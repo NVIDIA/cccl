@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,20 +35,18 @@ namespace detail
 namespace generic
 {
 
-
-template<typename ExecutionPolicy,
-         typename InputIterator,
-         typename UnaryFunction,
-         typename OutputType,
-         typename BinaryFunction>
-_CCCL_HOST_DEVICE
-  OutputType transform_reduce(thrust::execution_policy<ExecutionPolicy> &exec,
-                              InputIterator first,
-                              InputIterator last,
-                              UnaryFunction unary_op,
-                              OutputType init,
-                              BinaryFunction binary_op);
-
+template <typename ExecutionPolicy,
+          typename InputIterator,
+          typename UnaryFunction,
+          typename OutputType,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputType transform_reduce(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  UnaryFunction unary_op,
+  OutputType init,
+  BinaryFunction binary_op);
 
 } // end namespace generic
 } // end namespace detail
@@ -57,4 +54,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform_reduce.inl>
-

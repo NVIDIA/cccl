@@ -12,22 +12,24 @@
 
 // cuda::std::ranges::dangling;
 
-#include <cuda/std/ranges>
-
 #include <cuda/std/concepts>
+#include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 static_assert(cuda::std::is_empty_v<cuda::std::ranges::dangling>);
 
-template<int> struct S { };
+template <int>
+struct S
+{};
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling>);
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling, S<0>>);
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling, S<0>, S<1>>);
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling, S<0>, S<1>, S<2>>);
 
-__host__ __device__ constexpr bool test_dangling() {
+__host__ __device__ constexpr bool test_dangling()
+{
   auto a = cuda::std::ranges::dangling();
   auto b = cuda::std::ranges::dangling(S<0>());
   auto c = cuda::std::ranges::dangling(S<0>(), S<1>());
@@ -39,7 +41,8 @@ __host__ __device__ constexpr bool test_dangling() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   static_assert(test_dangling());
   test_dangling();
   return 0;

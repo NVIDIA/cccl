@@ -1,97 +1,91 @@
-#include <iostream>
-#include <unittest/unittest.h>
-#include <thrust/memory.h>
-#include <thrust/sort.h>
-#include <thrust/memory.h>
-#include <thrust/pair.h>
 #include <thrust/fill.h>
 #include <thrust/logical.h>
-#include <thrust/sequence.h>
+#include <thrust/memory.h>
+#include <thrust/pair.h>
 #include <thrust/reverse.h>
+#include <thrust/sequence.h>
+#include <thrust/sort.h>
+
+#include <iostream>
+
+#include <unittest/unittest.h>
 
 // Define a new system class, as the my_system one is already used with a thrust::sort template definition
 // that calls back into sort.cu
 class my_memory_system : public thrust::device_execution_policy<my_memory_system>
 {
-  public:
-    my_memory_system(int)
-      : correctly_dispatched(false),
-        num_copies(0)
-    {}
+public:
+  my_memory_system(int)
+      : correctly_dispatched(false)
+      , num_copies(0)
+  {}
 
-    my_memory_system(const my_memory_system &other)
-      : correctly_dispatched(false),
-        num_copies(other.num_copies + 1)
-    {}
+  my_memory_system(const my_memory_system& other)
+      : correctly_dispatched(false)
+      , num_copies(other.num_copies + 1)
+  {}
 
-    void validate_dispatch()
-    {
-      correctly_dispatched = (num_copies == 0);
-    }
+  void validate_dispatch()
+  {
+    correctly_dispatched = (num_copies == 0);
+  }
 
-    bool is_valid()
-    {
-      return correctly_dispatched;
-    }
+  bool is_valid()
+  {
+    return correctly_dispatched;
+  }
 
-  private:
-    bool correctly_dispatched;
+private:
+  bool correctly_dispatched;
 
-    // count the number of copies so that we can validate
-    // that dispatch does not introduce any
-    unsigned int num_copies;
+  // count the number of copies so that we can validate
+  // that dispatch does not introduce any
+  unsigned int num_copies;
 
-
-    // disallow default construction
-    my_memory_system();
+  // disallow default construction
+  my_memory_system();
 };
 
 namespace my_old_namespace
 {
 
-struct my_old_temporary_allocation_system
-  : public thrust::device_execution_policy<my_old_temporary_allocation_system>
-{
-};
+struct my_old_temporary_allocation_system : public thrust::device_execution_policy<my_old_temporary_allocation_system>
+{};
 
 template <typename T>
 thrust::pair<thrust::pointer<T, my_old_temporary_allocation_system>, std::ptrdiff_t>
 get_temporary_buffer(my_old_temporary_allocation_system, std::ptrdiff_t)
 {
-  thrust::pointer<T, my_old_temporary_allocation_system> const
-    result(reinterpret_cast<T*>(4217));
+  thrust::pointer<T, my_old_temporary_allocation_system> const result(reinterpret_cast<T*>(4217));
 
   return thrust::make_pair(result, 314);
 }
 
-template<typename Pointer>
+template <typename Pointer>
 void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
 {
   typedef typename thrust::detail::pointer_traits<Pointer>::raw_pointer RP;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
 }
 
-} // my_old_namespace
+} // namespace my_old_namespace
 
 namespace my_new_namespace
 {
 
-struct my_new_temporary_allocation_system
-  : public thrust::device_execution_policy<my_new_temporary_allocation_system>
-{
-};
+struct my_new_temporary_allocation_system : public thrust::device_execution_policy<my_new_temporary_allocation_system>
+{};
 
 template <typename T>
 thrust::pair<thrust::pointer<T, my_new_temporary_allocation_system>, std::ptrdiff_t>
 get_temporary_buffer(my_new_temporary_allocation_system, std::ptrdiff_t)
 {
-  thrust::pointer<T, my_new_temporary_allocation_system> const
-    result(reinterpret_cast<T*>(1742));
+  thrust::pointer<T, my_new_temporary_allocation_system> const result(reinterpret_cast<T*>(1742));
 
   return thrust::make_pair(result, 413);
 }
 
-template<typename Pointer>
+template <typename Pointer>
 void return_temporary_buffer(my_new_temporary_allocation_system, Pointer)
 {
   // This should never be called (the three-argument with size overload below
@@ -99,7 +93,7 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer)
   ASSERT_EQUAL(true, false);
 }
 
-template<typename Pointer>
+template <typename Pointer>
 void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std::ptrdiff_t n)
 {
   typedef typename thrust::detail::pointer_traits<Pointer>::raw_pointer RP;
@@ -107,21 +101,19 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std:
   ASSERT_EQUAL(n, 413);
 }
 
-} // my_new_namespace
+} // namespace my_new_namespace
 
-template<typename T1, typename T2>
-bool are_same(const T1 &, const T2 &)
+template <typename T1, typename T2>
+bool are_same(const T1&, const T2&)
 {
   return false;
 }
 
-
-template<typename T>
-bool are_same(const T &, const T &)
+template <typename T>
+bool are_same(const T&, const T&)
 {
   return true;
 }
-
 
 void TestSelectSystemDifferentTypes()
 {
@@ -139,7 +131,6 @@ void TestSelectSystemDifferentTypes()
   ASSERT_EQUAL(true, is_device_system_tag);
 }
 DECLARE_UNITTEST(TestSelectSystemDifferentTypes);
-
 
 void TestSelectSystemSameTypes()
 {
@@ -163,7 +154,6 @@ void TestSelectSystemSameTypes()
 }
 DECLARE_UNITTEST(TestSelectSystemSameTypes);
 
-
 void TestGetTemporaryBuffer()
 {
   const std::ptrdiff_t n = 9001;
@@ -185,7 +175,6 @@ void TestGetTemporaryBuffer()
 }
 DECLARE_UNITTEST(TestGetTemporaryBuffer);
 
-
 void TestMalloc()
 {
   const std::ptrdiff_t n = 9001;
@@ -205,15 +194,12 @@ void TestMalloc()
 }
 DECLARE_UNITTEST(TestMalloc);
 
-
-thrust::pointer<void,my_memory_system>
-  malloc(my_memory_system &system, std::size_t)
+thrust::pointer<void, my_memory_system> malloc(my_memory_system& system, std::size_t)
 {
   system.validate_dispatch();
 
-  return thrust::pointer<void,my_memory_system>();
+  return thrust::pointer<void, my_memory_system>();
 }
-
 
 void TestMallocDispatchExplicit()
 {
@@ -226,17 +212,15 @@ void TestMallocDispatchExplicit()
 }
 DECLARE_UNITTEST(TestMallocDispatchExplicit);
 
-
-template<typename Pointer>
-void free(my_memory_system &system, Pointer)
+template <typename Pointer>
+void free(my_memory_system& system, Pointer)
 {
   system.validate_dispatch();
 }
 
-
 void TestFreeDispatchExplicit()
 {
-  thrust::pointer<my_memory_system,void> ptr;
+  thrust::pointer<my_memory_system, void> ptr;
 
   my_memory_system sys(0);
   thrust::free(sys, ptr);
@@ -245,18 +229,17 @@ void TestFreeDispatchExplicit()
 }
 DECLARE_UNITTEST(TestFreeDispatchExplicit);
 
-
-template<typename T>
-  thrust::pair<thrust::pointer<T,my_memory_system>, std::ptrdiff_t>
-    get_temporary_buffer(my_memory_system &system, std::ptrdiff_t n)
+template <typename T>
+thrust::pair<thrust::pointer<T, my_memory_system>, std::ptrdiff_t>
+get_temporary_buffer(my_memory_system& system, std::ptrdiff_t n)
 {
   system.validate_dispatch();
 
   thrust::device_system_tag device_sys;
-  thrust::pair<thrust::pointer<T, thrust::device_system_tag>, std::ptrdiff_t> result = thrust::get_temporary_buffer<T>(device_sys, n);
-  return thrust::make_pair(thrust::pointer<T,my_memory_system>(result.first.get()), result.second);
+  thrust::pair<thrust::pointer<T, thrust::device_system_tag>, std::ptrdiff_t> result =
+    thrust::get_temporary_buffer<T>(device_sys, n);
+  return thrust::make_pair(thrust::pointer<T, my_memory_system>(result.first.get()), result.second);
 }
-
 
 void TestGetTemporaryBufferDispatchExplicit()
 {
@@ -280,10 +263,9 @@ void TestGetTemporaryBufferDispatchExplicit()
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
 
-
 void TestGetTemporaryBufferDispatchImplicit()
 {
-  if(are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
+  if (are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
   {
     // XXX cpp uses the internal scalar backend, which currently elides user tags
     KNOWN_FAILURE;
@@ -305,7 +287,6 @@ void TestGetTemporaryBufferDispatchImplicit()
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
 
-
 void TestTemporaryBufferOldCustomization()
 {
   typedef my_old_namespace::my_old_temporary_allocation_system system;
@@ -325,7 +306,6 @@ void TestTemporaryBufferOldCustomization()
   }
 }
 DECLARE_UNITTEST(TestTemporaryBufferOldCustomization);
-
 
 void TestTemporaryBufferNewCustomization()
 {

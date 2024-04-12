@@ -31,7 +31,6 @@
  * PTX intrinsics
  */
 
-
 #pragma once
 
 #include <cub/config.cuh>
@@ -44,7 +43,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 
@@ -54,25 +52,24 @@ CUB_NAMESPACE_BEGIN
  * PTX helper macros
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
  * Register modifier for pointer-types (for inlining PTX assembly)
  */
-#if defined(_WIN64) || defined(__LP64__)
-    #define __CUB_LP64__ 1
-    // 64-bit register modifier for inlined asm
-    #define _CUB_ASM_PTR_ "l"
-    #define _CUB_ASM_PTR_SIZE_ "u64"
-#else
-    #define __CUB_LP64__ 0
-    // 32-bit register modifier for inlined asm
-    #define _CUB_ASM_PTR_ "r"
-    #define _CUB_ASM_PTR_SIZE_ "u32"
-#endif
+#  if defined(_WIN64) || defined(__LP64__)
+#    define __CUB_LP64__ 1
+// 64-bit register modifier for inlined asm
+#    define _CUB_ASM_PTR_      "l"
+#    define _CUB_ASM_PTR_SIZE_ "u64"
+#  else
+#    define __CUB_LP64__       0
+// 32-bit register modifier for inlined asm
+#    define _CUB_ASM_PTR_      "r"
+#    define _CUB_ASM_PTR_SIZE_ "u32"
+#  endif
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
 
 /******************************************************************************
  * Inlined PTX intrinsics
@@ -106,122 +103,94 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
 /**
  * \brief Shift-right then add.  Returns (\p x >> \p shift) + \p addend.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(
-    unsigned int x,
-    unsigned int shift,
-    unsigned int addend)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHR_ADD(unsigned int x, unsigned int shift, unsigned int addend)
 {
-    unsigned int ret;
-    asm ("vshr.u32.u32.u32.clamp.add %0, %1, %2, %3;" :
-        "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
-    return ret;
+  unsigned int ret;
+  asm("vshr.u32.u32.u32.clamp.add %0, %1, %2, %3;" : "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
+  return ret;
 }
-
 
 /**
  * \brief Shift-left then add.  Returns (\p x << \p shift) + \p addend.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(
-    unsigned int x,
-    unsigned int shift,
-    unsigned int addend)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(unsigned int x, unsigned int shift, unsigned int addend)
 {
-    unsigned int ret;
-    asm ("vshl.u32.u32.u32.clamp.add %0, %1, %2, %3;" :
-        "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
-    return ret;
+  unsigned int ret;
+  asm("vshl.u32.u32.u32.clamp.add %0, %1, %2, %3;" : "=r"(ret) : "r"(x), "r"(shift), "r"(addend));
+  return ret;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
  * Bitfield-extract.
  */
 template <typename UnsignedBits, int BYTE_LEN>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-    UnsignedBits            source,
-    unsigned int            bit_start,
-    unsigned int            num_bits,
-    Int2Type<BYTE_LEN>      /*byte_len*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, Int2Type<BYTE_LEN> /*byte_len*/)
 {
-    unsigned int bits;
-    asm ("bfe.u32 %0, %1, %2, %3;" : "=r"(bits) : "r"((unsigned int) source), "r"(bit_start), "r"(num_bits));
-    return bits;
+  unsigned int bits;
+  asm("bfe.u32 %0, %1, %2, %3;" : "=r"(bits) : "r"((unsigned int) source), "r"(bit_start), "r"(num_bits));
+  return bits;
 }
-
 
 /**
  * Bitfield-extract for 64-bit types.
  */
 template <typename UnsignedBits>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-    UnsignedBits            source,
-    unsigned int            bit_start,
-    unsigned int            num_bits,
-    Int2Type<8>             /*byte_len*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, Int2Type<8> /*byte_len*/)
 {
-    const unsigned long long MASK = (1ull << num_bits) - 1;
-    return (source >> bit_start) & MASK;
+  const unsigned long long MASK = (1ull << num_bits) - 1;
+  return (source >> bit_start) & MASK;
 }
 
-#if CUB_IS_INT128_ENABLED
+#  if CUB_IS_INT128_ENABLED
 /**
  * Bitfield-extract for 128-bit types.
  */
 template <typename UnsignedBits>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-    UnsignedBits            source,
-    unsigned int            bit_start,
-    unsigned int            num_bits,
-    Int2Type<16>            /*byte_len*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, Int2Type<16> /*byte_len*/)
 {
-    const __uint128_t MASK = (__uint128_t{1} << num_bits) - 1;
-    return (source >> bit_start) & MASK;
+  const __uint128_t MASK = (__uint128_t{1} << num_bits) - 1;
+  return (source >> bit_start) & MASK;
 }
-#endif
+#  endif
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**
- * \brief Bitfield-extract.  Extracts \p num_bits from \p source starting at bit-offset \p bit_start.  The input \p source may be an 8b, 16b, 32b, or 64b unsigned integer type.
+ * \brief Bitfield-extract.  Extracts \p num_bits from \p source starting at bit-offset \p bit_start.  The input \p
+ * source may be an 8b, 16b, 32b, or 64b unsigned integer type.
  */
 template <typename UnsignedBits>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-    UnsignedBits source,
-    unsigned int bit_start,
-    unsigned int num_bits)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
-    return BFE(source, bit_start, num_bits, Int2Type<sizeof(UnsignedBits)>());
+  return BFE(source, bit_start, num_bits, Int2Type<sizeof(UnsignedBits)>());
 }
-
 
 /**
  * \brief Bitfield insert.  Inserts the \p num_bits least significant bits of \p y into \p x at bit-offset \p bit_start.
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE void BFI(
-    unsigned int &ret,
-    unsigned int x,
-    unsigned int y,
-    unsigned int bit_start,
-    unsigned int num_bits)
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+BFI(unsigned int& ret, unsigned int x, unsigned int y, unsigned int bit_start, unsigned int num_bits)
 {
-    asm ("bfi.b32 %0, %1, %2, %3, %4;" :
-        "=r"(ret) : "r"(y), "r"(x), "r"(bit_start), "r"(num_bits));
+  asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(ret) : "r"(y), "r"(x), "r"(bit_start), "r"(num_bits));
 }
-
 
 /**
  * \brief Three-operand add.  Returns \p x + \p y + \p z.
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y, unsigned int z)
 {
-    asm ("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
-    return x;
+  asm("vadd.u32.u32.u32.add %0, %1, %2, %3;" : "=r"(x) : "r"(x), "r"(y), "r"(z));
+  return x;
 }
 
-
 /**
- * \brief Byte-permute. Pick four arbitrary bytes from two 32-bit registers, and reassemble them into a 32-bit destination register.  For SM2.0 or later.
+ * \brief Byte-permute. Pick four arbitrary bytes from two 32-bit registers, and reassemble them into a 32-bit
+ * destination register.  For SM2.0 or later.
  *
  * \par
  * The bytes in the two source registers \p a and \p b are numbered from 0 to 7:
@@ -248,124 +217,119 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int IADD3(unsigned int x, unsigned int y
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned int index)
 {
-    int ret;
-    asm ("prmt.b32 %0, %1, %2, %3;" : "=r"(ret) : "r"(a), "r"(b), "r"(index));
-    return ret;
+  int ret;
+  asm("prmt.b32 %0, %1, %2, %3;" : "=r"(ret) : "r"(a), "r"(b), "r"(index));
+  return ret;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
  * Sync-threads barrier.
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE void BAR(int count)
 {
-    asm volatile("bar.sync 1, %0;" : : "r"(count));
+  asm volatile("bar.sync 1, %0;" : : "r"(count));
 }
 
 /**
  * CTA barrier
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE void CTA_SYNC()
+_CCCL_DEVICE _CCCL_FORCEINLINE void CTA_SYNC()
 {
-    __syncthreads();
+  __syncthreads();
 }
-
 
 /**
  * CTA barrier with predicate
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
+_CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_AND(int p)
 {
-    return __syncthreads_and(p);
+  return __syncthreads_and(p);
 }
-
 
 /**
  * CTA barrier with predicate
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
+_CCCL_DEVICE _CCCL_FORCEINLINE int CTA_SYNC_OR(int p)
 {
-    return __syncthreads_or(p);
+  return __syncthreads_or(p);
 }
-
 
 /**
  * Warp barrier
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE void WARP_SYNC(unsigned int member_mask)
 {
-    __syncwarp(member_mask);
+  __syncwarp(member_mask);
 }
-
 
 /**
  * Warp any
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ANY(int predicate, unsigned int member_mask)
 {
-    return __any_sync(member_mask, predicate);
+  return __any_sync(member_mask, predicate);
 }
-
 
 /**
  * Warp any
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE int WARP_ALL(int predicate, unsigned int member_mask)
 {
-    return __all_sync(member_mask, predicate);
+  return __all_sync(member_mask, predicate);
 }
-
 
 /**
  * Warp ballot
  */
-_CCCL_DEVICE  _CCCL_FORCEINLINE int WARP_BALLOT(int predicate, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE int WARP_BALLOT(int predicate, unsigned int member_mask)
 {
-    return __ballot_sync(member_mask, predicate);
+  return __ballot_sync(member_mask, predicate);
 }
-
 
 /**
  * Warp synchronous shfl_up
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE
-unsigned int SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+SHFL_UP_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
-    asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
-        : "=r"(word) : "r"(word), "r"(src_offset), "r"(flags), "r"(member_mask));
-    return word;
+  asm volatile("shfl.sync.up.b32 %0, %1, %2, %3, %4;"
+               : "=r"(word)
+               : "r"(word), "r"(src_offset), "r"(flags), "r"(member_mask));
+  return word;
 }
 
 /**
  * Warp synchronous shfl_down
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE
-unsigned int SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+SHFL_DOWN_SYNC(unsigned int word, int src_offset, int flags, unsigned int member_mask)
 {
-    asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
-        : "=r"(word) : "r"(word), "r"(src_offset), "r"(flags), "r"(member_mask));
-    return word;
+  asm volatile("shfl.sync.down.b32 %0, %1, %2, %3, %4;"
+               : "=r"(word)
+               : "r"(word), "r"(src_offset), "r"(flags), "r"(member_mask));
+  return word;
 }
 
 /**
  * Warp synchronous shfl_idx
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE
-unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+SHFL_IDX_SYNC(unsigned int word, int src_lane, int flags, unsigned int member_mask)
 {
-    asm volatile("shfl.sync.idx.b32 %0, %1, %2, %3, %4;"
-        : "=r"(word) : "r"(word), "r"(src_lane), "r"(flags), "r"(member_mask));
-    return word;
+  asm volatile("shfl.sync.idx.b32 %0, %1, %2, %3, %4;"
+               : "=r"(word)
+               : "r"(word), "r"(src_lane), "r"(flags), "r"(member_mask));
+  return word;
 }
 
 /**
  * Warp synchronous shfl_idx
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE
-unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_mask)
 {
-    return __shfl_sync(member_mask, word, src_lane);
+  return __shfl_sync(member_mask, word, src_lane);
 }
 
 /**
@@ -373,20 +337,19 @@ unsigned int SHFL_IDX_SYNC(unsigned int word, int src_lane, unsigned int member_
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE float FMUL_RZ(float a, float b)
 {
-    float d;
-    asm ("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
-    return d;
+  float d;
+  asm("mul.rz.f32 %0, %1, %2;" : "=f"(d) : "f"(a), "f"(b));
+  return d;
 }
-
 
 /**
  * Floating point multiply-add. (Mantissa LSB rounds towards zero.)
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
 {
-    float d;
-    asm ("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
-    return d;
+  float d;
+  asm("fma.rz.f32 %0, %1, %2, %3;" : "=f"(d) : "f"(a), "f"(b), "f"(c));
+  return d;
 }
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -394,49 +357,47 @@ _CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
 /**
  * \brief Terminates the calling thread
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit() {
-    asm volatile("exit;");
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
+{
+  asm volatile("exit;");
 }
-
 
 /**
  * \brief  Abort execution and generate an interrupt to the host CPU
  */
-_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap() {
-    asm volatile("trap;");
+_CCCL_DEVICE _CCCL_FORCEINLINE void ThreadTrap()
+{
+  asm volatile("trap;");
 }
-
 
 /**
  * \brief Returns the row-major linear thread identifier for a multidimensional thread block
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
 {
-    return ((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y)) +
-            ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) +
-            threadIdx.x;
+  return ((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y))
+       + ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) + threadIdx.x;
 }
-
 
 /**
  * \brief Returns the warp lane ID of the calling thread
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneId()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%laneid;" : "=r"(ret) );
-    return ret;
+  unsigned int ret;
+  asm("mov.u32 %0, %%laneid;" : "=r"(ret));
+  return ret;
 }
 
-
 /**
- * \brief Returns the warp ID of the calling thread.  Warp ID is guaranteed to be unique among warps, but may not correspond to a zero-based ranking within the thread block.
+ * \brief Returns the warp ID of the calling thread.  Warp ID is guaranteed to be unique among warps, but may not
+ * correspond to a zero-based ranking within the thread block.
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%warpid;" : "=r"(ret) );
-    return ret;
+  unsigned int ret;
+  asm("mov.u32 %0, %%warpid;" : "=r"(ret));
+  return ret;
 }
 
 /**
@@ -452,20 +413,18 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int WarpId()
  * @param warp_id Id of virtual warp within architectural warp
  */
 template <int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-unsigned int WarpMask(unsigned int warp_id)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
   constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
-  unsigned int member_mask = 0xFFFFFFFFu >>
-                             (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
+  unsigned int member_mask = 0xFFFFFFFFu >> (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
 
-  CUB_IF_CONSTEXPR(is_pow_of_two && !is_arch_warp)
+  _CCCL_IF_CONSTEXPR (is_pow_of_two && !is_arch_warp)
   {
     member_mask <<= warp_id * LOGICAL_WARP_THREADS;
   }
-  (void)warp_id;
+  (void) warp_id;
 
   return member_mask;
 }
@@ -475,9 +434,9 @@ unsigned int WarpMask(unsigned int warp_id)
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_lt;" : "=r"(ret) );
-    return ret;
+  unsigned int ret;
+  asm("mov.u32 %0, %%lanemask_lt;" : "=r"(ret));
+  return ret;
 }
 
 /**
@@ -485,9 +444,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLt()
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_le;" : "=r"(ret) );
-    return ret;
+  unsigned int ret;
+  asm("mov.u32 %0, %%lanemask_le;" : "=r"(ret));
+  return ret;
 }
 
 /**
@@ -495,9 +454,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskLe()
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_gt;" : "=r"(ret) );
-    return ret;
+  unsigned int ret;
+  asm("mov.u32 %0, %%lanemask_gt;" : "=r"(ret));
+  return ret;
 }
 
 /**
@@ -505,9 +464,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGt()
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGe()
 {
-    unsigned int ret;
-    asm ("mov.u32 %0, %%lanemask_ge;" : "=r"(ret) );
-    return ret;
+  unsigned int ret;
+  asm("mov.u32 %0, %%lanemask_ge;" : "=r"(ret));
+  return ret;
 }
 
 /**
@@ -560,34 +519,34 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int LaneMaskGe()
  *   32-bit mask of participating warp lanes
  */
 template <int LOGICAL_WARP_THREADS, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
-ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    enum {
-        SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
-    };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  enum
+  {
+    SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
+  };
 
-    typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
-    constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
-    T               output;
-    ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);
-    ShuffleWord     *input_alias    = reinterpret_cast<ShuffleWord *>(&input);
+  T output;
+  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
-    unsigned int shuffle_word;
-    shuffle_word = SHFL_UP_SYNC((unsigned int)input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
-    output_alias[0] = shuffle_word;
+  unsigned int shuffle_word;
+  shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
+  output_alias[0] = shuffle_word;
 
-    #pragma unroll
-    for (int WORD = 1; WORD < WORDS; ++WORD)
-    {
-        shuffle_word       = SHFL_UP_SYNC((unsigned int)input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
-        output_alias[WORD] = shuffle_word;
-    }
+#pragma unroll
+  for (int WORD = 1; WORD < WORDS; ++WORD)
+  {
+    shuffle_word       = SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
+    output_alias[WORD] = shuffle_word;
+  }
 
-    return output;
+  return output;
 }
 
 /**
@@ -641,34 +600,34 @@ ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
  *   32-bit mask of participating warp lanes
  */
 template <int LOGICAL_WARP_THREADS, typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T
-ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 {
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    enum {
-        SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
-    };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  enum
+  {
+    SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
+  };
 
-    typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
-    constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
-    T               output;
-    ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);
-    ShuffleWord     *input_alias    = reinterpret_cast<ShuffleWord *>(&input);
+  T output;
+  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
-    unsigned int shuffle_word;
-    shuffle_word    = SHFL_DOWN_SYNC((unsigned int)input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
-    output_alias[0] = shuffle_word;
+  unsigned int shuffle_word;
+  shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
+  output_alias[0] = shuffle_word;
 
-    #pragma unroll
-    for (int WORD = 1; WORD < WORDS; ++WORD)
-    {
-        shuffle_word       = SHFL_DOWN_SYNC((unsigned int)input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
-        output_alias[WORD] = shuffle_word;
-    }
+#pragma unroll
+  for (int WORD = 1; WORD < WORDS; ++WORD)
+  {
+    shuffle_word = SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
+    output_alias[WORD] = shuffle_word;
+  }
 
-    return output;
+  return output;
 }
 
 /**
@@ -723,43 +682,37 @@ ShuffleDown(T input, int src_offset, int last_thread, unsigned int member_mask)
 template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    enum {
-        SHFL_C = ((32 - LOGICAL_WARP_THREADS) << 8) | (LOGICAL_WARP_THREADS - 1)
-    };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  enum
+  {
+    SHFL_C = ((32 - LOGICAL_WARP_THREADS) << 8) | (LOGICAL_WARP_THREADS - 1)
+  };
 
-    typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
 
-    constexpr int   WORDS           = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
+  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
-    T               output;
-    ShuffleWord     *output_alias   = reinterpret_cast<ShuffleWord *>(&output);
-    ShuffleWord     *input_alias    = reinterpret_cast<ShuffleWord *>(&input);
+  T output;
+  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
-    unsigned int shuffle_word;
-    shuffle_word = SHFL_IDX_SYNC((unsigned int)input_alias[0],
-                                 src_lane,
-                                 SHFL_C,
-                                 member_mask);
+  unsigned int shuffle_word;
+  shuffle_word = SHFL_IDX_SYNC((unsigned int) input_alias[0], src_lane, SHFL_C, member_mask);
 
-    output_alias[0] = shuffle_word;
+  output_alias[0] = shuffle_word;
 
-    #pragma unroll
-    for (int WORD = 1; WORD < WORDS; ++WORD)
-    {
-        shuffle_word = SHFL_IDX_SYNC((unsigned int)input_alias[WORD],
-                                     src_lane,
-                                     SHFL_C,
-                                     member_mask);
+#pragma unroll
+  for (int WORD = 1; WORD < WORDS; ++WORD)
+  {
+    shuffle_word = SHFL_IDX_SYNC((unsigned int) input_alias[WORD], src_lane, SHFL_C, member_mask);
 
-        output_alias[WORD] = shuffle_word;
-    }
+    output_alias[WORD] = shuffle_word;
+  }
 
-    return output;
+  return output;
 }
 
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 namespace detail
 {
 
@@ -781,45 +734,43 @@ namespace detail
 template <int LABEL_BITS, int WARP_ACTIVE_THREADS>
 struct warp_matcher_t
 {
-
   static _CCCL_DEVICE unsigned int match_any(unsigned int label)
   {
     return warp_matcher_t<LABEL_BITS, 32>::match_any(label) & ~(~0 << WARP_ACTIVE_THREADS);
   }
-
 };
 
 template <int LABEL_BITS>
 struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
 {
-
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
   static _CCCL_DEVICE unsigned int match_any(unsigned int label)
   {
-      unsigned int retval;
+    unsigned int retval;
 
-      // Extract masks of common threads for each bit
-      #pragma unroll
-      for (int BIT = 0; BIT < LABEL_BITS; ++BIT)
-      {
-          unsigned int mask;
-          unsigned int current_bit = 1 << BIT;
-          asm ("{\n"
-              "    .reg .pred p;\n"
-              "    and.b32 %0, %1, %2;"
-              "    setp.ne.u32 p, %0, 0;\n"
-              "    vote.ballot.sync.b32 %0, p, 0xffffffff;\n"
-              "    @!p not.b32 %0, %0;\n"
-              "}\n" : "=r"(mask) : "r"(label), "r"(current_bit));
+// Extract masks of common threads for each bit
+#  pragma unroll
+    for (int BIT = 0; BIT < LABEL_BITS; ++BIT)
+    {
+      unsigned int mask;
+      unsigned int current_bit = 1 << BIT;
+      asm("{\n"
+          "    .reg .pred p;\n"
+          "    and.b32 %0, %1, %2;"
+          "    setp.ne.u32 p, %0, 0;\n"
+          "    vote.ballot.sync.b32 %0, p, 0xffffffff;\n"
+          "    @!p not.b32 %0, %0;\n"
+          "}\n"
+          : "=r"(mask)
+          : "r"(label), "r"(current_bit));
 
-          // Remove peers who differ
-          retval = (BIT == 0) ? mask : retval & mask;
-      }
+      // Remove peers who differ
+      retval = (BIT == 0) ? mask : retval & mask;
+    }
 
-      return retval;
+    return retval;
   }
-
 };
 
 } // namespace detail

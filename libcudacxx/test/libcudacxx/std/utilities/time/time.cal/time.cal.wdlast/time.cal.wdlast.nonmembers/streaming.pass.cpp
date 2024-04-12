@@ -19,16 +19,17 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
+
 #include <iostream>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-   using weekday_last = cuda::std::chrono::weekday_last;
-   using weekday      = cuda::std::chrono::weekday;
+  using weekday_last = cuda::std::chrono::weekday_last;
+  using weekday      = cuda::std::chrono::weekday;
 
-   std::cout << weekday_last{weekday{3}};
+  std::cout << weekday_last{weekday{3}};
 
   return 0;
 }

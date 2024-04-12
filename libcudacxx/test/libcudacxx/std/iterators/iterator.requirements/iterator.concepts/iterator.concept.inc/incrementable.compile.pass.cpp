@@ -12,11 +12,10 @@
 // template<class In>
 // concept indirectly_readable;
 
-#include <cuda/std/iterator>
+#include "../incrementable.h"
 
 #include <cuda/std/concepts>
-
-#include "../incrementable.h"
+#include <cuda/std/iterator>
 
 static_assert(cuda::std::incrementable<int>);
 static_assert(cuda::std::incrementable<int*>);

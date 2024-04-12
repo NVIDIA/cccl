@@ -35,60 +35,84 @@ THRUST_NAMESPACE_BEGIN
 
 struct input_universal_iterator_tag
 {
-  operator input_host_iterator_tag () {return input_host_iterator_tag();}
+  operator input_host_iterator_tag()
+  {
+    return input_host_iterator_tag();
+  }
 
-  operator input_device_iterator_tag () {return input_device_iterator_tag();}
+  operator input_device_iterator_tag()
+  {
+    return input_device_iterator_tag();
+  }
 };
 
 struct output_universal_iterator_tag
 {
-  operator output_host_iterator_tag () {return output_host_iterator_tag();}
+  operator output_host_iterator_tag()
+  {
+    return output_host_iterator_tag();
+  }
 
-  operator output_device_iterator_tag () {return output_device_iterator_tag();}
+  operator output_device_iterator_tag()
+  {
+    return output_device_iterator_tag();
+  }
 };
 
-struct forward_universal_iterator_tag
-  : input_universal_iterator_tag
+struct forward_universal_iterator_tag : input_universal_iterator_tag
 {
-  operator forward_host_iterator_tag () {return forward_host_iterator_tag();};
+  operator forward_host_iterator_tag()
+  {
+    return forward_host_iterator_tag();
+  };
 
-  operator forward_device_iterator_tag () {return forward_device_iterator_tag();};
+  operator forward_device_iterator_tag()
+  {
+    return forward_device_iterator_tag();
+  };
 };
 
-struct bidirectional_universal_iterator_tag
-  : forward_universal_iterator_tag
+struct bidirectional_universal_iterator_tag : forward_universal_iterator_tag
 {
-  operator bidirectional_host_iterator_tag () {return bidirectional_host_iterator_tag();};
+  operator bidirectional_host_iterator_tag()
+  {
+    return bidirectional_host_iterator_tag();
+  };
 
-  operator bidirectional_device_iterator_tag () {return bidirectional_device_iterator_tag();};
+  operator bidirectional_device_iterator_tag()
+  {
+    return bidirectional_device_iterator_tag();
+  };
 };
-
 
 namespace detail
 {
 
 // create this struct to control conversion precedence in random_access_universal_iterator_tag
-template<typename T>
-struct one_degree_of_separation
-  : T
-{
-};
+template <typename T>
+struct one_degree_of_separation : T
+{};
 
-} // end detail
-
+} // namespace detail
 
 struct random_access_universal_iterator_tag
 {
   // these conversions are all P0
-  operator random_access_host_iterator_tag () {return random_access_host_iterator_tag();};
+  operator random_access_host_iterator_tag()
+  {
+    return random_access_host_iterator_tag();
+  };
 
-  operator random_access_device_iterator_tag () {return random_access_device_iterator_tag();};
+  operator random_access_device_iterator_tag()
+  {
+    return random_access_device_iterator_tag();
+  };
 
   // bidirectional_universal_iterator_tag is P1
-  operator detail::one_degree_of_separation<bidirectional_universal_iterator_tag> () {return detail::one_degree_of_separation<bidirectional_universal_iterator_tag>();}
-
+  operator detail::one_degree_of_separation<bidirectional_universal_iterator_tag>()
+  {
+    return detail::one_degree_of_separation<bidirectional_universal_iterator_tag>();
+  }
 };
 
-
 THRUST_NAMESPACE_END
-

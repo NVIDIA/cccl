@@ -50,7 +50,7 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
 
   scan_op_t scan_op{};
   constexpr unsigned int threads_in_warp = 32;
-  const unsigned int tid             = threadIdx.x;
+  const unsigned int tid                 = threadIdx.x;
 
   // Construct prefix op
   tile_prefix_op prefix(tile_state, temp_storage, scan_op);
@@ -82,10 +82,7 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
       if (tid == 0)
       {
         MessageT inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
-        printf("tile %d: exclusive = %d inclusive = %d\n",
-               tile_idx,
-               exclusive_prefix,
-               inclusive_prefix);
+        printf("tile %d: exclusive = %d inclusive = %d\n", tile_idx, exclusive_prefix, inclusive_prefix);
       }
     }
   }
@@ -102,14 +99,13 @@ void decoupled_look_back_example(int blocks_in_grid)
 
   // Allocate temporary storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  std::uint8_t *d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  std::uint8_t* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Initialize temporary storage
   scan_tile_state_t tile_status;
   tile_status.Init(blocks_in_grid, d_temp_storage, temp_storage_bytes);
   constexpr unsigned int threads_in_init_block = 256;
-  const unsigned int blocks_in_init_grid   = cub::DivideAndRoundUp(blocks_in_grid,
-                                                                 threads_in_init_block);
+  const unsigned int blocks_in_init_grid       = cub::DivideAndRoundUp(blocks_in_grid, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, blocks_in_grid);
 
   // Launch decoupled look-back
@@ -120,4 +116,7 @@ void decoupled_look_back_example(int blocks_in_grid)
   cudaDeviceSynchronize();
 }
 
-int main() { decoupled_look_back_example<int>(14); }
+int main()
+{
+  decoupled_look_back_example<int>(14);
+}

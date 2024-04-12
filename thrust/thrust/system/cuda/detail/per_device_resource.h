@@ -38,43 +38,36 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#include <thrust/system/cuda/config.h>
+#  include <thrust/system/cuda/config.h>
 
-#include <thrust/system/cuda/detail/util.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-#include <thrust/system/cuda/detail/util.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/util.h>
 
-#include <mutex>
-#include <unordered_map>
+#  include <mutex>
+#  include <unordered_map>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
 
-template<typename MR, typename DerivedPolicy>
-_CCCL_HOST
-MR * get_per_device_resource(execution_policy<DerivedPolicy>&)
+template <typename MR, typename DerivedPolicy>
+_CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
 {
-    static std::mutex map_lock;
-    static std::unordered_map<int, MR> device_id_to_resource;
+  static std::mutex map_lock;
+  static std::unordered_map<int, MR> device_id_to_resource;
 
-    int device_id;
-    thrust::cuda_cub::throw_on_error(cudaGetDevice(&device_id));
+  int device_id;
+  thrust::cuda_cub::throw_on_error(cudaGetDevice(&device_id));
 
-    std::lock_guard<std::mutex> lock{map_lock};
-    return &device_id_to_resource[device_id];
+  std::lock_guard<std::mutex> lock{map_lock};
+  return &device_id_to_resource[device_id];
 }
 
-}
+} // namespace cuda_cub
 
 THRUST_NAMESPACE_END
 
 #endif
-
-#endif
-

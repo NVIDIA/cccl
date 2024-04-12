@@ -11,7 +11,6 @@
 #ifndef _CUDA_STREAM_REF
 #define _CUDA_STREAM_REF
 
-// clang-format off
 /*
     stream_ref synopsis
 namespace cuda {
@@ -40,9 +39,8 @@ private:
 */
 
 #include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
-// clang-format on
 
-#include "__cccl_config"
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -52,8 +50,10 @@ private:
 #  pragma system_header
 #endif // no system header
 
-#include "std/array"
-#include "std/type_traits"
+#include <cuda/std/cstddef>
+#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/detail/libcxx/include/__exception/cuda_error.h>
+#include <cuda/std/detail/libcxx/include/__exception/terminate.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -138,19 +138,7 @@ public:
    */
   void wait() const
   {
-    const auto __result = ::cudaStreamSynchronize(get());
-    switch (__result)
-    {
-      case ::cudaSuccess:
-        return;
-      default:
-        ::cudaGetLastError(); // Clear CUDA error state
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-        throw cuda::cuda_error{__result, "Failed to synchronize stream."};
-#else
-        _LIBCUDACXX_UNREACHABLE();
-#endif
-    }
+    _CCCL_TRY_CUDA_API(::cudaStreamSynchronize, "Failed to synchronize stream.", get());
   }
 
   /**
@@ -163,21 +151,18 @@ public:
   _LIBCUDACXX_NODISCARD_ATTRIBUTE bool ready() const
   {
     const auto __result = ::cudaStreamQuery(get());
+    if (__result == ::cudaErrorNotReady) {
+      return false;
+    }
     switch (__result)
     {
       case ::cudaSuccess:
-        return true;
-      case ::cudaErrorNotReady:
-        return false;
+        break;
       default:
         ::cudaGetLastError(); // Clear CUDA error state
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-        throw cuda::cuda_error{__result, ""};
-#else
-        // _LIBCUDACXX_UNREACHABLE();
-#endif
-        return false;
+        ::cuda::__throw_cuda_error(__result, "Failed to querry stream.");
     }
+    return true;
   }
 };
 

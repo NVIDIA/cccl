@@ -13,12 +13,15 @@
 
 // constexpr istream_iterator();
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
 #include "test_macros.h"
 
-struct S { S(); }; // not constexpr
+struct S
+{
+  S();
+}; // not constexpr
 
 int main(int, char**)
 {

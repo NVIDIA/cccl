@@ -9,42 +9,51 @@
 #ifndef TEST_SUPPORT_TYPE_CLASSIFICATION_MOVECONSTRUCTIBLE_H
 #define TEST_SUPPORT_TYPE_CLASSIFICATION_MOVECONSTRUCTIBLE_H
 
-struct HasDefaultOps {};
+struct HasDefaultOps
+{};
 
-struct CustomMoveCtor {
+struct CustomMoveCtor
+{
   __host__ __device__ CustomMoveCtor(CustomMoveCtor&&) noexcept;
 };
 
-struct MoveOnly {
-  MoveOnly(MoveOnly&&) noexcept = default;
+struct MoveOnly
+{
+  MoveOnly(MoveOnly&&) noexcept            = default;
   MoveOnly& operator=(MoveOnly&&) noexcept = default;
-  MoveOnly(const MoveOnly&) = delete;
-  MoveOnly& operator=(const MoveOnly&) = default;
+  MoveOnly(const MoveOnly&)                = delete;
+  MoveOnly& operator=(const MoveOnly&)     = default;
 };
 
-struct CustomMoveAssign {
+struct CustomMoveAssign
+{
   __host__ __device__ CustomMoveAssign(CustomMoveAssign&&) noexcept;
   __host__ __device__ CustomMoveAssign& operator=(CustomMoveAssign&&) noexcept;
 };
 
-struct DeletedMoveCtor {
-  DeletedMoveCtor(DeletedMoveCtor&&) = delete;
+struct DeletedMoveCtor
+{
+  DeletedMoveCtor(DeletedMoveCtor&&)            = delete;
   DeletedMoveCtor& operator=(DeletedMoveCtor&&) = default;
 };
 
-struct ImplicitlyDeletedMoveCtor {
+struct ImplicitlyDeletedMoveCtor
+{
   DeletedMoveCtor X;
 };
 
-struct DeletedMoveAssign {
+struct DeletedMoveAssign
+{
   DeletedMoveAssign& operator=(DeletedMoveAssign&&) = delete;
 };
 
-struct ImplicitlyDeletedMoveAssign {
+struct ImplicitlyDeletedMoveAssign
+{
   DeletedMoveAssign X;
 };
 
-class MemberLvalueReference {
+class MemberLvalueReference
+{
 public:
   __host__ __device__ MemberLvalueReference(int&);
 
@@ -52,7 +61,8 @@ private:
   int& X;
 };
 
-class MemberRvalueReference {
+class MemberRvalueReference
+{
 public:
   __host__ __device__ MemberRvalueReference(int&&);
 
@@ -60,15 +70,18 @@ private:
   int&& X;
 };
 
-struct NonMovable {
-  NonMovable() = default;
-  NonMovable(NonMovable&&) = delete;
+struct NonMovable
+{
+  NonMovable()                        = default;
+  NonMovable(NonMovable&&)            = delete;
   NonMovable& operator=(NonMovable&&) = delete;
 };
 
-struct DerivedFromNonMovable : NonMovable {};
+struct DerivedFromNonMovable : NonMovable
+{};
 
-struct HasANonMovable {
+struct HasANonMovable
+{
   NonMovable X;
 };
 

@@ -18,10 +18,10 @@
 
 int main(int, char**)
 {
-    using month_day_last = cuda::std::chrono::month_day_last;
+  using month_day_last = cuda::std::chrono::month_day_last;
 
-    static_assert(cuda::std::is_trivially_copyable_v<month_day_last>, "");
-    static_assert(cuda::std::is_standard_layout_v<month_day_last>, "");
+  static_assert(cuda::std::is_trivially_copyable_v<month_day_last>, "");
+  static_assert(cuda::std::is_standard_layout_v<month_day_last>, "");
 
   return 0;
 }

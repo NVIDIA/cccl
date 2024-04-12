@@ -33,27 +33,22 @@ THRUST_NAMESPACE_BEGIN
 namespace mr
 {
 
-template<typename MR>
+template <typename MR>
 struct validator
 {
-#if _CCCL_STD_VER >= 2011
-  static_assert(
-    std::is_base_of<memory_resource<typename MR::pointer>, MR>::value,
-    "a type used as a memory resource must derive from memory_resource"
-  );
-#endif
+  static_assert(std::is_base_of<memory_resource<typename MR::pointer>, MR>::value,
+                "a type used as a memory resource must derive from memory_resource");
 };
 
-template<typename T, typename U>
-struct validator2 : private validator<T>, private validator<U>
-{
-};
+template <typename T, typename U>
+struct validator2
+    : private validator<T>
+    , private validator<U>
+{};
 
-template<typename T>
+template <typename T>
 struct validator2<T, T> : private validator<T>
-{
-};
+{};
 
-} // end mr
+} // namespace mr
 THRUST_NAMESPACE_END
-

@@ -36,9 +36,7 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#if _CCCL_STD_VER >= 2011
-  #include <type_traits>
-#endif
+#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -78,16 +76,7 @@ struct is_trivially_relocatable_impl;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-#if _CCCL_STD_VER >= 2011
-using is_trivially_relocatable =
-#else
-struct is_trivially_relocatable :
-#endif
-  detail::is_trivially_relocatable_impl<T>
-#if _CCCL_STD_VER < 2011
-{}
-#endif
-;
+using is_trivially_relocatable = detail::is_trivially_relocatable_impl<T>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is
@@ -120,19 +109,8 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename From, typename To>
-#if _CCCL_STD_VER >= 2011
 using is_trivially_relocatable_to =
-#else
-struct is_trivially_relocatable_to :
-#endif
-  integral_constant<
-    bool
-  , detail::is_same<From, To>::value && is_trivially_relocatable<To>::value
-  >
-#if _CCCL_STD_VER < 2011
-{}
-#endif
-;
+  integral_constant<bool, detail::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
@@ -148,8 +126,7 @@ struct is_trivially_relocatable_to :
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename From, typename To>
-constexpr bool is_trivially_relocatable_to_v
-  = is_trivially_relocatable_to<From, To>::value;
+constexpr bool is_trivially_relocatable_to_v = is_trivially_relocatable_to<From, To>::value;
 #endif
 
 /*! \brief <a href="https://en.cppreference.com/w/cpp/named_req/BinaryTypeTrait"><i>BinaryTypeTrait</i></a>
@@ -167,24 +144,11 @@ constexpr bool is_trivially_relocatable_to_v
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename FromIterator, typename ToIterator>
-#if _CCCL_STD_VER >= 2011
 using is_indirectly_trivially_relocatable_to =
-#else
-struct is_indirectly_trivially_relocatable_to :
-#endif
-  integral_constant<
-    bool
-  ,    is_contiguous_iterator<FromIterator>::value
-    && is_contiguous_iterator<ToIterator>::value
-    && is_trivially_relocatable_to<
-         typename thrust::iterator_traits<FromIterator>::value_type,
-         typename thrust::iterator_traits<ToIterator>::value_type
-       >::value
-  >
-#if _CCCL_STD_VER < 2011
-{}
-#endif
-;
+  integral_constant<bool,
+                    is_contiguous_iterator<FromIterator>::value && is_contiguous_iterator<ToIterator>::value
+                      && is_trivially_relocatable_to<typename thrust::iterator_traits<FromIterator>::value_type,
+                                                     typename thrust::iterator_traits<ToIterator>::value_type>::value>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if the element type of
@@ -202,8 +166,8 @@ struct is_indirectly_trivially_relocatable_to :
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename FromIterator, typename ToIterator>
-constexpr bool is_indirectly_trivially_relocate_to_v
-  = is_indirectly_trivially_relocatable_to<FromIterator, ToIterator>::value;
+constexpr bool is_indirectly_trivially_relocate_to_v =
+  is_indirectly_trivially_relocatable_to<FromIterator, ToIterator>::value;
 #endif
 
 /*! \brief <a href="http://eel.is/c++draft/namespace.std#def:customization_point"><i>customization point</i></a>
@@ -218,7 +182,8 @@ constexpr bool is_indirectly_trivially_relocate_to_v
  * \see THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE
  */
 template <typename T>
-struct proclaim_trivially_relocatable : false_type {};
+struct proclaim_trivially_relocatable : false_type
+{};
 
 /*! \brief Declares that the type \c T is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -231,12 +196,12 @@ struct proclaim_trivially_relocatable : false_type {};
  * \see is_trivially_relocatable_to
  * \see proclaim_trivially_relocatable
  */
-#define THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(T)                              \
-  THRUST_NAMESPACE_BEGIN                                                      \
-  template <>                                                                 \
-  struct proclaim_trivially_relocatable<T> : THRUST_NS_QUALIFIER::true_type   \
-  {};                                                                         \
-  THRUST_NAMESPACE_END                                                        \
+#define THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(T)                            \
+  THRUST_NAMESPACE_BEGIN                                                    \
+  template <>                                                               \
+  struct proclaim_trivially_relocatable<T> : THRUST_NS_QUALIFIER::true_type \
+  {};                                                                       \
+  THRUST_NAMESPACE_END                                                      \
   /**/
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,40 +226,31 @@ namespace detail
 // 3) Any other case (essentially: compiling without C++11): has_trivial_assign.
 
 #ifndef __has_feature
-    #define __has_feature(x) 0
+#  define __has_feature(x) 0
 #endif
 
 template <typename T>
 struct is_trivially_copyable_impl
-    : integral_constant<
-        bool,
-        #if _CCCL_STD_VER >= 2011
-            #if defined(__GLIBCXX__) && __has_feature(is_trivially_copyable)
-                __is_trivially_copyable(T)
-            #elif defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 50000
-                std::is_trivially_copyable<T>::value
-            #else
-                has_trivial_assign<T>::value
-            #endif
-        #else
-            has_trivial_assign<T>::value
-        #endif
-    >
-{
-};
+    : integral_constant<bool,
+#if defined(__GLIBCXX__) && __has_feature(is_trivially_copyable)
+                        __is_trivially_copyable(T)
+#elif defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 50000
+                        std::is_trivially_copyable<T>::value
+#else
+                        has_trivial_assign<T>::value
+#endif
+                        >
+{};
 
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
-    : integral_constant<
-        bool,
-        is_trivially_copyable_impl<T>::value
-            || proclaim_trivially_relocatable<T>::value
-    >
+    : integral_constant<bool, is_trivially_copyable_impl<T>::value || proclaim_trivially_relocatable<T>::value>
 {};
 
 template <typename T, std::size_t N>
-struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T> {};
+struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
+{};
 
 } // namespace detail
 
@@ -369,4 +325,3 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double4)
 
 /*! \} // utility
  */
-

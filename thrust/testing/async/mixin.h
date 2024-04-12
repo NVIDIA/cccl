@@ -4,21 +4,19 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#include <thrust/sequence.h>
+#  include <thrust/device_vector.h>
+#  include <thrust/host_vector.h>
+#  include <thrust/iterator/constant_iterator.h>
+#  include <thrust/iterator/counting_iterator.h>
+#  include <thrust/iterator/discard_iterator.h>
+#  include <thrust/sequence.h>
+#  include <thrust/type_traits/logical_metafunctions.h>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
+#  include <tuple>
+#  include <type_traits>
 
-#include <thrust/type_traits/logical_metafunctions.h>
-
-#include <unittest/unittest.h>
-#include <unittest/util_async.h>
-
-#include <tuple>
-#include <type_traits>
+#  include <unittest/unittest.h>
+#  include <unittest/util_async.h>
 
 // clang-format off
 
@@ -261,10 +259,7 @@ struct device_vector
   static input_type generate_input(std::size_t num_values)
   {
     input_type input(num_values);
-    thrust::sequence(input.begin(),
-                     input.end(),
-                     static_cast<value_type>(1),
-                     static_cast<value_type>(1));
+    thrust::sequence(input.begin(), input.end(), static_cast<value_type>(1), static_cast<value_type>(1));
     return input;
   }
 };
@@ -278,13 +273,28 @@ struct counting_iterator_from_0
 
     std::size_t num_values;
 
-    iterator begin() const { return iterator{static_cast<value_type>(0)}; }
-    iterator cbegin() const { return iterator{static_cast<value_type>(0)}; }
+    iterator begin() const
+    {
+      return iterator{static_cast<value_type>(0)};
+    }
+    iterator cbegin() const
+    {
+      return iterator{static_cast<value_type>(0)};
+    }
 
-    iterator end() const { return iterator{static_cast<value_type>(num_values)}; }
-    iterator cend() const { return iterator{static_cast<value_type>(num_values)}; }
+    iterator end() const
+    {
+      return iterator{static_cast<value_type>(num_values)};
+    }
+    iterator cend() const
+    {
+      return iterator{static_cast<value_type>(num_values)};
+    }
 
-    std::size_t size() const { return num_values; }
+    std::size_t size() const
+    {
+      return num_values;
+    }
   };
 
   static input_type generate_input(std::size_t num_values)
@@ -302,13 +312,28 @@ struct counting_iterator_from_1
 
     std::size_t num_values;
 
-    iterator begin() const { return iterator{static_cast<value_type>(1)}; }
-    iterator cbegin() const { return iterator{static_cast<value_type>(1)}; }
+    iterator begin() const
+    {
+      return iterator{static_cast<value_type>(1)};
+    }
+    iterator cbegin() const
+    {
+      return iterator{static_cast<value_type>(1)};
+    }
 
-    iterator end() const { return iterator{static_cast<value_type>(1 + num_values)}; }
-    iterator cend() const { return iterator{static_cast<value_type>(1 + num_values)}; }
+    iterator end() const
+    {
+      return iterator{static_cast<value_type>(1 + num_values)};
+    }
+    iterator cend() const
+    {
+      return iterator{static_cast<value_type>(1 + num_values)};
+    }
 
-    std::size_t size() const { return num_values; }
+    std::size_t size() const
+    {
+      return num_values;
+    }
   };
 
   static input_type generate_input(std::size_t num_values)
@@ -326,8 +351,14 @@ struct constant_iterator_1
 
     std::size_t num_values;
 
-    iterator begin() const { return iterator{static_cast<value_type>(1)}; }
-    iterator cbegin() const { return iterator{static_cast<value_type>(1)}; }
+    iterator begin() const
+    {
+      return iterator{static_cast<value_type>(1)};
+    }
+    iterator cbegin() const
+    {
+      return iterator{static_cast<value_type>(1)};
+    }
 
     iterator end() const
     {
@@ -338,7 +369,10 @@ struct constant_iterator_1
       return iterator{static_cast<value_type>(1)} + num_values;
     }
 
-    std::size_t size() const { return num_values; }
+    std::size_t size() const
+    {
+      return num_values;
+    }
   };
 
   static input_type generate_input(std::size_t num_values)
@@ -359,8 +393,7 @@ struct device_vector
   using output_type = thrust::device_vector<value_type>;
 
   template <typename InputType>
-  static output_type generate_output(std::size_t num_values,
-                                     InputType& /* unused */)
+  static output_type generate_output(std::size_t num_values, InputType& /* unused */)
   {
     return output_type(num_values);
   }
@@ -372,8 +405,7 @@ struct device_vector_reuse_input
   using output_type = thrust::device_vector<value_type>&;
 
   template <typename InputType>
-  static output_type generate_output(std::size_t /*num_values*/,
-                                     InputType& input)
+  static output_type generate_output(std::size_t /*num_values*/, InputType& input)
   {
     return input;
   }
@@ -385,13 +417,18 @@ struct discard_iterator
   {
     using iterator = thrust::discard_iterator<>;
 
-    iterator begin() const { return thrust::make_discard_iterator(); }
-    iterator cbegin() const { return thrust::make_discard_iterator(); }
+    iterator begin() const
+    {
+      return thrust::make_discard_iterator();
+    }
+    iterator cbegin() const
+    {
+      return thrust::make_discard_iterator();
+    }
   };
 
   template <typename InputType>
-  static output_type generate_output(std::size_t /* num_values */,
-                                     InputType& /* input */)
+  static output_type generate_output(std::size_t /* num_values */, InputType& /* input */)
   {
     return output_type{};
   }
@@ -538,9 +575,7 @@ void basic_event_validation(thrust::device_future<T>& f)
 struct assert_equal
 {
   template <typename EventType, typename OutputType>
-  static void compare_outputs(EventType& e,
-                              OutputType const& ref,
-                              OutputType const& test)
+  static void compare_outputs(EventType& e, OutputType const& ref, OutputType const& test)
   {
     detail::basic_event_validation(e);
     ASSERT_EQUAL(ref, test);
@@ -550,9 +585,7 @@ struct assert_equal
 struct assert_almost_equal
 {
   template <typename EventType, typename OutputType>
-  static void compare_outputs(EventType& e,
-                              OutputType const& ref,
-                              OutputType const& test)
+  static void compare_outputs(EventType& e, OutputType const& ref, OutputType const& test)
   {
     detail::basic_event_validation(e);
     ASSERT_ALMOST_EQUAL(ref, test);
@@ -565,20 +598,16 @@ struct assert_almost_equal_if_fp
 {
 private:
   template <typename EventType, typename OutputType>
-  static void compare_outputs_impl(EventType& e,
-                                   OutputType const& ref,
-                                   OutputType const& test,
-                                   std::false_type /* is_floating_point */)
+  static void compare_outputs_impl(
+    EventType& e, OutputType const& ref, OutputType const& test, std::false_type /* is_floating_point */)
   {
     detail::basic_event_validation(e);
     ASSERT_EQUAL(ref, test);
   }
 
   template <typename EventType, typename OutputType>
-  static void compare_outputs_impl(EventType& e,
-                                   OutputType const& ref,
-                                   OutputType const& test,
-                                   std::true_type /* is_floating_point */)
+  static void compare_outputs_impl(
+    EventType& e, OutputType const& ref, OutputType const& test, std::true_type /* is_floating_point */)
   {
     detail::basic_event_validation(e);
     ASSERT_ALMOST_EQUAL(ref, test);
@@ -586,9 +615,7 @@ private:
 
 public:
   template <typename EventType, typename OutputType>
-  static void compare_outputs(EventType& e,
-                              OutputType const& ref,
-                              OutputType const& test)
+  static void compare_outputs(EventType& e, OutputType const& ref, OutputType const& test)
   {
     using value_type = typename OutputType::value_type;
     compare_outputs_impl(e, ref, test, std::is_floating_point<value_type>{});
@@ -598,9 +625,7 @@ public:
 struct assert_equal_quiet
 {
   template <typename EventType, typename OutputType>
-  static void compare_outputs(EventType& e,
-                              OutputType const& ref,
-                              OutputType const& test)
+  static void compare_outputs(EventType& e, OutputType const& ref, OutputType const& test)
   {
     detail::basic_event_validation(e);
     ASSERT_EQUAL_QUIET(ref, test);
@@ -613,20 +638,16 @@ struct assert_almost_equal_if_fp_quiet
 {
 private:
   template <typename EventType, typename OutputType>
-  static void compare_outputs_impl(EventType& e,
-                                   OutputType const& ref,
-                                   OutputType const& test,
-                                   std::false_type /* is_floating_point */)
+  static void compare_outputs_impl(
+    EventType& e, OutputType const& ref, OutputType const& test, std::false_type /* is_floating_point */)
   {
     detail::basic_event_validation(e);
     ASSERT_EQUAL_QUIET(ref, test);
   }
 
   template <typename EventType, typename OutputType>
-  static void compare_outputs_impl(EventType& e,
-                                   OutputType const& ref,
-                                   OutputType const& test,
-                                   std::true_type /* is_floating_point */)
+  static void compare_outputs_impl(
+    EventType& e, OutputType const& ref, OutputType const& test, std::true_type /* is_floating_point */)
   {
     detail::basic_event_validation(e);
     ASSERT_ALMOST_EQUAL(ref, test);
@@ -634,9 +655,7 @@ private:
 
 public:
   template <typename EventType, typename OutputType>
-  static void compare_outputs(EventType& e,
-                              OutputType const& ref,
-                              OutputType const& test)
+  static void compare_outputs(EventType& e, OutputType const& ref, OutputType const& test)
   {
     using value_type = typename OutputType::value_type;
     compare_outputs_impl(e, ref, test, std::is_floating_point<value_type>{});
@@ -648,7 +667,7 @@ public:
 struct noop
 {
   template <typename EventType, typename... Ts>
-  static void compare_outputs(EventType &e, Ts&&...)
+  static void compare_outputs(EventType& e, Ts&&...)
   {
     detail::basic_event_validation(e);
   }

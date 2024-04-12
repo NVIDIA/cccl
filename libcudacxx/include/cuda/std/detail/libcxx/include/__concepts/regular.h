@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___CONCEPTS_REGULAR_H
 #define _LIBCUDACXX___CONCEPTS_REGULAR_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/equality_comparable.h"
-#include "../__concepts/semiregular.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/semiregular.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -32,22 +30,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.object]
 
-template<class _Tp>
+template <class _Tp>
 concept regular = semiregular<_Tp> && equality_comparable<_Tp>;
 
 #elif _CCCL_STD_VER > 2011
 
 // [concept.object]
 
-template<class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __regular_,
-  requires()(
-    requires(semiregular<_Tp>),
-    requires(equality_comparable<_Tp>)
-  ));
+template <class _Tp>
+_LIBCUDACXX_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requires(equality_comparable<_Tp>)));
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT regular = _LIBCUDACXX_FRAGMENT(__regular_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011

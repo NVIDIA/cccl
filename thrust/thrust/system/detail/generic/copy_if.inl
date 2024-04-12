@@ -25,19 +25,20 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/detail/copy_if.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/detail/minimum_system.h>
-#include <thrust/functional.h>
-#include <thrust/distance.h>
-#include <thrust/transform.h>
-#include <thrust/detail/internal_functional.h>
 #include <thrust/detail/integer_traits.h>
+#include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/distance.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/detail/minimum_system.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
+#include <thrust/system/detail/generic/copy_if.h>
+#include <thrust/transform.h>
+
 #include <limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -50,48 +51,40 @@ namespace generic
 namespace detail
 {
 
-
-template<typename IndexType,
-         typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
-                       InputIterator1 first,
-                       InputIterator1 last,
-                       InputIterator2 stencil,
-                       OutputIterator result,
-                       Predicate pred)
+template <typename IndexType,
+          typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator copy_if(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred)
 {
   THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING(IndexType n = thrust::distance(first, last));
 
   // compute {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> predicates(exec, n);
-  thrust::transform(exec,
-                    stencil,
-                    stencil + n,
-                    predicates.begin(),
-                    thrust::detail::predicate_to_integral<Predicate,IndexType>(pred));
+  thrust::transform(
+    exec, stencil, stencil + n, predicates.begin(), thrust::detail::predicate_to_integral<Predicate, IndexType>(pred));
 
   // scan {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> scatter_indices(exec, n);
-  thrust::exclusive_scan(exec,
-                         predicates.begin(),
-                         predicates.end(),
-                         scatter_indices.begin(),
-                         static_cast<IndexType>(0),
-                         thrust::plus<IndexType>());
+  thrust::exclusive_scan(
+    exec,
+    predicates.begin(),
+    predicates.end(),
+    scatter_indices.begin(),
+    static_cast<IndexType>(0),
+    thrust::plus<IndexType>());
 
   // scatter the true elements
-  thrust::scatter_if(exec,
-                     first,
-                     last,
-                     scatter_indices.begin(),
-                     predicates.begin(),
-                     result,
-                     thrust::identity<IndexType>());
+  thrust::scatter_if(
+    exec, first, last, scatter_indices.begin(), predicates.begin(), result, thrust::identity<IndexType>());
 
   // find the end of the new sequence
   IndexType output_size = scatter_indices[n - 1] + predicates[n - 1];
@@ -99,20 +92,15 @@ OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
   return result + output_size;
 }
 
-
 } // end namespace detail
 
-
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename OutputIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-  OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
-                         InputIterator first,
-                         InputIterator last,
-                         OutputIterator result,
-                         Predicate pred)
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator copy_if(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  Predicate pred)
 {
   // XXX it's potentially expensive to send [first,last) twice
   //     we should probably specialize this case for POD
@@ -121,25 +109,26 @@ _CCCL_HOST_DEVICE
   return thrust::copy_if(exec, first, last, first, result, pred);
 } // end copy_if()
 
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-   OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
-                          InputIterator1 first,
-                          InputIterator1 last,
-                          InputIterator2 stencil,
-                          OutputIterator result,
-                          Predicate pred)
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator copy_if(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred)
 {
   typedef typename thrust::iterator_traits<InputIterator1>::difference_type difference_type;
 
   // empty sequence
-  if(first == last)
+  if (first == last)
+  {
     return result;
+  }
 
   difference_type n = thrust::distance(first, last);
 
@@ -148,7 +137,8 @@ _CCCL_HOST_DEVICE
   typename thrust::detail::make_unsigned<difference_type>::type unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
-  if(sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > thrust::detail::integer_traits<unsigned int>::const_max)
+  if (sizeof(difference_type) > sizeof(unsigned int)
+      && unsigned_n > thrust::detail::integer_traits<unsigned int>::const_max)
   {
     result = detail::copy_if<difference_type>(exec, first, last, stencil, result, pred);
   } // end if
@@ -160,9 +150,7 @@ _CCCL_HOST_DEVICE
   return result;
 } // end copy_if()
 
-
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-

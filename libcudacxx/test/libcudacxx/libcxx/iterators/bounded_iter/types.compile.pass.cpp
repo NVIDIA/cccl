@@ -19,12 +19,16 @@
 #include "test_macros.h"
 
 #if TEST_STD_VER > 2017
-struct Iterator {
-  struct value_type {};
+struct Iterator
+{
+  struct value_type
+  {};
   using difference_type = int;
-  struct pointer {};
+  struct pointer
+  {};
   using reference = value_type&;
-  struct iterator_category : cuda::std::random_access_iterator_tag {};
+  struct iterator_category : cuda::std::random_access_iterator_tag
+  {};
   using iterator_concept = cuda::std::contiguous_iterator_tag;
 };
 
@@ -37,7 +41,6 @@ static_assert(cuda::std::is_same<BoundedIter1::iterator_category, Iterator::iter
 static_assert(cuda::std::is_same<BoundedIter1::iterator_concept, Iterator::iterator_concept>::value, "");
 #endif
 
-
 using BoundedIter2 = cuda::std::__bounded_iter<int*>;
 static_assert(cuda::std::is_same<BoundedIter2::value_type, int>::value, "");
 static_assert(cuda::std::is_same<BoundedIter2::difference_type, cuda::std::ptrdiff_t>::value, "");
@@ -48,6 +51,7 @@ static_assert(cuda::std::is_same<BoundedIter2::iterator_category, cuda::std::ran
 static_assert(cuda::std::is_same<BoundedIter2::iterator_concept, cuda::std::contiguous_iterator_tag>::value, "");
 #endif
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

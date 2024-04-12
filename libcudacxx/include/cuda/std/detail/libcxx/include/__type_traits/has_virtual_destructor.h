@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
 #define _LIBCUDACXX___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,26 +20,28 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor
-    : public integral_constant<bool, _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor
+    : public integral_constant<bool, _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
+{};
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor
-    : public false_type {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor : public false_type
+{};
 
 #endif // defined(_LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_virtual_destructor_v
-    = has_virtual_destructor<_Tp>::value;
+_LIBCUDACXX_INLINE_VAR constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -29,13 +29,13 @@
 
 #include <cuda/std/tuple>
 
-#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
+#include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 template <class T>
-__global__ void cub_api_example_x2_0_kernel(const T *d_in, T *d_out, int num_items)
+__global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -46,7 +46,7 @@ __global__ void cub_api_example_x2_0_kernel(const T *d_in, T *d_out, int num_ite
 }
 
 template <class T>
-__global__ void cub_api_example_x0_5_kernel(const T *d_in, T *d_out, int num_items)
+__global__ void cub_api_example_x0_5_kernel(const T* d_in, T* d_out, int num_items)
 {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -61,13 +61,14 @@ struct cub_api_example_t
   static constexpr int threads_in_block = 256;
 
   template <class T, class KernelT>
-  CUB_RUNTIME_FUNCTION static cudaError_t invoke(std::uint8_t *d_temp_storage,
-                                                 std::size_t &temp_storage_bytes,
-                                                 KernelT kernel,
-                                                 const T *d_in,
-                                                 T *d_out,
-                                                 int num_items,
-                                                 cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t invoke(
+    std::uint8_t* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KernelT kernel,
+    const T* d_in,
+    T* d_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
     constexpr bool should_be_invoked_on_device = TEST_LAUNCH == 1;
 
@@ -86,11 +87,11 @@ struct cub_api_example_t
       return cudaErrorInvalidValue;
     }
 
-    #if TEST_LAUNCH == 2
+#if TEST_LAUNCH == 2
     NV_IF_TARGET(NV_IS_HOST,
                  (cudaStreamCaptureStatus status{}; cudaStreamIsCapturing(stream, &status);
                   if (status != cudaStreamCaptureStatusActive) { return cudaErrorLaunchFailure; }));
-    #endif
+#endif
 
     const int blocks_in_grid = (num_items + threads_in_block - 1) / threads_in_block;
 
@@ -99,37 +100,27 @@ struct cub_api_example_t
   }
 
   template <class T>
-  CUB_RUNTIME_FUNCTION static cudaError_t x2_0(std::uint8_t *d_temp_storage,
-                                               std::size_t &temp_storage_bytes,
-                                               const T *d_in,
-                                               T *d_out,
-                                               int num_items,
-                                               cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  x2_0(std::uint8_t* d_temp_storage,
+       std::size_t& temp_storage_bytes,
+       const T* d_in,
+       T* d_out,
+       int num_items,
+       cudaStream_t stream = 0)
   {
-    return invoke(d_temp_storage,
-                  temp_storage_bytes,
-                  cub_api_example_x2_0_kernel<T>,
-                  d_in,
-                  d_out,
-                  num_items,
-                  stream);
+    return invoke(d_temp_storage, temp_storage_bytes, cub_api_example_x2_0_kernel<T>, d_in, d_out, num_items, stream);
   }
 
   template <class T>
-  CUB_RUNTIME_FUNCTION static cudaError_t x0_5(std::uint8_t *d_temp_storage,
-                                               std::size_t &temp_storage_bytes,
-                                               const T *d_in,
-                                               T *d_out,
-                                               int num_items,
-                                               cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  x0_5(std::uint8_t* d_temp_storage,
+       std::size_t& temp_storage_bytes,
+       const T* d_in,
+       T* d_out,
+       int num_items,
+       cudaStream_t stream = 0)
   {
-    return invoke(d_temp_storage,
-                  temp_storage_bytes,
-                  cub_api_example_x0_5_kernel<T>,
-                  d_in,
-                  d_out,
-                  num_items,
-                  stream);
+    return invoke(d_temp_storage, temp_storage_bytes, cub_api_example_x0_5_kernel<T>, d_in, d_out, num_items, stream);
   }
 };
 
@@ -144,8 +135,8 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
   c2h::device_vector<int> in(n, 21);
   c2h::device_vector<int> out(n);
 
-  int *d_in  = thrust::raw_pointer_cast(in.data());
-  int *d_out = thrust::raw_pointer_cast(out.data());
+  int* d_in  = thrust::raw_pointer_cast(in.data());
+  int* d_out = thrust::raw_pointer_cast(out.data());
 
   {
     x2_0(d_in, d_out, n);
@@ -169,38 +160,30 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
 struct custom_x2_0_invocable
 {
   template <class T>
-  CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t *d_temp_storage,
-                                              std::size_t &temp_storage_bytes,
-                                              const T *d_in,
-                                              T *d_out,
-                                              int num_items,
-                                              cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION cudaError_t operator()(
+    std::uint8_t* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const T* d_in,
+    T* d_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
-    return cub_api_example_t::x2_0(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_in,
-                                   d_out,
-                                   num_items,
-                                   stream);
+    return cub_api_example_t::x2_0(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 };
 
 struct custom_x0_5_invocable
 {
   template <class T>
-  CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t *d_temp_storage,
-                                              std::size_t &temp_storage_bytes,
-                                              const T *d_in,
-                                              T *d_out,
-                                              int num_items,
-                                              cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION cudaError_t operator()(
+    std::uint8_t* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const T* d_in,
+    T* d_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
-    return cub_api_example_t::x0_5(d_temp_storage,
-                                   temp_storage_bytes,
-                                   d_in,
-                                   d_out,
-                                   num_items,
-                                   stream);
+    return cub_api_example_t::x0_5(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 };
 
@@ -210,8 +193,8 @@ CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]")
   c2h::device_vector<int> in(n, 21);
   c2h::device_vector<int> out(n);
 
-  int *d_in  = thrust::raw_pointer_cast(in.data());
-  int *d_out = thrust::raw_pointer_cast(out.data());
+  int* d_in  = thrust::raw_pointer_cast(in.data());
+  int* d_out = thrust::raw_pointer_cast(out.data());
 
   {
     launch(custom_x2_0_invocable{}, d_in, d_out, n);

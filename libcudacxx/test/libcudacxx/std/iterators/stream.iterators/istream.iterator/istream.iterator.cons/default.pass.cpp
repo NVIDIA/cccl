@@ -19,48 +19,53 @@
 // C++17 says: If is_trivially_default_constructible_v<T> is true, then this
 //    constructor is a constexpr constructor.
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_STRING)
-#include <cuda/std/string>
+#  include <cuda/std/string>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
-struct S { S(); }; // not constexpr
+struct S
+{
+  S();
+}; // not constexpr
 
-#if TEST_STD_VER > 2014
+#  if TEST_STD_VER > 2014
 template <typename T, bool isTrivial = cuda::std::is_trivially_default_constructible_v<T>>
-struct test_trivial {
-void operator ()() const {
+struct test_trivial
+{
+  void operator()() const
+  {
     constexpr cuda::std::istream_iterator<T> it;
-    (void)it;
-    }
+    (void) it;
+  }
 };
 
 template <typename T>
-struct test_trivial<T, false> {
-void operator ()() const {}
+struct test_trivial<T, false>
+{
+  void operator()() const {}
 };
-#endif
-
+#  endif
 
 int main(int, char**)
 {
-    {
+  {
     typedef cuda::std::istream_iterator<int> T;
     T it;
     assert(it == T());
     constexpr T it2;
-    (void)it2;
-    }
+    (void) it2;
+  }
 
-#if TEST_STD_VER > 2014
-    test_trivial<int>()();
-    test_trivial<char>()();
-    test_trivial<double>()();
-    test_trivial<S>()();
-    test_trivial<cuda::std::string>()();
-#endif
+#  if TEST_STD_VER > 2014
+  test_trivial<int>()();
+  test_trivial<char>()();
+  test_trivial<double>()();
+  test_trivial<S>()();
+  test_trivial<cuda::std::string>()();
+#  endif
 
   return 0;
 }

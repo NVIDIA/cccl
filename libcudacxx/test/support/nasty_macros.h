@@ -8,11 +8,11 @@
 #ifndef SUPPORT_NASTY_MACROS_H
 #define SUPPORT_NASTY_MACROS_H
 
-#define NASTY_MACRO This should not be expanded!!!
-#define _A NASTY_MACRO
-#define _B NASTY_MACRO
-#define _C NASTY_MACRO
-#define _D NASTY_MACRO
+#define NASTY_MACRO This should not be expanded !!!
+#define _A          NASTY_MACRO
+#define _B          NASTY_MACRO
+#define _C          NASTY_MACRO
+#define _D          NASTY_MACRO
 // GCC's <initializer_list>
 // #define _E NASTY_MACRO
 #define _F NASTY_MACRO
@@ -25,7 +25,7 @@
 // Because FreeBSD uses _M in its <sys/types.h>, and it is hard to avoid
 // including that header, only define _M for other operating systems.
 #ifndef __FreeBSD__
-#define _M NASTY_MACRO
+#  define _M NASTY_MACRO
 #endif
 #define _N NASTY_MACRO
 #define _O NASTY_MACRO
@@ -56,16 +56,16 @@
 // NOTE: Obviously we can only define these on non-windows platforms.
 #ifndef _WIN32
 // However, NVC++'s builtin OpenACC headers also define these.
-#ifndef __NVCOMPILER
-#define __allocator NASTY_MACRO
-#define __deallocate NASTY_MACRO
-#endif
+#  ifndef __NVCOMPILER
+#    define __allocator  NASTY_MACRO
+#    define __deallocate NASTY_MACRO
+#  endif
 // GCC's c++locale.h
 // #define __out NASTY_MACRO
 #endif
 
 #define __output NASTY_MACRO
-#define __input NASTY_MACRO
+#define __input  NASTY_MACRO
 
 #define __acquire NASTY_MACRO
 #define __release NASTY_MACRO

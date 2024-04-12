@@ -25,12 +25,12 @@
  *
  ******************************************************************************/
 
-#include <nvbench_helper.cuh>
-
+#include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/copy.h>
+
+#include <nvbench_helper.cuh>
 
 template <class InT, class OutT>
 struct fib_t
@@ -64,8 +64,7 @@ struct fib_t
 };
 
 template <typename T>
-static void basic(nvbench::state &state,
-                  nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -80,14 +79,12 @@ static void basic(nvbench::state &state,
   fib_t<T, nvbench::uint32_t> op{};
   thrust::transform(policy(alloc), input.cbegin(), input.cend(), output.begin(), op);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               thrust::transform(policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), op);
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::transform(policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), op);
+  });
 }
 
-using types = nvbench::type_list<nvbench::uint32_t,
-                                 nvbench::uint64_t>;
+using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")

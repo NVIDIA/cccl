@@ -39,7 +39,7 @@
 #if defined(THRUST_DOXYGEN)
 #  define THRUST_TRAILING_RETURN(...)
 #else
-#  define THRUST_TRAILING_RETURN(...) -> __VA_ARGS__
+#  define THRUST_TRAILING_RETURN(...) ->__VA_ARGS__
 #endif
 
 #if _CCCL_STD_VER >= 2014 && __has_cpp_attribute(nodiscard)
@@ -48,39 +48,25 @@
 #  define THRUST_NODISCARD
 #endif
 
-#if _CCCL_STD_VER >= 2017 && __cpp_if_constexpr
-#  define THRUST_IF_CONSTEXPR if constexpr
-#else
-#  define THRUST_IF_CONSTEXPR if
-#endif
-
 // FIXME: Combine THRUST_INLINE_CONSTANT and
 // THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT into one macro when NVCC properly
 // supports `constexpr` globals in host and device code.
 #if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
 // FIXME: Add this when NVCC supports inline variables.
-//#  if   _CCCL_STD_VER >= 2017
-//#    define THRUST_INLINE_CONSTANT                 inline constexpr
-//#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if _CCCL_STD_VER >= 2011
-#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
-#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
-#  else
-#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
-#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static const
-#  endif
+// #  if   _CCCL_STD_VER >= 2017
+// #    define THRUST_INLINE_CONSTANT                 inline constexpr
+// #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
+#  define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
+#  define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
+
 #else
 // FIXME: Add this when NVCC supports inline variables.
-//#  if   _CCCL_STD_VER >= 2017
-//#    define THRUST_INLINE_CONSTANT                 inline constexpr
-//#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if _CCCL_STD_VER >= 2011
-#    define THRUST_INLINE_CONSTANT                 static constexpr
-#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
-#  else
-#    define THRUST_INLINE_CONSTANT                 static const
-#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static const
-#  endif
+// #  if   _CCCL_STD_VER >= 2017
+// #    define THRUST_INLINE_CONSTANT                 inline constexpr
+// #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
+#  define THRUST_INLINE_CONSTANT                 static constexpr
+#  define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
+
 #endif
 
 // These definitions were intended for internal use only and are now obsolete.
@@ -90,22 +76,22 @@
 // them available again. These should be considered deprecated and will be
 // fully removed in a future version.
 #ifdef THRUST_PROVIDE_LEGACY_ARCH_MACROS
-  #ifndef THRUST_IS_DEVICE_CODE
-    #if defined(_NVHPC_CUDA)
-      #define THRUST_IS_DEVICE_CODE __builtin_is_device_code()
-      #define THRUST_IS_HOST_CODE (!__builtin_is_device_code())
-      #define THRUST_INCLUDE_DEVICE_CODE 1
-      #define THRUST_INCLUDE_HOST_CODE 1
-    #elif defined(__CUDA_ARCH__)
-      #define THRUST_IS_DEVICE_CODE 1
-      #define THRUST_IS_HOST_CODE 0
-      #define THRUST_INCLUDE_DEVICE_CODE 1
-      #define THRUST_INCLUDE_HOST_CODE 0
-    #else
-      #define THRUST_IS_DEVICE_CODE 0
-      #define THRUST_IS_HOST_CODE 1
-      #define THRUST_INCLUDE_DEVICE_CODE 0
-      #define THRUST_INCLUDE_HOST_CODE 1
-    #endif
-  #endif
+#  ifndef THRUST_IS_DEVICE_CODE
+#    if defined(_NVHPC_CUDA)
+#      define THRUST_IS_DEVICE_CODE      __builtin_is_device_code()
+#      define THRUST_IS_HOST_CODE        (!__builtin_is_device_code())
+#      define THRUST_INCLUDE_DEVICE_CODE 1
+#      define THRUST_INCLUDE_HOST_CODE   1
+#    elif defined(__CUDA_ARCH__)
+#      define THRUST_IS_DEVICE_CODE      1
+#      define THRUST_IS_HOST_CODE        0
+#      define THRUST_INCLUDE_DEVICE_CODE 1
+#      define THRUST_INCLUDE_HOST_CODE   0
+#    else
+#      define THRUST_IS_DEVICE_CODE      0
+#      define THRUST_IS_HOST_CODE        1
+#      define THRUST_INCLUDE_DEVICE_CODE 0
+#      define THRUST_INCLUDE_HOST_CODE   1
+#    endif
+#  endif
 #endif // THRUST_PROVIDE_LEGACY_ARCH_MACROS

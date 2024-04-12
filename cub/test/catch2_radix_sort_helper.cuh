@@ -25,18 +25,17 @@
  *
  ******************************************************************************/
 
-#include <thrust/gather.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/memory.h>
-#include <thrust/scan.h>
-#include <thrust/sequence.h>
-
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/gather.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/memory.h>
+#include <thrust/scan.h>
+#include <thrust/sequence.h>
 
 #include <array>
 #include <climits>
@@ -63,10 +62,9 @@ private:
 
 public:
   explicit double_buffer_sort_t(bool is_descending)
-  : m_is_descending(is_descending),
-    m_selector(nullptr)
-  {
-  }
+      : m_is_descending(is_descending)
+      , m_selector(nullptr)
+  {}
 
   void initialize()
   {
@@ -79,7 +77,10 @@ public:
     m_selector = nullptr;
   }
 
-  int selector() const { return *m_selector;}
+  int selector() const
+  {
+    return *m_selector;
+  }
 
   template <class KeyT, class... As>
   CUB_RUNTIME_FUNCTION cudaError_t
@@ -102,8 +103,9 @@ public:
     As... as)
   {
     const cudaError_t status =
-      m_is_descending ? cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, keys, values, as...)
-                      : cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, keys, values, as...);
+      m_is_descending
+        ? cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, keys, values, as...)
+        : cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, keys, values, as...);
 
     *m_selector = keys.selector;
     return status;
@@ -118,10 +120,9 @@ private:
 
 public:
   explicit double_buffer_segmented_sort_t(bool is_descending)
-  : m_is_descending(is_descending),
-    m_selector(nullptr)
-  {
-  }
+      : m_is_descending(is_descending)
+      , m_selector(nullptr)
+  {}
 
   void initialize()
   {
@@ -134,15 +135,19 @@ public:
     m_selector = nullptr;
   }
 
-  int selector() const { return *m_selector;}
+  int selector() const
+  {
+    return *m_selector;
+  }
 
   template <class KeyT, class... As>
   CUB_RUNTIME_FUNCTION cudaError_t
   operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, cub::DoubleBuffer<KeyT> keys, As... as)
   {
     const cudaError_t status =
-      m_is_descending ? cub::DeviceSegmentedRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, keys, as...)
-                      : cub::DeviceSegmentedRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, keys, as...);
+      m_is_descending
+        ? cub::DeviceSegmentedRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, keys, as...)
+        : cub::DeviceSegmentedRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, keys, as...);
 
     *m_selector = keys.selector;
     return status;
@@ -157,8 +162,9 @@ public:
     As... as)
   {
     const cudaError_t status =
-      m_is_descending ? cub::DeviceSegmentedRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, keys, values, as...)
-                      : cub::DeviceSegmentedRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, keys, values, as...);
+      m_is_descending
+        ? cub::DeviceSegmentedRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, keys, values, as...)
+        : cub::DeviceSegmentedRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, keys, values, as...);
 
     *m_selector = keys.selector;
     return status;
@@ -179,16 +185,13 @@ constexpr int end_bit()
 }
 
 template <class KeyT>
-c2h::host_vector<KeyT>
-get_striped_keys(const c2h::host_vector<KeyT> &h_keys,
-                 int begin_bit,
-                 int end_bit)
+c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, int begin_bit, int end_bit)
 {
   c2h::host_vector<KeyT> h_striped_keys(h_keys);
-  KeyT *h_striped_keys_data = thrust::raw_pointer_cast(h_striped_keys.data());
+  KeyT* h_striped_keys_data = thrust::raw_pointer_cast(h_striped_keys.data());
 
-  using traits_t                    = cub::Traits<KeyT>;
-  using bit_ordered_t               = typename traits_t::UnsignedBits;
+  using traits_t      = cub::Traits<KeyT>;
+  using bit_ordered_t = typename traits_t::UnsignedBits;
 
   const int num_bits = end_bit - begin_bit;
 
@@ -196,7 +199,7 @@ get_striped_keys(const c2h::host_vector<KeyT> &h_keys,
   {
     bit_ordered_t key = c2h::bit_cast<bit_ordered_t>(h_keys[i]);
 
-    CUB_IF_CONSTEXPR(traits_t::CATEGORY == cub::FLOATING_POINT)
+    _CCCL_IF_CONSTEXPR (traits_t::CATEGORY == cub::FLOATING_POINT)
     {
       const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
 
@@ -218,7 +221,7 @@ get_striped_keys(const c2h::host_vector<KeyT> &h_keys,
     // key = traits_t::TwiddleOut(key);
 
     memcpy(h_striped_keys_data + i, &key, sizeof(KeyT));
-}
+  }
 
   return h_striped_keys;
 }
@@ -246,22 +249,21 @@ struct indirect_binary_comparator_t
 };
 
 template <class KeyT, class SegBeginIterT, class SegEndIterT>
-c2h::host_vector<std::size_t>
-get_permutation(const c2h::host_vector<KeyT> &h_keys,
-                bool is_descending,
-                std::size_t num_segments,
-                SegBeginIterT h_seg_begin_it,
-                SegEndIterT h_seg_end_it,
-                int begin_bit,
-                int end_bit)
+c2h::host_vector<std::size_t> get_permutation(
+  const c2h::host_vector<KeyT>& h_keys,
+  bool is_descending,
+  std::size_t num_segments,
+  SegBeginIterT h_seg_begin_it,
+  SegEndIterT h_seg_end_it,
+  int begin_bit,
+  int end_bit)
 {
-  c2h::host_vector<KeyT> h_striped_keys =
-    get_striped_keys(h_keys, begin_bit, end_bit);
+  c2h::host_vector<KeyT> h_striped_keys = get_striped_keys(h_keys, begin_bit, end_bit);
 
   c2h::host_vector<std::size_t> h_permutation(h_keys.size());
   thrust::sequence(h_permutation.begin(), h_permutation.end());
 
-  using traits_t = cub::Traits<KeyT>;
+  using traits_t      = cub::Traits<KeyT>;
   using bit_ordered_t = typename traits_t::UnsignedBits;
 
   auto bit_ordered_striped_keys =
@@ -271,18 +273,19 @@ get_permutation(const c2h::host_vector<KeyT> &h_keys,
 
   for (std::size_t segment = 0; segment < num_segments; ++segment)
   {
-    std::stable_sort(h_permutation.begin() + h_seg_begin_it[segment], h_permutation.begin() + h_seg_end_it[segment], comp);
+    std::stable_sort(
+      h_permutation.begin() + h_seg_begin_it[segment], h_permutation.begin() + h_seg_end_it[segment], comp);
   }
 
   return h_permutation;
 }
 
 template <class KeyT>
-c2h::host_vector<KeyT>
-radix_sort_reference(const c2h::device_vector<KeyT> &d_keys,
-                     bool is_descending,
-                     int begin_bit = 0,
-                     int end_bit = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
+c2h::host_vector<KeyT> radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
+  bool is_descending,
+  int begin_bit = 0,
+  int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
   c2h::host_vector<KeyT> h_keys(d_keys);
   std::array<std::size_t, 2> segments{0, d_keys.size()};
@@ -295,12 +298,12 @@ radix_sort_reference(const c2h::device_vector<KeyT> &d_keys,
 }
 
 template <class KeyT, class ValueT>
-std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>>
-radix_sort_reference(const c2h::device_vector<KeyT> &d_keys,
-                     const c2h::device_vector<ValueT> &d_values,
-                     bool is_descending,
-                     int begin_bit = 0,
-                     int end_bit = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
+std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
+  const c2h::device_vector<ValueT>& d_values,
+  bool is_descending,
+  int begin_bit = 0,
+  int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
   std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> result;
   result.first.resize(d_keys.size());
@@ -443,8 +446,7 @@ struct offset_scan_op_t
 {
   OffsetT num_items;
 
-  __host__ __device__
-  OffsetT operator()(OffsetT a, OffsetT b) const
+  __host__ __device__ OffsetT operator()(OffsetT a, OffsetT b) const
   {
     const OffsetT sum = a + b;
     return CUB_MIN(sum, num_items);

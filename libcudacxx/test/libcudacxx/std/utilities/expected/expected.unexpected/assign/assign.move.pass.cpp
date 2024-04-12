@@ -17,17 +17,22 @@
 
 #include "test_macros.h"
 
-struct Error {
+struct Error
+{
   int i;
-  __host__ __device__ constexpr Error(int ii) : i(ii) {}
-  __host__ __device__ constexpr Error& operator=(Error&& other) {
+  __host__ __device__ constexpr Error(int ii)
+      : i(ii)
+  {}
+  __host__ __device__ constexpr Error& operator=(Error&& other)
+  {
     i       = other.i;
     other.i = 0;
     return *this;
   }
 };
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   cuda::std::unexpected<Error> unex1(4);
   cuda::std::unexpected<Error> unex2(5);
   unex1 = cuda::std::move(unex2);
@@ -36,7 +41,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
   return 0;

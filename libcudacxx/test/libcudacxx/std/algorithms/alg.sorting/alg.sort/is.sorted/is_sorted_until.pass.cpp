@@ -18,172 +18,175 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   {
-    int a[] = {0};
+    int a[]     = {0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a)) == Iter(a));
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
 
   {
-    int a[] = {0, 0};
+    int a[]     = {0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {0, 1};
+    int a[]     = {0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {1, 0};
+    int a[]     = {1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 1};
+    int a[]     = {1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
 
   {
-    int a[] = {0, 0, 0};
+    int a[]     = {0, 0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {0, 0, 1};
+    int a[]     = {0, 0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {0, 1, 0};
+    int a[]     = {0, 1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 2));
   }
   {
-    int a[] = {0, 1, 1};
+    int a[]     = {0, 1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {1, 0, 0};
+    int a[]     = {1, 0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 0, 1};
+    int a[]     = {1, 0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 1, 0};
+    int a[]     = {1, 1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 2));
   }
   {
-    int a[] = {1, 1, 1};
+    int a[]     = {1, 1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
 
   {
-    int a[] = {0, 0, 0, 0};
+    int a[]     = {0, 0, 0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {0, 0, 0, 1};
+    int a[]     = {0, 0, 0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {0, 0, 1, 0};
+    int a[]     = {0, 0, 1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 3));
   }
   {
-    int a[] = {0, 0, 1, 1};
+    int a[]     = {0, 0, 1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {0, 1, 0, 0};
+    int a[]     = {0, 1, 0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 2));
   }
   {
-    int a[] = {0, 1, 0, 1};
+    int a[]     = {0, 1, 0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 2));
   }
   {
-    int a[] = {0, 1, 1, 0};
+    int a[]     = {0, 1, 1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 3));
   }
   {
-    int a[] = {0, 1, 1, 1};
+    int a[]     = {0, 1, 1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
   {
-    int a[] = {1, 0, 0, 0};
+    int a[]     = {1, 0, 0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 0, 0, 1};
+    int a[]     = {1, 0, 0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 0, 1, 0};
+    int a[]     = {1, 0, 1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 0, 1, 1};
+    int a[]     = {1, 0, 1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 1));
   }
   {
-    int a[] = {1, 1, 0, 0};
+    int a[]     = {1, 1, 0, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 2));
   }
   {
-    int a[] = {1, 1, 0, 1};
+    int a[]     = {1, 1, 0, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 2));
   }
   {
-    int a[] = {1, 1, 1, 0};
+    int a[]     = {1, 1, 1, 0};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + 3));
   }
   {
-    int a[] = {1, 1, 1, 1};
+    int a[]     = {1, 1, 1, 1};
     unsigned sa = sizeof(a) / sizeof(a[0]);
     assert(cuda::std::is_sorted_until(Iter(a), Iter(a + sa)) == Iter(a + sa));
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<forward_iterator<const int*> >();
-  test<bidirectional_iterator<const int*> >();
-  test<random_access_iterator<const int*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<forward_iterator<const int*>>();
+  test<bidirectional_iterator<const int*>>();
+  test<random_access_iterator<const int*>>();
   test<const int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

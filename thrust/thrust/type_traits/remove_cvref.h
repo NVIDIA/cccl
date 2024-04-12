@@ -31,10 +31,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if  _CCCL_STD_VER >= 2017
-#if __has_include(<version>)
-#  include <version>
-#endif
+#if _CCCL_STD_VER >= 2017
+#  if __has_include(<version>)
+#    include <version>
+#  endif
 #endif
 
 #include <type_traits>
@@ -69,9 +69,7 @@ using std::remove_cvref;
 template <typename T>
 struct remove_cvref
 {
-  using type = typename std::remove_cv<
-    typename std::remove_reference<T>::type
-  >::type;
+  using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 };
 #endif
 
@@ -102,4 +100,3 @@ using remove_cvref_t = typename remove_cvref<T>::type;
  */
 
 THRUST_NAMESPACE_END
-

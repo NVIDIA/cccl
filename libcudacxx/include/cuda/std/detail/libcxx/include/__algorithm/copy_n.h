@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_COPY_N_H
 #define _LIBCUDACXX___ALGORITHM_COPY_N_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/copy.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__utility/convert_to_integral.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/copy.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__utility/convert_to_integral.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -34,7 +32,7 @@ template <class _InputIterator,
           class _OutputIterator,
           __enable_if_t<__is_cpp17_input_iterator<_InputIterator>::value, int>          = 0,
           __enable_if_t<!__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
@@ -57,7 +55,7 @@ template <class _InputIterator,
           class _Size,
           class _OutputIterator,
           __enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));

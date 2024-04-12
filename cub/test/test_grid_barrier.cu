@@ -33,14 +33,12 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
-#include <stdio.h>
-
 #include <cub/grid/grid_barrier.cuh>
 
 #include "test_util.h"
+#include <stdio.h>
 
 using namespace cub;
-
 
 //---------------------------------------------------------------------
 // Test kernels
@@ -49,16 +47,13 @@ using namespace cub;
 /**
  * Kernel that iterates through the specified number of software global barriers
  */
-__global__ void Kernel(
-    GridBarrier global_barrier,
-    int iterations)
+__global__ void Kernel(GridBarrier global_barrier, int iterations)
 {
-    for (int i = 0; i < iterations; i++)
-    {
-        global_barrier.Sync();
-    }
+  for (int i = 0; i < iterations; i++)
+  {
+    global_barrier.Sync();
+  }
 }
-
 
 //---------------------------------------------------------------------
 // Main
@@ -69,84 +64,85 @@ __global__ void Kernel(
  */
 int main(int argc, char** argv)
 {
-    cudaError_t retval = cudaSuccess;
+  cudaError_t retval = cudaSuccess;
 
-    // Defaults
-    int iterations = 10000;
-    int block_size = 128;
-    int grid_size = -1;
+  // Defaults
+  int iterations = 10000;
+  int block_size = 128;
+  int grid_size  = -1;
 
-    // Initialize command line
-    CommandLineArgs args(argc, argv);
+  // Initialize command line
+  CommandLineArgs args(argc, argv);
 
-    // Get args
-    args.GetCmdLineArgument("i", iterations);
-    args.GetCmdLineArgument("grid-size", grid_size);
-    args.GetCmdLineArgument("block-size", block_size);
+  // Get args
+  args.GetCmdLineArgument("i", iterations);
+  args.GetCmdLineArgument("grid-size", grid_size);
+  args.GetCmdLineArgument("block-size", block_size);
 
-    // Print usage
-    if (args.CheckCmdLineFlag("help"))
-    {
-        printf("%s "
-            "[--device=<device-id>]"
-            "[--i=<iterations>]"
-            "[--grid-size<grid-size>]"
-            "[--block-size<block-size>]"
-            "\n", argv[0]);
-        exit(0);
-    }
+  // Print usage
+  if (args.CheckCmdLineFlag("help"))
+  {
+    printf("%s "
+           "[--device=<device-id>]"
+           "[--i=<iterations>]"
+           "[--grid-size<grid-size>]"
+           "[--block-size<block-size>]"
+           "\n",
+           argv[0]);
+    exit(0);
+  }
 
-    // Initialize device
-    CubDebugExit(args.DeviceInit());
+  // Initialize device
+  CubDebugExit(args.DeviceInit());
 
-    // Get device ordinal
-    int device_ordinal;
-    CubDebugExit(cudaGetDevice(&device_ordinal));
+  // Get device ordinal
+  int device_ordinal;
+  CubDebugExit(cudaGetDevice(&device_ordinal));
 
-    // Get device SM version
-    int sm_version = 0;
-    CubDebugExit(SmVersion(sm_version, device_ordinal));
+  // Get device SM version
+  int sm_version = 0;
+  CubDebugExit(SmVersion(sm_version, device_ordinal));
 
-    // Get SM properties
-    int sm_count, max_block_threads, max_sm_occupancy;
-    CubDebugExit(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
-    CubDebugExit(cudaDeviceGetAttribute(&max_block_threads, cudaDevAttrMaxThreadsPerBlock, device_ordinal));
-    CubDebugExit(MaxSmOccupancy(max_sm_occupancy, EmptyKernel<void>, 32));
+  // Get SM properties
+  int sm_count, max_block_threads, max_sm_occupancy;
+  CubDebugExit(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+  CubDebugExit(cudaDeviceGetAttribute(&max_block_threads, cudaDevAttrMaxThreadsPerBlock, device_ordinal));
+  CubDebugExit(MaxSmOccupancy(max_sm_occupancy, EmptyKernel<void>, 32));
 
-    // Compute grid size and occupancy
-    int occupancy = CUB_MIN((max_block_threads / block_size), max_sm_occupancy);
+  // Compute grid size and occupancy
+  int occupancy = CUB_MIN((max_block_threads / block_size), max_sm_occupancy);
 
-    if (grid_size == -1)
-    {
-        grid_size = occupancy * sm_count;
-    }
-    else
-    {
-        occupancy = grid_size / sm_count;
-    }
+  if (grid_size == -1)
+  {
+    grid_size = occupancy * sm_count;
+  }
+  else
+  {
+    occupancy = grid_size / sm_count;
+  }
 
-    printf("Initializing software global barrier for Kernel<<<%d,%d>>> with %d occupancy\n",
-        grid_size, block_size, occupancy);
-    fflush(stdout);
+  printf(
+    "Initializing software global barrier for Kernel<<<%d,%d>>> with %d occupancy\n", grid_size, block_size, occupancy);
+  fflush(stdout);
 
-    // Init global barrier
-    GridBarrierLifetime global_barrier;
-    global_barrier.Setup(grid_size);
+  // Init global barrier
+  GridBarrierLifetime global_barrier;
+  global_barrier.Setup(grid_size);
 
-    // Time kernel
-    GpuTimer gpu_timer;
-    gpu_timer.Start();
-    Kernel<<<grid_size, block_size>>>(global_barrier, iterations);
-    gpu_timer.Stop();
+  // Time kernel
+  GpuTimer gpu_timer;
+  gpu_timer.Start();
+  Kernel<<<grid_size, block_size>>>(global_barrier, iterations);
+  gpu_timer.Stop();
 
-    retval = CubDebug(cudaDeviceSynchronize());
+  retval = CubDebug(cudaDeviceSynchronize());
 
-    // Output timing results
-    float avg_elapsed = gpu_timer.ElapsedMillis() / float(iterations);
-    printf("%d iterations, %f total elapsed millis, %f avg elapsed millis\n",
-        iterations,
-        gpu_timer.ElapsedMillis(),
-        avg_elapsed);
+  // Output timing results
+  float avg_elapsed = gpu_timer.ElapsedMillis() / float(iterations);
+  printf("%d iterations, %f total elapsed millis, %f avg elapsed millis\n",
+         iterations,
+         gpu_timer.ElapsedMillis(),
+         avg_elapsed);
 
-    return retval;
+  return retval;
 }

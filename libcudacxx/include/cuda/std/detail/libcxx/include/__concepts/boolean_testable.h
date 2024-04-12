@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H
 #define _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/convertible_to.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -32,28 +30,28 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concepts.booleantestable]
 
-template<class _Tp>
+template <class _Tp>
 concept __boolean_testable_impl = convertible_to<_Tp, bool>;
 
-template<class _Tp>
+template <class _Tp>
 concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t) {
-  { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
+  {
+    !_CUDA_VSTD::forward<_Tp>(__t)
+  } -> __boolean_testable_impl;
 };
 
 #elif _CCCL_STD_VER > 2011
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __boolean_testable_,
-  requires(_Tp&& __t)(
-    requires(__boolean_testable_impl<_Tp>),
-    requires(__boolean_testable_impl<decltype(!_CUDA_VSTD::forward<_Tp>(__t))>)
-  ));
+  requires(_Tp&& __t)(requires(__boolean_testable_impl<_Tp>),
+                      requires(__boolean_testable_impl<decltype(!_CUDA_VSTD::forward<_Tp>(__t))>)));
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT __boolean_testable = _LIBCUDACXX_FRAGMENT(__boolean_testable_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011

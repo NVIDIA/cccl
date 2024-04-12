@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_COMP_REF_TYPE_H
 #define _LIBCUDACXX___ALGORITHM_COMP_REF_TYPE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__debug"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__debug>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -31,12 +29,12 @@ template <class _Compare>
 struct __debug_less
 {
   _Compare& __comp_;
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __debug_less(_Compare& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __debug_less(_Compare& __c)
       : __comp_(__c)
   {}
 
   template <class _Tp, class _Up>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(const _Tp& __x, const _Up& __y)
   {
     bool __r = __comp_(__x, __y);
@@ -48,7 +46,7 @@ struct __debug_less
   }
 
   template <class _Tp, class _Up>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(_Tp& __x, _Up& __y)
   {
     bool __r = __comp_(__x, __y);
@@ -60,7 +58,7 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 decltype((void) declval<_Compare&>()(
+  inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 decltype((void) declval<_Compare&>()(
     declval<_LHS&>(), declval<_RHS&>()))
   __do_compare_assert(int, _LHS& __l, _RHS& __r)
   {
@@ -70,7 +68,7 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void __do_compare_assert(long, _LHS&, _RHS&)
+  inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __do_compare_assert(long, _LHS&, _RHS&)
   {}
 };
 

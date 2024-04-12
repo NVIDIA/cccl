@@ -17,15 +17,15 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
-
+#include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  int ia[] = {0, 1, 2, 3};
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
+  int ia[]          = {0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  int ib[sa] = {0};
+  int ib[sa]        = {0};
 
   OutIter r = cuda::std::rotate_copy(InIter(ia), InIter(ia), InIter(ia), OutIter(ib));
   assert(base(r) == ib);
@@ -113,12 +113,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   assert(ib[3] == 3);
 
   {
-    int ints[] = {1, 3, 5, 2, 5, 6};
-    int const n_ints = sizeof(ints)/sizeof(int);
+    int ints[]        = {1, 3, 5, 2, 5, 6};
+    int const n_ints  = sizeof(ints) / sizeof(int);
     int zeros[n_ints] = {0};
 
     const cuda::std::size_t N = 2;
-    const auto middle = cuda::std::begin(ints) + N;
+    const auto middle         = cuda::std::begin(ints) + N;
     auto it = cuda::std::rotate_copy(cuda::std::begin(ints), middle, cuda::std::end(ints), cuda::std::begin(zeros));
     assert(cuda::std::distance(cuda::std::begin(zeros), it) == n_ints);
     assert(cuda::std::equal(cuda::std::begin(ints), middle, cuda::std::begin(zeros) + n_ints - N));
@@ -126,29 +126,31 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, forward_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, random_access_iterator<int*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, forward_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<int*>>();
   test<bidirectional_iterator<const int*>, int*>();
 
-  test<random_access_iterator<const int*>, cpp17_output_iterator<int*> >();
-  test<random_access_iterator<const int*>, forward_iterator<int*> >();
-  test<random_access_iterator<const int*>, bidirectional_iterator<int*> >();
-  test<random_access_iterator<const int*>, random_access_iterator<int*> >();
+  test<random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<random_access_iterator<const int*>, forward_iterator<int*>>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<random_access_iterator<const int*>, random_access_iterator<int*>>();
   test<random_access_iterator<const int*>, int*>();
 
-  test<const int*, cpp17_output_iterator<int*> >();
-  test<const int*, forward_iterator<int*> >();
-  test<const int*, bidirectional_iterator<int*> >();
-  test<const int*, random_access_iterator<int*> >();
+  test<const int*, cpp17_output_iterator<int*>>();
+  test<const int*, forward_iterator<int*>>();
+  test<const int*, bidirectional_iterator<int*>>();
+  test<const int*, random_access_iterator<int*>>();
   test<const int*, int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");

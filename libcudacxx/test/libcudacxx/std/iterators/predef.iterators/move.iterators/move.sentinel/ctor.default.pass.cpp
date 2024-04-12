@@ -15,12 +15,11 @@
 
 // constexpr move_sentinel();
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
 __host__ __device__ constexpr bool test()
 {
-
   // The underlying sentinel is an integer.
   {
     cuda::std::move_sentinel<int> m;
@@ -35,9 +34,10 @@ __host__ __device__ constexpr bool test()
 
   // The underlying sentinel is a user-defined type with an explicit default constructor.
   {
-    struct S {
+    struct S
+    {
       constexpr explicit S() = default;
-      int i = 3;
+      int i                  = 3;
     };
     cuda::std::move_sentinel<S> m;
     assert(m.base().i == 3);

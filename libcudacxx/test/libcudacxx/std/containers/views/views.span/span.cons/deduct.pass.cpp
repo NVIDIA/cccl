@@ -28,68 +28,66 @@
 //   template<class R>
 //     span(R&&) -> span<remove_reference_t<ranges::range_reference_t<R>>>;
 
-
-#include <cuda/std/span>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
+#include <cuda/std/span>
 
 #include "test_macros.h"
 
-
-__host__ __device__
-void test_iterator_sentinel() {
+__host__ __device__ void test_iterator_sentinel()
+{
   int arr[] = {1, 2, 3};
   {
-  cuda::std::span s{cuda::std::begin(arr), cuda::std::end(arr)};
-  ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int>);
-  assert(s.size() == cuda::std::size(arr));
-  assert(s.data() == cuda::std::data(arr));
+    cuda::std::span s{cuda::std::begin(arr), cuda::std::end(arr)};
+    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int>);
+    assert(s.size() == cuda::std::size(arr));
+    assert(s.data() == cuda::std::data(arr));
   }
   {
-  cuda::std::span s{cuda::std::begin(arr), 3};
-  ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int>);
-  assert(s.size() == cuda::std::size(arr));
-  assert(s.data() == cuda::std::data(arr));
+    cuda::std::span s{cuda::std::begin(arr), 3};
+    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int>);
+    assert(s.size() == cuda::std::size(arr));
+    assert(s.data() == cuda::std::data(arr));
   }
 }
 
-__host__ __device__
-void test_c_array() {
-    {
+__host__ __device__ void test_c_array()
+{
+  {
     int arr[] = {1, 2, 3};
     cuda::std::span s{arr};
     ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int, 3>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
-    }
+  }
 
-    {
-    const int arr[] = {1,2,3};
+  {
+    const int arr[] = {1, 2, 3};
     cuda::std::span s{arr};
     ASSERT_SAME_TYPE(decltype(s), cuda::std::span<const int, 3>);
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
-    }
+  }
 }
 
-__host__ __device__
-void test_std_array() {
-    {
+__host__ __device__ void test_std_array()
+{
+  {
     cuda::std::array<double, 4> arr = {1.0, 2.0, 3.0, 4.0};
     cuda::std::span s{arr};
     ASSERT_SAME_TYPE(decltype(s), cuda::std::span<double, 4>);
     assert(s.size() == arr.size());
     assert(s.data() == arr.data());
-    }
+  }
 
-    {
+  {
     const cuda::std::array<long, 5> arr = {4, 5, 6, 7, 8};
     cuda::std::span s{arr};
     ASSERT_SAME_TYPE(decltype(s), cuda::std::span<const long, 5>);
     assert(s.size() == arr.size());
     assert(s.data() == arr.data());
-    }
+  }
 }
 
 int main(int, char**)

@@ -12,9 +12,7 @@
 #ifndef _CUDA_PTX_FENCE_H_
 #define _CUDA_PTX_FENCE_H_
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
+#include <cuda/std/cstdint>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
 
-#include "../ptx_dot_variants.h"
-#include "../ptx_helper_functions.h"
-#include "../../../cstdint"
+#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -46,60 +44,29 @@ __device__ static inline void fence(
 #if __cccl_ptx_isa >= 600
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
 template <dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(
-  sem_t<_Sem> __sem,
-  scope_t<_Scope> __scope)
+_CCCL_DEVICE static inline void fence(sem_t<_Sem> __sem, scope_t<_Scope> __scope)
 {
   static_assert(__sem == sem_sc || __sem == sem_acq_rel, "");
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_cta) {
-      asm volatile (
-        "fence.sc.cta; // 1."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_gpu) {
-      asm volatile (
-        "fence.sc.gpu; // 1."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_sys) {
-      asm volatile (
-        "fence.sc.sys; // 1."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_cta) {
-      asm volatile (
-        "fence.acq_rel.cta; // 1."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_gpu) {
-      asm volatile (
-        "fence.acq_rel.gpu; // 1."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_sys) {
-      asm volatile (
-        "fence.acq_rel.sys; // 1."
-        :
-        :
-        : "memory"
-      );
-    }
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_is_not_supported_before_SM_70__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_70,
+    (
+      _CCCL_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_cta) {
+        asm volatile("fence.sc.cta; // 1." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_gpu) {
+        asm volatile("fence.sc.gpu; // 1." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_sys) {
+        asm volatile("fence.sc.sys; // 1." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_cta) {
+        asm volatile("fence.acq_rel.cta; // 1." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_gpu) {
+        asm volatile("fence.acq_rel.gpu; // 1." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_sys) {
+        asm volatile("fence.acq_rel.sys; // 1." : : : "memory");
+      }),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_is_not_supported_before_SM_70__();));
 }
 #endif // __cccl_ptx_isa >= 600
 
@@ -115,32 +82,21 @@ __device__ static inline void fence(
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <dot_sem _Sem>
-_CCCL_DEVICE static inline void fence(
-  sem_t<_Sem> __sem,
-  scope_cluster_t)
+_CCCL_DEVICE static inline void fence(sem_t<_Sem> __sem, scope_cluster_t)
 {
   static_assert(__sem == sem_sc || __sem == sem_acq_rel, "");
   // __scope == scope_cluster (due to parameter type constraint)
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc) {
-      asm volatile (
-        "fence.sc.cluster; // 2."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel) {
-      asm volatile (
-        "fence.acq_rel.cluster; // 2."
-        :
-        :
-        : "memory"
-      );
-    }
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+      _CCCL_IF_CONSTEXPR (__sem == sem_sc) {
+        asm volatile("fence.sc.cluster; // 2." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel) {
+        asm volatile("fence.acq_rel.cluster; // 2." : : : "memory");
+      }),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 780
 /*
@@ -154,24 +110,20 @@ __device__ static inline void fence_mbarrier_init(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
-template <typename=void>
-_CCCL_DEVICE static inline void fence_mbarrier_init(
-  sem_release_t,
-  scope_cluster_t)
+template <typename = void>
+_CCCL_DEVICE static inline void fence_mbarrier_init(sem_release_t, scope_cluster_t)
 {
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    asm volatile (
-      "fence.mbarrier_init.release.cluster; // 3."
-      :
-      :
-      : "memory"
-    );
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (asm volatile("fence.mbarrier_init.release.cluster; // 3."
+                  :
+                  :
+                  : "memory");),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 /*
@@ -181,20 +133,18 @@ __device__ static inline void fence_proxy_alias();
 */
 #if __cccl_ptx_isa >= 750
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
-template <typename=void>
+template <typename = void>
 _CCCL_DEVICE static inline void fence_proxy_alias()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,(
-    asm volatile (
-      "fence.proxy.alias; // 4."
-      :
-      :
-      : "memory"
-    );
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("fence.proxy.alias; // 4."
+                  :
+                  :
+                  : "memory");),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();));
 }
 #endif // __cccl_ptx_isa >= 750
 /*
@@ -204,20 +154,18 @@ __device__ static inline void fence_proxy_async();
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
-template <typename=void>
+template <typename = void>
 _CCCL_DEVICE static inline void fence_proxy_async()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    asm volatile (
-      "fence.proxy.async; // 5."
-      :
-      :
-      : "memory"
-    );
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (asm volatile("fence.proxy.async; // 5."
+                  :
+                  :
+                  : "memory");),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -231,37 +179,22 @@ __device__ static inline void fence_proxy_async(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
 template <dot_space _Space>
-_CCCL_DEVICE static inline void fence_proxy_async(
-  space_t<_Space> __space)
+_CCCL_DEVICE static inline void fence_proxy_async(space_t<_Space> __space)
 {
   static_assert(__space == space_global || __space == space_cluster || __space == space_shared, "");
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_global) {
-      asm volatile (
-        "fence.proxy.async.global; // 6."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_cluster) {
-      asm volatile (
-        "fence.proxy.async.shared::cluster; // 6."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_shared) {
-      asm volatile (
-        "fence.proxy.async.shared::cta; // 6."
-        :
-        :
-        : "memory"
-      );
-    }
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+      _CCCL_IF_CONSTEXPR (__space == space_global) {
+        asm volatile("fence.proxy.async.global; // 6." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__space == space_cluster) {
+        asm volatile("fence.proxy.async.shared::cluster; // 6." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__space == space_shared) {
+        asm volatile("fence.proxy.async.shared::cta; // 6." : : : "memory");
+      }),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 /*
@@ -276,46 +209,25 @@ __device__ static inline void fence_proxy_tensormap_generic(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
-_CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
-  sem_release_t,
-  scope_t<_Scope> __scope)
+_CCCL_DEVICE static inline void fence_proxy_tensormap_generic(sem_release_t, scope_t<_Scope> __scope)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.release.cta; // 7."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.release.cluster; // 7."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.release.gpu; // 7."
-        :
-        :
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.release.sys; // 7."
-        :
-        :
-        : "memory"
-      );
-    }
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+      _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
+        asm volatile("fence.proxy.tensormap::generic.release.cta; // 7." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+        asm volatile("fence.proxy.tensormap::generic.release.cluster; // 7." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
+        asm volatile("fence.proxy.tensormap::generic.release.gpu; // 7." : : : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
+        asm volatile("fence.proxy.tensormap::generic.release.sys; // 7." : : : "memory");
+      }),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 830
 
@@ -333,52 +245,38 @@ __device__ static inline void fence_proxy_tensormap_generic(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
 template <int _N32, dot_scope _Scope>
-_CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
-  sem_acquire_t,
-  scope_t<_Scope> __scope,
-  const void* __addr,
-  n32_t<_N32> __size)
+_CCCL_DEVICE static inline void
+fence_proxy_tensormap_generic(sem_acquire_t, scope_t<_Scope> __scope, const void* __addr, n32_t<_N32> __size)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.acquire.cta [%0], %1; // 8."
-        :
-        : "l"(__addr),
-          "n"(__size)
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.acquire.cluster [%0], %1; // 8."
-        :
-        : "l"(__addr),
-          "n"(__size)
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.acquire.gpu [%0], %1; // 8."
-        :
-        : "l"(__addr),
-          "n"(__size)
-        : "memory"
-      );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
-      asm volatile (
-        "fence.proxy.tensormap::generic.acquire.sys [%0], %1; // 8."
-        :
-        : "l"(__addr),
-          "n"(__size)
-        : "memory"
-      );
-    }
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+      _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
+        asm volatile("fence.proxy.tensormap::generic.acquire.cta [%0], %1; // 8."
+                     :
+                     : "l"(__addr), "n"(__size)
+                     : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+        asm volatile("fence.proxy.tensormap::generic.acquire.cluster [%0], %1; // 8."
+                     :
+                     : "l"(__addr), "n"(__size)
+                     : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
+        asm volatile("fence.proxy.tensormap::generic.acquire.gpu [%0], %1; // 8."
+                     :
+                     : "l"(__addr), "n"(__size)
+                     : "memory");
+      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
+        asm volatile("fence.proxy.tensormap::generic.acquire.sys [%0], %1; // 8."
+                     :
+                     : "l"(__addr), "n"(__size)
+                     : "memory");
+      }),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 830
 

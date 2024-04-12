@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX___MDSPAN_DYNAMIC_EXTENT_HPP
 #define _LIBCUDACXX___MDSPAN_DYNAMIC_EXTENT_HPP
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -56,10 +54,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/span.h" // dynamic_extent
-#include "../__mdspan/macros.h"
-#include "../cstddef"
-#include "../limits" // numeric_limits
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__fwd/span.h> // dynamic_extent
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/limits> // numeric_limits
 
 #ifdef _LIBCUDACXX_IMPLICIT_SYSTEM_HEADER
 #endif
@@ -68,15 +66,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-namespace __detail {
+namespace __detail
+{
 
 template <class>
-_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent() {
+_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent()
+{
   return dynamic_extent;
 }
 
 template <size_t>
-_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral() {
+_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral()
+{
   return dynamic_extent;
 }
 

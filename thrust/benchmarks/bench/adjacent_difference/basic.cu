@@ -32,7 +32,7 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 

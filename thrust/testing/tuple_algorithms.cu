@@ -1,18 +1,15 @@
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2011
-
-#include <unittest/unittest.h>
-
 #include <thrust/detail/tuple_algorithms.h>
 #include <thrust/type_traits/integer_sequence.h>
+
+#include <unittest/unittest.h>
 
 // FIXME: Replace with C++14 style `thrust::square<>` when we have it.
 struct custom_square
 {
   template <typename T>
-  __host__ __device__
-  T operator()(T v) const
+  __host__ __device__ T operator()(T v) const
   {
     return v * v;
   }
@@ -21,8 +18,7 @@ struct custom_square
 struct custom_square_inplace
 {
   template <typename T>
-  __host__ __device__
-  void operator()(T& v) const
+  __host__ __device__ void operator()(T& v) const
   {
     v *= v;
   }
@@ -57,6 +53,3 @@ void test_tuple_for_each()
   ASSERT_EQUAL_QUIET(t, std::make_tuple(0, 4, 9.8596));
 }
 DECLARE_UNITTEST(test_tuple_for_each);
-
-#endif // _CCCL_STD_VER >= 2011
-

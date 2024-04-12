@@ -13,33 +13,56 @@
 // template <class T>
 //     constexpr underlying_type_t<T> to_underlying( T value ) noexcept; // C++2b
 
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-enum class e_default { a = 0, b = 1, c = 2 };
-enum class e_ushort : unsigned short { d = 10, e = 25, f = 50 };
-enum class e_longlong : long long {
-  low = cuda::std::numeric_limits<long long>::min(),
+enum class e_default
+{
+  a = 0,
+  b = 1,
+  c = 2
+};
+enum class e_ushort : unsigned short
+{
+  d = 10,
+  e = 25,
+  f = 50
+};
+enum class e_longlong : long long
+{
+  low  = cuda::std::numeric_limits<long long>::min(),
   high = cuda::std::numeric_limits<long long>::max()
 };
-enum e_non_class { enum_a = 10, enum_b = 11, enum_c = 12 };
-enum e_int : int {
+enum e_non_class
+{
+  enum_a = 10,
+  enum_b = 11,
+  enum_c = 12
+};
+enum e_int : int
+{
   enum_min = cuda::std::numeric_limits<int>::min(),
   enum_max = cuda::std::numeric_limits<int>::max()
 };
-enum class e_bool : cuda::std::uint8_t { f = 0, t = 1 };
-
-struct WithBitfieldEnums {
-  e_default e1 : 3;
-  e_ushort e2 : 6;
-  e_bool e3 : 1;
+enum class e_bool : cuda::std::uint8_t
+{
+  f = 0,
+  t = 1
 };
 
-__host__ __device__ constexpr bool test() {
+struct WithBitfieldEnums
+{
+  e_default e1 : 3;
+  e_ushort e2  : 6;
+  e_bool e3    : 1;
+};
+
+__host__ __device__ constexpr bool test()
+{
   ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
   ASSERT_SAME_TYPE(unsigned short, decltype(cuda::std::to_underlying(e_ushort::d)));
@@ -56,10 +79,8 @@ __host__ __device__ constexpr bool test() {
   assert(50 == cuda::std::to_underlying(e_ushort::f));
 
   // Check no truncating.
-  assert(cuda::std::numeric_limits<long long>::min() ==
-         cuda::std::to_underlying(e_longlong::low));
-  assert(cuda::std::numeric_limits<long long>::max() ==
-         cuda::std::to_underlying(e_longlong::high));
+  assert(cuda::std::numeric_limits<long long>::min() == cuda::std::to_underlying(e_longlong::low));
+  assert(cuda::std::numeric_limits<long long>::max() == cuda::std::to_underlying(e_longlong::high));
 
   assert(10 == cuda::std::to_underlying(enum_a));
   assert(11 == cuda::std::to_underlying(enum_b));
@@ -78,7 +99,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

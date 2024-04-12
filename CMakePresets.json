@@ -599,24 +599,34 @@
       "inherits": "cub-base"
     },
     {
+      "name": "thrust-base",
+      "hidden": true,
+      "inherits": "base",
+      "filter": {
+        "exclude": {
+          "name": "^thrust.*\\.test\\.async[._].*$"
+        }
+      }
+    },
+    {
       "name": "thrust-cpp11",
       "configurePreset": "thrust-cpp11",
-      "inherits": "base"
+      "inherits": "thrust-base"
     },
     {
       "name": "thrust-cpp14",
       "configurePreset": "thrust-cpp14",
-      "inherits": "base"
+      "inherits": "thrust-base"
     },
     {
       "name": "thrust-cpp17",
       "configurePreset": "thrust-cpp17",
-      "inherits": "base"
+      "inherits": "thrust-base"
     },
     {
       "name": "thrust-cpp20",
       "configurePreset": "thrust-cpp20",
-      "inherits": "base"
+      "inherits": "thrust-base"
     },
     {
       "name": "cuda-next-base",

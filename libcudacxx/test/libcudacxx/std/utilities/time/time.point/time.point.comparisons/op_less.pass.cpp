@@ -26,85 +26,85 @@
 //   bool
 //   operator>=(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs);
 
-#include <cuda/std/chrono>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    typedef cuda::std::chrono::system_clock Clock;
-    typedef cuda::std::chrono::milliseconds Duration1;
-    typedef cuda::std::chrono::microseconds Duration2;
-    typedef cuda::std::chrono::time_point<Clock, Duration1> T1;
-    typedef cuda::std::chrono::time_point<Clock, Duration2> T2;
+  typedef cuda::std::chrono::system_clock Clock;
+  typedef cuda::std::chrono::milliseconds Duration1;
+  typedef cuda::std::chrono::microseconds Duration2;
+  typedef cuda::std::chrono::time_point<Clock, Duration1> T1;
+  typedef cuda::std::chrono::time_point<Clock, Duration2> T2;
 
-    {
+  {
     T1 t1(Duration1(3));
     T1 t2(Duration1(3));
-    assert(!(t1 <  t2));
-    assert(!(t1 >  t2));
-    assert( (t1 <= t2));
-    assert( (t1 >= t2));
-    }
-    {
+    assert(!(t1 < t2));
+    assert(!(t1 > t2));
+    assert((t1 <= t2));
+    assert((t1 >= t2));
+  }
+  {
     T1 t1(Duration1(3));
     T1 t2(Duration1(4));
-    assert( (t1 <  t2));
-    assert(!(t1 >  t2));
-    assert( (t1 <= t2));
+    assert((t1 < t2));
+    assert(!(t1 > t2));
+    assert((t1 <= t2));
     assert(!(t1 >= t2));
-    }
-    {
+  }
+  {
     T1 t1(Duration1(3));
     T2 t2(Duration2(3000));
-    assert(!(t1 <  t2));
-    assert(!(t1 >  t2));
-    assert( (t1 <= t2));
-    assert( (t1 >= t2));
-    }
-    {
+    assert(!(t1 < t2));
+    assert(!(t1 > t2));
+    assert((t1 <= t2));
+    assert((t1 >= t2));
+  }
+  {
     T1 t1(Duration1(3));
     T2 t2(Duration2(3001));
-    assert( (t1 <  t2));
-    assert(!(t1 >  t2));
-    assert( (t1 <= t2));
+    assert((t1 < t2));
+    assert(!(t1 > t2));
+    assert((t1 <= t2));
     assert(!(t1 >= t2));
-    }
+  }
 
 #if TEST_STD_VER > 2011
-    {
+  {
     constexpr T1 t1(Duration1(3));
     constexpr T1 t2(Duration1(3));
-    static_assert(!(t1 <  t2), "");
-    static_assert(!(t1 >  t2), "");
-    static_assert( (t1 <= t2), "");
-    static_assert( (t1 >= t2), "");
-    }
-    {
+    static_assert(!(t1 < t2), "");
+    static_assert(!(t1 > t2), "");
+    static_assert((t1 <= t2), "");
+    static_assert((t1 >= t2), "");
+  }
+  {
     constexpr T1 t1(Duration1(3));
     constexpr T1 t2(Duration1(4));
-    static_assert( (t1 <  t2), "");
-    static_assert(!(t1 >  t2), "");
-    static_assert( (t1 <= t2), "");
+    static_assert((t1 < t2), "");
+    static_assert(!(t1 > t2), "");
+    static_assert((t1 <= t2), "");
     static_assert(!(t1 >= t2), "");
-    }
-    {
+  }
+  {
     constexpr T1 t1(Duration1(3));
     constexpr T2 t2(Duration2(3000));
-    static_assert(!(t1 <  t2), "");
-    static_assert(!(t1 >  t2), "");
-    static_assert( (t1 <= t2), "");
-    static_assert( (t1 >= t2), "");
-    }
-    {
+    static_assert(!(t1 < t2), "");
+    static_assert(!(t1 > t2), "");
+    static_assert((t1 <= t2), "");
+    static_assert((t1 >= t2), "");
+  }
+  {
     constexpr T1 t1(Duration1(3));
     constexpr T2 t2(Duration2(3001));
-    static_assert( (t1 <  t2), "");
-    static_assert(!(t1 >  t2), "");
-    static_assert( (t1 <= t2), "");
+    static_assert((t1 < t2), "");
+    static_assert(!(t1 > t2), "");
+    static_assert((t1 <= t2), "");
     static_assert(!(t1 >= t2), "");
-    }
+  }
 #endif
 
   return 0;

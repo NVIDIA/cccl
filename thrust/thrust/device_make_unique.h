@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file device_make_unique.h
  *  \brief A factory function for creating `unique_ptr`s to device objects.
  */
@@ -30,26 +29,20 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
-
-#if _CCCL_STD_VER >= 2011
-
 #include <thrust/allocate_unique.h>
+#include <thrust/detail/cpp11_required.h>
+#include <thrust/detail/type_deduction.h>
+#include <thrust/device_allocator.h>
 #include <thrust/device_new.h>
 #include <thrust/device_ptr.h>
-#include <thrust/device_allocator.h>
-#include <thrust/detail/type_deduction.h>
 
 THRUST_NAMESPACE_BEGIN
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename... Args>
-_CCCL_HOST
-auto device_make_unique(Args&&... args)
-  THRUST_TRAILING_RETURN(decltype(
-    uninitialized_allocate_unique<T>(device_allocator<T>{})
-  ))
+_CCCL_HOST auto device_make_unique(Args&&... args)
+  THRUST_TRAILING_RETURN(decltype(uninitialized_allocate_unique<T>(device_allocator<T>{})))
 {
 #if !defined(THRUST_DOXYGEN) // This causes Doxygen to choke for some reason.
   // FIXME: This is crude - we construct an unnecessary T on the host for
@@ -64,5 +57,3 @@ auto device_make_unique(Args&&... args)
 ///////////////////////////////////////////////////////////////////////////////
 
 THRUST_NAMESPACE_END
-
-#endif // _CCCL_STD_VER >= 2011

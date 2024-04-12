@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_GENERATE_N_H
 #define _LIBCUDACXX___ALGORITHM_GENERATE_N_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__utility/convert_to_integral.h"
+#include <cuda/std/detail/libcxx/include/__utility/convert_to_integral.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _OutputIterator, class _Size, class _Generator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator
 generate_n(_OutputIterator __first, _Size __orig_n, _Generator __gen)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));

@@ -25,28 +25,31 @@
 #include "variant_test_helpers.h"
 
 // See https://bugs.llvm.org/show_bug.cgi?id=31916
-struct A {};
-template<class ReturnType>
-struct Visitor {
-  __host__ __device__
-  auto operator()(A&) {
-      return ReturnType{};
+struct A
+{};
+template <class ReturnType>
+struct Visitor
+{
+  __host__ __device__ auto operator()(A&)
+  {
+    return ReturnType{};
   }
 };
-template<>
-struct Visitor<void> {
-  __host__ __device__
-  void operator()(A&) {}
+template <>
+struct Visitor<void>
+{
+  __host__ __device__ void operator()(A&) {}
 };
 
 template <typename ReturnType>
-__host__ __device__
-void test_caller_accepts_nonconst() {
+__host__ __device__ void test_caller_accepts_nonconst()
+{
   cuda::std::variant<A> v;
   cuda::std::visit<ReturnType>(Visitor<ReturnType>{}, v);
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_caller_accepts_nonconst<void>();
   test_caller_accepts_nonconst<int>();
 

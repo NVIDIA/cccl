@@ -39,16 +39,15 @@
 #include <thrust/random/xor_combine_engine.h>
 
 // distributions
+#include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_int_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
-#include <thrust/random/normal_distribution.h>
 
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup random Random Number Generation
  *  \{
  */
-
 
 /*! \namespace thrust::random
  *  \brief \p thrust::random is the namespace which contains random number engine class templates,
@@ -73,7 +72,6 @@ namespace random
  */
 typedef discard_block_engine<ranlux24_base, 223, 23> ranlux24;
 
-
 /*! \typedef ranlux48
  *  \brief A random number engine with predefined parameters which implements the
  *         RANLUX level-4 random number generation algorithm.
@@ -82,7 +80,6 @@ typedef discard_block_engine<ranlux24_base, 223, 23> ranlux24;
  */
 typedef discard_block_engine<ranlux48_base, 389, 11> ranlux48;
 
-
 /*! \typedef taus88
  *  \brief A random number engine with predefined parameters which implements
  *         L'Ecuyer's 1996 three-component Tausworthe random number generator.
@@ -90,15 +87,14 @@ typedef discard_block_engine<ranlux48_base, 389, 11> ranlux48;
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p taus88
  *        shall produce the value \c 3535848941 .
  */
-typedef xor_combine_engine<
-  linear_feedback_shift_engine<thrust::detail::uint32_t, 32u, 31u, 13u, 12u>,
-  0,
-  xor_combine_engine<
-    linear_feedback_shift_engine<thrust::detail::uint32_t, 32u, 29u,  2u,  4u>, 0,
-    linear_feedback_shift_engine<thrust::detail::uint32_t, 32u, 28u,  3u, 17u>, 0
-  >,
-  0
-> taus88;
+typedef xor_combine_engine<linear_feedback_shift_engine<thrust::detail::uint32_t, 32u, 31u, 13u, 12u>,
+                           0,
+                           xor_combine_engine<linear_feedback_shift_engine<thrust::detail::uint32_t, 32u, 29u, 2u, 4u>,
+                                              0,
+                                              linear_feedback_shift_engine<thrust::detail::uint32_t, 32u, 28u, 3u, 17u>,
+                                              0>,
+                           0>
+  taus88;
 
 /*! \typedef default_random_engine
  *  \brief An implementation-defined "default" random number engine.
@@ -110,16 +106,15 @@ typedef minstd_rand default_random_engine;
 /*! \} // end predefined_random
  */
 
-} // end random
-
+} // namespace random
 
 /*! \} // end random
  */
 
 // import names into thrust::
+using random::default_random_engine;
 using random::ranlux24;
 using random::ranlux48;
 using random::taus88;
-using random::default_random_engine;
 
 THRUST_NAMESPACE_END

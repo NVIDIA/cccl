@@ -11,70 +11,68 @@
 // has_nothrow_move_constructor
 
 #include <cuda/std/type_traits>
+
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_is_nothrow_move_constructible()
+__host__ __device__ void test_is_nothrow_move_constructible()
 {
-    static_assert( cuda::std::is_nothrow_move_constructible<T>::value, "");
-    static_assert( cuda::std::is_nothrow_move_constructible<const T>::value, "");
+  static_assert(cuda::std::is_nothrow_move_constructible<T>::value, "");
+  static_assert(cuda::std::is_nothrow_move_constructible<const T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert( cuda::std::is_nothrow_move_constructible_v<T>, "");
-    static_assert( cuda::std::is_nothrow_move_constructible_v<const T>, "");
+  static_assert(cuda::std::is_nothrow_move_constructible_v<T>, "");
+  static_assert(cuda::std::is_nothrow_move_constructible_v<const T>, "");
 #endif
 }
 
 template <class T>
-__host__ __device__
-void test_has_not_nothrow_move_constructor()
+__host__ __device__ void test_has_not_nothrow_move_constructor()
 {
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    static_assert(!cuda::std::is_nothrow_move_constructible<T>::value, "");
-    static_assert(!cuda::std::is_nothrow_move_constructible<const T>::value, "");
+  static_assert(!cuda::std::is_nothrow_move_constructible<T>::value, "");
+  static_assert(!cuda::std::is_nothrow_move_constructible<const T>::value, "");
 #endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    static_assert(!cuda::std::is_nothrow_move_constructible<volatile T>::value, "");
-    static_assert(!cuda::std::is_nothrow_move_constructible<const volatile T>::value, "");
+  static_assert(!cuda::std::is_nothrow_move_constructible<volatile T>::value, "");
+  static_assert(!cuda::std::is_nothrow_move_constructible<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    static_assert(!cuda::std::is_nothrow_move_constructible_v<T>, "");
-    static_assert(!cuda::std::is_nothrow_move_constructible_v<const T>, "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    static_assert(!cuda::std::is_nothrow_move_constructible_v<volatile T>, "");
-    static_assert(!cuda::std::is_nothrow_move_constructible_v<const volatile T>, "");
+#  ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+  static_assert(!cuda::std::is_nothrow_move_constructible_v<T>, "");
+  static_assert(!cuda::std::is_nothrow_move_constructible_v<const T>, "");
+#  endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+  static_assert(!cuda::std::is_nothrow_move_constructible_v<volatile T>, "");
+  static_assert(!cuda::std::is_nothrow_move_constructible_v<const volatile T>, "");
 #endif // TEST_STD_VER > 2011
 }
 
 class Empty
-{
-};
+{};
 
-union Union {};
+union Union
+{};
 
 struct bit_zero
 {
-    int :  0;
+  int : 0;
 };
 
 struct A
 {
-    __host__ __device__
-    A(const A&);
+  __host__ __device__ A(const A&);
 };
 
 int main(int, char**)
 {
-    test_has_not_nothrow_move_constructor<void>();
-    test_has_not_nothrow_move_constructor<A>();
+  test_has_not_nothrow_move_constructor<void>();
+  test_has_not_nothrow_move_constructor<A>();
 
-    test_is_nothrow_move_constructible<int&>();
-    test_is_nothrow_move_constructible<Union>();
-    test_is_nothrow_move_constructible<Empty>();
-    test_is_nothrow_move_constructible<int>();
-    test_is_nothrow_move_constructible<double>();
-    test_is_nothrow_move_constructible<int*>();
-    test_is_nothrow_move_constructible<const int*>();
-    test_is_nothrow_move_constructible<bit_zero>();
+  test_is_nothrow_move_constructible<int&>();
+  test_is_nothrow_move_constructible<Union>();
+  test_is_nothrow_move_constructible<Empty>();
+  test_is_nothrow_move_constructible<int>();
+  test_is_nothrow_move_constructible<double>();
+  test_is_nothrow_move_constructible<int*>();
+  test_is_nothrow_move_constructible<const int*>();
+  test_is_nothrow_move_constructible<bit_zero>();
 
   return 0;
 }

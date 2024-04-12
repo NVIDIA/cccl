@@ -26,37 +26,51 @@
 #include <cuda/std/utility>
 #include <cuda/std/variant>
 
-#include "test_macros.h"
 #include "test_comparisons.h"
+#include "test_macros.h"
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
 // MakeEmptyT throws in operator=(&&), so we can move to it to create valueless-by-exception variants.
-struct MakeEmptyT {
+struct MakeEmptyT
+{
   MakeEmptyT() = default;
-  MakeEmptyT(MakeEmptyT&&) { throw 42; }
-  MakeEmptyT& operator=(MakeEmptyT&&) { throw 42; }
+  MakeEmptyT(MakeEmptyT&&)
+  {
+    throw 42;
+  }
+  MakeEmptyT& operator=(MakeEmptyT&&)
+  {
+    throw 42;
+  }
 };
-inline bool operator==(const MakeEmptyT&, const MakeEmptyT&) {
+inline bool operator==(const MakeEmptyT&, const MakeEmptyT&)
+{
   assert(false);
   return false;
 }
-inline cuda::std::weak_ordering operator<=>(const MakeEmptyT&, const MakeEmptyT&) {
+inline cuda::std::weak_ordering operator<=>(const MakeEmptyT&, const MakeEmptyT&)
+{
   assert(false);
   return cuda::std::weak_ordering::equivalent;
 }
 
 template <class Variant>
-void makeEmpty(Variant& v) {
+void makeEmpty(Variant& v)
+{
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
-  try {
+  try
+  {
     v = cuda::std::move(v2);
     assert(false);
-  } catch (...) {
+  }
+  catch (...)
+  {
     assert(v.valueless_by_exception());
   }
 }
 
-void test_empty() {
+void test_empty()
+{
   {
     using V = cuda::std::variant<int, MakeEmptyT>;
     V v1;
@@ -80,10 +94,11 @@ void test_empty() {
     assert(testOrder(v1, v2, cuda::std::weak_ordering::equivalent));
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class T1, class T2, class Order>
-constexpr bool test_with_types() {
+constexpr bool test_with_types()
+{
   using V = cuda::std::variant<T1, T2>;
   AssertOrderReturn<Order, V>();
   { // same index, same value
@@ -115,7 +130,8 @@ constexpr bool test_with_types() {
   return true;
 }
 
-constexpr bool test_three_way() {
+constexpr bool test_three_way()
+{
   assert((test_with_types<int, double, cuda::std::partial_ordering>()));
   assert((test_with_types<int, long, cuda::std::strong_ordering>()));
 
@@ -144,23 +160,26 @@ constexpr bool test_three_way() {
 
 // SFINAE tests
 template <class T, class U = T>
-concept has_three_way_op = requires (T& t, U& u) { t <=> u; };
+concept has_three_way_op = requires(T& t, U& u) { t <=> u; };
 
 // cuda::std::three_way_comparable is a more stringent requirement that demands
 // operator== and a few other things.
 using cuda::std::three_way_comparable;
 
-struct HasSimpleOrdering {
+struct HasSimpleOrdering
+{
   constexpr bool operator==(const HasSimpleOrdering&) const;
   constexpr bool operator<(const HasSimpleOrdering&) const;
 };
 
-struct HasOnlySpaceship {
+struct HasOnlySpaceship
+{
   constexpr bool operator==(const HasOnlySpaceship&) const = delete;
   constexpr cuda::std::weak_ordering operator<=>(const HasOnlySpaceship&) const;
 };
 
-struct HasFullOrdering {
+struct HasFullOrdering
+{
   constexpr bool operator==(const HasFullOrdering&) const;
   constexpr cuda::std::weak_ordering operator<=>(const HasFullOrdering&) const;
 };
@@ -179,19 +198,20 @@ static_assert(!has_three_way_op<cuda::std::variant<int, HasOnlySpaceship>>);
 static_assert(!three_way_comparable<HasOnlySpaceship>);
 static_assert(!three_way_comparable<cuda::std::variant<int, HasOnlySpaceship>>);
 
-static_assert( has_three_way_op<HasFullOrdering>);
-static_assert( has_three_way_op<cuda::std::variant<int, HasFullOrdering>>);
+static_assert(has_three_way_op<HasFullOrdering>);
+static_assert(has_three_way_op<cuda::std::variant<int, HasFullOrdering>>);
 
-static_assert( three_way_comparable<HasFullOrdering>);
-static_assert( three_way_comparable<cuda::std::variant<int, HasFullOrdering>>);
+static_assert(three_way_comparable<HasFullOrdering>);
+static_assert(three_way_comparable<cuda::std::variant<int, HasFullOrdering>>);
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_three_way();
   static_assert(test_three_way());
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
   test_empty();
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

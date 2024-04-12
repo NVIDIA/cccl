@@ -14,31 +14,37 @@
 // template<class T, class U>
 //   constexpr bool cmp_equal(T t, U u) noexcept;         // C++20
 
-#include <cuda/std/utility>
+#include <cuda/std/cassert>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
-#include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
 template <typename T>
-struct Tuple {
+struct Tuple
+{
   T min;
   T max;
   T mid;
-  __host__ __device__ constexpr Tuple() {
+  __host__ __device__ constexpr Tuple()
+  {
     min = cuda::std::numeric_limits<T>::min();
     max = cuda::std::numeric_limits<T>::max();
-    if constexpr (cuda::std::is_signed_v<T>) {
+    if constexpr (cuda::std::is_signed_v<T>)
+    {
       mid = T(-1);
-    } else {
+    }
+    else
+    {
       mid = max >> 1;
     }
   }
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_cmp_equal1() {
+__host__ __device__ constexpr void test_cmp_equal1()
+{
   constexpr Tuple<T> tup;
   assert(cuda::std::cmp_equal(T(0), T(0)));
   assert(cuda::std::cmp_equal(T(10), T(10)));
@@ -62,7 +68,8 @@ __host__ __device__ constexpr void test_cmp_equal1() {
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test_cmp_equal2() {
+__host__ __device__ constexpr void test_cmp_equal2()
+{
   constexpr Tuple<T> ttup;
   constexpr Tuple<U> utup;
   assert(cuda::std::cmp_equal(T(0), U(0)));
@@ -76,33 +83,48 @@ __host__ __device__ constexpr void test_cmp_equal2() {
 }
 
 template <class... Ts>
-__host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&) {
-  (test_cmp_equal1<Ts>() , ...);
+__host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&)
+{
+  (test_cmp_equal1<Ts>(), ...);
 }
 
 template <class T, class... Us>
-__host__ __device__ constexpr void test2_impl(const cuda::std::tuple<Us...>&) {
-  (test_cmp_equal2<T, Us>() , ...);
+__host__ __device__ constexpr void test2_impl(const cuda::std::tuple<Us...>&)
+{
+  (test_cmp_equal2<T, Us>(), ...);
 }
 
 template <class... Ts, class UTuple>
-__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple) {
-  (test2_impl<Ts>(utuple) , ...);
+__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple)
+{
+  (test2_impl<Ts>(utuple), ...);
 }
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   cuda::std::tuple<
 #ifndef TEST_HAS_NO_INT128_T
-      __int128_t, __uint128_t,
+    __int128_t,
+    __uint128_t,
 #endif
-      unsigned long long, long long, unsigned long, long, unsigned int, int,
-      unsigned short, short, unsigned char, signed char> types;
+    unsigned long long,
+    long long,
+    unsigned long,
+    long,
+    unsigned int,
+    int,
+    unsigned short,
+    short,
+    unsigned char,
+    signed char>
+    types;
   test1(types);
   test2(types, types);
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   ASSERT_NOEXCEPT(cuda::std::cmp_equal(0, 0));
   test();
   static_assert(test());

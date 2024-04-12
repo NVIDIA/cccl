@@ -15,8 +15,8 @@
 
 // constexpr explicit move_sentinel(S s);
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
 __host__ __device__ constexpr bool test()
 {
@@ -37,9 +37,12 @@ __host__ __device__ constexpr bool test()
 
   // The underlying sentinel is a user-defined type with an explicit default constructor.
   {
-    struct S {
+    struct S
+    {
       explicit S() = default;
-      __host__ __device__ constexpr explicit S(int j) : i(j) {}
+      __host__ __device__ constexpr explicit S(int j)
+          : i(j)
+      {}
       int i = 3;
     };
     static_assert(!cuda::std::is_convertible_v<S, cuda::std::move_sentinel<S>>);

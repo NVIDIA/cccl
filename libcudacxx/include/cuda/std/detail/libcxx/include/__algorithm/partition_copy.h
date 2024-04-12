@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_PARTITION_COPY_H
 #define _LIBCUDACXX___ALGORITHM_PARTITION_COPY_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,13 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/iterator_traits.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _Predicate>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair<_OutputIterator1, _OutputIterator2> partition_copy(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_OutputIterator1, _OutputIterator2> partition_copy(
   _InputIterator __first,
   _InputIterator __last,
   _OutputIterator1 __out_true,

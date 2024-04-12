@@ -9,9 +9,7 @@
 #ifndef _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
 #define _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,16 +26,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Arg, class _Result>
 struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
 {
-    typedef _Arg    argument_type;
-    typedef _Result result_type;
+  typedef _Arg argument_type;
+  typedef _Result result_type;
 };
 
 #endif // _CCCL_STD_VER <= 2014
 
-template <class _Arg, class _Result> struct __unary_function_keep_layout_base {
+template <class _Arg, class _Result>
+struct __unary_function_keep_layout_base
+{
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
   using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Arg;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Result;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX17   = _Result;
 #endif
 };
 

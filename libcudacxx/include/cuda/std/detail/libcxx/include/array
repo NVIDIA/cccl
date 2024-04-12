@@ -109,9 +109,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 
 */
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -121,51 +119,51 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #  pragma system_header
 #endif // no system header
 
-#include "__algorithm/equal.h"
-#include "__algorithm/fill_n.h"
-#include "__algorithm/lexicographical_compare.h"
-#include "__algorithm/swap_ranges.h"
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__iterator/reverse_iterator.h"
-#include "__tuple_dir/sfinae_helpers.h"
-#include "__type_traits/conditional.h"
-#include "__type_traits/is_array.h"
-#include "__type_traits/is_const.h"
-#include "__type_traits/is_constructible.h"
-#include "__type_traits/is_move_constructible.h"
-#include "__type_traits/is_nothrow_constructible.h"
-#include "__type_traits/is_nothrow_move_constructible.h"
-#include "__type_traits/is_same.h"
-#include "__type_traits/is_swappable.h"
-#include "__type_traits/remove_cv.h"
-#include "__utility/integer_sequence.h"
-#include "__utility/move.h"
-#include "__utility/unreachable.h"
-#include "cstdint"
-#include "cstdlib"
-#include "limits"
-#include "stdexcept"
-#include "version"
+#include <cuda/std/detail/libcxx/include/__algorithm/equal.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/fill_n.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/lexicographical_compare.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/swap_ranges.h>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_iterator.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/unreachable.h>
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/detail/libcxx/include/stdexcept>
+
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 // standard-mandated includes
-#include "version"
+#include <cuda/std/version>
 
 // [iterator.range]
-#include "__iterator/access.h"
-#include "__iterator/data.h"
-#include "__iterator/empty.h"
-#include "__iterator/reverse_access.h"
-#include "__iterator/size.h"
+#include <cuda/std/detail/libcxx/include/__iterator/access.h>
+#include <cuda/std/detail/libcxx/include/__iterator/data.h>
+#include <cuda/std/detail/libcxx/include/__iterator/empty.h>
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_access.h>
+#include <cuda/std/detail/libcxx/include/__iterator/size.h>
 
 // [array.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <compare>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "initializer_list"
+#include <cuda/std/initializer_list>
 
 // [tuple.helper]
-#include "__tuple_dir/tuple_element.h"
-#include "__tuple_dir/tuple_size.h"
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -189,74 +187,74 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
   _Tp __elems_[_Size];
 
   // No explicit construct/copy/destroy for aggregate type
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void fill(const value_type& __u)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void fill(const value_type& __u)
   {
     _CUDA_VSTD::fill_n(__elems_, _Size, __u);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
   swap(array& __a) noexcept(__is_nothrow_swappable<_Tp>::value)
   {
     _CUDA_VSTD::swap_ranges(__elems_, __elems_ + _Size, __a.data());
   }
 
   // iterators:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 iterator begin() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 iterator begin() noexcept
   {
     return iterator(__elems_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   begin() const noexcept
   {
     return const_iterator(__elems_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 iterator end() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 iterator end() noexcept
   {
     return iterator(__elems_ + _Size);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   end() const noexcept
   {
     return const_iterator(__elems_ + _Size);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator
   rbegin() noexcept
   {
     return reverse_iterator(end());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   rbegin() const noexcept
   {
     return const_reverse_iterator(end());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator
   rend() noexcept
   {
     return reverse_iterator(begin());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   rend() const noexcept
   {
     return const_reverse_iterator(begin());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   cbegin() const noexcept
   {
     return begin();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   cend() const noexcept
   {
     return end();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   crbegin() const noexcept
   {
     return rbegin();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   crend() const noexcept
   {
     return rend();
@@ -277,20 +275,20 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
   }
 
   // element access:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
   operator[](size_type __n) noexcept
   {
     _LIBCUDACXX_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
     return __elems_[__n];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   operator[](size_type __n) const noexcept
   {
     _LIBCUDACXX_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
     return __elems_[__n];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference at(size_type __n)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference at(size_type __n)
   {
     if (__n >= _Size)
     {
@@ -299,7 +297,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
     return __elems_[__n];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   at(size_type __n) const
   {
     if (__n >= _Size)
@@ -309,30 +307,30 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
     return __elems_[__n];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference front() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference front() noexcept
   {
     return (*this)[0];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   front() const noexcept
   {
     return (*this)[0];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference back() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference back() noexcept
   {
     return (*this)[_Size - 1];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   back() const noexcept
   {
     return (*this)[_Size - 1];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 value_type* data() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 value_type* data() noexcept
   {
     return __elems_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const value_type*
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const value_type*
   data() const noexcept
   {
     return __elems_;
@@ -364,84 +362,84 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   };
   _ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 value_type* data() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 value_type* data() noexcept
   {
     return nullptr;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const value_type*
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const value_type*
   data() const noexcept
   {
     return nullptr;
   }
 
   // No explicit construct/copy/destroy for aggregate type
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void fill(const value_type&)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void fill(const value_type&)
   {
     static_assert(!is_const<_Tp>::value, "cannot fill zero-sized array of type 'const T'");
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void swap(array&) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void swap(array&) noexcept
   {
     static_assert(!is_const<_Tp>::value, "cannot swap zero-sized array of type 'const T'");
   }
 
   // iterators:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 iterator begin() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 iterator begin() noexcept
   {
     return iterator(nullptr);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   begin() const noexcept
   {
     return const_iterator(nullptr);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 iterator end() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 iterator end() noexcept
   {
     return iterator(nullptr);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   end() const noexcept
   {
     return const_iterator(nullptr);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator
   rbegin() noexcept
   {
     return reverse_iterator(end());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   rbegin() const noexcept
   {
     return const_reverse_iterator(end());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator
   rend() noexcept
   {
     return reverse_iterator(begin());
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   rend() const noexcept
   {
     return const_reverse_iterator(begin());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   cbegin() const noexcept
   {
     return begin();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_iterator
   cend() const noexcept
   {
     return end();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   crbegin() const noexcept
   {
     return rbegin();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 const_reverse_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 const_reverse_iterator
   crend() const noexcept
   {
     return rend();
@@ -461,59 +459,68 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
     return true;
   }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
   // element access:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
   operator[](size_type) noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   operator[](size_type) const noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference at(size_type)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference at(size_type)
   {
     __throw_out_of_range("array<T, 0>::at");
     _LIBCUDACXX_UNREACHABLE();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   at(size_type) const
   {
     __throw_out_of_range("array<T, 0>::at");
     _LIBCUDACXX_UNREACHABLE();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference front() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference front() noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   front() const noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference back() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference back() noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const_reference
   back() const noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
+_CCCL_DIAG_POP
 };
 
 #if _CCCL_STD_VER >= 2017
@@ -522,49 +529,49 @@ _LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator==(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return _CUDA_VSTD::equal(__x.begin(), __x.end(), __y.begin());
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator<(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return _CUDA_VSTD::lexicographical_compare(__x.begin(), __x.end(), __y.begin(), __y.end());
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator>(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return __y < __x;
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__y < __x);
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__x < __y);
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   __enable_if_t<_Size == 0 || __is_swappable<_Tp>::value, void>
   swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
 {
@@ -583,14 +590,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, array<_Tp, _Size> >
 };
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Tp& get(array<_Tp, _Size>& __a) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp& get(array<_Tp, _Size>& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (std::array)");
   return __a.__elems_[_Ip];
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _Tp&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp&
 get(const array<_Tp, _Size>& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array)");
@@ -598,14 +605,14 @@ get(const array<_Tp, _Size>& __a) noexcept
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Tp&& get(array<_Tp, _Size>&& __a) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (std::array &&)");
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _Tp&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp&&
 get(const array<_Tp, _Size>&& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array &&)");
@@ -615,21 +622,21 @@ get(const array<_Tp, _Size>&& __a) noexcept
 #if _CCCL_STD_VER >= 2014
 
 template <typename _Tp, size_t _Size, size_t... _Index>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 array<remove_cv_t<_Tp>, _Size>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 array<remove_cv_t<_Tp>, _Size>
 __to_array_lvalue_impl(_Tp (&__arr)[_Size], index_sequence<_Index...>)
 {
   return {{__arr[_Index]...}};
 }
 
 template <typename _Tp, size_t _Size, size_t... _Index>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 array<remove_cv_t<_Tp>, _Size>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 array<remove_cv_t<_Tp>, _Size>
 __to_array_rvalue_impl(_Tp (&&__arr)[_Size], index_sequence<_Index...>)
 {
   return {{_CUDA_VSTD::move(__arr[_Index])...}};
 }
 
 template <typename _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 array<remove_cv_t<_Tp>, _Size>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 array<remove_cv_t<_Tp>, _Size>
 to_array(_Tp (&__arr)[_Size]) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Tp&))
 {
   static_assert(!_LIBCUDACXX_TRAIT(is_array, _Tp),

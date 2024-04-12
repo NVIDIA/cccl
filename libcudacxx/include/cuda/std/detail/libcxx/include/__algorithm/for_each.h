@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_FOR_EACH_H
 #define _LIBCUDACXX___ALGORITHM_FOR_EACH_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,9 +22,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Function>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-  _Function
-  for_each(_InputIterator __first, _InputIterator __last, _Function __f)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Function
+for_each(_InputIterator __first, _InputIterator __last, _Function __f)
 {
   for (; __first != __last; ++__first)
   {

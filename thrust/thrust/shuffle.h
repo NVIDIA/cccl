@@ -31,21 +31,17 @@
 #endif // no system header
 
 #include <thrust/detail/cpp11_required.h>
-
-#if _CCCL_STD_VER >= 2011
-
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup reordering
-*  \ingroup algorithms
-*
-*  \addtogroup shuffling
-*  \ingroup reordering
-*  \{
-*/
-
+ *  \ingroup algorithms
+ *
+ *  \addtogroup shuffling
+ *  \ingroup reordering
+ *  \{
+ */
 
 /*! \p shuffle reorders the elements <tt>[first, last)</tt> by a uniform pseudorandom permutation, defined by
  *  random engine \p g.
@@ -79,8 +75,7 @@ THRUST_NAMESPACE_BEGIN
  */
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle(
-    const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-    RandomIterator first, RandomIterator last, URBG&& g);
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
 
 /*! \p shuffle reorders the elements <tt>[first, last)</tt> by a uniform pseudorandom permutation, defined by
  *  random engine \p g.
@@ -107,10 +102,10 @@ _CCCL_HOST_DEVICE void shuffle(
  *  \see \p shuffle_copy
  */
 template <typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
-                                 URBG&& g);
+_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&& g);
 
-/*! shuffle_copy differs from shuffle only in that the reordered sequence is written to different output sequences, rather than in place.
+/*! shuffle_copy differs from shuffle only in that the reordered sequence is written to different output sequences,
+ rather than in place.
  *  \p shuffle_copy reorders the elements <tt>[first, last)</tt> by a uniform pseudorandom permutation, defined by
  *  random engine \p g.
  *
@@ -124,7 +119,8 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam RandomIterator is a random access iterator
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ Iterator</a>.
  *  \tparam URBG is a uniform random bit generator
  *
  *  The following code snippet demonstrates how to use \p shuffle_copy to create a random permutation.
@@ -143,15 +139,17 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
  *
  *  \see \p shuffle
  */
-template <typename DerivedPolicy, typename RandomIterator,
-          typename OutputIterator, typename URBG>
+template <typename DerivedPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle_copy(
-    const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-    RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g);
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  RandomIterator first,
+  RandomIterator last,
+  OutputIterator result,
+  URBG&& g);
 
-/*! shuffle_copy differs from shuffle only in that the reordered sequence is written to different output sequences, rather than in place.
- *\p shuffle_copy reorders the elements <tt>[first, last)</tt> by a uniform pseudorandom permutation, defined by
- *  random engine \p g.
+/*! shuffle_copy differs from shuffle only in that the reordered sequence is written to different output sequences,
+ *rather than in place. \p shuffle_copy reorders the elements <tt>[first, last)</tt> by a uniform pseudorandom
+ *permutation, defined by random engine \p g.
  *
  *  \param first The beginning of the sequence to shuffle.
  *  \param last The end of the sequence to shuffle.
@@ -159,8 +157,8 @@ _CCCL_HOST_DEVICE void shuffle_copy(
  *  \param g A UniformRandomBitGenerator
  *
  *  \tparam RandomIterator is a random access iterator
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam URBG is a uniform random bit generator
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ *Iterator</a>. \tparam URBG is a uniform random bit generator
  *
  *  The following code snippet demonstrates how to use \p shuffle_copy to create a random permutation.
  *
@@ -178,10 +176,8 @@ _CCCL_HOST_DEVICE void shuffle_copy(
  *  \see \p shuffle
  */
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
-                                      OutputIterator result, URBG&& g);
+_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g);
 
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/shuffle.inl>
-#endif

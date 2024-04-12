@@ -12,12 +12,11 @@
 // template<class T>
 // concept move_constructible;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#include "type_classification/moveconstructible.h"
 #include "test_macros.h"
+#include "type_classification/moveconstructible.h"
 
 using cuda::std::move_constructible;
 
@@ -82,4 +81,7 @@ static_assert(!move_constructible<NonMovable>, "");
 static_assert(!move_constructible<DerivedFromNonMovable>, "");
 static_assert(!move_constructible<HasANonMovable>, "");
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

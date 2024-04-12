@@ -17,13 +17,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
-
-#if _CCCL_STD_VER >= 2011
-
 #include <thrust/detail/preprocessor.h>
 
-#include <utility>
 #include <type_traits>
+#include <utility>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,9 +47,11 @@
 /// \brief Expands to a function definition that returns the expression
 ///        \c __VA_ARGS__.
 ///
-#define THRUST_RETURNS(...)                                                   \
-  noexcept(noexcept(__VA_ARGS__))                                             \
-  { return (__VA_ARGS__); }                                                   \
+#define THRUST_RETURNS(...)       \
+  noexcept(noexcept(__VA_ARGS__)) \
+  {                               \
+    return (__VA_ARGS__);         \
+  }                               \
   /**/
 
 /// \def THRUST_DECLTYPE_RETURNS(...)
@@ -62,14 +61,17 @@
 // Trailing return types seem to confuse Doxygen, and cause it to interpret
 // parts of the function's body as new function signatures.
 #if defined(THRUST_DOXYGEN)
-  #define THRUST_DECLTYPE_RETURNS(...)                                        \
-  { return (__VA_ARGS__); }                                                   \
-  /**/
+#  define THRUST_DECLTYPE_RETURNS(...) \
+    {                                  \
+      return (__VA_ARGS__);            \
+    }                                  \
+    /**/
 #else
-  #define THRUST_DECLTYPE_RETURNS(...)                                        \
-    noexcept(noexcept(__VA_ARGS__))                                           \
-    -> decltype(__VA_ARGS__)                                                  \
-    { return (__VA_ARGS__); }                                                 \
+#  define THRUST_DECLTYPE_RETURNS(...)                     \
+    noexcept(noexcept(__VA_ARGS__))->decltype(__VA_ARGS__) \
+    {                                                      \
+      return (__VA_ARGS__);                                \
+    }                                                      \
     /**/
 #endif
 
@@ -81,18 +83,18 @@
 // Trailing return types seem to confuse Doxygen, and cause it to interpret
 // parts of the function's body as new function signatures.
 #if defined(THRUST_DOXYGEN)
-  #define THRUST_DECLTYPE_RETURNS(...)                                        \
-  { return (__VA_ARGS__); }                                                   \
-  /**/
+#  define THRUST_DECLTYPE_RETURNS(...) \
+    {                                  \
+      return (__VA_ARGS__);            \
+    }                                  \
+    /**/
 #else
-  #define THRUST_DECLTYPE_RETURNS_WITH_SFINAE_CONDITION(condition, ...)       \
-    noexcept(noexcept(__VA_ARGS__))                                           \
-    -> typename std::enable_if<condition, decltype(__VA_ARGS__)>::type        \
-    { return (__VA_ARGS__); }                                                 \
+#  define THRUST_DECLTYPE_RETURNS_WITH_SFINAE_CONDITION(condition, ...)                              \
+    noexcept(noexcept(__VA_ARGS__))->typename std::enable_if<condition, decltype(__VA_ARGS__)>::type \
+    {                                                                                                \
+      return (__VA_ARGS__);                                                                          \
+    }                                                                                                \
     /**/
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif // _CCCL_STD_VER >= 2011
-

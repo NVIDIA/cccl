@@ -33,14 +33,13 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#include <thrust/detail/static_assert.h>
-#include <thrust/detail/select_system.h>
-#include <thrust/type_traits/logical_metafunctions.h>
-#include <thrust/type_traits/remove_cvref.h>
-#include <thrust/type_traits/is_execution_policy.h>
-#include <thrust/system/detail/adl/async/sort.h>
-
-#include <thrust/event.h>
+#  include <thrust/detail/select_system.h>
+#  include <thrust/detail/static_assert.h>
+#  include <thrust/event.h>
+#  include <thrust/system/detail/adl/async/sort.h>
+#  include <thrust/type_traits/is_execution_policy.h>
+#  include <thrust/type_traits/logical_metafunctions.h>
+#  include <thrust/type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -53,21 +52,12 @@ namespace async
 namespace unimplemented
 {
 
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
->
-_CCCL_HOST
-event<DerivedPolicy>
-async_stable_sort(
-  thrust::execution_policy<DerivedPolicy>&
-, ForwardIt, Sentinel, StrictWeakOrdering
-)
+template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
+_CCCL_HOST event<DerivedPolicy>
+async_stable_sort(thrust::execution_policy<DerivedPolicy>&, ForwardIt, Sentinel, StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<ForwardIt, false>::value)
-  , "this algorithm is not implemented for the specified system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
+                           "this algorithm is not implemented for the specified system");
   return {};
 }
 
@@ -78,6 +68,7 @@ namespace stable_sort_detail
 
 using thrust::async::unimplemented::async_stable_sort;
 
+// clang-format off
 struct stable_sort_fn final
 {
   template <
@@ -151,6 +142,7 @@ struct stable_sort_fn final
     call(THRUST_FWD(args)...)
   )
 };
+// clang-format on
 
 } // namespace stable_sort_detail
 
@@ -159,21 +151,11 @@ THRUST_INLINE_CONSTANT stable_sort_detail::stable_sort_fn stable_sort{};
 namespace fallback
 {
 
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
->
-_CCCL_HOST
-event<DerivedPolicy>
-async_sort(
-  thrust::execution_policy<DerivedPolicy>& exec
-, ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp
-)
+template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
+_CCCL_HOST event<DerivedPolicy>
+async_sort(thrust::execution_policy<DerivedPolicy>& exec, ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp)
 {
-  return async_stable_sort(
-    thrust::detail::derived_cast(exec)
-  , THRUST_FWD(first), THRUST_FWD(last), THRUST_FWD(comp)
-  );
+  return async_stable_sort(thrust::detail::derived_cast(exec), THRUST_FWD(first), THRUST_FWD(last), THRUST_FWD(comp));
 }
 
 } // namespace fallback
@@ -183,6 +165,7 @@ namespace sort_detail
 
 using thrust::async::fallback::async_sort;
 
+// clang-format off
 struct sort_fn final
 {
   template <
@@ -272,6 +255,7 @@ struct sort_fn final
     call(THRUST_FWD(args)...)
   )
 };
+// clang-format on
 
 } // namespace sort_detail
 
@@ -285,4 +269,3 @@ THRUST_INLINE_CONSTANT sort_detail::sort_fn sort{};
 THRUST_NAMESPACE_END
 
 #endif
-

@@ -16,49 +16,57 @@
 //   minmax_element(Iter first, Iter last, Compare comp);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "cases.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int(&input_data)[num_elements]) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int (&input_data)[num_elements])
+{
   Iter first{cuda::std::begin(input_data)};
   Iter last{cuda::std::end(input_data)};
 
   cuda::std::greater<int> comp{};
   cuda::std::pair<Iter, Iter> p = cuda::std::minmax_element(first, last, comp);
-  if (first != last) {
-    for (Iter j = first; j != last; ++j) {
+  if (first != last)
+  {
+    for (Iter j = first; j != last; ++j)
+    {
       assert(!comp(*j, *p.first));
       assert(!comp(*p.second, *j));
     }
-  } else {
+  }
+  else
+  {
     assert(p.first == last);
     assert(p.second == last);
   }
 }
 
 template <class Iter, class Pred>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_eq(Iter first, Iter last,
-                                                      Pred pred) {
-  cuda::std::pair<Iter, Iter> p =
-      cuda::std::minmax_element(Iter(first), Iter(last), pred);
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_eq(Iter first, Iter last, Pred pred)
+{
+  cuda::std::pair<Iter, Iter> p = cuda::std::minmax_element(Iter(first), Iter(last), pred);
   assert(base(p.first) == first);
   assert(base(p.second) == last - 1);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_eq() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_eq()
+{
   constexpr int N = 10;
-  int a[N] = {};
+  int a[N]        = {};
   for (int i = 0; i < N; ++i)
+  {
     a[i] = 10; // all the same
+  }
   test_eq(a, a + N, cuda::std::greater<int>());
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   constexpr int input_data[num_elements] = INPUT_DATA;
   test<forward_iterator<const int*>>(input_data);
   test<bidirectional_iterator<const int*>>(input_data);
@@ -69,7 +77,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");

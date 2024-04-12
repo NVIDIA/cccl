@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_ROTATE_H
 #define _LIBCUDACXX___ALGORITHM_ROTATE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,19 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/iterator_operations.h"
-#include "../__algorithm/move.h"
-#include "../__algorithm/move_backward.h"
-#include "../__algorithm/swap_ranges.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/is_trivially_move_assignable.h"
-#include "../__utility/move.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/move.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/move_backward.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/swap_ranges.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
@@ -47,7 +45,7 @@ __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BidirectionalIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator
 __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
@@ -62,7 +60,7 @@ __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
   _ForwardIterator __i = __middle;
@@ -105,7 +103,7 @@ __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIt
 }
 
 template <typename _Integral>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Integral __algo_gcd(_Integral __x, _Integral __y)
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Integral __algo_gcd(_Integral __x, _Integral __y)
 {
   do
   {
@@ -117,7 +115,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Integral
 }
 
 template <class _AlgPolicy, typename _RandomAccessIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
@@ -157,7 +155,7 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator __rotate_impl(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __rotate_impl(
   _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
@@ -172,7 +170,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardI
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BidirectionalIterator __rotate_impl(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator __rotate_impl(
   _BidirectionalIterator __first,
   _BidirectionalIterator __middle,
   _BidirectionalIterator __last,
@@ -194,7 +192,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Bidirect
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator __rotate_impl(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __rotate_impl(
   _RandomAccessIterator __first,
   _RandomAccessIterator __middle,
   _RandomAccessIterator __last,
@@ -217,7 +215,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAc
 }
 
 template <class _AlgPolicy, class _Iterator, class _Sentinel>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair<_Iterator, _Iterator>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Iterator, _Iterator>
 __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
 {
   using _Ret            = pair<_Iterator, _Iterator>;
@@ -240,7 +238,7 @@ __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
 }
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
   return _CUDA_VSTD::__rotate<_ClassicAlgPolicy>(

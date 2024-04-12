@@ -42,7 +42,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
@@ -53,231 +52,252 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4 *ptr, uint4 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4* ptr, uint4 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.v4.u32 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
-                             : "memory");),
-               (asm volatile("st.cg.v4.u32 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.v4.u32 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
+                  : "memory");),
+    (asm volatile("st.cg.v4.u32 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ulonglong2 *ptr, ulonglong2 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ulonglong2* ptr, ulonglong2 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.v2.u64 [%0], {%1, %2};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
-                             : "memory");),
-               (asm volatile("st.cg.v2.u64 [%0], {%1, %2};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.v2.u64 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
+                  : "memory");),
+    (asm volatile("st.cg.v2.u64 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ushort4 *ptr, ushort4 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(ushort4* ptr, ushort4 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.v4.u16 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
-                             : "memory");),
-               (asm volatile("st.cg.v4.u16 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.v4.u16 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
+                  : "memory");),
+    (asm volatile("st.cg.v4.u16 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint2 *ptr, uint2 val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint2* ptr, uint2 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.v2.u32 [%0], {%1, %2};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
-                             : "memory");),
-               (asm volatile("st.cg.v2.u32 [%0], {%1, %2};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.v2.u32 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
+                  : "memory");),
+    (asm volatile("st.cg.v2.u32 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned long long *ptr,
-                                                     unsigned long long val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned long long* ptr, unsigned long long val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.u64 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "l"(val)
-                             : "memory");),
-               (asm volatile("st.cg.u64 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "l"(val)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.u64 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val)
+                  : "memory");),
+    (asm volatile("st.cg.u64 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned int *ptr, unsigned int val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned int* ptr, unsigned int val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.u32 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val)
-                             : "memory");),
-               (asm volatile("st.cg.u32 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.u32 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val)
+                  : "memory");),
+    (asm volatile("st.cg.u32 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned short *ptr, unsigned short val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned short* ptr, unsigned short val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.relaxed.gpu.u16 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val)
-                             : "memory");),
-               (asm volatile("st.cg.u16 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.relaxed.gpu.u16 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val)
+                  : "memory");),
+    (asm volatile("st.cg.u16 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val)
+                  : "memory");));
 }
 
-static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned char *ptr, unsigned char val)
+static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(unsigned char* ptr, unsigned char val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("{"
-                             "  .reg .u8 datum;"
-                             "  cvt.u8.u16 datum, %1;"
-                             "  st.relaxed.gpu.u8 [%0], datum;"
-                             "}"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"((unsigned short)val)
-                             : "memory");),
-               (asm volatile("{"
-                             "  .reg .u8 datum;"
-                             "  cvt.u8.u16 datum, %1;"
-                             "  st.cg.u8 [%0], datum;"
-                             "}"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"((unsigned short)val)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("{"
+                  "  .reg .u8 datum;"
+                  "  cvt.u8.u16 datum, %1;"
+                  "  st.relaxed.gpu.u8 [%0], datum;"
+                  "}"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"((unsigned short) val)
+                  : "memory");),
+    (asm volatile("{"
+                  "  .reg .u8 datum;"
+                  "  cvt.u8.u16 datum, %1;"
+                  "  st.cg.u8 [%0], datum;"
+                  "}"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"((unsigned short) val)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint4 *ptr, uint4 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint4* ptr, uint4 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.v4.u32 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
-                             : "memory");),
-               (__threadfence();
-                asm volatile("st.cg.v4.u32 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.v4.u32 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.v4.u32 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y), "r"(val.z), "r"(val.w)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ulonglong2 *ptr, ulonglong2 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ulonglong2* ptr, ulonglong2 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.v2.u64 [%0], {%1, %2};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
-                             : "memory");),
-               (__threadfence(); asm volatile("st.cg.v2.u64 [%0], {%1, %2};"
-                                              :
-                                              : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
-                                              : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.v2.u64 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.v2.u64 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val.x), "l"(val.y)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ushort4 *ptr, ushort4 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(ushort4* ptr, ushort4 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.v4.u16 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
-                             : "memory");),
-               (__threadfence();
-                asm volatile("st.cg.v4.u16 [%0], {%1, %2, %3, %4};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
-                             : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.v4.u16 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.v4.u16 [%0], {%1, %2, %3, %4};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val.x), "h"(val.y), "h"(val.z), "h"(val.w)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint2 *ptr, uint2 val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(uint2* ptr, uint2 val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.v2.u32 [%0], {%1, %2};"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
-                             : "memory");),
-               (__threadfence(); asm volatile("st.cg.v2.u32 [%0], {%1, %2};"
-                                              :
-                                              : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
-                                              : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.v2.u32 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.v2.u32 [%0], {%1, %2};"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val.x), "r"(val.y)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long *ptr, unsigned long long val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned long long* ptr, unsigned long long val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.u64 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "l"(val)
-                             : "memory");),
-               (__threadfence(); asm volatile("st.cg.u64 [%0], %1;"
-                                              :
-                                              : _CUB_ASM_PTR_(ptr), "l"(val)
-                                              : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.u64 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.u64 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "l"(val)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int *ptr, unsigned int val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned int* ptr, unsigned int val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.u32 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "r"(val)
-                             : "memory");),
-               (__threadfence(); asm volatile("st.cg.u32 [%0], %1;"
-                                              :
-                                              : _CUB_ASM_PTR_(ptr), "r"(val)
-                                              : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.u32 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.u32 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "r"(val)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short *ptr, unsigned short val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned short* ptr, unsigned short val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("st.release.gpu.u16 [%0], %1;"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"(val)
-                             : "memory");),
-               (__threadfence(); asm volatile("st.cg.u16 [%0], %1;"
-                                              :
-                                              : _CUB_ASM_PTR_(ptr), "h"(val)
-                                              : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("st.release.gpu.u16 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val)
+                  : "memory");),
+    (__threadfence();
+     asm volatile("st.cg.u16 [%0], %1;"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"(val)
+                  : "memory");));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char *ptr, unsigned char val)
+_CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned char val)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               (asm volatile("{"
-                             "  .reg .u8 datum;"
-                             "  cvt.u8.u16 datum, %1;"
-                             "  st.release.gpu.u8 [%0], datum;"
-                             "}"
-                             :
-                             : _CUB_ASM_PTR_(ptr), "h"((unsigned short)val)
-                             : "memory");),
-               (__threadfence(); asm volatile("{"
-                                              "  .reg .u8 datum;"
-                                              "  cvt.u8.u16 datum, %1;"
-                                              "  st.cg.u8 [%0], datum;"
-                                              "}"
-                                              :
-                                              : _CUB_ASM_PTR_(ptr), "h"((unsigned short)val)
-                                              : "memory");));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("{"
+                  "  .reg .u8 datum;"
+                  "  cvt.u8.u16 datum, %1;"
+                  "  st.release.gpu.u8 [%0], datum;"
+                  "}"
+                  :
+                  : _CUB_ASM_PTR_(ptr), "h"((unsigned short) val)
+                  : "memory");),
+    (__threadfence(); asm volatile(
+       "{"
+       "  .reg .u8 datum;"
+       "  cvt.u8.u16 datum, %1;"
+       "  st.cg.u8 [%0], datum;"
+       "}"
+       :
+       : _CUB_ASM_PTR_(ptr), "h"((unsigned short) val)
+       : "memory");));
 }
 
 } // namespace detail
@@ -285,4 +305,3 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char *ptr, unsigned c
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 CUB_NAMESPACE_END
-

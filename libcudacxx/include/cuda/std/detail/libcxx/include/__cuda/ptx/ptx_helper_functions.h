@@ -12,9 +12,9 @@
 #ifndef _CUDA_PTX_HELPER_FUNCTIONS_H_
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
-#include "../../cstdint"        // uint32_t
-#include "../../cstddef"        // size_t
-#include "../../__type_traits/integral_constant.h"
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/cstdint> // uint32_t
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -60,7 +60,6 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
   return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
 }
 
-
 /*************************************************************
  *
  * Conversion from state space "pointer" -> generic pointer
@@ -94,7 +93,6 @@ inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
   return reinterpret_cast<_Tp*>(__cvta_global_to_generic(__ptr));
 }
 
-
 /*************************************************************
  *
  * Conversion from template type -> concrete binary type
@@ -103,9 +101,9 @@ inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 {
-#if _CCCL_STD_VER >= 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
+#if _CCCL_STD_VER >= 2017
   static_assert(sizeof(_Tp) == 4, "");
-#endif // _CCCL_STD_VER >= 2017  && !_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR
+#endif // _CCCL_STD_VER >= 2017
   // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
 }
@@ -113,9 +111,9 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 {
-#if _CCCL_STD_VER >= 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR)
+#if _CCCL_STD_VER >= 2017
   static_assert(sizeof(_Tp) == 8, "");
-#endif // _CCCL_STD_VER >= 2017 && !_LIBCUDACXX_HAS_NO_CXX14_CONSTEXPR
+#endif // _CCCL_STD_VER >= 2017
   // Consider using std::bitcast
   return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
 }

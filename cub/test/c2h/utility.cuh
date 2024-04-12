@@ -28,6 +28,8 @@
 #pragma once
 
 #include <cstring>
+#include <string>
+#include <typeinfo>
 
 namespace c2h
 {
@@ -37,8 +39,7 @@ namespace c2h
  * Types `To` and `From` must be the same size.
  */
 template <typename To, typename From>
-__host__ __device__
-To bit_cast(const From& in)
+__host__ __device__ To bit_cast(const From& in)
 {
   static_assert(sizeof(To) == sizeof(From), "Types must be same size.");
   To out;
@@ -46,4 +47,10 @@ To bit_cast(const From& in)
   return out;
 }
 
+template <typename T>
+std::string type_name()
+{
+  return typeid(T).name();
 }
+
+} // namespace c2h

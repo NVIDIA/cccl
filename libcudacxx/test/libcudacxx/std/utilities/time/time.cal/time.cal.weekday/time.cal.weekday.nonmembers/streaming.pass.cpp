@@ -40,18 +40,19 @@
 //     If %z (or a modified variant) is used and successfully parsed,
 //       that value will be assigned to *offset if offset is non-null.
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
+
 #include <iostream>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-   using weekday = cuda::std::chrono::weekday;
+  using weekday = cuda::std::chrono::weekday;
 
-   std::cout << weekday{3};
+  std::cout << weekday{3};
 
   return 0;
 }

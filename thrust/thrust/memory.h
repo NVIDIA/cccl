@@ -29,13 +29,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/pointer.h>
-#include <thrust/detail/reference.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/detail/malloc_and_free.h>
+#include <thrust/detail/reference.h>
 #include <thrust/detail/temporary_buffer.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -177,10 +176,9 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
  *  \see free
  *  \see device_malloc
  */
-template<typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-pointer<void,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<DerivedPolicy> &system, std::size_t n);
-
+template <typename DerivedPolicy>
+_CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
 
 /*! This version of \p malloc allocates typed uninitialized storage associated with a given system.
  *
@@ -215,24 +213,25 @@ pointer<void,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<D
  *  \see free
  *  \see device_malloc
  */
-template<typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-pointer<T,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<DerivedPolicy> &system, std::size_t n);
-
+template <typename T, typename DerivedPolicy>
+_CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
 
 /*! \p get_temporary_buffer returns a pointer to storage associated with a given Thrust system sufficient to store up to
- *  \p n objects of type \c T. If not enough storage is available to accomodate \p n objects, an implementation may return
- *  a smaller buffer. The number of objects the returned buffer can accomodate is also returned.
+ *  \p n objects of type \c T. If not enough storage is available to accomodate \p n objects, an implementation may
+ * return a smaller buffer. The number of objects the returned buffer can accomodate is also returned.
  *
- *  Thrust uses \p get_temporary_buffer internally when allocating temporary storage required by algorithm implementations.
+ *  Thrust uses \p get_temporary_buffer internally when allocating temporary storage required by algorithm
+ * implementations.
  *
  *  The storage allocated with \p get_temporary_buffer must be returned to the system with \p return_temporary_buffer.
  *
  *  \param system The Thrust system with which to associate the storage.
  *  \param n The requested number of objects of type \c T the storage should accomodate.
- *  \return A pair \c p such that <tt>p.first</tt> is a pointer to the allocated storage and <tt>p.second</tt> is the number of
- *          contiguous objects of type \c T that the storage can accomodate. If no storage can be allocated, <tt>p.first</tt> if
- *          no storage can be obtained. The storage must be returned to the system using \p return_temporary_buffer.
+ *  \return A pair \c p such that <tt>p.first</tt> is a pointer to the allocated storage and <tt>p.second</tt> is the
+ * number of contiguous objects of type \c T that the storage can accomodate. If no storage can be allocated,
+ * <tt>p.first</tt> if no storage can be obtained. The storage must be returned to the system using \p
+ * return_temporary_buffer.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *
@@ -268,10 +267,11 @@ pointer<T,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<Deri
  *  \see malloc
  *  \see return_temporary_buffer
  */
-template<typename T, typename DerivedPolicy>
+template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE
-thrust::pair<thrust::pointer<T,DerivedPolicy>, typename thrust::pointer<T,DerivedPolicy>::difference_type>
-get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> &system, typename thrust::pointer<T,DerivedPolicy>::difference_type n);
+  thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+  get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
+                       typename thrust::pointer<T, DerivedPolicy>::difference_type n);
 
 /*! \p free deallocates the storage previously allocated by \p thrust::malloc.
  *
@@ -281,7 +281,8 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> 
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *
- *  \pre \p ptr shall have been returned by a previous call to <tt>thrust::malloc(system, n)</tt> or <tt>thrust::malloc<T>(system, n)</tt> for some type \c T.
+ *  \pre \p ptr shall have been returned by a previous call to <tt>thrust::malloc(system, n)</tt> or
+ * <tt>thrust::malloc<T>(system, n)</tt> for some type \c T.
  *
  *  The following code snippet demonstrates how to use \p free to deallocate a range of memory
  *  previously allocated with \p thrust::malloc.
@@ -301,17 +302,18 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> 
  *  thrust::free(device_sys, ptr);
  *  \endcode
  */
-template<typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE
-void free(const thrust::detail::execution_policy_base<DerivedPolicy> &system, Pointer ptr);
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
 
-
-/*! \p return_temporary_buffer deallocates storage associated with a given Thrust system previously allocated by \p get_temporary_buffer.
+/*! \p return_temporary_buffer deallocates storage associated with a given Thrust system previously allocated by \p
+ * get_temporary_buffer.
  *
- *  Thrust uses \p return_temporary_buffer internally when deallocating temporary storage required by algorithm implementations.
+ *  Thrust uses \p return_temporary_buffer internally when deallocating temporary storage required by algorithm
+ * implementations.
  *
  *  \param system The Thrust system with which the storage is associated.
- *  \param p A pointer previously returned by \p thrust::get_temporary_buffer. If \p ptr is null, \p return_temporary_buffer does nothing.
+ *  \param p A pointer previously returned by \p thrust::get_temporary_buffer. If \p ptr is null, \p
+ * return_temporary_buffer does nothing.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *
@@ -347,10 +349,9 @@ void free(const thrust::detail::execution_policy_base<DerivedPolicy> &system, Po
  *  \see free
  *  \see get_temporary_buffer
  */
-template<typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE
-void return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> &system, Pointer p, std::ptrdiff_t n);
-
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void return_temporary_buffer(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer p, std::ptrdiff_t n);
 
 /*! \p raw_pointer_cast creates a "raw" pointer from a pointer-like type,
  *  simply returning the wrapped pointer, should it exist.
@@ -359,11 +360,8 @@ void return_temporary_buffer(const thrust::detail::execution_policy_base<Derived
  *  \return <tt>ptr.get()</tt>, if the expression is well formed; <tt>ptr</tt>, otherwise.
  *  \see raw_reference_cast
  */
-template<typename Pointer>
-_CCCL_HOST_DEVICE
-typename thrust::detail::pointer_traits<Pointer>::raw_pointer
-  raw_pointer_cast(Pointer ptr);
-
+template <typename Pointer>
+_CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
 
 /*! \p raw_reference_cast creates a "raw" reference from a wrapped reference type,
  *  simply returning the underlying reference, should it exist.
@@ -376,11 +374,8 @@ typename thrust::detail::pointer_traits<Pointer>::raw_pointer
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
  */
-template<typename T>
-_CCCL_HOST_DEVICE
-typename detail::raw_reference<T>::type
-  raw_reference_cast(T &ref);
-
+template <typename T>
+_CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
 
 /*! \p raw_reference_cast creates a "raw" reference from a wrapped reference type,
  *  simply returning the underlying reference, should it exist.
@@ -393,10 +388,8 @@ typename detail::raw_reference<T>::type
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
  */
-template<typename T>
-_CCCL_HOST_DEVICE
-typename detail::raw_reference<const T>::type
-  raw_reference_cast(const T &ref);
+template <typename T>
+_CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);
 
 /*! \} // memory_management
  */

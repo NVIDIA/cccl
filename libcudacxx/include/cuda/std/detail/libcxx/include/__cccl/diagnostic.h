@@ -11,8 +11,8 @@
 #ifndef __CCCL_DIAGNOSTIC_H
 #define __CCCL_DIAGNOSTIC_H
 
-#include "../__cccl/compiler.h"
-#include "../__cccl/system_header.h"
+#include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
+#include <cuda/std/detail/libcxx/include/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -64,20 +64,20 @@
 
 // Convenient shortcuts to silence common warnings
 #if defined(_CCCL_COMPILER_CLANG)
-#  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
+#  define _CCCL_SUPPRESS_DEPRECATED_PUSH      \
     _CCCL_DIAG_PUSH                           \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated") \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations")
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #elif defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_ICC)
-#  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
-    _CCCL_DIAG_PUSH                           \
-    _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated")   \
+#  define _CCCL_SUPPRESS_DEPRECATED_PUSH    \
+    _CCCL_DIAG_PUSH                         \
+    _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated") \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-declarations")
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #elif defined(_CCCL_COMPILER_MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
-    _CCCL_DIAG_PUSH                           \
+    _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #else // !_CCCL_COMPILER_CLANG && !_CCCL_COMPILER_GCC

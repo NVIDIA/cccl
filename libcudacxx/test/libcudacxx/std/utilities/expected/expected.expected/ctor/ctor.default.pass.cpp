@@ -25,7 +25,8 @@
 
 #include "test_macros.h"
 
-struct NoDedefaultCtor {
+struct NoDedefaultCtor
+{
   NoDedefaultCtor() = delete;
 };
 
@@ -33,56 +34,75 @@ struct NoDedefaultCtor {
 static_assert(cuda::std::is_default_constructible_v<cuda::std::expected<int, int>>, "");
 static_assert(!cuda::std::is_default_constructible_v<cuda::std::expected<NoDedefaultCtor, int>>, "");
 
-struct MyInt {
+struct MyInt
+{
   int i;
 #if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
+  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
+  {
+    return lhs.i == rhs.i;
+  }
+  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
+  {
+    return lhs.i == rhs.i;
+  }
 #endif // TEST_STD_VER > 2017
 };
 
 template <class T, class E>
-__host__ __device__ constexpr void testDefaultCtor() {
+__host__ __device__ constexpr void testDefaultCtor()
+{
   cuda::std::expected<T, E> e;
   assert(e.has_value());
   assert(e.value() == T());
 }
 
 template <class T>
-__host__ __device__ constexpr void testTypes() {
+__host__ __device__ constexpr void testTypes()
+{
   testDefaultCtor<T, int>();
   testDefaultCtor<T, NoDedefaultCtor>();
 }
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   testTypes<int>();
   testTypes<MyInt>();
   return true;
 }
 
-__host__ __device__ void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except {};
-
-  struct Throwing {
-    Throwing() { throw Except{}; };
+struct Except
+{};
+struct Throwing
+{
+  Throwing()
+  {
+    throw Except{};
   };
-
-  try {
+};
+void test_exceptions()
+{
+  try
+  {
     cuda::std::expected<Throwing, int> u;
     assert(false);
-  } catch (Except) {
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
+  catch (const Except&)
+  {}
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

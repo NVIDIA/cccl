@@ -44,35 +44,17 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-#if _CCCL_STD_VER >= 2011
-
-template <typename...> struct voider { using type = void; };
+template <typename...>
+struct voider
+{
+  using type = void;
+};
 
 #if _CCCL_STD_VER >= 2017
 using std::void_t;
 #else
-template <typename... Ts> using void_t = typename voider<Ts...>::type;
-#endif
-
-#else // Older than C++11.
-
-template <
-  typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
->
-struct voider
-{
-  typedef void type;
-};
-
+template <typename... Ts>
+using void_t = typename voider<Ts...>::type;
 #endif
 
 /*! \} // type traits
@@ -82,4 +64,3 @@ struct voider
  */
 
 THRUST_NAMESPACE_END
-

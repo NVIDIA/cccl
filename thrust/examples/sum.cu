@@ -1,9 +1,9 @@
-#include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
-#include <thrust/generate.h>
-#include <thrust/reduce.h>
 #include <thrust/functional.h>
+#include <thrust/generate.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
+#include <thrust/reduce.h>
 
 int my_rand(void)
 {
@@ -22,8 +22,8 @@ int main(void)
   thrust::device_vector<int> d_vec = h_vec;
 
   // initial value of the reduction
-  int init = 0; 
- 
+  int init = 0;
+
   // binary operation used to reduce values
   thrust::plus<int> binary_op;
 

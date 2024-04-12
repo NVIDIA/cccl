@@ -37,16 +37,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/version.h>
-#include <thrust/detail/execution_policy.h>
-#include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/system/cuda/config.h>
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
-
-#if _CCCL_STD_VER >= 2011
-  #include <thrust/detail/dependencies_aware_execution_policy.h>
-#endif
+#include <thrust/detail/dependencies_aware_execution_policy.h>
+#include <thrust/detail/execution_policy.h>
+#include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/version.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -64,45 +61,55 @@ struct execution_policy<tag> : thrust::execution_policy<tag>
   typedef tag tag_type;
 };
 
-struct tag : execution_policy<tag>
-, thrust::detail::allocator_aware_execution_policy<cuda_cub::execution_policy>
-#if _CCCL_STD_VER >= 2011
-, thrust::detail::dependencies_aware_execution_policy<cuda_cub::execution_policy>
-#endif
+struct tag
+    : execution_policy<tag>
+    , thrust::detail::allocator_aware_execution_policy<cuda_cub::execution_policy>
+    , thrust::detail::dependencies_aware_execution_policy<cuda_cub::execution_policy>
 {};
 
 template <class Derived>
 struct execution_policy : thrust::execution_policy<Derived>
 {
   typedef tag tag_type;
-  operator tag() const { return tag(); }
+  operator tag() const
+  {
+    return tag();
+  }
 };
 
 } // namespace cuda_cub
 
-namespace system { namespace cuda { namespace detail
+namespace system
+{
+namespace cuda
+{
+namespace detail
 {
 
-using thrust::cuda_cub::tag;
 using thrust::cuda_cub::execution_policy;
+using thrust::cuda_cub::tag;
 
-}}} // namespace system::cuda::detail
+} // namespace detail
+} // namespace cuda
+} // namespace system
 
-namespace system { namespace cuda
+namespace system
+{
+namespace cuda
 {
 
-using thrust::cuda_cub::tag;
 using thrust::cuda_cub::execution_policy;
+using thrust::cuda_cub::tag;
 
-}} // namespace system::cuda
+} // namespace cuda
+} // namespace system
 
 namespace cuda
 {
 
-using thrust::cuda_cub::tag;
 using thrust::cuda_cub::execution_policy;
+using thrust::cuda_cub::tag;
 
 } // namespace cuda
 
 THRUST_NAMESPACE_END
-

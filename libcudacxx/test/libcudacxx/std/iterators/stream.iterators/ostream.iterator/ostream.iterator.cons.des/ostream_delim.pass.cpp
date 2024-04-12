@@ -15,13 +15,13 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
-
-struct MyTraits : cuda::std::char_traits<char> {};
+struct MyTraits : cuda::std::char_traits<char>
+{};
 
 typedef cuda::std::basic_ostringstream<char, MyTraits> StringStream;
 typedef cuda::std::basic_ostream<char, MyTraits> BasicStream;
@@ -30,21 +30,21 @@ void operator&(BasicStream const&) {}
 
 int main(int, char**)
 {
-    {
-        cuda::std::ostringstream outf;
-        cuda::std::ostream_iterator<int> i(outf, ", ");
-        assert(outf.good());
-    }
-    {
-        cuda::std::wostringstream outf;
-        cuda::std::ostream_iterator<double, wchar_t> i(outf, L", ");
-        assert(outf.good());
-    }
-    {
-        StringStream outf;
-        cuda::std::ostream_iterator<int, char, MyTraits> i(outf, ", ");
-        assert(outf.good());
-    }
+  {
+    cuda::std::ostringstream outf;
+    cuda::std::ostream_iterator<int> i(outf, ", ");
+    assert(outf.good());
+  }
+  {
+    cuda::std::wostringstream outf;
+    cuda::std::ostream_iterator<double, wchar_t> i(outf, L", ");
+    assert(outf.good());
+  }
+  {
+    StringStream outf;
+    cuda::std::ostream_iterator<int, char, MyTraits> i(outf, ", ");
+    assert(outf.good());
+  }
 
   return 0;
 }

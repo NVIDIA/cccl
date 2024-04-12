@@ -16,6 +16,30 @@ explode_libs() {
   jq -cr 'map(. as $o | {lib: $o.lib[]} + del($o.lib))'
 }
 
+# Filter out the libraries that are dirty
+filter_libs() {
+  all_libs=("libcudacxx" "thrust" "cub")
+  dirty_libs=()
+  for lib in "${all_libs[@]}"; do
+    dirty_var_name="${lib^^}_DIRTY"
+    # If the variable named in dirty_var_name is not set, set it to false:
+    : "${!dirty_var_name:=false}"
+    # Declare a nameref to the variable named in dirty_var_name
+    declare -n lib_dirty="$dirty_var_name"
+    # echo "${lib^^}_DIRTY: ${lib_dirty}" >> /dev/stderr
+    if [ "${lib_dirty}" = "true" ]; then
+      dirty_libs+=("$lib")
+    fi
+  done
+  # echo "Dirty libraries: ${dirty_libs[@]}" >> /dev/stderr
+
+  # Construct a regex to filter out the dirty libraries
+  dirty_lib_regex=$(IFS="|"; echo "${dirty_libs[*]}")
+  dirty_lib_regex="^(${dirty_lib_regex})\$"
+  jq_filter="map(select(.lib | test(\"$dirty_lib_regex\")))"
+  jq -cr "$jq_filter"
+}
+
 extract_matrix() {
   local file="$1"
   local type="$2"
@@ -34,7 +58,7 @@ extract_matrix() {
 
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
 
-  local clang_cuda_matrix="$(echo "$matrix" | jq -cr '.["clang-cuda"]' | explode_std_versions | explode_libs)"
+  local clang_cuda_matrix="$(echo "$matrix" | jq -cr '.["clang-cuda"]' | explode_std_versions | explode_libs | filter_libs)"
   write_output "CLANG_CUDA_MATRIX" "$clang_cuda_matrix"
   write_output "CCCL_INFRA_MATRIX" "$(echo "$matrix" | jq -cr '.["cccl-infra"]' )"
 }

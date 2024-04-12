@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -119,9 +118,8 @@ static const int enfile          = 9977;
 static const int emfile          = 9978;
 static const int emlink          = 9979;
 
-} // end detail
+} // namespace detail
 
-} // end system
+} // namespace system
 
 THRUST_NAMESPACE_END
-

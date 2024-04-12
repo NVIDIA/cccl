@@ -16,17 +16,20 @@
 #include <cuda/std/ranges>
 
 template <cuda::std::ranges::range R>
-__host__ __device__ consteval bool check_subsumption() {
+__host__ __device__ consteval bool check_subsumption()
+{
   return false;
 }
 
 template <cuda::std::ranges::borrowed_range R>
-__host__ __device__ consteval bool check_subsumption() {
+__host__ __device__ consteval bool check_subsumption()
+{
   return true;
 }
 
 static_assert(check_subsumption<int (&)[8]>());
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

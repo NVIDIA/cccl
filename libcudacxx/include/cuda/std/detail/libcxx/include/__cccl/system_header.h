@@ -11,7 +11,7 @@
 #ifndef __CCCL_SYSTEM_HEADER_H
 #define __CCCL_SYSTEM_HEADER_H
 
-#include "../__cccl/compiler.h"
+#include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
 
 // Enforce that cccl headers are treated as system headers
 #if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC) \

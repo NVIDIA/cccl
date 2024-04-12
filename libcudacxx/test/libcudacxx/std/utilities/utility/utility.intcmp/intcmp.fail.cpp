@@ -8,7 +8,6 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 
-
 // <utility>
 
 // template<class T, class U>
@@ -32,25 +31,43 @@
 // template<class R, class T>
 //   constexpr bool in_range(T t) noexcept;      // C++20
 
-#include <cuda/std/utility>
 #include <cuda/std/cstddef>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-struct NonEmptyT {
+struct NonEmptyT
+{
   int val;
-  __host__ __device__ NonEmptyT() : val(0) {}
-  __host__ __device__ NonEmptyT(int val) : val(val) {}
-  __host__ __device__ operator int&() { return val; }
-  __host__ __device__ operator int() const { return val; }
+  __host__ __device__ NonEmptyT()
+      : val(0)
+  {}
+  __host__ __device__ NonEmptyT(int val)
+      : val(val)
+  {}
+  __host__ __device__ operator int&()
+  {
+    return val;
+  }
+  __host__ __device__ operator int() const
+  {
+    return val;
+  }
 };
 
-enum ColorT { red, green, blue };
+enum ColorT
+{
+  red,
+  green,
+  blue
+};
 
-struct EmptyT {};
+struct EmptyT
+{};
 
 template <class T>
-__host__ __device__ constexpr void test() {
+__host__ __device__ constexpr void test()
+{
   cuda::std::cmp_equal(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(int(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
@@ -66,15 +83,19 @@ __host__ __device__ constexpr void test() {
   cuda::std::cmp_greater(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_greater'}}
   cuda::std::cmp_greater(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_greater'}}
   cuda::std::cmp_greater(int(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_greater'}}
-  cuda::std::cmp_greater_equal(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_greater_equal'}}
-  cuda::std::cmp_greater_equal(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_greater_equal'}}
-  cuda::std::cmp_greater_equal(int(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_greater_equal'}}
+  cuda::std::cmp_greater_equal(T(), T()); // expected-error 10-11 {{no matching function for call to
+                                          // 'cmp_greater_equal'}}
+  cuda::std::cmp_greater_equal(T(), int()); // expected-error 10-11 {{no matching function for call to
+                                            // 'cmp_greater_equal'}}
+  cuda::std::cmp_greater_equal(int(), T()); // expected-error 10-11 {{no matching function for call to
+                                            // 'cmp_greater_equal'}}
   cuda::std::in_range<T>(int()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
 }
 #ifndef TEST_HAS_NO_CHAR8_T
 template <class T>
-__host__ __device__ constexpr void test_char8t() {
+__host__ __device__ constexpr void test_char8t()
+{
   cuda::std::cmp_equal(T(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(int(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
@@ -99,7 +120,8 @@ __host__ __device__ constexpr void test_char8t() {
 #endif // TEST_HAS_NO_CHAR8_T
 
 template <class T>
-__host__ __device__ constexpr void test_uchars() {
+__host__ __device__ constexpr void test_uchars()
+{
   cuda::std::cmp_equal(T(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(int(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
@@ -122,7 +144,8 @@ __host__ __device__ constexpr void test_uchars() {
   cuda::std::in_range<int>(T()); // expected-error 2 {{no matching function for call to 'in_range'}}
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test<bool>();
   test<char>();
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS

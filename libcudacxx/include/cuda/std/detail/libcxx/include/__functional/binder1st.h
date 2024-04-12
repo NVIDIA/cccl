@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
 #define _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/unary_function.h"
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -36,27 +34,34 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 binder1st
     : public __unary_function<typename __Operation::second_argument_type, typename __Operation::result_type>
 {
 protected:
-    __Operation                               op;
-    typename __Operation::first_argument_type value;
+  __Operation op;
+  typename __Operation::first_argument_type value;
+
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY binder1st(const __Operation& __x,
-                               const typename __Operation::first_argument_type __y)
-        : op(__x), value(__y) {}
-    _CCCL_EXEC_CHECK_DISABLE
-    _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type operator()
-        (typename __Operation::second_argument_type& __x) const
-            {return op(value, __x);}
-    _CCCL_EXEC_CHECK_DISABLE
-    _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type operator()
-        (const typename __Operation::second_argument_type& __x) const
-            {return op(value, __x);}
+  _LIBCUDACXX_INLINE_VISIBILITY binder1st(const __Operation& __x, const typename __Operation::first_argument_type __y)
+      : op(__x)
+      , value(__y)
+  {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type
+  operator()(typename __Operation::second_argument_type& __x) const
+  {
+    return op(value, __x);
+  }
+  _CCCL_EXEC_CHECK_DISABLE
+  _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type
+  operator()(const typename __Operation::second_argument_type& __x) const
+  {
+    return op(value, __x);
+  }
 };
 
 template <class __Operation, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY
-binder1st<__Operation>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY binder1st<__Operation>
 bind1st(const __Operation& __op, const _Tp& __x)
-    {return binder1st<__Operation>(__op, __x);}
+{
+  return binder1st<__Operation>(__op, __x);
+}
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 

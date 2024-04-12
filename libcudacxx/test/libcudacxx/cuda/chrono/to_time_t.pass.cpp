@@ -13,19 +13,14 @@
 
 // time_t to_time_t(const time_point& t);
 
-#include <nv/target>
-
 #include <cuda/std/chrono>
 
 #include "test_macros.h"
+#include <nv/target>
 
 int main(int, char**)
 {
-NV_IF_TARGET(
-NV_IS_HOST, (
-    typedef ::std::chrono::system_clock C;
-    cuda::std::time_t t1 = C::to_time_t(C::now());
-    unused(t1);
-));
+  NV_IF_TARGET(NV_IS_HOST,
+               (typedef ::std::chrono::system_clock C; cuda::std::time_t t1 = C::to_time_t(C::now()); unused(t1);));
   return 0;
 }

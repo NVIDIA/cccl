@@ -26,59 +26,41 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits.h>
 #include <thrust/random/uniform_int_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
-#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
 
+template <typename IntType>
+_CCCL_HOST_DEVICE uniform_int_distribution<IntType>::uniform_int_distribution(IntType a, IntType b)
+    : m_param(a, b)
+{} // end uniform_int_distribution::uniform_int_distribution()
 
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  uniform_int_distribution<IntType>
-    ::uniform_int_distribution(IntType a, IntType b)
-      :m_param(a,b)
-{
-} // end uniform_int_distribution::uniform_int_distribution()
+template <typename IntType>
+_CCCL_HOST_DEVICE uniform_int_distribution<IntType>::uniform_int_distribution(const param_type& parm)
+    : m_param(parm)
+{} // end uniform_int_distribution::uniform_int_distribution()
 
+template <typename IntType>
+_CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::reset(void)
+{} // end uniform_int_distribution::reset()
 
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  uniform_int_distribution<IntType>
-    ::uniform_int_distribution(const param_type &parm)
-      :m_param(parm)
-{
-} // end uniform_int_distribution::uniform_int_distribution()
-
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  void uniform_int_distribution<IntType>
-    ::reset(void)
-{
-} // end uniform_int_distribution::reset()
-
-
-template<typename IntType>
-  template<typename UniformRandomNumberGenerator>
-    _CCCL_HOST_DEVICE
-    typename uniform_int_distribution<IntType>::result_type
-      uniform_int_distribution<IntType>
-        ::operator()(UniformRandomNumberGenerator &urng)
+template <typename IntType>
+template <typename UniformRandomNumberGenerator>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
+uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng)
 {
   return operator()(urng, m_param);
 } // end uniform_int_distribution::operator()()
 
-
-template<typename IntType>
-  template<typename UniformRandomNumberGenerator>
-    _CCCL_HOST_DEVICE
-    typename uniform_int_distribution<IntType>::result_type
-      uniform_int_distribution<IntType>
-        ::operator()(UniformRandomNumberGenerator &urng, const param_type &parm)
+template <typename IntType>
+template <typename UniformRandomNumberGenerator>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
+uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng, const param_type& parm)
 {
   // XXX this implementation is somewhat hacky and will skip
   //     values if the range of the RNG is smaller than the range of the distribution
@@ -96,87 +78,64 @@ template<typename IntType>
   return static_cast<result_type>(real_dist(urng));
 } // end uniform_int_distribution::operator()()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  typename uniform_int_distribution<IntType>::result_type
-    uniform_int_distribution<IntType>
-      ::a(void) const
+template <typename IntType>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
+uniform_int_distribution<IntType>::a(void) const
 {
   return m_param.first;
 } // end uniform_int_distribution<IntType>::a()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  typename uniform_int_distribution<IntType>::result_type
-    uniform_int_distribution<IntType>
-      ::b(void) const
+template <typename IntType>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
+uniform_int_distribution<IntType>::b(void) const
 {
   return m_param.second;
 } // end uniform_int_distribution::b()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  typename uniform_int_distribution<IntType>::param_type
-    uniform_int_distribution<IntType>
-      ::param(void) const
+template <typename IntType>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::param_type
+uniform_int_distribution<IntType>::param(void) const
 {
   return m_param;
 } // end uniform_int_distribution::param()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  void uniform_int_distribution<IntType>
-    ::param(const param_type &parm)
+template <typename IntType>
+_CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::param(const param_type& parm)
 {
   m_param = parm;
 } // end uniform_int_distribution::param()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  typename uniform_int_distribution<IntType>::result_type
-    uniform_int_distribution<IntType>
-      ::min THRUST_PREVENT_MACRO_SUBSTITUTION (void) const
+template <typename IntType>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::min
+THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
 {
   return a();
 } // end uniform_int_distribution::min()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  typename uniform_int_distribution<IntType>::result_type
-    uniform_int_distribution<IntType>
-      ::max THRUST_PREVENT_MACRO_SUBSTITUTION (void) const
+template <typename IntType>
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::max
+THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
 {
   return b();
 } // end uniform_int_distribution::max()
 
-
-template<typename IntType>
-  _CCCL_HOST_DEVICE
-  bool uniform_int_distribution<IntType>
-    ::equal(const uniform_int_distribution &rhs) const
+template <typename IntType>
+_CCCL_HOST_DEVICE bool uniform_int_distribution<IntType>::equal(const uniform_int_distribution& rhs) const
 {
   return param() == rhs.param();
 }
 
-
-template<typename IntType>
-  template<typename CharT, typename Traits>
-    std::basic_ostream<CharT,Traits>&
-      uniform_int_distribution<IntType>
-        ::stream_out(std::basic_ostream<CharT,Traits> &os) const
+template <typename IntType>
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>&
+uniform_int_distribution<IntType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
-  typedef std::basic_ostream<CharT,Traits> ostream_type;
-  typedef typename ostream_type::ios_base  ios_base;
+  typedef std::basic_ostream<CharT, Traits> ostream_type;
+  typedef typename ostream_type::ios_base ios_base;
 
   // save old flags and fill character
   const typename ios_base::fmtflags flags = os.flags();
-  const CharT fill = os.fill();
+  const CharT fill                        = os.fill();
 
   const CharT space = os.widen(' ');
   os.flags(ios_base::dec | ios_base::fixed | ios_base::left);
@@ -190,15 +149,12 @@ template<typename IntType>
   return os;
 }
 
-
-template<typename IntType>
-  template<typename CharT, typename Traits>
-    std::basic_istream<CharT,Traits>&
-      uniform_int_distribution<IntType>
-        ::stream_in(std::basic_istream<CharT,Traits> &is)
+template <typename IntType>
+template <typename CharT, typename Traits>
+std::basic_istream<CharT, Traits>& uniform_int_distribution<IntType>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
-  typedef std::basic_istream<CharT,Traits> istream_type;
-  typedef typename istream_type::ios_base  ios_base;
+  typedef std::basic_istream<CharT, Traits> istream_type;
+  typedef typename istream_type::ios_base ios_base;
 
   // save old flags
   const typename ios_base::fmtflags flags = is.flags();
@@ -212,46 +168,34 @@ template<typename IntType>
   return is;
 }
 
-
-template<typename IntType>
-_CCCL_HOST_DEVICE
-bool operator==(const uniform_int_distribution<IntType> &lhs,
-                const uniform_int_distribution<IntType> &rhs)
+template <typename IntType>
+_CCCL_HOST_DEVICE bool
+operator==(const uniform_int_distribution<IntType>& lhs, const uniform_int_distribution<IntType>& rhs)
 {
-  return thrust::random::detail::random_core_access::equal(lhs,rhs);
+  return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
-
-template<typename IntType>
-_CCCL_HOST_DEVICE
-bool operator!=(const uniform_int_distribution<IntType> &lhs,
-                const uniform_int_distribution<IntType> &rhs)
+template <typename IntType>
+_CCCL_HOST_DEVICE bool
+operator!=(const uniform_int_distribution<IntType>& lhs, const uniform_int_distribution<IntType>& rhs)
 {
   return !(lhs == rhs);
 }
 
-
-template<typename IntType,
-         typename CharT, typename Traits>
-std::basic_ostream<CharT,Traits>&
-operator<<(std::basic_ostream<CharT,Traits> &os,
-           const uniform_int_distribution<IntType> &d)
+template <typename IntType, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_int_distribution<IntType>& d)
 {
-  return thrust::random::detail::random_core_access::stream_out(os,d);
+  return thrust::random::detail::random_core_access::stream_out(os, d);
 }
 
-
-template<typename IntType,
-         typename CharT, typename Traits>
-std::basic_istream<CharT,Traits>&
-operator>>(std::basic_istream<CharT,Traits> &is,
-           uniform_int_distribution<IntType> &d)
+template <typename IntType, typename CharT, typename Traits>
+std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntType>& d)
 {
-  return thrust::random::detail::random_core_access::stream_in(is,d);
+  return thrust::random::detail::random_core_access::stream_in(is, d);
 }
 
-
-} // end random
+} // namespace random
 
 THRUST_NAMESPACE_END
-

@@ -11,7 +11,7 @@
 #ifndef _CUDA_DISCARD_MEMORY
 #define _CUDA_DISCARD_MEMORY
 
-#include "__cccl_config"
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "std/cstdint"
-#include "ptx"
+#include <cuda/std/cstdint>
+#include <cuda/ptx>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

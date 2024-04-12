@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_DEFAULT_SENTINEL_H
 #define _LIBCUDACXX___ITERATOR_DEFAULT_SENTINEL_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,7 +25,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2014
 
-struct default_sentinel_t { };
+struct default_sentinel_t
+{};
 inline constexpr default_sentinel_t default_sentinel{};
 
 #endif // _CCCL_STD_VER > 2014

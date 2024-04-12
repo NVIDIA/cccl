@@ -12,19 +12,20 @@
 // template<class I1, class I2>
 // concept indirectly_swappable;
 
+#include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
-#include <cuda/std/concepts>
-
-template<class I1, class I2>
+template <class I1, class I2>
   requires cuda::std::indirectly_readable<I1> && cuda::std::indirectly_readable<I2>
-__host__ __device__ constexpr bool indirectly_swappable_subsumption() {
+__host__ __device__ constexpr bool indirectly_swappable_subsumption()
+{
   return false;
 }
 
-template<class I1, class I2>
+template <class I1, class I2>
   requires cuda::std::indirectly_swappable<I1, I2>
-__host__ __device__ constexpr bool indirectly_swappable_subsumption() {
+__host__ __device__ constexpr bool indirectly_swappable_subsumption()
+{
   return true;
 }
 

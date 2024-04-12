@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// XFAIL: nvrtc || nvcc-12.0 || nvcc-12.1 || nvcc-12.2 || nvcc-12.3
+// XFAIL: nvcc-12.0 || nvcc-12.1 || nvcc-12.2 || nvcc-12.3
 // nvbug 3885350
 
 // template<class In, class Out>
@@ -16,14 +16,16 @@
 
 #include <cuda/std/iterator>
 
-template<cuda::std::indirectly_readable I, class O>
-__host__ __device__ constexpr bool indirectly_copyable_subsumption() {
+template <cuda::std::indirectly_readable I, class O>
+__host__ __device__ constexpr bool indirectly_copyable_subsumption()
+{
   return false;
 }
 
-template<class I, class O>
+template <class I, class O>
   requires cuda::std::indirectly_copyable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_subsumption() {
+__host__ __device__ constexpr bool indirectly_copyable_subsumption()
+{
   return true;
 }
 

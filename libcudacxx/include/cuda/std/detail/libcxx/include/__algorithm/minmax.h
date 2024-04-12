@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_MINMAX_H
 #define _LIBCUDACXX___ALGORITHM_MINMAX_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,27 +20,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/minmax_element.h"
-#include "../__functional/identity.h"
-#include "../__type_traits/is_callable.h"
-#include "../__utility/pair.h"
-#include "../initializer_list"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/minmax_element.h>
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_callable.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
+#include <cuda/std/initializer_list>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-  pair<const _Tp&, const _Tp&>
-  minmax(const _Tp& __a, const _Tp& __b, _Compare __comp)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<const _Tp&, const _Tp&>
+minmax(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__b, __a) ? pair<const _Tp&, const _Tp&>(__b, __a) : pair<const _Tp&, const _Tp&>(__a, __b);
 }
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
-  pair<const _Tp&, const _Tp&>
-  minmax(const _Tp& __a, const _Tp& __b)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<const _Tp&, const _Tp&>
+minmax(const _Tp& __a, const _Tp& __b)
 {
   return _CUDA_VSTD::minmax(__a, __b, __less{});
 }
@@ -50,7 +46,7 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONST
 #ifndef _LIBCUDACXX_CXX03_LANG
 
 template <class _Tp, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair<_Tp, _Tp>
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Tp, _Tp>
 minmax(initializer_list<_Tp> __t, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, _Tp, _Tp>::value, "The comparator has to be callable");
@@ -60,7 +56,7 @@ minmax(initializer_list<_Tp> __t, _Compare __comp)
 }
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair<_Tp, _Tp>
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Tp, _Tp>
 minmax(initializer_list<_Tp> __t)
 {
   return _CUDA_VSTD::minmax(__t, __less{});

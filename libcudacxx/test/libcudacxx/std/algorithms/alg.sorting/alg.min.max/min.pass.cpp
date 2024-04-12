@@ -20,12 +20,13 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& a, const T& b,
-                                                   const T& x) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& a, const T& b, const T& x)
+{
   assert(&cuda::std::min(a, b) == &x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   {
     int x = 0;
     int y = 0;
@@ -48,7 +49,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

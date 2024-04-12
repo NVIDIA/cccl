@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_DISJUNCTION_H
 #define _LIBCUDACXX___TYPE_TRAITS_DISJUNCTION_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -30,14 +28,16 @@ template <bool>
 struct _OrImpl;
 
 template <>
-struct _OrImpl<true> {
+struct _OrImpl<true>
+{
   template <class _Res, class _First, class... _Rest>
   using _Result _LIBCUDACXX_NODEBUG_TYPE =
-      typename _OrImpl<!bool(_First::value) && sizeof...(_Rest) != 0>::template _Result<_First, _Rest...>;
+    typename _OrImpl<!bool(_First::value) && sizeof...(_Rest) != 0>::template _Result<_First, _Rest...>;
 };
 
 template <>
-struct _OrImpl<false> {
+struct _OrImpl<false>
+{
   template <class _Res, class...>
   using _Result = _Res;
 };
@@ -53,16 +53,19 @@ using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _OrImpl<sizeof...(_Args) != 0>::te
 
 #if _CCCL_STD_VER > 2011
 
-#ifdef _CCCL_COMPILER_MSVC
+#  ifdef _CCCL_COMPILER_MSVC
 template <class... _Args>
-struct disjunction : false_type {};
+struct disjunction : false_type
+{};
 
 template <class _First, class... _Rest>
-struct disjunction<_First, _Rest...> : _OrImpl<true>::template _Result<false_type, _First, _Rest...> {};
-#else
+struct disjunction<_First, _Rest...> : _OrImpl<true>::template _Result<false_type, _First, _Rest...>
+{};
+#  else
 template <class... _Args>
-struct disjunction : _Or<_Args...> {};
-#endif // !MSVC
+struct disjunction : _Or<_Args...>
+{};
+#  endif // !MSVC
 
 template <class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;

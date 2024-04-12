@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_ERASE_IF_CONTAINER_H
 #define _LIBCUDACXX___ITERATOR_ERASE_IF_CONTAINER_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,17 +24,22 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Container, class _Predicate>
-_LIBCUDACXX_INLINE_VISIBILITY
-typename _Container::size_type
-__libcpp_erase_if_container(_Container& __c, _Predicate& __pred) {
+_LIBCUDACXX_INLINE_VISIBILITY typename _Container::size_type
+__libcpp_erase_if_container(_Container& __c, _Predicate& __pred)
+{
   typename _Container::size_type __old_size = __c.size();
 
   const typename _Container::iterator __last = __c.end();
-  for (typename _Container::iterator __iter = __c.begin(); __iter != __last;) {
+  for (typename _Container::iterator __iter = __c.begin(); __iter != __last;)
+  {
     if (__pred(*__iter))
+    {
       __iter = __c.erase(__iter);
+    }
     else
+    {
       ++__iter;
+    }
   }
 
   return __old_size - __c.size();

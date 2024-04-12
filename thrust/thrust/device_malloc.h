@@ -30,6 +30,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/device_ptr.h>
+
 #include <cstddef> // for std::size_t
 
 THRUST_NAMESPACE_BEGIN
@@ -96,8 +97,8 @@ inline thrust::device_ptr<void> device_malloc(const std::size_t n);
  *  \see device_ptr
  *  \see device_free
  */
-template<typename T>
-  inline thrust::device_ptr<T> device_malloc(const std::size_t n);
+template <typename T>
+inline thrust::device_ptr<T> device_malloc(const std::size_t n);
 
 /*! \} // memory_management
  */
@@ -105,4 +106,3 @@ template<typename T>
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/device_malloc.inl>
-

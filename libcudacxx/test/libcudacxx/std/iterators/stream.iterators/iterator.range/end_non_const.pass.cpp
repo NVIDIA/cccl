@@ -12,17 +12,17 @@
 // template <class C> auto end(C& c) -> decltype(c.end());
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-#include <cuda/std/vector>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/vector>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 int main(int, char**)
 {
-    int ia[] = {1, 2, 3};
-    cuda::std::vector<int> v(ia, ia + sizeof(ia)/sizeof(ia[0]));
-    cuda::std::vector<int>::iterator i = end(v);
-    assert(i == v.end());
+  int ia[] = {1, 2, 3};
+  cuda::std::vector<int> v(ia, ia + sizeof(ia) / sizeof(ia[0]));
+  cuda::std::vector<int>::iterator i = end(v);
+  assert(i == v.end());
 
   return 0;
 }

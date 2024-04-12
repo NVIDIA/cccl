@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,48 +35,41 @@ namespace detail
 namespace generic
 {
 
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
+_CCCL_HOST_DEVICE void
+scatter(thrust::execution_policy<DerivedPolicy>& exec,
+        InputIterator1 first,
+        InputIterator1 last,
+        InputIterator2 map,
+        RandomAccessIterator output);
 
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename RandomAccessIterator>
-_CCCL_HOST_DEVICE
-  void scatter(thrust::execution_policy<DerivedPolicy> &exec,
-               InputIterator1 first,
-               InputIterator1 last,
-               InputIterator2 map,
-               RandomAccessIterator output);
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename RandomAccessIterator>
+_CCCL_HOST_DEVICE void scatter_if(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 map,
+  InputIterator3 stencil,
+  RandomAccessIterator output);
 
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename InputIterator3,
-         typename RandomAccessIterator>
-_CCCL_HOST_DEVICE
-  void scatter_if(thrust::execution_policy<DerivedPolicy> &exec,
-                  InputIterator1 first,
-                  InputIterator1 last,
-                  InputIterator2 map,
-                  InputIterator3 stencil,
-                  RandomAccessIterator output);
-
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename InputIterator3,
-         typename RandomAccessIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-  void scatter_if(thrust::execution_policy<DerivedPolicy> &exec,
-                  InputIterator1 first,
-                  InputIterator1 last,
-                  InputIterator2 map,
-                  InputIterator3 stencil,
-                  RandomAccessIterator output,
-                  Predicate pred);
-
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename RandomAccessIterator,
+          typename Predicate>
+_CCCL_HOST_DEVICE void scatter_if(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 map,
+  InputIterator3 stencil,
+  RandomAccessIterator output,
+  Predicate pred);
 
 } // end namespace generic
 } // end namespace detail
@@ -85,4 +77,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/scatter.inl>
-

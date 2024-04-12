@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
 #define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/is_trivially_constructible.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_constructible.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -31,26 +29,28 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_default_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v = _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp);
-#endif
+_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v =
+  _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp);
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_default_constructible
-    : public is_trivially_constructible<_Tp>
-    {};
-
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v
-    = is_trivially_default_constructible<_Tp>::value;
-#endif
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_default_constructible : public is_trivially_constructible<_Tp>
+{};
 
-#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+template <class _Tp>
+_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v =
+  is_trivially_default_constructible<_Tp>::value;
+#  endif
+
+#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) &&
+       // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

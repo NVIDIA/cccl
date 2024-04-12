@@ -10,13 +10,13 @@
 #ifndef _CUDA_STD_EXPECTED
 #define _CUDA_STD_EXPECTED
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
-#include "detail/__pragma_push"
+#include <cuda/std/detail/__pragma_push>
 
-#include "detail/libcxx/include/expected"
+#include <cuda/std/detail/libcxx/include/expected>
 
-#include "detail/__pragma_pop"
+#include <cuda/std/detail/__pragma_pop>
 
 #endif //_CUDA_STD_EXPECTED
 

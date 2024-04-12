@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TUPLE_TUPLE_ELEMENT_H
 #define _LIBCUDACXX___TUPLE_TUPLE_ELEMENT_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_types.h"
-#include "../__type_traits/add_const.h"
-#include "../__type_traits/add_cv.h"
-#include "../__type_traits/add_volatile.h"
-#include "../cstddef"
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_types.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_volatile.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,7 +55,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
 
 #ifdef _CCCL_COMPILER_MSVC
 
-namespace __indexer_detail {
+namespace __indexer_detail
+{
 
 template <size_t _Idx, class... _Types>
 struct _nth_of;
@@ -89,7 +88,8 @@ using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename __indexer_detail::
 
 #elif !__has_builtin(__type_pack_element)
 
-namespace __indexer_detail {
+namespace __indexer_detail
+{
 
 template <size_t _Idx, class _Tp>
 struct __indexed
@@ -110,13 +110,12 @@ _LIBCUDACXX_INLINE_VISIBILITY __indexed<_Idx, _Tp> __at_index(__indexed<_Idx, _T
 } // namespace __indexer_detail
 
 template <size_t _Idx, class... _Types>
-using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE =
-    typename decltype(__indexer_detail::__at_index<_Idx>(__indexer_detail::__indexer< __tuple_types<_Types...>,
-        __make_tuple_indices_t<sizeof...(_Types)>>{}))::type;
+using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename decltype(__indexer_detail::__at_index<_Idx>(
+  __indexer_detail::__indexer<__tuple_types<_Types...>, __make_tuple_indices_t<sizeof...(_Types)>>{}))::type;
 #endif
 
 template <size_t _Ip, class... _Types>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, __tuple_types<_Types...> >
+struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, __tuple_types<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
   typedef _LIBCUDACXX_NODEBUG_TYPE __type_pack_element<_Ip, _Types...> type;

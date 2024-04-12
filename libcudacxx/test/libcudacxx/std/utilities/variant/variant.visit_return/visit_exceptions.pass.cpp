@@ -24,30 +24,36 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-struct almost_string {
-    const char * ptr;
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct almost_string
+{
+  const char* ptr;
 
-    __host__ __device__
-    almost_string(const char * ptr) : ptr(ptr) {}
+  __host__ __device__ almost_string(const char* ptr)
+      : ptr(ptr)
+  {}
 
-    __host__ __device__
-    friend bool operator==(const almost_string & lhs, const almost_string & rhs) {
-        return lhs.ptr == rhs.ptr;
-    }
+  __host__ __device__ friend bool operator==(const almost_string& lhs, const almost_string& rhs)
+  {
+    return lhs.ptr == rhs.ptr;
+  }
 };
 
 template <typename ReturnType>
-__host__ __device__
-void test_exceptions() {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions()
+{
   ReturnArity obj{};
-  auto test = [&](auto &&... args) {
-    try {
+  auto test = [&](auto&&... args) {
+    try
+    {
       cuda::std::visit<ReturnType>(obj, args...);
-    } catch (const cuda::std::bad_variant_access &) {
-      return true;
-    } catch (...) {
     }
+    catch (const cuda::std::bad_variant_access&)
+    {
+      return true;
+    }
+    catch (...)
+    {}
     return false;
   };
   {
@@ -57,24 +63,24 @@ void test_exceptions() {
     assert(test(v));
   }
   {
-    using V = cuda::std::variant<int, MakeEmptyT>;
-    using V2 = cuda::std::variant<long, almost_string, void *>;
+    using V  = cuda::std::variant<int, MakeEmptyT>;
+    using V2 = cuda::std::variant<long, almost_string, void*>;
     V v;
     makeEmpty(v);
     V2 v2("hello");
     assert(test(v, v2));
   }
   {
-    using V = cuda::std::variant<int, MakeEmptyT>;
-    using V2 = cuda::std::variant<long, almost_string, void *>;
+    using V  = cuda::std::variant<int, MakeEmptyT>;
+    using V2 = cuda::std::variant<long, almost_string, void*>;
     V v;
     makeEmpty(v);
     V2 v2("hello");
     assert(test(v2, v));
   }
   {
-    using V = cuda::std::variant<int, MakeEmptyT>;
-    using V2 = cuda::std::variant<long, almost_string, void *, MakeEmptyT>;
+    using V  = cuda::std::variant<int, MakeEmptyT>;
+    using V2 = cuda::std::variant<long, almost_string, void*, MakeEmptyT>;
     V v;
     makeEmpty(v);
     V2 v2;
@@ -96,12 +102,15 @@ void test_exceptions() {
     makeEmpty(v4);
     assert(test(v1, v2, v3, v4));
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
-  test_exceptions<void>();
-  test_exceptions<int>();
+int main(int, char**)
+{
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions<void>();))
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions<int>();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

@@ -25,10 +25,8 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_copy.cuh>
 #include <cub/util_ptx.cuh>
-
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -55,12 +53,12 @@
  */
 template <typename T>
 void GenerateRandomData(
-  T *rand_out,
+  T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val          = std::numeric_limits<T>::min(),
-  const T max_rand_val          = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type * = nullptr)
+  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
+  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed                                                  = 320981U,
+  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);
@@ -78,8 +76,8 @@ void GenerateRandomData(
  * sequence of input-ranges.
  */
 template <typename RangeOffsetT, typename ByteOffsetT, typename RangeSizeT>
-c2h::host_vector<ByteOffsetT> GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT> &range_sizes,
-                                                 const std::uint_fast32_t seed = 320981U)
+c2h::host_vector<ByteOffsetT>
+GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const std::uint_fast32_t seed = 320981U)
 {
   RangeOffsetT num_ranges = static_cast<RangeOffsetT>(range_sizes.size());
 
@@ -117,14 +115,14 @@ c2h::host_vector<ByteOffsetT> GetShuffledRangeOffsets(const c2h::host_vector<Ran
 
 template <size_t n, typename... T>
 typename std::enable_if<n >= thrust::tuple_size<thrust::tuple<T...>>::value>::type
-print_tuple(std::ostream &, const thrust::tuple<T...> &)
+print_tuple(std::ostream&, const thrust::tuple<T...>&)
 {}
 
 template <size_t n, typename... T>
 typename std::enable_if<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>::type
-print_tuple(std::ostream &os, const thrust::tuple<T...> &tup)
+print_tuple(std::ostream& os, const thrust::tuple<T...>& tup)
 {
-  CUB_IF_CONSTEXPR(n != 0)
+  _CCCL_IF_CONSTEXPR (n != 0)
   {
     os << ", ";
   }
@@ -133,7 +131,7 @@ print_tuple(std::ostream &os, const thrust::tuple<T...> &tup)
 }
 
 template <typename... T>
-std::ostream &operator<<(std::ostream &os, const thrust::tuple<T...> &tup)
+std::ostream& operator<<(std::ostream& os, const thrust::tuple<T...>& tup)
 {
   os << "[";
   print_tuple<0>(os, tup);
@@ -209,10 +207,7 @@ std::string TestDataGenToString(TestDataGen gen)
  * @tparam ByteOffsetT Type used for indexing into elements over *all* the ranges' sizes
  */
 template <typename AtomicT, typename RangeOffsetT, typename RangeSizeT, typename ByteOffsetT>
-void RunTest(RangeOffsetT num_ranges,
-             RangeSizeT min_range_size,
-             RangeSizeT max_range_size,
-             TestDataGen output_gen)
+void RunTest(RangeOffsetT num_ranges, RangeSizeT min_range_size, RangeSizeT max_range_size, TestDataGen output_gen)
 try
 {
   // Range segment data (their offsets and sizes)
@@ -249,26 +244,22 @@ try
 
   // Get temporary storage requirements
   size_t temp_storage_bytes = 0;
-  CubDebugExit(cub::DeviceCopy::Batched(nullptr,
-                                        temp_storage_bytes,
-                                        d_range_srcs,
-                                        d_range_dsts,
-                                        d_range_sizes.cbegin(),
-                                        num_ranges));
+  CubDebugExit(cub::DeviceCopy::Batched(
+    nullptr, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes.cbegin(), num_ranges));
 
   c2h::device_vector<std::uint8_t> d_temp_storage(temp_storage_bytes);
-
 
   c2h::host_vector<AtomicT> h_out(num_total_items);
   c2h::host_vector<AtomicT> h_gpu_results(num_total_items);
 
   // Invoke device-side algorithm being under test
-  CubDebugExit(cub::DeviceCopy::Batched(thrust::raw_pointer_cast(d_temp_storage.data()),
-                                        temp_storage_bytes,
-                                        d_range_srcs,
-                                        d_range_dsts,
-                                        d_range_sizes.cbegin(),
-                                        num_ranges));
+  CubDebugExit(cub::DeviceCopy::Batched(
+    thrust::raw_pointer_cast(d_temp_storage.data()),
+    temp_storage_bytes,
+    d_range_srcs,
+    d_range_dsts,
+    d_range_sizes.cbegin(),
+    num_ranges));
 
   // Copy back the output range
   h_gpu_results = d_out;
@@ -279,8 +270,7 @@ try
     std::copy(d_range_srcs[i], d_range_srcs[i] + h_range_sizes[i], h_out.begin() + h_offsets[i]);
   }
 
-  const auto it_pair =
-    std::mismatch(h_gpu_results.cbegin(), h_gpu_results.cend(), h_out.cbegin());
+  const auto it_pair = std::mismatch(h_gpu_results.cbegin(), h_gpu_results.cend(), h_out.cbegin());
 
   if (it_pair.first != h_gpu_results.cend())
   {
@@ -291,11 +281,10 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  (void)e;
+  (void) e;
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
   std::cout
-    << "Skipping test 'RunTest("
-    << num_ranges << ", " //
+    << "Skipping test 'RunTest(" << num_ranges << ", " //
     << min_range_size << ", " //
     << max_range_size << ", " //
     << TestDataGenToString(output_gen) << ")" //
@@ -321,9 +310,9 @@ struct object_with_non_trivial_ctor
     field = f;
   }
 
-  object_with_non_trivial_ctor(const object_with_non_trivial_ctor &x) = default;
+  object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
-  __host__ __device__ object_with_non_trivial_ctor &operator=(const object_with_non_trivial_ctor &x)
+  __host__ __device__ object_with_non_trivial_ctor& operator=(const object_with_non_trivial_ctor& x)
   {
     if (magic == MAGIC)
     {
@@ -336,8 +325,7 @@ struct object_with_non_trivial_ctor
 void nontrivial_constructor_test()
 {
   constexpr int num_buffers = 3;
-  c2h::device_vector<object_with_non_trivial_ctor> a(num_buffers,
-                                                     object_with_non_trivial_ctor(99));
+  c2h::device_vector<object_with_non_trivial_ctor> a(num_buffers, object_with_non_trivial_ctor(99));
   c2h::device_vector<object_with_non_trivial_ctor> b(num_buffers);
   using iterator = c2h::device_vector<object_with_non_trivial_ctor>::iterator;
 
@@ -347,25 +335,15 @@ void nontrivial_constructor_test()
 
   auto sizes = thrust::make_constant_iterator(1);
 
-  std::uint8_t *d_temp_storage{};
+  std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
 
-  cub::DeviceCopy::Batched(d_temp_storage,
-                           temp_storage_bytes,
-                           a_iter.begin(),
-                           b_iter.begin(),
-                           sizes,
-                           num_buffers);
+  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  cub::DeviceCopy::Batched(d_temp_storage,
-                           temp_storage_bytes,
-                           a_iter.begin(),
-                           b_iter.begin(),
-                           sizes,
-                           num_buffers);
+  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
 
   for (int i = 0; i < 10; i++)
   {
@@ -381,7 +359,7 @@ void nontrivial_constructor_test()
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   CommandLineArgs args(argc, argv);
 
@@ -409,15 +387,15 @@ int main(int argc, char **argv)
   constexpr std::size_t num_rnd_range_tests = 32;
 
   // Each range's size will be random within this interval
-  c2h::host_vector<std::pair<std::size_t, std::size_t>> size_ranges = {{0, 1},
-                                                                       {1, 2},
-                                                                       {0, 16},
-                                                                       {1, 32},
-                                                                       {1, 1024},
-                                                                       {1, 32 * 1024},
-                                                                       {128 * 1024, 256 * 1024},
-                                                                       {target_copy_size,
-                                                                        target_copy_size}};
+  c2h::host_vector<std::pair<std::size_t, std::size_t>> size_ranges = {
+    {0, 1},
+    {1, 2},
+    {0, 16},
+    {1, 32},
+    {1, 1024},
+    {1, 32 * 1024},
+    {128 * 1024, 256 * 1024},
+    {target_copy_size, target_copy_size}};
 
   std::mt19937 rng(0);
   std::uniform_int_distribution<std::size_t> size_dist(1, 1000000);
@@ -432,54 +410,42 @@ int main(int argc, char **argv)
     size_ranges.push_back({range_begin, range_end});
   }
 
-  for (const auto &size_range : size_ranges)
+  for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT = int64_t;
-    RangeSizeT min_range_size =
-      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
-    RangeSizeT max_range_size = static_cast<RangeSizeT>(
-      CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
-    double average_range_size = (min_range_size + max_range_size) / 2.0;
-    RangeOffsetT target_num_ranges =
-      static_cast<RangeOffsetT>(target_copy_size / average_range_size);
+    using AtomicCopyT         = int64_t;
+    RangeSizeT min_range_size = static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
+    RangeSizeT max_range_size =
+      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
+    double average_range_size      = (min_range_size + max_range_size) / 2.0;
+    RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
     // Run tests with output ranges being consecutive
-    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(target_num_ranges,
-                                                                min_range_size,
-                                                                max_range_size,
-                                                                TestDataGen::CONSECUTIVE);
+    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
+      target_num_ranges, min_range_size, max_range_size, TestDataGen::CONSECUTIVE);
 
     // Run tests with output ranges being randomly shuffled
-    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(target_num_ranges,
-                                                                min_range_size,
-                                                                max_range_size,
-                                                                TestDataGen::RANDOM);
+    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
+      target_num_ranges, min_range_size, max_range_size, TestDataGen::RANDOM);
   }
 
-  for (const auto &size_range : size_ranges)
+  for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT = thrust::tuple<int64_t, int32_t, int16_t, char, char>;
-    RangeSizeT min_range_size =
-      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
-    RangeSizeT max_range_size = static_cast<RangeSizeT>(
-      CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
-    double average_range_size = (min_range_size + max_range_size) / 2.0;
-    RangeOffsetT target_num_ranges =
-      static_cast<RangeOffsetT>(target_copy_size / average_range_size);
+    using AtomicCopyT         = thrust::tuple<int64_t, int32_t, int16_t, char, char>;
+    RangeSizeT min_range_size = static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
+    RangeSizeT max_range_size =
+      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
+    double average_range_size      = (min_range_size + max_range_size) / 2.0;
+    RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
     // Run tests with output ranges being consecutive
-    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(target_num_ranges,
-                                                                min_range_size,
-                                                                max_range_size,
-                                                                TestDataGen::CONSECUTIVE);
+    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
+      target_num_ranges, min_range_size, max_range_size, TestDataGen::CONSECUTIVE);
 
     // Run tests with output ranges being randomly shuffled
-    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(target_num_ranges,
-                                                                min_range_size,
-                                                                max_range_size,
-                                                                TestDataGen::RANDOM);
+    RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
+      target_num_ranges, min_range_size, max_range_size, TestDataGen::RANDOM);
   }
 
   //---------------------------------------------------------------------
@@ -493,8 +459,6 @@ int main(int argc, char **argv)
   constexpr RangeOffsetT single_range = 1;
 
   // Run tests with output ranges being consecutive
-  RunTest<uint8_t, RangeOffsetT, RangeSize64T, ByteOffset64T>(single_range,
-                                                              large_target_copy_size,
-                                                              large_target_copy_size,
-                                                              TestDataGen::CONSECUTIVE);
+  RunTest<uint8_t, RangeOffsetT, RangeSize64T, ByteOffset64T>(
+    single_range, large_target_copy_size, large_target_copy_size, TestDataGen::CONSECUTIVE);
 }

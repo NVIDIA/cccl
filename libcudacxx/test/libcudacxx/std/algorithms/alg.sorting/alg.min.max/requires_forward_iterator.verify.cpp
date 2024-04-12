@@ -18,8 +18,9 @@
 
 #include "test_iterators.h"
 
-int main(int, char**) {
-  int arr[] = {1, 2, 3};
+int main(int, char**)
+{
+  int arr[]    = {1, 2, 3};
   const int *b = cuda::std::begin(arr), *e = cuda::std::end(arr);
   typedef cpp17_input_iterator<const int*> Iter;
   {
@@ -34,7 +35,6 @@ int main(int, char**) {
     // expected-error@*:* {{cuda::std::minmax_element requires a ForwardIterator}}
     (void) cuda::std::minmax_element(Iter(b), Iter(e));
   }
-
 
   return 0;
 }

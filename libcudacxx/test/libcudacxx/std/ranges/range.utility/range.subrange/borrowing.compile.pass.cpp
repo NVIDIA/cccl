@@ -15,10 +15,16 @@
 
 #include <cuda/std/ranges>
 
-static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::subrange<int*, const int*, cuda::std::ranges::subrange_kind::sized>>);
-static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::subrange<int*, cuda::std::unreachable_sentinel_t, cuda::std::ranges::subrange_kind::sized>>);
-static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::subrange<int*, cuda::std::unreachable_sentinel_t, cuda::std::ranges::subrange_kind::unsized>>);
+static_assert(cuda::std::ranges::borrowed_range<
+              cuda::std::ranges::subrange<int*, const int*, cuda::std::ranges::subrange_kind::sized>>);
+static_assert(
+  cuda::std::ranges::borrowed_range<
+    cuda::std::ranges::subrange<int*, cuda::std::unreachable_sentinel_t, cuda::std::ranges::subrange_kind::sized>>);
+static_assert(
+  cuda::std::ranges::borrowed_range<
+    cuda::std::ranges::subrange<int*, cuda::std::unreachable_sentinel_t, cuda::std::ranges::subrange_kind::unsized>>);
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

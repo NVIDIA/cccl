@@ -12,7 +12,7 @@
 #ifndef _CUDA_PTX_DOT_VARIANTS_H_
 #define _CUDA_PTX_DOT_VARIANTS_H_
 
-#include "../../__type_traits/integral_constant.h" // std::integral_constant
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h> // std::integral_constant
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -73,7 +73,7 @@ enum class dot_space
 {
   global,
   cluster, // The PTX spelling is shared::cluster
-  shared,  // The PTX spelling is shared::cta
+  shared, // The PTX spelling is shared::cta
 
   // The following state spaces are unlikely to be used in cuda::ptx in the near
   // future, so they are not exposed:

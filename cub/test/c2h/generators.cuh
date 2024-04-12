@@ -29,10 +29,10 @@
 
 #include <cub/util_type.cuh> // __CUDA_FP8_TYPES_EXIST__
 
+#include <limits>
+
 #include <c2h/custom_type.cuh>
 #include <c2h/vector.cuh>
-
-#include <limits>
 
 #if defined(__CUDA_FP8_TYPES_EXIST__)
 #  include <cuda_fp8.h>
@@ -83,13 +83,18 @@ class value_wrapper_t
   T m_val{};
 
 public:
+  using value_type = T;
+
   explicit value_wrapper_t(T val)
       : m_val(val)
   {}
   explicit value_wrapper_t(int val)
       : m_val(static_cast<T>(val))
   {}
-  T get() const { return m_val; }
+  T get() const
+  {
+    return m_val;
+  }
 };
 
 } // namespace detail
@@ -113,34 +118,32 @@ struct le_comparator_op
   T maximum;
 
   template <typename ValueT>
-  __host__ __device__ __forceinline__ bool operator()(const ValueT &val)
+  __host__ __device__ __forceinline__ bool operator()(const ValueT& val)
   {
     return (val <= maximum);
   }
 };
 
 void gen(seed_t seed,
-         char *data,
+         char* data,
          c2h::custom_type_state_t min,
          c2h::custom_type_state_t max,
          std::size_t elements,
          std::size_t element_size);
 
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
-                       KeyT *d_out,
-                       std::size_t element_size);
+void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT* d_out, std::size_t element_size);
 
 } // namespace detail
 
 template <template <typename> class... Ps>
 void gen(seed_t seed,
-         c2h::device_vector<c2h::custom_type_t<Ps...>> &data,
+         c2h::device_vector<c2h::custom_type_t<Ps...>>& data,
          c2h::custom_type_t<Ps...> min = std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
          c2h::custom_type_t<Ps...> max = std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
 {
   detail::gen(seed,
-              reinterpret_cast<char *>(thrust::raw_pointer_cast(data.data())),
+              reinterpret_cast<char*>(thrust::raw_pointer_cast(data.data())),
               min,
               max,
               data.size(),
@@ -149,12 +152,12 @@ void gen(seed_t seed,
 
 template <typename T>
 void gen(seed_t seed,
-         c2h::device_vector<T> &data,
+         c2h::device_vector<T>& data,
          T min = std::numeric_limits<T>::lowest(),
          T max = std::numeric_limits<T>::max());
 
 template <typename T>
-void gen(modulo_t mod, c2h::device_vector<T> &data);
+void gen(modulo_t mod, c2h::device_vector<T>& data);
 
 /**
  * @brief Generates an array of offsets with uniformly distributed segment sizes in the range
@@ -164,29 +167,24 @@ void gen(modulo_t mod, c2h::device_vector<T> &data);
  * `max_segment_size` items.
  */
 template <typename T>
-c2h::device_vector<T>
-gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size);
+c2h::device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size);
 
 /**
  * @brief Generates key-segment ranges from an offsets-array like the one given by
  * `gen_uniform_offset`.
  */
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
-                       c2h::device_vector<KeyT> &keys_out)
+void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, c2h::device_vector<KeyT>& keys_out)
 {
-  detail::init_key_segments(segment_offsets,
-                            thrust::raw_pointer_cast(keys_out.data()),
-                            sizeof(KeyT));
+  detail::init_key_segments(segment_offsets, thrust::raw_pointer_cast(keys_out.data()), sizeof(KeyT));
 }
 
 template <typename OffsetT, template <typename> class... Ps>
-void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
-                       c2h::device_vector<custom_type_t<Ps...>> &keys_out)
+void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets,
+                       c2h::device_vector<custom_type_t<Ps...>>& keys_out)
 {
   detail::init_key_segments(segment_offsets,
-                            reinterpret_cast<custom_type_state_t *>(
-                              thrust::raw_pointer_cast(keys_out.data())),
+                            reinterpret_cast<custom_type_state_t*>(thrust::raw_pointer_cast(keys_out.data())),
                             sizeof(custom_type_t<Ps...>));
 }
 

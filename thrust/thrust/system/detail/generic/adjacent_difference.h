@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file adjacent_difference.h
  *  \brief Generic implementation of adjacent_difference.
  */
@@ -40,21 +39,17 @@ namespace detail
 namespace generic
 {
 
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
 
-template<typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE
-OutputIterator adjacent_difference(thrust::execution_policy<DerivedPolicy> &exec,
-                                   InputIterator first, InputIterator last,
-                                   OutputIterator result);
-
-
-template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE
-OutputIterator adjacent_difference(thrust::execution_policy<DerivedPolicy> &exec,
-                                   InputIterator first, InputIterator last,
-                                   OutputIterator result,
-                                   BinaryFunction binary_op);
-
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  BinaryFunction binary_op);
 
 } // end namespace generic
 } // end namespace detail
@@ -62,4 +57,3 @@ OutputIterator adjacent_difference(thrust::execution_policy<DerivedPolicy> &exec
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/adjacent_difference.inl>
-

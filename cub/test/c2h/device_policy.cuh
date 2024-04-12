@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include <thrust/execution_policy.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include <type_traits>
 
@@ -36,8 +36,12 @@
 namespace c2h
 {
 
-using device_policy_t = typename std::remove_reference<decltype(thrust::device(checked_cuda_allocator<char>{}))>::type;
+using device_policy_t =
+  typename std::remove_reference<decltype(thrust::cuda::par(checked_cuda_allocator<char>{}))>::type;
+static const device_policy_t device_policy = thrust::cuda::par(checked_cuda_allocator<char>{});
 
-static const device_policy_t device_policy = thrust::device(checked_cuda_allocator<char>{});
+using nosync_device_policy_t =
+  typename std::remove_reference<decltype(thrust::cuda::par_nosync(checked_cuda_allocator<char>{}))>::type;
+static const nosync_device_policy_t nosync_device_policy = thrust::cuda::par_nosync(checked_cuda_allocator<char>{});
 
 } // namespace c2h

@@ -15,31 +15,34 @@
 // constexpr bool operator<(const day& x, const day& y) noexcept;
 //   Returns: unsigned{x} < unsigned{y}.
 
-
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_comparisons.h"
+#include "test_macros.h"
 
 int main(int, char**)
 {
-    using day = cuda::std::chrono::day;
+  using day = cuda::std::chrono::day;
 
-    AssertComparisonsAreNoexcept<day>();
-    AssertComparisonsReturnBool<day>();
+  AssertComparisonsAreNoexcept<day>();
+  AssertComparisonsReturnBool<day>();
 
-    static_assert(testComparisonsValues<day>(0U, 0U), "");
-    static_assert(testComparisonsValues<day>(0U, 1U), "");
+  static_assert(testComparisonsValues<day>(0U, 0U), "");
+  static_assert(testComparisonsValues<day>(0U, 1U), "");
 
-//  Some 'ok' values as well
-    static_assert(testComparisonsValues<day>( 5U,  5U), "");
-    static_assert(testComparisonsValues<day>( 5U, 10U), "");
+  //  Some 'ok' values as well
+  static_assert(testComparisonsValues<day>(5U, 5U), "");
+  static_assert(testComparisonsValues<day>(5U, 10U), "");
 
-    for (unsigned i = 1; i < 10; ++i)
-        for (unsigned j = 1; j < 10; ++j)
-            assert(testComparisonsValues<day>(i, j));
+  for (unsigned i = 1; i < 10; ++i)
+  {
+    for (unsigned j = 1; j < 10; ++j)
+    {
+      assert(testComparisonsValues<day>(i, j));
+    }
+  }
 
   return 0;
 }

@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___BIT_REFERENCE
 #define _LIBCUDACXX___BIT_REFERENCE
 
-#include <__config>
+##include <cuda/std/detail/__config>
 #include <bit>
 #include <algorithm>
 

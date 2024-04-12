@@ -33,4 +33,3 @@ template <typename Element, typename Pointer, typename Derived = use_default>
 class reference;
 
 THRUST_NAMESPACE_END
-

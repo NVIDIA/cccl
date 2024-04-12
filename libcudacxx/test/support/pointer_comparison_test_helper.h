@@ -8,13 +8,14 @@
 #ifndef POINTER_COMPARISON_TEST_HELPER_H
 #define POINTER_COMPARISON_TEST_HELPER_H
 
-#include <cuda/std/cstdint>
 #include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 
 #include "test_macros.h"
 
 template <template <class> class CompareTemplate>
-__host__ __device__ void do_pointer_comparison_test() {
+__host__ __device__ void do_pointer_comparison_test()
+{
   typedef CompareTemplate<int*> Compare;
   typedef CompareTemplate<cuda::std::uintptr_t> UIntCompare;
 #if TEST_STD_VER > 2011
@@ -26,12 +27,15 @@ __host__ __device__ void do_pointer_comparison_test() {
   Compare comp;
   UIntCompare ucomp;
   VoidCompare vcomp;
-  struct {
+  struct
+  {
     int a, b;
   } local;
   int* pointers[] = {&local.a, &local.b, nullptr, &local.a + 1};
-  for (int* lhs : pointers) {
-    for (int* rhs : pointers) {
+  for (int* lhs : pointers)
+  {
+    for (int* rhs : pointers)
+    {
       cuda::std::uintptr_t lhs_uint = reinterpret_cast<cuda::std::uintptr_t>(lhs);
       cuda::std::uintptr_t rhs_uint = reinterpret_cast<cuda::std::uintptr_t>(rhs);
       assert(comp(lhs, rhs) == ucomp(lhs_uint, rhs_uint));
@@ -41,17 +45,21 @@ __host__ __device__ void do_pointer_comparison_test() {
 }
 
 template <class Comp>
-__host__ __device__ void do_pointer_comparison_test(Comp comp) {
-  struct {
+__host__ __device__ void do_pointer_comparison_test(Comp comp)
+{
+  struct
+  {
     int a, b;
   } local;
   int* pointers[] = {&local.a, &local.b, nullptr, &local.a + 1};
-  for (int* lhs : pointers) {
-    for (int* rhs : pointers) {
+  for (int* lhs : pointers)
+  {
+    for (int* rhs : pointers)
+    {
       cuda::std::uintptr_t lhs_uint = reinterpret_cast<cuda::std::uintptr_t>(lhs);
       cuda::std::uintptr_t rhs_uint = reinterpret_cast<cuda::std::uintptr_t>(rhs);
-      void*          lhs_void = static_cast<void*>(lhs);
-      void*          rhs_void = static_cast<void*>(rhs);
+      void* lhs_void                = static_cast<void*>(lhs);
+      void* rhs_void                = static_cast<void*>(rhs);
       assert(comp(lhs, rhs) == comp(lhs_uint, rhs_uint));
       assert(comp(lhs_void, rhs_void) == comp(lhs_uint, rhs_uint));
     }
