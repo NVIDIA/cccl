@@ -27,6 +27,7 @@ AttributeMacros: [
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HOST_DEVICE',
                   '_CCCL_HOST',
+                  '_CCCL_NODISCARD_FRIEND',
                   '_CCCL_NODISCARD',
                   'CUB_RUNTIME_FUNCTION',
                   'CUB_DETAIL_KERNEL_ATTRIBUTES',

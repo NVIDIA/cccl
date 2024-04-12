@@ -105,7 +105,7 @@ struct cuda_memory_resource
    * resources. Otherwise, returns false.
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator==(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
@@ -115,7 +115,7 @@ struct cuda_memory_resource
    * @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
@@ -124,7 +124,7 @@ struct cuda_memory_resource
    * @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
@@ -133,7 +133,7 @@ struct cuda_memory_resource
    * @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};

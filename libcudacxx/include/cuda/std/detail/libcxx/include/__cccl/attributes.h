@@ -32,4 +32,12 @@
 #  define _CCCL_NODISCARD
 #endif // no nodiscard
 
+// NVCC below 11.3 does not support nodiscard on friend operators
+// It always fails with clang
+#if defined(_CCCL_CUDACC_BELOW_11_3) || defined(_CCCL_COMPILER_CLANG)
+#  define _CCCL_NODISCARD_FRIEND friend
+#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
+#  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
+#endif // !_CCCL_CUDACC_BELOW_11_3 && !_CCCL_COMPILER_CLANG
+
 #endif // __CCCL_ATTRIBUTES_H
