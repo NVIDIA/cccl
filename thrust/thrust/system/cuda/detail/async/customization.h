@@ -44,6 +44,8 @@
 
 #  if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
+#    include <thrust/system/cuda/config.h>
+
 #    include <thrust/detail/cstdint.h>
 #    include <thrust/detail/execute_with_allocator.h>
 #    include <thrust/detail/type_deduction.h>
@@ -52,7 +54,6 @@
 #    include <thrust/mr/host_memory_resource.h>
 #    include <thrust/mr/sync_pool.h>
 #    include <thrust/per_device_resource.h>
-#    include <thrust/system/cuda/config.h>
 #    include <thrust/system/cuda/memory_resource.h>
 
 THRUST_NAMESPACE_BEGIN

@@ -38,6 +38,8 @@
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
+#  include <thrust/system/cuda/config.h>
+
 #  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #  include <cub/util_type.cuh>
 
@@ -48,7 +50,6 @@
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/system/cuda/config.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>

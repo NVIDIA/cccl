@@ -36,8 +36,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/system/cuda/config.h>
+
+#include <thrust/advance.h>
 #include <thrust/system/cuda/detail/cdp_dispatch.h>
 #include <thrust/system/cuda/detail/cross_system.h>
 #include <thrust/system/cuda/detail/execution_policy.h>

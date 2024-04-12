@@ -30,6 +30,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/reference_forward_declaration.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>

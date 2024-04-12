@@ -31,6 +31,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>

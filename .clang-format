@@ -107,7 +107,7 @@ IfMacros: [
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h)'
+  - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0
   - Regex:           '^<cub/'

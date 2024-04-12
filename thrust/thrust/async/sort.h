@@ -68,48 +68,81 @@ namespace stable_sort_detail
 
 using thrust::async::unimplemented::async_stable_sort;
 
+// clang-format off
 struct stable_sort_fn final
 {
-  template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
-  _CCCL_HOST static auto
-  call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-       ForwardIt&& first,
-       Sentinel&& last,
-       StrictWeakOrdering&& comp)
-    // ADL dispatch.
-    THRUST_RETURNS(async_stable_sort(
-      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-      THRUST_FWD(first),
-      THRUST_FWD(last),
-      THRUST_FWD(comp)))
+  template <
+    typename DerivedPolicy
+  , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
+  >
+  _CCCL_HOST
+  static auto call(
+    thrust::detail::execution_policy_base<DerivedPolicy> const& exec
+  , ForwardIt&& first, Sentinel&& last
+  , StrictWeakOrdering&& comp
+  )
+  // ADL dispatch.
+  THRUST_RETURNS(
+    async_stable_sort(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec))
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , THRUST_FWD(comp)
+    )
+  )
 
-      template <typename DerivedPolicy, typename ForwardIt, typename Sentinel>
-      _CCCL_HOST static auto call(
-        thrust::detail::execution_policy_base<DerivedPolicy> const& exec, ForwardIt&& first, Sentinel&& last)
-    // ADL dispatch.
-    THRUST_RETURNS(async_stable_sort(
-      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-      THRUST_FWD(first),
-      THRUST_FWD(last),
-      thrust::less<typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type>{}))
+  template <
+    typename DerivedPolicy
+  , typename ForwardIt, typename Sentinel
+  >
+  _CCCL_HOST
+  static auto call(
+    thrust::detail::execution_policy_base<DerivedPolicy> const& exec
+  , ForwardIt&& first, Sentinel&& last
+  )
+  // ADL dispatch.
+  THRUST_RETURNS(
+    async_stable_sort(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec))
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , thrust::less<
+        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+      >{}
+    )
+  )
 
-      template <typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
-      _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp)
-        THRUST_RETURNS(stable_sort_fn::call(
-          thrust::detail::select_system(typename iterator_system<remove_cvref_t<ForwardIt>>::type{}),
-          THRUST_FWD(first),
-          THRUST_FWD(last),
-          THRUST_FWD(comp)))
+  template <typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
+  _CCCL_HOST
+  static auto call(ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp)
+  THRUST_RETURNS(
+    stable_sort_fn::call(
+      thrust::detail::select_system(
+        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
+      )
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , THRUST_FWD(comp)
+    )
+  )
 
-          template <typename ForwardIt, typename Sentinel>
-          _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(stable_sort_fn::call(
-            THRUST_FWD(first),
-            THRUST_FWD(last),
-            thrust::less<typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type>{}))
+  template <typename ForwardIt, typename Sentinel>
+  _CCCL_HOST
+  static auto call(ForwardIt&& first, Sentinel&& last)
+  THRUST_RETURNS(
+    stable_sort_fn::call(
+      THRUST_FWD(first), THRUST_FWD(last)
+    , thrust::less<
+        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+      >{}
+    )
+  )
 
-            template <typename... Args>
-            THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+  template <typename... Args>
+  THRUST_NODISCARD _CCCL_HOST
+  auto operator()(Args&&... args) const
+  THRUST_RETURNS(
+    call(THRUST_FWD(args)...)
+  )
 };
+// clang-format on
 
 } // namespace stable_sort_detail
 
@@ -132,55 +165,97 @@ namespace sort_detail
 
 using thrust::async::fallback::async_sort;
 
+// clang-format off
 struct sort_fn final
 {
-  template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
-  _CCCL_HOST static auto
-  call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-       ForwardIt&& first,
-       Sentinel&& last,
-       StrictWeakOrdering&& comp)
-    // ADL dispatch.
-    THRUST_RETURNS(async_sort(thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-                              THRUST_FWD(first),
-                              THRUST_FWD(last),
-                              THRUST_FWD(comp)))
+  template <
+    typename DerivedPolicy
+  , typename ForwardIt, typename Sentinel, typename StrictWeakOrdering
+  >
+  _CCCL_HOST
+  static auto call(
+    thrust::detail::execution_policy_base<DerivedPolicy> const& exec
+  , ForwardIt&& first, Sentinel&& last
+  , StrictWeakOrdering&& comp
+  )
+  // ADL dispatch.
+  THRUST_RETURNS(
+    async_sort(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec))
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , THRUST_FWD(comp)
+    )
+  )
 
-      template <typename DerivedPolicy, typename ForwardIt, typename Sentinel>
-      _CCCL_HOST static auto call3(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
-                                   ForwardIt&& first,
-                                   Sentinel&& last,
-                                   thrust::true_type)
-        THRUST_RETURNS(sort_fn::call(exec,
-                                     THRUST_FWD(first),
-                                     THRUST_FWD(last),
-                                     thrust::less<typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type>{}))
+  template <
+    typename DerivedPolicy
+  , typename ForwardIt, typename Sentinel
+  >
+  _CCCL_HOST
+  static auto call3(
+    thrust::detail::execution_policy_base<DerivedPolicy> const& exec
+  , ForwardIt&& first, Sentinel&& last
+  , thrust::true_type
+  )
+  THRUST_RETURNS(
+    sort_fn::call(
+      exec
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , thrust::less<
+        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+      >{}
+    )
+  )
 
-          template <typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
-          _CCCL_HOST static auto call3(ForwardIt&& first, Sentinel&& last, StrictWeakOrdering&& comp, thrust::false_type)
-            THRUST_RETURNS(sort_fn::call(
-              thrust::detail::select_system(typename iterator_system<remove_cvref_t<ForwardIt>>::type{}),
-              THRUST_FWD(first),
-              THRUST_FWD(last),
-              THRUST_FWD(comp)))
+  template <typename ForwardIt, typename Sentinel, typename StrictWeakOrdering>
+  _CCCL_HOST
+  static auto call3(ForwardIt&& first, Sentinel&& last,
+                    StrictWeakOrdering&& comp,
+                    thrust::false_type)
+  THRUST_RETURNS(
+    sort_fn::call(
+      thrust::detail::select_system(
+        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
+      )
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , THRUST_FWD(comp)
+    )
+  )
 
-    // MSVC WAR: MSVC gets angsty and eats all available RAM when we try to detect
-    // if T1 is an execution_policy by using SFINAE. Switching to a static
-    // dispatch pattern to prevent this.
-    template <typename T1, typename T2, typename T3>
-    _CCCL_HOST static auto call(T1&& t1, T2&& t2, T3&& t3) THRUST_RETURNS(sort_fn::call3(
-      THRUST_FWD(t1), THRUST_FWD(t2), THRUST_FWD(t3), thrust::is_execution_policy<thrust::remove_cvref_t<T1>>{}))
+  // MSVC WAR: MSVC gets angsty and eats all available RAM when we try to detect
+  // if T1 is an execution_policy by using SFINAE. Switching to a static
+  // dispatch pattern to prevent this.
+  template <typename T1, typename T2, typename T3>
+  _CCCL_HOST
+  static auto call(T1&& t1, T2&& t2, T3&& t3)
+  THRUST_RETURNS(
+    sort_fn::call3(THRUST_FWD(t1), THRUST_FWD(t2), THRUST_FWD(t3),
+                   thrust::is_execution_policy<thrust::remove_cvref_t<T1>>{})
+  )
 
-      template <typename ForwardIt, typename Sentinel>
-      _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(sort_fn::call(
-        thrust::detail::select_system(typename iterator_system<remove_cvref_t<ForwardIt>>::type{}),
-        THRUST_FWD(first),
-        THRUST_FWD(last),
-        thrust::less<typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type>{}))
+  template <typename ForwardIt, typename Sentinel>
+  _CCCL_HOST
+  static auto call(ForwardIt&& first, Sentinel&& last)
+  THRUST_RETURNS(
+    sort_fn::call(
+      thrust::detail::select_system(
+        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
+      )
+    , THRUST_FWD(first), THRUST_FWD(last)
+    , thrust::less<
+        typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type
+      >{}
+    )
+  )
 
-        template <typename... Args>
-        THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+  template <typename... Args>
+  THRUST_NODISCARD _CCCL_HOST
+  auto operator()(Args&&... args) const
+  THRUST_RETURNS(
+    call(THRUST_FWD(args)...)
+  )
 };
+// clang-format on
 
 } // namespace sort_detail
 

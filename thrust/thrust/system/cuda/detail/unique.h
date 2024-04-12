@@ -38,6 +38,8 @@
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
+#  include <thrust/system/cuda/config.h>
+
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
 
@@ -47,7 +49,6 @@
 #  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
-#  include <thrust/system/cuda/config.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/get_value.h>

@@ -27,9 +27,10 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  include <thrust/system/cuda/config.h>
+
 #  include <thrust/detail/raw_pointer_cast.h>
 #  include <thrust/iterator/iterator_traits.h>
-#  include <thrust/system/cuda/config.h>
 #  include <thrust/system/cuda/detail/cross_system.h>
 
 #  include <nv/target>

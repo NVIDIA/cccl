@@ -37,11 +37,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/system/cuda/config.h>
+
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/detail/dependencies_aware_execution_policy.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/any_system_tag.h>
-#include <thrust/system/cuda/config.h>
 #include <thrust/version.h>
 
 THRUST_NAMESPACE_BEGIN

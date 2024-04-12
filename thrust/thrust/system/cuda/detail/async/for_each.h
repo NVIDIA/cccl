@@ -45,11 +45,12 @@
 
 #  if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
+#    include <thrust/system/cuda/config.h>
+
 #    include <cub/device/device_for.cuh>
 
 #    include <thrust/distance.h>
 #    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/config.h>
 #    include <thrust/system/cuda/detail/async/customization.h>
 #    include <thrust/system/cuda/future.h>
 

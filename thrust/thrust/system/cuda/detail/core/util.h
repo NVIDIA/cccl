@@ -35,13 +35,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/system/cuda/config.h>
+
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/system/cuda/config.h>
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/system/system_error.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>

@@ -40,11 +40,12 @@
 // this file must not be included on its own, ever,
 // but must be part of include in thrust/system/cuda/detail/copy.h
 
+#include <thrust/system/cuda/config.h>
+
 #include <thrust/advance.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/distance.h>
-#include <thrust/system/cuda/config.h>
 #include <thrust/system/cuda/detail/uninitialized_copy.h>
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>

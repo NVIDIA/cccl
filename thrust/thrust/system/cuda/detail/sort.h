@@ -37,6 +37,8 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  include <thrust/system/cuda/config.h>
+
 #  include <cub/device/device_merge_sort.cuh>
 #  include <cub/device/device_radix_sort.cuh>
 
@@ -49,7 +51,6 @@
 #  include <thrust/extrema.h>
 #  include <thrust/sequence.h>
 #  include <thrust/sort.h>
-#  include <thrust/system/cuda/config.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/core/util.h>

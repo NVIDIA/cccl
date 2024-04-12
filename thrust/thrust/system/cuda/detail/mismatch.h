@@ -37,9 +37,10 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  include <thrust/system/cuda/config.h>
+
 #  include <thrust/distance.h>
 #  include <thrust/pair.h>
-#  include <thrust/system/cuda/config.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN

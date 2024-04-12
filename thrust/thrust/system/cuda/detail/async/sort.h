@@ -44,11 +44,12 @@
 
 #  if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
+#    include <thrust/system/cuda/config.h>
+
 #    include <thrust/detail/alignment.h>
 #    include <thrust/detail/static_assert.h>
 #    include <thrust/distance.h>
 #    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/config.h>
 #    include <thrust/system/cuda/detail/async/copy.h>
 #    include <thrust/system/cuda/detail/async/customization.h>
 #    include <thrust/system/cuda/detail/sort.h>

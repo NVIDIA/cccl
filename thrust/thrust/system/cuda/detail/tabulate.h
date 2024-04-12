@@ -37,8 +37,9 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <thrust/distance.h>
 #  include <thrust/system/cuda/config.h>
+
+#  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/execution_policy.h>
 
