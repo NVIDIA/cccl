@@ -31,9 +31,14 @@ template<class MemoryResource, class = cuda::std::enable_if_t<cuda::has_property
 void function_that_dispatches_to_device(MemoryResource& resource);
 ```
 
-For now, libcu++ provides two commonly used properties: `cuda::mr::device_accessible` and `cuda::mr::host_accessible`. More properties may be added as the library and the hardware capabilities evolve. However, a user library is free to define as many properties as needed to fully cover its API surface.
+For now, libcu++ provides various commonly used properties:
 
-Note that the libcu++ provided properties are stateless. However, properties can also provide stateful information that is retrieved via the `get_property` free function. In order to communicate the desired type of the carried state, a stateful property must define the `value_type` alias. A library can constrain interfaces that require a stateful property with `cuda::has_property_with` as shown in the example below (See [here](https://godbolt.org/z/11sGbr333) for a minimal Compiler Explorer example).
+* `cuda::mr::device_accessible` and `cuda::mr::host_accessible` indicate whether memory allocated using a memory resource is accessible from host or device respectively.
+* `cuda::mr::managed_memory` indicates that the memory resource allocates CUDA unified memory which is both host and device accessible
+
+More properties may be added as the library and the hardware capabilities evolve. However, a user library is free to define custom properties.
+
+Note that currently the libcu++ provided properties are stateless. However, properties can also provide stateful information that is retrieved via the `get_property` free function. In order to communicate the desired type of the carried state, a stateful property must define the `value_type` alias. A library can constrain interfaces that require a stateful property with `cuda::has_property_with` as shown in the example below (See [here](https://godbolt.org/z/11sGbr333) for a minimal Compiler Explorer example).
 
 ```c++
 struct required_alignment{
