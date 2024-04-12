@@ -9,8 +9,7 @@ template <class T>
 struct foo_ptr
 {
   T* data;
-  _LIBCUDACXX_HOST_DEVICE
-  constexpr foo_ptr(T* ptr)
+  _CCCL_HOST_DEVICE constexpr foo_ptr(T* ptr)
       : data(ptr)
   {}
 };
@@ -41,18 +40,18 @@ struct foo_accessor
     flag = other.flag;
   }
 
-  _LIBCUDACXX_HOST_DEVICE constexpr reference access(data_handle_type p, size_t i) const noexcept
+  _CCCL_HOST_DEVICE constexpr reference access(data_handle_type p, size_t i) const noexcept
   {
     return p.data[i];
   }
 
-  _LIBCUDACXX_HOST_DEVICE constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
+  _CCCL_HOST_DEVICE constexpr data_handle_type offset(data_handle_type p, size_t i) const noexcept
   {
     return data_handle_type(p.data + i);
   }
   int* flag;
 
-  _LIBCUDACXX_HOST_DEVICE friend constexpr void swap(foo_accessor& x, foo_accessor& y)
+  _CCCL_HOST_DEVICE friend constexpr void swap(foo_accessor& x, foo_accessor& y)
   {
     x.flag[0] = 99;
     y.flag[0] = 77;
@@ -90,8 +89,7 @@ public:
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept               = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
 
-  _LIBCUDACXX_HOST_DEVICE
-  constexpr mapping(extents_type const& __exts) noexcept
+  _CCCL_HOST_DEVICE constexpr mapping(extents_type const& __exts) noexcept
       : __extents(__exts)
   {}
 
@@ -242,13 +240,13 @@ public:
 
   // Not really public, but currently needed to implement fully constexpr useable submdspan:
   template <size_t N, class SizeType, size_t... E, size_t... Idx>
-  _LIBCUDACXX_HOST_DEVICE constexpr index_type
+  _CCCL_HOST_DEVICE constexpr index_type
   __get_stride(cuda::std::extents<SizeType, E...>, cuda::std::integer_sequence<size_t, Idx...>) const
   {
     return __MDSPAN_FOLD_TIMES_RIGHT((Idx > N ? __extents.template __extent<Idx>() : 1), 1);
   }
   template <size_t N>
-  _LIBCUDACXX_HOST_DEVICE constexpr index_type __stride() const noexcept
+  _CCCL_HOST_DEVICE constexpr index_type __stride() const noexcept
   {
     return __get_stride<N>(__extents, std::make_index_sequence<extents_type::rank()>());
   }

@@ -1597,11 +1597,11 @@ public:
     typedef chrono::time_point<system_clock> time_point;
     static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
 
-    _LIBCUDACXX_HOST_DEVICE
+    _CCCL_HOST_DEVICE
     static time_point now() noexcept;
-    _LIBCUDACXX_HOST_DEVICE
+    _CCCL_HOST_DEVICE
     static time_t     to_time_t  (const time_point& __t) noexcept;
-    _LIBCUDACXX_HOST_DEVICE
+    _CCCL_HOST_DEVICE
     static time_point from_time_t(time_t __t) noexcept;
 };
 

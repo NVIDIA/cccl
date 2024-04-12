@@ -967,16 +967,16 @@ public:
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
-template <class... _Tp> _LIBCUDACXX_HOST_DEVICE tuple(_Tp...) -> tuple<_Tp...>;
+template <class... _Tp> _CCCL_HOST_DEVICE tuple(_Tp...) -> tuple<_Tp...>;
 template <class _Tp1, class _Tp2>
-_LIBCUDACXX_HOST_DEVICE tuple(pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
+_CCCL_HOST_DEVICE tuple(pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
-_LIBCUDACXX_HOST_DEVICE tuple(allocator_arg_t, _Alloc, _Tp...) -> tuple<_Tp...>;
+_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, _Tp...) -> tuple<_Tp...>;
 template <class _Alloc, class _Tp1, class _Tp2>
-_LIBCUDACXX_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>)
+_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>)
     -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
-_LIBCUDACXX_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>)
+_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>)
     -> tuple<_Tp...>;
 #endif // _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
 

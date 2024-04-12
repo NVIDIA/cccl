@@ -116,7 +116,7 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HOST operator ::std::complex<value_type>() const
+  _CCCL_HOST operator ::std::complex<value_type>() const
   {
     return {__repr_.x, __repr_.y};
   }

@@ -101,14 +101,14 @@ int main()
 
   for (auto& s : scopes)
   {
-    out << "static inline _LIBCUDACXX_DEVICE void __cuda_membar_" << s.first << "() { asm volatile(\"membar"
+    out << "static inline _CCCL_DEVICE void __cuda_membar_" << s.first << "() { asm volatile(\"membar"
         << membar_scopes[s.first] << ";\":::\"memory\"); }\n";
     for (auto& sem : fence_semantics)
     {
-      out << "static inline _LIBCUDACXX_DEVICE void " << fencename(sem.first, s.first) << "() { asm volatile(\"fence"
+      out << "static inline _CCCL_DEVICE void " << fencename(sem.first, s.first) << "() { asm volatile(\"fence"
           << sem.second << s.second << ";\":::\"memory\"); }\n";
     }
-    out << "static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder, " << scopenametag(s.first)
+    out << "static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, " << scopenametag(s.first)
         << ") {\n";
     out << "  NV_DISPATCH_TARGET(\n";
     out << "    NV_PROVIDES_SM_70, (\n";
@@ -140,7 +140,7 @@ int main()
       for (auto& sem : ld_semantics)
       {
         out << "template<class _CUDA_A, class _CUDA_B> ";
-        out << "static inline _LIBCUDACXX_DEVICE void __cuda_load_" << sem.first << "_" << sz << "_" << s.first
+        out << "static inline _CCCL_DEVICE void __cuda_load_" << sem.first << "_" << sz << "_" << s.first
             << "(_CUDA_A __ptr, _CUDA_B& __dst) {";
         if (ld_as_atom)
         {
@@ -158,8 +158,8 @@ int main()
       for (auto& cv : cv_qualifier)
       {
         out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
-        out << "_LIBCUDACXX_DEVICE void __atomic_load_cuda(const " << cv
-            << "_Type *__ptr, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
+        out << "_CCCL_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, "
+            << scopenametag(s.first) << ") {\n";
         out << "    uint" << sz << "_t __tmp = 0;\n";
         out << "    NV_DISPATCH_TARGET(\n";
         out << "      NV_PROVIDES_SM_70, (\n";
@@ -194,7 +194,7 @@ int main()
       for (auto& sem : st_semantics)
       {
         out << "template<class _CUDA_A, class _CUDA_B> ";
-        out << "static inline _LIBCUDACXX_DEVICE void __cuda_store_" << sem.first << "_" << sz << "_" << s.first
+        out << "static inline _CCCL_DEVICE void __cuda_store_" << sem.first << "_" << sz << "_" << s.first
             << "(_CUDA_A __ptr, _CUDA_B __src) { ";
         out << "asm volatile(\"st" << sem.second << (sem.first == "volatile" ? "" : s.second.c_str()) << ".b" << sz
             << " [%0], %1;\" :: ";
@@ -204,7 +204,7 @@ int main()
       for (auto& cv : cv_qualifier)
       {
         out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
-        out << "_LIBCUDACXX_DEVICE void __atomic_store_cuda(" << cv << "_Type *__ptr, _Type *__val, int __memorder, "
+        out << "_CCCL_DEVICE void __atomic_store_cuda(" << cv << "_Type *__ptr, _Type *__val, int __memorder, "
             << scopenametag(s.first) << ") {\n";
         out << "    uint" << sz << "_t __tmp = 0;\n";
         out << "    memcpy(&__tmp, __val, " << sz / 8 << ");\n";
@@ -259,8 +259,8 @@ int main()
               {
                 out << "template<class _CUDA_A, class _CUDA_B, class _CUDA_C> ";
               }
-              out << "static inline _LIBCUDACXX_DEVICE void __cuda_" << rmw.first << "_" << sem.first << "_"
-                  << type.first << sz << "_" << s.first << "(";
+              out << "static inline _CCCL_DEVICE void __cuda_" << rmw.first << "_" << sem.first << "_" << type.first
+                  << sz << "_" << s.first << "(";
               if (rmw.first == "compare_exchange")
               {
                 out << "_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op";
@@ -301,7 +301,7 @@ int main()
               if (rmw.first == "compare_exchange")
               {
                 out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
-                out << "_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(" << cv
+                out << "_CCCL_DEVICE bool __atomic_compare_exchange_cuda(" << cv
                     << "_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int "
                        "__failure_memorder, "
                     << scopenametag(s.first) << ") {\n";
@@ -355,7 +355,7 @@ int main()
                 {
                   out << ", int> = 0>\n";
                   out
-                    << "_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(" << cv
+                    << "_CCCL_DEVICE void __atomic_exchange_cuda(" << cv
                     << "_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
                   out << "    uint" << sz << "_t __tmp = 0;\n";
                   out << "    memcpy(&__tmp, __val, " << sz / 8 << ");\n";
@@ -387,7 +387,7 @@ int main()
                   {
                     out << ", int> = 0>\n";
                   }
-                  out << "_LIBCUDACXX_DEVICE _Type __atomic_" << rmw.first << "_cuda(" << cv
+                  out << "_CCCL_DEVICE _Type __atomic_" << rmw.first << "_cuda(" << cv
                       << "_Type *__ptr, _Type __val, int __memorder, " << scopenametag(s.first) << ") {\n";
                   out << "    _Type __ret;\n";
                   if (type.first == "f" && sz == 32)
@@ -460,7 +460,7 @@ int main()
       for (auto& op : addsub)
       {
         out << "template<class _Type>\n";
-        out << "_LIBCUDACXX_DEVICE _Type* __atomic_fetch_" << op << "_cuda(_Type *" << cv
+        out << "_CCCL_DEVICE _Type* __atomic_fetch_" << op << "_cuda(_Type *" << cv
             << "*__ptr, ptrdiff_t __val, int __memorder, " << scopenametag(s.first) << ") {\n";
         out << "    _Type* __ret;\n";
         out << "    uint64_t __tmp = 0;\n";

@@ -115,8 +115,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
-_LIBCUDACXX_DEVICE
-inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& b);
+_CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& b);
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
@@ -128,8 +127,7 @@ class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __blo
   using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int) thread_scope_block>;
   __barrier_base __barrier;
 
-  _LIBCUDACXX_DEVICE
-  friend inline _CUDA_VSTD::uint64_t*
+  _CCCL_DEVICE friend inline _CUDA_VSTD::uint64_t*
   device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(barrier<thread_scope_block>& b);
 
   template <typename _Barrier>
@@ -537,8 +535,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
-_LIBCUDACXX_DEVICE
-inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& b)
+_CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& b)
 {
   return reinterpret_cast<_CUDA_VSTD::uint64_t*>(&b.__barrier);
 }
@@ -546,8 +543,8 @@ inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& 
 #if defined(_CCCL_CUDA_COMPILER)
 
 #  if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
-_CCCL_NODISCARD _LIBCUDACXX_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
+extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
+_CCCL_NODISCARD _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
   barrier<thread_scope_block>& __b,
   _CUDA_VSTD::ptrdiff_t __arrive_count_update,
   _CUDA_VSTD::ptrdiff_t __transaction_count_update)
@@ -598,8 +595,8 @@ _CCCL_NODISCARD _LIBCUDACXX_DEVICE inline barrier<thread_scope_block>::arrival_t
   return __token;
 }
 
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
-_LIBCUDACXX_DEVICE inline void
+extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
+_CCCL_DEVICE inline void
 barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __transaction_count_update)
 {
   _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
@@ -627,9 +624,9 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
     (__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
 }
 
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
 template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
-_LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
+_CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   _Tp* __dest,
   const _Tp* __src,
   ::cuda::aligned_size_t<_Alignment> __size,
@@ -928,7 +925,7 @@ struct __memcpy_completion_impl
  ***********************************************************************/
 
 #  if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
 template <typename _Group>
 inline __device__ void
 __cp_async_bulk_shared_global(const _Group& __g, char* __dest, const char* __src, size_t __size, uint64_t* __bar_handle)
@@ -943,7 +940,7 @@ __cp_async_bulk_shared_global(const _Group& __g, char* __dest, const char* __src
 }
 #  endif // __cccl_ptx_isa >= 800
 
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
 template <size_t _Copy_size>
 inline __device__ void __cp_async_shared_global(char* __dest, const char* __src)
 {
@@ -1081,7 +1078,7 @@ struct __get_size_align<T, _CUDA_VSTD::__void_t<decltype(T::align)>>
  ***********************************************************************/
 
 template <_CUDA_VSTD::size_t _Align, typename _Group>
-_CCCL_NODISCARD _LIBCUDACXX_DEVICE inline __completion_mechanism __dispatch_memcpy_async_any_to_any(
+_CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_any_to_any(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -1094,7 +1091,7 @@ _CCCL_NODISCARD _LIBCUDACXX_DEVICE inline __completion_mechanism __dispatch_memc
 }
 
 template <_CUDA_VSTD::size_t _Align, typename _Group>
-_CCCL_NODISCARD _LIBCUDACXX_DEVICE inline __completion_mechanism __dispatch_memcpy_async_global_to_shared(
+_CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_global_to_shared(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
