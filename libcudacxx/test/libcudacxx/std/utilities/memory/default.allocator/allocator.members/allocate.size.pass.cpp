@@ -21,10 +21,10 @@
 
 #include "test_macros.h"
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
 template <typename T>
 __host__ __device__ void test_max(cuda::std::size_t count)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::allocator<T> a;
   try
   {
@@ -33,9 +33,6 @@ __host__ __device__ void test_max(cuda::std::size_t count)
   }
   catch (const cuda::std::bad_array_new_length&)
   {}
-#else
-  unused(count);
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
 template <typename T>
@@ -50,11 +47,14 @@ __host__ __device__ void test()
   test_max<T>(((cuda::std::size_t) -1) / sizeof(T) + 1); // multiply will overflow
   test_max<T>((cuda::std::size_t) -1); // way too large
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
-  test<double>();
-  test<const double>();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test<double>();));
+  NV_IF_TARGET(NV_IS_HOST, (test<const double>();));
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }
