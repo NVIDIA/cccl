@@ -1862,21 +1862,6 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_DIAGNOSE_ERROR(...)
 #endif
 
-// Use a function like macro to imply that it must be followed by a semicolon
-#if __cplusplus > 201402L && __has_cpp_attribute(fallthrough)
-#  define _LIBCUDACXX_FALLTHROUGH() [[fallthrough]]
-#elif defined(_CCCL_COMPILER_NVRTC)
-#  define _LIBCUDACXX_FALLTHROUGH() ((void)0)
-#elif __has_cpp_attribute(clang::fallthrough)
-#  define _LIBCUDACXX_FALLTHROUGH() [[clang::fallthrough]]
-#elif defined(_CCCL_COMPILER_NVHPC)
-#  define _LIBCUDACXX_FALLTHROUGH()
-#elif __has_attribute(fallthough) || _GNUC_VER >= 700
-#  define _LIBCUDACXX_FALLTHROUGH() __attribute__((__fallthrough__))
-#else
-#  define _LIBCUDACXX_FALLTHROUGH() ((void)0)
-#endif
-
 #if __has_attribute(__nodebug__)
 #define _LIBCUDACXX_NODEBUG __attribute__((__nodebug__))
 #else

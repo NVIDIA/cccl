@@ -12,6 +12,7 @@
 #define __CCCL_ATTRIBUTES_H
 
 #include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
+#include <cuda/std/detail/libcxx/include/__cccl/dialect.h>
 #include <cuda/std/detail/libcxx/include/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,9 +23,28 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef __has_attribute
+#  define __has_attribute(__x) 0
+#endif // !__has_attribute
+
 #ifndef __has_cpp_attribute
 #  define __has_cpp_attribute(__x) 0
 #endif // !__has_cpp_attribute
+
+// Use a function like macro to imply that it must be followed by a semicolon
+#if _CCCL_STD_VER >= 2017 && __has_cpp_attribute(fallthrough)
+#  define _CCCL_FALLTHROUGH() [[fallthrough]]
+#elif defined(_CCCL_COMPILER_NVRTC)
+#  define _CCCL_FALLTHROUGH() ((void) 0)
+#elif __has_cpp_attribute(clang::fallthrough)
+#  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]
+#elif defined(_CCCL_COMPILER_NVHPC)
+#  define _CCCL_FALLTHROUGH()
+#elif __has_attribute(fallthough) || _GNUC_VER >= 700
+#  define _CCCL_FALLTHROUGH() __attribute__((__fallthrough__))
+#else
+#  define _CCCL_FALLTHROUGH() ((void) 0)
+#endif
 
 #if __has_cpp_attribute(msvc::no_unique_address)
 // MSVC implements [[no_unique_address]] as a silent no-op currently.
