@@ -142,7 +142,6 @@ void TestGatherIfSimple(void)
   Vector src(8); // source vector
   Vector dst(5); // destination vector
 
-
   // clang-format off
   flg[0] = 0; flg[1] = 1; flg[2] = 0; flg[3] = 1; flg[4] = 0;
   map[0] = 6; map[1] = 2; map[2] = 1; map[3] = 7; map[4] = 2;
