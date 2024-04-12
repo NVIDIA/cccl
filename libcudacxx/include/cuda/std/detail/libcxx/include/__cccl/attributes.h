@@ -26,6 +26,22 @@
 #  define __has_cpp_attribute(__x) 0
 #endif // !__has_cpp_attribute
 
+#if __has_cpp_attribute(msvc::no_unique_address)
+// MSVC implements [[no_unique_address]] as a silent no-op currently.
+// (If/when MSVC breaks its C++ ABI, it will be changed to work as intended.)
+// However, MSVC implements [[msvc::no_unique_address]] which does what
+// [[no_unique_address]] is supposed to do, in general.
+#  define _CCCL_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#elif defined(_CCCL_CUDACC_BELOW_11_3) || (__has_cpp_attribute(no_unique_address) < 201803L)
+#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _CCCL_NO_UNIQUE_ADDRESS
+#elif __has_cpp_attribute(no_unique_address)
+#  define _CCCL_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#else
+#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _CCCL_NO_UNIQUE_ADDRESS
+#endif
+
 #if __has_cpp_attribute(nodiscard) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER >= 2017)
 #  define _CCCL_NODISCARD [[nodiscard]]
 #else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv

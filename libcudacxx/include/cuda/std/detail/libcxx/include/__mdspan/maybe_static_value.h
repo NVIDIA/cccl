@@ -56,9 +56,9 @@
 
 #include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
-#endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 // This is only needed for the non-standard-layout version of partially
 // static array.
@@ -121,13 +121,13 @@ struct __maybe_static_value
 // dynamic case
 template <class _dynamic_t, class _static_t, _static_t __is_dynamic_sentinal, size_t __array_entry_index>
 struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_dynamic_sentinal, __array_entry_index>
-#    ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : __no_unique_address_emulation<_Tp>
 #    endif
 {
   static constexpr _static_t __static_value = __is_dynamic_sentinal;
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _dynamic_t __v = {};
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  _CCCL_NO_UNIQUE_ADDRESS _dynamic_t __v = {};
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _dynamic_t __value() const noexcept
   {
     return __v;

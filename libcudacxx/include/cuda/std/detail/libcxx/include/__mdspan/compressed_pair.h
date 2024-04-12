@@ -55,9 +55,9 @@
 #endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
-#endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_empty.h>
 
@@ -73,8 +73,8 @@ namespace __detail
 template <class _Tp, class _Up, class _Enable = void>
 struct __compressed_pair
 {
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Tp __t_val;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Up __u_val;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp __t_val;
+  _CCCL_NO_UNIQUE_ADDRESS _Up __u_val;
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __first() noexcept
   {
     return __t_val;
@@ -111,7 +111,7 @@ struct __compressed_pair
   {}
 };
 
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 // First empty.
 template <class _Tp, class _Up>
@@ -261,7 +261,7 @@ struct __compressed_pair<
   {}
 };
 
-#  endif // !_LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 } // end namespace __detail
 

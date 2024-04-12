@@ -245,10 +245,10 @@ private:
     _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Empty(_Tp) noexcept
     {}
   };
-  using _Size = conditional_t<_StoreSize, make_unsigned_t<iter_difference_t<_Iter>>, _Empty>;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Iter __begin_ = _Iter();
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Sent __end_   = _Sent();
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Size __size_  = 0;
+  using _Size                            = conditional_t<_StoreSize, make_unsigned_t<iter_difference_t<_Iter>>, _Empty>;
+  _CCCL_NO_UNIQUE_ADDRESS _Iter __begin_ = _Iter();
+  _CCCL_NO_UNIQUE_ADDRESS _Sent __end_   = _Sent();
+  _CCCL_NO_UNIQUE_ADDRESS _Size __size_  = 0;
 
 public:
 #  if _CCCL_STD_VER >= 2020

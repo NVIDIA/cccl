@@ -275,7 +275,7 @@ public:
   }
 
 private:
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS extents_type __extents{};
+  _CCCL_NO_UNIQUE_ADDRESS extents_type __extents{};
 };
 
 #endif // _CCCL_STD_VER > 2011

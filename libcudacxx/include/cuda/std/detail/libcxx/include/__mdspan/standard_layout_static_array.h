@@ -57,9 +57,9 @@
 #include <cuda/std/detail/libcxx/include/__mdspan/compressed_pair.h>
 #include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
-#endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
@@ -130,7 +130,7 @@ struct __standard_layout_psa<_Tag,
                              _CUDA_VSTD::integer_sequence<_static_t, __value, __values_or_sentinals...>,
                              __sentinal,
                              _CUDA_VSTD::integer_sequence<size_t, _Idx, _Idxs...>>
-#    ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : private __no_unique_address_emulation<
         __standard_layout_psa<_Tag,
                               _Tp,
@@ -150,15 +150,15 @@ struct __standard_layout_psa<_Tag,
                           __sentinal,
                           _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>;
 
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __next_t __next_;
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  _CCCL_NO_UNIQUE_ADDRESS __next_t __next_;
 #    else
   using __base_t = __no_unique_address_emulation<__next_t>;
 #    endif
 
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t& __next() noexcept
   {
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __next_;
 #    else
     return this->__base_t::__ref();
@@ -166,7 +166,7 @@ struct __standard_layout_psa<_Tag,
   }
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t const& __next() const noexcept
   {
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __next_;
 #    else
     return this->__base_t::__ref();
@@ -197,13 +197,13 @@ struct __standard_layout_psa<_Tag,
   constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t,
                                   _Tp const& /*__val*/,
                                   __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __construct_psa_from_all_exts_values_tag, __vals...
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -213,13 +213,13 @@ struct __standard_layout_psa<_Tag,
   template <class... _Ts>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
     __construct_psa_from_dynamic_exts_values_tag_t, _Ts const&... __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __construct_psa_from_dynamic_exts_values_tag, __vals...
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -228,13 +228,13 @@ struct __standard_layout_psa<_Tag,
 
   template <class _Up, size_t _Np>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __vals
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -244,13 +244,13 @@ struct __standard_layout_psa<_Tag,
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t const& __tag, array<_Up, _NStatic> const& __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __tag, __vals
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -260,13 +260,13 @@ struct __standard_layout_psa<_Tag,
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag, array<_Up, _NDynamic> const& __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __tag, __vals
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -275,13 +275,13 @@ struct __standard_layout_psa<_Tag,
 
   template <class _Up, size_t _Np>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __vals
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -291,13 +291,13 @@ struct __standard_layout_psa<_Tag,
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t const& __tag, _CUDA_VSTD::span<_Up, _NStatic> const& __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __tag, __vals
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -308,13 +308,13 @@ struct __standard_layout_psa<_Tag,
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag,
     _CUDA_VSTD::span<_Up, _NDynamic> const& __vals) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __tag, __vals
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
         )})
@@ -324,13 +324,13 @@ struct __standard_layout_psa<_Tag,
   template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _IdxsSeq>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
     __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _IdxsSeq> const& __rhs) noexcept
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
         __rhs.__next()
-#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #    else
           )})
