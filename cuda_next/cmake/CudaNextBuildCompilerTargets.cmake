@@ -14,15 +14,10 @@ function(CudaNext_build_compiler_targets)
   set(cuda_compile_options)
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # CudaNext requires dim3 to be usable from a constexpr context, and the CUDART headers require
-    # __cplusplus to be defined for this to work:
-    list(APPEND cuda_compile_options "/Zc:__cplusplus")
-
-    # Use the local env instead of rebuilding it all the time
-    list(APPEND cuda_compile_options "--use-local-env")
-
     # sccache cannot handle the -Fd option generating pdb files
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+
+    append_option_if_available("--use-local-env" cuda_compile_options)
 
     append_option_if_available("/W4" cxx_compile_options)
 
@@ -42,12 +37,12 @@ function(CudaNext_build_compiler_targets)
     # unintentional assignments and suppress all such warnings on MSVC.
     append_option_if_available("/wd4706" cxx_compile_options)
 
-    # Some tests require /bigobj to fit everything into their object files:
-    append_option_if_available("/bigobj" cxx_compile_options)
+    # CudaNext requires dim3 to be usable from a constexpr context, and the CUDART headers require
+    # __cplusplus to be defined for this to work:
+    append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
   else()
     append_option_if_available("-Wreorder" cuda_compile_options)
     append_option_if_available("-Wno_unknown-cuda-version" cuda_compile_options)
-    append_option_if_available("-Wreorder" cuda_compile_options)
     append_option_if_available("-Xclang=-fcuda-allow-variadic-functions" cuda_compile_options)
 
     append_option_if_available("-Werror" cxx_compile_options)
@@ -69,8 +64,6 @@ function(CudaNext_build_compiler_targets)
 
     # GCC 7.3 complains about name mangling changes due to `noexcept`
     append_option_if_available("-Wno-noexcept-type" cxx_compile_options)
-
-
   endif()
 
   if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
