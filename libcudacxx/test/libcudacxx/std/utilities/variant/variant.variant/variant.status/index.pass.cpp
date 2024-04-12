@@ -17,13 +17,26 @@
 // constexpr size_t index() const noexcept;
 
 #include <cuda/std/cassert>
-// #include <cuda/std/string>
+#if defined(_LIBCUDACXX_HAS_STRING)
+#  include <cuda/std/string>
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
 
 #include "archetypes.h"
 #include "test_macros.h"
 #include "variant_test_helpers.h"
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions()
+{
+  using V = cuda::std::variant<int, MakeEmptyT>;
+  V v;
+  assert(v.index() == 0);
+  makeEmpty(v);
+  assert(v.index() == cuda::std::variant_npos);
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -42,22 +55,18 @@ int main(int, char**)
     constexpr V v(cuda::std::in_place_index<1>);
     static_assert(v.index() == 1, "");
   }
-  /*{
+#if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, cuda::std::string>;
     V v("abc");
     assert(v.index() == 1);
     v = 42;
     assert(v.index() == 0);
-  }*/
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    using V = cuda::std::variant<int, MakeEmptyT>;
-    V v;
-    assert(v.index() == 0);
-    makeEmpty(v);
-    assert(v.index() == cuda::std::variant_npos);
   }
-#endif
+#endif // _LIBCUDACXX_HAS_STRING
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

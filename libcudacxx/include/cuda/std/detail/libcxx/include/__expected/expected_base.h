@@ -189,9 +189,10 @@ struct __expected_destruct<_Tp, _Err, false, false>
   _LIBCUDACXX_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
-  constexpr __expected_destruct() noexcept = default;
+  constexpr __expected_destruct() = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
@@ -254,9 +255,10 @@ struct __expected_destruct<_Tp, _Err, true, false>
   _LIBCUDACXX_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
-  constexpr __expected_destruct() noexcept = default;
+  constexpr __expected_destruct() = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
@@ -269,7 +271,7 @@ struct __expected_destruct<_Tp, _Err, true, false>
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -315,9 +317,10 @@ struct __expected_destruct<_Tp, _Err, false, true>
   _LIBCUDACXX_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
-  constexpr __expected_destruct() noexcept = default;
+  constexpr __expected_destruct() = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
@@ -330,7 +333,7 @@ struct __expected_destruct<_Tp, _Err, false, true>
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -377,9 +380,10 @@ struct __expected_destruct<_Tp, _Err, true, true>
   /* _LIBCUDACXX_NO_UNIQUE_ADDRESS */ __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
-  constexpr __expected_destruct() noexcept = default;
+  constexpr __expected_destruct() = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
@@ -392,7 +396,7 @@ struct __expected_destruct<_Tp, _Err, true, true>
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -732,7 +736,7 @@ struct __expected_destruct<void, _Err, false, false>
   } __union_{};
   bool __has_val_{true};
 
-  constexpr __expected_destruct() noexcept = default;
+  constexpr __expected_destruct() = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept
       : __has_val_(__has_val)
@@ -800,7 +804,7 @@ struct __expected_destruct<void, _Err, false, true>
   } __union_{};
   bool __has_val_{true};
 
-  constexpr __expected_destruct() noexcept = default;
+  constexpr __expected_destruct() = default;
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(in_place_t) noexcept(

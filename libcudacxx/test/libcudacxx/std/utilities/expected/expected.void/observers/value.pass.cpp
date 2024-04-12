@@ -54,10 +54,9 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void testException()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-
+void test_exceptions()
+{
   // int
   {
     const cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
@@ -85,9 +84,8 @@ __host__ __device__ void testException()
       assert(ex.error() == 5);
     }
   }
-
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -95,6 +93,8 @@ int main(int, char**)
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

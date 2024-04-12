@@ -38,15 +38,6 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc()
-{
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  throw bad_alloc();
-#else
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_LIBCUDACXX_NO_EXCEPTIONS
-}
-
 class _LIBCUDACXX_TYPE_VIS bad_array_new_length : public bad_alloc
 {
 public:
@@ -58,14 +49,29 @@ public:
   }
 };
 
+_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc()
+{
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_alloc();), (_CUDA_VSTD_NOVERSION::terminate();))
+#else
+  _CUDA_VSTD_NOVERSION::terminate();
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
+}
+
 _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_array_new_length()
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  throw bad_array_new_length();
-#endif // !_LIBCUDACXX_NO_EXCEPTIONS
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_array_new_length();), (_CUDA_VSTD_NOVERSION::terminate();))
+#else
   _CUDA_VSTD_NOVERSION::terminate();
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___NEW_BAD_ALLOC_H

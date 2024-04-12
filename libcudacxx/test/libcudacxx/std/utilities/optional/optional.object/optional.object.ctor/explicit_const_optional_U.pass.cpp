@@ -22,37 +22,16 @@
 using cuda::std::optional;
 
 template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const optional<U>& rhs, bool is_going_to_throw = false)
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const optional<U>& rhs)
 {
   static_assert(!(cuda::std::is_convertible<const optional<U>&, optional<T>>::value), "");
   bool rhs_engaged = static_cast<bool>(rhs);
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  try
-  {
-    optional<T> lhs(rhs);
-    assert(is_going_to_throw == false);
-    assert(static_cast<bool>(lhs) == rhs_engaged);
-    if (rhs_engaged)
-    {
-      assert(*lhs == T(*rhs));
-    }
-  }
-  catch (int i)
-  {
-    assert(i == 6);
-  }
-#else
-  if (is_going_to_throw)
-  {
-    return;
-  }
   optional<T> lhs(rhs);
   assert(static_cast<bool>(lhs) == rhs_engaged);
   if (rhs_engaged)
   {
     assert(*lhs == T(*rhs));
   }
-#endif
 }
 
 class X
@@ -91,6 +70,37 @@ public:
   }
 };
 
+template <class T, class U>
+__host__ __device__ constexpr bool test_all()
+{
+  {
+    optional<U> rhs;
+    test<T>(rhs);
+  }
+  {
+    optional<U> rhs(3);
+    test<T>(rhs);
+  }
+  return true;
+}
+
+class TerminatesOnConstruction
+{
+  int i_;
+
+public:
+  __host__ __device__ explicit TerminatesOnConstruction(int)
+  {
+    cuda::std::terminate();
+  }
+
+  __host__ __device__ friend bool operator==(const TerminatesOnConstruction& x, const TerminatesOnConstruction& y)
+  {
+    return x.i_ == y.i_;
+  }
+};
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
 class Z
 {
   int i_;
@@ -109,18 +119,28 @@ public:
 };
 
 template <class T, class U>
-__host__ __device__ constexpr bool test_all()
+void test_exception(const optional<U>& rhs)
 {
+  try
   {
-    optional<U> rhs;
-    test<T>(rhs);
+    optional<T> lhs(rhs);
+    unused(lhs);
+    assert(false);
   }
+  catch (int i)
   {
-    optional<U> rhs(3);
-    test<T>(rhs);
+    assert(i == 6);
   }
-  return true;
 }
+
+void test_exceptions()
+{
+  typedef Z T;
+  typedef int U;
+  optional<U> rhs(3);
+  test_exception<T>(rhs);
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -131,17 +151,15 @@ int main(int, char**)
   static_assert(test_all<Y, int>());
 #endif
   {
-    typedef Z T;
+    typedef TerminatesOnConstruction T;
     typedef int U;
     optional<U> rhs;
     test<T>(rhs);
+    static_assert(!(cuda::std::is_convertible<const optional<U>&, optional<T>>::value), "");
   }
-  {
-    typedef Z T;
-    typedef int U;
-    optional<U> rhs(3);
-    test<T>(rhs, true);
-  }
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

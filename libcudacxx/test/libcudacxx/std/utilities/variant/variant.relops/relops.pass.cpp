@@ -101,7 +101,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 struct MyBool
 {
@@ -191,7 +191,11 @@ __host__ __device__ void test_equality()
   test_equality_basic<ComparesToMyBool, int>();
   test_equality_basic<int, ComparesToMyBool>();
   test_equality_basic<ComparesToMyBool, ComparesToMyBool>();
+}
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions_equality()
+{
   {
     using V = cuda::std::variant<int, MakeEmptyT>;
     V v1;
@@ -223,8 +227,8 @@ __host__ __device__ void test_equality()
     assert(!(v1 != v2));
     assert(!(v2 != v1));
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class Var>
 __host__ __device__ constexpr bool test_less(const Var& l, const Var& r, bool expect_less, bool expect_greater)
@@ -279,7 +283,11 @@ __host__ __device__ void test_relational()
   test_relational_basic<ComparesToMyBool, int>();
   test_relational_basic<int, ComparesToMyBool>();
   test_relational_basic<ComparesToMyBool, ComparesToMyBool>();
+}
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions_relational()
+{
   { // LHS.index() < RHS.index(), RHS is empty
     using V = cuda::std::variant<int, MakeEmptyT>;
     V v1;
@@ -302,13 +310,18 @@ __host__ __device__ void test_relational()
     makeEmpty(v2);
     assert(test_less(v1, v2, false, false));
   }
-#endif
 }
+#endif
 
 int main(int, char**)
 {
   test_equality();
   test_relational();
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions_equality();))
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions_relational();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

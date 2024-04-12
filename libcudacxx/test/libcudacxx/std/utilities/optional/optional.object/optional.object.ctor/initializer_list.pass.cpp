@@ -75,6 +75,7 @@ public:
   }
 };
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
 class Z
 {
   int i_;
@@ -99,6 +100,21 @@ public:
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
 };
+
+void test_exceptions()
+{
+  static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value, "");
+  try
+  {
+    optional<Z> opt(in_place, {3, 1});
+    assert(false);
+  }
+  catch (int i)
+  {
+    assert(i == 6);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -144,19 +160,8 @@ int main(int, char**)
     };
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value, "");
-    try
-    {
-      optional<Z> opt(in_place, {3, 1});
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 6);
-    }
-  }
-#endif
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

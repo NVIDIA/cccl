@@ -128,8 +128,8 @@ struct MakeEmptyT
 };
 
 int MakeEmptyT::alive = 0;
-__host__ __device__ template <class Variant>
-void makeEmpty(Variant& v)
+template <class Variant>
+__host__ __device__ void makeEmpty(Variant& v)
 {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
   try
@@ -142,7 +142,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ void test_copy_ctor_sfinae()
 {
@@ -258,17 +258,17 @@ __host__ __device__ void test_copy_ctor_basic()
   }
 }
 
-__host__ __device__ void test_copy_ctor_valueless_by_exception()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_copy_ctor_valueless_by_exception()
+{
   using V = cuda::std::variant<int, MakeEmptyT>;
   V v1;
   makeEmpty(v1);
   const V& cv1 = v1;
   V v(cv1);
   assert(v.valueless_by_exception());
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <size_t Idx>
 __host__ __device__ constexpr bool test_constexpr_copy_ctor_imp(cuda::std::variant<long, void*, const int> const& v)
@@ -298,7 +298,9 @@ __host__ __device__ void test_constexpr_copy_ctor()
 int main(int, char**)
 {
   test_copy_ctor_basic();
-  test_copy_ctor_valueless_by_exception();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_ctor_valueless_by_exception();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   test_copy_ctor_sfinae();
   test_constexpr_copy_ctor();
   return 0;

@@ -492,9 +492,9 @@ __host__ __device__ void other_callable_types_test()
   }
 }
 
-__host__ __device__ void throws_in_constructor_test()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void throws_in_constructor_test()
+{
   struct ThrowsOnCopy
   {
     ThrowsOnCopy(ThrowsOnCopy const&)
@@ -524,8 +524,8 @@ __host__ __device__ void throws_in_constructor_test()
       assert(value == 42);
     }
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ void call_operator_sfinae_test()
 {
@@ -750,7 +750,9 @@ int main(int, char**)
   constructor_tests();
   return_type_tests();
   other_callable_types_test();
-  throws_in_constructor_test();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (throws_in_constructor_test();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   call_operator_sfinae_test(); // somewhat of an extension
   // call_operator_forwarding_test();
   call_operator_noexcept_test();
