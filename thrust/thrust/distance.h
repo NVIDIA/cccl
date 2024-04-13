@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file distance.h
  *  \brief Computes the size of a range
  */
@@ -46,10 +45,11 @@ THRUST_NAMESPACE_BEGIN
  *  \param last The end of an input range of interest.
  *  \return The distance between the beginning and end of the input range.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
  *
- *  \pre If \c InputIterator meets the requirements of random access iterator, \p last shall be reachable from \p first or
- *       \p first shall be reachable from \p last; otherwise, \p last shall be reachable from \p first.
+ *  \pre If \c InputIterator meets the requirements of random access iterator, \p last shall be reachable from \p first
+ * or \p first shall be reachable from \p last; otherwise, \p last shall be reachable from \p first.
  *
  *  The following code snippet demonstrates how to use \p distance to compute
  *  the distance to one iterator from another.
@@ -69,10 +69,9 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/iterator/distance
  */
-template<typename InputIterator>
-inline _CCCL_HOST_DEVICE
-  typename thrust::iterator_traits<InputIterator>::difference_type
-    distance(InputIterator first, InputIterator last);
+template <typename InputIterator>
+inline _CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
+distance(InputIterator first, InputIterator last);
 
 /*! \} // end iterators
  */

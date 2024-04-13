@@ -37,62 +37,46 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <thrust/system/cuda/config.h>
+#  include <thrust/system/cuda/config.h>
 
-#include <cub/device/device_for.cuh>
+#  include <cub/device/device_for.cuh>
 
-#include <thrust/system/cuda/detail/cdp_dispatch.h>
-#include <thrust/system/cuda/detail/util.h>
-#include <thrust/system/cuda/detail/parallel_for.h>
-#include <thrust/detail/function.h>
-#include <thrust/distance.h>
+#  include <thrust/detail/function.h>
+#  include <thrust/distance.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/parallel_for.h>
+#  include <thrust/system/cuda/detail/util.h>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub {
+namespace cuda_cub
+{
 
-  // for_each_n
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class Derived,
-            class Input,
-            class Size,
-            class UnaryOp>
-  Input THRUST_FUNCTION
-  for_each_n(execution_policy<Derived> &policy,
-             Input                      first,
-             Size                       count,
-             UnaryOp                    op)
-  {
-    THRUST_CDP_DISPATCH(
-      (cudaStream_t stream = cuda_cub::stream(policy);
-       cudaError_t  status = cub::DeviceFor::ForEachN(first, count, op, stream);
-       cuda_cub::throw_on_error(status, "parallel_for failed");
-       status = cuda_cub::synchronize_optional(policy);
-       cuda_cub::throw_on_error(status, "parallel_for: failed to synchronize");),
-       (for (Size idx = 0; idx != count; ++idx)
-        {
-          op(raw_reference_cast(*(first + idx)));
-        }
-    ));
+// for_each_n
+_CCCL_EXEC_CHECK_DISABLE
+template <class Derived, class Input, class Size, class UnaryOp>
+Input THRUST_FUNCTION for_each_n(execution_policy<Derived>& policy, Input first, Size count, UnaryOp op)
+{
+  THRUST_CDP_DISPATCH(
+    (cudaStream_t stream = cuda_cub::stream(policy);
+     cudaError_t status  = cub::DeviceFor::ForEachN(first, count, op, stream);
+     cuda_cub::throw_on_error(status, "parallel_for failed");
+     status = cuda_cub::synchronize_optional(policy);
+     cuda_cub::throw_on_error(status, "parallel_for: failed to synchronize");),
+    (for (Size idx = 0; idx != count; ++idx) { op(raw_reference_cast(*(first + idx))); }));
 
-    return first + count;
-  }
+  return first + count;
+}
 
-  // for_each
-  template <class Derived,
-            class Input,
-            class UnaryOp>
-  Input THRUST_FUNCTION
-  for_each(execution_policy<Derived> &policy,
-           Input                      first,
-           Input                      last,
-           UnaryOp                    op)
-  {
-    typedef typename iterator_traits<Input>::difference_type size_type;
-    size_type count = static_cast<size_type>(thrust::distance(first,last));
+// for_each
+template <class Derived, class Input, class UnaryOp>
+Input THRUST_FUNCTION for_each(execution_policy<Derived>& policy, Input first, Input last, UnaryOp op)
+{
+  typedef typename iterator_traits<Input>::difference_type size_type;
+  size_type count = static_cast<size_type>(thrust::distance(first, last));
 
-    return THRUST_NS_QUALIFIER::cuda_cub::for_each_n(policy, first, count, op);
-  }
+  return THRUST_NS_QUALIFIER::cuda_cub::for_each_n(policy, first, count, op);
+}
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

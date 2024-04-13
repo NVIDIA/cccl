@@ -28,43 +28,35 @@
 
 #include <thrust/fill.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/detail/generic/fill.h>
 #include <thrust/system/detail/adl/fill.h>
+#include <thrust/system/detail/generic/fill.h>
+#include <thrust/system/detail/generic/select_system.h>
 
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-  void fill(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-            ForwardIterator first,
-            ForwardIterator last,
-            const T &value)
+template <typename DerivedPolicy, typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE void
+fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+     ForwardIterator first,
+     ForwardIterator last,
+     const T& value)
 {
   using thrust::system::detail::generic::fill;
   return fill(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 } // end fill()
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE
-  OutputIterator fill_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                        OutputIterator first,
-                        Size n,
-                        const T &value)
+template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
+_CCCL_HOST_DEVICE OutputIterator
+fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value)
 {
   using thrust::system::detail::generic::fill_n;
   return fill_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, value);
 } // end fill_n()
 
-
-template<typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-  void fill(ForwardIterator first,
-            ForwardIterator last,
-            const T &value)
+template <typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T& value)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -75,12 +67,8 @@ _CCCL_HOST_DEVICE
   thrust::fill(select_system(system), first, last, value);
 } // end fill()
 
-
-template<typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE
-  OutputIterator fill_n(OutputIterator first,
-                        Size n,
-                        const T &value)
+template <typename OutputIterator, typename Size, typename T>
+_CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& value)
 {
   using thrust::system::detail::generic::select_system;
 

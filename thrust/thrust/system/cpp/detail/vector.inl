@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/system/cpp/vector.h>
+
 #include <utility>
 
 THRUST_NAMESPACE_BEGIN
@@ -34,116 +35,96 @@ namespace system
 namespace cpp
 {
 
-template<typename T, typename Allocator>
-  vector<T,Allocator>
-    ::vector()
-      : super_t()
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector()
+    : super_t()
 {}
 
-template<typename T, typename Allocator>
-  vector<T,Allocator>
-    ::vector(size_type n)
-      : super_t(n)
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector(size_type n)
+    : super_t(n)
 {}
 
-template<typename T, typename Allocator>
-  vector<T,Allocator>
-    ::vector(size_type n, const value_type &value)
-      : super_t(n,value)
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector(size_type n, const value_type& value)
+    : super_t(n, value)
 {}
 
-template<typename T, typename Allocator>
-  vector<T,Allocator>
-    ::vector(const vector &x)
-      : super_t(x)
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector(const vector& x)
+    : super_t(x)
 {}
 
-  template<typename T, typename Allocator>
-    vector<T,Allocator>
-      ::vector(vector &&x)
-        : super_t(std::move(x))
-  {}
-
-template<typename T, typename Allocator>
-  template<typename OtherT, typename OtherAllocator>
-    vector<T,Allocator>
-      ::vector(const thrust::detail::vector_base<OtherT,OtherAllocator> &x)
-        : super_t(x)
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector(vector&& x)
+    : super_t(std::move(x))
 {}
 
-template<typename T, typename Allocator>
-  template<typename OtherT, typename OtherAllocator>
-    vector<T,Allocator>
-      ::vector(const std::vector<OtherT,OtherAllocator> &x)
-        : super_t(x)
+template <typename T, typename Allocator>
+template <typename OtherT, typename OtherAllocator>
+vector<T, Allocator>::vector(const thrust::detail::vector_base<OtherT, OtherAllocator>& x)
+    : super_t(x)
 {}
 
-template<typename T, typename Allocator>
-  template<typename InputIterator>
-    vector<T,Allocator>
-      ::vector(InputIterator first, InputIterator last)
-        : super_t(first,last)
+template <typename T, typename Allocator>
+template <typename OtherT, typename OtherAllocator>
+vector<T, Allocator>::vector(const std::vector<OtherT, OtherAllocator>& x)
+    : super_t(x)
 {}
 
-template<typename T, typename Allocator>
-  vector<T,Allocator> &
-    vector<T,Allocator>
-      ::operator=(const vector &x)
+template <typename T, typename Allocator>
+template <typename InputIterator>
+vector<T, Allocator>::vector(InputIterator first, InputIterator last)
+    : super_t(first, last)
+{}
+
+template <typename T, typename Allocator>
+vector<T, Allocator>& vector<T, Allocator>::operator=(const vector& x)
 {
   super_t::operator=(x);
   return *this;
 }
 
-  template<typename T, typename Allocator>
-    vector<T,Allocator> &
-      vector<T,Allocator>
-        ::operator=(vector &&x)
-  {
-    super_t::operator=(std::move(x));
-    return *this;
-  }
+template <typename T, typename Allocator>
+vector<T, Allocator>& vector<T, Allocator>::operator=(vector&& x)
+{
+  super_t::operator=(std::move(x));
+  return *this;
+}
 
-  template<typename T, typename Allocator>
-    vector<T,Allocator>
-      ::vector(std::initializer_list<T> il)
-        : super_t(il)
-  {}
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector(std::initializer_list<T> il)
+    : super_t(il)
+{}
 
-  template<typename T, typename Allocator>
-    vector<T,Allocator>
-      ::vector(std::initializer_list<T> il, const Allocator& alloc)
-        : super_t(il, alloc)
-  {}
+template <typename T, typename Allocator>
+vector<T, Allocator>::vector(std::initializer_list<T> il, const Allocator& alloc)
+    : super_t(il, alloc)
+{}
 
-  template<typename T, typename Allocator>
-    vector<T,Allocator> &
-      vector<T,Allocator>
-        ::operator=(std::initializer_list<T> il)
-  {
-    super_t::operator=(il);
-    return *this;
-  }
+template <typename T, typename Allocator>
+vector<T, Allocator>& vector<T, Allocator>::operator=(std::initializer_list<T> il)
+{
+  super_t::operator=(il);
+  return *this;
+}
 
-template<typename T, typename Allocator>
-  template<typename OtherT, typename OtherAllocator>
-    vector<T,Allocator> &
-      vector<T,Allocator>
-        ::operator=(const std::vector<OtherT,OtherAllocator> &x)
+template <typename T, typename Allocator>
+template <typename OtherT, typename OtherAllocator>
+vector<T, Allocator>& vector<T, Allocator>::operator=(const std::vector<OtherT, OtherAllocator>& x)
 {
   super_t::operator=(x);
   return *this;
 }
 
-template<typename T, typename Allocator>
-  template<typename OtherT, typename OtherAllocator>
-    vector<T,Allocator> &
-      vector<T,Allocator>
-        ::operator=(const thrust::detail::vector_base<OtherT,OtherAllocator> &x)
+template <typename T, typename Allocator>
+template <typename OtherT, typename OtherAllocator>
+vector<T, Allocator>& vector<T, Allocator>::operator=(const thrust::detail::vector_base<OtherT, OtherAllocator>& x)
 {
   super_t::operator=(x);
   return *this;
 }
 
-} // end cpp
-} // end system
+} // namespace cpp
+} // namespace system
 THRUST_NAMESPACE_END

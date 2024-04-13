@@ -27,4 +27,3 @@
 #endif // no system header
 
 // this system has no special transform_reduce functions
-

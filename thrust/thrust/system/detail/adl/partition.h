@@ -36,10 +36,10 @@
 // includes, so we fake it out by specifying all possible files we might end up
 // including inside an #if 0.
 #if 0
-#include <thrust/system/cpp/detail/partition.h>
-#include <thrust/system/cuda/detail/partition.h>
-#include <thrust/system/omp/detail/partition.h>
-#include <thrust/system/tbb/detail/partition.h>
+#  include <thrust/system/cpp/detail/partition.h>
+#  include <thrust/system/cuda/detail/partition.h>
+#  include <thrust/system/omp/detail/partition.h>
+#  include <thrust/system/tbb/detail/partition.h>
 #endif
 
 #define __THRUST_HOST_SYSTEM_PARTITION_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/partition.h>
@@ -49,4 +49,3 @@
 #define __THRUST_DEVICE_SYSTEM_PARTITION_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/partition.h>
 #include __THRUST_DEVICE_SYSTEM_PARTITION_HEADER
 #undef __THRUST_DEVICE_SYSTEM_PARTITION_HEADER
-

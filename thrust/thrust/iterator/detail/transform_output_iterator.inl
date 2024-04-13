@@ -26,13 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/transform_output_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename UnaryFunction, typename OutputIterator>
-  class transform_output_iterator;
+class transform_output_iterator;
 
 namespace detail
 {
@@ -40,50 +40,46 @@ namespace detail
 // Proxy reference that uses Unary Function to transform the rhs of assigment
 // operator before writing the result to OutputIterator
 template <typename UnaryFunction, typename OutputIterator>
-  class transform_output_iterator_proxy
+class transform_output_iterator_proxy
 {
-  public:
-    _CCCL_HOST_DEVICE
-    transform_output_iterator_proxy(const OutputIterator& out, UnaryFunction fun) : out(out), fun(fun)
-    {
-    }
+public:
+  _CCCL_HOST_DEVICE transform_output_iterator_proxy(const OutputIterator& out, UnaryFunction fun)
+      : out(out)
+      , fun(fun)
+  {}
 
-    _CCCL_EXEC_CHECK_DISABLE
-    template <typename T>
-    _CCCL_HOST_DEVICE
-    transform_output_iterator_proxy operator=(const T& x)
-    {
-      *out = fun(x);
-      return *this;
-    }
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename T>
+  _CCCL_HOST_DEVICE transform_output_iterator_proxy operator=(const T& x)
+  {
+    *out = fun(x);
+    return *this;
+  }
 
-  private:
-    OutputIterator out;
-    UnaryFunction fun;
+private:
+  OutputIterator out;
+  UnaryFunction fun;
 };
 
 // Compute the iterator_adaptor instantiation to be used for transform_output_iterator
 template <typename UnaryFunction, typename OutputIterator>
 struct transform_output_iterator_base
 {
-    typedef thrust::iterator_adaptor
-    <
-        transform_output_iterator<UnaryFunction, OutputIterator>
-      , OutputIterator
-      , thrust::use_default
-      , thrust::use_default
-      , thrust::use_default
-      , transform_output_iterator_proxy<UnaryFunction, OutputIterator>
-    > type;
+  typedef thrust::iterator_adaptor<transform_output_iterator<UnaryFunction, OutputIterator>,
+                                   OutputIterator,
+                                   thrust::use_default,
+                                   thrust::use_default,
+                                   thrust::use_default,
+                                   transform_output_iterator_proxy<UnaryFunction, OutputIterator>>
+    type;
 };
 
 // Register transform_output_iterator_proxy with 'is_proxy_reference' from
 // type_traits to enable its use with algorithms.
 template <class UnaryFunction, class OutputIterator>
-struct is_proxy_reference<
-    transform_output_iterator_proxy<UnaryFunction, OutputIterator> >
-    : public thrust::detail::true_type {};
+struct is_proxy_reference<transform_output_iterator_proxy<UnaryFunction, OutputIterator>>
+    : public thrust::detail::true_type
+{};
 
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
-

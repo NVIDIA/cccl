@@ -38,31 +38,24 @@ struct op_t
             class InputIterator4,
             class OutputIterator1,
             class OutputIterator2>
-  __host__ thrust::pair<OutputIterator1, OutputIterator2>
-  operator()(const PolicyT& policy,
-             InputIterator1 keys_first1,
-             InputIterator1 keys_last1,
-             InputIterator2 keys_first2,
-             InputIterator2 keys_last2,
-             InputIterator3 values_first1,
-             InputIterator4 values_first2,
-             OutputIterator1 keys_result,
-             OutputIterator2 values_result) const
+  __host__ thrust::pair<OutputIterator1, OutputIterator2> operator()(
+    const PolicyT& policy,
+    InputIterator1 keys_first1,
+    InputIterator1 keys_last1,
+    InputIterator2 keys_first2,
+    InputIterator2 keys_last2,
+    InputIterator3 values_first1,
+    InputIterator4 values_first2,
+    OutputIterator1 keys_result,
+    OutputIterator2 values_result) const
   {
-    return thrust::set_union_by_key(policy,
-                                    keys_first1,
-                                    keys_last1,
-                                    keys_first2,
-                                    keys_last2,
-                                    values_first1,
-                                    values_first2,
-                                    keys_result,
-                                    values_result);
+    return thrust::set_union_by_key(
+      policy, keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
   }
 };
 
 template <class KeyT, class ValueT>
-static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT> tl)
+static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT> tl)
 {
   basic(state, tl, op_t{});
 }

@@ -30,14 +30,10 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
+template <typename Allocator, typename Pointer, typename Size, typename T>
+_CCCL_HOST_DEVICE inline void fill_construct_range(Allocator& a, Pointer p, Size n, const T& value);
 
-template<typename Allocator, typename Pointer, typename Size, typename T>
-_CCCL_HOST_DEVICE
-inline void fill_construct_range(Allocator &a, Pointer p, Size n, const T &value);
-
-
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/allocator/fill_construct_range.inl>
-

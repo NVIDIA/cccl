@@ -25,45 +25,41 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/mismatch.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/detail/generic/mismatch.h>
+#include <thrust/mismatch.h>
 #include <thrust/system/detail/adl/mismatch.h>
+#include <thrust/system/detail/generic/mismatch.h>
+#include <thrust/system/detail/generic/select_system.h>
 
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE
-thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                                      InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2)
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
+_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2>
+mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+         InputIterator1 first1,
+         InputIterator1 last1,
+         InputIterator2 first2)
 {
   using thrust::system::detail::generic::mismatch;
   return mismatch(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2);
 } // end mismatch()
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                                      InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2,
-                                                      BinaryPredicate pred)
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  BinaryPredicate pred)
 {
   using thrust::system::detail::generic::mismatch;
   return mismatch(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, pred);
 } // end mismatch()
 
-
-template<typename InputIterator1, typename InputIterator2>
-thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2)
+template <typename InputIterator1, typename InputIterator2>
+thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -73,15 +69,12 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
   System1 system1;
   System2 system2;
 
-  return thrust::mismatch(select_system(system1,system2), first1, last1, first2);
+  return thrust::mismatch(select_system(system1, system2), first1, last1, first2);
 } // end mismatch()
 
-
-template<typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2,
-                                                      BinaryPredicate pred)
+template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+thrust::pair<InputIterator1, InputIterator2>
+mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -91,7 +84,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
   System1 system1;
   System2 system2;
 
-  return thrust::mismatch(select_system(system1,system2), first1, last1, first2, pred);
+  return thrust::mismatch(select_system(system1, system2), first1, last1, first2, pred);
 } // end mismatch()
 
 THRUST_NAMESPACE_END

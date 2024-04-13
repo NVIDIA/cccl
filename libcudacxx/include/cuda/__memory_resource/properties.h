@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
+
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
 #  if _CCCL_STD_VER >= 2014
@@ -32,14 +34,33 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
  */
 _LIBCUDACXX_INLINE_VAR constexpr size_t default_cuda_malloc_alignment = 256;
 
-/// \struct device_accessible
-/// \brief The \c device_accessible property signals that the allocated memory is device accessible
+/**
+ * @brief The default alignment by a cudaMallocHost{...} call
+ */
+_LIBCUDACXX_INLINE_VAR constexpr size_t default_cuda_malloc_host_alignment = alignof(_CUDA_VSTD::max_align_t);
+
+/**
+ * @brief The \c device_accessible property signals that the allocated memory is device accessible
+ */
 struct device_accessible
 {};
 
-/// \struct host_accessible
-/// \brief The \c host_accessible property signals that the allocated memory is host accessible
+/**
+ * @brief The \c host_accessible property signals that the allocated memory is host accessible
+ */
 struct host_accessible
+{};
+
+/**
+ * @brief The \c managed_memory property signals that the allocated memory is managed
+ */
+struct managed_memory
+{};
+
+/**
+ * @brief The \c pinned_memory property signals that the allocated memory is not pageable.
+ */
+struct pinned_memory
 {};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR

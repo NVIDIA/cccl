@@ -26,41 +26,34 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/adl/transform_reduce.h>
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/transform_reduce.h>
-#include <thrust/system/detail/adl/transform_reduce.h>
 
 THRUST_NAMESPACE_BEGIN
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename UnaryFunction,
-         typename OutputType,
-         typename BinaryFunction>
-_CCCL_HOST_DEVICE
-  OutputType transform_reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                              InputIterator first,
-                              InputIterator last,
-                              UnaryFunction unary_op,
-                              OutputType init,
-                              BinaryFunction binary_op)
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename UnaryFunction,
+          typename OutputType,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputType transform_reduce(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  UnaryFunction unary_op,
+  OutputType init,
+  BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::transform_reduce;
-  return transform_reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, unary_op, init, binary_op);
+  return transform_reduce(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, unary_op, init, binary_op);
 } // end transform_reduce()
 
-
-template<typename InputIterator,
-         typename UnaryFunction,
-         typename OutputType,
-         typename BinaryFunction>
-  OutputType transform_reduce(InputIterator first,
-                              InputIterator last,
-                              UnaryFunction unary_op,
-                              OutputType init,
-                              BinaryFunction binary_op)
+template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
+OutputType transform_reduce(
+  InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -71,6 +64,4 @@ template<typename InputIterator,
   return thrust::transform_reduce(select_system(system), first, last, unary_op, init, binary_op);
 } // end transform_reduce()
 
-
 THRUST_NAMESPACE_END
-

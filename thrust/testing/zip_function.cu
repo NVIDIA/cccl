@@ -98,7 +98,7 @@ struct TestZipFunctionMixed
     ASSERT_EQUAL(vecC, expected);
   }
 };
-SimpleUnitTest<TestZipFunctionMixed, type_list<int, float> > TestZipFunctionMixedInstance;
+SimpleUnitTest<TestZipFunctionMixed, type_list<int, float>> TestZipFunctionMixedInstance;
 
 struct NestedFunctionCall
 {
@@ -136,14 +136,15 @@ struct TestNestedZipFunction
     ASSERT_EQUAL(isMH, expected);
   }
 };
-SimpleUnitTest<TestNestedZipFunction, type_list<int, float> > TestNestedZipFunctionInstance;
+SimpleUnitTest<TestNestedZipFunction, type_list<int, float>> TestNestedZipFunctionInstance;
 
-struct SortPred {
-    __device__ __forceinline__
-    bool operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a,
-                    const thrust::tuple<thrust::tuple<int, int>, int>& b) {
-        return thrust::get<1>(a) < thrust::get<1>(b);
-    }
+struct SortPred
+{
+  __device__ __forceinline__ bool
+  operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a, const thrust::tuple<thrust::tuple<int, int>, int>& b)
+  {
+    return thrust::get<1>(a) < thrust::get<1>(b);
+  }
 };
 template <typename T>
 struct TestNestedZipFunction2
@@ -155,10 +156,10 @@ struct TestNestedZipFunction2
     thrust::device_vector<int> C(5);
     auto n = A.size();
 
-    auto tupleIt = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
+    auto tupleIt       = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
     auto nestedTupleIt = thrust::make_zip_iterator(tupleIt, cuda::std::begin(C));
     thrust::sort(nestedTupleIt, nestedTupleIt + n, SortPred{});
   }
 };
-SimpleUnitTest<TestNestedZipFunction2, type_list<int, float> > TestNestedZipFunctionInstance2;
+SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
 #endif // _CCCL_STD_VER

@@ -28,4 +28,3 @@
 
 // this system inherits uninitialized_fill
 #include <thrust/system/cpp/detail/uninitialized_fill.h>
-

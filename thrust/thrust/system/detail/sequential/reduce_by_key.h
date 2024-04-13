@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/pair.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -37,45 +37,41 @@ namespace detail
 namespace sequential
 {
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator1,
-         typename OutputIterator2,
-         typename BinaryPredicate,
-         typename BinaryFunction>
-_CCCL_HOST_DEVICE
-  thrust::pair<OutputIterator1,OutputIterator2>
-    reduce_by_key(sequential::execution_policy<DerivedPolicy> &,
-                  InputIterator1 keys_first,
-                  InputIterator1 keys_last,
-                  InputIterator2 values_first,
-                  OutputIterator1 keys_output,
-                  OutputIterator2 values_output,
-                  BinaryPredicate binary_pred,
-                  BinaryFunction binary_op)
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator1,
+          typename OutputIterator2,
+          typename BinaryPredicate,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator1 keys_first,
+  InputIterator1 keys_last,
+  InputIterator2 values_first,
+  OutputIterator1 keys_output,
+  OutputIterator2 values_output,
+  BinaryPredicate binary_pred,
+  BinaryFunction binary_op)
 {
-  typedef typename thrust::iterator_traits<InputIterator1>::value_type  InputKeyType;
-  typedef typename thrust::iterator_traits<InputIterator2>::value_type  InputValueType;
+  typedef typename thrust::iterator_traits<InputIterator1>::value_type InputKeyType;
+  typedef typename thrust::iterator_traits<InputIterator2>::value_type InputValueType;
 
   // Use the input iterator's value type per https://wg21.link/P0571
   using TemporaryType = typename thrust::iterator_value<InputIterator2>::type;
 
-  if(keys_first != keys_last)
+  if (keys_first != keys_last)
   {
-    InputKeyType  temp_key   = *keys_first;
+    InputKeyType temp_key    = *keys_first;
     TemporaryType temp_value = *values_first;
 
-    for(++keys_first, ++values_first;
-        keys_first != keys_last;
-        ++keys_first, ++values_first)
+    for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, ++values_first)
     {
-      InputKeyType    key  = *keys_first;
+      InputKeyType key     = *keys_first;
       InputValueType value = *values_first;
 
-      if(binary_pred(temp_key, key))
+      if (binary_pred(temp_key, key))
       {
         temp_value = binary_op(temp_value, value);
       }
@@ -102,9 +98,7 @@ _CCCL_HOST_DEVICE
   return thrust::make_pair(keys_output, values_output);
 }
 
-
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-

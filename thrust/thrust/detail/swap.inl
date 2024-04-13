@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/swap.h>
 #include <thrust/detail/swap.h>
 #include <thrust/detail/swap_ranges.inl>
-
+#include <thrust/swap.h>

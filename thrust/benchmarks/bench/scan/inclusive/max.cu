@@ -32,7 +32,7 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -46,11 +46,9 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   caching_allocator_t alloc;
   thrust::inclusive_scan(policy(alloc), input.cbegin(), input.cend(), output.begin(), max_t{});
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               thrust::inclusive_scan(policy(alloc, launch), input.cbegin(),
-                                      input.cend(), output.begin(), max_t{});
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::inclusive_scan(policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), max_t{});
+  });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types))

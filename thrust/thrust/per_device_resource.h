@@ -26,14 +26,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
-
-
-#include <thrust/system/detail/generic/per_device_resource.h>
-#include <thrust/system/detail/adl/per_device_resource.h>
-#include <thrust/mr/allocator.h>
-
 #include <thrust/detail/execution_policy.h>
 #include <thrust/mr/allocator.h>
+#include <thrust/system/detail/adl/per_device_resource.h>
+#include <thrust/system/detail/generic/per_device_resource.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -43,66 +39,61 @@ THRUST_NAMESPACE_BEGIN
  *  \param system execution policy for which the resource is requested.
  *  \return a pointer to a global instance of \p MR for the current device.
  */
-template<typename MR, typename DerivedPolicy>
-_CCCL_HOST
-MR * get_per_device_resource(const thrust::detail::execution_policy_base<DerivedPolicy> & system)
+template <typename MR, typename DerivedPolicy>
+_CCCL_HOST MR* get_per_device_resource(const thrust::detail::execution_policy_base<DerivedPolicy>& system)
 {
-    using thrust::system::detail::generic::get_per_device_resource;
+  using thrust::system::detail::generic::get_per_device_resource;
 
-    return get_per_device_resource<MR>(
-        thrust::detail::derived_cast(
-            thrust::detail::strip_const(system)));
+  return get_per_device_resource<MR>(thrust::detail::derived_cast(thrust::detail::strip_const(system)));
 }
 
-/*! A helper allocator class that uses global per device instances of a given upstream memory resource. Requires the memory
- *      resource to be default constructible.
+/*! A helper allocator class that uses global per device instances of a given upstream memory resource. Requires the
+ * memory resource to be default constructible.
  *
  *  \tparam T the type that will be allocated by this allocator.
  *  \tparam MR the upstream memory resource to use for memory allocation. Must derive from
  *      \p thrust::mr::memory_resource and must be \p final.
- *  \tparam ExecutionPolicy the execution policy of the system to be used to retrieve the resource for the current device.
+ *  \tparam ExecutionPolicy the execution policy of the system to be used to retrieve the resource for the current
+ * device.
  */
-template<typename T, typename Upstream, typename ExecutionPolicy>
+template <typename T, typename Upstream, typename ExecutionPolicy>
 class per_device_allocator : public thrust::mr::allocator<T, Upstream>
 {
-    typedef thrust::mr::allocator<T, Upstream> base;
+  typedef thrust::mr::allocator<T, Upstream> base;
 
 public:
-    /*! The \p rebind metafunction provides the type of an \p per_device_allocator instantiated with another type.
-     *
-     *  \tparam U the other type to use for instantiation.
+  /*! The \p rebind metafunction provides the type of an \p per_device_allocator instantiated with another type.
+   *
+   *  \tparam U the other type to use for instantiation.
+   */
+  template <typename U>
+  struct rebind
+  {
+    /*! The typedef \p other gives the type of the rebound \p per_device_allocator.
      */
-    template<typename U>
-    struct rebind
-    {
-        /*! The typedef \p other gives the type of the rebound \p per_device_allocator.
-         */
-        typedef per_device_allocator<U, Upstream, ExecutionPolicy> other;
-    };
+    typedef per_device_allocator<U, Upstream, ExecutionPolicy> other;
+  };
 
-    /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
-     *      \p allocator base subobject with that resource.
-     */
-    _CCCL_HOST
-    per_device_allocator() : base(get_per_device_resource<Upstream>(ExecutionPolicy()))
-    {
-    }
+  /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
+   *      \p allocator base subobject with that resource.
+   */
+  _CCCL_HOST per_device_allocator()
+      : base(get_per_device_resource<Upstream>(ExecutionPolicy()))
+  {}
 
-    /*! Copy constructor. Copies the memory resource pointer. */
-    _CCCL_HOST_DEVICE
-    per_device_allocator(const per_device_allocator & other)
-        : base(other) {}
+  /*! Copy constructor. Copies the memory resource pointer. */
+  _CCCL_HOST_DEVICE per_device_allocator(const per_device_allocator& other)
+      : base(other)
+  {}
 
-    /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
-    template<typename U>
-    _CCCL_HOST_DEVICE
-    per_device_allocator(const per_device_allocator<U, Upstream, ExecutionPolicy> & other)
-        : base(other) {}
+  /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
+  template <typename U>
+  _CCCL_HOST_DEVICE per_device_allocator(const per_device_allocator<U, Upstream, ExecutionPolicy>& other)
+      : base(other)
+  {}
 
-    /*! Destructor. */
-    _CCCL_HOST_DEVICE
-    ~per_device_allocator() {}
+  /*! Destructor. */
+  _CCCL_HOST_DEVICE ~per_device_allocator() {}
 };
 
 THRUST_NAMESPACE_END
-

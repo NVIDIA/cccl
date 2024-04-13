@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,24 +35,13 @@ namespace detail
 namespace generic
 {
 
-template<typename ExecutionPolicy,
-         typename ForwardIterator,
-         typename Generator>
-_CCCL_HOST_DEVICE
-  void generate(thrust::execution_policy<ExecutionPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last,
-                Generator gen);
+template <typename ExecutionPolicy, typename ForwardIterator, typename Generator>
+_CCCL_HOST_DEVICE void
+generate(thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Generator gen);
 
-template<typename ExecutionPolicy,
-         typename OutputIterator,
-         typename Size,
-         typename Generator>
-_CCCL_HOST_DEVICE
-  OutputIterator generate_n(thrust::execution_policy<ExecutionPolicy> &exec,
-                            OutputIterator first,
-                            Size n,
-                            Generator gen);
+template <typename ExecutionPolicy, typename OutputIterator, typename Size, typename Generator>
+_CCCL_HOST_DEVICE OutputIterator
+generate_n(thrust::execution_policy<ExecutionPolicy>& exec, OutputIterator first, Size n, Generator gen);
 
 } // end namespace generic
 } // end namespace detail
@@ -61,4 +49,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/generate.inl>
-

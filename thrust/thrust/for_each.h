@@ -13,7 +13,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file thrust/for_each.h
  *  \brief Applies a function to each element in a range
  */
@@ -29,8 +28,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/detail/execution_policy.h>
+#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -38,7 +37,6 @@ THRUST_NAMESPACE_BEGIN
  *  \ingroup transformations
  *  \{
  */
-
 
 /*! \p for_each applies the function object \p f to each element
  *  in the range <tt>[first, last)</tt>; \p f's return value, if any,
@@ -56,10 +54,10 @@ THRUST_NAMESPACE_BEGIN
  *  \return last
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>,
- *          and \p UnaryFunction does not apply any non-constant operation through its argument.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
+ * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
+ * Function</a>, and \p UnaryFunction does not apply any non-constant operation through its argument.
  *
  *  The following code snippet demonstrates how to use \p for_each to print the elements
  *  of a \p thrust::device_vector using the \p thrust::device parallelization policy:
@@ -94,15 +92,12 @@ THRUST_NAMESPACE_BEGIN
  *  \see for_each_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
  */
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename UnaryFunction>
-_CCCL_HOST_DEVICE
-InputIterator for_each(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                       InputIterator first,
-                       InputIterator last,
-                       UnaryFunction f);
-
+template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
+_CCCL_HOST_DEVICE InputIterator for_each(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  UnaryFunction f);
 
 /*! \p for_each_n applies the function object \p f to each element
  *  in the range <tt>[first, first + n)</tt>; \p f's return value, if any,
@@ -119,11 +114,11 @@ InputIterator for_each(const thrust::detail::execution_policy_base<DerivedPolicy
  *  \return <tt>first + n</tt>
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type.
- *  \tparam Size is an integral type.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>,
- *          and \p UnaryFunction does not apply any non-constant operation through its argument.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
+ * Size is an integral type. \tparam UnaryFunction is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>, and \p UnaryFunction
+ * does not apply any non-constant operation through its argument.
  *
  *  The following code snippet demonstrates how to use \p for_each_n to print the elements
  *  of a \p device_vector using the \p thrust::device parallelization policy.
@@ -157,15 +152,9 @@ InputIterator for_each(const thrust::detail::execution_policy_base<DerivedPolicy
  *  \see for_each
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
  */
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename Size,
-         typename UnaryFunction>
-_CCCL_HOST_DEVICE
-InputIterator for_each_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                         InputIterator first,
-                         Size n,
-                         UnaryFunction f);
+template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
+_CCCL_HOST_DEVICE InputIterator for_each_n(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, UnaryFunction f);
 
 /*! \p for_each applies the function object \p f to each element
  *  in the range <tt>[first, last)</tt>; \p f's return value, if any,
@@ -179,10 +168,10 @@ InputIterator for_each_n(const thrust::detail::execution_policy_base<DerivedPoli
  *  \param f The function object to apply to the range <tt>[first, last)</tt>.
  *  \return last
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>,
- *          and \p UnaryFunction does not apply any non-constant operation through its argument.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
+ * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
+ * Function</a>, and \p UnaryFunction does not apply any non-constant operation through its argument.
  *
  *  The following code snippet demonstrates how to use \p for_each to print the elements
  *  of a \p device_vector.
@@ -215,12 +204,8 @@ InputIterator for_each_n(const thrust::detail::execution_policy_base<DerivedPoli
  *  \see for_each_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
  */
-template<typename InputIterator,
-         typename UnaryFunction>
-InputIterator for_each(InputIterator first,
-                       InputIterator last,
-                       UnaryFunction f);
-
+template <typename InputIterator, typename UnaryFunction>
+InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f);
 
 /*! \p for_each_n applies the function object \p f to each element
  *  in the range <tt>[first, first + n)</tt>; \p f's return value, if any,
@@ -233,11 +218,11 @@ InputIterator for_each(InputIterator first,
  *  \param f The function object to apply to the range <tt>[first, first + n)</tt>.
  *  \return <tt>first + n</tt>
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type.
- *  \tparam Size is an integral type.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>,
- *          and \p UnaryFunction does not apply any non-constant operation through its argument.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
+ * Size is an integral type. \tparam UnaryFunction is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>, and \p UnaryFunction
+ * does not apply any non-constant operation through its argument.
  *
  *  The following code snippet demonstrates how to use \p for_each_n to print the elements
  *  of a \p device_vector.
@@ -270,12 +255,8 @@ InputIterator for_each(InputIterator first,
  *  \see for_each
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
  */
-template<typename InputIterator,
-         typename Size,
-         typename UnaryFunction>
-InputIterator for_each_n(InputIterator first,
-                         Size n,
-                         UnaryFunction f);
+template <typename InputIterator, typename Size, typename UnaryFunction>
+InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f);
 
 /*! \} // end modifying
  */
@@ -283,4 +264,3 @@ InputIterator for_each_n(InputIterator first,
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/for_each.inl>
-

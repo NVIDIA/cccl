@@ -16,10 +16,6 @@ repos:
       - id: clang-format
         types_or: [c, c++, cuda]
         args: ["-fallback-style=none", "-style=file", "-i"]
-        exclude: |
-          (?x)^(
-            ^thrust/.*
-          )
 
 default_language_version:
   python: python3

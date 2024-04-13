@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file inner_product.h
  *  \brief Mathematical inner product between ranges
  */
@@ -41,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-
 /*! \p inner_product calculates an inner product of the ranges
  *  <tt>[first1, last1)</tt> and <tt>[first2, first2 + (last1 - first1))</tt>.
  *
@@ -59,12 +57,12 @@ THRUST_NAMESPACE_BEGIN
  *          and <tt>[first2, last2)</tt> plus \p init.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam OutputType is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x is an object of type \p OutputType, and \c y is an object of \p InputIterator1's \c value_type,
- *          and \c z is an object of \p InputIterator2's \c value_type, then <tt>x + y * z</tt> is defined
- *          and is convertible to \p OutputType.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputType is a model of
+ * <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and if \c x is an object of type
+ * \p OutputType, and \c y is an object of \p InputIterator1's \c value_type, and \c z is an object of \p
+ * InputIterator2's \c value_type, then <tt>x + y * z</tt> is defined and is convertible to \p OutputType.
  *
  *  The following code demonstrates how to use \p inner_product to
  *  compute the dot product of two vectors using the \p thrust::host execution policy for parallelization.
@@ -83,17 +81,13 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
  */
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputType>
-_CCCL_HOST_DEVICE
-OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                         InputIterator1 first1,
-                         InputIterator1 last1,
-                         InputIterator2 first2,
-                         OutputType init);
-
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
+_CCCL_HOST_DEVICE OutputType inner_product(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputType init);
 
 /*! \p inner_product calculates an inner product of the ranges
  *  <tt>[first1, last1)</tt> and <tt>[first2, first2 + (last1 - first1))</tt>.
@@ -111,12 +105,12 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
  *  \return The inner product of sequences <tt>[first1, last1)</tt>
  *          and <tt>[first2, last2)</tt> plus \p init.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam OutputType is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x is an object of type \p OutputType, and \c y is an object of \p InputIterator1's \c value_type,
- *          and \c z is an object of \p InputIterator2's \c value_type, then <tt>x + y * z</tt> is defined
- *          and is convertible to \p OutputType.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputType is a model of
+ * <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and if \c x is an object of type
+ * \p OutputType, and \c y is an object of \p InputIterator1's \c value_type, and \c z is an object of \p
+ * InputIterator2's \c value_type, then <tt>x + y * z</tt> is defined and is convertible to \p OutputType.
  *
  *  The following code demonstrates how to use \p inner_product to
  *  compute the dot product of two vectors.
@@ -134,10 +128,8 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
  */
-template<typename InputIterator1, typename InputIterator2, typename OutputType>
-OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
-                         InputIterator2 first2, OutputType init);
-
+template <typename InputIterator1, typename InputIterator2, typename OutputType>
+OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init);
 
 /*! \p inner_product calculates an inner product of the ranges
  *  <tt>[first1, last1)</tt> and <tt>[first2, first2 + (last1 - first1))</tt>.
@@ -160,16 +152,17 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
  *  \return The inner product of sequences <tt>[first1, last1)</tt> and <tt>[first2, last2)</tt>.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's \c first_argument_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *          and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's \c second_argument_type.
- *  \tparam OutputType is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and \p OutputType is convertible to \p BinaryFunction1's \c first_argument_type.
- *  \tparam BinaryFunction1 is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
- *          and \p BinaryFunction1's \c return_type is convertible to \p OutputType.
- *  \tparam BinaryFunction2 is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
- *          and \p BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's \c first_argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's \c second_argument_type.
+ *  \tparam OutputType is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p OutputType is convertible to
+ * \p BinaryFunction1's \c first_argument_type. \tparam BinaryFunction1 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
+ * BinaryFunction1's \c return_type is convertible to \p OutputType. \tparam BinaryFunction2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
+ * BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
  *
  *  \code
  *  #include <thrust/inner_product.h>
@@ -189,21 +182,20 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
  */
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputType,
-         typename BinaryFunction1,
-         typename BinaryFunction2>
-_CCCL_HOST_DEVICE
-OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                         InputIterator1 first1,
-                         InputIterator1 last1,
-                         InputIterator2 first2,
-                         OutputType init,
-                         BinaryFunction1 binary_op1,
-                         BinaryFunction2 binary_op2);
-
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputType,
+          typename BinaryFunction1,
+          typename BinaryFunction2>
+_CCCL_HOST_DEVICE OutputType inner_product(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputType init,
+  BinaryFunction1 binary_op1,
+  BinaryFunction2 binary_op2);
 
 /*! \p inner_product calculates an inner product of the ranges
  *  <tt>[first1, last1)</tt> and <tt>[first2, first2 + (last1 - first1))</tt>.
@@ -225,16 +217,17 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
  *  \param binary_op2 Generalized multiplication operation.
  *  \return The inner product of sequences <tt>[first1, last1)</tt> and <tt>[first2, last2)</tt>.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's \c first_argument_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *          and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's \c second_argument_type.
- *  \tparam OutputType is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and \p OutputType is convertible to \p BinaryFunction1's \c first_argument_type.
- *  \tparam BinaryFunction1 is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
- *          and \p BinaryFunction1's \c return_type is convertible to \p OutputType.
- *  \tparam BinaryFunction2 is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
- *          and \p BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator1's \c value_type is convertible to \p BinaryFunction2's \c first_argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. and \p InputIterator2's \c value_type is convertible to \p BinaryFunction2's \c second_argument_type.
+ *  \tparam OutputType is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and \p OutputType is convertible to
+ * \p BinaryFunction1's \c first_argument_type. \tparam BinaryFunction1 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
+ * BinaryFunction1's \c return_type is convertible to \p OutputType. \tparam BinaryFunction2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
+ * BinaryFunction2's \c return_type is convertible to \p BinaryFunction1's \c second_argument_type.
  *
  *  \code
  *  #include <thrust/inner_product.h>
@@ -253,12 +246,18 @@ OutputType inner_product(const thrust::detail::execution_policy_base<DerivedPoli
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
  */
-template<typename InputIterator1, typename InputIterator2, typename OutputType,
-         typename BinaryFunction1, typename BinaryFunction2>
-OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
-                         InputIterator2 first2, OutputType init,
-                         BinaryFunction1 binary_op1, BinaryFunction2 binary_op2);
-
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename OutputType,
+          typename BinaryFunction1,
+          typename BinaryFunction2>
+OutputType inner_product(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputType init,
+  BinaryFunction1 binary_op1,
+  BinaryFunction2 binary_op2);
 
 /*! \} // end transformed_reductions
  *  \} // end reductions
@@ -267,4 +266,3 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1,
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/inner_product.inl>
-

@@ -1,14 +1,15 @@
-#include <thrust/system/cuda/vector.h>
-#include <thrust/system/cuda/execution_policy.h>
-#include <thrust/host_vector.h>
 #include <thrust/generate.h>
-#include <thrust/sort.h>
+#include <thrust/host_vector.h>
 #include <thrust/pair.h>
+#include <thrust/sort.h>
+#include <thrust/system/cuda/execution_policy.h>
+#include <thrust/system/cuda/vector.h>
+
+#include <cassert>
 #include <cstdlib>
 #include <iostream>
-#include <sstream>
 #include <map>
-#include <cassert>
+#include <sstream>
 
 // This example demonstrates how to control how Thrust allocates temporary
 // storage during algorithms such as thrust::sort. The idea will be to create a
@@ -27,7 +28,7 @@
 struct not_my_pointer
 {
   not_my_pointer(void* p)
-    : message()
+      : message()
   {
     std::stringstream s;
     s << "Pointer `" << p << "` was not allocated by this allocator.";
@@ -57,21 +58,18 @@ struct cached_allocator
     free_all();
   }
 
-  char *allocate(std::ptrdiff_t num_bytes)
+  char* allocate(std::ptrdiff_t num_bytes)
   {
-    std::cout << "cached_allocator::allocate(): num_bytes == "
-              << num_bytes
-              << std::endl;
+    std::cout << "cached_allocator::allocate(): num_bytes == " << num_bytes << std::endl;
 
-    char *result = 0;
+    char* result = 0;
 
     // Search the cache for a free block.
     free_blocks_type::iterator free_block = free_blocks.find(num_bytes);
 
     if (free_block != free_blocks.end())
     {
-      std::cout << "cached_allocator::allocate(): found a free block"
-                << std::endl;
+      std::cout << "cached_allocator::allocate(): found a free block" << std::endl;
 
       result = free_block->second;
 
@@ -84,8 +82,7 @@ struct cached_allocator
       // `thrust::cuda::malloc`.
       try
       {
-        std::cout << "cached_allocator::allocate(): allocating new block"
-                  << std::endl;
+        std::cout << "cached_allocator::allocate(): allocating new block" << std::endl;
 
         // Allocate memory and convert the resulting `thrust::cuda::pointer` to
         // a raw pointer.
@@ -103,16 +100,17 @@ struct cached_allocator
     return result;
   }
 
-  void deallocate(char *ptr, size_t)
+  void deallocate(char* ptr, size_t)
   {
-    std::cout << "cached_allocator::deallocate(): ptr == "
-              << reinterpret_cast<void*>(ptr) << std::endl;
+    std::cout << "cached_allocator::deallocate(): ptr == " << reinterpret_cast<void*>(ptr) << std::endl;
 
     // Erase the allocated block from the allocated blocks map.
     allocated_blocks_type::iterator iter = allocated_blocks.find(ptr);
 
     if (iter == allocated_blocks.end())
+    {
       throw not_my_pointer(reinterpret_cast<void*>(ptr));
+    }
 
     std::ptrdiff_t num_bytes = iter->second;
     allocated_blocks.erase(iter);
@@ -123,9 +121,9 @@ struct cached_allocator
 
 private:
   typedef std::multimap<std::ptrdiff_t, char*> free_blocks_type;
-  typedef std::map<char*, std::ptrdiff_t>      allocated_blocks_type;
+  typedef std::map<char*, std::ptrdiff_t> allocated_blocks_type;
 
-  free_blocks_type      free_blocks;
+  free_blocks_type free_blocks;
   allocated_blocks_type allocated_blocks;
 
   void free_all()
@@ -133,17 +131,13 @@ private:
     std::cout << "cached_allocator::free_all()" << std::endl;
 
     // Deallocate all outstanding blocks in both lists.
-    for ( free_blocks_type::iterator i = free_blocks.begin()
-        ; i != free_blocks.end()
-        ; ++i)
+    for (free_blocks_type::iterator i = free_blocks.begin(); i != free_blocks.end(); ++i)
     {
       // Transform the pointer to cuda::pointer before calling cuda::free.
       thrust::cuda::free(thrust::cuda::pointer<char>(i->second));
     }
 
-    for( allocated_blocks_type::iterator i = allocated_blocks.begin()
-       ; i != allocated_blocks.end()
-       ; ++i)
+    for (allocated_blocks_type::iterator i = allocated_blocks.begin(); i != allocated_blocks.end(); ++i)
     {
       // Transform the pointer to cuda::pointer before calling cuda::free.
       thrust::cuda::free(thrust::cuda::pointer<char>(i->first));
@@ -181,4 +175,3 @@ int main()
 
   return 0;
 }
-

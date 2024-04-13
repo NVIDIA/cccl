@@ -31,24 +31,15 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template<typename System, typename Allocator, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE
-  Pointer copy_construct_range(thrust::execution_policy<System> &from_system,
-                               Allocator &a,
-                               InputIterator first,
-                               InputIterator last,
-                               Pointer result);
+template <typename System, typename Allocator, typename InputIterator, typename Pointer>
+_CCCL_HOST_DEVICE Pointer copy_construct_range(
+  thrust::execution_policy<System>& from_system, Allocator& a, InputIterator first, InputIterator last, Pointer result);
 
-template<typename System, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE
-  Pointer copy_construct_range_n(thrust::execution_policy<System> &from_system,
-                                 Allocator &a,
-                                 InputIterator first,
-                                 Size n,
-                                 Pointer result);
+template <typename System, typename Allocator, typename InputIterator, typename Size, typename Pointer>
+_CCCL_HOST_DEVICE Pointer copy_construct_range_n(
+  thrust::execution_policy<System>& from_system, Allocator& a, InputIterator first, Size n, Pointer result);
 
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/allocator/copy_construct_range.inl>
-

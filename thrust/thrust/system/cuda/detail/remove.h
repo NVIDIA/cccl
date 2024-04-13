@@ -37,50 +37,29 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <thrust/system/cuda/detail/copy_if.h>
+#  include <thrust/system/cuda/detail/copy_if.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub {
+namespace cuda_cub
+{
 
 // in-place
 
-template <class Derived,
-          class InputIt,
-          class StencilIt,
-          class Predicate>
+template <class Derived, class InputIt, class StencilIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
-remove_if(execution_policy<Derived> &policy,
-          InputIt                    first,
-          InputIt                    last,
-          StencilIt                  stencil,
-          Predicate                  predicate)
+remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, stencil, first,
-    thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, stencil, first, thrust::detail::not1(predicate));
 }
 
-template <class Derived,
-          class InputIt,
-          class Predicate>
-InputIt _CCCL_HOST_DEVICE
-remove_if(execution_policy<Derived> &policy,
-          InputIt                    first,
-          InputIt                    last,
-          Predicate                  predicate)
+template <class Derived, class InputIt, class Predicate>
+InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, first,
-    thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, first, thrust::detail::not1(predicate));
 }
 
-
-template <class Derived,
-          class InputIt,
-          class T>
-InputIt _CCCL_HOST_DEVICE
-remove(execution_policy<Derived> &policy,
-       InputIt                    first,
-       InputIt                    last,
-       const T &                  value)
+template <class Derived, class InputIt, class T>
+InputIt _CCCL_HOST_DEVICE remove(execution_policy<Derived>& policy, InputIt first, InputIt last, const T& value)
 {
   using thrust::placeholders::_1;
 
@@ -89,54 +68,33 @@ remove(execution_policy<Derived> &policy,
 
 // copy
 
-template <class Derived,
-          class InputIt,
-          class StencilIt,
-          class OutputIt,
-          class Predicate>
-OutputIt _CCCL_HOST_DEVICE
-remove_copy_if(execution_policy<Derived> &policy,
-               InputIt                    first,
-               InputIt                    last,
-               StencilIt                  stencil,
-               OutputIt                   result,
-               Predicate                  predicate)
+template <class Derived, class InputIt, class StencilIt, class OutputIt, class Predicate>
+OutputIt _CCCL_HOST_DEVICE remove_copy_if(
+  execution_policy<Derived>& policy,
+  InputIt first,
+  InputIt last,
+  StencilIt stencil,
+  OutputIt result,
+  Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, stencil, result,
-    thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, stencil, result, thrust::detail::not1(predicate));
 }
 
-template <class Derived,
-          class InputIt,
-          class OutputIt,
-          class Predicate>
+template <class Derived, class InputIt, class OutputIt, class Predicate>
 OutputIt _CCCL_HOST_DEVICE
-remove_copy_if(execution_policy<Derived> &policy,
-               InputIt                    first,
-               InputIt                    last,
-               OutputIt                   result,
-               Predicate                  predicate)
+remove_copy_if(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, result,
-    thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, result, thrust::detail::not1(predicate));
 }
 
-
-template <class Derived,
-          class InputIt,
-          class OutputIt,
-          class T>
+template <class Derived, class InputIt, class OutputIt, class T>
 OutputIt _CCCL_HOST_DEVICE
-remove_copy(execution_policy<Derived> &policy,
-            InputIt                    first,
-            InputIt                    last,
-            OutputIt                   result,
-            const T &                  value)
+remove_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, const T& value)
 {
   thrust::detail::equal_to_value<T> pred(value);
   return cuda_cub::remove_copy_if(policy, first, last, result, pred);
 }
 
-}    // namespace cuda_cub
+} // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif
