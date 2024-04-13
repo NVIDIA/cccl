@@ -732,10 +732,10 @@ public:
   {
     _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
-    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset set argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
 
     (*this)[__pos] = __val;
     return *this;
@@ -751,10 +751,10 @@ public:
   {
     _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
-    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset reset argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
 
     (*this)[__pos] = false;
     return *this;
@@ -777,10 +777,10 @@ public:
   {
     _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
-    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset flip argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
 
     reference __r = base::__make_ref(__pos);
     __r           = ~__r;
@@ -879,10 +879,10 @@ public:
   {
     _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
-    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset test argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
 
     return (*this)[__pos];
   }

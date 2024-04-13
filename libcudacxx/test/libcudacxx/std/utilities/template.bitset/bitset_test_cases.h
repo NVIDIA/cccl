@@ -42,11 +42,17 @@ private:
     cuda::std::size_t _len;
 };
 
-#define DEFINE_CASES(N, ...) \
+#ifdef _CCCL_COMPILER_NVRTC
+#define DEFINE_CASES_HOST_HELPER(N, ...)
+#else
+#define DEFINE_CASES_HOST_HELPER(N, ...) \
     BITSET_TEST_CONSTEXPR const char * cases_ ## N[] = { \
         __VA_ARGS__ \
-    }; \
-    \
+    };
+#endif
+
+#define DEFINE_CASES(N, ...) \
+    DEFINE_CASES_HOST_HELPER(N, ...) \
     __device__ BITSET_TEST_CONSTEXPR const char * cases_ ## N ## _device[] = { \
         __VA_ARGS__ \
     }; \

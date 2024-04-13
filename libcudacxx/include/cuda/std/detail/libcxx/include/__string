@@ -243,13 +243,17 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
     _LIBCUDACXX_INLINE_VISIBILITY static inline size_t _CCCL_CONSTEXPR_CXX14
     length(const char_type* __s)  noexcept {
 #ifdef _CCCL_COMPILER_GCC // GCC's builtin_strlen isn't reliable at constexpr time
-        if (__libcpp_is_constant_evaluated()) {
+#ifdef _LIBCUDACXX_IS_CONSTANT_EVALUATED // is_constant_evaluated only exists since GCC 9
+        if (__libcpp_is_constant_evaluated())
+#endif
+        {
             size_t __len = 0;
             for (; !eq(*__s, char(0)); ++__s)
                 ++__len;
             return __len;
         }
 #endif
+#if !defined(_CCCL_COMPILER_GCC) || defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
         NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
             size_t __len = 0;
             for (; !eq(*__s, char(0)); ++__s)
@@ -258,6 +262,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
         ), (
             return __builtin_strlen(__s);
         ))
+#endif
     }
     _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
