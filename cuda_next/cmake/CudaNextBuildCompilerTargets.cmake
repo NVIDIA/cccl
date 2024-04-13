@@ -17,7 +17,7 @@ function(CudaNext_build_compiler_targets)
     # sccache cannot handle the -Fd option generating pdb files
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
-    append_option_if_available("--use-local-env" cuda_compile_options)
+    list(APPEND cuda_compile_options "--use-local-env")
 
     append_option_if_available("/W4" cxx_compile_options)
 
@@ -36,14 +36,14 @@ function(CudaNext_build_compiler_targets)
     # double-parentheses are used around the assignment. We'll let Clang catch
     # unintentional assignments and suppress all such warnings on MSVC.
     append_option_if_available("/wd4706" cxx_compile_options)
+    # C4848: support for attribute 'msvc::no_unique_address' in C++17 and earlier is a vendor extension
+    append_option_if_available("/wd4848" cxx_compile_options)
 
     # CudaNext requires dim3 to be usable from a constexpr context, and the CUDART headers require
     # __cplusplus to be defined for this to work:
     append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
   else()
-    append_option_if_available("-Wreorder" cuda_compile_options)
-    append_option_if_available("-Wno_unknown-cuda-version" cuda_compile_options)
-    append_option_if_available("-Xclang=-fcuda-allow-variadic-functions" cuda_compile_options)
+    list(APPEND cuda_compile_options "-Wreorder")
 
     append_option_if_available("-Werror" cxx_compile_options)
     append_option_if_available("-Wall" cxx_compile_options)
@@ -102,5 +102,11 @@ function(CudaNext_build_compiler_targets)
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcudafe=--promote_warnings>
     # Don't complain about deprecated GPU targets.
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Wno-deprecated-gpu-targets>
+  )
+
+  # Clang-cuda only:
+  target_compile_options(CudaNext.compiler_interface INTERFACE
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno_unknown-cuda-version>
   )
 endfunction()
