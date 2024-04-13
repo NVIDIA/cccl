@@ -20,7 +20,7 @@ target_compile_features(
 add_dependencies(libcudacxx.atomics.codegen codegen)
 
 set(atomic_generated_output "${libcudacxx_BINARY_DIR}/codegen/atomic_cuda_ptx_generated.h")
-set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/__atomic")
+set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/__atomic/operations")
 
 add_custom_target(
     libcudacxx.atomics.codegen.execute

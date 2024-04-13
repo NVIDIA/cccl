@@ -9,9 +9,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
+#define __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
+
 #ifndef _MSC_VER
 #  error "This file is only for CL.EXE's benefit"
 #endif
+
+#include <intrin.h>
+#include <cuda/std/cassert>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
@@ -621,3 +629,7 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
   }
   return __expected;
 }
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
