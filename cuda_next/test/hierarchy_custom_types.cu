@@ -35,8 +35,7 @@ __global__ void kernel_custom_level(Dims dims)
   auto cnt = dims.count(cuda_next::grid, custom_level());
 }
 
-TEST_CASE("Custom level", "[hierarchy]")
-{
+void custom_level_test() {
   // Check extending level_dimensions with custom info
   custom_level_dims<cuda_next::block_level, cuda_next::detail::dims<64>> custom_block;
   custom_block.dummy     = 2;
@@ -64,6 +63,11 @@ TEST_CASE("Custom level", "[hierarchy]")
     HOST_DEV_REQUIRE(dims.flatten() == dim3(42 * 512, 2, 2));
     HOST_DEV_REQUIRE(dims.flatten(custom_level(), cuda_next::grid) == dim3(42, 1, 1));
   });
+}
+
+TEST_CASE("Custom level", "[hierarchy]")
+{
+  custom_level_test();
 }
 
 template <typename Level, typename Dims>

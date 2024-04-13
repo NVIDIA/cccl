@@ -16,8 +16,9 @@
 
 namespace cg = cooperative_groups;
 
-TEST_CASE("Basic", "[hierarchy]")
+void basic_test_implementation()
 {
+
   constexpr auto block_cnt = 256;
   constexpr auto grid_cnt  = 512;
   auto dimensions = cuda_next::make_hierarchy(cuda_next::block_dims<block_cnt>(), cuda_next::grid_dims<grid_cnt>());
@@ -124,7 +125,12 @@ TEST_CASE("Basic", "[hierarchy]")
   // Currently bugged in std::extents
 }
 
-TEST_CASE("Cluster dims", "[hierarchy]")
+TEST_CASE("Basic", "[hierarchy]")
+{
+  basic_test_implementation();
+}
+
+void cluster_dims_test()
 {
   SECTION("Static cluster dims")
   {
@@ -166,12 +172,17 @@ TEST_CASE("Cluster dims", "[hierarchy]")
   }
 }
 
-TEST_CASE("Flatten static", "[hierarchy]")
+TEST_CASE("Cluster dims", "[hierarchy]")
 {
-  const auto block_cnt = 128;
-  const auto grid_x    = 256;
-  const auto grid_y    = 4;
-  const auto grid_z    = 1;
+  cluster_dims_test();
+}
+
+void flatten_static_test()
+{
+  constexpr auto block_cnt = 128;
+  constexpr auto grid_x    = 256;
+  constexpr auto grid_y    = 4;
+  constexpr auto grid_z    = 1;
 
   constexpr auto static_dims = cuda_next::block_dims<block_cnt>() & cuda_next::grid_dims<grid_x, grid_y, grid_z>();
   using dims_type            = decltype(static_dims);
@@ -194,6 +205,11 @@ TEST_CASE("Flatten static", "[hierarchy]")
     HOST_DEV_REQUIRE(dim3s.y == grid_y);
     HOST_DEV_REQUIRE(dim3s.z == grid_z);
   });
+}
+
+TEST_CASE("Flatten static", "[hierarchy]")
+{
+  flatten_static_test();
 }
 
 TEST_CASE("Different constructions", "[hierarchy]")
