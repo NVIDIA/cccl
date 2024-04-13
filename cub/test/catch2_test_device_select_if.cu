@@ -73,7 +73,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_select_if_wra
     false>::Dispatch(d_temp_storage,
                      temp_storage_bytes,
                      d_in,
-                     NULL,
+                     nullptr,
                      d_out,
                      d_num_selected_out,
                      select_op,
@@ -396,10 +396,18 @@ CUB_TEST("DeviceSelect::If works for very large number of items", "[device][sele
   using offset_t = typename c2h::get<0, TestType>;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()) - 1,
+  auto num_items_max_ull =
+    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
              ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items = static_cast<offset_t>(num_items_ull);
+  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
+  offset_t num_items_min =
+    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  offset_t num_items = GENERATE_COPY(
+    take(2, random(num_items_min, num_items_max)),
+    values({
+      num_items_max,
+      static_cast<offset_t>(num_items_max_ull - 1),
+    }));
 
   // Input
   auto in = thrust::make_counting_iterator(static_cast<type>(0));
@@ -409,8 +417,9 @@ CUB_TEST("DeviceSelect::If works for very large number of items", "[device][sele
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  std::size_t match_every_nth  = 1000000;
-  offset_t expected_num_copied = static_cast<offset_t>((num_items_ull + match_every_nth - 1ULL) / match_every_nth);
+  std::size_t match_every_nth = 1000000;
+  offset_t expected_num_copied =
+    static_cast<offset_t>((static_cast<std::size_t>(num_items) + match_every_nth - 1ULL) / match_every_nth);
   c2h::device_vector<type> out(expected_num_copied);
   dispatch_select_if(
     in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
@@ -429,10 +438,18 @@ CUB_TEST("DeviceSelect::If works for very large number of output items", "[devic
   using offset_t = typename c2h::get<0, TestType>;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()) - 1,
+  auto num_items_max_ull =
+    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
              ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items = static_cast<offset_t>(num_items_ull);
+  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
+  offset_t num_items_min =
+    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  offset_t num_items = GENERATE_COPY(
+    take(2, random(num_items_min, num_items_max)),
+    values({
+      num_items_max,
+      static_cast<offset_t>(num_items_max_ull - 1),
+    }));
 
   // Prepare input
   c2h::device_vector<type> in(num_items);
