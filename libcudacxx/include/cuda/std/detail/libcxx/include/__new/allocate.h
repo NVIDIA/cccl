@@ -59,7 +59,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __is_overaligned_for_new(siz
 template <class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_operator_new(_Args... __args)
 {
-#if __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
+  // Those builtins are not usable on device and the tests crash when using them
+#if 0 && __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
   return __builtin_operator_new(__args...);
 #else // ^^^ use builtin ^^^ / vvv no builtin
   return ::operator new(__args...);
@@ -69,7 +70,8 @@ _LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_operator_new(_Args... __args)
 template <class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_operator_delete(_Args... __args)
 {
-#if __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
+  // Those builtins are not usable on device and the tests crash when using them
+#if 0 && __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
   __builtin_operator_delete(__args...);
 #else // ^^^ use builtin ^^^ / vvv no builtin
   ::operator delete(__args...);
