@@ -16,25 +16,26 @@
 TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
                            //
 template <cuda::std::size_t N>
-__host__ __device__
-TEST_CONSTEXPR_CXX14 void test_default_ctor()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_default_ctor()
 {
+  {
+    TEST_CONSTEXPR cuda::std::bitset<N> v1;
+    assert(v1.size() == N);
+    for (cuda::std::size_t i = 0; i < v1.size(); ++i)
     {
-        TEST_CONSTEXPR cuda::std::bitset<N> v1;
-        assert(v1.size() == N);
-        for (cuda::std::size_t i = 0; i < v1.size(); ++i)
-            assert(v1[i] == false);
+      assert(v1[i] == false);
     }
+  }
 #if TEST_STD_VER >= 11
-    {
-        constexpr cuda::std::bitset<N> v1;
-        static_assert(v1.size() == N, "");
-    }
+  {
+    constexpr cuda::std::bitset<N> v1;
+    static_assert(v1.size() == N, "");
+  }
 #endif
 }
 
-__host__ __device__
-TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   test_default_ctor<0>();
   test_default_ctor<1>();
   test_default_ctor<31>();

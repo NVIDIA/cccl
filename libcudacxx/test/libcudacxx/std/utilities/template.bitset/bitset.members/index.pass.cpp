@@ -12,43 +12,44 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
-
 #include "../bitset_test_cases.h"
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__
-BITSET_TEST_CONSTEXPR void test_index() {
-    span_stub<const char *> const cases = get_test_cases<N>();
-    for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
-        cuda::std::bitset<N> v1(cases[c]);
-        if (v1.size() > 0) {
-            assert(v1[N/2] == v1.test(N/2));
-            typename cuda::std::bitset<N>::reference r = v1[N/2];
-            assert(r == v1.test(N/2));
-            typename cuda::std::bitset<N>::reference r2 = v1[N/2];
-            r = r2;
-            assert(r == v1.test(N/2));
-            r = false;
-            assert(r == false);
-            assert(v1.test(N/2) == false);
-            r = true;
-            assert(r == true);
-            assert(v1.test(N/2) == true);
-            bool b = ~r;
-            assert(r == true);
-            assert(v1.test(N/2) == true);
-            assert(b == false);
-            r.flip();
-            assert(r == false);
-            assert(v1.test(N/2) == false);
-        }
-        ASSERT_SAME_TYPE(decltype(v1[0]), typename cuda::std::bitset<N>::reference);
+__host__ __device__ BITSET_TEST_CONSTEXPR void test_index()
+{
+  span_stub<const char*> const cases = get_test_cases<N>();
+  for (cuda::std::size_t c = 0; c != cases.size(); ++c)
+  {
+    cuda::std::bitset<N> v1(cases[c]);
+    if (v1.size() > 0)
+    {
+      assert(v1[N / 2] == v1.test(N / 2));
+      typename cuda::std::bitset<N>::reference r = v1[N / 2];
+      assert(r == v1.test(N / 2));
+      typename cuda::std::bitset<N>::reference r2 = v1[N / 2];
+      r                                           = r2;
+      assert(r == v1.test(N / 2));
+      r = false;
+      assert(r == false);
+      assert(v1.test(N / 2) == false);
+      r = true;
+      assert(r == true);
+      assert(v1.test(N / 2) == true);
+      bool b = ~r;
+      assert(r == true);
+      assert(v1.test(N / 2) == true);
+      assert(b == false);
+      r.flip();
+      assert(r == false);
+      assert(v1.test(N / 2) == false);
     }
+    ASSERT_SAME_TYPE(decltype(v1[0]), typename cuda::std::bitset<N>::reference);
+  }
 }
 
-__host__ __device__
-BITSET_TEST_CONSTEXPR bool test() {
+__host__ __device__ BITSET_TEST_CONSTEXPR bool test()
+{
   test_index<0>();
   test_index<1>();
   test_index<31>();
@@ -67,10 +68,12 @@ BITSET_TEST_CONSTEXPR bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   test_index<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars needed here
+#if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars
+                                                                   // needed here
   static_assert(test(), "");
 #endif
 

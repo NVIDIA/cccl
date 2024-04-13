@@ -15,24 +15,25 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__
-TEST_CONSTEXPR_CXX14 void test_none() {
-    cuda::std::bitset<N> v;
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_none()
+{
+  cuda::std::bitset<N> v;
+  v.reset();
+  assert(v.none() == true);
+  v.set();
+  assert(v.none() == (N == 0));
+  if (v.size() > 1)
+  {
+    v[N / 2] = false;
+    assert(v.none() == false);
     v.reset();
-    assert(v.none() == true);
-    v.set();
-    assert(v.none() == (N == 0));
-    if (v.size() > 1) {
-        v[N/2] = false;
-        assert(v.none() == false);
-        v.reset();
-        v[N/2] = true;
-        assert(v.none() == false);
-    }
+    v[N / 2] = true;
+    assert(v.none() == false);
+  }
 }
 
-__host__ __device__
-TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   test_none<0>();
   test_none<1>();
   test_none<31>();
@@ -46,7 +47,8 @@ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2011
   static_assert(test(), "");

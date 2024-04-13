@@ -17,74 +17,84 @@
 #include <cuda/std/version>
 
 #ifndef _LIBCUDACXX_HAS_SSTREAM
-int main(int, char **) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #else
 
-#include <cuda/std/bitset>
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
-#include "test_macros.h"
+#  include <cuda/std/bitset>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
+
+#  include "test_macros.h"
 
 int main(int, char**)
 {
+  {
+    cuda::std::istringstream in("01011010");
+    cuda::std::bitset<8> b;
+    in >> b;
+    assert(b.to_ulong() == 0x5A);
+  }
+  {
+    // Make sure that input-streaming an empty bitset does not cause the
+    // failbit to be set (LWG 3199).
+    cuda::std::istringstream in("01011010");
+    cuda::std::bitset<0> b;
+    in >> b;
+    assert(b.to_string() == "");
+    assert(!in.bad());
+    assert(!in.fail());
+    assert(!in.eof());
+    assert(in.good());
+  }
+#  ifndef TEST_HAS_NO_EXCEPTIONS
+  {
+    cuda::std::stringbuf sb;
+    cuda::std::istream is(&sb);
+    is.exceptions(cuda::std::ios::failbit);
+
+    bool threw = false;
+    try
     {
-        cuda::std::istringstream in("01011010");
-        cuda::std::bitset<8> b;
-        in >> b;
-        assert(b.to_ulong() == 0x5A);
+      cuda::std::bitset<8> b;
+      is >> b;
     }
+    catch (cuda::std::ios::failure const&)
     {
-        // Make sure that input-streaming an empty bitset does not cause the
-        // failbit to be set (LWG 3199).
-        cuda::std::istringstream in("01011010");
-        cuda::std::bitset<0> b;
-        in >> b;
-        assert(b.to_string() == "");
-        assert(!in.bad());
-        assert(!in.fail());
-        assert(!in.eof());
-        assert(in.good());
+      threw = true;
     }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+
+    assert(!is.bad());
+    assert(is.fail());
+    assert(is.eof());
+    assert(threw);
+  }
+  {
+    cuda::std::stringbuf sb;
+    cuda::std::istream is(&sb);
+    is.exceptions(cuda::std::ios::eofbit);
+
+    bool threw = false;
+    try
     {
-        cuda::std::stringbuf sb;
-        cuda::std::istream is(&sb);
-        is.exceptions(cuda::std::ios::failbit);
-
-        bool threw = false;
-        try {
-            cuda::std::bitset<8> b;
-            is >> b;
-        } catch (cuda::std::ios::failure const&) {
-            threw = true;
-        }
-
-        assert(!is.bad());
-        assert(is.fail());
-        assert(is.eof());
-        assert(threw);
+      cuda::std::bitset<8> b;
+      is >> b;
     }
+    catch (cuda::std::ios::failure const&)
     {
-        cuda::std::stringbuf sb;
-        cuda::std::istream is(&sb);
-        is.exceptions(cuda::std::ios::eofbit);
-
-        bool threw = false;
-        try {
-            cuda::std::bitset<8> b;
-            is >> b;
-        } catch (cuda::std::ios::failure const&) {
-            threw = true;
-        }
-
-        assert(!is.bad());
-        assert(is.fail());
-        assert(is.eof());
-        assert(threw);
+      threw = true;
     }
-#endif // TEST_HAS_NO_EXCEPTIONS
 
-    return 0;
+    assert(!is.bad());
+    assert(is.fail());
+    assert(is.eof());
+    assert(threw);
+  }
+#  endif // TEST_HAS_NO_EXCEPTIONS
+
+  return 0;
 }
 
 #endif

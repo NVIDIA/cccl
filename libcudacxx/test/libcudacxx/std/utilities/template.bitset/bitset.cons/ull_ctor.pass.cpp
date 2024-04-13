@@ -15,32 +15,36 @@
 
 #include "test_macros.h"
 
-// TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.
+// TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not
+// executed.
 _CCCL_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
-__host__ __device__
-TEST_CONSTEXPR_CXX14 void test_val_ctor()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_val_ctor()
 {
+  {
+    TEST_CONSTEXPR cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
+    assert(v.size() == N);
+    cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 64);
+    for (cuda::std::size_t i = 0; i < M; ++i)
     {
-        TEST_CONSTEXPR cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
-        assert(v.size() == N);
-        cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 64);
-        for (cuda::std::size_t i = 0; i < M; ++i)
-            assert(v[i] == ((i & 1) != 0));
-        for (cuda::std::size_t i = M; i < v.size(); ++i)
-            assert(v[i] == false);
+      assert(v[i] == ((i & 1) != 0));
     }
+    for (cuda::std::size_t i = M; i < v.size(); ++i)
+    {
+      assert(v[i] == false);
+    }
+  }
 #if TEST_STD_VER >= 11
-    {
-        constexpr cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
-        static_assert(v.size() == N, "");
-    }
+  {
+    constexpr cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
+    static_assert(v.size() == N, "");
+  }
 #endif
 }
 
-__host__ __device__
-TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   test_val_ctor<0>();
   test_val_ctor<1>();
   test_val_ctor<31>();

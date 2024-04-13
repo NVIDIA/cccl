@@ -17,21 +17,24 @@
 #include <cuda/std/version>
 
 #ifndef _LIBCUDACXX_HAS_SSTREAM
-int main(int, char **) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #else
 
-#include <cuda/std/bitset>
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/bitset>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 int main(int, char**)
 {
-    cuda::std::ostringstream os;
-    cuda::std::bitset<8> b(0x5A);
-    os << b;
-    assert(os.str() == "01011010");
+  cuda::std::ostringstream os;
+  cuda::std::bitset<8> b(0x5A);
+  os << b;
+  assert(os.str() == "01011010");
 
   return 0;
 }

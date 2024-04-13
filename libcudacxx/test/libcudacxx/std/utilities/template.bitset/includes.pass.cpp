@@ -12,13 +12,16 @@
 
 #include "test_macros.h"
 
-template <class> __host__ __device__ void test_typedef() {}
+template <class>
+__host__ __device__ void test_typedef()
+{}
 
 int main(int, char**)
 {
 #ifdef _LIBCUDACXX_HAS_STRING
   { // test for <cuda/std/string>
-    cuda::std::string s; ((void)s);
+    cuda::std::string s;
+    ((void) s);
   }
 #endif
   { // test for <cuda/std/iosfwd>

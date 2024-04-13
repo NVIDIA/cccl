@@ -88,12 +88,9 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
 {
 #if __has_builtin(__builtin_constant_p) || defined(_CCCL_COMPILER_GCC)
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (
-    return __builtin_constant_p(__first < __needle) && __first < __needle;
-  ),
-  (
-    return __constexpr_tail_overlap_fallback(__first, __needle, __last);
-  ))
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return __builtin_constant_p(__first < __needle) && __first < __needle;),
+                    (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
 #else
   return __constexpr_tail_overlap_fallback(__first, __needle, __last);
 #endif
@@ -114,7 +111,8 @@ __copy(_Tp* __first, _Tp* __last, _Up* __result)
     {
       return {__last, __result + __n};
     }
-    if ((!__libcpp_is_constant_evaluated() && __first < __result) || __constexpr_tail_overlap(__first, __result, __last))
+    if ((!__libcpp_is_constant_evaluated() && __first < __result)
+        || __constexpr_tail_overlap(__first, __result, __last))
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)
       {

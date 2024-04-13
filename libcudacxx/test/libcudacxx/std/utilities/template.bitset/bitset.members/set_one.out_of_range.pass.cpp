@@ -15,21 +15,38 @@
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
-    NV_IF_TARGET(NV_IS_HOST,
-        {
-            cuda::std::bitset<0> v;
-            try { v.set(0); assert(false); } catch (cuda::std::out_of_range const&) { }
-        }
-        {
-            cuda::std::bitset<1> v("0");
-            try { v.set(2); assert(false); } catch (cuda::std::out_of_range const&) { }
-        }
-        {
-            cuda::std::bitset<10> v("0000000000");
-            try { v.set(10); assert(false); } catch (cuda::std::out_of_range const&) { }
-        }
-    )
+int main(int, char**)
+{
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    {
+      cuda::std::bitset<0> v;
+      try
+      {
+        v.set(0);
+        assert(false);
+      }
+      catch (cuda::std::out_of_range const&)
+      {}
+    } {
+      cuda::std::bitset<1> v("0");
+      try
+      {
+        v.set(2);
+        assert(false);
+      }
+      catch (cuda::std::out_of_range const&)
+      {}
+    } {
+      cuda::std::bitset<10> v("0000000000");
+      try
+      {
+        v.set(10);
+        assert(false);
+      }
+      catch (cuda::std::out_of_range const&)
+      {}
+    })
 
-    return 0;
+  return 0;
 }

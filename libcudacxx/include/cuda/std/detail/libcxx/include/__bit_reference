@@ -11,8 +11,6 @@
 #define _LIBCUDACXX___BIT_REFERENCE
 
 #include <cuda/std/detail/__config>
-#include <bit>
-#include <algorithm>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,21 +20,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include "__algorithm/copy_n.h"
-#include "__algorithm/fill_n.h"
-#include "__algorithm/min.h"
-// TODO: modularize bit, will do soon
-#include "bit"
-// #include "__bit/countr.h"
-// #include "__bit/invert_if.h"
-// #include "__bit/popcount.h"
-#include "__fwd/bit_reference.h"
-#include "__iterator/iterator_traits.h"
-#include "__memory/construct_at.h"
-#include "__memory/pointer_traits.h"
-#include "__type_traits/conditional.h"
-#include "__utility/swap.h"
-#include "cstring"
+#include <cuda/std/detail/libcxx/include/__algorithm/copy_n.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/fill_n.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/min.h>
+// TODO: modularize bit a bit
+#include <cuda/std/detail/libcxx/include/bit>
+// #include <cuda/std/detail/libcxx/include/__bit/countr.h>
+// #include <cuda/std/detail/libcxx/include/__bit/invert_if.h>
+// #include <cuda/std/detail/libcxx/include/__bit/popcount.h>
+#include <cuda/std/detail/libcxx/include/__fwd/bit_reference.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/detail/libcxx/include/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -291,8 +289,10 @@ fill(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __last, bool
 // copy
 
 template <class _Cp, bool _IsConst>
-inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> __copy_aligned(
-  __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
+inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false>
+__copy_aligned(__bit_iterator<_Cp, _IsConst> __first,
+               __bit_iterator<_Cp, _IsConst> __last,
+               __bit_iterator<_Cp, false> __result)
 {
   using _In             = __bit_iterator<_Cp, _IsConst>;
   using difference_type = typename _In::difference_type;
@@ -1039,9 +1039,9 @@ public:
   using value_type      = bool;
   using pointer         = __bit_iterator;
 #ifndef _LIBCUDACXX_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
-  using reference = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp> >;
+  using reference = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
 #else
-  using reference = __conditional_t<_IsConst, bool, __bit_reference<_Cp> >;
+  using reference = __conditional_t<_IsConst, bool, __bit_reference<_Cp>>;
 #endif
   using iterator_category = random_access_iterator_tag;
 
@@ -1089,7 +1089,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
-    return __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp> >(
+    return __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>(
       __seg_, __storage_type(1) << __ctz_);
   }
 
