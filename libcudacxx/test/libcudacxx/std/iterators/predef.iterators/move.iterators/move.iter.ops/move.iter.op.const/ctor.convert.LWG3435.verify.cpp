@@ -17,10 +17,14 @@
 
 #include <cuda/std/iterator>
 
-struct Base { };
-struct Derived : Base { };
+struct Base
+{};
+struct Derived : Base
+{};
 
-void test() {
-    cuda::std::move_iterator<Base*> base;
-    cuda::std::move_iterator<Derived*> derived(base); // expected-error {{no matching constructor for initialization of 'std::move_iterator<Derived *>'}}
+void test()
+{
+  cuda::std::move_iterator<Base*> base;
+  cuda::std::move_iterator<Derived*> derived(base); // expected-error {{no matching constructor for initialization of
+                                                    // 'std::move_iterator<Derived *>'}}
 }

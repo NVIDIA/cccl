@@ -47,22 +47,14 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 // Additional details of the Merge-Path Algorithm can be found in:
 // S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, " Merge Path - Parallel
 // Merging Made Simple", Multithreaded Architectures and Applications (MTAAP)
 // Workshop, IEEE 26th International Parallel & Distributed Processing
 // Symposium (IPDPS), 2012
-template <typename KeyT,
-          typename KeyIteratorT,
-          typename OffsetT,
-          typename BinaryPred>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(KeyIteratorT keys1,
-                                             KeyIteratorT keys2,
-                                             OffsetT keys1_count,
-                                             OffsetT keys2_count,
-                                             OffsetT diag,
-                                             BinaryPred binary_pred)
+template <typename KeyT, typename KeyIteratorT, typename OffsetT, typename BinaryPred>
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(
+  KeyIteratorT keys1, KeyIteratorT keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
   OffsetT keys1_end   = (cub::min)(diag, keys1_count);
@@ -87,14 +79,15 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(KeyIteratorT keys1,
 }
 
 template <typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
-_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(KeyT *keys_shared,
-                                            int keys1_beg,
-                                            int keys2_beg,
-                                            int keys1_count,
-                                            int keys2_count,
-                                            KeyT (&output)[ITEMS_PER_THREAD],
-                                            int (&indices)[ITEMS_PER_THREAD],
-                                            CompareOp compare_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+  KeyT* keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ITEMS_PER_THREAD],
+  int (&indices)[ITEMS_PER_THREAD],
+  CompareOp compare_op)
 {
   int keys1_end = keys1_beg + keys1_count;
   int keys2_end = keys2_beg + keys2_count;
@@ -105,9 +98,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(KeyT *keys_shared,
 #pragma unroll
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    bool p = (keys2_beg < keys2_end) &&
-             ((keys1_beg >= keys1_end)
-              || compare_op(key2, key1));
+    bool p = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
 
     output[item]  = p ? key2 : key1;
     indices[item] = p ? keys2_beg++ : keys1_beg++;
@@ -175,34 +166,28 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(KeyT *keys_shared,
  *   Provides a way of synchronizing threads. Should be derived from
  *   `BlockMergeSortStrategy`.
  */
-template <typename KeyT,
-          typename ValueT,
-          int NUM_THREADS,
-          int ITEMS_PER_THREAD,
-          typename SynchronizationPolicy>
+template <typename KeyT, typename ValueT, int NUM_THREADS, int ITEMS_PER_THREAD, typename SynchronizationPolicy>
 class BlockMergeSortStrategy
 {
-  static_assert(PowerOfTwo<NUM_THREADS>::VALUE,
-                "NUM_THREADS must be a power of two");
+  static_assert(PowerOfTwo<NUM_THREADS>::VALUE, "NUM_THREADS must be a power of two");
 
 private:
-
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * NUM_THREADS;
 
   // Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   /// Shared memory type required by this thread block
   union _TempStorage
   {
     KeyT keys_shared[ITEMS_PER_TILE + 1];
     ValueT items_shared[ITEMS_PER_TILE + 1];
   }; // union TempStorage
-  #endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /// Shared storage reference
-  _TempStorage &temp_storage;
+  _TempStorage& temp_storage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -215,17 +200,16 @@ private:
 
 public:
   /// \smemstorage{BlockMergeSort}
-  struct TempStorage : Uninitialized<_TempStorage> {};
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   BlockMergeSortStrategy() = delete;
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
-  BlockMergeSortStrategy(unsigned int linear_tid)
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(unsigned int linear_tid)
       : temp_storage(PrivateStorage())
       , linear_tid(linear_tid)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage &temp_storage,
-                                                    unsigned int linear_tid)
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage& temp_storage, unsigned int linear_tid)
       : temp_storage(temp_storage.Alias())
       , linear_tid(linear_tid)
   {}
@@ -258,8 +242,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op)
   {
     ValueT items[ITEMS_PER_THREAD];
     Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
@@ -300,10 +283,8 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op,
-                                       int valid_items,
-                                       KeyT oob_default)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
     ValueT items[ITEMS_PER_THREAD];
     Sort<CompareOp, true>(keys, items, compare_op, valid_items, oob_default);
@@ -334,9 +315,8 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       ValueT (&items)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
   {
     Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
@@ -381,13 +361,13 @@ public:
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
-  template <typename CompareOp,
-            bool IS_LAST_TILE = true>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       ValueT (&items)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op,
-                                       int valid_items,
-                                       KeyT oob_default)
+  template <typename CompareOp, bool IS_LAST_TILE = true>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&items)[ITEMS_PER_THREAD],
+       CompareOp compare_op,
+       int valid_items,
+       KeyT oob_default)
   {
     if (IS_LAST_TILE)
     {
@@ -396,7 +376,7 @@ public:
       //
       KeyT max_key = oob_default;
 
-      #pragma unroll
+#pragma unroll
       for (int item = 1; item < ITEMS_PER_THREAD; ++item)
       {
         if (ITEMS_PER_THREAD * linear_tid + item < valid_items)
@@ -420,18 +400,17 @@ public:
     // each thread has sorted keys
     // merge sort keys in shared memory
     //
-    for (int target_merged_threads_number = 2;
-         target_merged_threads_number <= NUM_THREADS;
+    for (int target_merged_threads_number = 2; target_merged_threads_number <= NUM_THREADS;
          target_merged_threads_number *= 2)
     {
       int merged_threads_number = target_merged_threads_number / 2;
-      int mask = target_merged_threads_number - 1;
+      int mask                  = target_merged_threads_number - 1;
 
       Sync();
 
-      // store keys in shmem
-      //
-      #pragma unroll
+// store keys in shmem
+//
+#pragma unroll
       for (int item = 0; item < ITEMS_PER_THREAD; ++item)
       {
         int idx                       = ITEMS_PER_THREAD * linear_tid + item;
@@ -448,9 +427,7 @@ public:
 
       int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag =
-        (cub::min)(valid_items,
-                   ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      int diag = (cub::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
       int keys1_beg = (cub::min)(valid_items, start);
       int keys1_end = (cub::min)(valid_items, keys1_beg + size);
@@ -460,12 +437,13 @@ public:
       int keys1_count = keys1_end - keys1_beg;
       int keys2_count = keys2_end - keys2_beg;
 
-      int partition_diag = MergePath<KeyT>(&temp_storage.keys_shared[keys1_beg],
-                                           &temp_storage.keys_shared[keys2_beg],
-                                           keys1_count,
-                                           keys2_count,
-                                           diag,
-                                           compare_op);
+      int partition_diag = MergePath<KeyT>(
+        &temp_storage.keys_shared[keys1_beg],
+        &temp_storage.keys_shared[keys2_beg],
+        keys1_count,
+        keys2_count,
+        diag,
+        compare_op);
 
       int keys1_beg_loc   = keys1_beg + partition_diag;
       int keys1_end_loc   = keys1_end;
@@ -473,33 +451,34 @@ public:
       int keys2_end_loc   = keys2_end;
       int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
       int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
-      SerialMerge(&temp_storage.keys_shared[0],
-                  keys1_beg_loc,
-                  keys2_beg_loc,
-                  keys1_count_loc,
-                  keys2_count_loc,
-                  keys,
-                  indices,
-                  compare_op);
+      SerialMerge(
+        &temp_storage.keys_shared[0],
+        keys1_beg_loc,
+        keys2_beg_loc,
+        keys1_count_loc,
+        keys2_count_loc,
+        keys,
+        indices,
+        compare_op);
 
       if (!KEYS_ONLY)
       {
         Sync();
 
-        // store keys in shmem
-        //
-        #pragma unroll
+// store keys in shmem
+//
+#pragma unroll
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
-          int idx = ITEMS_PER_THREAD * linear_tid + item;
+          int idx                        = ITEMS_PER_THREAD * linear_tid + item;
           temp_storage.items_shared[idx] = items[item];
         }
 
         Sync();
 
-        // gather items from shmem
-        //
-        #pragma unroll
+// gather items from shmem
+//
+#pragma unroll
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
           items[item] = temp_storage.items_shared[indices[item]];
@@ -532,8 +511,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                             CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op)
   {
     Sort(keys, compare_op);
   }
@@ -565,9 +543,8 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                             ValueT (&items)[ITEMS_PER_THREAD],
-                                             CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StableSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
   {
     Sort(keys, items, compare_op);
   }
@@ -609,10 +586,8 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                             CompareOp compare_op,
-                                             int valid_items,
-                                             KeyT oob_default)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StableSort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
     Sort(keys, compare_op, valid_items, oob_default);
   }
@@ -658,19 +633,15 @@ public:
    *
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
-  template <typename CompareOp,
-            bool IS_LAST_TILE = true>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                             ValueT (&items)[ITEMS_PER_THREAD],
-                                             CompareOp compare_op,
-                                             int valid_items,
-                                             KeyT oob_default)
+  template <typename CompareOp, bool IS_LAST_TILE = true>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&items)[ITEMS_PER_THREAD],
+    CompareOp compare_op,
+    int valid_items,
+    KeyT oob_default)
   {
-    Sort<CompareOp, IS_LAST_TILE>(keys,
-                                  items,
-                                  compare_op,
-                                  valid_items,
-                                  oob_default);
+    Sort<CompareOp, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
   }
 
 private:
@@ -679,7 +650,6 @@ private:
     static_cast<const SynchronizationPolicy*>(this)->SyncImplementation();
   }
 };
-
 
 /**
  * @brief The BlockMergeSort class provides methods for sorting items
@@ -767,40 +737,27 @@ template <typename KeyT,
           int BLOCK_DIM_Y = 1,
           int BLOCK_DIM_Z = 1>
 class BlockMergeSort
-    : public BlockMergeSortStrategy<KeyT,
-                                    ValueT,
-                                    BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-                                    ITEMS_PER_THREAD,
-                                    BlockMergeSort<KeyT,
-                                                   BLOCK_DIM_X,
-                                                   ITEMS_PER_THREAD,
-                                                   ValueT,
-                                                   BLOCK_DIM_Y,
-                                                   BLOCK_DIM_Z>>
+    : public BlockMergeSortStrategy<
+        KeyT,
+        ValueT,
+        BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+        ITEMS_PER_THREAD,
+        BlockMergeSort<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, ValueT, BLOCK_DIM_Y, BLOCK_DIM_Z>>
 {
 private:
   // The thread block size in threads
-  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+  static constexpr int BLOCK_THREADS  = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * BLOCK_THREADS;
 
-  using BlockMergeSortStrategyT =
-    BlockMergeSortStrategy<KeyT,
-                           ValueT,
-                           BLOCK_THREADS,
-                           ITEMS_PER_THREAD,
-                           BlockMergeSort>;
+  using BlockMergeSortStrategyT = BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, BlockMergeSort>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
-      : BlockMergeSortStrategyT(
-          RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      : BlockMergeSortStrategyT(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(
-    typename BlockMergeSortStrategyT::TempStorage &temp_storage)
-      : BlockMergeSortStrategyT(
-          temp_storage,
-          RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+  _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
+      : BlockMergeSortStrategyT(temp_storage, RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
   {}
 
 private:
@@ -811,6 +768,5 @@ private:
 
   friend BlockMergeSortStrategyT;
 };
-
 
 CUB_NAMESPACE_END

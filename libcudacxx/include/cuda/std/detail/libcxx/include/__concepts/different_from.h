@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___CONCEPTS_DIFFERENT_FROM_H
 #define _LIBCUDACXX___CONCEPTS_DIFFERENT_FROM_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,15 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/remove_cvref.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT __different_from = !same_as<remove_cvref_t<_Tp>, remove_cvref_t<_Up>>;
 
 #endif // _CCCL_STD_VER > 2011

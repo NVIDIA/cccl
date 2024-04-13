@@ -2,6 +2,7 @@
 #define TEST_SUPPORT_FILESYSTEM_INCLUDE_H
 
 #include <filesystem>
+
 #include "test_macros.h"
 
 #if defined(_LIBCUDACXX_VERSION) && TEST_STD_VER < 2017

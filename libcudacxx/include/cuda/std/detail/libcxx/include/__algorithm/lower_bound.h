@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_LOWER_BOUND_H
 #define _LIBCUDACXX___ALGORITHM_LOWER_BOUND_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,16 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/half_positive.h"
-#include "../__algorithm/iterator_operations.h"
-#include "../__functional/identity.h"
-#include "../__functional/invoke.h"
-#include "../__iterator/advance.h"
-#include "../__iterator/distance.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/is_callable.h"
-#include "../__type_traits/remove_reference.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/half_positive.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/distance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_callable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

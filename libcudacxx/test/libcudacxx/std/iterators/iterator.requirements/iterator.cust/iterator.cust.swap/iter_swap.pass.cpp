@@ -12,80 +12,104 @@
 // template<class I>
 // unspecified iter_swap;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
+#include "../unqualified_lookup_wrapper.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#include "../unqualified_lookup_wrapper.h"
-
 using IterSwapT = decltype(cuda::std::ranges::iter_swap);
 
-struct HasIterSwap {
-  int &value_;
-  __host__ __device__ constexpr explicit HasIterSwap(int &value) : value_(value) { assert(value == 0); }
+struct HasIterSwap
+{
+  int& value_;
+  __host__ __device__ constexpr explicit HasIterSwap(int& value)
+      : value_(value)
+  {
+    assert(value == 0);
+  }
 
-  __host__ __device__ friend constexpr void iter_swap(HasIterSwap& a, HasIterSwap& b) {
+  __host__ __device__ friend constexpr void iter_swap(HasIterSwap& a, HasIterSwap& b)
+  {
     a.value_ = 1;
     b.value_ = 1;
   }
-  __host__ __device__ friend constexpr void iter_swap(HasIterSwap& a, int& b) {
+  __host__ __device__ friend constexpr void iter_swap(HasIterSwap& a, int& b)
+  {
     a.value_ = 2;
-    b = 2;
+    b        = 2;
   }
 };
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
-static_assert( cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>);
-static_assert( cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>);
 
-static_assert( cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, HasIterSwap&>);
-static_assert( cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, int&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>);
 
-static_assert( cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>);
-static_assert( cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>);
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
-struct NodiscardIterSwap {
-  __host__ __device__ friend _LIBCUDACXX_NODISCARD_EXT int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&) { return 0; }
+struct NodiscardIterSwap
+{
+  __host__ __device__ friend _LIBCUDACXX_NODISCARD_EXT int iter_swap(NodiscardIterSwap&, NodiscardIterSwap&)
+  {
+    return 0;
+  }
 };
 
-__host__ __device__
-void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap& b) { cuda::std::ranges::iter_swap(a, b); }
+__host__ __device__ void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap& b)
+{
+  cuda::std::ranges::iter_swap(a, b);
+}
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
-struct HasRangesSwap {
-  int &value_;
-  __host__ __device__ constexpr explicit HasRangesSwap(int &value) : value_(value) { assert(value == 0); }
+struct HasRangesSwap
+{
+  int& value_;
+  __host__ __device__ constexpr explicit HasRangesSwap(int& value)
+      : value_(value)
+  {
+    assert(value == 0);
+  }
 
-  __host__ __device__ friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b) {
+  __host__ __device__ friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b)
+  {
     a.value_ = 1;
     b.value_ = 1;
   }
-  __host__ __device__ friend constexpr void swap(HasRangesSwap& a, int& b) {
+  __host__ __device__ friend constexpr void swap(HasRangesSwap& a, int& b)
+  {
     a.value_ = 2;
-    b = 2;
+    b        = 2;
   }
 };
 
-struct HasRangesSwapWrapper {
+struct HasRangesSwapWrapper
+{
   using value_type = HasRangesSwap;
 
-  HasRangesSwap &value_;
-  __host__ __device__ constexpr explicit HasRangesSwapWrapper(HasRangesSwap &value) : value_(value) {}
+  HasRangesSwap& value_;
+  __host__ __device__ constexpr explicit HasRangesSwapWrapper(HasRangesSwap& value)
+      : value_(value)
+  {}
 
-  __host__ __device__ constexpr HasRangesSwap& operator*() const { return value_; }
+  __host__ __device__ constexpr HasRangesSwap& operator*() const
+  {
+    return value_;
+  }
 };
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
-static_assert( cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>);
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
 static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>);
@@ -93,17 +117,21 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>
 
 struct B;
 
-struct A {
+struct A
+{
   bool value = false;
-  __host__ __device__ constexpr A& operator=(const B&) {
+  __host__ __device__ constexpr A& operator=(const B&)
+  {
     value = true;
     return *this;
   };
 };
 
-struct B {
+struct B
+{
   bool value = false;
-  __host__ __device__ constexpr B& operator=(const A&) {
+  __host__ __device__ constexpr B& operator=(const A&)
+  {
     value = true;
     return *this;
   };
@@ -111,31 +139,35 @@ struct B {
 
 struct MoveOnly2;
 
-struct MoveOnly1 {
+struct MoveOnly1
+{
   bool value = false;
 
-  MoveOnly1() = default;
-  MoveOnly1(MoveOnly1&&) = default;
-  MoveOnly1& operator=(MoveOnly1&&) = default;
-  MoveOnly1(const MoveOnly1&) = delete;
+  MoveOnly1()                            = default;
+  MoveOnly1(MoveOnly1&&)                 = default;
+  MoveOnly1& operator=(MoveOnly1&&)      = default;
+  MoveOnly1(const MoveOnly1&)            = delete;
   MoveOnly1& operator=(const MoveOnly1&) = delete;
 
-  __host__ __device__ constexpr MoveOnly1& operator=(MoveOnly2 &&) {
+  __host__ __device__ constexpr MoveOnly1& operator=(MoveOnly2&&)
+  {
     value = true;
     return *this;
   };
 };
 
-struct MoveOnly2 {
+struct MoveOnly2
+{
   bool value = false;
 
-  MoveOnly2() = default;
-  MoveOnly2(MoveOnly2&&) = default;
-  MoveOnly2& operator=(MoveOnly2&&) = default;
-  MoveOnly2(const MoveOnly2&) = delete;
+  MoveOnly2()                            = default;
+  MoveOnly2(MoveOnly2&&)                 = default;
+  MoveOnly2& operator=(MoveOnly2&&)      = default;
+  MoveOnly2(const MoveOnly2&)            = delete;
   MoveOnly2& operator=(const MoveOnly2&) = delete;
 
-  __host__ __device__ constexpr MoveOnly2& operator=(MoveOnly1 &&) {
+  __host__ __device__ constexpr MoveOnly2& operator=(MoveOnly1&&)
+  {
     value = true;
     return *this;
   };
@@ -167,15 +199,17 @@ __host__ __device__ constexpr bool test()
     assert(value1 == 1 && value2 == 1);
   }
   {
-    A e; B f;
-    A *ePtr = &e;
-    B *fPtr = &f;
+    A e;
+    B f;
+    A* ePtr = &e;
+    B* fPtr = &f;
     cuda::std::ranges::iter_swap(ePtr, fPtr);
     assert(e.value && f.value);
   }
 
   {
-    MoveOnly1 g; MoveOnly2 h;
+    MoveOnly1 g;
+    MoveOnly2 h;
     cuda::std::ranges::iter_swap(&g, &h);
     assert(g.value && h.value);
   }
@@ -184,9 +218,11 @@ __host__ __device__ constexpr bool test()
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
-    if (__builtin_is_constant_evaluated()) {
+    if (__builtin_is_constant_evaluated())
+    {
       assert(arr[0].moves() == 1 && arr[1].moves() == 3);
-    } else
+    }
+    else
     {
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
@@ -229,7 +265,11 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>);
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
-template<class T> struct Holder { T t; };
+template <class T>
+struct Holder
+{
+  T t;
+};
 static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**>);
 static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**&>);
 static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**>);

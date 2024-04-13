@@ -4,8 +4,8 @@
 //=======================================================================================================================
 #include <nv/target>
 
-// The below are part of libcu++ and are exposed for users that would like a simpler method of targeting host/device code
-// on NVCC, NVC++ or GCC/Clang/MSVC even when the NVCC compiler isn't present.
+// The below are part of libcu++ and are exposed for users that would like a simpler method of targeting host/device
+// code on NVCC, NVC++ or GCC/Clang/MSVC even when the NVCC compiler isn't present.
 
 // These macros are to be used in lieu of common #if defined(__CUDA_ARCH__) statements and
 // are only to be used inside of function scopes
@@ -60,16 +60,19 @@ Static true/false values for fallbacks or user manipulation
 
 //=======================================================================================================================
 // NV_IF_ELSE_TARGET(query, true statement, false statement)
-__host__ __device__ int my_popc(unsigned int v) {
+__host__ __device__ int my_popc(unsigned int v)
+{
   // NV_IF_ELSE_TARGET accepts three arguments, a query and two statement.
   // Here we check if we're compiling for device code. This function acts as a backend for both CUDA and host CPU popc.
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-      return __popc(v);,        // Is false, use CUDA intrinsic
-      return __builtin_popc(v); // Is host, use GCC builtin
+    return __popc(v); // Is false, use CUDA intrinsic
+    , // Notice comma signifying end of block
+    return __builtin_popc(v); // Is host, use GCC builtin
   )
 }
-// Note the commas seperating statements, if preprocessed code is written out the macro will be preprocessed into the below:
+// Note the commas seperating statements, if preprocessed code is written out the macro will be preprocessed into the
+// below:
 /*
   my_popc(unsigned int v) {
     {return __popc(v);}
@@ -78,27 +81,28 @@ __host__ __device__ int my_popc(unsigned int v) {
 
 //=======================================================================================================================
 // NV_IF_TARGET(query, true statement) OR NV_IF_TARGET(q, t, ...)
-__host__ __device__ void some_algorithm() {
+__host__ __device__ void some_algorithm()
+{
   // NV_IF_TARGET accepts two arguments, a query and a statement. (and an optional false statement in >=C++11)
-  NV_IF_TARGET(
-    NV_IS_DEVICE,
-      do_device_specific_work(); // Code only emitted if compiling for device
+  NV_IF_TARGET(NV_IS_DEVICE,
+               do_device_specific_work(); // Code only emitted if compiling for device
   )
 }
 
 //=======================================================================================================================
 // NV_DISPATCH_TARGET(...) - Available only in C++11 and up due to variadic macros
-__host__ __device__ void my_memset(void *p, uint8_t v, uint64_t c) {
+__host__ __device__ void my_memset(void* p, uint8_t v, uint64_t c)
+{
   // Target dispatch accepts pairs of queries and statements.
   // The first postive query encountered will be emitted while others are ignored.
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_80,
-      // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
-      if (v == 0) zero_fill(p, 0, c); // zero fill using cp.async available on SM_80
-      else memset(p, v, c);, // Notice comma signifying end of block
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
+    if (v == 0) zero_fill(p, 0, c); // zero fill using cp.async available on SM_80
+    else memset(p, v, c);
+    , // Notice comma signifying end of block
     NV_ANY_TARGET, // Uncoditionally use memset in other cases
-      memset(p, v, c);
-  )
+    memset(p, v, c);)
 }
 
 //***********************************************************************************************************************

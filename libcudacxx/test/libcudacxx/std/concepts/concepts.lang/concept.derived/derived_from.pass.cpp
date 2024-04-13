@@ -12,38 +12,47 @@
 // template<class Derived, class Base>
 // concept derived_from;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
 #if TEST_STD_VER > 2017
-#define TEST_IF_CONSTEXPR if constexpr
+#  define TEST_IF_CONSTEXPR if constexpr
 #else
-#define TEST_IF_CONSTEXPR if
+#  define TEST_IF_CONSTEXPR if
 #endif
 
 using cuda::std::derived_from;
 
-struct Base1 {};
-struct Derived1 : Base1 {};
-struct Derived2 : Base1 {};
+struct Base1
+{};
+struct Derived1 : Base1
+{};
+struct Derived2 : Base1
+{};
 
-struct DerivedPrivate : private Base1 {};
-struct Derived3 : DerivedPrivate {};
+struct DerivedPrivate : private Base1
+{};
+struct Derived3 : DerivedPrivate
+{};
 
-struct DerivedProtected : protected DerivedPrivate {};
-struct Derived4 : DerivedProtected {};
-struct Derived5 : Derived4 {};
+struct DerivedProtected : protected DerivedPrivate
+{};
+struct Derived4 : DerivedProtected
+{};
+struct Derived5 : Derived4
+{};
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromPointer() {
+__host__ __device__ constexpr void CheckNotDerivedFromPointer()
+{
   { // From as pointer
     static_assert(!derived_from<From*, To>, "");
     static_assert(!derived_from<From*, const To>, "");
     static_assert(!derived_from<From*, volatile To>, "");
     static_assert(!derived_from<From*, const volatile To>, "");
 
-    TEST_IF_CONSTEXPR (!cuda::std::same_as<To, void>) {
+    TEST_IF_CONSTEXPR(!cuda::std::same_as<To, void>)
+    {
       static_assert(!derived_from<From*, To&>, "");
       static_assert(!derived_from<From*, const To&>, "");
       static_assert(!derived_from<From*, volatile To&>, "");
@@ -77,14 +86,12 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer() {
       static_assert(!derived_from<const volatile From*, To&>, "");
       static_assert(!derived_from<const volatile From*, const To&>, "");
       static_assert(!derived_from<const volatile From*, volatile To&>, "");
-      static_assert(
-          !derived_from<const volatile From*, const volatile To&>, "");
+      static_assert(!derived_from<const volatile From*, const volatile To&>, "");
 
       static_assert(!derived_from<const volatile From*, To&&>, "");
       static_assert(!derived_from<const volatile From*, const To&&>, "");
       static_assert(!derived_from<const volatile From*, volatile To&&>, "");
-      static_assert(
-          !derived_from<const volatile From*, const volatile To&&>, "");
+      static_assert(!derived_from<const volatile From*, const volatile To&&>, "");
     }
   }
   { // To as pointer
@@ -93,7 +100,8 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer() {
     static_assert(!derived_from<From, volatile To*>, "");
     static_assert(!derived_from<From, const volatile To*>, "");
 
-    TEST_IF_CONSTEXPR (!cuda::std::same_as<From, void>) {
+    TEST_IF_CONSTEXPR(!cuda::std::same_as<From, void>)
+    {
       static_assert(!derived_from<From&, To*>, "");
       static_assert(!derived_from<From&, const To*>, "");
       static_assert(!derived_from<From&, volatile To*>, "");
@@ -127,14 +135,12 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer() {
       static_assert(!derived_from<const volatile From&, To*>, "");
       static_assert(!derived_from<const volatile From&, const To*>, "");
       static_assert(!derived_from<const volatile From&, volatile To*>, "");
-      static_assert(
-          !derived_from<const volatile From&, const volatile To*>, "");
+      static_assert(!derived_from<const volatile From&, const volatile To*>, "");
 
       static_assert(!derived_from<const volatile From&&, To*>, "");
       static_assert(!derived_from<const volatile From&&, const To*>, "");
       static_assert(!derived_from<const volatile From&&, volatile To*>, "");
-      static_assert(
-          !derived_from<const volatile From&&, const volatile To*>, "");
+      static_assert(!derived_from<const volatile From&&, const volatile To*>, "");
     }
   }
   { // Both as pointers
@@ -161,46 +167,55 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer() {
 
 #if TEST_STD_VER > 2017
   // From as the return type of a pointer-to-function
-  TEST_IF_CONSTEXPR (!cuda::std::is_array_v<From>) {
+  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From>)
+  {
     static_assert(!derived_from<From (*)(), To>, "");
     static_assert(!derived_from<From (*)(int), To>, "");
   }
 
   // To as the return type of a pointer-to-function
-  TEST_IF_CONSTEXPR (!cuda::std::is_array_v<To>) {
+  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<To>)
+  {
     static_assert(!derived_from<From, To (*)()>, "");
     static_assert(!derived_from<From, To (*)(double)>, "");
   }
 
   // Both as the return type of a pointer-to-function
-  TEST_IF_CONSTEXPR (!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>) {
+  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
+  {
     static_assert(!derived_from<From (*)(), To (*)()>, "");
     static_assert(!derived_from<From (*)(int), To (*)(double)>, "");
   }
   { // pointer-to-member
-    TEST_IF_CONSTEXPR (cuda::std::is_class_v<From> && !cuda::std::same_as<To, void>) {
+    TEST_IF_CONSTEXPR(cuda::std::is_class_v<From> && !cuda::std::same_as<To, void>)
+    {
       static_assert(!derived_from<To From::*, To>, "");
     }
 
-    TEST_IF_CONSTEXPR (cuda::std::is_class_v<To> && !cuda::std::same_as<From, void>) {
+    TEST_IF_CONSTEXPR(cuda::std::is_class_v<To> && !cuda::std::same_as<From, void>)
+    {
       static_assert(!derived_from<From To::*, From>, "");
     }
   }
   { // pointer-to-member-functions
-    TEST_IF_CONSTEXPR (cuda::std::is_class_v<From>) {
+    TEST_IF_CONSTEXPR(cuda::std::is_class_v<From>)
+    {
       static_assert(!derived_from<From (From::*)(), To>, "");
     }
 
-    TEST_IF_CONSTEXPR (cuda::std::is_class_v<To>) {
+    TEST_IF_CONSTEXPR(cuda::std::is_class_v<To>)
+    {
       static_assert(!derived_from<To (To::*)(), From>, "");
     }
   }
-  #endif
+#endif
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromReference() {
-  TEST_IF_CONSTEXPR (!cuda::std::same_as<To, void>) {
+__host__ __device__ constexpr void CheckNotDerivedFromReference()
+{
+  TEST_IF_CONSTEXPR(!cuda::std::same_as<To, void>)
+  {
     static_assert(!derived_from<From, To&>, "");
     static_assert(!derived_from<From, const To&>, "");
     static_assert(!derived_from<From, volatile To&>, "");
@@ -212,7 +227,8 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
     static_assert(!derived_from<From, const volatile To&&>, "");
   }
 
-  TEST_IF_CONSTEXPR (!cuda::std::same_as<From, void>) {
+  TEST_IF_CONSTEXPR(!cuda::std::same_as<From, void>)
+  {
     static_assert(!derived_from<From&, To>, "");
     static_assert(!derived_from<From&, To>, "");
     static_assert(!derived_from<From&, To>, "");
@@ -225,7 +241,8 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
   }
 
   // From as lvalue references
-  TEST_IF_CONSTEXPR (!cuda::std::same_as<From, void> && !cuda::std::same_as<To, void>) {
+  TEST_IF_CONSTEXPR(!cuda::std::same_as<From, void> && !cuda::std::same_as<To, void>)
+  {
     static_assert(!derived_from<From&, To&>, "");
     static_assert(!derived_from<From&, const To&>, "");
     static_assert(!derived_from<From&, volatile To&>, "");
@@ -264,8 +281,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
     static_assert(!derived_from<const volatile From&, To&&>, "");
     static_assert(!derived_from<const volatile From&, const To&&>, "");
     static_assert(!derived_from<const volatile From&, volatile To&&>, "");
-    static_assert(
-        !derived_from<const volatile From&, const volatile To&&>, "");
+    static_assert(!derived_from<const volatile From&, const volatile To&&>, "");
 
     // From as rvalue references
     static_assert(!derived_from<From&&, To&>, "");
@@ -301,29 +317,30 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
     static_assert(!derived_from<const volatile From&&, To&>, "");
     static_assert(!derived_from<const volatile From&&, const To&>, "");
     static_assert(!derived_from<const volatile From&&, volatile To&>, "");
-    static_assert(
-        !derived_from<const volatile From&&, const volatile To&>, "");
+    static_assert(!derived_from<const volatile From&&, const volatile To&>, "");
 
     static_assert(!derived_from<const volatile From&&, To&&>, "");
     static_assert(!derived_from<const volatile From&&, const To&&>, "");
     static_assert(!derived_from<const volatile From&&, volatile To&&>, "");
-    static_assert(
-        !derived_from<const volatile From&&, const volatile To&&>, "");
+    static_assert(!derived_from<const volatile From&&, const volatile To&&>, "");
   }
 
 #if TEST_STD_VER > 2017
   // From as the return type of a reference-to-function
-  TEST_IF_CONSTEXPR (!cuda::std::is_array_v<From>) {
+  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From>)
+  {
     static_assert(!derived_from<From (&)(), To>, "");
     static_assert(!derived_from<From (&)(int), To>, "");
   }
   // To as the return type of a reference-to-function
-  TEST_IF_CONSTEXPR (!cuda::std::is_array_v<To>) {
+  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<To>)
+  {
     static_assert(!derived_from<From, To (&)()>, "");
     static_assert(!derived_from<From, To (&)(double)>, "");
   }
   // Both as the return type of a reference-to-function
-  TEST_IF_CONSTEXPR (!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>) {
+  TEST_IF_CONSTEXPR(!cuda::std::is_array_v<From> && !cuda::std::is_array_v<To>)
+  {
     static_assert(!derived_from<From (&)(), To (&)()>, "");
     static_assert(!derived_from<From (&)(int), To (&)(double)>, "");
   }
@@ -331,8 +348,8 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
 }
 
 template <typename From, typename To>
-__host__ __device__
-constexpr void CheckDerivedFrom() {
+__host__ __device__ constexpr void CheckDerivedFrom()
+{
   static_assert(derived_from<From, To>, "");
 
   static_assert(derived_from<From, const To>, "");
@@ -356,8 +373,8 @@ constexpr void CheckDerivedFrom() {
 }
 
 template <typename From, typename To>
-__host__ __device__
-constexpr void CheckNotDerivedFrom() {
+__host__ __device__ constexpr void CheckNotDerivedFrom()
+{
   static_assert(!derived_from<From, To>, "");
 
   static_assert(!derived_from<From, const To>, "");
@@ -380,10 +397,19 @@ constexpr void CheckNotDerivedFrom() {
   CheckNotDerivedFromReference<From, To>();
 }
 
-enum Enumeration { Yes, No };
-enum class ScopedEnumeration : int { No, Yes };
+enum Enumeration
+{
+  Yes,
+  No
+};
+enum class ScopedEnumeration : int
+{
+  No,
+  Yes
+};
 
-int main(int, char**) {
+int main(int, char**)
+{
   { // Fundamentals shouldn't be derived from anything
     CheckNotDerivedFrom<int, long>();
     CheckNotDerivedFrom<signed char, char>();

@@ -28,4 +28,3 @@
 
 // this system inherits set_operations
 #include <thrust/system/cpp/detail/set_operations.h>
-

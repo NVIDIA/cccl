@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/omp/detail/copy_if.h>
 #include <thrust/system/detail/generic/copy_if.h>
+#include <thrust/system/omp/detail/copy_if.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -36,26 +36,24 @@ namespace omp
 namespace detail
 {
 
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename Predicate>
-  OutputIterator copy_if(execution_policy<DerivedPolicy> &exec,
-                         InputIterator1 first,
-                         InputIterator1 last,
-                         InputIterator2 stencil,
-                         OutputIterator result,
-                         Predicate pred)
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate>
+OutputIterator copy_if(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred)
 {
   // omp prefers generic::copy_if to cpp::copy_if
   return thrust::system::detail::generic::copy_if(exec, first, last, stencil, result, pred);
 } // end copy_if()
 
-
-} // end detail
-} // end omp
-} // end system
+} // namespace detail
+} // namespace omp
+} // namespace system
 THRUST_NAMESPACE_END
-

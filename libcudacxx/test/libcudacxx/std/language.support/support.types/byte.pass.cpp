@@ -8,6 +8,7 @@
 
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
+
 #include "test_macros.h"
 
 // XFAIL: c++98, c++03, c++11
@@ -19,20 +20,21 @@
 // It is a distinct type for accessing the bits that ultimately make up object storage.
 
 #if TEST_STD_VER > 2011
-static_assert( cuda::std::is_trivial<cuda::std::byte>::value, "" );   // P0767
+static_assert(cuda::std::is_trivial<cuda::std::byte>::value, ""); // P0767
 #else
-static_assert( cuda::std::is_pod<cuda::std::byte>::value, "" );
+static_assert(cuda::std::is_pod<cuda::std::byte>::value, "");
 #endif
-static_assert(!cuda::std::is_arithmetic<cuda::std::byte>::value, "" );
-static_assert(!cuda::std::is_integral<cuda::std::byte>::value, "" );
+static_assert(!cuda::std::is_arithmetic<cuda::std::byte>::value, "");
+static_assert(!cuda::std::is_integral<cuda::std::byte>::value, "");
 
-static_assert(!cuda::std::is_same<cuda::std::byte,          char>::value, "" );
-static_assert(!cuda::std::is_same<cuda::std::byte,   signed char>::value, "" );
-static_assert(!cuda::std::is_same<cuda::std::byte, unsigned char>::value, "" );
+static_assert(!cuda::std::is_same<cuda::std::byte, char>::value, "");
+static_assert(!cuda::std::is_same<cuda::std::byte, signed char>::value, "");
+static_assert(!cuda::std::is_same<cuda::std::byte, unsigned char>::value, "");
 
 // The standard doesn't outright say this, but it's pretty clear that it has to be true.
-static_assert(sizeof(cuda::std::byte) == 1, "" );
+static_assert(sizeof(cuda::std::byte) == 1, "");
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

@@ -10,6 +10,6 @@
 #ifndef _CUDA_STD_CCOMPLEX
 #define _CUDA_STD_CCOMPLEX
 
-#include "complex"
+#include <cuda/std/complex>
 
 #endif // _CUDA_STD_CCOMPLEX

@@ -11,8 +11,8 @@
 #ifndef __CCCL_DIALECT_H
 #define __CCCL_DIALECT_H
 
-#include "../__cccl/compiler.h"
-#include "../__cccl/system_header.h"
+#include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
+#include <cuda/std/detail/libcxx/include/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -77,10 +77,10 @@
 #endif // _CCCL_STD_VER <= 2020
 
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_if_constexpr)
-#  define _CCCL_IF_CONSTEXPR if constexpr
+#  define _CCCL_IF_CONSTEXPR      if constexpr
 #  define _CCCL_ELSE_IF_CONSTEXPR else if constexpr
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
-#  define _CCCL_IF_CONSTEXPR if
+#  define _CCCL_IF_CONSTEXPR      if
 #  define _CCCL_ELSE_IF_CONSTEXPR else if
 #endif // _CCCL_STD_VER <= 2014
 

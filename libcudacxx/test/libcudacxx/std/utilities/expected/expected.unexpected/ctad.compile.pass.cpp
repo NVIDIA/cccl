@@ -15,12 +15,15 @@
 #include <cuda/std/concepts>
 #include <cuda/std/expected>
 
-struct Foo{};
+struct Foo
+{};
 
 static_assert(cuda::std::same_as<decltype(cuda::std::unexpected(5)), cuda::std::unexpected<int>>);
 static_assert(cuda::std::same_as<decltype(cuda::std::unexpected(Foo{})), cuda::std::unexpected<Foo>>);
-static_assert(cuda::std::same_as<decltype(cuda::std::unexpected(cuda::std::unexpected<int>(5))), cuda::std::unexpected<int>>);
+static_assert(
+  cuda::std::same_as<decltype(cuda::std::unexpected(cuda::std::unexpected<int>(5))), cuda::std::unexpected<int>>);
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

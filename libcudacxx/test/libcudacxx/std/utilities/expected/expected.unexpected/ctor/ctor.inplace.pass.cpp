@@ -29,7 +29,8 @@
 static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, cuda::std::in_place_t, int>, "");
 
 // !is_constructible_v<E, Args...>
-struct Foo {};
+struct Foo
+{};
 static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>, cuda::std::in_place_t, int>, "");
 
 // test explicit
@@ -37,11 +38,8 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  ImplicitlyConstructible_,
-  requires(Args&&... args)(
-    (conversion_test<T>({cuda::std::forward<Args>(args)...}))
-  ));
+_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
+                             requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
 
 template <class T, class... Args>
 constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
@@ -49,21 +47,40 @@ constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstruc
 static_assert(ImplicitlyConstructible<int, int>, "");
 static_assert(!ImplicitlyConstructible<cuda::std::unexpected<int>, cuda::std::in_place_t, int>, "");
 
-struct Arg {
+struct Arg
+{
   int i;
-  __host__ __device__ constexpr Arg(int ii) : i(ii) {}
-  __host__ __device__ constexpr Arg(const Arg& other) : i(other.i) {}
-  __host__ __device__ constexpr Arg(Arg&& other) : i(other.i) { other.i = 0; }
+  __host__ __device__ constexpr Arg(int ii)
+      : i(ii)
+  {}
+  __host__ __device__ constexpr Arg(const Arg& other)
+      : i(other.i)
+  {}
+  __host__ __device__ constexpr Arg(Arg&& other)
+      : i(other.i)
+  {
+    other.i = 0;
+  }
 };
 
-struct Error {
+struct Error
+{
   Arg arg;
-  __host__ __device__ constexpr explicit Error(const Arg& a) : arg(a) {}
-  __host__ __device__ constexpr explicit Error(Arg&& a) : arg(cuda::std::move(a)) {}
-  __host__ __device__ Error(cuda::std::initializer_list<Error>) :arg(0){ assert(false); }
+  __host__ __device__ constexpr explicit Error(const Arg& a)
+      : arg(a)
+  {}
+  __host__ __device__ constexpr explicit Error(Arg&& a)
+      : arg(cuda::std::move(a))
+  {}
+  __host__ __device__ Error(cuda::std::initializer_list<Error>)
+      : arg(0)
+  {
+    assert(false);
+  }
 };
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // lvalue
   {
     Arg a{5};
@@ -89,26 +106,36 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__
-void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except {};
+void test_exceptions()
+{
+  struct Except
+  {};
 
-  struct Throwing {
-    Throwing(int) { throw Except{}; }
+  struct Throwing
+  {
+    Throwing(int)
+    {
+      throw Except{};
+    }
   };
 
-  try {
+  try
+  {
     cuda::std::unexpected<Throwing> u(cuda::std::in_place, 5);
     assert(false);
-  } catch (Except) {
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
+  catch (Except)
+  {}
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

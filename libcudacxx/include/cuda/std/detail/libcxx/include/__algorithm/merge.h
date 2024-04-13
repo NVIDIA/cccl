@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_MERGE_H
 #define _LIBCUDACXX___ALGORITHM_MERGE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/comp_ref_type.h"
-#include "../__algorithm/copy.h"
-#include "../__iterator/iterator_traits.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/comp_ref_type.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/copy.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -67,7 +65,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator merge
   _OutputIterator __result,
   _Compare __comp)
 {
-  return _CUDA_VSTD::__merge<__comp_ref_type<_Compare> >(__first1, __last1, __first2, __last2, __result, __comp);
+  return _CUDA_VSTD::__merge<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>

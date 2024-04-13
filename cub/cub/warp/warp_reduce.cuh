@@ -172,9 +172,8 @@ public:
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpReduce = cub::detail::conditional_t<IS_POW_OF_TWO,
-                                                        WarpReduceShfl<T, LOGICAL_WARP_THREADS>,
-                                                        WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpReduce = cub::detail::
+    conditional_t<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
@@ -187,7 +186,7 @@ private:
    ******************************************************************************/
 
   /// Shared storage reference
-  _TempStorage &temp_storage;
+  _TempStorage& temp_storage;
 
   /******************************************************************************
    * Utility methods
@@ -207,7 +206,7 @@ public:
   //! @endrst
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage &temp_storage)
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
   {}
 
@@ -255,8 +254,7 @@ public:
   //! @param[in] input Calling thread's input
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return InternalWarpReduce(temp_storage)
-      .template Reduce<true>(input, LOGICAL_WARP_THREADS, cub::Sum());
+    return InternalWarpReduce(temp_storage).template Reduce<true>(input, LOGICAL_WARP_THREADS, cub::Sum());
   }
 
   //! @rst
@@ -476,8 +474,7 @@ public:
   template <typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
-    return InternalWarpReduce(temp_storage)
-      .template Reduce<true>(input, LOGICAL_WARP_THREADS, reduction_op);
+    return InternalWarpReduce(temp_storage).template Reduce<true>(input, LOGICAL_WARP_THREADS, reduction_op);
   }
 
   //! @rst
@@ -596,12 +593,9 @@ public:
   //! @param[in] reduction_op
   //!   Reduction operator
   template <typename ReductionOp, typename FlagT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input,
-                                                   FlagT head_flag,
-                                                   ReductionOp reduction_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input, FlagT head_flag, ReductionOp reduction_op)
   {
-    return InternalWarpReduce(temp_storage)
-      .template SegmentedReduce<true>(input, head_flag, reduction_op);
+    return InternalWarpReduce(temp_storage).template SegmentedReduce<true>(input, head_flag, reduction_op);
   }
 
   //! @rst
@@ -658,12 +652,9 @@ public:
   //! @param[in] reduction_op
   //!   Reduction operator
   template <typename ReductionOp, typename FlagT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input,
-                                                   FlagT tail_flag,
-                                                   ReductionOp reduction_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input, FlagT tail_flag, ReductionOp reduction_op)
   {
-    return InternalWarpReduce(temp_storage)
-      .template SegmentedReduce<false>(input, tail_flag, reduction_op);
+    return InternalWarpReduce(temp_storage).template SegmentedReduce<false>(input, tail_flag, reduction_op);
   }
 
   //! @}  end member group
@@ -682,20 +673,16 @@ public:
     struct TempStorage : Uninitialized<_TempStorage>
     {};
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage & /*temp_storage */) {}
+    _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
     template <bool ALL_LANES_VALID, typename ReductionOp>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input,
-                                        int /* valid_items */,
-                                        ReductionOp /* reduction_op */)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
     {
       return input;
     }
 
     template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input,
-                                                 FlagT /* flag */,
-                                                 ReductionOp /* reduction_op */)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
     {
       return input;
     }
@@ -703,11 +690,17 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage & /*temp_storage */) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input) { return input; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  {
+    return input;
+  }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */) { return input; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
+  {
+    return input;
+  }
 
   template <typename FlagT>
   _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT /* head_flag */)
@@ -728,25 +721,19 @@ public:
   }
 
   template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input,
-                                      ReductionOp /* reduction_op */,
-                                      int /* valid_items */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp /* reduction_op */, int /* valid_items */)
   {
     return input;
   }
 
   template <typename ReductionOp, typename FlagT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input,
-                                                   FlagT /* head_flag */,
-                                                   ReductionOp /* reduction_op */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input, FlagT /* head_flag */, ReductionOp /* reduction_op */)
   {
     return input;
   }
 
   template <typename ReductionOp, typename FlagT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input,
-                                                   FlagT /* tail_flag */,
-                                                   ReductionOp /* reduction_op */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input, FlagT /* tail_flag */, ReductionOp /* reduction_op */)
   {
     return input;
   }

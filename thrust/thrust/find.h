@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file find.h
  *  \brief Locating values in (unsorted) ranges
  */
@@ -42,7 +41,6 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-
 /*! \p find returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>*i == value</tt>
  *  or \c last if no such iterator exists.
@@ -56,9 +54,9 @@ THRUST_NAMESPACE_BEGIN
  *  \return The first iterator \c i such that <tt>*i == value</tt> or \c last.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
- *          and \p InputIterator's \c value_type is equality comparable to type \c T.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \p InputIterator's \c value_type is equality comparable to type \c T. \tparam T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -82,13 +80,12 @@ THRUST_NAMESPACE_BEGIN
  *  \see find_if
  *  \see mismatch
  */
-template<typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE
-InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                   InputIterator first,
-                   InputIterator last,
-                   const T& value);
-
+template <typename DerivedPolicy, typename InputIterator, typename T>
+_CCCL_HOST_DEVICE InputIterator
+find(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+     InputIterator first,
+     InputIterator last,
+     const T& value);
 
 /*! \p find returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>*i == value</tt>
@@ -99,9 +96,9 @@ InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &e
  *  \param value The value to find.
  *  \return The first iterator \c i such that <tt>*i == value</tt> or \c last.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
- *          and \p InputIterator's \c value_type is equality comparable to type \c T.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \p InputIterator's \c value_type is equality comparable to type \c T. \tparam T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">EqualityComparable</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -125,10 +122,7 @@ InputIterator find(const thrust::detail::execution_policy_base<DerivedPolicy> &e
  *  \see mismatch
  */
 template <typename InputIterator, typename T>
-InputIterator find(InputIterator first,
-                   InputIterator last,
-                   const T& value);
-
+InputIterator find(InputIterator first, InputIterator last, const T& value);
 
 /*! \p find_if returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c true
@@ -143,8 +137,9 @@ InputIterator find(InputIterator first,
  *  \return The first iterator \c i such that <tt>pred(*i)</tt> is \c true, or \c last.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -180,7 +175,8 @@ InputIterator find(InputIterator first,
  *
  *  thrust::device_vector<int>::iterator iter;
  *
- *  iter = thrust::find_if(thrust::device, input.begin(), input.end(), greater_than_four()); // returns input.first() + 1
+ *  iter = thrust::find_if(thrust::device, input.begin(), input.end(), greater_than_four()); // returns input.first() +
+ * 1
  *
  *  iter = thrust::find_if(thrust::device, input.begin(), input.end(), greater_than_ten());  // returns input.end()
  *  \endcode
@@ -189,13 +185,12 @@ InputIterator find(InputIterator first,
  *  \see find_if_not
  *  \see mismatch
  */
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                      InputIterator first,
-                      InputIterator last,
-                      Predicate pred);
-
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE InputIterator find_if(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  Predicate pred);
 
 /*! \p find_if returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c true
@@ -206,8 +201,9 @@ InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy>
  *  \param pred A predicate used to test range elements.
  *  \return The first iterator \c i such that <tt>pred(*i)</tt> is \c true, or \c last.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -251,10 +247,7 @@ InputIterator find_if(const thrust::detail::execution_policy_base<DerivedPolicy>
  *  \see mismatch
  */
 template <typename InputIterator, typename Predicate>
-InputIterator find_if(InputIterator first,
-                      InputIterator last,
-                      Predicate pred);
-
+InputIterator find_if(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \p find_if_not returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c false
@@ -269,8 +262,9 @@ InputIterator find_if(InputIterator first,
  *  \return The first iterator \c i such that <tt>pred(*i)</tt> is \c false, or \c last.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -306,22 +300,22 @@ InputIterator find_if(InputIterator first,
  *
  *  thrust::device_vector<int>::iterator iter;
  *
- *  iter = thrust::find_if_not(thrust::device, input.begin(), input.end(), greater_than_four()); // returns input.first()
+ *  iter = thrust::find_if_not(thrust::device, input.begin(), input.end(), greater_than_four()); // returns
+ * input.first()
  *
- *  iter = thrust::find_if_not(thrust::device, input.begin(), input.end(), greater_than_ten());  // returns input.first()
- *  \endcode
+ *  iter = thrust::find_if_not(thrust::device, input.begin(), input.end(), greater_than_ten());  // returns
+ * input.first() \endcode
  *
  *  \see find
  *  \see find_if
  *  \see mismatch
  */
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                          InputIterator first,
-                          InputIterator last,
-                          Predicate pred);
-
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE InputIterator find_if_not(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  Predicate pred);
 
 /*! \p find_if_not returns the first iterator \c i in the range
  *  <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c false
@@ -332,8 +326,9 @@ InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPol
  *  \param pred A predicate used to test range elements.
  *  \return The first iterator \c i such that <tt>pred(*i)</tt> is \c false, or \c last.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/find.h>
@@ -377,9 +372,7 @@ InputIterator find_if_not(const thrust::detail::execution_policy_base<DerivedPol
  *  \see mismatch
  */
 template <typename InputIterator, typename Predicate>
-InputIterator find_if_not(InputIterator first,
-                          InputIterator last,
-                          Predicate pred);
+InputIterator find_if_not(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \} // end searching
  */

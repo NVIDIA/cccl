@@ -2,9 +2,8 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#include <async/test_policy_overloads.h>
-
-#include <async/inclusive_scan/mixin.h>
+#  include <async/inclusive_scan/mixin.h>
+#  include <async/test_policy_overloads.h>
 
 // Verify what happens when calling the algorithm without any namespace
 // qualifiers:
@@ -16,34 +15,30 @@
 namespace invoke_reference
 {
 
-template <typename input_value_type,
-          typename output_value_type = input_value_type>
+template <typename input_value_type, typename output_value_type = input_value_type>
 struct adl_host_synchronous
 {
-  template <typename InputType,
-            typename OutputType,
-            typename PostfixArgTuple,
-            std::size_t... PostfixArgIndices>
-  static void invoke_reference(InputType const& input,
-                               OutputType& output,
-                               PostfixArgTuple&& postfix_tuple,
-                               std::index_sequence<PostfixArgIndices...>)
+  template <typename InputType, typename OutputType, typename PostfixArgTuple, std::size_t... PostfixArgIndices>
+  static void invoke_reference(
+    InputType const& input,
+    OutputType& output,
+    PostfixArgTuple&& postfix_tuple,
+    std::index_sequence<PostfixArgIndices...>)
   {
     // Create host versions of the input/output:
-    thrust::host_vector<input_value_type> host_input(input.cbegin(),
-                                                     input.cend());
+    thrust::host_vector<input_value_type> host_input(input.cbegin(), input.cend());
     thrust::host_vector<output_value_type> host_output(host_input.size());
 
     using OutIter = thrust::remove_cvref_t<decltype(host_output.begin())>;
 
     // ADL should resolve this to the synchronous `thrust::` algorithm.
     // This is checked by ensuring that the call returns an output iterator.
-    OutIter result =
-      inclusive_scan(host_input.cbegin(),
-                     host_input.cend(),
-                     host_output.begin(),
-                     std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
-    (void)result;
+    OutIter result = inclusive_scan(
+      host_input.cbegin(),
+      host_input.cend(),
+      host_output.begin(),
+      std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    (void) result;
 
     // Copy back to device.
     output = host_output;
@@ -63,23 +58,24 @@ struct using_namespace
             typename OutputType,
             typename PostfixArgTuple,
             std::size_t... PostfixArgIndices>
-  static auto invoke_async(PrefixArgTuple&& prefix_tuple,
-                           std::index_sequence<PrefixArgIndices...>,
-                           InputType const& input,
-                           OutputType& output,
-                           PostfixArgTuple&& postfix_tuple,
-                           std::index_sequence<PostfixArgIndices...>)
+  static auto invoke_async(
+    PrefixArgTuple&& prefix_tuple,
+    std::index_sequence<PrefixArgIndices...>,
+    InputType const& input,
+    OutputType& output,
+    PostfixArgTuple&& postfix_tuple,
+    std::index_sequence<PostfixArgIndices...>)
   {
     // Importing the CPO into the current namespace should unambiguously resolve
     // this call to the CPO, as opposed to resolving to the thrust:: algorithm
     // via ADL. This is verified by checking that an event is returned.
     using namespace thrust::async;
-    thrust::device_event e =
-      inclusive_scan(std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
-                     input.cbegin(),
-                     input.cend(),
-                     output.begin(),
-                     std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    thrust::device_event e = inclusive_scan(
+      std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
+      input.cbegin(),
+      input.cend(),
+      output.begin(),
+      std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
     return e;
   }
 };
@@ -92,23 +88,24 @@ struct using_cpo
             typename OutputType,
             typename PostfixArgTuple,
             std::size_t... PostfixArgIndices>
-  static auto invoke_async(PrefixArgTuple&& prefix_tuple,
-                           std::index_sequence<PrefixArgIndices...>,
-                           InputType const& input,
-                           OutputType& output,
-                           PostfixArgTuple&& postfix_tuple,
-                           std::index_sequence<PostfixArgIndices...>)
+  static auto invoke_async(
+    PrefixArgTuple&& prefix_tuple,
+    std::index_sequence<PrefixArgIndices...>,
+    InputType const& input,
+    OutputType& output,
+    PostfixArgTuple&& postfix_tuple,
+    std::index_sequence<PostfixArgIndices...>)
   {
     // Importing the CPO into the current namespace should unambiguously resolve
     // this call to the CPO, as opposed to resolving to the thrust:: algorithm
     // via ADL. This is verified by checking that an event is returned.
     using thrust::async::inclusive_scan;
-    thrust::device_event e =
-      inclusive_scan(std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
-                     input.cbegin(),
-                     input.cend(),
-                     output.begin(),
-                     std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    thrust::device_event e = inclusive_scan(
+      std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,
+      input.cbegin(),
+      input.cend(),
+      output.begin(),
+      std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
     return e;
   }
 };
@@ -121,8 +118,7 @@ template <typename input_value_type,
 struct using_namespace_invoker
     : testing::async::mixin::input::device_vector<input_value_type>
     , testing::async::mixin::output::device_vector<output_value_type>
-    , testing::async::inclusive_scan::mixin::postfix_args::
-        all_overloads<alternate_binary_op>
+    , testing::async::inclusive_scan::mixin::postfix_args::all_overloads<alternate_binary_op>
     , invoke_reference::adl_host_synchronous<input_value_type, output_value_type>
     , invoke_async::using_namespace
     , testing::async::mixin::compare_outputs::assert_almost_equal_if_fp_quiet
@@ -146,8 +142,7 @@ template <typename input_value_type,
 struct using_cpo_invoker
     : testing::async::mixin::input::device_vector<input_value_type>
     , testing::async::mixin::output::device_vector<output_value_type>
-    , testing::async::inclusive_scan::mixin::postfix_args::
-        all_overloads<alternate_binary_op>
+    , testing::async::inclusive_scan::mixin::postfix_args::all_overloads<alternate_binary_op>
     , invoke_reference::adl_host_synchronous<input_value_type, output_value_type>
     , invoke_async::using_cpo
     , testing::async::mixin::compare_outputs::assert_almost_equal_if_fp_quiet

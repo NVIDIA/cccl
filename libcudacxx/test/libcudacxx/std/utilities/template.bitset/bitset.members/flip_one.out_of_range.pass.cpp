@@ -14,21 +14,22 @@
 
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
-#include <cuda/std/stdexcept>
 
 int main(int, char**) {
-    {
-        cuda::std::bitset<0> v;
-        try { v.flip(0); assert(false); } catch (cuda::std::out_of_range const&) { }
-    }
-    {
-        cuda::std::bitset<1> v("0");
-        try { v.flip(2); assert(false); } catch (cuda::std::out_of_range const&) { }
-    }
-    {
-        cuda::std::bitset<10> v("0000000000");
-        try { v.flip(10); assert(false); } catch (cuda::std::out_of_range const&) { }
-    }
+    NV_IF_TARGET(NV_IS_HOST,
+        {
+            cuda::std::bitset<0> v;
+            try { v.flip(0); assert(false); } catch (cuda::std::out_of_range const&) { }
+        }
+        {
+            cuda::std::bitset<1> v("0");
+            try { v.flip(2); assert(false); } catch (cuda::std::out_of_range const&) { }
+        }
+        {
+            cuda::std::bitset<10> v("0000000000");
+            try { v.flip(10); assert(false); } catch (cuda::std::out_of_range const&) { }
+        }
+    )
 
     return 0;
 }

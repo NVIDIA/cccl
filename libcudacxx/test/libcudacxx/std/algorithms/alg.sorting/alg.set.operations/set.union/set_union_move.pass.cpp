@@ -24,18 +24,21 @@
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 
-#include "test_macros.h"
 #include "MoveOnly.h"
+#include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   MoveOnly lhs[] = {MoveOnly(2)};
   MoveOnly rhs[] = {MoveOnly(2)};
 
   MoveOnly res[] = {MoveOnly(0)};
-  cuda::std::set_union(cuda::std::make_move_iterator(lhs),
-                       cuda::std::make_move_iterator(lhs + 1),
-                       cuda::std::make_move_iterator(rhs),
-                       cuda::std::make_move_iterator(rhs + 1), res);
+  cuda::std::set_union(
+    cuda::std::make_move_iterator(lhs),
+    cuda::std::make_move_iterator(lhs + 1),
+    cuda::std::make_move_iterator(rhs),
+    cuda::std::make_move_iterator(rhs + 1),
+    res);
 
   assert(res[0].get() == 2);
 

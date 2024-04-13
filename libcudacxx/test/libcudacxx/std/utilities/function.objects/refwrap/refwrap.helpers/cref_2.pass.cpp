@@ -14,20 +14,22 @@
 // template <ObjectType T> reference_wrapper<const T> cref(reference_wrapper<T> t);
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-namespace adl {
-  struct A {};
-  __host__ __device__ void cref(A) {}
-}
+namespace adl
+{
+struct A
+{};
+__host__ __device__ void cref(A) {}
+} // namespace adl
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
-    const int i = 0;
+    const int i                                = 0;
     cuda::std::reference_wrapper<const int> r1 = cuda::std::cref(i);
     cuda::std::reference_wrapper<const int> r2 = cuda::std::cref(r1);
     assert(&r2.get() == &i);

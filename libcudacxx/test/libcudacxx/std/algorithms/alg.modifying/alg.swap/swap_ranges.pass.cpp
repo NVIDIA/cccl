@@ -19,18 +19,19 @@
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "MoveOnly.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter1>())>::type;
 
   {
     iter_value_t i[3] = {1, 2, 3};
     iter_value_t j[3] = {4, 5, 6};
-    Iter2 r = cuda::std::swap_ranges(Iter1(i), Iter1(i + 3), Iter2(j));
+    Iter2 r           = cuda::std::swap_ranges(Iter1(i), Iter1(i + 3), Iter2(j));
     assert(base(r) == j + 3);
     assert(i[0] == 4);
     assert(i[1] == 5);
@@ -59,38 +60,41 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<forward_iterator<T*>, forward_iterator<T*> >();
-  test<forward_iterator<T*>, bidirectional_iterator<T*> >();
-  test<forward_iterator<T*>, random_access_iterator<T*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<forward_iterator<T*>, forward_iterator<T*>>();
+  test<forward_iterator<T*>, bidirectional_iterator<T*>>();
+  test<forward_iterator<T*>, random_access_iterator<T*>>();
   test<forward_iterator<T*>, T*>();
 
-  test<bidirectional_iterator<T*>, forward_iterator<T*> >();
-  test<bidirectional_iterator<T*>, bidirectional_iterator<T*> >();
-  test<bidirectional_iterator<T*>, random_access_iterator<T*> >();
+  test<bidirectional_iterator<T*>, forward_iterator<T*>>();
+  test<bidirectional_iterator<T*>, bidirectional_iterator<T*>>();
+  test<bidirectional_iterator<T*>, random_access_iterator<T*>>();
   test<bidirectional_iterator<T*>, T*>();
 
-  test<random_access_iterator<T*>, forward_iterator<T*> >();
-  test<random_access_iterator<T*>, bidirectional_iterator<T*> >();
-  test<random_access_iterator<T*>, random_access_iterator<T*> >();
+  test<random_access_iterator<T*>, forward_iterator<T*>>();
+  test<random_access_iterator<T*>, bidirectional_iterator<T*>>();
+  test<random_access_iterator<T*>, random_access_iterator<T*>>();
   test<random_access_iterator<T*>, T*>();
 
-  test<T*, forward_iterator<T*> >();
-  test<T*, bidirectional_iterator<T*> >();
-  test<T*, random_access_iterator<T*> >();
+  test<T*, forward_iterator<T*>>();
+  test<T*, bidirectional_iterator<T*>>();
+  test<T*, random_access_iterator<T*>>();
   test<T*, T*>();
 
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   test<int>();
   test<MoveOnly>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 
 #if TEST_STD_VER >= 2014

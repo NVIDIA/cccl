@@ -46,8 +46,7 @@ CUB_TEST("Tests choose_offset", "[util][type]")
 CUB_TEST("Tests promote_small_offset", "[util][type]")
 {
   // Uses input type for types of at least 32 bits
-  STATIC_REQUIRE(
-    ::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int32_t>, std::int32_t>::value);
+  STATIC_REQUIRE(::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int32_t>, std::int32_t>::value);
 
   // Uses input type for types of at least 32 bits
   STATIC_REQUIRE(
@@ -58,16 +57,13 @@ CUB_TEST("Tests promote_small_offset", "[util][type]")
     ::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::uint64_t>, std::uint64_t>::value);
 
   // Uses input type for types of at least 32 bits
-  STATIC_REQUIRE(
-    ::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int64_t>, std::int64_t>::value);
+  STATIC_REQUIRE(::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int64_t>, std::int64_t>::value);
 
   // Uses 32-bit type for type smaller than 32 bits
-  STATIC_REQUIRE(
-    ::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int8_t>, std::int32_t>::value);
+  STATIC_REQUIRE(::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int8_t>, std::int32_t>::value);
 
   // Uses 32-bit type for type smaller than 32 bits
-  STATIC_REQUIRE(
-    ::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int16_t>, std::int32_t>::value);
+  STATIC_REQUIRE(::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int16_t>, std::int32_t>::value);
 
   // Uses 32-bit type for type smaller than 32 bits
   STATIC_REQUIRE(

@@ -29,7 +29,6 @@
 
 #include "catch2_test_helper.h"
 
-
 template <class T>
 struct value_t
 {
@@ -51,7 +50,10 @@ struct rref_t
 template <class T>
 struct value_ret_t
 {
-  __device__ T operator()(T v) { return v; }
+  __device__ T operator()(T v)
+  {
+    return v;
+  }
 };
 
 template <class T>
@@ -63,7 +65,8 @@ struct ref_t
 struct tpl_value_t
 {
   template <class T>
-  __device__ void operator()(T) {}
+  __device__ void operator()(T)
+  {}
 };
 
 template <class T>

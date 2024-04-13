@@ -4,65 +4,79 @@
 #include "test_macros.h"
 
 template <class T>
-struct EmplaceConstructible {
+struct EmplaceConstructible
+{
   T value;
-  explicit EmplaceConstructible(T xvalue) : value(xvalue) {}
+  explicit EmplaceConstructible(T xvalue)
+      : value(xvalue)
+  {}
   EmplaceConstructible(EmplaceConstructible const&) = delete;
 };
 
 template <class T>
-struct EmplaceConstructibleAndMoveInsertable {
+struct EmplaceConstructibleAndMoveInsertable
+{
   int copied = 0;
   T value;
-  explicit EmplaceConstructibleAndMoveInsertable(T xvalue) : value(xvalue) {}
+  explicit EmplaceConstructibleAndMoveInsertable(T xvalue)
+      : value(xvalue)
+  {}
 
-  EmplaceConstructibleAndMoveInsertable(
-      EmplaceConstructibleAndMoveInsertable&& Other)
-      : copied(Other.copied + 1), value(std::move(Other.value)) {}
+  EmplaceConstructibleAndMoveInsertable(EmplaceConstructibleAndMoveInsertable&& Other)
+      : copied(Other.copied + 1)
+      , value(std::move(Other.value))
+  {}
 };
 
 template <class T>
-struct EmplaceConstructibleAndMoveable {
-  int copied = 0;
+struct EmplaceConstructibleAndMoveable
+{
+  int copied   = 0;
   int assigned = 0;
   T value;
-  explicit EmplaceConstructibleAndMoveable(T xvalue) noexcept : value(xvalue) {}
+  explicit EmplaceConstructibleAndMoveable(T xvalue) noexcept
+      : value(xvalue)
+  {}
 
-  EmplaceConstructibleAndMoveable(EmplaceConstructibleAndMoveable&& Other)
-      noexcept : copied(Other.copied + 1),
-                 value(std::move(Other.value)) {}
+  EmplaceConstructibleAndMoveable(EmplaceConstructibleAndMoveable&& Other) noexcept
+      : copied(Other.copied + 1)
+      , value(std::move(Other.value))
+  {}
 
-  EmplaceConstructibleAndMoveable&
-  operator=(EmplaceConstructibleAndMoveable&& Other) noexcept {
-    copied = Other.copied;
+  EmplaceConstructibleAndMoveable& operator=(EmplaceConstructibleAndMoveable&& Other) noexcept
+  {
+    copied   = Other.copied;
     assigned = Other.assigned + 1;
-    value = std::move(Other.value);
+    value    = std::move(Other.value);
     return *this;
   }
 };
 
 template <class T>
-struct EmplaceConstructibleMoveableAndAssignable {
-  int copied = 0;
+struct EmplaceConstructibleMoveableAndAssignable
+{
+  int copied   = 0;
   int assigned = 0;
   T value;
   explicit EmplaceConstructibleMoveableAndAssignable(T xvalue) noexcept
-      : value(xvalue) {}
+      : value(xvalue)
+  {}
 
-  EmplaceConstructibleMoveableAndAssignable(
-      EmplaceConstructibleMoveableAndAssignable&& Other) noexcept
-      : copied(Other.copied + 1),
-        value(std::move(Other.value)) {}
+  EmplaceConstructibleMoveableAndAssignable(EmplaceConstructibleMoveableAndAssignable&& Other) noexcept
+      : copied(Other.copied + 1)
+      , value(std::move(Other.value))
+  {}
 
-  EmplaceConstructibleMoveableAndAssignable&
-  operator=(EmplaceConstructibleMoveableAndAssignable&& Other) noexcept {
-    copied = Other.copied;
+  EmplaceConstructibleMoveableAndAssignable& operator=(EmplaceConstructibleMoveableAndAssignable&& Other) noexcept
+  {
+    copied   = Other.copied;
     assigned = Other.assigned + 1;
-    value = std::move(Other.value);
+    value    = std::move(Other.value);
     return *this;
   }
 
-  EmplaceConstructibleMoveableAndAssignable& operator=(T xvalue) {
+  EmplaceConstructibleMoveableAndAssignable& operator=(T xvalue)
+  {
     value = std::move(xvalue);
     ++assigned;
     return *this;

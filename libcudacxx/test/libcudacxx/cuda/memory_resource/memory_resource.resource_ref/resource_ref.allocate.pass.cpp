@@ -8,33 +8,42 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::mr::resource_ref properties
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
 #include <cuda/memory_resource>
-
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-struct resource {
-  void* allocate(std::size_t, std::size_t) { return &_val; }
+struct resource
+{
+  void* allocate(std::size_t, std::size_t)
+  {
+    return &_val;
+  }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) {
+  void deallocate(void* ptr, std::size_t, std::size_t)
+  {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  bool operator==(const resource& other) const { return _val == other._val; }
-  bool operator!=(const resource& other) const { return _val != other._val; }
+  bool operator==(const resource& other) const
+  {
+    return _val == other._val;
+  }
+  bool operator!=(const resource& other) const
+  {
+    return _val != other._val;
+  }
 
   int _val = 0;
 };
 
-void test_allocate() {
+void test_allocate()
+{
   { // allocate(size)
     resource input{42};
     cuda::mr::resource_ref<> ref{input};
@@ -60,10 +69,9 @@ void test_allocate() {
   }
 }
 
-int main(int, char**) {
-    NV_IF_TARGET(NV_IS_HOST,(
-      test_allocate();
-    ))
+int main(int, char**)
+{
+  NV_IF_TARGET(NV_IS_HOST, (test_allocate();))
 
-    return 0;
+  return 0;
 }

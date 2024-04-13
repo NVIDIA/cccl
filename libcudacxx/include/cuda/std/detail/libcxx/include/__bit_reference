@@ -10,9 +10,9 @@
 #ifndef _LIBCUDACXX___BIT_REFERENCE
 #define _LIBCUDACXX___BIT_REFERENCE
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif
+#include <cuda/std/detail/__config>
+#include <bit>
+#include <algorithm>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

@@ -35,7 +35,6 @@ namespace detail
 namespace sequential
 {
 
-
 // this awkward sequence of definitions arises
 // from the desire both for tag to derive
 // from execution_policy and for execution_policy
@@ -46,12 +45,12 @@ namespace sequential
 struct tag;
 
 // forward declaration of execution_policy
-template<typename> struct execution_policy;
+template <typename>
+struct execution_policy;
 
 // specialize execution_policy for tag
-template<>
-  struct execution_policy<tag>
-    : thrust::execution_policy<tag>
+template <>
+struct execution_policy<tag> : thrust::execution_policy<tag>
 {};
 
 // tag's definition comes before the generic definition of execution_policy
@@ -61,23 +60,19 @@ struct tag : execution_policy<tag>
 };
 
 // allow conversion to tag when it is not a successor
-template<typename Derived>
-  struct execution_policy
-    : thrust::execution_policy<Derived>
+template <typename Derived>
+struct execution_policy : thrust::execution_policy<Derived>
 {
   // allow conversion to tag
-  inline operator tag () const
+  inline operator tag() const
   {
     return tag();
   }
 };
 
-
 THRUST_INLINE_CONSTANT tag seq;
 
-
-} // end sequential
-} // end detail
-} // end system
+} // namespace sequential
+} // namespace detail
+} // namespace system
 THRUST_NAMESPACE_END
-

@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_INCLUDES_H
 #define _LIBCUDACXX___ALGORITHM_INCLUDES_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,13 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/comp_ref_type.h"
-#include "../__functional/identity.h"
-#include "../__functional/invoke.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/is_callable.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/comp_ref_type.h>
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_callable.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -65,7 +63,7 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
     _CUDA_VSTD::move(__last1),
     _CUDA_VSTD::move(__first2),
     _CUDA_VSTD::move(__last2),
-    static_cast<__comp_ref_type<_Compare> >(__comp),
+    static_cast<__comp_ref_type<_Compare>>(__comp),
     __identity(),
     __identity());
 }

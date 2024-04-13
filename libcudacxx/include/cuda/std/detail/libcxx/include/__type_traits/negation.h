@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_NEGATION_H
 #define _LIBCUDACXX___TYPE_TRAITS_NEGATION_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,17 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Pred>
-struct _Not : _BoolConstant<!_Pred::value> {};
+struct _Not : _BoolConstant<!_Pred::value>
+{};
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>
-struct negation : _Not<_Tp> {};
-template<class _Tp>
+struct negation : _Not<_Tp>
+{};
+template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool negation_v = !_Tp::value;
 #endif // _CCCL_STD_VER > 2014
 

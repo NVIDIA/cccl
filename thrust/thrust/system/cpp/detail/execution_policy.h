@@ -46,35 +46,38 @@ namespace detail
 struct tag;
 
 // forward declaration of execution_policy
-template<typename> struct execution_policy;
+template <typename>
+struct execution_policy;
 
 // specialize execution_policy for tag
-template<>
-  struct execution_policy<tag>
-    : thrust::system::detail::sequential::execution_policy<tag>
+template <>
+struct execution_policy<tag> : thrust::system::detail::sequential::execution_policy<tag>
 {};
 
 // tag's definition comes before the
 // generic definition of execution_policy
-struct tag : execution_policy<tag> {};
+struct tag : execution_policy<tag>
+{};
 
 // allow conversion to tag when it is not a successor
-template<typename Derived>
-  struct execution_policy
-    : thrust::system::detail::sequential::execution_policy<Derived>
+template <typename Derived>
+struct execution_policy : thrust::system::detail::sequential::execution_policy<Derived>
 {
   typedef tag tag_type;
-  operator tag() const { return tag(); }
+  operator tag() const
+  {
+    return tag();
+  }
 };
 
-} // end detail
+} // namespace detail
 
 // alias execution_policy and tag here
 using thrust::system::cpp::detail::execution_policy;
 using thrust::system::cpp::detail::tag;
 
-} // end cpp
-} // end system
+} // namespace cpp
+} // namespace system
 
 // alias items at top-level
 namespace cpp
@@ -83,6 +86,5 @@ namespace cpp
 using thrust::system::cpp::execution_policy;
 using thrust::system::cpp::tag;
 
-} // end cpp
+} // namespace cpp
 THRUST_NAMESPACE_END
-

@@ -12,11 +12,11 @@
 // template<class T>
 // concept semiregular = see below;
 
+#include "type_classification/semiregular.h"
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#include "type_classification/semiregular.h"
 #include "test_macros.h"
 
 using cuda::std::semiregular;
@@ -29,7 +29,8 @@ static_assert(semiregular<int volatile*>, "");
 static_assert(semiregular<int volatile const*>, "");
 static_assert(semiregular<int (*)()>, "");
 
-struct S {};
+struct S
+{};
 static_assert(semiregular<S>, "");
 static_assert(semiregular<int S::*>, "");
 static_assert(semiregular<int (S::*)()>, "");
@@ -37,25 +38,25 @@ static_assert(semiregular<int (S::*)() noexcept>, "");
 static_assert(semiregular<int (S::*)() &>, "");
 static_assert(semiregular<int (S::*)() & noexcept>, "");
 static_assert(semiregular<int (S::*)() &&>, "");
-static_assert(semiregular<int (S::*)() && noexcept>, "");
+static_assert(semiregular < int(S::*)() && noexcept >, "");
 static_assert(semiregular<int (S::*)() const>, "");
 static_assert(semiregular<int (S::*)() const noexcept>, "");
 static_assert(semiregular<int (S::*)() const&>, "");
 static_assert(semiregular<int (S::*)() const & noexcept>, "");
 static_assert(semiregular<int (S::*)() const&&>, "");
-static_assert(semiregular<int (S::*)() const && noexcept>, "");
+static_assert(semiregular < int(S::*)() const&& noexcept >, "");
 static_assert(semiregular<int (S::*)() volatile>, "");
 static_assert(semiregular<int (S::*)() volatile noexcept>, "");
 static_assert(semiregular<int (S::*)() volatile&>, "");
 static_assert(semiregular<int (S::*)() volatile & noexcept>, "");
 static_assert(semiregular<int (S::*)() volatile&&>, "");
-static_assert(semiregular<int (S::*)() volatile && noexcept>, "");
+static_assert(semiregular < int(S::*)() volatile&& noexcept >, "");
 static_assert(semiregular<int (S::*)() const volatile>, "");
 static_assert(semiregular<int (S::*)() const volatile noexcept>, "");
 static_assert(semiregular<int (S::*)() const volatile&>, "");
 static_assert(semiregular<int (S::*)() const volatile & noexcept>, "");
 static_assert(semiregular<int (S::*)() const volatile&&>, "");
-static_assert(semiregular<int (S::*)() const volatile && noexcept>, "");
+static_assert(semiregular < int(S::*)() const volatile&& noexcept >, "");
 
 static_assert(semiregular<has_volatile_member>, "");
 static_assert(semiregular<has_array_member>, "");
@@ -112,4 +113,7 @@ static_assert(!semiregular<deleted_default_ctor>, "");
 static_assert(!semiregular<derived_from_deleted_default_ctor>, "");
 static_assert(!semiregular<has_deleted_default_ctor>, "");
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

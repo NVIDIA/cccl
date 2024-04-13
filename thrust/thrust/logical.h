@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file logical.h
  *  \brief Logical operations on ranges
  */
@@ -41,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-
 /*! \p all_of determines whether all elements in a range satify a predicate.
  *  Specifically, \p all_of returns \c true if <tt>pred(*i)</tt> is \c true
  *  for every iterator \c i in the range <tt>[first, last)</tt> and
@@ -56,8 +54,9 @@ THRUST_NAMESPACE_BEGIN
  *  \return \c true, if all elements satisfy the predicate; \c false, otherwise.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam Predicate must be a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/logical.h>
@@ -78,10 +77,12 @@ THRUST_NAMESPACE_BEGIN
  *  \see none_of
  *  \see transform_reduce
  */
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
-
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE bool
+all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       Predicate pred);
 
 /*! \p all_of determines whether all elements in a range satify a predicate.
  * Specifically, \p all_of returns \c true if <tt>pred(*i)</tt> is \c true
@@ -93,8 +94,9 @@ bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
  *  \param pred A predicate used to test range elements.
  *  \return \c true, if all elements satisfy the predicate; \c false, otherwise.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam Predicate must be a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/logical.h>
@@ -114,9 +116,8 @@ bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
  *  \see none_of
  *  \see transform_reduce
  */
-template<typename InputIterator, typename Predicate>
+template <typename InputIterator, typename Predicate>
 bool all_of(InputIterator first, InputIterator last, Predicate pred);
-
 
 /*! \p any_of determines whether any element in a range satifies a predicate.
  *  Specifically, \p any_of returns \c true if <tt>pred(*i)</tt> is \c true
@@ -132,8 +133,9 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \return \c true, if any element satisfies the predicate; \c false, otherwise.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam Predicate must be a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/logical.h>
@@ -155,10 +157,12 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see none_of
  *  \see transform_reduce
  */
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
-
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE bool
+any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       Predicate pred);
 
 /*! \p any_of determines whether any element in a range satifies a predicate.
  * Specifically, \p any_of returns \c true if <tt>pred(*i)</tt> is \c true
@@ -170,8 +174,9 @@ bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
  *  \param pred A predicate used to test range elements.
  *  \return \c true, if any element satisfies the predicate; \c false, otherwise.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam Predicate must be a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/logical.h>
@@ -192,9 +197,8 @@ bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
  *  \see none_of
  *  \see transform_reduce
  */
-template<typename InputIterator, typename Predicate>
+template <typename InputIterator, typename Predicate>
 bool any_of(InputIterator first, InputIterator last, Predicate pred);
-
 
 /*! \p none_of determines whether no element in a range satifies a predicate.
  *  Specifically, \p none_of returns \c true if there is no iterator \c i in
@@ -210,8 +214,9 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \return \c true, if no element satisfies the predicate; \c false, otherwise.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam Predicate must be a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/logical.h>
@@ -233,10 +238,12 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see any_of
  *  \see transform_reduce
  */
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-bool none_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
-
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE bool
+none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+        InputIterator first,
+        InputIterator last,
+        Predicate pred);
 
 /*! \p none_of determines whether no element in a range satifies a predicate.
  *  Specifically, \p none_of returns \c true if there is no iterator \c i in
@@ -248,8 +255,9 @@ bool none_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, I
  *  \param pred A predicate used to test range elements.
  *  \return \c true, if no element satisfies the predicate; \c false, otherwise.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \tparam Predicate must be a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \code
  *  #include <thrust/logical.h>
@@ -270,9 +278,8 @@ bool none_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, I
  *  \see any_of
  *  \see transform_reduce
  */
-template<typename InputIterator, typename Predicate>
+template <typename InputIterator, typename Predicate>
 bool none_of(InputIterator first, InputIterator last, Predicate pred);
-
 
 /*! \} // end logical
  *  \} // end reductions

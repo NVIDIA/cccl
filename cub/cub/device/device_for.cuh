@@ -69,7 +69,7 @@ struct op_wrapper_t
   {
     // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
     // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
-    (void)op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
+    (void) op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
   }
 };
 
@@ -104,14 +104,14 @@ struct op_wrapper_vectorized_t
 #pragma unroll
       for (int j = 0; j < vec_size; j++)
       {
-        (void)op(*(reinterpret_cast<const T*>(&vec) + j));
+        (void) op(*(reinterpret_cast<const T*>(&vec) + j));
       }
     }
     else
     { // Case of partially filled vector
       for (OffsetT j = i * vec_size; j < num_items; j++)
       {
-        (void)op(input[j]);
+        (void) op(input[j]);
       }
     }
   }
@@ -173,7 +173,7 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each index in the provided shape
-  //! The algorithm is similar to 
+  //! The algorithm is similar to
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
@@ -532,7 +532,7 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each index in the provided shape
-  //! The algorithm is similar to 
+  //! The algorithm is similar to
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
@@ -575,7 +575,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
     static_assert(::cuda::std::is_integral<ShapeT>::value, "ShapeT must be an integral type");
-    using offset_t = ShapeT; 
+    using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
 

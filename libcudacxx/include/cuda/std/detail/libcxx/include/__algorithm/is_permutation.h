@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H
 #define _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,11 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__iterator/distance.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/next.h"
-#include "../__type_traits/add_lvalue_reference.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__iterator/distance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/next.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_lvalue_reference.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -222,7 +220,7 @@ is_permutation(_ForwardIterator1 __first1,
                _ForwardIterator2 __last2,
                _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__is_permutation< __add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__is_permutation<__add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,

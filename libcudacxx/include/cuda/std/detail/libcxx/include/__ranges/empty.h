@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___RANGES_EMPTY_H
 #define _LIBCUDACXX___RANGES_EMPTY_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/class_or_enum.h"
-#include "../__iterator/concepts.h"
-#include "../__ranges/access.h"
-#include "../__ranges/size.h"
+#include <cuda/std/detail/libcxx/include/__concepts/class_or_enum.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__ranges/size.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

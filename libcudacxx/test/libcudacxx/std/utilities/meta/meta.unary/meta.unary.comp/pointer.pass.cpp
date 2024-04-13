@@ -15,34 +15,32 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_pointer_imp()
+__host__ __device__ void test_pointer_imp()
 {
-    static_assert(!cuda::std::is_reference<T>::value, "");
-    static_assert(!cuda::std::is_arithmetic<T>::value, "");
-    static_assert(!cuda::std::is_fundamental<T>::value, "");
-    static_assert( cuda::std::is_object<T>::value, "");
-    static_assert( cuda::std::is_scalar<T>::value, "");
-    static_assert( cuda::std::is_compound<T>::value, "");
-    static_assert(!cuda::std::is_member_pointer<T>::value, "");
+  static_assert(!cuda::std::is_reference<T>::value, "");
+  static_assert(!cuda::std::is_arithmetic<T>::value, "");
+  static_assert(!cuda::std::is_fundamental<T>::value, "");
+  static_assert(cuda::std::is_object<T>::value, "");
+  static_assert(cuda::std::is_scalar<T>::value, "");
+  static_assert(cuda::std::is_compound<T>::value, "");
+  static_assert(!cuda::std::is_member_pointer<T>::value, "");
 }
 
 template <class T>
-__host__ __device__
-void test_pointer()
+__host__ __device__ void test_pointer()
 {
-    test_pointer_imp<T>();
-    test_pointer_imp<const T>();
-    test_pointer_imp<volatile T>();
-    test_pointer_imp<const volatile T>();
+  test_pointer_imp<T>();
+  test_pointer_imp<const T>();
+  test_pointer_imp<volatile T>();
+  test_pointer_imp<const volatile T>();
 }
 
 int main(int, char**)
 {
-    test_pointer<void*>();
-    test_pointer<int*>();
-    test_pointer<const int*>();
-    test_pointer<void (*)(int)>();
+  test_pointer<void*>();
+  test_pointer<int*>();
+  test_pointer<const int*>();
+  test_pointer<void (*)(int)>();
 
   return 0;
 }

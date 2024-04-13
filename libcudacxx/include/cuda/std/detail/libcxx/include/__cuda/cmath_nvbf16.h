@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___CUDA_CMATH_NVBF16_H
 #define _LIBCUDACXX___CUDA_CMATH_NVBF16_H
 
-#ifndef __cuda_std__
-#  include <config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -30,10 +28,9 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
 
-#  include <nv/target>
+#  include <cuda/std/cstdint>
 
-#  include "../__type_traits/integral_constant.h"
-#  include "../cmath"
+#  include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

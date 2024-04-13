@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file thrust/iterator/iterator_traits.h
  *  \brief Traits and metafunctions for reasoning about the traits of iterators
  */
@@ -49,25 +48,31 @@ THRUST_NAMESPACE_BEGIN
  *  interface for querying the properties of iterators at compile-time.
  */
 template <typename T>
-struct iterator_traits : std::iterator_traits<T> {};
+struct iterator_traits : std::iterator_traits<T>
+{};
 
-template<typename Iterator> struct iterator_value;
+template <typename Iterator>
+struct iterator_value;
 
-template<typename Iterator> struct iterator_pointer;
+template <typename Iterator>
+struct iterator_pointer;
 
-template<typename Iterator> struct iterator_reference;
+template <typename Iterator>
+struct iterator_reference;
 
-template<typename Iterator> struct iterator_difference;
+template <typename Iterator>
+struct iterator_difference;
 
-template<typename Iterator> struct iterator_traversal;
+template <typename Iterator>
+struct iterator_traversal;
 
-template<typename Iterator> struct iterator_system;
+template <typename Iterator>
+struct iterator_system;
 
 THRUST_NAMESPACE_END
 
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
-#include <thrust/iterator/detail/host_system_tag.h>
-#include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/any_system_tag.h>
+#include <thrust/iterator/detail/device_system_tag.h>
+#include <thrust/iterator/detail/host_system_tag.h>
 #include <thrust/iterator/detail/iterator_traits.inl>
-
+#include <thrust/iterator/detail/iterator_traversal_tags.h>

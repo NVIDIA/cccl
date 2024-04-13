@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_WRAP_ITER_H
 #define _LIBCUDACXX___ITERATOR_WRAP_ITER_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__debug"
-#include "../__iterator/iterator_traits.h"
-#include "../__memory/addressof.h"
-#include "../__memory/pointer_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_trivially_copy_assignable.h"
+#include <cuda/std/detail/libcxx/include/__debug>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_assignable.h>
 
 #ifndef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 #  if defined(_LIBCUDACXX_DEBUG)
@@ -145,8 +143,7 @@ public:
     --(*this);
     return __tmp;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter
-  operator+(difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator+(difference_type __n) const noexcept
   {
     __wrap_iter __w(*this);
     __w += __n;
@@ -159,8 +156,7 @@ public:
     __i_ += __n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter
-  operator-(difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator-(difference_type __n) const noexcept
   {
     return *this + (-__n);
   }
@@ -169,8 +165,7 @@ public:
     *this += -__n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
-  operator[](difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__subscriptable(this, __n),
                              "Attempted to subscript an iterator outside its valid range");
@@ -317,12 +312,12 @@ operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1>
 
 #if _CCCL_STD_VER <= 2017
 template <class _It>
-struct __is_cpp17_contiguous_iterator<__wrap_iter<_It> > : true_type
+struct __is_cpp17_contiguous_iterator<__wrap_iter<_It>> : true_type
 {};
 #endif
 
 template <class _It>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<__wrap_iter<_It> >
+struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<__wrap_iter<_It>>
 {
   typedef __wrap_iter<_It> pointer;
   typedef typename pointer_traits<_It>::element_type element_type;

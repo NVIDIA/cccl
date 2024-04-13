@@ -20,9 +20,9 @@
 
 int main(int, char**)
 {
-    typedef cuda::std::chrono::duration<long, cuda::std::ratio<3, 2> > D;
-    static_assert((cuda::std::is_same<D::rep, long>::value), "");
-    static_assert((cuda::std::is_same<D::period, cuda::std::ratio<3, 2> >::value), "");
+  typedef cuda::std::chrono::duration<long, cuda::std::ratio<3, 2>> D;
+  static_assert((cuda::std::is_same<D::rep, long>::value), "");
+  static_assert((cuda::std::is_same<D::period, cuda::std::ratio<3, 2>>::value), "");
 
   return 0;
 }

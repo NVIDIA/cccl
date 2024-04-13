@@ -25,37 +25,39 @@
  *
  ******************************************************************************/
 
-#include "nvbench_helper.cuh"
-
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/partition.h>
 
+#include "nvbench_helper.cuh"
+
 template <class T>
-struct less_then_t 
+struct less_then_t
 {
   T m_val;
 
-  __host__ __device__ bool operator()(const T &val) const { return val < m_val; }
+  __host__ __device__ bool operator()(const T& val) const
+  {
+    return val < m_val;
+  }
 };
 
 template <typename T>
-T value_from_entropy(double percentage) 
+T value_from_entropy(double percentage)
 {
-  if (percentage == 1) 
+  if (percentage == 1)
   {
     return std::numeric_limits<T>::max();
   }
-  
+
   const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
   const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
-  const auto result = min_val + percentage * max_val - percentage * min_val;
+  const auto result  = min_val + percentage * max_val - percentage * min_val;
   return static_cast<T>(result);
 }
 
 template <typename T>
-static void basic(nvbench::state &state,
-                  nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   using select_op_t = less_then_t<T>;
 
@@ -74,17 +76,22 @@ static void basic(nvbench::state &state,
 
   caching_allocator_t alloc;
   thrust::partition_copy(
-      policy(alloc), input.cbegin(), input.cend(), output.begin(),
-      thrust::make_reverse_iterator(output.begin() + elements), select_op);
+    policy(alloc),
+    input.cbegin(),
+    input.cend(),
+    output.begin(),
+    thrust::make_reverse_iterator(output.begin() + elements),
+    select_op);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               thrust::partition_copy(
-                   policy(alloc, launch), input.cbegin(), input.cend(),
-                   output.begin(),
-                   thrust::make_reverse_iterator(output.begin() + elements),
-                   select_op);
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::partition_copy(
+      policy(alloc, launch),
+      input.cbegin(),
+      input.cend(),
+      output.begin(),
+      thrust::make_reverse_iterator(output.begin() + elements),
+      select_op);
+  });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

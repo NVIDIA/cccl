@@ -25,11 +25,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/system/detail/generic/memory.h>
-#include <thrust/system/detail/adl/malloc_and_free.h>
+
 #include <thrust/detail/static_assert.h>
-#include <thrust/detail/malloc_and_free.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/system/detail/adl/malloc_and_free.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -39,75 +38,50 @@ namespace detail
 namespace generic
 {
 
-
-template<typename DerivedPolicy, typename Size>
-_CCCL_HOST_DEVICE
-  void malloc(thrust::execution_policy<DerivedPolicy> &, Size)
+template <typename DerivedPolicy, typename Size>
+_CCCL_HOST_DEVICE void malloc(thrust::execution_policy<DerivedPolicy>&, Size)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<Size, false>::value)
-  , "unimplemented for this system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<Size, false>::value),
+                           "unimplemented for this system");
 }
 
-
-template<typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-  thrust::pointer<T,DerivedPolicy>
-    malloc(thrust::execution_policy<DerivedPolicy> &exec, std::size_t n)
+template <typename T, typename DerivedPolicy>
+_CCCL_HOST_DEVICE thrust::pointer<T, DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy>& exec, std::size_t n)
 {
-  thrust::pointer<void,DerivedPolicy> void_ptr = thrust::malloc(exec, sizeof(T) * n);
+  thrust::pointer<void, DerivedPolicy> void_ptr = thrust::malloc(exec, sizeof(T) * n);
 
-  return pointer<T,DerivedPolicy>(static_cast<T*>(void_ptr.get()));
+  return pointer<T, DerivedPolicy>(static_cast<T*>(void_ptr.get()));
 } // end malloc()
 
-
-template<typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE
-  void free(thrust::execution_policy<DerivedPolicy> &, Pointer)
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void free(thrust::execution_policy<DerivedPolicy>&, Pointer)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<Pointer, false>::value)
-  , "unimplemented for this system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<Pointer, false>::value),
+                           "unimplemented for this system");
 }
 
-
-template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE
-void assign_value(thrust::execution_policy<DerivedPolicy> &, Pointer1, Pointer2)
+template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
+_CCCL_HOST_DEVICE void assign_value(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<Pointer1, false>::value)
-  , "unimplemented for this system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<Pointer1, false>::value),
+                           "unimplemented for this system");
 }
 
-
-template<typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE
-void get_value(thrust::execution_policy<DerivedPolicy> &, Pointer)
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void get_value(thrust::execution_policy<DerivedPolicy>&, Pointer)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<Pointer, false>::value)
-  , "unimplemented for this system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<Pointer, false>::value),
+                           "unimplemented for this system");
 }
 
-
-template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE
-void iter_swap(thrust::execution_policy<DerivedPolicy> &, Pointer1, Pointer2)
+template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
+_CCCL_HOST_DEVICE void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<Pointer1, false>::value)
-  , "unimplemented for this system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<Pointer1, false>::value),
+                           "unimplemented for this system");
 }
 
-
-} // end generic
-} // end detail
-} // end system
+} // namespace generic
+} // namespace detail
+} // namespace system
 THRUST_NAMESPACE_END
-

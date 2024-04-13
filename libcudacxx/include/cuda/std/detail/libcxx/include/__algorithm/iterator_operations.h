@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_ITERATOR_OPERATIONS_H
 #define _LIBCUDACXX___ALGORITHM_ITERATOR_OPERATIONS_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,24 +20,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/iter_swap.h"
-#include "../__algorithm/ranges_iterator_concept.h"
-#include "../__iterator/advance.h"
-#include "../__iterator/distance.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iter_swap.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/next.h"
-#include "../__iterator/prev.h"
-#include "../__iterator/readable_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/ranges_iterator_concept.h>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/distance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/next.h>
+#include <cuda/std/detail/libcxx/include/__iterator/prev.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -97,9 +95,8 @@ struct _IterOps<_ClassicAlgPolicy>
 
   // distance
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
-    typename iterator_traits<_Iter>::difference_type
-    distance(_Iter __first, _Iter __last)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static typename iterator_traits<_Iter>::difference_type
+  distance(_Iter __first, _Iter __last)
   {
     return _CUDA_VSTD::distance(__first, __last);
   }
@@ -114,14 +111,14 @@ struct _IterOps<_ClassicAlgPolicy>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static void __validate_iter_reference()
   {
     static_assert(
-      is_same<__deref_t<_Iter>, typename iterator_traits<__remove_cvref_t<_Iter> >::reference>::value,
+      is_same<__deref_t<_Iter>, typename iterator_traits<__remove_cvref_t<_Iter>>::reference>::value,
       "It looks like your iterator's `iterator_traits<It>::reference` does not match the return type of "
       "dereferencing the iterator, i.e., calling `*it`. This is undefined behavior according to [input.iterators] "
       "and can lead to dangling reference issues at runtime, so we are flagging this.");
   }
 
   // iter_move
-  template <class _Iter, __enable_if_t<is_reference<__deref_t<_Iter> >::value, int> = 0>
+  template <class _Iter, __enable_if_t<is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `_CUDA_VSTD::move` on
     // it. Note that the C++03 mode doesn't support `decltype(auto)` as the return type.
@@ -133,7 +130,7 @@ struct _IterOps<_ClassicAlgPolicy>
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Iter>(__i));
   }
 
-  template <class _Iter, __enable_if_t<!is_reference<__deref_t<_Iter> >::value, int> = 0>
+  template <class _Iter, __enable_if_t<!is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
     // value -- otherwise, after `operator*` returns a temporary, this function would return a dangling reference to

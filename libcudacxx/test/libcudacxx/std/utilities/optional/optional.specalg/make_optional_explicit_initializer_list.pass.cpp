@@ -14,26 +14,30 @@
 //   constexpr optional<T> make_optional(initializer_list<U> il, Args&&... args);
 
 #include <cuda/std/cassert>
-//#include <cuda/std/memory>
+// #include <cuda/std/memory>
 #include <cuda/std/optional>
-//#include <cuda/std/string>
+// #include <cuda/std/string>
 
 #include "test_macros.h"
 
-struct TestT {
+struct TestT
+{
   int x;
   int size;
-  int *ptr;
-  __host__ __device__
-  constexpr TestT(cuda::std::initializer_list<int> il)
-    : x(*il.begin()), size(static_cast<int>(il.size())), ptr(nullptr) {}
-  __host__ __device__
-  constexpr TestT(cuda::std::initializer_list<int> il, int *p)
-    : x(*il.begin()), size(static_cast<int>(il.size())), ptr(p) {}
+  int* ptr;
+  __host__ __device__ constexpr TestT(cuda::std::initializer_list<int> il)
+      : x(*il.begin())
+      , size(static_cast<int>(il.size()))
+      , ptr(nullptr)
+  {}
+  __host__ __device__ constexpr TestT(cuda::std::initializer_list<int> il, int* p)
+      : x(*il.begin())
+      , size(static_cast<int>(il.size()))
+      , ptr(p)
+  {}
 };
 
-__host__ __device__
-constexpr bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3});
@@ -43,7 +47,7 @@ constexpr bool test()
     assert(opt->ptr == nullptr);
   }
   {
-    int i = 42;
+    int i    = 42;
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3}, &i);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<TestT>);
     assert(opt->x == 42);
@@ -57,9 +61,9 @@ int main(int, char**)
 {
   test();
 #if defined(_LIBCUDACXX_ADDRESSOF)
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif
   /*
   {

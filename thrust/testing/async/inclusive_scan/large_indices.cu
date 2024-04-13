@@ -2,19 +2,17 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#include <async/test_policy_overloads.h>
+#  include <thrust/device_free.h>
+#  include <thrust/device_malloc.h>
+#  include <thrust/device_ptr.h>
+#  include <thrust/iterator/detail/device_system_tag.h>
+#  include <thrust/iterator/detail/iterator_facade_category.h>
+#  include <thrust/optional.h>
 
-#include <async/inclusive_scan/mixin.h>
+#  include <cstdint>
 
-#include <thrust/device_free.h>
-#include <thrust/device_malloc.h>
-#include <thrust/device_ptr.h>
-#include <thrust/optional.h>
-
-#include <thrust/iterator/detail/device_system_tag.h>
-#include <thrust/iterator/detail/iterator_facade_category.h>
-
-#include <cstdint>
+#  include <async/inclusive_scan/mixin.h>
+#  include <async/test_policy_overloads.h>
 
 // This test is an adaptation of TestInclusiveScanWithBigIndices from scan.cu.
 
@@ -33,13 +31,10 @@ struct assert_sequence_iterator
   using difference_type = std::int64_t;
 
   // Defined for thrust::iterator_traits:
-  using pointer           = value_type *;
+  using pointer           = value_type*;
   using reference         = assert_sequence_iterator; // weird but convenient
-  using iterator_category = typename thrust::detail::iterator_facade_category<
-    thrust::device_system_tag,
-    thrust::random_access_traversal_tag,
-    value_type,
-    reference>::type;
+  using iterator_category = typename thrust::detail::
+    iterator_facade_category<thrust::device_system_tag, thrust::random_access_traversal_tag, value_type, reference>::type;
 
   std::int64_t expected{0};
   std::int64_t max{0};
@@ -94,8 +89,7 @@ struct assert_sequence_iterator
   }
 
 private:
-  __host__ __device__ assert_sequence_iterator
-  clone(value_type new_expected) const
+  __host__ __device__ assert_sequence_iterator clone(value_type new_expected) const
   {
     return {new_expected, max, found_max, unexpected_value};
   }
@@ -112,25 +106,28 @@ struct assert_sequence_output
 
     iterator iter;
 
-    explicit output_type(iterator &&it)
+    explicit output_type(iterator&& it)
         : iter{std::move(it)}
     {
       iter.initialize_shared_state();
     }
 
-    ~output_type() { iter.free_shared_state(); }
+    ~output_type()
+    {
+      iter.free_shared_state();
+    }
 
-    iterator begin() { return iter; }
+    iterator begin()
+    {
+      return iter;
+    }
   };
 
   template <typename InputType>
-  static output_type generate_output(std::size_t num_values, InputType &)
+  static output_type generate_output(std::size_t num_values, InputType&)
   {
     using value_type = typename assert_sequence_iterator::value_type;
-    assert_sequence_iterator it{1,
-                                static_cast<value_type>(num_values),
-                                nullptr,
-                                nullptr};
+    assert_sequence_iterator it{1, static_cast<value_type>(num_values), nullptr, nullptr};
     return output_type{std::move(it)};
   }
 };
@@ -140,9 +137,7 @@ struct validate_assert_sequence_iterators
   using output_t = assert_sequence_output::output_type;
 
   template <typename EventType>
-  static void compare_outputs(EventType &e,
-                              output_t const &,
-                              output_t const &test)
+  static void compare_outputs(EventType& e, output_t const&, output_t const& test)
   {
     testing::async::mixin::compare_outputs::detail::basic_event_validation(e);
 
@@ -157,7 +152,7 @@ struct validate_assert_sequence_iterators
 struct default_bin_op_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:
-    std::tuple<>                        // - no extra args
+    std::tuple<> // - no extra args
     >;
 
   static postfix_args_type generate_postfix_args()
@@ -180,7 +175,7 @@ struct default_bin_op_invoker
   }
 };
 
-} // end anon namespace
+} // namespace
 
 void test_large_indices_default_scan_op()
 {
@@ -201,7 +196,7 @@ namespace
 struct custom_bin_op_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:
-    std::tuple<thrust::maximum<>>       // - custom binary op
+    std::tuple<thrust::maximum<>> // - custom binary op
     >;
 
   static postfix_args_type generate_postfix_args()
@@ -224,7 +219,7 @@ struct custom_bin_op_invoker
   }
 };
 
-} // end anon namespace
+} // namespace
 
 void test_large_indices_custom_scan_op()
 {

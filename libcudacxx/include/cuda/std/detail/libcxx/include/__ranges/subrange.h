@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___RANGES_SUBRANGE_H
 #define _LIBCUDACXX___RANGES_SUBRANGE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,38 +20,38 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/constructible.h"
-#include "../__concepts/convertible_to.h"
-#include "../__concepts/copyable.h"
-#include "../__concepts/derived_from.h"
-#include "../__concepts/different_from.h"
-#include "../__fwd/get.h"
-#include "../__fwd/subrange.h"
-#include "../__iterator/advance.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__ranges/access.h"
-#include "../__ranges/concepts.h"
-#include "../__ranges/dangling.h"
-#include "../__ranges/enable_borrowed_range.h"
-#include "../__ranges/size.h"
-#include "../__ranges/view_interface.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__tuple_dir/structured_bindings.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_pointer.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/make_unsigned.h"
-#include "../__type_traits/remove_const.h"
-#include "../__type_traits/remove_pointer.h"
-#include "../__utility/move.h"
-#include "../cstdlib"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/constructible.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__concepts/copyable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/derived_from.h>
+#include <cuda/std/detail/libcxx/include/__concepts/different_from.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__fwd/subrange.h>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__ranges/concepts.h>
+#include <cuda/std/detail/libcxx/include/__ranges/dangling.h>
+#include <cuda/std/detail/libcxx/include/__ranges/enable_borrowed_range.h>
+#include <cuda/std/detail/libcxx/include/__ranges/size.h>
+#include <cuda/std/detail/libcxx/include/__ranges/view_interface.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_pointer.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/cstdlib>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
@@ -405,7 +403,7 @@ public:
     {
       __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
-    (void)__d;
+    (void) __d;
     return *this;
   }
 };
@@ -469,7 +467,7 @@ template <
   class _Iter,
   class _Sent,
   subrange_kind _Kind,
-  enable_if_t<_Index< 2, int>>
+  enable_if_t<_Index<2, int>>
 #  endif // _CCCL_STD_VER <= 2017
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
 {

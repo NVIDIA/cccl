@@ -17,10 +17,10 @@
 
 int main(int, char**)
 {
-    using year = cuda::std::chrono::year;
+  using year = cuda::std::chrono::year;
 
-    static_assert(cuda::std::is_trivially_copyable_v<year>, "");
-    static_assert(cuda::std::is_standard_layout_v<year>, "");
+  static_assert(cuda::std::is_trivially_copyable_v<year>, "");
+  static_assert(cuda::std::is_standard_layout_v<year>, "");
 
   return 0;
 }

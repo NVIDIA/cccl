@@ -24,72 +24,96 @@
 #include "../../types.h"
 #include "test_macros.h"
 
-struct LVal {
-  __host__ __device__
-  constexpr int operator()(TestError&) { return 42; }
-  int operator()(const TestError&) = delete;
-  int operator()(TestError&&) = delete;
+struct LVal
+{
+  __host__ __device__ constexpr int operator()(TestError&)
+  {
+    return 42;
+  }
+  int operator()(const TestError&)  = delete;
+  int operator()(TestError&&)       = delete;
   int operator()(const TestError&&) = delete;
 };
 
-struct CLVal {
+struct CLVal
+{
   int operator()(TestError&) = delete;
-  __host__ __device__
-  constexpr int operator()(const TestError&) { return 42; }
-  int operator()(TestError&&) = delete;
+  __host__ __device__ constexpr int operator()(const TestError&)
+  {
+    return 42;
+  }
+  int operator()(TestError&&)       = delete;
   int operator()(const TestError&&) = delete;
 };
 
-struct RVal {
-  int operator()(TestError&) = delete;
+struct RVal
+{
+  int operator()(TestError&)       = delete;
   int operator()(const TestError&) = delete;
-  __host__ __device__
-  constexpr int operator()(TestError&&) { return 42; }
+  __host__ __device__ constexpr int operator()(TestError&&)
+  {
+    return 42;
+  }
   int operator()(const TestError&&) = delete;
 };
 
-struct CRVal {
-  int operator()(TestError&) = delete;
+struct CRVal
+{
+  int operator()(TestError&)       = delete;
   int operator()(const TestError&) = delete;
-  int operator()(TestError&&) = delete;
-  __host__ __device__
-  constexpr int operator()(const TestError&&) { return 42; }
+  int operator()(TestError&&)      = delete;
+  __host__ __device__ constexpr int operator()(const TestError&&)
+  {
+    return 42;
+  }
 };
 
-struct RefQual {
-  __host__ __device__
-  constexpr int operator()(TestError) & { return 42; }
-  int operator()(TestError) const& = delete;
-  int operator()(TestError) && = delete;
+struct RefQual
+{
+  __host__ __device__ constexpr int operator()(TestError) &
+  {
+    return 42;
+  }
+  int operator()(TestError) const&  = delete;
+  int operator()(TestError) &&      = delete;
   int operator()(TestError) const&& = delete;
 };
 
-struct CRefQual {
+struct CRefQual
+{
   int operator()(TestError) & = delete;
-  __host__ __device__
-  constexpr int operator()(TestError) const& { return 42; }
-  int operator()(TestError) && = delete;
+  __host__ __device__ constexpr int operator()(TestError) const&
+  {
+    return 42;
+  }
+  int operator()(TestError) &&      = delete;
   int operator()(TestError) const&& = delete;
 };
 
-struct RVRefQual {
-  int operator()(TestError) & = delete;
+struct RVRefQual
+{
+  int operator()(TestError) &      = delete;
   int operator()(TestError) const& = delete;
-  __host__ __device__
-  constexpr int operator()(TestError) && { return 42; }
+  __host__ __device__ constexpr int operator()(TestError) &&
+  {
+    return 42;
+  }
   int operator()(TestError) const&& = delete;
 };
 
-struct RVCRefQual {
-  int operator()(TestError) & = delete;
+struct RVCRefQual
+{
+  int operator()(TestError) &      = delete;
   int operator()(TestError) const& = delete;
-  int operator()(TestError) && = delete;
-  __host__ __device__
-  constexpr int operator()(TestError) const&& { return 42; }
+  int operator()(TestError) &&     = delete;
+  __host__ __device__ constexpr int operator()(TestError) const&&
+  {
+    return 42;
+  }
 };
 
-__host__ __device__
-constexpr void test_val_types() {
+__host__ __device__ constexpr void test_val_types()
+{
   const cuda::std::expected<int, TestError> previous_value{cuda::std::in_place, 42};
   const cuda::std::expected<int, TestError> expected_error{cuda::std::unexpect, 42};
 
@@ -108,7 +132,7 @@ constexpr void test_val_types() {
       ASSERT_SAME_TYPE(decltype(i.transform_error(LVal{})), cuda::std::expected<int, int>);
     }
 
-    //With & qualifier on F's operator()
+    // With & qualifier on F's operator()
     {
       cuda::std::expected<int, TestError> i{42};
       RefQual l{};
@@ -139,7 +163,7 @@ constexpr void test_val_types() {
       ASSERT_SAME_TYPE(decltype(i.transform_error(CLVal{})), cuda::std::expected<int, int>);
     }
 
-    //With & qualifier on F's operator()
+    // With & qualifier on F's operator()
     {
       const cuda::std::expected<int, TestError> i{42};
       const CRefQual l{};
@@ -170,7 +194,7 @@ constexpr void test_val_types() {
       ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform_error(RVal{})), cuda::std::expected<int, int>);
     }
 
-    //With & qualifier on F's operator()
+    // With & qualifier on F's operator()
     {
       cuda::std::expected<int, TestError> i{42};
       assert(i.transform_error(RVRefQual{}) == previous_value);
@@ -199,7 +223,7 @@ constexpr void test_val_types() {
       ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform_error(CRVal{})), cuda::std::expected<int, int>);
     }
 
-    //With & qualifier on F's operator()
+    // With & qualifier on F's operator()
     {
       const cuda::std::expected<int, TestError> i{42};
       const RVCRefQual l{};
@@ -216,53 +240,65 @@ constexpr void test_val_types() {
   }
 }
 
-struct NonConst {
-  __host__ __device__
-  constexpr int non_const() { return 1; }
+struct NonConst
+{
+  __host__ __device__ constexpr int non_const()
+  {
+    return 1;
+  }
 };
 
-// For a generic lambda, nvrtc appears to not know what to do and claims it needs an annotation (when normal lambdas don't).
-// This is an expanded lambda from the original test.
-struct nvrtc_workaround {
-    template<typename T>
-    __host__ __device__
-    constexpr int operator()(T && t) {
-        return t.non_const();
-    }
+// For a generic lambda, nvrtc appears to not know what to do and claims it needs an annotation (when normal lambdas
+// don't). This is an expanded lambda from the original test.
+struct nvrtc_workaround
+{
+  template <typename T>
+  __host__ __device__ constexpr int operator()(T&& t)
+  {
+    return t.non_const();
+  }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__
-constexpr void test_sfinae() {
+__host__ __device__ constexpr void test_sfinae()
+{
   cuda::std::expected<int, NonConst> expect{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
   expect.transform_error(l);
   cuda::std::move(expect).transform_error(l);
 }
 
-struct NoCopy {
-  NoCopy() = default;
-  __host__ __device__
-  constexpr NoCopy(const NoCopy&) = delete;
-  __host__ __device__
-  constexpr int operator()(const NoCopy&&) { return 42; }
+struct NoCopy
+{
+  NoCopy()                                            = default;
+  __host__ __device__ constexpr NoCopy(const NoCopy&) = delete;
+  __host__ __device__ constexpr int operator()(const NoCopy&&)
+  {
+    return 42;
+  }
 };
 
 // We need an indirection so the assert does not break the compilation
-template<class T>
-struct AlwaysFalse {
-  __host__ __device__
-  constexpr AlwaysFalse() { assert(false); }
+template <class T>
+struct AlwaysFalse
+{
+  __host__ __device__ constexpr AlwaysFalse()
+  {
+    assert(false);
+  }
 };
 
-struct NeverCalled {
-  template<class T>
-  __host__ __device__
-  constexpr int operator()(T) const { return AlwaysFalse<T>{}, 42; }
+struct NeverCalled
+{
+  template <class T>
+  __host__ __device__ constexpr int operator()(T) const
+  {
+    return AlwaysFalse<T>{}, 42;
+  }
 };
 
-__host__ __device__
-constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   test_sfinae();
   test_val_types();
 
@@ -281,7 +317,8 @@ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
   return 0;

@@ -14,27 +14,34 @@
 // template <ObjectType T> reference_wrapper<T> ref(reference_wrapper<T> t);
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "counting_predicates.h"
-
 #include "test_macros.h"
 
-__host__ __device__ bool is5 ( int i ) { return i == 5; }
+__host__ __device__ bool is5(int i)
+{
+  return i == 5;
+}
 
 template <typename T>
-__host__ __device__ bool call_pred ( T pred ) { return pred(5); }
-
-namespace adl {
-  struct A {};
-  __host__ __device__ void ref(A) {}
+__host__ __device__ bool call_pred(T pred)
+{
+  return pred(5);
 }
+
+namespace adl
+{
+struct A
+{};
+__host__ __device__ void ref(A) {}
+} // namespace adl
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   {
-    int i = 0;
+    int i                                = 0;
     cuda::std::reference_wrapper<int> r1 = cuda::std::ref(i);
     cuda::std::reference_wrapper<int> r2 = cuda::std::ref(r1);
     assert(&r2.get() == &i);
@@ -56,7 +63,7 @@ int main(int, char**)
 #endif
 
   {
-    unary_counting_predicate<bool(*)(int), int> cp(is5);
+    unary_counting_predicate<bool (*)(int), int> cp(is5);
     assert(!cp(6));
     assert(cp.count() == 1);
     assert(call_pred(cp));

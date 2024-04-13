@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TUPLE_APPLY_CV_H
 #define _LIBCUDACXX___TUPLE_APPLY_CV_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/is_const.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_volatile.h"
-#include "../__type_traits/remove_reference.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_volatile.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -79,11 +77,11 @@ struct __apply_cv_mf<true, true, true>
   template <class _Tp>
   using __apply _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
 };
-template <class _Tp, class _RawTp = __libcpp_remove_reference_t<_Tp> >
+template <class _Tp, class _RawTp = __libcpp_remove_reference_t<_Tp>>
 using __apply_cv_t _LIBCUDACXX_NODEBUG_TYPE =
-    __apply_cv_mf<_LIBCUDACXX_TRAIT(is_lvalue_reference, _Tp),
-                  _LIBCUDACXX_TRAIT(is_const, _RawTp),
-                  _LIBCUDACXX_TRAIT(is_volatile, _RawTp)>;
+  __apply_cv_mf<_LIBCUDACXX_TRAIT(is_lvalue_reference, _Tp),
+                _LIBCUDACXX_TRAIT(is_const, _RawTp),
+                _LIBCUDACXX_TRAIT(is_volatile, _RawTp)>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

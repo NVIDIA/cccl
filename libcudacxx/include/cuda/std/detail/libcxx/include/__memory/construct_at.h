@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
 #define _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,22 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/__concept_macros.h"
-#include "../__iterator/access.h"
-#include "../__memory/addressof.h"
-#include "../__memory/voidify.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_arithmetic.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_constant_evaluated.h"
-#include "../__type_traits/is_trivially_move_assignable.h"
-#include "../__type_traits/is_trivially_constructible.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__iterator/access.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/voidify.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_arithmetic.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 #ifdef _CCCL_CUDA_COMPILER_CLANG
 #  include <new>
@@ -84,7 +82,8 @@ template <class _To, class _From>
 struct __is_narrowing_impl<_To, _From> : true_type
 {};
 
-// This is a bit hacky, but we rely on the fact that arithmetic types cannot have more than one argument to their constructor
+// This is a bit hacky, but we rely on the fact that arithmetic types cannot have more than one argument to their
+// constructor
 template <class _To, class _From>
 struct __is_narrowing_impl<_To, _From, __void_t<decltype(_To{_CUDA_VSTD::declval<_From>()})>> : false_type
 {};
@@ -110,8 +109,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
   construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -129,8 +128,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
   construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -153,8 +152,8 @@ _LIBCUDACXX_INLINE_VISIBILITY
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
   __construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -170,8 +169,8 @@ _LIBCUDACXX_INLINE_VISIBILITY
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
   __construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -191,8 +190,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 // The internal functions are available regardless of the language version (with the exception of the `__destroy_at`
 // taking an array).
 template <class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
 
 template <class _Tp, __enable_if_t<!is_array<_Tp>::value, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __destroy_at(_Tp* __loc)
@@ -251,15 +249,13 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 #  endif // _CCCL_STD_VER > 2017
 
 template <class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
-destroy(_ForwardIterator __first, _ForwardIterator __last)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last)
 {
   (void) _CUDA_VSTD::__destroy(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }
 
 template <class _ForwardIterator, class _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _ForwardIterator
-destroy_n(_ForwardIterator __first, _Size __n)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_ForwardIterator __first, _Size __n)
 {
   for (; __n > 0; (void) ++__first, --__n)
   {

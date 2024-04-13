@@ -18,7 +18,8 @@
 // constexpr bool operator>=(monostate, monostate) noexcept { return true; }
 // constexpr bool operator==(monostate, monostate) noexcept { return true; }
 // constexpr bool operator!=(monostate, monostate) noexcept { return false; }
-// constexpr strong_ordering operator<=>(monostate, monostate) noexcept { return strong_ordering::equal; } // since C++20
+// constexpr strong_ordering operator<=>(monostate, monostate) noexcept { return strong_ordering::equal; } // since
+// C++20
 
 #include <cuda/std/cassert>
 #include <cuda/std/variant>
@@ -26,8 +27,8 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-__host__ __device__
-constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   using M = cuda::std::monostate;
   constexpr M m1{};
   constexpr M m2{};
@@ -42,7 +43,8 @@ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
 

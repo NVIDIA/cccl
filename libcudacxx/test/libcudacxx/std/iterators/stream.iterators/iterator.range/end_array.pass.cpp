@@ -11,18 +11,18 @@
 
 // template <class T, size_t N> T* end(T (&array)[N]);
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    int ia[] = {1, 2, 3};
-    int* i = cuda::std::begin(ia);
-    int* e = cuda::std::end(ia);
-    assert(e == ia + 3);
-    assert(e - i == 3);
+  int ia[] = {1, 2, 3};
+  int* i   = cuda::std::begin(ia);
+  int* e   = cuda::std::end(ia);
+  assert(e == ia + 3);
+  assert(e - i == 3);
 
   return 0;
 }

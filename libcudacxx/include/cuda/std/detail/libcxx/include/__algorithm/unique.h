@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_UNIQUE_H
 #define _LIBCUDACXX___ALGORITHM_UNIQUE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/adjacent_find.h"
-#include "../__algorithm/comp.h"
-#include "../__algorithm/iterator_operations.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__utility/move.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/adjacent_find.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

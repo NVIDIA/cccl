@@ -31,4 +31,3 @@
 #    error GCC 5 or later is required for this Thrust feature; please upgrade your compiler.
 #  endif
 #endif
-

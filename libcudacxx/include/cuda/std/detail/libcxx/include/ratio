@@ -77,9 +77,7 @@ typedef ratio<1000000000000000000000000, 1> yotta;  // not supported
 }
 */
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -89,15 +87,13 @@ typedef ratio<1000000000000000000000000, 1> yotta;  // not supported
 #  pragma system_header
 #endif // no system header
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__type_traits/integral_constant.h"
-#include "climits"
-#include "cstdint"
-#include "type_traits"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/climits>
+#include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -496,8 +492,6 @@ _LIBCUDACXX_INLINE_VAR constexpr bool ratio_greater_equal_v
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif //__cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_pop> //__cuda_std__
 
 #endif  // _LIBCUDACXX_RATIO

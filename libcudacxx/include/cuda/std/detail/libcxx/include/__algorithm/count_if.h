@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_COUNT_IF_H
 #define _LIBCUDACXX___ALGORITHM_COUNT_IF_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/iterator_traits.h"
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

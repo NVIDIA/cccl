@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_FIND_H
 #define _LIBCUDACXX___ALGORITHM_FIND_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,15 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/invoke.h"
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // generic implementation
 template <class _Iter, class _Sent, class _Tp, class _Proj>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  _Iter
-  __find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter
+__find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
 {
   for (; __first != __last; ++__first)
   {

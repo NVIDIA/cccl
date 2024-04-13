@@ -109,9 +109,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 
 */
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -121,51 +119,51 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #  pragma system_header
 #endif // no system header
 
-#include "__algorithm/equal.h"
-#include "__algorithm/fill_n.h"
-#include "__algorithm/lexicographical_compare.h"
-#include "__algorithm/swap_ranges.h"
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__iterator/reverse_iterator.h"
-#include "__tuple_dir/sfinae_helpers.h"
-#include "__type_traits/conditional.h"
-#include "__type_traits/is_array.h"
-#include "__type_traits/is_const.h"
-#include "__type_traits/is_constructible.h"
-#include "__type_traits/is_move_constructible.h"
-#include "__type_traits/is_nothrow_constructible.h"
-#include "__type_traits/is_nothrow_move_constructible.h"
-#include "__type_traits/is_same.h"
-#include "__type_traits/is_swappable.h"
-#include "__type_traits/remove_cv.h"
-#include "__utility/integer_sequence.h"
-#include "__utility/move.h"
-#include "__utility/unreachable.h"
-#include "cstdint"
-#include "cstdlib"
-#include "limits"
-#include "stdexcept"
-#include "version"
+#include <cuda/std/detail/libcxx/include/__algorithm/equal.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/fill_n.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/lexicographical_compare.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/swap_ranges.h>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_iterator.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/unreachable.h>
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/detail/libcxx/include/stdexcept>
+
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 // standard-mandated includes
-#include "version"
+#include <cuda/std/version>
 
 // [iterator.range]
-#include "__iterator/access.h"
-#include "__iterator/data.h"
-#include "__iterator/empty.h"
-#include "__iterator/reverse_access.h"
-#include "__iterator/size.h"
+#include <cuda/std/detail/libcxx/include/__iterator/access.h>
+#include <cuda/std/detail/libcxx/include/__iterator/data.h>
+#include <cuda/std/detail/libcxx/include/__iterator/empty.h>
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_access.h>
+#include <cuda/std/detail/libcxx/include/__iterator/size.h>
 
 // [array.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <compare>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "initializer_list"
+#include <cuda/std/initializer_list>
 
 // [tuple.helper]
-#include "__tuple_dir/tuple_element.h"
-#include "__tuple_dir/tuple_size.h"
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

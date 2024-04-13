@@ -19,14 +19,25 @@
 
 using cuda::std::convertible_to;
 
-namespace {
-enum ClassicEnum { a, b };
-enum class ScopedEnum { x, y };
-struct Empty {};
+namespace
+{
+enum ClassicEnum
+{
+  a,
+  b
+};
+enum class ScopedEnum
+{
+  x,
+  y
+};
+struct Empty
+{};
 using nullptr_t = decltype(nullptr);
 
 template <class T, class U>
-__host__ __device__ void CheckConvertibleTo() {
+__host__ __device__ void CheckConvertibleTo()
+{
   static_assert(convertible_to<T, U>, "");
   static_assert(convertible_to<const T, U>, "");
   static_assert(convertible_to<T, const U>, "");
@@ -34,7 +45,8 @@ __host__ __device__ void CheckConvertibleTo() {
 }
 
 template <class T, class U>
-__host__ __device__ void CheckNotConvertibleTo() {
+__host__ __device__ void CheckNotConvertibleTo()
+{
   static_assert(!convertible_to<T, U>, "");
   static_assert(!convertible_to<const T, U>, "");
   static_assert(!convertible_to<T, const U>, "");
@@ -42,7 +54,8 @@ __host__ __device__ void CheckNotConvertibleTo() {
 }
 
 template <class T, class U>
-__host__ __device__ void CheckIsConvertibleButNotConvertibleTo() {
+__host__ __device__ void CheckIsConvertibleButNotConvertibleTo()
+{
   // Sanity check T is either implicitly xor explicitly convertible to U.
   static_assert(cuda::std::is_convertible_v<T, U>, "");
   static_assert(cuda::std::is_convertible_v<const T, U>, "");
@@ -56,9 +69,10 @@ __host__ __device__ void CheckIsConvertibleButNotConvertibleTo() {
 template <class T>
 #else
 _LIBCUDACXX_TEMPLATE(class T)
-  _LIBCUDACXX_REQUIRES( (!(cuda::std::same_as<T, bool> || cuda::std::same_as<T, nullptr_t>)))
+_LIBCUDACXX_REQUIRES((!(cuda::std::same_as<T, bool> || cuda::std::same_as<T, nullptr_t>) ))
 #endif
-__host__ __device__ constexpr void CommonlyNotConvertibleTo() {
+__host__ __device__ constexpr void CommonlyNotConvertibleTo()
+{
   CheckNotConvertibleTo<T, void>();
   CheckNotConvertibleTo<T, nullptr_t>();
   CheckNotConvertibleTo<T, T*>();
@@ -67,12 +81,13 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<T, T[sizeof(T)]>();
   CheckNotConvertibleTo<T, T (*)()>();
   CheckNotConvertibleTo<T, T (&)()>();
-  CheckNotConvertibleTo<T, T(&&)()>();
+  CheckNotConvertibleTo<T, T (&&)()>();
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-  _LIBCUDACXX_REQUIRES( cuda::std::same_as<T, bool>)
-__host__ __device__ constexpr void CommonlyNotConvertibleTo() {
+_LIBCUDACXX_REQUIRES(cuda::std::same_as<T, bool>)
+__host__ __device__ constexpr void CommonlyNotConvertibleTo()
+{
   CheckNotConvertibleTo<bool, void>();
   CheckNotConvertibleTo<bool, nullptr_t>();
   CheckConvertibleTo<bool Empty::*, bool>();
@@ -80,12 +95,13 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckConvertibleTo<bool[2], bool>();
   CheckConvertibleTo<bool (*)(), bool>();
   CheckConvertibleTo<bool (&)(), bool>();
-  CheckConvertibleTo<bool(&&)(), bool>();
+  CheckConvertibleTo<bool (&&)(), bool>();
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-  _LIBCUDACXX_REQUIRES( cuda::std::same_as<T, nullptr_t>)
-__host__ __device__ constexpr void CommonlyNotConvertibleTo() {
+_LIBCUDACXX_REQUIRES(cuda::std::same_as<T, nullptr_t>)
+__host__ __device__ constexpr void CommonlyNotConvertibleTo()
+{
   CheckNotConvertibleTo<nullptr_t, void>();
   CheckConvertibleTo<nullptr_t, nullptr_t>();
   CheckConvertibleTo<nullptr_t, void*>();
@@ -94,7 +110,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<nullptr_t, int[2]>();
   CheckConvertibleTo<nullptr_t, void (*)()>();
   CheckNotConvertibleTo<nullptr_t, void (&)()>();
-  CheckNotConvertibleTo<nullptr_t, void(&&)()>();
+  CheckNotConvertibleTo<nullptr_t, void (&&)()>();
 }
 } // namespace
 
@@ -103,52 +119,65 @@ using Function = void();
 using NoexceptFunction = void() noexcept;
 #endif
 using ConstFunction = void() const;
-using Array = char[1];
+using Array         = char[1];
 
-struct StringType {
+struct StringType
+{
   __host__ __device__ StringType(const char*) {}
 };
 
-class NonCopyable {
+class NonCopyable
+{
   __host__ __device__ NonCopyable(NonCopyable&);
 };
 
 template <typename T>
-class CannotInstantiate {
-  enum { X = T::ThisExpressionWillBlowUp };
+class CannotInstantiate
+{
+  enum
+  {
+    X = T::ThisExpressionWillBlowUp
+  };
 };
 
-struct abstract {
+struct abstract
+{
   __host__ __device__ virtual int f() = 0;
 };
 
 struct ExplicitlyConvertible;
 struct ImplicitlyConvertible;
 
-struct ExplicitlyConstructible {
+struct ExplicitlyConstructible
+{
   __host__ __device__ explicit ExplicitlyConstructible(int);
   __host__ __device__ explicit ExplicitlyConstructible(ExplicitlyConvertible);
   explicit ExplicitlyConstructible(ImplicitlyConvertible) = delete;
 };
 
-struct ExplicitlyConvertible {
-  __host__ __device__ explicit operator ExplicitlyConstructible() const {
+struct ExplicitlyConvertible
+{
+  __host__ __device__ explicit operator ExplicitlyConstructible() const
+  {
     return ExplicitlyConstructible(0);
   }
 };
 
 struct ImplicitlyConstructible;
 
-struct ImplicitlyConvertible {
+struct ImplicitlyConvertible
+{
   __host__ __device__ operator ExplicitlyConstructible() const;
   operator ImplicitlyConstructible() const = delete;
 };
 
-struct ImplicitlyConstructible {
+struct ImplicitlyConstructible
+{
   __host__ __device__ ImplicitlyConstructible(ImplicitlyConvertible);
 };
 
-int main(int, char**) {
+int main(int, char**)
+{
   // void
   CheckConvertibleTo<void, void>();
   CheckNotConvertibleTo<void, Function>();
@@ -169,17 +198,17 @@ int main(int, char**) {
   // Function
   CheckNotConvertibleTo<Function, void>();
   CheckNotConvertibleTo<Function, Function>();
-  //CheckNotConvertibleTo<Function, NoexceptFunction>();
-  //CheckNotConvertibleTo<Function, NoexceptFunction&>();
-  //CheckNotConvertibleTo<Function, NoexceptFunction*>();
-  //CheckNotConvertibleTo<Function, NoexceptFunction* const>();
+  // CheckNotConvertibleTo<Function, NoexceptFunction>();
+  // CheckNotConvertibleTo<Function, NoexceptFunction&>();
+  // CheckNotConvertibleTo<Function, NoexceptFunction*>();
+  // CheckNotConvertibleTo<Function, NoexceptFunction* const>();
   CheckConvertibleTo<Function, Function&>();
   CheckConvertibleTo<Function, Function*>();
   CheckConvertibleTo<Function, Function* const>();
 
   static_assert(convertible_to<Function, Function&&>, "");
 #if TEST_STD_VER > 2014
-  //static_assert(!convertible_to<Function, NoexceptFunction&&>, "");
+  // static_assert(!convertible_to<Function, NoexceptFunction&&>, "");
 #endif
 
   CheckNotConvertibleTo<Function, Array>();
@@ -230,15 +259,15 @@ int main(int, char**) {
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction&>();
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction*>();
   CheckConvertibleTo<NoexceptFunction, NoexceptFunction* const>();
-#ifndef TEST_COMPILER_MSVC_2017
+#  ifndef TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction, Function&>();
-#endif // !TEST_COMPILER_MSVC_2017
+#  endif // !TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction, Function*>();
   CheckConvertibleTo<NoexceptFunction, Function* const>();
 
-#ifndef TEST_COMPILER_MSVC_2017
+#  ifndef TEST_COMPILER_MSVC_2017
   static_assert(convertible_to<NoexceptFunction, Function&&>, "");
-#endif // !TEST_COMPILER_MSVC_2017
+#  endif // !TEST_COMPILER_MSVC_2017
   static_assert(convertible_to<NoexceptFunction, NoexceptFunction&&>, "");
 
   CheckNotConvertibleTo<NoexceptFunction, Array>();
@@ -249,13 +278,13 @@ int main(int, char**) {
 
   // NoexceptFunction&
   CheckNotConvertibleTo<NoexceptFunction&, void>();
-#ifndef TEST_COMPILER_MSVC_2017
+#  ifndef TEST_COMPILER_MSVC_2017
   CheckNotConvertibleTo<NoexceptFunction&, Function>();
-#endif // !TEST_COMPILER_MSVC_2017
+#  endif // !TEST_COMPILER_MSVC_2017
   CheckNotConvertibleTo<NoexceptFunction&, NoexceptFunction>();
-#ifndef TEST_COMPILER_MSVC_2017
+#  ifndef TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction&, Function&>();
-#endif // !TEST_COMPILER_MSVC_2017
+#  endif // !TEST_COMPILER_MSVC_2017
   CheckConvertibleTo<NoexceptFunction&, NoexceptFunction&>();
 
   CheckConvertibleTo<NoexceptFunction&, Function*>();
@@ -425,12 +454,9 @@ int main(int, char**) {
   static_assert(convertible_to<NonCopyable&, const volatile NonCopyable&>, "");
   static_assert(convertible_to<NonCopyable&, volatile NonCopyable&>, "");
   static_assert(convertible_to<const NonCopyable&, const NonCopyable&>, "");
-  static_assert(
-      convertible_to<const NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(
-      convertible_to<volatile NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(convertible_to<const volatile NonCopyable&,
-                                    const volatile NonCopyable&>, "");
+  static_assert(convertible_to<const NonCopyable&, const volatile NonCopyable&>, "");
+  static_assert(convertible_to<volatile NonCopyable&, const volatile NonCopyable&>, "");
+  static_assert(convertible_to<const volatile NonCopyable&, const volatile NonCopyable&>, "");
   static_assert(!convertible_to<const NonCopyable&, NonCopyable&>, "");
 
   // This test requires Access control SFINAE which we only have in C++11 or when
@@ -439,7 +465,7 @@ int main(int, char**) {
 
   // Ensure that CannotInstantiate is not instantiated by convertible_to when it is not needed.
   // For example CannotInstantiate is instantiated as a part of ADL lookup for arguments of type CannotInstantiate*.
-  //static_assert(
+  // static_assert(
   //    convertible_to<CannotInstantiate<int>*, CannotInstantiate<int>*>, "");
 
   // Test for PR13592
@@ -452,8 +478,7 @@ int main(int, char**) {
   CheckNotConvertibleTo<int, ExplicitlyConstructible>();
   CheckNotConvertibleTo<ExplicitlyConvertible, ExplicitlyConstructible>();
   CheckNotConvertibleTo<ExplicitlyConstructible, ExplicitlyConvertible>();
-  CheckIsConvertibleButNotConvertibleTo<ImplicitlyConvertible,
-                                        ExplicitlyConstructible>();
+  CheckIsConvertibleButNotConvertibleTo<ImplicitlyConvertible, ExplicitlyConstructible>();
   CheckNotConvertibleTo<ImplicitlyConstructible, ImplicitlyConvertible>();
 
   return 0;

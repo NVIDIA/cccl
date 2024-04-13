@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03, c++11
 
-
 // <span>
 
 // template<size_t Count>
@@ -16,10 +15,11 @@
 //
 //  Requires: Count <= size().
 
-#include <cuda/std/span>
 #include <cuda/std/cstddef>
+#include <cuda/std/span>
 
-void f() {
+void f()
+{
   int array[] = {1, 2, 3, 4};
   cuda::std::span<const int, 4> sp(array);
 
@@ -27,7 +27,8 @@ void f() {
   [[maybe_unused]] auto s1 = sp.first<5>(); // expected-error@span:* {{span<T, N>::first<Count>(): Count out of range}}
 
   //  Count numeric_limits
-  [[maybe_unused]] auto s2 = sp.first<cuda::std::size_t(-1)>(); // expected-error@span:* {{span<T, N>::first<Count>(): Count out of range}}
+  [[maybe_unused]] auto s2 = sp.first<cuda::std::size_t(-1)>(); // expected-error@span:* {{span<T, N>::first<Count>():
+                                                                // Count out of range}}
 }
 
 int main(int, char**)

@@ -12,9 +12,7 @@
 #ifndef _CUDA_PTX_GETCTARANK_H_
 #define _CUDA_PTX_GETCTARANK_H_
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
+#include <cuda/std/cstdint>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
 
-#include "../ptx_dot_variants.h"
-#include "../ptx_helper_functions.h"
-#include "../../../cstdint"
+#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -44,26 +42,21 @@ __device__ static inline uint32_t getctarank(
 */
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
-template <typename=void>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(
-  space_cluster_t,
-  const void* __addr)
+template <typename = void>
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(space_cluster_t, const void* __addr)
 {
   // __space == space_cluster (due to parameter type constraint)
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __dest;
-    asm (
-      "getctarank.shared::cluster.u32 %0, %1;"
-      : "=r"(__dest)
-      : "r"(__as_ptr_smem(__addr))
-      :
-    );
-    return __dest;
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
-    return 0;
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (_CUDA_VSTD::uint32_t __dest;
+     asm("getctarank.shared::cluster.u32 %0, %1;"
+         : "=r"(__dest)
+         : "r"(__as_ptr_smem(__addr))
+         :);
+     return __dest;),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_getctarank_is_not_supported_before_SM_90__(); return 0;));
 }
 #endif // __cccl_ptx_isa >= 780
 

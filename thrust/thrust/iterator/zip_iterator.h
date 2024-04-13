@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file thrust/iterator/zip_iterator.h
  *  \brief An iterator which returns a tuple of the result of dereferencing
  *         a tuple of iterators when dereferenced
@@ -40,9 +39,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/zip_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
-#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -144,89 +143,79 @@ THRUST_NAMESPACE_BEGIN
  *  \see get
  */
 template <typename IteratorTuple>
-  class zip_iterator
-    : public detail::zip_iterator_base<IteratorTuple>::type
+class zip_iterator : public detail::zip_iterator_base<IteratorTuple>::type
 {
-  public:
-    /*! Default constructor does nothing.
-     */
+public:
+  /*! Default constructor does nothing.
+   */
 #if defined(_CCCL_COMPILER_MSVC_2017)
-    inline _CCCL_HOST_DEVICE zip_iterator() {}
+  inline _CCCL_HOST_DEVICE zip_iterator() {}
 #else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
-    zip_iterator() = default;
+  zip_iterator() = default;
 #endif // !_CCCL_COMPILER_MSVC_2017
 
-    /*! This constructor creates a new \p zip_iterator from a
-     *  \p tuple of iterators.
-     *
-     *  \param iterator_tuple The \p tuple of iterators to copy from.
-     */
-    inline _CCCL_HOST_DEVICE
-    zip_iterator(IteratorTuple iterator_tuple);
+  /*! This constructor creates a new \p zip_iterator from a
+   *  \p tuple of iterators.
+   *
+   *  \param iterator_tuple The \p tuple of iterators to copy from.
+   */
+  inline _CCCL_HOST_DEVICE zip_iterator(IteratorTuple iterator_tuple);
 
-    /*! This copy constructor creates a new \p zip_iterator from another
-     *  \p zip_iterator.
-     *
-     *  \param other The \p zip_iterator to copy.
-     */
-    template <typename OtherIteratorTuple,
-              detail::enable_if_convertible_t<OtherIteratorTuple, IteratorTuple, int> = 0>
-    inline _CCCL_HOST_DEVICE zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
-        : m_iterator_tuple(other.get_iterator_tuple())
-    {}
+  /*! This copy constructor creates a new \p zip_iterator from another
+   *  \p zip_iterator.
+   *
+   *  \param other The \p zip_iterator to copy.
+   */
+  template <typename OtherIteratorTuple, detail::enable_if_convertible_t<OtherIteratorTuple, IteratorTuple, int> = 0>
+  inline _CCCL_HOST_DEVICE zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
+      : m_iterator_tuple(other.get_iterator_tuple())
+  {}
 
-    /*! This method returns a \c const reference to this \p zip_iterator's
-     *  \p tuple of iterators.
-     *
-     *  \return A \c const reference to this \p zip_iterator's \p tuple
-     *          of iterators.
-     */
-    inline _CCCL_HOST_DEVICE
-    const IteratorTuple &get_iterator_tuple() const;
+  /*! This method returns a \c const reference to this \p zip_iterator's
+   *  \p tuple of iterators.
+   *
+   *  \return A \c const reference to this \p zip_iterator's \p tuple
+   *          of iterators.
+   */
+  inline _CCCL_HOST_DEVICE const IteratorTuple& get_iterator_tuple() const;
 
-    /*! \cond
-     */
-  private:
-    typedef typename
-    detail::zip_iterator_base<IteratorTuple>::type super_t;
+  /*! \cond
+   */
 
-    friend class thrust::iterator_core_access;
+private:
+  typedef typename detail::zip_iterator_base<IteratorTuple>::type super_t;
 
-    // Dereferencing returns a tuple built from the dereferenced
-    // iterators in the iterator tuple.
-    _CCCL_HOST_DEVICE
-    typename super_t::reference dereference() const;
+  friend class thrust::iterator_core_access;
 
-    // Two zip_iterators are equal if the two first iterators of the
-    // tuple are equal. Note this differs from Boost's implementation, which
-    // considers the entire tuple.
-    template<typename OtherIteratorTuple>
-    inline _CCCL_HOST_DEVICE
-    bool equal(const zip_iterator<OtherIteratorTuple> &other) const;
+  // Dereferencing returns a tuple built from the dereferenced
+  // iterators in the iterator tuple.
+  _CCCL_HOST_DEVICE typename super_t::reference dereference() const;
 
-    // Advancing a zip_iterator means to advance all iterators in the tuple
-    inline _CCCL_HOST_DEVICE
-    void advance(typename super_t::difference_type n);
+  // Two zip_iterators are equal if the two first iterators of the
+  // tuple are equal. Note this differs from Boost's implementation, which
+  // considers the entire tuple.
+  template <typename OtherIteratorTuple>
+  inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const;
 
-    // Incrementing a zip iterator means to increment all iterators in the tuple
-    inline _CCCL_HOST_DEVICE
-    void increment();
+  // Advancing a zip_iterator means to advance all iterators in the tuple
+  inline _CCCL_HOST_DEVICE void advance(typename super_t::difference_type n);
 
-    // Decrementing a zip iterator means to decrement all iterators in the tuple
-    inline _CCCL_HOST_DEVICE
-    void decrement();
+  // Incrementing a zip iterator means to increment all iterators in the tuple
+  inline _CCCL_HOST_DEVICE void increment();
 
-    // Distance is calculated using the first iterator in the tuple.
-    template<typename OtherIteratorTuple>
-    inline _CCCL_HOST_DEVICE
-      typename super_t::difference_type
-        distance_to(const zip_iterator<OtherIteratorTuple> &other) const;
+  // Decrementing a zip iterator means to decrement all iterators in the tuple
+  inline _CCCL_HOST_DEVICE void decrement();
 
-    // The iterator tuple.
-    IteratorTuple m_iterator_tuple;
+  // Distance is calculated using the first iterator in the tuple.
+  template <typename OtherIteratorTuple>
+  inline _CCCL_HOST_DEVICE typename super_t::difference_type
+  distance_to(const zip_iterator<OtherIteratorTuple>& other) const;
 
-    /*! \endcond
-     */
+  // The iterator tuple.
+  IteratorTuple m_iterator_tuple;
+
+  /*! \endcond
+   */
 }; // end zip_iterator
 
 /*! \p make_zip_iterator creates a \p zip_iterator from a \p tuple
@@ -237,10 +226,8 @@ template <typename IteratorTuple>
  *
  *  \see zip_iterator
  */
-template<typename... Iterators>
-inline _CCCL_HOST_DEVICE
-zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(thrust::tuple<Iterators...> t);
-
+template <typename... Iterators>
+inline _CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(thrust::tuple<Iterators...> t);
 
 /*! \p make_zip_iterator creates a \p zip_iterator from
  *  iterators.
@@ -250,10 +237,8 @@ zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(thrust::tuple<Iterat
  *
  *  \see zip_iterator
  */
-template<typename... Iterators>
-inline _CCCL_HOST_DEVICE
-zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(Iterators... its);
-
+template <typename... Iterators>
+inline _CCCL_HOST_DEVICE zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(Iterators... its);
 
 /*! \} // end fancyiterators
  */
@@ -264,4 +249,3 @@ zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(Iterators... its);
 THRUST_NAMESPACE_END
 
 #include <thrust/iterator/detail/zip_iterator.inl>
-

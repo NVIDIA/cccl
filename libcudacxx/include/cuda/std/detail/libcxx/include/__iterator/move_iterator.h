@@ -12,9 +12,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
 #define _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,25 +23,25 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "../__compare/compare_three_way_result.h"
-#  include "../__compare/three_way_comparable.h"
+#  include <cuda/std/detail/libcxx/include/__compare/compare_three_way_result.h>
+#  include <cuda/std/detail/libcxx/include/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "../__concepts/assignable.h"
-#include "../__concepts/convertible_to.h"
-#include "../__concepts/derived_from.h"
-#include "../__concepts/same_as.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iter_swap.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/move_sentinel.h"
-#include "../__iterator/readable_traits.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/move.h"
-#include "../cstdlib"
+#include <cuda/std/detail/libcxx/include/__concepts/assignable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__concepts/derived_from.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/move_sentinel.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,9 +55,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter>
 {
   using iterator_category =
-    _If< derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
-         random_access_iterator_tag,
-         typename iterator_traits<_Iter>::iterator_category >;
+    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+        random_access_iterator_tag,
+        typename iterator_traits<_Iter>::iterator_category>;
 };
 
 template <class _Iter, class _Sent>
@@ -70,7 +68,8 @@ concept __move_iter_comparable = requires {
 };
 
 template <class _Iter>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
+  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #elif _CCCL_STD_VER >= 2017
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -80,9 +79,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator_traits<_Iter>>>>
 {
   using iterator_category =
-    _If< derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
-         random_access_iterator_tag,
-         typename iterator_traits<_Iter>::iterator_category >;
+    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+        random_access_iterator_tag,
+        typename iterator_traits<_Iter>::iterator_category>;
 };
 
 template <class _Iter, class _Sent>
@@ -94,7 +93,8 @@ template <class _Iter, class _Sent>
 _LIBCUDACXX_CONCEPT __move_iter_comparable = _LIBCUDACXX_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
+  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Iter>
@@ -111,8 +111,7 @@ private:
 
 #if _CCCL_STD_VER >= 2017
 #  if !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __mi_get_iter_concept()
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
     {
@@ -156,20 +155,19 @@ public:
   using reference       = iter_rvalue_reference_t<_Iter>;
 #else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER < 2017 vvv
   typedef _Iter iterator_type;
-  typedef _If< __is_cpp17_random_access_iterator<_Iter>::value,
-               random_access_iterator_tag,
-               typename iterator_traits<_Iter>::iterator_category >
+  typedef _If<__is_cpp17_random_access_iterator<_Iter>::value,
+              random_access_iterator_tag,
+              typename iterator_traits<_Iter>::iterator_category>
     iterator_category;
   typedef typename iterator_traits<iterator_type>::value_type value_type;
   typedef typename iterator_traits<iterator_type>::difference_type difference_type;
   typedef iterator_type pointer;
   typedef typename iterator_traits<iterator_type>::reference __reference;
-  typedef __conditional_t< is_reference<__reference>::value, __libcpp_remove_reference_t<__reference>&&, __reference >
+  typedef __conditional_t<is_reference<__reference>::value, __libcpp_remove_reference_t<__reference>&&, __reference>
     reference;
 #endif // _CCCL_STD_VER < 2017
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit move_iterator(
-    _Iter __i)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)
       : __current_(_CUDA_VSTD::move(__i))
   {}
 
@@ -179,9 +177,8 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-    pointer
-    operator->() const
+  _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pointer
+  operator->() const
   {
     return __current_;
   }
@@ -254,15 +251,15 @@ public:
       : __current_()
   {}
 
-  template <class _Up, class = __enable_if_t< !is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value > >
+  template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   move_iterator(const move_iterator<_Up>& __u)
       : __current_(__u.base())
   {}
 
   template <class _Up,
-            class = __enable_if_t< !is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value
-                                   && is_assignable<_Iter&, const _Up&>::value > >
+            class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value
+                                  && is_assignable<_Iter&, const _Up&>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator&
   operator=(const move_iterator<_Up>& __u)
   {
@@ -280,8 +277,8 @@ public:
     return static_cast<reference>(*__current_);
   }
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
   operator[](difference_type __n) const
@@ -289,7 +286,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or tempora
     return static_cast<reference>(__current_[__n]);
   }
 
-_CCCL_DIAG_POP
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator operator++(int)
   {
@@ -390,23 +387,23 @@ _CCCL_DIAG_POP
     return _CUDA_VRANGES::iter_move(__i.__current_);
   }
 
-#if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
-  template<class _Iter2, class _Iter1 = _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
-  iter_swap(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
-  _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter> && indirectly_swappable<_Iter2, _Iter1>)
+#  if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
+  template <class _Iter2, class _Iter1 = _Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto iter_swap(
+    const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
-  template<class _Iter2>
+#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+  template <class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
-  _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+    _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER > 2014
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);

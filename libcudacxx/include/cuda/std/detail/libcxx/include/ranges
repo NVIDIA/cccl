@@ -306,9 +306,7 @@ namespace std {
 }
 */
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -322,34 +320,34 @@ namespace std {
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__ranges/access.h"
-#include "__ranges/concepts.h"
-#include "__ranges/dangling.h"
-#include "__ranges/data.h"
-#include "__ranges/empty.h"
-#include "__ranges/enable_borrowed_range.h"
-#include "__ranges/enable_view.h"
-#include "__ranges/rbegin.h"
-#include "__ranges/rend.h"
-#include "__ranges/size.h"
-#include "__ranges/subrange.h"
-#include "__ranges/view_interface.h"
-#include "__ranges/views.h"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__ranges/concepts.h>
+#include <cuda/std/detail/libcxx/include/__ranges/dangling.h>
+#include <cuda/std/detail/libcxx/include/__ranges/data.h>
+#include <cuda/std/detail/libcxx/include/__ranges/empty.h>
+#include <cuda/std/detail/libcxx/include/__ranges/enable_borrowed_range.h>
+#include <cuda/std/detail/libcxx/include/__ranges/enable_view.h>
+#include <cuda/std/detail/libcxx/include/__ranges/rbegin.h>
+#include <cuda/std/detail/libcxx/include/__ranges/rend.h>
+#include <cuda/std/detail/libcxx/include/__ranges/size.h>
+#include <cuda/std/detail/libcxx/include/__ranges/subrange.h>
+#include <cuda/std/detail/libcxx/include/__ranges/view_interface.h>
+#include <cuda/std/detail/libcxx/include/__ranges/views.h>
 
 // standard-mandated includes
-#include "version"
+#include <cuda/std/version>
 
 // [ranges.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "compare"
+#include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "initializer_list"
-#include "iterator"
+#include <cuda/std/initializer_list>
+#include <cuda/std/iterator>
 
 // [tuple.helper]
-#include "__tuple_dir/tuple_element.h"
-#include "__tuple_dir/tuple_size.h"
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
 
 _CCCL_DIAG_POP
 

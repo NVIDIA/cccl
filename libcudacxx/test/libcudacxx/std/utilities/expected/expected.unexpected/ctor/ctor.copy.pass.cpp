@@ -16,19 +16,24 @@
 
 #include "test_macros.h"
 
-struct Error {
+struct Error
+{
   int i;
-  __host__ __device__ constexpr Error(int ii) : i(ii) {}
+  __host__ __device__ constexpr Error(int ii)
+      : i(ii)
+  {}
 };
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   const cuda::std::unexpected<Error> unex(5);
   auto unex2 = unex;
   assert(unex2.error().i == 5);
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
   return 0;

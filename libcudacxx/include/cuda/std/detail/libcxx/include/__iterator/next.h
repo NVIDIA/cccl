@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_NEXT_H
 #define _LIBCUDACXX___ITERATOR_NEXT_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__iterator/advance.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/enable_if.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

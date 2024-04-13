@@ -30,7 +30,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
-
 #include <thrust/mr/pool.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -43,27 +42,25 @@ namespace mr
  *  \{
  */
 
-/*! Potentially constructs, if not yet created, and then returns the address of a thread-local \p unsynchronized_pool_resource,
+/*! Potentially constructs, if not yet created, and then returns the address of a thread-local \p
+ * unsynchronized_pool_resource,
  *
  *  \tparam Upstream the template argument to the pool template
  *  \param upstream the argument to the constructor, if invoked
  */
-template<typename Upstream, typename Bookkeeper>
-_CCCL_HOST
-thrust::mr::unsynchronized_pool_resource<Upstream> & tls_pool(Upstream * upstream = NULL)
+template <typename Upstream, typename Bookkeeper>
+_CCCL_HOST thrust::mr::unsynchronized_pool_resource<Upstream>& tls_pool(Upstream* upstream = NULL)
 {
-    static thread_local auto adaptor = [&]{
-        assert(upstream);
-        return thrust::mr::unsynchronized_pool_resource<Upstream>(upstream);
-    }();
+  static thread_local auto adaptor = [&] {
+    assert(upstream);
+    return thrust::mr::unsynchronized_pool_resource<Upstream>(upstream);
+  }();
 
-    return adaptor;
+  return adaptor;
 }
 
 /*! \}
  */
 
-} // end mr
+} // namespace mr
 THRUST_NAMESPACE_END
-
-

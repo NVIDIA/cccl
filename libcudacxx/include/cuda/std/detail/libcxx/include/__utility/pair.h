@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___UTILITY_PAIR_H
 #define _LIBCUDACXX___UTILITY_PAIR_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,45 +21,45 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "../__compare/common_comparison_category.h"
-#  include "../__compare/synth_three_way.h"
+#  include <cuda/std/detail/libcxx/include/__compare/common_comparison_category.h>
+#  include <cuda/std/detail/libcxx/include/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#include "../__functional/unwrap_ref.h"
-#include "../__fwd/get.h"
-#include "../__fwd/pair.h"
-#include "../__fwd/tuple.h"
-#include "../__tuple_dir/sfinae_helpers.h"
-#include "../__tuple_dir/structured_bindings.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_implicitly_default_constructible.h"
-#include "../__type_traits/is_move_assignable.h"
-#include "../__type_traits/is_nothrow_assignable.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_nothrow_copy_assignable.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_swappable.h"
-#include "../__type_traits/make_const_lvalue_ref.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
-#include "../__utility/piecewise_construct.h"
-#include "../cstddef"
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__functional/unwrap_ref.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/common_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_implicitly_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
 
 // Provide compatability between `std::pair` and `cuda::std::pair`
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
@@ -271,14 +269,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   {}
 
   // element wise constructors
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
+  template <class _Constraints                                                       = __pair_constraints<_T1, _T2>,
             __enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T2))
       : __base(__t1, __t2)
   {}
 
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
+  template <class _Constraints                                                       = __pair_constraints<_T1, _T2>,
             __enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T2))
@@ -373,9 +371,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  pair(const ::std::pair<_U1, _U2>& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
-                                                  && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(const ::std::pair<_U1, _U2>& __p) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
+    && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
   {}
 
@@ -383,9 +381,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14
-  pair(::std::pair<_U1, _U2>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1)
-                                             && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 pair(::std::pair<_U1, _U2>&& __p) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
 
@@ -393,9 +390,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  pair(::std::pair<_U1, _U2>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1)
-                                             && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(::std::pair<_U1, _U2>&& __p) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
@@ -582,7 +578,7 @@ operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 template <class _T1, class _T2>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr common_comparison_category_t<
   __synth_three_way_result<_T1>,
-  __synth_three_way_result<_T2> >
+  __synth_three_way_result<_T2>>
 operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   if (auto __c = _CUDA_VSTD::__synth_three_way(__x.first, __y.first); __c != 0)
@@ -650,8 +646,8 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
   swap(pair<_T1, _T2>& __x,
        pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
 {
@@ -678,23 +674,23 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 }
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<pair<_T1, _T2> > : public integral_constant<size_t, 2>
+struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<pair<_T1, _T2>> : public integral_constant<size_t, 2>
 {};
 
 template <size_t _Ip, class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, pair<_T1, _T2> >
+struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, pair<_T1, _T2>>
 {
   static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<std::pair<T1, T2>>");
 };
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<0, pair<_T1, _T2> >
+struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<0, pair<_T1, _T2>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _T1 type;
 };
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<1, pair<_T1, _T2> >
+struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<1, pair<_T1, _T2>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _T2 type;
 };
@@ -712,8 +708,7 @@ struct __get_pair<0>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&
-  get(const pair<_T1, _T2>& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1& get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.first;
   }
@@ -725,8 +720,7 @@ struct __get_pair<0>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&&
-  get(const pair<_T1, _T2>&& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&& get(const pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<const _T1>(__p.first);
   }
@@ -742,8 +736,7 @@ struct __get_pair<1>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&
-  get(const pair<_T1, _T2>& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2& get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.second;
   }
@@ -755,8 +748,7 @@ struct __get_pair<1>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&&
-  get(const pair<_T1, _T2>&& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&& get(const pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<const _T2>(__p.second);
   }

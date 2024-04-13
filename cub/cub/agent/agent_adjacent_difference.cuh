@@ -47,13 +47,11 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-template <
-  int                      _BLOCK_THREADS,
-  int                      _ITEMS_PER_THREAD = 1,
-  cub::BlockLoadAlgorithm  _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-  cub::CacheLoadModifier   _LOAD_MODIFIER    = cub::LOAD_LDG,
-  cub::BlockStoreAlgorithm _STORE_ALGORITHM  = cub::BLOCK_STORE_DIRECT>
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD                     = 1,
+          cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
 struct AgentAdjacentDifferencePolicy
 {
   static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
@@ -78,11 +76,10 @@ struct AgentDifference
 {
   using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::LoadIterator<Policy, InputIteratorT>::type;
 
-  using BlockLoad = typename cub::BlockLoadType<Policy, LoadIt>::type;
+  using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
 
-  using BlockAdjacentDifferenceT =
-    cub::BlockAdjacentDifference<InputT, Policy::BLOCK_THREADS>;
+  using BlockAdjacentDifferenceT = cub::BlockAdjacentDifference<InputT, Policy::BLOCK_THREADS>;
 
   union _TempStorage
   {
@@ -92,43 +89,40 @@ struct AgentDifference
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage> {};
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
-  static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
+  static constexpr int BLOCK_THREADS      = Policy::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD   = Policy::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE     = Policy::ITEMS_PER_TILE;
   static constexpr int SHARED_MEMORY_SIZE = static_cast<int>(sizeof(TempStorage));
 
-  _TempStorage &temp_storage;
+  _TempStorage& temp_storage;
   InputIteratorT input_it;
   LoadIt load_it;
-  InputT *first_tile_previous;
+  InputT* first_tile_previous;
   OutputIteratorT result;
   DifferenceOpT difference_op;
   OffsetT num_items;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentDifference(TempStorage &temp_storage,
-                                             InputIteratorT input_it,
-                                             InputT *first_tile_previous,
-                                             OutputIteratorT result,
-                                             DifferenceOpT difference_op,
-                                             OffsetT num_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentDifference(
+    TempStorage& temp_storage,
+    InputIteratorT input_it,
+    InputT* first_tile_previous,
+    OutputIteratorT result,
+    DifferenceOpT difference_op,
+    OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(
-          THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(Policy(),
-                                                                  input_it))
+      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::make_load_iterator(Policy(), input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)
       , num_items(num_items)
   {}
 
-  template <bool IS_LAST_TILE,
-            bool IS_FIRST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining,
-                                                    int tile_idx,
-                                                    OffsetT tile_base)
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     InputT input[ITEMS_PER_THREAD];
     OutputT output[ITEMS_PER_THREAD];
@@ -137,8 +131,7 @@ struct AgentDifference
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
-      BlockLoad(temp_storage.load)
-        .Load(load_it + tile_base, input, num_remaining, *(load_it + tile_base));
+      BlockLoad(temp_storage.load).Load(load_it + tile_base, input, num_remaining, *(load_it + tile_base));
     }
     else
     {
@@ -154,31 +147,21 @@ struct AgentDifference
         if (IS_LAST_TILE)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
-            .SubtractLeftPartialTile(input,
-                                     output,
-                                     difference_op,
-                                     num_remaining);
+            .SubtractLeftPartialTile(input, output, difference_op, num_remaining);
         }
         else
         {
-          BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
-            .SubtractLeft(input, output, difference_op);
+          BlockAdjacentDifferenceT(temp_storage.adjacent_difference).SubtractLeft(input, output, difference_op);
         }
       }
       else
       {
-        InputT tile_prev_input = MayAlias
-                               ? first_tile_previous[tile_idx]
-                               : *(input_it + tile_base - 1);
+        InputT tile_prev_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base - 1);
 
         if (IS_LAST_TILE)
         {
           BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
-            .SubtractLeftPartialTile(input,
-                                     output,
-                                     difference_op,
-                                     num_remaining,
-                                     tile_prev_input);
+            .SubtractLeftPartialTile(input, output, difference_op, num_remaining, tile_prev_input);
         }
         else
         {
@@ -196,9 +179,7 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_next_input = MayAlias
-                               ? first_tile_previous[tile_idx]
-                               : *(input_it + tile_base + ITEMS_PER_TILE);
+        InputT tile_next_input = MayAlias ? first_tile_previous[tile_idx] : *(input_it + tile_base + ITEMS_PER_TILE);
 
         BlockAdjacentDifferenceT(temp_storage.adjacent_difference)
           .SubtractRight(input, output, difference_op, tile_next_input);
@@ -209,8 +190,7 @@ struct AgentDifference
 
     if (IS_LAST_TILE)
     {
-      BlockStore(temp_storage.store)
-        .Store(result + tile_base, output, num_remaining);
+      BlockStore(temp_storage.store).Store(result + tile_base, output, num_remaining);
     }
     else
     {
@@ -219,26 +199,19 @@ struct AgentDifference
   }
 
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining,
-                                               int tile_idx,
-                                               OffsetT tile_base)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining, int tile_idx, OffsetT tile_base)
   {
     if (tile_idx == 0)
     {
-      consume_tile_impl<IS_LAST_TILE, true>(num_remaining,
-                                            tile_idx,
-                                            tile_base);
+      consume_tile_impl<IS_LAST_TILE, true>(num_remaining, tile_idx, tile_base);
     }
     else
     {
-      consume_tile_impl<IS_LAST_TILE, false>(num_remaining,
-                                             tile_idx,
-                                             tile_base);
+      consume_tile_impl<IS_LAST_TILE, false>(num_remaining, tile_idx, tile_base);
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx,
-                                          OffsetT tile_base)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx, OffsetT tile_base)
   {
     OffsetT num_remaining = num_items - tile_base;
 
@@ -253,21 +226,15 @@ struct AgentDifference
   }
 };
 
-template <typename InputIteratorT,
-          typename InputT,
-          typename OffsetT,
-          bool ReadLeft>
+template <typename InputIteratorT, typename InputT, typename OffsetT, bool ReadLeft>
 struct AgentDifferenceInit
 {
   static constexpr int BLOCK_THREADS = 128;
 
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx,
-                                                 InputIteratorT first,
-                                                 InputT *result,
-                                                 OffsetT num_tiles,
-                                                 int items_per_tile)
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Process(int tile_idx, InputIteratorT first, InputT* result, OffsetT num_tiles, int items_per_tile)
   {
-    OffsetT tile_base  = static_cast<OffsetT>(tile_idx) * items_per_tile;
+    OffsetT tile_base = static_cast<OffsetT>(tile_idx) * items_per_tile;
 
     if (tile_base > 0 && tile_idx < num_tiles)
     {
@@ -282,6 +249,5 @@ struct AgentDifferenceInit
     }
   }
 };
-
 
 CUB_NAMESPACE_END

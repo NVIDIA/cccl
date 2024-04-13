@@ -14,37 +14,35 @@
 // reference_wrapper(const reference_wrapper<T>& x);
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
 class functor1
-{
-};
+{};
 
 template <class T>
-__host__ __device__ void
-test(T& t)
+__host__ __device__ void test(T& t)
 {
-    cuda::std::reference_wrapper<T> r(t);
-    cuda::std::reference_wrapper<T> r2 = r;
-    assert(&r2.get() == &t);
+  cuda::std::reference_wrapper<T> r(t);
+  cuda::std::reference_wrapper<T> r2 = r;
+  assert(&r2.get() == &t);
 }
 
 __host__ __device__ void f() {}
 
 int main(int, char**)
 {
-    void (*fp)() = f;
-    test(fp);
-    test(f);
-    functor1 f1;
-    test(f1);
-    int i = 0;
-    test(i);
-    const int j = 0;
-    test(j);
+  void (*fp)() = f;
+  test(fp);
+  test(f);
+  functor1 f1;
+  test(f1);
+  int i = 0;
+  test(i);
+  const int j = 0;
+  test(j);
 
   return 0;
 }

@@ -15,9 +15,8 @@
 //   iter_move(const move_iterator& i)
 //     noexcept(noexcept(ranges::iter_move(i.current))); // Since C++20
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -27,16 +26,22 @@
 __device__ int global;
 
 template <bool IsNoexcept>
-struct MaybeNoexceptMove {
+struct MaybeNoexceptMove
+{
   int x;
-  using value_type = int;
+  using value_type      = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ constexpr friend value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept) {
+  __host__ __device__ constexpr friend value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept)
+  {
     return cuda::std::move(global);
   }
 
-  __host__ __device__ int& operator*() const { static int a; return a; }
+  __host__ __device__ int& operator*() const
+  {
+    static int a;
+    return a;
+  }
 
   __host__ __device__ MaybeNoexceptMove& operator++();
   __host__ __device__ MaybeNoexceptMove operator++(int);
@@ -49,8 +54,8 @@ ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(cuda::std::declval<ThrowingBase
 #endif // TEST_COMPILER_ICC
 ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(cuda::std::declval<NoexceptBase>()));
 
-__host__ __device__
-constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // Can use `iter_move` with a regular array.
   {
     int a[] = {0, 1, 2};
@@ -68,7 +73,7 @@ constexpr bool test() {
     int a[] = {0, 1, 2};
 
     int iter_move_invocations = 0;
-    adl::Iterator base = adl::Iterator::TrackMoves(a, iter_move_invocations);
+    adl::Iterator base        = adl::Iterator::TrackMoves(a, iter_move_invocations);
     cuda::std::move_iterator<adl::Iterator> i(base);
     int x = iter_move(i);
     assert(x == 0);
@@ -88,7 +93,8 @@ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
   return 0;

@@ -8,45 +8,54 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::get_property
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
-#include <cuda/std/cassert>
 #include <cuda/memory_resource>
+#include <cuda/std/cassert>
+#include <cuda/std/concepts>
+#include <cuda/std/type_traits>
 
-struct prop_with_value {
+struct prop_with_value
+{
   using value_type = int;
 };
-struct prop {};
+struct prop
+{};
 
-struct upstream_with_valueless_property {
+struct upstream_with_valueless_property
+{
   friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
 };
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_valueless_property, prop>, "");
-static_assert(!cuda::std::invocable<decltype(cuda::get_property), upstream_with_valueless_property, prop_with_value>, "");
+static_assert(cuda::std::invocable<decltype(cuda::get_property), upstream_with_valueless_property, prop>, "");
+static_assert(!cuda::std::invocable<decltype(cuda::get_property), upstream_with_valueless_property, prop_with_value>,
+              "");
 
-struct upstream_with_stateful_property {
-  friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value) {
+struct upstream_with_stateful_property
+{
+  friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value)
+  {
     return 42;
   }
 };
 static_assert(!cuda::std::invocable<decltype(cuda::get_property), upstream_with_stateful_property, prop>, "");
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_stateful_property, prop_with_value>, "");
+static_assert(cuda::std::invocable<decltype(cuda::get_property), upstream_with_stateful_property, prop_with_value>, "");
 
-struct upstream_with_both_properties {
+struct upstream_with_both_properties
+{
   friend constexpr void get_property(const upstream_with_both_properties&, prop) {}
-  friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value) {
+  friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value)
+  {
     return 42;
   }
 };
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_both_properties, prop>, "");
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_both_properties, prop_with_value>, "");
+static_assert(cuda::std::invocable<decltype(cuda::get_property), upstream_with_both_properties, prop>, "");
+static_assert(cuda::std::invocable<decltype(cuda::get_property), upstream_with_both_properties, prop_with_value>, "");
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   upstream_with_valueless_property with_valueless{};
   cuda::get_property(with_valueless, prop{});
 
@@ -59,7 +68,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
   return 0;

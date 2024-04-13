@@ -24,15 +24,18 @@ template <class T, class = void>
 constexpr bool HasValueNoexcept = false;
 
 template <class T>
-constexpr bool HasValueNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().has_value())>> = noexcept(cuda::std::declval<T>().has_value());
+constexpr bool HasValueNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().has_value())>> =
+  noexcept(cuda::std::declval<T>().has_value());
 
-struct Foo {};
+struct Foo
+{};
 static_assert(!HasValueNoexcept<Foo>, "");
 
 static_assert(HasValueNoexcept<cuda::std::expected<int, int>>, "");
 static_assert(HasValueNoexcept<const cuda::std::expected<int, int>>, "");
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // has_value
   {
     const cuda::std::expected<int, int> e(5);
@@ -48,7 +51,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

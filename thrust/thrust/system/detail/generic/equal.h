@@ -35,16 +35,17 @@ namespace detail
 namespace generic
 {
 
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
+_CCCL_HOST_DEVICE bool equal(
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
-template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE
-bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
-
-
-template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
-
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+_CCCL_HOST_DEVICE bool
+equal(thrust::execution_policy<DerivedPolicy>& exec,
+      InputIterator1 first1,
+      InputIterator1 last1,
+      InputIterator2 first2,
+      BinaryPredicate binary_pred);
 
 } // end namespace generic
 } // end namespace detail
@@ -52,4 +53,3 @@ bool equal(thrust::execution_policy<DerivedPolicy> &exec, InputIterator1 first1,
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/equal.inl>
-

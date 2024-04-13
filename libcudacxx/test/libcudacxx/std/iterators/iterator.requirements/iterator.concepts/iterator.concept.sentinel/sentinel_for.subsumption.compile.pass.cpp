@@ -12,10 +12,9 @@
 // template<class S, class I>
 // concept sentinel_for;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/array>
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 // clang-format off
 template<cuda::std::input_or_output_iterator, cuda::std::semiregular>

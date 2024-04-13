@@ -14,13 +14,14 @@
 // cuda::std::ranges::cend
 //   Test the fix for https://llvm.org/PR54100
 
-#include <cuda/std/ranges>
 #include <cuda/std/cassert>
+#include <cuda/std/ranges>
 
 #include "test_macros.h"
 
 #ifndef __CUDA_ARCH__
-struct A {
+struct A
+{
   int m[0];
 };
 static_assert(sizeof(A) == 0); // an extension supported by GCC and Clang
@@ -39,5 +40,8 @@ int main(int, char**)
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

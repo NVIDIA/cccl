@@ -37,6 +37,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/system/cuda/detail/util.h>
+
 #include <cstdio>
 
 THRUST_NAMESPACE_BEGIN
@@ -47,24 +48,18 @@ namespace cuda
 namespace detail
 {
 
-
-inline _CCCL_DEVICE
-void terminate()
+inline _CCCL_DEVICE void terminate()
 {
   thrust::cuda_cub::terminate();
 }
 
-
-inline _CCCL_HOST_DEVICE
-void terminate_with_message(const char* message)
+inline _CCCL_HOST_DEVICE void terminate_with_message(const char* message)
 {
   printf("%s\n", message);
   thrust::cuda_cub::terminate();
 }
 
-
-} // end detail
-} // end cuda
-} // end system
+} // namespace detail
+} // namespace cuda
+} // namespace system
 THRUST_NAMESPACE_END
-

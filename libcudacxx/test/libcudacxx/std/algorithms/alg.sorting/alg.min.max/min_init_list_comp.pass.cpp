@@ -17,12 +17,13 @@
 //   min(initializer_list<T> t, Compare comp);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   int i = cuda::std::min({2, 3, 1}, cuda::std::greater<int>());
   assert(i == 3);
   i = cuda::std::min({2, 1, 3}, cuda::std::greater<int>());
@@ -39,7 +40,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

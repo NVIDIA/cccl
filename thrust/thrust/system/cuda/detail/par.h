@@ -35,16 +35,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/allocator_aware_execution_policy.h>
+#include <thrust/detail/dependencies_aware_execution_policy.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 
-#include <thrust/detail/allocator_aware_execution_policy.h>
-
-#include <thrust/detail/dependencies_aware_execution_policy.h>
-
-
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub {
+namespace cuda_cub
+{
 
 template <class Derived>
 struct execute_on_stream_base : execution_policy<Derived>
@@ -54,13 +52,11 @@ private:
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  execute_on_stream_base(cudaStream_t stream_ = default_stream())
-      : stream(stream_){}
+  _CCCL_HOST_DEVICE execute_on_stream_base(cudaStream_t stream_ = default_stream())
+      : stream(stream_)
+  {}
 
-  THRUST_RUNTIME_FUNCTION
-  Derived
-  on(cudaStream_t const &s) const
+  THRUST_RUNTIME_FUNCTION Derived on(cudaStream_t const& s) const
   {
     Derived result = derived_cast(*this);
     result.stream  = s;
@@ -68,9 +64,7 @@ public:
   }
 
 private:
-  friend _CCCL_HOST_DEVICE
-  cudaStream_t
-  get_stream(const execute_on_stream_base &exec)
+  friend _CCCL_HOST_DEVICE cudaStream_t get_stream(const execute_on_stream_base& exec)
   {
     return exec.stream;
   }
@@ -83,13 +77,11 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_HOST_DEVICE
-  execute_on_stream_nosync_base(cudaStream_t stream_ = default_stream())
-      : stream(stream_){}
+  _CCCL_HOST_DEVICE execute_on_stream_nosync_base(cudaStream_t stream_ = default_stream())
+      : stream(stream_)
+  {}
 
-  THRUST_RUNTIME_FUNCTION
-  Derived
-  on(cudaStream_t const &s) const
+  THRUST_RUNTIME_FUNCTION Derived on(cudaStream_t const& s) const
   {
     Derived result = derived_cast(*this);
     result.stream  = s;
@@ -97,16 +89,12 @@ public:
   }
 
 private:
-  friend _CCCL_HOST_DEVICE
-  cudaStream_t
-  get_stream(const execute_on_stream_nosync_base &exec)
+  friend _CCCL_HOST_DEVICE cudaStream_t get_stream(const execute_on_stream_nosync_base& exec)
   {
     return exec.stream;
   }
 
-  friend _CCCL_HOST_DEVICE
-  bool
-  must_perform_optional_stream_synchronization(const execute_on_stream_nosync_base &)
+  friend _CCCL_HOST_DEVICE bool must_perform_optional_stream_synchronization(const execute_on_stream_nosync_base&)
   {
     return false;
   }
@@ -116,71 +104,63 @@ struct execute_on_stream : execute_on_stream_base<execute_on_stream>
 {
   typedef execute_on_stream_base<execute_on_stream> base_t;
 
-  _CCCL_HOST_DEVICE
-  execute_on_stream() : base_t(){};
-  _CCCL_HOST_DEVICE
-  execute_on_stream(cudaStream_t stream)
-  : base_t(stream){};
+  _CCCL_HOST_DEVICE execute_on_stream()
+      : base_t(){};
+  _CCCL_HOST_DEVICE execute_on_stream(cudaStream_t stream)
+      : base_t(stream){};
 };
 
 struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_stream_nosync>
 {
   typedef execute_on_stream_nosync_base<execute_on_stream_nosync> base_t;
 
-  _CCCL_HOST_DEVICE
-  execute_on_stream_nosync() : base_t(){};
-  _CCCL_HOST_DEVICE
-  execute_on_stream_nosync(cudaStream_t stream)
-  : base_t(stream){};
+  _CCCL_HOST_DEVICE execute_on_stream_nosync()
+      : base_t(){};
+  _CCCL_HOST_DEVICE execute_on_stream_nosync(cudaStream_t stream)
+      : base_t(stream){};
 };
 
-
-struct par_t : execution_policy<par_t>,
-  thrust::detail::allocator_aware_execution_policy<
-    execute_on_stream_base>
-, thrust::detail::dependencies_aware_execution_policy<
-    execute_on_stream_base>
+struct par_t
+    : execution_policy<par_t>
+    , thrust::detail::allocator_aware_execution_policy<execute_on_stream_base>
+    , thrust::detail::dependencies_aware_execution_policy<execute_on_stream_base>
 {
   typedef execution_policy<par_t> base_t;
 
-  _CCCL_HOST_DEVICE
-  constexpr par_t() : base_t() {}
+  _CCCL_HOST_DEVICE constexpr par_t()
+      : base_t()
+  {}
 
   typedef execute_on_stream stream_attachment_type;
 
-  THRUST_RUNTIME_FUNCTION
-  stream_attachment_type
-  on(cudaStream_t const &stream) const
+  THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
   {
     return execute_on_stream(stream);
   }
 };
 
-struct par_nosync_t : execution_policy<par_nosync_t>,
-  thrust::detail::allocator_aware_execution_policy<
-    execute_on_stream_nosync_base>, thrust::detail::dependencies_aware_execution_policy<
-    execute_on_stream_nosync_base>
+struct par_nosync_t
+    : execution_policy<par_nosync_t>
+    , thrust::detail::allocator_aware_execution_policy<execute_on_stream_nosync_base>
+    , thrust::detail::dependencies_aware_execution_policy<execute_on_stream_nosync_base>
 {
   typedef execution_policy<par_nosync_t> base_t;
 
-  _CCCL_HOST_DEVICE
-  constexpr par_nosync_t() : base_t() {}
+  _CCCL_HOST_DEVICE constexpr par_nosync_t()
+      : base_t()
+  {}
 
   typedef execute_on_stream_nosync stream_attachment_type;
 
-  THRUST_RUNTIME_FUNCTION
-  stream_attachment_type
-  on(cudaStream_t const &stream) const
+  THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
   {
     return execute_on_stream_nosync(stream);
   }
 
 private:
-  //this function is defined to allow non-blocking calls on the default_stream() with thrust::cuda::par_nosync
-  //without explicitly using thrust::cuda::par_nosync.on(default_stream())
-  friend _CCCL_HOST_DEVICE
-  bool
-  must_perform_optional_stream_synchronization(const par_nosync_t &)
+  // this function is defined to allow non-blocking calls on the default_stream() with thrust::cuda::par_nosync
+  // without explicitly using thrust::cuda::par_nosync.on(default_stream())
+  friend _CCCL_HOST_DEVICE bool must_perform_optional_stream_synchronization(const par_nosync_t&)
   {
     return false;
   }
@@ -236,23 +216,26 @@ THRUST_INLINE_CONSTANT par_t par;
  *
  */
 THRUST_INLINE_CONSTANT par_nosync_t par_nosync;
-}    // namespace cuda_
+} // namespace cuda_cub
 
-namespace system {
-namespace cuda {
-  using thrust::cuda_cub::par;
-  using thrust::cuda_cub::par_nosync;
-  namespace detail {
-    using thrust::cuda_cub::par_t;
-    using thrust::cuda_cub::par_nosync_t;
-  }
-} // namesapce cuda
+namespace system
+{
+namespace cuda
+{
+using thrust::cuda_cub::par;
+using thrust::cuda_cub::par_nosync;
+namespace detail
+{
+using thrust::cuda_cub::par_nosync_t;
+using thrust::cuda_cub::par_t;
+} // namespace detail
+} // namespace cuda
 } // namespace system
 
-namespace cuda {
+namespace cuda
+{
 using thrust::cuda_cub::par;
 using thrust::cuda_cub::par_nosync;
 } // namespace cuda
 
 THRUST_NAMESPACE_END
-
