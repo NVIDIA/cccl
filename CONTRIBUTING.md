@@ -98,7 +98,7 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 ## Code Formatting (pre-commit hooks)
 
 CCCL uses [pre-commit](https://pre-commit.com/) to execute all code linters and formatters. These
-tools ensure a consistent code format throughout the project. Using pre-commit ensures that linter
+tools ensure a consistent coding style throughout the project. Using pre-commit ensures that linter
 versions and options are aligned for all developers. Additionally, there is a CI check in place to
 enforce that committed code follows our standards.
 
