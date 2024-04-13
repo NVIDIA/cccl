@@ -403,11 +403,11 @@ CUB_TEST("DeviceSelect::If works for very large number of items", "[device][sele
   offset_t num_items_min =
     num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
   offset_t num_items = GENERATE_COPY(
-    take(2, random(num_items_min, num_items_max)),
     values({
       num_items_max,
-      static_cast<offset_t>(num_items_max_ull - 1),
-    }));
+      static_cast<offset_t>(num_items_max - 1),
+    }),
+    take(2, random(num_items_min, num_items_max)));
 
   // Input
   auto in = thrust::make_counting_iterator(static_cast<type>(0));
@@ -445,11 +445,11 @@ CUB_TEST("DeviceSelect::If works for very large number of output items", "[devic
   offset_t num_items_min =
     num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
   offset_t num_items = GENERATE_COPY(
-    take(2, random(num_items_min, num_items_max)),
     values({
       num_items_max,
-      static_cast<offset_t>(num_items_max_ull - 1),
-    }));
+      static_cast<offset_t>(num_items_max - 1),
+    }),
+    take(2, random(num_items_min, num_items_max)));
 
   // Prepare input
   c2h::device_vector<type> in(num_items);
