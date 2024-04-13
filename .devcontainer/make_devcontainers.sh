@@ -20,6 +20,11 @@ function usage {
     exit 1
 }
 
+matrix_sections=(
+    'pull_request.nvcc'
+    'pull_request."nvcc-cuda-next"'
+)
+
 # Function to update the devcontainer.json file with the provided parameters
 update_devcontainer() {
     local input_file="$1"
@@ -53,6 +58,33 @@ make_name() {
     echo "cuda$cuda_version-$compiler_name$compiler_version"
 }
 
+get_devcontainer_version_from_matrix() {
+    local matrix_file="$1"
+
+    # Read matrix.yaml and convert it to json
+    matrix_json=$(yq -o json ${matrix_file})
+
+    # Get the devcontainer image version
+    echo "$matrix_json" | jq -r '.devcontainer_version'
+}
+
+get_container_info_from_matrix() {
+    local matrix_file="$1"
+
+    # Read matrix.yaml and convert it to json
+    local matrix_json=$(yq -o json ${matrix_file})
+
+    # Extract the requested matrix_sections
+    sections_query=$(printf '.%s + ' "${matrix_sections[@]}" | sed 's/ + $//')
+    matrix_json=$(echo "$matrix_json" | jq -c "$sections_query")
+
+    # Exclude Windows environments
+    matrix_json=$(echo "$matrix_json" | jq 'del(.[] | select(.os | contains("windows")))')
+
+    # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
+    echo "$matrix_json" | jq -c '[.[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_exe: .compiler.exe, compiler_version: .compiler.version, os: .os}] | unique | .[]'
+}
+
 CLEAN=false
 VERBOSE=false
 while [[ $# -gt 0 ]]; do
@@ -81,17 +113,8 @@ if [ "$VERBOSE" = true ]; then
     cat ${MATRIX_FILE}
 fi
 
-# Read matrix.yaml and convert it to json
-matrix_json=$(yq -o json ${MATRIX_FILE})
-
-# Exclude Windows environments
-readonly matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | select(.os | contains("windows")))')
-
-# Get the devcontainer image version and define image tag root
-readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
-
-# Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-readonly combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_exe: .compiler.exe, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+readonly DEVCONTAINER_VERSION=$(get_devcontainer_version_from_matrix ${MATRIX_FILE})
+readonly combinations=$(get_container_info_from_matrix "${MATRIX_FILE}")
 
 # Update the base devcontainer with the default values
 # The root devcontainer.json file is used as the default container as well as a template for all
