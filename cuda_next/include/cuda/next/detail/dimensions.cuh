@@ -38,7 +38,7 @@ struct hierarchy_query_result : public dimensions<T, Extents...>
 
   constexpr _CCCL_HOST_DEVICE operator dim3() const
   {
-    return dim3(x, y, z);
+    return dim3(static_cast<uint32_t>(x), static_cast<uint32_t>(y), static_cast<uint32_t>(z));
   }
 };
 
@@ -74,14 +74,14 @@ template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t
 _CCCL_HOST_DEVICE constexpr auto
 dims_product(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
-  return dims_op<DstType>(::cuda::std::multiplies<DstType>(), h1, h2);
+  return dims_op<DstType>(::cuda::std::multiplies(), h1, h2);
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
 _CCCL_HOST_DEVICE constexpr auto
 dims_sum(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
-  return dims_op<DstType>(::cuda::std::plus<DstType>(), h1, h2);
+  return dims_op<DstType>(::cuda::std::plus(), h1, h2);
 }
 
 template <typename T, size_t... Extents>

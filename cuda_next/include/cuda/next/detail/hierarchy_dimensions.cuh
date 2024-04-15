@@ -218,8 +218,9 @@ _CCCL_HOST_DEVICE constexpr auto get_levels_range_end() noexcept
 }
 
 // Find LUnit in Levels... and discard the rest
+// maybe_unused needed for MSVC
 template <typename LUnit, typename LDims, typename... Levels>
-_CCCL_HOST_DEVICE constexpr auto get_levels_range_end(const LDims& l, const Levels&... levels) noexcept
+_CCCL_HOST_DEVICE constexpr auto get_levels_range_end(const LDims& l, [[maybe_unused]] const Levels&... levels) noexcept
 {
   if constexpr (::cuda::std::is_same_v<LUnit, typename LDims::level_type>)
   {
