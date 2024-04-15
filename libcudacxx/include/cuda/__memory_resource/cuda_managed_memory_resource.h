@@ -32,7 +32,7 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/resource_ref.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
+#  include <cuda/std/__new/bad_alloc.h>
 
 #  if _CCCL_STD_VER >= 2014
 

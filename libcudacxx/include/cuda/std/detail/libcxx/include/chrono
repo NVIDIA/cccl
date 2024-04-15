@@ -840,11 +840,11 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #endif // __cuda_std__
 
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__type_traits/common_type.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/ctime>
 #include <cuda/std/limits>
 #include <cuda/std/ratio>
@@ -3350,7 +3350,7 @@ _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
 
 _CCCL_NV_DIAG_DEFAULT(cuda_demote_unsupported_floating_point)
 
-#include <cuda/std/detail/libcxx/include/__cuda/chrono.h>
+#include <cuda/std/__cuda/chrono.h>
 #include <cuda/std/detail/libcxx/include/__pragma_pop>
 
 #endif  // _LIBCUDACXX_CHRONO

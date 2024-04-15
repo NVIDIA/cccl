@@ -218,45 +218,45 @@ C++20
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__availability>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include <cuda/std/detail/libcxx/include/__compare/common_comparison_category.h>
-#  include <cuda/std/detail/libcxx/include/__compare/compare_three_way_result.h>
-#  include <cuda/std/detail/libcxx/include/__compare/three_way_comparable.h>
+#  include <cuda/std/__compare/common_comparison_category.h>
+#  include <cuda/std/__compare/compare_three_way_result.h>
+#  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include <cuda/std/detail/libcxx/include/__exception/exception.h>
-#include <cuda/std/detail/libcxx/include/__exception/terminate.h>
-#include <cuda/std/detail/libcxx/include/__functional/hash.h>
-#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
-#include <cuda/std/detail/libcxx/include/__functional/operations.h>
-#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
-#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
-#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/add_const.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/add_cv.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/add_volatile.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/dependent_type.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_destructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/type_identity.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
-#include <cuda/std/detail/libcxx/include/__utility/declval.h>
-#include <cuda/std/detail/libcxx/include/__utility/forward.h>
-#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
-#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
-#include <cuda/std/detail/libcxx/include/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__variant/monostate.h>
+#include <cuda/std/__exception/exception.h>
+#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__functional/hash.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__tuple_dir/tuple_indices.h>
+#include <cuda/std/__type_traits/add_const.h>
+#include <cuda/std/__type_traits/add_cv.h>
+#include <cuda/std/__type_traits/add_pointer.h>
+#include <cuda/std/__type_traits/add_volatile.h>
+#include <cuda/std/__type_traits/dependent_type.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_array.h>
+#include <cuda/std/__type_traits/is_destructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/__variant/monostate.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 #include <cuda/std/initializer_list>

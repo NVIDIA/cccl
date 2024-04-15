@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
 
 #if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) && !defined(_LIBCUDACXX_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY)

@@ -156,26 +156,26 @@ template <class... Types>
 #endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__functional/unwrap_ref.h>
+#include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/detail/libcxx/include/__functional_base>
-#include <cuda/std/detail/libcxx/include/__fwd/array.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/apply_cv.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/make_tuple_types.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_like.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_types.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/vector_types.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/maybe_const.h>
-#include <cuda/std/detail/libcxx/include/__utility/forward.h>
-#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
-#include <cuda/std/detail/libcxx/include/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__utility/pair.h>
-#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
-#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__tuple_dir/apply_cv.h>
+#include <cuda/std/__tuple_dir/make_tuple_types.h>
+#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__tuple_dir/structured_bindings.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_indices.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__tuple_dir/vector_types.h>
+#include <cuda/std/__type_traits/maybe_const.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/__utility/piecewise_construct.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>

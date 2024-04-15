@@ -119,26 +119,26 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__algorithm/equal.h>
-#include <cuda/std/detail/libcxx/include/__algorithm/fill_n.h>
-#include <cuda/std/detail/libcxx/include/__algorithm/lexicographical_compare.h>
-#include <cuda/std/detail/libcxx/include/__algorithm/swap_ranges.h>
+#include <cuda/std/__algorithm/equal.h>
+#include <cuda/std/__algorithm/fill_n.h>
+#include <cuda/std/__algorithm/lexicographical_compare.h>
+#include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__iterator/reverse_iterator.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
-#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
-#include <cuda/std/detail/libcxx/include/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__utility/unreachable.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_array.h>
+#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
@@ -149,11 +149,11 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <cuda/std/version>
 
 // [iterator.range]
-#include <cuda/std/detail/libcxx/include/__iterator/access.h>
-#include <cuda/std/detail/libcxx/include/__iterator/data.h>
-#include <cuda/std/detail/libcxx/include/__iterator/empty.h>
-#include <cuda/std/detail/libcxx/include/__iterator/reverse_access.h>
-#include <cuda/std/detail/libcxx/include/__iterator/size.h>
+#include <cuda/std/__iterator/access.h>
+#include <cuda/std/__iterator/data.h>
+#include <cuda/std/__iterator/empty.h>
+#include <cuda/std/__iterator/reverse_access.h>
+#include <cuda/std/__iterator/size.h>
 
 // [array.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
@@ -162,8 +162,8 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <cuda/std/initializer_list>
 
 // [tuple.helper]
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
