@@ -19,7 +19,7 @@
 
 // Currently no suppport for std::allocator
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 

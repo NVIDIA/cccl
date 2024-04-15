@@ -27,7 +27,7 @@
 
 // ADDITIONAL_COMPILE_FLAGS: -D_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/type_traits>
 
 static_assert((cuda::std::is_same<cuda::std::allocator<void>::pointer, void*>::value), "");

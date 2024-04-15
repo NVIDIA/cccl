@@ -12,7 +12,7 @@
 //   constexpr OutIter   // constexpr after C++17
 //   copy(InIter first, InIter last, OutIter result);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

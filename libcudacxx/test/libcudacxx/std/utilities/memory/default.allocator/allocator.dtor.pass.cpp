@@ -13,7 +13,7 @@
 // template <class T>
 // constexpr allocator<T>::~allocator();
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 #include "test_macros.h"
 
