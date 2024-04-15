@@ -588,9 +588,9 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& value() &&
   {
     static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
-                  "expected::value() const&& requires is_copy_constructible_v<E>");
+                  "expected::value() && requires is_copy_constructible_v<E>");
     static_assert(_LIBCUDACXX_TRAIT(is_constructible, _Err, decltype(_CUDA_VSTD::move(error()))),
-                  "expected::value() const&& requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
+                  "expected::value() && requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
