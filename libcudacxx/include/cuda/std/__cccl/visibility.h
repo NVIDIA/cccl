@@ -11,9 +11,9 @@
 #ifndef __CCCL_VISIBILITY_H
 #define __CCCL_VISIBILITY_H
 
-#ifndef __CCCL_CONFIG
+#ifndef _CUDA__CCCL_CONFIG
 #  error "<__cccl/visibility.h> should only be included in from <cuda/__cccl_config>"
-#endif // __CCCL_CONFIG
+#endif // _CUDA__CCCL_CONFIG
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
