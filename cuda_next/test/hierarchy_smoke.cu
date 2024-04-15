@@ -18,7 +18,6 @@ namespace cg = cooperative_groups;
 
 void basic_test_implementation()
 {
-
   constexpr auto block_cnt = 256;
   constexpr auto grid_cnt  = 512;
   auto dimensions = cuda_next::make_hierarchy(cuda_next::block_dims<block_cnt>(), cuda_next::grid_dims<grid_cnt>());

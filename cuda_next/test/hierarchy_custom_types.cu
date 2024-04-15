@@ -35,7 +35,8 @@ __global__ void kernel_custom_level(Dims dims)
   auto cnt = dims.count(cuda_next::grid, custom_level());
 }
 
-void custom_level_test() {
+void custom_level_test()
+{
   // Check extending level_dimensions with custom info
   custom_level_dims<cuda_next::block_level, cuda_next::detail::dims<64>> custom_block;
   custom_block.dummy     = 2;

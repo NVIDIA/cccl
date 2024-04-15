@@ -82,7 +82,7 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     }
 
     cudaLaunchConfig_t config = {};
-    config.gridDim = {0};
+    config.gridDim            = {0};
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
