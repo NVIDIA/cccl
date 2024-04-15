@@ -82,7 +82,7 @@ if [ "$VERBOSE" = true ]; then
 fi
 
 # Read matrix.yaml and convert it to json
-matrix_json=$(yq -o json ${MATRIX_FILE})
+matrix_json=$(yq . ${MATRIX_FILE})
 
 # Exclude Windows environments
 readonly matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | select(.os | contains("windows")))')
