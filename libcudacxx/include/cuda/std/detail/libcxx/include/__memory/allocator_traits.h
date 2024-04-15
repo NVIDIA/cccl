@@ -368,14 +368,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
   template <class _Tp>
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
   template <class _Ap = _Alloc, __enable_if_t<__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
   {
     _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -385,7 +385,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
   template <class _Ap                                                                           = _Alloc,
             class                                                                               = void,
             __enable_if_t<!__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer)
   {
     return __a.allocate(__n);

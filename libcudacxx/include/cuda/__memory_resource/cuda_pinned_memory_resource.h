@@ -63,7 +63,8 @@ public:
    * @throw cuda::cuda_error if allocation fails with a CUDA error.
    * @return Pointer to the newly allocated memory
    */
-  void* allocate(const size_t __bytes, const size_t __alignment = default_cuda_malloc_host_alignment) const
+  _CCCL_NODISCARD void* allocate(const size_t __bytes,
+                                 const size_t __alignment = default_cuda_malloc_host_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -95,7 +96,7 @@ public:
    * @brief Equality comparison with another cuda_pinned_memory_resource
    * @return Whether both cuda_pinned_memory_resource were constructed with the same flags
    */
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr bool operator==(cuda_pinned_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator==(cuda_pinned_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
@@ -104,7 +105,7 @@ public:
    * @brief Equality comparison with another cuda_pinned_memory_resource
    * @return Whether both cuda_pinned_memory_resource were constructed with different flags
    */
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr bool operator!=(cuda_pinned_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator!=(cuda_pinned_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }
@@ -118,7 +119,7 @@ public:
    * resources. Otherwise, returns false.
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator==(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
@@ -129,7 +130,7 @@ public:
    * @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
@@ -139,7 +140,7 @@ public:
    * @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
@@ -149,7 +150,7 @@ public:
    * @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
-  _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}

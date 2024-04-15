@@ -61,9 +61,9 @@ struct __one
   typedef char type;
 };
 template <class _Bp, class _Dp>
-_LIBCUDACXX_HOST_DEVICE typename __one<sizeof(_Dst<_Bp>(_CUDA_VSTD::declval<_Src<_Dp>>()))>::type __test(int);
+_CCCL_HOST_DEVICE typename __one<sizeof(_Dst<_Bp>(_CUDA_VSTD::declval<_Src<_Dp>>()))>::type __test(int);
 template <class _Bp, class _Dp>
-_LIBCUDACXX_HOST_DEVICE __two __test(...);
+_CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>

@@ -33,7 +33,7 @@ struct __cxx_atomic_base_impl
 
   __cxx_atomic_base_impl& operator=(const __cxx_atomic_base_impl&) noexcept = default;
 
-  _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
+  _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 };
 
 template <typename _Tp, int _Sco>

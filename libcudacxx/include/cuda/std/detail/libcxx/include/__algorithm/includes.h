@@ -52,7 +52,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool __includes(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool includes(
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool includes(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first1), decltype(*__first2)>::value,
@@ -69,7 +69,7 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 }
 
 template <class _InputIterator1, class _InputIterator2>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
   return _CUDA_VSTD::includes(

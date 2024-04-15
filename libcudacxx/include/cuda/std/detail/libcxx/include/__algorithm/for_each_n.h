@@ -25,9 +25,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Size, class _Function>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  _InputIterator
-  for_each_n(_InputIterator __first, _Size __orig_n, _Function __f)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _InputIterator
+for_each_n(_InputIterator __first, _Size __orig_n, _Function __f)
 {
   typedef decltype(_CUDA_VSTD::__convert_to_integral(__orig_n)) _IntegralSize;
   _IntegralSize __n = __orig_n;

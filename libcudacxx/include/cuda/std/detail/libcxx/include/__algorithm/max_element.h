@@ -47,14 +47,14 @@ __max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp
 }
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 max_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__max_element<__comp_ref_type<_Compare>>(__first, __last, __comp);
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 max_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::max_element(__first, __last, __less{});

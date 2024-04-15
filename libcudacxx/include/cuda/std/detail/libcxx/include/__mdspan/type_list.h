@@ -86,16 +86,16 @@ template <class _Result>
 struct __type_at_assign_op_ignore_rest
 {
   template <class _Tp>
-  _LIBCUDACXX_HOST_DEVICE __type_at_assign_op_ignore_rest<_Result> operator=(_Tp&&);
+  _CCCL_HOST_DEVICE __type_at_assign_op_ignore_rest<_Result> operator=(_Tp&&);
   using type = _Result;
 };
 
 struct __type_at_assign_op_impl
 {
   template <size_t _Ip, size_t _Idx, class _Tp>
-  _LIBCUDACXX_HOST_DEVICE __type_at_assign_op_impl operator=(__type_at_entry<_Ip, _Idx, _Tp>&&);
+  _CCCL_HOST_DEVICE __type_at_assign_op_impl operator=(__type_at_entry<_Ip, _Idx, _Tp>&&);
   template <size_t _Ip, class _Tp>
-  _LIBCUDACXX_HOST_DEVICE __type_at_assign_op_ignore_rest<_Tp> operator=(__type_at_entry<_Ip, _Ip, _Tp>&&);
+  _CCCL_HOST_DEVICE __type_at_assign_op_ignore_rest<_Tp> operator=(__type_at_entry<_Ip, _Ip, _Tp>&&);
 };
 
 template <size_t _Ip, class... _Ts, size_t... _Idxs>

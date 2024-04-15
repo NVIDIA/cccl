@@ -57,9 +57,9 @@
 #include <cuda/std/detail/libcxx/include/__mdspan/compressed_pair.h>
 #include <cuda/std/detail/libcxx/include/__mdspan/extents.h>
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
-#endif // _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include <cuda/std/array>
 #include <cuda/std/detail/libcxx/include/__mdspan/static_array.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
@@ -120,7 +120,7 @@ struct layout_stride
 {
   template <class _Extents>
   class mapping
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : private __detail::__no_unique_address_emulation<
           __detail::__compressed_pair<_Extents, _CUDA_VSTD::array<typename _Extents::index_type, _Extents::rank()>>>
 #  endif
@@ -143,15 +143,15 @@ struct layout_stride
                                                                                      // extents_type::rank()>;
     using __member_pair_t = __detail::__compressed_pair<extents_type, __strides_storage_t>;
 
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-    _LIBCUDACXX_NO_UNIQUE_ADDRESS __member_pair_t __members;
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    _CCCL_NO_UNIQUE_ADDRESS __member_pair_t __members;
 #  else
     using __base_t = __detail::__no_unique_address_emulation<__member_pair_t>;
 #  endif
 
     __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t const& __strides_storage() const noexcept
     {
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__second();
 #  else
       return this->__base_t::__ref().__second();
@@ -159,7 +159,7 @@ struct layout_stride
     }
     __MDSPAN_FORCE_INLINE_FUNCTION constexpr __strides_storage_t& __strides_storage() noexcept
     {
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__second();
 #  else
       return this->__base_t::__ref().__second();
@@ -167,7 +167,7 @@ struct layout_stride
     }
 
     template <class _SizeType, size_t... _Ep, size_t... _Idx>
-    _LIBCUDACXX_HOST_DEVICE constexpr index_type
+    _CCCL_HOST_DEVICE constexpr index_type
     __get_size(_CUDA_VSTD::extents<_SizeType, _Ep...>, _CUDA_VSTD::integer_sequence<size_t, _Idx...>) const
     {
       return __MDSPAN_FOLD_TIMES_RIGHT(static_cast<index_type>(extents().extent(_Idx)), 1);
@@ -267,7 +267,7 @@ struct layout_stride
 
     //----------------------------------------------------------------------------
 
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     __MDSPAN_INLINE_FUNCTION constexpr explicit mapping(__member_pair_t&& __m)
         : __members(_CUDA_VSTD::move(__m))
     {}
@@ -286,12 +286,12 @@ struct layout_stride
     {
       // call the private constructor we created for this purpose
       return mapping(
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         __base_t{
 #  endif
           __member_pair_t(extents_type::__make_extents_impl(_CUDA_VSTD::move(__exts)),
                           __strides_storage_t{__impl::fill_strides(_CUDA_VSTD::move(__strs))})
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #  endif
       );
@@ -316,13 +316,13 @@ struct layout_stride
     __MDSPAN_INLINE_FUNCTION
     constexpr mapping(extents_type const& __e,
                       _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
         : __base_t(__base_t{__member_pair_t(
 #  endif
           __e, __strides_storage_t(__impl::fill_strides(__s))
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #  else
             )})
@@ -350,13 +350,13 @@ struct layout_stride
     __MDSPAN_INLINE_FUNCTION
     constexpr mapping(extents_type const& __e,
                       _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
         : __base_t(__base_t{__member_pair_t(
 #  endif
           __e, __strides_storage_t(__impl::fill_strides(__s))
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #  else
             )})
@@ -393,13 +393,13 @@ struct layout_stride
           || __detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>) ) // needs two () due to comma
     __MDSPAN_INLINE_FUNCTION constexpr mapping(
       _StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
         : __base_t(__base_t{__member_pair_t(
 #  endif
           __other.extents(), __strides_storage_t(__impl::fill_strides(__other))
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         }
 #  else
             )})
@@ -420,7 +420,7 @@ struct layout_stride
 
     __MDSPAN_INLINE_FUNCTION constexpr const extents_type& extents() const noexcept
     {
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__first();
 #  else
       return this->__base_t::__ref().__first();

@@ -82,10 +82,10 @@ _Size __murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __le
   {
     case 3:
       __h ^= static_cast<_Size>(__data[2] << 16);
-      _LIBCUDACXX_FALLTHROUGH();
+      _CCCL_FALLTHROUGH();
     case 2:
       __h ^= static_cast<_Size>(__data[1] << 8);
-      _LIBCUDACXX_FALLTHROUGH();
+      _CCCL_FALLTHROUGH();
     case 1:
       __h ^= __data[0];
       __h *= __m;

@@ -81,7 +81,7 @@
 #  define __DBL_DENORM_MIN__ 4.94065645841246544176568792868221372e-324
 
 template <typename _To, typename _From>
-static _LIBCUDACXX_DEVICE _LIBCUDACXX_FORCE_INLINE _To __cowchild_cast(_From __from)
+static _CCCL_DEVICE _CCCL_FORCEINLINE _To __cowchild_cast(_From __from)
 {
   static_assert(sizeof(_From) == sizeof(_To), "");
   union __cast

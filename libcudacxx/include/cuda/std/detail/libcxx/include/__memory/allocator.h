@@ -123,8 +123,7 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp*
-  allocate(size_t __n)
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
@@ -142,8 +141,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr allocation_result<
-    _Tp*>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr allocation_result<_Tp*>
   allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
@@ -187,8 +185,7 @@ public:
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp*
-  allocate(size_t __n, const void*)
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
@@ -230,7 +227,7 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
   {}
 
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
@@ -247,8 +244,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr allocation_result<
-    const _Tp*>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr allocation_result<const _Tp*>
   allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
@@ -285,7 +281,7 @@ public:
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp*
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp*
   allocate(size_t __n, const void*)
   {
     return allocate(__n);

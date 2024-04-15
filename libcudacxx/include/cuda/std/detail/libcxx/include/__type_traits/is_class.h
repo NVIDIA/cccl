@@ -46,9 +46,9 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_class_v = _LIBCUDACXX_IS_CLASS(_Tp);
 namespace __is_class_imp
 {
 template <class _Tp>
-_LIBCUDACXX_HOST_DEVICE char __test(int _Tp::*);
+_CCCL_HOST_DEVICE char __test(int _Tp::*);
 template <class _Tp>
-_LIBCUDACXX_HOST_DEVICE __two __test(...);
+_CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_class_imp
 
 template <class _Tp>

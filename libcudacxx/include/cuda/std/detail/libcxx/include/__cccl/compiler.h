@@ -56,4 +56,29 @@
 #  define _CCCL_CUDA_COMPILER
 #endif // cuda compiler available
 
+#if defined(__CUDACC__) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  define _CCCL_CUDACC
+#  define _CCCL_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
+#  define _CCCL_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
+#  define _CCCL_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
+#  define _CCCL_CUDACC_VER       _CCCL_CUDACC_VER_MAJOR * 100000 + _CCCL_CUDACC_VER_MINOR * 1000 + _CCCL_CUDACC_VER_BUILD
+#endif // __CUDACC__ || _CCCL_CUDA_COMPILER_NVHPC
+
+// Some convenience macros to filter CUDACC versions
+#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1102000
+#  define _CCCL_CUDACC_BELOW_11_2
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1102000
+#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000
+#  define _CCCL_CUDACC_BELOW_11_3
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000
+#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
+#  define _CCCL_CUDACC_BELOW_11_8
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
+#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1202000
+#  define _CCCL_CUDACC_BELOW_12_2
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+#  define _CCCL_CUDACC_BELOW_12_3
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+
 #endif // __CCCL_COMPILER_H

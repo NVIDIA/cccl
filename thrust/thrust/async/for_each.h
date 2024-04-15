@@ -89,7 +89,7 @@ struct for_each_fn final
           THRUST_FWD(f)))
 
           template <typename... Args>
-          THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+          _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace for_each_detail

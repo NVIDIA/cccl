@@ -47,8 +47,8 @@ public:
       : m_upstream(upstream)
   {}
 
-  THRUST_NODISCARD
-  virtual Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  _CCCL_NODISCARD virtual Pointer
+  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return static_cast<Pointer>(m_upstream->do_allocate(bytes, alignment));
   }

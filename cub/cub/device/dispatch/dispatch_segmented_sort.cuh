@@ -514,7 +514,7 @@ template <typename LargeSegmentPolicyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT>
-CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN cudaError_t DeviceSegmentedSortContinuation(
+CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortContinuation(
   LargeKernelT large_kernel,
   SmallKernelT small_kernel,
   int num_segments,
@@ -1493,7 +1493,7 @@ private:
   }
 
   template <typename LargeSegmentPolicyT, typename SmallAndMediumPolicyT, typename LargeKernelT, typename SmallKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t SortWithPartitioning(
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t SortWithPartitioning(
     LargeKernelT large_kernel,
     SmallKernelT small_kernel,
     std::size_t three_way_partition_temp_storage_bytes,
@@ -1630,7 +1630,7 @@ private:
   }
 
   template <typename LargeSegmentPolicyT, typename FallbackKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t SortWithoutPartitioning(
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t SortWithoutPartitioning(
     FallbackKernelT fallback_kernel,
     cub::detail::device_double_buffer<KeyT>& d_keys_double_buffer,
     cub::detail::device_double_buffer<ValueT>& d_values_double_buffer)

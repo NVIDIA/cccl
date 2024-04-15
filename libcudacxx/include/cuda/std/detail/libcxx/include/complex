@@ -341,7 +341,7 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14 operator ::std::complex<_Tp>() const
+  _CCCL_HOST _CCCL_CONSTEXPR_CXX14 operator ::std::complex<_Tp>() const
   {
     return {__re_, __im_};
   }

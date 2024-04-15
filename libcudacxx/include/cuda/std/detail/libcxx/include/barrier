@@ -160,7 +160,7 @@ public:
     __barrier_base(__barrier_base const&) = delete;
     __barrier_base& operator=(__barrier_base const&) = delete;
 
-     _LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY
+     _CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(ptrdiff_t update = 1)
     {
         _LIBCUDACXX_ASSERT(update > 0, "");
@@ -304,7 +304,7 @@ public:
     __barrier_base(__barrier_base const&) = delete;
     __barrier_base& operator=(__barrier_base const&) = delete;
 
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(ptrdiff_t __update = 1)
     {
         auto const __old_phase = __phase.load(memory_order_relaxed);
@@ -414,7 +414,7 @@ public:
     __barrier_base(__barrier_base const&) = delete;
     __barrier_base& operator=(__barrier_base const&) = delete;
 
-    _LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY
     arrival_token arrive(ptrdiff_t __update = 1)
     {
         auto const __inc = __arrived_unit * __update;

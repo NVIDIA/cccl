@@ -360,7 +360,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _Tp __data_[1];
   };
-  _ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
+  _CCCL_ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 value_type* data() noexcept
   {
@@ -454,7 +454,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     return 0;
   }
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
   {
     return true;
   }
@@ -525,7 +525,7 @@ _CCCL_DIAG_POP
 
 #if _CCCL_STD_VER >= 2017
 template <class _Tp, class... _Args, class = __enable_if_t<(is_same_v<_Tp, _Args> && ...)> >
-_LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
+_CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>

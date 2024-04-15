@@ -75,14 +75,14 @@ class view_interface
 public:
   _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
   _LIBCUDACXX_REQUIRES(forward_range<_D2>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty()
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }
 
   _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
   _LIBCUDACXX_REQUIRES(forward_range<const _D2>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }

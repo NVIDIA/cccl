@@ -88,7 +88,7 @@ private:
 };
 
 template <class _Err, class _Arg>
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expected_access(_Arg&& __arg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expected_access(_Arg&& __arg)
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
