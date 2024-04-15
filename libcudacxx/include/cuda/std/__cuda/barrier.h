@@ -29,7 +29,7 @@
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
 #if defined(_CCCL_CUDA_COMPILER)
-#  include <cuda/std/__cuda/ptx.h> // cuda::ptx::*
+#  include <cuda/ptx> // cuda::ptx::*
 #endif // _CCCL_CUDA_COMPILER
 
 #if defined(_CCCL_COMPILER_NVRTC)

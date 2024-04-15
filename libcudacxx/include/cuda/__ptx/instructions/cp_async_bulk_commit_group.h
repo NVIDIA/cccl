@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX_GETCTARANK_H_
-#define _CUDA_PTX_GETCTARANK_H_
+#ifndef _CUDA_PTX_CP_ASYNC_BULK_COMMIT_GROUP_H_
+#define _CUDA_PTX_CP_ASYNC_BULK_COMMIT_GROUP_H_
 
 #include <cuda/std/detail/__config>
 
@@ -22,44 +22,38 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/ptx/ptx_dot_variants.h>
-#include <cuda/std/__cuda/ptx/ptx_helper_functions.h>
+#include <cuda/__ptx/ptx_dot_variants.h>
+#include <cuda/__ptx/ptx_helper_functions.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
-// 9.7.8.23. Data Movement and Conversion Instructions: getctarank
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+// 9.7.8.24.12. Data Movement and Conversion Instructions: cp.async.bulk.commit_group
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
 /*
-// getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
-// .space     = { .shared::cluster }
+// cp.async.bulk.commit_group; // PTX ISA 80, SM_90
 template <typename=void>
-__device__ static inline uint32_t getctarank(
-  cuda::ptx::space_cluster_t,
-  const void* addr);
+__device__ static inline void cp_async_bulk_commit_group();
 */
-#if __cccl_ptx_isa >= 780
-extern "C" _CCCL_DEVICE void __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
+#if __cccl_ptx_isa >= 800
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(space_cluster_t, const void* __addr)
+_CCCL_DEVICE static inline void cp_async_bulk_commit_group()
 {
-  // __space == space_cluster (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (_CUDA_VSTD::uint32_t __dest;
-     asm("getctarank.shared::cluster.u32 %0, %1;"
-         : "=r"(__dest)
-         : "r"(__as_ptr_smem(__addr))
-         :);
-     return __dest;),
+    (asm volatile("cp.async.bulk.commit_group;"
+                  :
+                  :
+                  :);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_getctarank_is_not_supported_before_SM_90__(); return 0;));
+      __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();));
 }
-#endif // __cccl_ptx_isa >= 780
+#endif // __cccl_ptx_isa >= 800
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
-#endif // _CUDA_PTX_GETCTARANK_H_
+#endif // _CUDA_PTX_CP_ASYNC_BULK_COMMIT_GROUP_H_
