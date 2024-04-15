@@ -19,7 +19,7 @@ on:
   issues:
     # Run this action when an issue is opened
     types: [opened]
-      
+
 env:
  ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
 
@@ -49,7 +49,7 @@ jobs:
         with:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
           private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
-        
+
       - name: Get Issue Project ID
         id: get_issue_id
         env:
@@ -71,14 +71,14 @@ jobs:
                   }
                 }
               }' > project_data.json
-            
+
             # Filter the json result to only the project-specific ID for the PR
             # An issue can be in multiple projects so we need to filter by the project ID we want
             issue_id=$(jq -r '.data.node.projectItems.nodes[] |
                            select(.project.id == "${{ env.PROJECT_ID }}") |
                            .id' project_data.json)
             echo "ISSUE_PROJECT_ID=$issue_id" >> $GITHUB_ENV
-            
+
       - name: Extract Issue Type Text
         id: extract_issue_type
         env:

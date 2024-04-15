@@ -112,4 +112,3 @@ The CMake options are divided into these categories:
 - `THRUST_TBB_ROOT=<path to tbb root>`
   - When the TBB system is requested, set this to the root of the TBB installation
     (e.g. the location of `lib/`, `bin/` and `include/` for the TBB libraries).
-

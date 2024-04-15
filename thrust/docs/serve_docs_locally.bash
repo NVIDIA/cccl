@@ -32,4 +32,3 @@ bundle exec jekyll serve \
   --profile              \
   --baseurl "/thrust"    \
   ${@}
-

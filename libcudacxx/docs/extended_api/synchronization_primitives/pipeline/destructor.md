@@ -18,4 +18,3 @@ Calls [`cuda::pipeline::quit`] if it was not called by the current thread and
   destructs the pipeline.
 
 [`cuda::pipeline::quit`]: ./quit.md
-

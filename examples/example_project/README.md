@@ -3,14 +3,14 @@
 
 Many CUDA C++ users are accustomed to using CCCL headers (Thrust, CUB, libcu++) provided with the [NVIDIA CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) or [NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk).
 
-In addition, we also support using CCCL directly from GitHub. 
+In addition, we also support using CCCL directly from GitHub.
 The primary benefit is that this allows users to use the latest version of CCCL without having to wait for a new release of the CUDA Toolkit or HPC SDK.
 
 This example demonstrates how to use CCCL from GitHub in a CMake project.
 
 ## Overview
 
-This is a standalone example of how to use [CCCL](https://github.com/nvidia/cccl) in a CMake project. 
+This is a standalone example of how to use [CCCL](https://github.com/nvidia/cccl) in a CMake project.
 
 This example demonstrates fetching CCCL from GitHub and linking it with a simple example CUDA program ([`example.cu`](example.cu)) that utilizes the headers from CCCL.
 
@@ -18,7 +18,7 @@ This is intended to be a starting point for users who want to use CCCL in their 
 
 ## How to Adapt This Example to Your Project
 
-This example is intended to be a starting point for users who want to use CCCL in their own projects. 
+This example is intended to be a starting point for users who want to use CCCL in their own projects.
 In order to adapt this example to your project, you will need to do the following:
 1. Download `CPM.cmake` into your project's `cmake/` directory ([see below for instructions](#downloading-cpm)).
 2. Add the following lines to your project's `CMakeLists.txt` file:
@@ -47,12 +47,12 @@ For more information on using CPM, see [below](#using-cmake-package-manager).
 
 ## Using CMake Package Manager
 
-This example uses the CMake Package Manager (CPM) to fetch CCCL from GitHub. 
+This example uses the CMake Package Manager (CPM) to fetch CCCL from GitHub.
 
 See the [CMakeLists.txt](CMakeLists.txt) file in this directory for the complete example.
 
-If you are not familiar with CPM, you can find more information [here](https://github.com/cpm-cmake/CPM.cmake). 
-In short, CPM is a CMake module that simplifies dependency management for CMake projects. 
+If you are not familiar with CPM, you can find more information [here](https://github.com/cpm-cmake/CPM.cmake).
+In short, CPM is a CMake module that simplifies dependency management for CMake projects.
 It automatically downloads and integrates dependencies into your CMake project.
 
 ### Downloading CPM
@@ -64,7 +64,7 @@ mkdir -p cmake
 wget -O cmake/CPM.cmake https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/get_cpm.cmake
 ```
 
-This will download and create the file `cmake/CPM.cmake` in your project directory. 
+This will download and create the file `cmake/CPM.cmake` in your project directory.
 Most projects will want to commit this file to their source control system.
 You can then use `include(cmake/CPM.cmake)` in your project's `CMakeLists.txt` file to include CPM in your project.
 
@@ -115,7 +115,7 @@ If you would like to build and run this example as-is, you will need:
 
 2. Enter the directory of the cloned repository.
    ```bash
-   cd cccl/examples/example_project 
+   cd cccl/examples/example_project
    ```
 
 3. Run the CMake configure step
@@ -139,5 +139,3 @@ If you would like to build and run this example as-is, you will need:
    ```
 
 If everything is configured correctly, the program will execute and print the sum of an array of integers, demonstrating the use of cccl.
-
-

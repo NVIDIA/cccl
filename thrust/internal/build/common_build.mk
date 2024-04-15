@@ -86,4 +86,3 @@ ifdef VULCAN_TOOLKIT_BASE
 else
   include $(ROOTDIR)/build/common.mk
 endif
-

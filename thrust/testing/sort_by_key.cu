@@ -52,11 +52,11 @@ void InitializeSimpleKeyValueSortTest(
   unsorted_keys[4] = 2;  unsorted_values[4] = 4;
   unsorted_keys[5] = 0;  unsorted_values[5] = 5;
   unsorted_keys[6] = 4;  unsorted_values[6] = 6;
-  
+
   sorted_keys.resize(7);
   sorted_values.resize(7);
-  sorted_keys[0] = 0;  sorted_values[1] = 0;  
-  sorted_keys[1] = 1;  sorted_values[3] = 1;  
+  sorted_keys[0] = 0;  sorted_values[1] = 0;
+  sorted_keys[1] = 1;  sorted_values[3] = 1;
   sorted_keys[2] = 2;  sorted_values[6] = 2;
   sorted_keys[3] = 3;  sorted_values[5] = 3;
   sorted_keys[4] = 4;  sorted_values[2] = 4;

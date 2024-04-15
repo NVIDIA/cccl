@@ -598,4 +598,3 @@ printf("#### START_TIME $START_TIME\n");
 printf("#### STOP_TIME $STOP_TIME\n");
 
 dvs_summary();
-

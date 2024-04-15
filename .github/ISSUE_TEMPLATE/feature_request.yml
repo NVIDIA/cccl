@@ -26,13 +26,13 @@ body:
         - Not sure
     validations:
       required: true
-      
+
   - type: textarea
     id: description
     attributes:
       label: Is your feature request related to a problem? Please describe.
       description: A clear and concise description of what the problem is, e.g., "I would like to be able to..."
-      placeholder: I would like to be able to use the equivalent of `std::variant` in both host and device code. 
+      placeholder: I would like to be able to use the equivalent of `std::variant` in both host and device code.
     validations:
       required: true
 
@@ -42,7 +42,7 @@ body:
       label: Describe the solution you'd like
       description: A clear and concise description of what you want to happen.
       placeholder: |
-        Provide the header `<cuda/std/variant>` that implements a heterogeneous `cuda::std::variant` type. 
+        Provide the header `<cuda/std/variant>` that implements a heterogeneous `cuda::std::variant` type.
     validations:
       required: true
 
@@ -53,7 +53,7 @@ body:
       description:
         If applicable, please add a clear and concise description of any alternative solutions or features you've
         considered.
-      placeholder: The alternatives to a `variant` are unappealing. They usually involve using a raw `union` which is not type safe and has none of the convenient machinery like `std::visit`. 
+      placeholder: The alternatives to a `variant` are unappealing. They usually involve using a raw `union` which is not type safe and has none of the convenient machinery like `std::visit`.
     validations:
       required: false
 
@@ -62,6 +62,6 @@ body:
     attributes:
       label: Additional context
       description: Add any other context about the request here.
-      placeholder: This would be a helpful vocabulary type that could replace a lot of custom and error prone code. 
+      placeholder: This would be a helpful vocabulary type that could replace a lot of custom and error prone code.
     validations:
       required: false

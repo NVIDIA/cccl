@@ -66,4 +66,3 @@ jobs:
               echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
               exit $exit_code
             fi
-

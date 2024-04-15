@@ -1,6 +1,6 @@
 # Citation Guide
 
-## To Cite CCCL 
+## To Cite CCCL
 If you use CCCL in a publication, please use citations in the following format (BibTeX entry for LaTeX):
 ```tex
 @Manual{,

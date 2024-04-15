@@ -41,11 +41,10 @@ function(cub_add_header_test label definitions)
 endfunction()
 
 # Wrap Thrust/CUB in a custom namespace to check proper use of ns macros:
-set(header_definitions 
-  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust" 
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub")
 cub_add_header_test(base "${header_definitions}")
 
 list(APPEND header_definitions "CUB_DISABLE_BF16_SUPPORT")
 cub_add_header_test(bf16 "${header_definitions}")
-

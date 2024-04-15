@@ -158,4 +158,3 @@ dvs_debug:
 	$(MAKE) dvs THRUST_DVS_BUILD=debug
 
 include $(THRUST_MKDIR)/dependencies.mk
-

@@ -248,4 +248,3 @@ Thrust is distributed under the [Apache License v2.0 with LLVM Exceptions];
 [Apache License v2.0 with LLVM Exceptions]: https://llvm.org/LICENSE.txt
 [Apache License v2.0]: https://www.apache.org/licenses/LICENSE-2.0.txt
 [Boost License v1.0]: https://www.boost.org/LICENSE_1_0.txt
-

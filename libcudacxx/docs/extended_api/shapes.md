@@ -7,4 +7,3 @@
 [`cuda::std::size_t`]: https://en.cppreference.com/w/cpp/types/size_t
 
 [`cuda::aligned_size_t`]: {{ "extended_api/shapes/aligned_size_t.html" | relative_url }}
-

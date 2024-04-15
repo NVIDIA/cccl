@@ -103,4 +103,3 @@ rm -rf ${BUILD_GITHUB_PAGES_PATH}/api/images
 rm -rf ${BUILD_GITHUB_PAGES_PATH}/api/index_namespaces.md
 rm -rf ${BUILD_GITHUB_PAGES_PATH}/api/index_groups.md
 rm -rf ${BUILD_GITHUB_PAGES_PATH}/api/index_classes.md
-

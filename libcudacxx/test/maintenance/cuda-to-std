@@ -13,4 +13,3 @@ do
     sed -i "${file}" ${header_replacements}
     sed -i "${file}" -e 's/cuda::std::/std::/g'
 done
-

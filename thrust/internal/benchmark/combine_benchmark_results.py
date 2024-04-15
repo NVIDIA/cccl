@@ -206,7 +206,7 @@ def sample_variance(X, u = None):
   """
   if u is None: u = arithmetic_mean(X)
   return sum(imap(lambda X_i: (X_i - u) ** 2, X)) / (len(X) - 1)
- 
+
 def sample_standard_deviation(X, u = None, v = None):
   """Computes the sample standard deviation of the sequence `X`.
 
@@ -263,7 +263,7 @@ def combine_arithmetic_mean(As, n = None):
   """
   if n is None: n = combine_sample_size(As)
   return sum(imap(unpack_tuple(lambda u_i, s_i, n_i, t_i: n_i * u_i), As)) / n
-  
+
 def combine_sample_variance(As, n = None, u = None):
   """Computes the combined sample variance of a group of `measured_value`s.
 
@@ -398,9 +398,9 @@ class io_manager(object):
     input_files (list of `file`s) :
       List of input `file` objects.
     variable_names (`list` of `str`s) :
-      Names of the variables, in order. 
+      Names of the variables, in order.
     variable_units (`list` of `str`s) :
-      Units of the variables, in order. 
+      Units of the variables, in order.
   """
 
   def __init__(self, input_files, output_file, preserve_whitespace = True):
@@ -460,7 +460,7 @@ class io_manager(object):
 
       self.readers.append(reader)
       self.input_files.append(input_file_object)
- 
+
     if   output_file == "-": # Output to stdout.
       self.output_file = stdout
     else:                    # Output to user-specified file.
@@ -512,7 +512,7 @@ class io_manager(object):
       return row
     except StopIteration:
       # The current reader is empty, so pop it, pop it's input file, close the
-      # input file, and then call ourselves again. 
+      # input file, and then call ourselves again.
       self.readers.popleft()
       self.input_files.popleft().close()
       return self.next()
@@ -543,7 +543,7 @@ class dependent_variable_parser(object):
   # Parse a variable_name.
   variable_name_rule = r'[^,]+'
 
-  # Parse a variable classification.        
+  # Parse a variable classification.
   dependent_variable_rule = r'(' + variable_name_rule + r')'   \
                           + r','                               \
                           + r'(' + variable_name_rule + r')'   \
@@ -558,7 +558,7 @@ class dependent_variable_parser(object):
     """Parses the string `s` with the form "AVG,STDEV,TRIALS".
 
     Returns:
-      A `measured_variable`. 
+      A `measured_variable`.
 
     Raises:
       AssertionError : If parsing fails.
@@ -585,7 +585,7 @@ class record_aggregator(object):
       A list of dependent variables provided on the command line.
     dataset (`dict`) :
       A mapping of distinguishing (e.g. control + independent) values (`tuple`s
-      of variable-quantity pairs) to `list`s of dependent values (`dict`s from 
+      of variable-quantity pairs) to `list`s of dependent values (`dict`s from
       variables to lists of cells).
     in_order_dataset_keys :
       A list of unique dataset keys (e.g. distinguishing variables) in order of
@@ -738,7 +738,7 @@ class record_aggregator(object):
 
     return combined_dependent_values
 
-  ############################################################################# 
+  #############################################################################
   # Output Stream.
 
   def __iter__(self):
@@ -814,4 +814,3 @@ with io_manager(args.input_files,
   # Write combined results out.
   for record in ra.records():
     iom.write(record)
-

@@ -20,4 +20,3 @@ ifneq ("$(wildcard $(TEST_MAKEFILE))","") # Check if the file exists.
 endif
 
 include $(ROOTDIR)/thrust/internal/build/common_build.mk
-

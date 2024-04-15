@@ -436,4 +436,3 @@ __device__ static inline uint32_t get_sreg_dynamic_smem_size();
 template <typename=void>
 __device__ static inline uint64_t get_sreg_current_graph_exec();
 ```
-

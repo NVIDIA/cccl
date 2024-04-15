@@ -23,7 +23,7 @@ void apply_access_property(void const volatile* ptr, ShapeT shape, cuda::access_
 
 **_Hint_**: to prefetch `shape` bytes of memory starting at `ptr` while applying a property. Two properties are supported:
 
-* [`cuda::access_property::persisting`] 
+* [`cuda::access_property::persisting`]
 * [`cuda::access_property::normal`]
 
 
