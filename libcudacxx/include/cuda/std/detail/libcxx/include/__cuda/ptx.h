@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX___CUDA_PTX_H
-#define  _LIBCUDACXX___CUDA_PTX_H
+#define _LIBCUDACXX___CUDA_PTX_H
 
 #include <cuda/std/detail/__config>
 
