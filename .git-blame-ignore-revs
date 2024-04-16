@@ -22,9 +22,3 @@ baee3f502d4fd5febc7f602428592b2bec5d2d3b
 
 # Apply clang-format to cub (#1602)
 eefcca862226672eae8eacb244f39f2e7b4bf7c4
-
-# Rework our system header approach to be more error proof (#661)
-774a2a552e9c42a9e5085e9aef2baa835daa2f69
-
-# Enable users to treat CCCL as system headers (#531)
-e6375bc8b48cb7f688ec3a15675911ef70b3faa3
