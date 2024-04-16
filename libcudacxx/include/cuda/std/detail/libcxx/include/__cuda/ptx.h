@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX___CUDA_PTX_H
-#define _LIBCUDACXX___CUDA_PTX_H
+#define  _LIBCUDACXX___CUDA_PTX_H
 
 #include <cuda/std/detail/__config>
 
@@ -76,7 +76,6 @@
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_async_bulk_wait_group.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_reduce_async_bulk.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_reduce_async_bulk_tensor.h>
-#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/elect_sync.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/fence.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/get_sreg.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/getctarank.h>
