@@ -55,7 +55,7 @@ class BaseRunner:
       else:
         failure_occured = True
         print("&&&& FAILED {}".format(algname))
-    
+
     if failure_occured:
       sys.exit(1)
 

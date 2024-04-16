@@ -4,4 +4,3 @@
 
 
 [`cuda::proclaim_return_type`]: {{ "extended_api/functional/proclaim_return_type.html" | relative_url }}
-

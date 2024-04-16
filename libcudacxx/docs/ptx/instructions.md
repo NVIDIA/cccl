@@ -6,4 +6,3 @@ has_toc: true
 ---
 
 # PTX Instructions
-

@@ -111,7 +111,7 @@ constexpr explicit annotated_ptr(pointer ptr);
 * if `Property` is [`cuda::access_property::shared`] then `ptr` must be a generic pointer that is valid to cast to a pointer to the shared memory address space.
 * if `Property` is [`cuda::access_property::global`], [`cuda::access_property::normal`], [`cuda::access_property::streaming`], [`cuda::access_property::persisting`], or [`cuda::access_property`]  then `ptr` must be a generic pointer that is valid to cast to a pointer to the global memory address space.
 
-**Effects**:  Constructs an `annotated_ptr` requesting associating `ptr` with `Property`. 
+**Effects**:  Constructs an `annotated_ptr` requesting associating `ptr` with `Property`.
 If `Property` is [`cuda::access_property`] then `prop` is initialized with [`cuda::access_property::global`].
 
 **Note**: in **Preconditions** "valid" means that casting the generic pointer to the corresponding address space does not introduce undefined behavior.

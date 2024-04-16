@@ -20,7 +20,7 @@ struct cuda::aligned_size_t {
 The class template `cuda::aligned_size_t` is a _shape_ representing an extent
   of bytes with a statically defined (address and size) alignment.
 
-*Preconditions*: 
+*Preconditions*:
 
 - The _address_ of the extent of bytes must be aligned to an `Alignment` alignment boundary.
 - The _size_ of the extent of bytes must be a multiple of the `Alignment`.
@@ -71,4 +71,3 @@ __global__ void example_kernel(void* dst, void* src, size_t size) {
 [valid alignment]: https://en.cppreference.com/w/c/language/object#Alignment
 
 [`cuda::std::size_t`]: https://en.cppreference.com/w/cpp/types/size_t
-

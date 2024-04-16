@@ -61,4 +61,3 @@ __global__ void example_kernel(uint64_t* global, cuda::std::size_t element_count
 
 
 [`cuda::pipeline::quit`]: ./pipeline/quit.md
-

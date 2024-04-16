@@ -136,7 +136,7 @@ For more information, see the `.devcontainer/make_devcontainers.sh --help` messa
 
 2. Install WSL 2 by running:
 ```bash
-wsl --install 
+wsl --install
 ```
 This should probably install Ubuntu distro as a default.
 
@@ -182,14 +182,14 @@ then run `sudo systemctl restart docker.service`.
 10. Open the CCCL cloned repo in VS Code ( `Ctrl + Shift + P `, select `File: Open Folder...` and select the path where your CCCL clone is located).
 
 11. If prompted, choose `Reopen in Container`.
-    
+
     - If you are not prompted just type `Ctrl + Shift + P` and `Dev Containers: Open Folder in Container ...`.
 
 12. Verify that Dev Container was configured properly by running `nvidia-smi` in your Dev Container terminal. For a proper configuration it is important for the steps in [Install prerequisites and VS Code extensions](#prereqs) to be followed in a precise order.
 
 From that point on, the guide aligns with our [existing Dev Containers native Linux guide](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md) with just one minor potential alteration:
 
-13. If WSL was launched without the X-server enabled, when asked to "authenticate Git with your Github credentials", if you answer **Yes**, the browser might not open automatically, with the following error message. 
+13. If WSL was launched without the X-server enabled, when asked to "authenticate Git with your Github credentials", if you answer **Yes**, the browser might not open automatically, with the following error message.
 
 > Failed opening a web browser at https://github.com/login/device
   exec: "xdg-open,x-www-browser,www-browser,wslview": executable file not found in $PATH

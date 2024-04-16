@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Assign Issues for Triage 
+name: Assign Issues for Triage
 
 on:
   issues:
     types:
       - opened
-      
+
 env:
  GH_TOKEN: ${{ github.token }}
 
@@ -39,32 +39,32 @@ jobs:
       - name: Get User ID
         run: |
           gh api graphql -f query='
-            query{ user(login: "${{ env.ASSIGNEE }}") 
+            query{ user(login: "${{ env.ASSIGNEE }}")
                     { id } }' > user_info.json
-          
+
            echo 'ASSIGNEE_ID='$(jq '.data.user.id' user_info.json) >> $GITHUB_ENV
-      
+
       - name: Assign issue
         run: |
            gh api graphql -f query='
-                        mutation { 
-                         addAssigneesToAssignable(input: 
-                               {assignableId: "${{ github.event.issue.node_id }}", 
+                        mutation {
+                         addAssigneesToAssignable(input:
+                               {assignableId: "${{ github.event.issue.node_id }}",
                                 assigneeIds: [ ${{ env.ASSIGNEE_ID }} ]
-                                }) 
-                                   { clientMutationId } 
+                                })
+                                   { clientMutationId }
                                }'
 
       - name: add-triage-label
         run: |
           issue_url=${{ github.event.issue.html_url }}
           gh issue edit ${issue_url} --add-label "Needs Triage"
-      
+
       - name: add-comment-to-issue
         run: |
            issue_url=${{ github.event.issue.html_url }}
            author=${{ github.event.issue.user.login }}
            gh issue comment ${issue_url} --body "Hi @${author}!
-             
+
              Thanks for submitting this issue - the CCCL team has been notified and we'll get back to you as soon as we can!
              In the mean time, feel free to add any relevant information to this issue."

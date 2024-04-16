@@ -23,7 +23,7 @@ int main(void)
   thrust::device_vector<float> d_b(4);
 
   // clang-format off
-  d_a[0] = 1.0;  d_b[0] = 2.0; 
+  d_a[0] = 1.0;  d_b[0] = 2.0;
   d_a[1] = 2.0;  d_b[1] = 4.0;
   d_a[2] = 3.0;  d_b[2] = 3.0;
   d_a[3] = 4.0;  d_b[3] = 0.0;

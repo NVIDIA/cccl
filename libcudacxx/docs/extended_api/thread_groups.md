@@ -53,4 +53,3 @@ struct single_thread_group {
 
 
 [CUDA Cooperative Groups Library]: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#group-collectives
-

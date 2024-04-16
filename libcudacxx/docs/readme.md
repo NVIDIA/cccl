@@ -6,4 +6,3 @@ To build and serve the documentation as a website to `http://localhost:4000` jus
 ```shell
 ./docs/serve
 ```
-

@@ -365,4 +365,3 @@ g.	You agree to defend, indemnify and hold harmless NVIDIA and its affiliates, a
 15. ENTIRE AGREEMENT. This license is the final, complete and exclusive agreement between the parties relating to the subject matter of this license and supersedes all prior or contemporaneous understandings and agreements relating to this subject matter, whether oral or written. If any court of competent jurisdiction determines that any provision of this license is illegal, invalid or unenforceable, the remaining provisions will remain in full force and effect. This license may only be modified in a writing signed by an authorized representative of each party.
 
 (v. August 20, 2021)
-

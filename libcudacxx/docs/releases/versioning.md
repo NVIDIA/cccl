@@ -240,4 +240,3 @@ The deprecation period will depend on the impact of the change, but will usually
 [inline namespace]: https://en.cppreference.com/w/cpp/language/namespace#Inline_namespaces
 
 [CUDA Compute Capability]: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability
-

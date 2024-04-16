@@ -79,4 +79,3 @@ To build and test Thrust and CUB yourself, you will need the following in
 [CUDA Toolkit]: https://developer.nvidia.com/cuda-toolkit
 
 [CMake]: https://cmake.org
-

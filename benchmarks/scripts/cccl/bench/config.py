@@ -36,19 +36,19 @@ class RangePoint:
 class VariantPoint:
     def __init__(self, range_points):
         self.range_points = range_points
-    
+
     def label(self):
         if self.is_base():
             return 'base'
         return '.'.join(["{}_{}".format(point.label, point.value) for point in self.range_points])
-    
+
     def is_base(self):
         return len(self.range_points) == 0
-    
+
     def tuning(self):
         if self.is_base():
             return ""
-        
+
         tuning = "#pragma once\n\n"
         for point in self.range_points:
             tuning += "#define {} {}\n".format(point.definition, point.value)
@@ -111,7 +111,7 @@ class Config:
             cls._instance = super().__new__(cls, *args, **kwargs)
             cls._instance.ctk, cls._instance.cccl, cls._instance.benchmarks = parse_meta()
         return cls._instance
-    
+
     def label_to_variant_point(self, algname, label):
         if label == "base":
             return BasePoint()
@@ -119,12 +119,12 @@ class Config:
         label_to_definition = {}
         for param_space in self.benchmarks[algname]:
             label_to_definition[param_space.label] = param_space.definition
-        
+
         points = []
         for point in label.split('.'):
             label, value = point.split('_')
             points.append(RangePoint(label_to_definition[label], label, int(value)))
-        
+
         return VariantPoint(points)
 
     def variant_space(self, algname):

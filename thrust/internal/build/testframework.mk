@@ -14,4 +14,3 @@ THRUST_TEST := 1
 
 include $(ROOTDIR)/thrust/internal/build/common_detect.mk
 include $(ROOTDIR)/thrust/internal/build/common_build.mk
-

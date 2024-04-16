@@ -132,4 +132,3 @@ Implementing a heterogeneous C++ I/O streams library involves many challenges
 [`gettimeofday`]: https://linux.die.net/man/2/gettimeofday
 
 [PTX's `%globaltimer`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer
-

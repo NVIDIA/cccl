@@ -1652,4 +1652,3 @@ CUB 0.9.1 is a minor release.
 Initial preview release.
 CUB is the first durable, high-performance library of cooperative block-level,
   warp-level, and thread-level primitives for CUDA kernel programming.
-

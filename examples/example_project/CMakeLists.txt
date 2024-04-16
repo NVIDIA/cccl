@@ -23,7 +23,7 @@ include(cmake/CPM.cmake)
 
 
 # We define these as variables so they can be overriden in CI to pull from a PR instead of CCCL `main`
-# In your project, these variables are unncessary and you can just use the values directly 
+# In your project, these variables are unncessary and you can just use the values directly
 set(CCCL_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository to fetch CCCL from")
 set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
@@ -46,7 +46,7 @@ add_executable(example_project example.cu)
 # CCCL headers, including setting up include paths, compiler flags, etc.
 target_link_libraries(example_project PRIVATE CCCL::CCCL)
 
-# This is only relevant for internal testing and not needed by end users. 
+# This is only relevant for internal testing and not needed by end users.
 include(CTest)
 enable_testing()
 add_test(NAME example_project COMMAND example_project)

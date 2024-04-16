@@ -66,7 +66,7 @@ __host__ __device__
 void make_trie(/* trie to insert word counts into */ trie& root,
                /* bump allocator to get new nodes*/ cuda::std::atomic<trie*>& bump,
                /* input */ const char* begin, const char* end,
-               /* thread this invocation is for */ unsigned index, 
+               /* thread this invocation is for */ unsigned index,
                /* how many threads there are */ unsigned domain) {
 
     auto const size = end - begin;
@@ -98,19 +98,19 @@ void make_trie(/* trie to insert word counts into */ trie& root,
             else {
                 auto next = bump.fetch_add(1, cuda::std::memory_order_relaxed);
                 n->next[index].ptr.store(next, cuda::std::memory_order_release);
-            } 
-        } 
+            }
+        }
         n = n->next[index].ptr.load(cuda::std::memory_order_relaxed);
     }
 }
 
-__global__ // __launch_bounds__(1024, 1) 
+__global__ // __launch_bounds__(1024, 1)
 void call_make_trie(trie* t, cuda::std::atomic<trie*>* bump, const char* begin, const char* end) {
-    
+
     auto const index = blockDim.x * blockIdx.x + threadIdx.x;
     auto const domain = gridDim.x * blockDim.x;
     make_trie(*t, *bump, begin, end, index, domain);
-    
+
 }
 
 )xxx";

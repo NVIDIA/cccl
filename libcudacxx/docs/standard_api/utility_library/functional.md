@@ -52,4 +52,3 @@ Further research and investigation is required before we can provide this
 [`std::function`]: https://en.cppreference.com/w/cpp/utility/functional/function
 [`std::bind`]: https://en.cppreference.com/w/cpp/utility/functional/bind
 [`std::hash`]: https://en.cppreference.com/w/cpp/utility/hash
-

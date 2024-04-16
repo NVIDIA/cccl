@@ -99,13 +99,13 @@
     {%- endfor -%}
   {%- else if exists("returns") -%}
     {%- if length(returns) == 1 -%}{{first(returns)}}
-    {%- else -%} 
+    {%- else -%}
       {%- for item in returns -%}* {{item}}
       {%- endfor -%}
     {%- endif -%}
   {%- else if exists("returnsList") -%}
     {%- if length(returnsList) == 1 -%}**`{{get(first(returnsList), "name")}}`** {{get(first(returnsList), "text")}}
-    {%- else -%} 
+    {%- else -%}
       {%- for item in returnsList -%}* **`{{item.name}}`**: {{item.text}}
       {%- endfor -%}
     {%- endif -%}

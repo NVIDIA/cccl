@@ -11,4 +11,3 @@ if (${${_VAR}})
 endif ()
 
 endmacro ()
-

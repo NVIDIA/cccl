@@ -162,7 +162,7 @@ def parse_bw(state):
                          state['summaries']), None)
     if not bwutil:
         return None
-    
+
     return extract_bw(bwutil)
 
 class SubBenchState:
@@ -178,10 +178,10 @@ class SubBenchState:
 
     def __repr__(self):
         return str(self.__dict__)
-    
+
     def name(self):
         return ' '.join(f'{k}={v}' for k, v in self.point.items())
-    
+
     def center(self, estimator):
         return estimator(self.samples)
 
@@ -213,7 +213,7 @@ class SubBenchResult:
         for state in self.states:
             result[state.name()] = state.center(estimator)
         return result
-    
+
 
 class BenchResult:
     def __init__(self, json_path, code, elapsed):
@@ -225,10 +225,10 @@ class BenchResult:
             if code == 0:
                 for bench in read_json(json_path)["benchmarks"]:
                     self.subbenches[bench["name"]] = SubBenchResult(bench)
-    
+
     def __repr__(self):
         return str(self.__dict__)
-    
+
     def centers(self, estimator):
         result = {}
         for subbench in self.subbenches:
@@ -321,7 +321,7 @@ class BenchCache:
             cls._instance.existing_tables = set()
 
         return cls._instance
-    
+
 
     def create_table_if_not_exists(self, conn, bench):
         bench_base = bench.get_base()
@@ -373,7 +373,7 @@ class BenchCache:
 
                     conn.execute(query, to_insert)
                     centers[subbench][state.name()] = center
-        
+
         return centers
 
     def pull_bench_centers(self, bench, ct_workload_point, rt_values):
@@ -408,10 +408,10 @@ class BenchCache:
                     result = conn.execute(query, (ctk, cccl, gpu, bench.variant_name())).fetchone()
                     if result is None:
                         return None
-                    
+
                     state_name = ' '.join(f'{k}={v}' for k, v in point_map.items())
                     centers[subbench][state_name] = float(result[0])
-        
+
         return centers
 
 def get_axis_name(axis):
@@ -422,19 +422,19 @@ def get_axis_name(axis):
 
 
 def speedup(base, variant):
-    # If one of the runs failed, dict is empty 
+    # If one of the runs failed, dict is empty
     if not base or not variant:
         return {}
 
     benchmarks = set(base.keys())
     if benchmarks != set(variant.keys()):
         raise Exception("Benchmarks do not match.")
-    
+
     result = {}
     for bench in benchmarks:
         base_states = base[bench]
         variant_states = variant[bench]
-        
+
         state_names = set(base_states.keys())
         if state_names != set(variant_states.keys()):
             raise Exception("States do not match.")
@@ -502,12 +502,12 @@ class Bench:
 
     def get_base(self):
         return BaseBench(self.algorithm_name())
-    
+
     def exe_name(self):
         if self.is_base():
             return self.algorithm_name() + '.base'
         return self.algorithm_name() + '.variant'
-    
+
     def bench_names(self):
         return [bench['name'] for bench in json_benches(self.algname)["benchmarks"]]
 
@@ -547,7 +547,7 @@ class Bench:
 
             subbench_space[bench['name']] = space
         return subbench_space
-    
+
     def ct_axes_value_descriptions(self):
         subbench_descriptions = {}
         for bench in json_benches(self.algname)["benchmarks"]:
@@ -565,7 +565,7 @@ class Bench:
             subbench_descriptions[bench["name"]] = descriptions
         return first_val(subbench_descriptions)
 
-    
+
     def axis_values(self, axis_name):
         result = json_benches(self.algname)
 
@@ -594,7 +594,7 @@ class Bench:
             self.get_base().build()
         build = CMake().build(self)
         return build.code == 0
-    
+
     def definitions(self):
         definitions = self.variant.tuning()
         definitions = definitions + "\n"
@@ -622,7 +622,7 @@ class Bench:
             for value in ct_point:
                 cmd.append('-a')
                 cmd.append(value)
-            
+
             cmd.append('--jsonbin')
             cmd.append(result_path)
 
@@ -632,7 +632,7 @@ class Bench:
             # NVBench is currently broken for multiple GPUs, use `CUDA_VISIBLE_DEVICES`
             cmd.append("-d")
             cmd.append("0")
-            
+
             for bench in rt_values:
                 cmd.append('-b')
                 cmd.append(bench)
@@ -659,13 +659,13 @@ class Bench:
     def ct_workload_space(self, sub_space):
         if not self.build():
             raise Exception("Unable to build benchmark: " + self.label())
-        
+
         return values_to_space(first_val(self.axes_values(sub_space, True)))
 
     def rt_axes_values(self, sub_space):
         if not self.build():
             raise Exception("Unable to build benchmark: " + self.label())
-        
+
         return self.axes_values(sub_space, False)
 
     def run(self, ct_workload_point, rt_values, estimator, is_search=True):
@@ -688,7 +688,7 @@ class Bench:
         result = self.do_run(ct_workload_point, rt_values, timeout, is_search)
         runs_cache.push_run(self, result.code, result.elapsed)
         return bench_cache.push_bench_centers(self, result, estimator)
-    
+
     def speedup(self, ct_workload_point, rt_values, base_estimator, variant_estimator):
         if self.is_base():
             return 1.0
@@ -697,7 +697,7 @@ class Bench:
         base_center = base.run(ct_workload_point, rt_values, base_estimator)
         self_center = self.run(ct_workload_point, rt_values, variant_estimator)
         return speedup(base_center, self_center)
-    
+
     def score(self, ct_workload, rt_values, base_estimator, variant_estimator):
         if self.is_base():
             return 1.0

@@ -46,4 +46,3 @@ jobs:
                                                                     git fetch --all;
                                                                     git checkout ${{github.ref_name}};
                                                                     ${{inputs.build_script}};"
-

@@ -441,7 +441,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`mbarrier.arrive`]: ptx/instructions/mbarrier.arrive.md
 [`mbarrier.arrive_drop`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop
 [`cp.async.mbarrier.arrive`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-cp-async-mbarrier-arrive
-[`mbarrier.test_wait`]: ptx/instructions/mbarrier.test_wait.md 
+[`mbarrier.test_wait`]: ptx/instructions/mbarrier.test_wait.md
 [`mbarrier.try_wait`]: ptx/instructions/mbarrier.try_wait.md
 [`mbarrier.pending_count`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count
 [`tensormap.cp_fenceproxy`]: ptx/instructions/tensormap.cp_fenceproxy.md
