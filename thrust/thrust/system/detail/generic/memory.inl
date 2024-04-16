@@ -28,6 +28,7 @@
 
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/detail/malloc_and_free_fwd.h>
 #include <thrust/system/detail/adl/malloc_and_free.h>
 
 THRUST_NAMESPACE_BEGIN
