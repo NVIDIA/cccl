@@ -52,6 +52,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "c2h/extended_types.cuh"

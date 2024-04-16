@@ -147,6 +147,23 @@ struct random_to_item_t<T, cub::FLOATING_POINT>
   }
 };
 
+template <>
+struct random_to_item_t<bool, cub::Traits<bool>::CATEGORY>
+{
+  float m_min;
+  float m_max;
+
+  __host__ __device__ random_to_item_t(bool min, bool max)
+      : m_min(static_cast<float>(min))
+      , m_max(static_cast<float>(max))
+  {}
+
+  __device__ bool operator()(float random_value)
+  {
+    return random_value < 0.5f * (m_min + m_max);
+  }
+};
+
 template <typename T, int VecItem>
 struct random_to_vec_item_t;
 

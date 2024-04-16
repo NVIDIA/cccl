@@ -87,10 +87,10 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<key_t>;
   using dispatch_t = cub::
-    DispatchStableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
+    DispatchUnstableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
 #else // TUNE_BASE
   using dispatch_t =
-    cub::DispatchStableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
+    cub::DispatchUnstableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters

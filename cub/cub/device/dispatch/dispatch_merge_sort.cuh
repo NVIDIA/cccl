@@ -72,37 +72,46 @@ struct dual_policy_agent_helper_t
  * size. This circumstance needs to be respected when determining whether the fallback policy for large user types is
  * applicable: we must either use the fallback for both or for none of the two agents.
  */
-template <typename DefaultPolicyT,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
-          typename OffsetT,
-          typename CompareOpT,
-          typename KeyT,
-          typename ValueT>
+template < typename DefaultPolicyT,
+           stability_t Stability,
+           typename KeyInputIteratorT,
+           typename ValueInputIteratorT,
+           typename KeyIteratorT,
+           typename ValueIteratorT,
+           typename OffsetT,
+           typename CompareOpT,
+           typename KeyT,
+           typename ValueT>
 class merge_sort_vsmem_helper_t
 {
 private:
   // Default fallback policy with a smaller tile size
   using fallback_policy_t = cub::detail::policy_wrapper_t<DefaultPolicyT, 64, 1>;
 
-  // Helper for the `AgentBlockSort` template with one member type alias for the agent template instantiated with the
-  // default policy and one instantiated with the fallback policy
-  using block_sort_helper_t = dual_policy_agent_helper_t<
-    DefaultPolicyT,
-    fallback_policy_t,
-    AgentBlockSort,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
-  using default_block_sort_agent_t  = typename block_sort_helper_t::default_agent_t;
-  using fallback_block_sort_agent_t = typename block_sort_helper_t::fallback_agent_t;
+  using default_block_sort_agent_t =
+    AgentBlockSort< DefaultPolicyT,
+                    Stability,
+                    KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    KeyT,
+                    ValueT>;
+  using fallback_block_sort_agent_t =
+    AgentBlockSort< fallback_policy_t,
+                    Stability,
+                    KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    KeyT,
+                    ValueT>;
+  static constexpr auto block_sort_default_size  = sizeof(typename default_block_sort_agent_t::TempStorage);
+  static constexpr auto block_sort_fallback_size = sizeof(typename fallback_block_sort_agent_t::TempStorage);
 
   // Helper for the `AgentMerge` template with one member type alias for the agent template instantiated with the
   // default policy and one instantiated with the fallback policy
@@ -122,9 +131,8 @@ private:
   // Use fallback if either (a) the default block sort or (b) the block merge agent exceed the maximum shared memory
   // available per block and both (1) the fallback block sort and (2) the fallback merge agent would not exceed the
   // available shared memory
-  static constexpr auto max_default_size = (cub::max)(block_sort_helper_t::default_size, merge_helper_t::default_size);
-  static constexpr auto max_fallback_size =
-    (cub::max)(block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
+  static constexpr auto max_default_size  = (cub::max)(block_sort_default_size, merge_helper_t::default_size);
+  static constexpr auto max_fallback_size = (cub::max)(block_sort_fallback_size, merge_helper_t::fallback_size);
   static constexpr bool uses_fallback_policy =
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
@@ -137,6 +145,7 @@ public:
 } // namespace detail
 
 template <typename ChainedPolicyT,
+          stability_t Stability,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -148,6 +157,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(
   cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -170,6 +180,7 @@ __launch_bounds__(
 {
   using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -242,6 +253,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 }
 
 template <typename ChainedPolicyT,
+          stability_t Stability,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -253,6 +265,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(
   cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -275,6 +288,7 @@ __launch_bounds__(
 {
   using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -376,7 +390,8 @@ template <typename KeyInputIteratorT,
           typename ValueIteratorT,
           typename OffsetT,
           typename CompareOpT,
-          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>,
+          stability_t Stability   = stability_t::stable>
 struct DispatchMergeSort : SelectedPolicy
 {
   using KeyT   = cub::detail::value_t<KeyIteratorT>;
@@ -477,6 +492,7 @@ struct DispatchMergeSort : SelectedPolicy
 
     using merge_sort_helper_t = cub::detail::merge_sort_vsmem_helper_t<
       MergePolicyT,
+      Stability,
       KeyInputIteratorT,
       ValueInputIteratorT,
       KeyIteratorT,
@@ -562,6 +578,7 @@ struct DispatchMergeSort : SelectedPolicy
         .doit(
           DeviceMergeSortBlockSortKernel<
             MaxPolicyT,
+            Stability,
             KeyInputIteratorT,
             ValueInputIteratorT,
             KeyIteratorT,
@@ -647,15 +664,17 @@ struct DispatchMergeSort : SelectedPolicy
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream)
           .doit(
-            DeviceMergeSortMergeKernel<MaxPolicyT,
-                                       KeyInputIteratorT,
-                                       ValueInputIteratorT,
-                                       KeyIteratorT,
-                                       ValueIteratorT,
-                                       OffsetT,
-                                       CompareOpT,
-                                       KeyT,
-                                       ValueT>,
+            DeviceMergeSortMergeKernel<
+              MaxPolicyT,
+              Stability,
+              KeyInputIteratorT,
+              ValueInputIteratorT,
+              KeyIteratorT,
+              ValueIteratorT,
+              OffsetT,
+              CompareOpT,
+              KeyT,
+              ValueT>,
             ping,
             d_output_keys,
             d_output_items,
@@ -762,5 +781,39 @@ struct DispatchMergeSort : SelectedPolicy
       stream);
   }
 };
+
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+using DispatchStableMergeSort =
+  DispatchMergeSort<KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    SelectedPolicy,
+                    stability_t::stable>;
+
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+using DispatchUnstableMergeSort =
+  DispatchMergeSort<KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    SelectedPolicy,
+                    stability_t::unstable>;
 
 CUB_NAMESPACE_END

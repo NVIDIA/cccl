@@ -216,7 +216,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
+      DispatchUnstableMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
@@ -370,7 +370,12 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
+      DispatchUnstableMergeSort<KeyInputIteratorT,
+                                ValueInputIteratorT,
+                                KeyIteratorT,
+                                ValueIteratorT,
+                                PromotedOffsetT,
+                                CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -511,7 +516,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+      DispatchUnstableMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -650,7 +655,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+      DispatchUnstableMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -785,8 +790,11 @@ struct DeviceMergeSort
   {
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortPairs<KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
+    using DispatchMergeSortT =
+      DispatchStableMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
+
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
   }
 
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
@@ -901,8 +909,19 @@ struct DeviceMergeSort
   {
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortKeys<KeyIteratorT, PromotedOffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
+    using DispatchMergeSortT =
+      DispatchStableMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -1030,8 +1049,19 @@ struct DeviceMergeSort
   {
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(
-      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
+    using DispatchMergeSortT =
+      DispatchStableMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      static_cast<NullType*>(nullptr),
+      d_output_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 };
 

@@ -166,10 +166,10 @@ void seg_sort(nvbench::state& state,
   using policy_t   = device_seg_sort_policy_hub<key_t>;
   using dispatch_t = //
     cub::
-      DispatchStableSegmentedSort<is_descending, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t, policy_t>;
+      DispatchUnstableSegmentedSort<is_descending, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t, policy_t>;
 #else
   using dispatch_t = //
-    cub::DispatchStableSegmentedSort<is_descending, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t>;
+    cub::DispatchUnstableSegmentedSort<is_descending, key_t, value_t, offset_t, begin_offset_it_t, end_offset_it_t>;
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));

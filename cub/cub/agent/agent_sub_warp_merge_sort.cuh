@@ -49,11 +49,11 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int WARP_THREADS_ARG,
-          int ITEMS_PER_THREAD_ARG,
-          cub::WarpLoadAlgorithm LOAD_ALGORITHM_ARG   = cub::WARP_LOAD_DIRECT,
-          cub::CacheLoadModifier LOAD_MODIFIER_ARG    = cub::LOAD_LDG,
-          cub::WarpStoreAlgorithm STORE_ALGORITHM_ARG = cub::WARP_STORE_DIRECT>
+template < int WARP_THREADS_ARG,
+           int ITEMS_PER_THREAD_ARG,
+           cub::WarpLoadAlgorithm LOAD_ALGORITHM_ARG   = cub::WARP_LOAD_DIRECT,
+           cub::CacheLoadModifier LOAD_MODIFIER_ARG    = cub::LOAD_LDG,
+           cub::WarpStoreAlgorithm STORE_ALGORITHM_ARG = cub::WARP_STORE_DIRECT>
 struct AgentSubWarpMergeSortPolicy
 {
   static constexpr int WARP_THREADS     = WARP_THREADS_ARG;
@@ -89,6 +89,9 @@ struct AgentSmallAndMediumSegmentedSortPolicy
  * @tparam IS_DESCENDING
  *   Whether or not the sorted-order is high-to-low
  *
+ * @tparam Stability
+ *   Whether to use a stable sorting method
+ *
  * @tparam PolicyT
  *   Chained tuning policy
  *
@@ -101,7 +104,7 @@ struct AgentSmallAndMediumSegmentedSortPolicy
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
+template <bool IS_DESCENDING, stability_t Stability, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
 class AgentSubWarpSort
 {
   using traits           = detail::radix::traits_t<KeyT>;
@@ -241,7 +244,14 @@ public:
         WARP_SYNC(warp_merge_sort.get_member_mask());
       }
 
-      warp_merge_sort.Sort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      _CCCL_IF_CONSTEXPR (Stability == stability_t::stable)
+      {
+        warp_merge_sort.StableSort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      }
+      else
+      {
+        warp_merge_sort.Sort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      }
       WARP_SYNC(warp_merge_sort.get_member_mask());
 
       WarpStoreKeysT(storage.store_keys).Store(keys_output, keys, segment_size);

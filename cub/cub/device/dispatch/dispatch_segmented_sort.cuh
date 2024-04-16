@@ -105,6 +105,7 @@ CUB_NAMESPACE_BEGIN
  *   considered empty.
  */
 template <bool IS_DESCENDING,
+          stability_t Stability,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -141,7 +142,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
-  using AgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using AgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, Stability, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -281,6 +282,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *   considered empty.
  */
 template <bool IS_DESCENDING,
+          stability_t Stability,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -312,9 +314,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr int threads_per_medium_segment = MediumPolicyT::WARP_THREADS;
   constexpr int threads_per_small_segment  = SmallPolicyT::WARP_THREADS;
 
-  using MediumAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+  using MediumAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, Stability, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
-  using SmallAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+  using SmallAgentWarpMergeSortT = AgentSubWarpSort<IS_DESCENDING, Stability, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<unsigned int>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
@@ -1008,7 +1010,8 @@ template <bool IS_DESCENDING,
           typename OffsetT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename SelectedPolicy = DeviceSegmentedSortPolicy<KeyT, ValueT>>
+          typename SelectedPolicy = DeviceSegmentedSortPolicy<KeyT, ValueT>,
+          stability_t Stability   = stability_t::stable>
 struct DispatchSegmentedSort : SelectedPolicy
 {
   static constexpr int KEYS_ONLY = std::is_same<ValueT, NullType>::value;
@@ -1344,13 +1347,15 @@ struct DispatchSegmentedSort : SelectedPolicy
                                          BeginOffsetIteratorT,
                                          EndOffsetIteratorT,
                                          OffsetT>,
-          DeviceSegmentedSortKernelSmall<IS_DESCENDING,
-                                         MaxPolicyT,
-                                         KeyT,
-                                         ValueT,
-                                         BeginOffsetIteratorT,
-                                         EndOffsetIteratorT,
-                                         OffsetT>,
+          DeviceSegmentedSortKernelSmall<
+            IS_DESCENDING,
+            Stability,
+            MaxPolicyT,
+            KeyT,
+            ValueT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            OffsetT>,
           three_way_partition_temp_storage_bytes,
           d_keys_double_buffer,
           d_values_double_buffer,
@@ -1367,13 +1372,15 @@ struct DispatchSegmentedSort : SelectedPolicy
         // on extra partitioning steps.
 
         error = SortWithoutPartitioning<LargeSegmentPolicyT>(
-          DeviceSegmentedSortFallbackKernel<IS_DESCENDING,
-                                            MaxPolicyT,
-                                            KeyT,
-                                            ValueT,
-                                            BeginOffsetIteratorT,
-                                            EndOffsetIteratorT,
-                                            OffsetT>,
+          DeviceSegmentedSortFallbackKernel<
+            IS_DESCENDING,
+            Stability,
+            MaxPolicyT,
+            KeyT,
+            ValueT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            OffsetT>,
           d_keys_double_buffer,
           d_values_double_buffer);
       }
@@ -1680,5 +1687,39 @@ private:
     return error;
   }
 };
+
+template <bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename SelectedPolicy = DeviceSegmentedSortPolicy<KeyT, ValueT>>
+using DispatchStableSegmentedSort =
+  DispatchSegmentedSort<IS_DESCENDING,
+                        KeyT,
+                        ValueT,
+                        OffsetT,
+                        BeginOffsetIteratorT,
+                        EndOffsetIteratorT,
+                        SelectedPolicy,
+                        stability_t::stable>;
+
+template <bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename SelectedPolicy = DeviceSegmentedSortPolicy<KeyT, ValueT>>
+using DispatchUnstableSegmentedSort =
+  DispatchSegmentedSort<IS_DESCENDING,
+                        KeyT,
+                        ValueT,
+                        OffsetT,
+                        BeginOffsetIteratorT,
+                        EndOffsetIteratorT,
+                        SelectedPolicy,
+                        stability_t::unstable>;
 
 CUB_NAMESPACE_END

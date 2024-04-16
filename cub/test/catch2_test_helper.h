@@ -34,6 +34,7 @@
 #include <type_traits>
 
 #include "cuda/std/detail/libcxx/include/__cccl/diagnostic.h"
+#include "test_util_sort.h"
 #include "test_util_vec.h"
 #include <metal.hpp>
 
@@ -174,6 +175,37 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
 {
   return CustomEqualsRangeMatcher<Range, bitwise_equal>(range);
 }
+
+// Catch2 Matcher that checks that a range is sorted
+template <typename Range, typename CompareOp>
+struct CustomSortedRangeMatcher : Catch::MatcherBase<Range>
+{
+  CustomSortedRangeMatcher(CompareOp const& op)
+      : compare_op{op}
+  {}
+
+  bool match(Range const& range) const override
+  {
+    using std::begin;
+    using std::end;
+
+    return IsSorted(begin(range), end(range), compare_op);
+  }
+
+  std::string describe() const override
+  {
+    return "Sorted";
+  }
+
+private:
+  CompareOp const& compare_op;
+};
+
+template <typename Range, typename CompareOp>
+auto SortedRange(const CompareOp& compare_op) -> CustomSortedRangeMatcher<Range, CompareOp>
+{
+  return CustomSortedRangeMatcher<Range, CompareOp>(compare_op);
+}
 } // namespace detail
 
 #define REQUIRE_EQ_WITH_NAN_MATCHING(ref, out)              \
@@ -188,6 +220,13 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
     auto vec_ref = detail::to_vec(ref);                     \
     auto vec_out = detail::to_vec(out);                     \
     REQUIRE_THAT(vec_ref, detail::NaNEqualsRange(vec_out)); \
+  }
+
+#define REQUIRE_SORTED(out, compare_op)                            \
+  {                                                                \
+    auto vec_out = detail::to_vec(out);                            \
+    using Range  = decltype(vec_out);                              \
+    REQUIRE_THAT(vec_out, detail::SortedRange<Range>(compare_op)); \
   }
 
 #include <c2h/custom_type.cuh>
