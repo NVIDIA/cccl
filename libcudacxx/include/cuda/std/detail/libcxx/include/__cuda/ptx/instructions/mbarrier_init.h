@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // 9.7.12.15.9. Parallel Synchronization and Communication Instructions: mbarrier.init
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init
 /*
-// mbarrier.init.b64 [addr], count; // PTX ISA 70, SM_80
+// mbarrier.init.shared.b64 [addr], count; // PTX ISA 70, SM_80
 template <typename=void>
 __device__ static inline void mbarrier_init(
   uint64_t* addr,
@@ -46,7 +46,7 @@ _CCCL_DEVICE static inline void mbarrier_init(_CUDA_VSTD::uint64_t* __addr, cons
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
-    (asm("mbarrier.init.b64 [%0], %1;"
+    (asm("mbarrier.init.shared.b64 [%0], %1;"
          :
          : "r"(__as_ptr_smem(__addr)), "r"(__count)
          : "memory");),
