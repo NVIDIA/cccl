@@ -94,14 +94,13 @@ struct level_dimensions
   constexpr _CCCL_HOST_DEVICE level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  constexpr level_dimensions(){};
+  constexpr _CCCL_HOST_DEVICE level_dimensions(){};
 };
 
 template <size_t X, size_t Y = 1, size_t Z = 1>
 _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
 {
-  detail::dims<X, Y, Z> dims;
-  return level_dimensions<grid_level, decltype(dims)>(dims);
+  return level_dimensions<grid_level, detail::dims<X, Y, Z>>();
 }
 
 template <typename T>
@@ -115,8 +114,7 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
 template <size_t X, size_t Y = 1, size_t Z = 1>
 _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 {
-  detail::dims<X, Y, Z> dims;
-  return level_dimensions<cluster_level, decltype(dims)>(dims);
+  return level_dimensions<cluster_level, detail::dims<X, Y, Z>>();
 }
 
 template <typename T>
@@ -130,8 +128,7 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
 template <size_t X, size_t Y = 1, size_t Z = 1>
 _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 {
-  detail::dims<X, Y, Z> dims;
-  return level_dimensions<block_level, decltype(dims)>(dims);
+  return level_dimensions<block_level, detail::dims<X, Y, Z>>();
 }
 
 template <typename T>

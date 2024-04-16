@@ -183,7 +183,7 @@ void flatten_static_test()
   constexpr auto grid_y    = 4;
   constexpr auto grid_z    = 1;
 
-  constexpr auto static_dims = cuda_next::block_dims<block_cnt>() & cuda_next::grid_dims<grid_x, grid_y, grid_z>();
+  auto static_dims = cuda_next::block_dims<block_cnt>() & cuda_next::grid_dims<grid_x, grid_y, grid_z>();
   using dims_type            = decltype(static_dims);
 
   test_host_dev(static_dims, [=] __host__ __device__(const dims_type& dims) {
