@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-import cccl.bench 
+import cccl.bench
 
 
 def parse_arguments():

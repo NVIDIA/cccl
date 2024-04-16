@@ -6,4 +6,3 @@
 
 [`cuda::memcpy_async`]: {{ "extended_api/asynchronous_operations/memcpy_async.html" | relative_url }}
 [`cuda::device::memcpy_async_tx`]: {{ "extended_api/asynchronous_operations/memcpy_async_tx.html" | relative_url }}
-

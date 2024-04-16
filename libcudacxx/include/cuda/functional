@@ -162,4 +162,3 @@ proclaim_return_type(_Fn&& __fn) noexcept {
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CUDA_FUNCTIONAL_
-

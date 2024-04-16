@@ -4,4 +4,3 @@
 # prefix to CUB's namespace macro.
 
 sed -i -e 's/CUB_NS_P/THRUST_CUB_NS_P/g' `find . -type f`
-

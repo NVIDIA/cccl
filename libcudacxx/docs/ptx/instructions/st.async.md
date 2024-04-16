@@ -48,5 +48,3 @@ __device__ static inline void st_async(
   const B32 (&value)[4],
   uint64_t* remote_bar);
 ```
-
-

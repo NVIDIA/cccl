@@ -19,5 +19,3 @@
 #include <cuda/std/detail/__pragma_pop>
 
 #endif //_CUDA_STD_EXPECTED
-
-

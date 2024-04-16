@@ -50,4 +50,3 @@ It's also possible to benchmark a subset of algorithms and workloads:
     &&&& PERF cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__I32___Elements_io__pow2__24 0.00016899200272746384 -sec
     &&&& PERF cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__I32___Elements_io__pow2__28 0.002696000039577484 -sec
     &&&& PASSED bench
-

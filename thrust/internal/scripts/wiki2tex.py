@@ -136,7 +136,7 @@ def apply_rules(txt, rules):
 
 def split_sections(contents):
     """Given one string of all file contents, return list of sections
-    
+
     Return format is list of pairs, each pair has section title
     and list of lines.  Result is ordered as the original input.
 
@@ -171,19 +171,19 @@ def filter_sections(splitinput, removelst):
 def main():
     infile = codecs.open(sys.argv[1], encoding='utf-8')
     outfile = codecs.open(sys.argv[2], mode='w', encoding='utf-8')
-    
+
     contents = infile.read()
-    
+
     # Remove first three lines
     contents = '\n'.join(contents.split('\n')[3:])
-    
+
     # Split sections and filter out some of them
     sections = split_sections(contents)
     contents = filter_sections(sections, ['Introduction', 'Prerequisites', 'Simple Example'])
-    
+
     # Convert to latex format
     contents = apply_rules(contents, rules)
-    
+
     infile.close()
     outfile.write(contents)
     outfile.close()

@@ -73,7 +73,7 @@ jobs:
                   }
                 }
               }' > project_data.json
-            
+
             # Filter the json result to only the project-specific ID for the PR
             # A PR can be in multiple projects so we need to filter by the project ID we want
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
@@ -84,7 +84,7 @@ jobs:
 
       - name: Get Status, Start Sprint, and Working Sprint Fields from the PR
         id: get_pr_status
-        env: 
+        env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Query the PR's status from the project

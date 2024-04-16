@@ -58,4 +58,3 @@ example_kernel(cuda::std::uint64_t* global, cuda::std::size_t element_count) {
 
 
 [`cuda::pipeline::quit`]: ./pipeline/quit.md
-

@@ -68,4 +68,3 @@ On the rare occasion that we cannot do work in the open, for example when
   exist on an internal NVIDIA GitLab instance instead of the public GitHub.
 By default, everything should be in the open on GitHub unless there is a strong
   motivation for it to not be open.
-

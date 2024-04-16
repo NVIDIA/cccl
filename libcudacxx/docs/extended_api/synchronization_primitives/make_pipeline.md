@@ -124,4 +124,3 @@ __global__ void example_kernel() {
 [_ThreadGroup_]: ../thread_groups.md
 
 [`cuda::pipeline_shared_state<Scope>`]: ./pipeline_shared_state.md
-

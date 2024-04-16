@@ -37,4 +37,3 @@ toolkit version 12.2 or higher.
 
 Our implementation includes support for the `__nv_bfloat16` type from `<cuda_bf16.h>`, when the conditions for the
 support of `__half` are fulfilled, and when `CUB_DISABLE_BF16_SUPPORT` is **not** defined.
-

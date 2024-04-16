@@ -30,5 +30,3 @@ __global__ void kernel() {
     *remote_x = 2;
 }
 ```
-
-

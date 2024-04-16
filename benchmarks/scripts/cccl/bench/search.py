@@ -72,7 +72,7 @@ def filter_benchmarks_by_regex(benchmarks, R):
 def filter_benchmarks(benchmarks, args):
     if args.run_shard >= args.num_shards:
         raise ValueError('run-shard must be less than num-shards')
-    
+
     algnames = filter_benchmarks_by_regex(benchmarks.keys(), args.R)
     if args.P0:
         algnames = filter_benchmarks_by_regex(algnames, '^(?!.*segmented).*(scan|reduce|select|sort).*')
@@ -81,9 +81,9 @@ def filter_benchmarks(benchmarks, args):
     if args.num_shards > 1:
         algnames = np.array_split(algnames, args.num_shards)[args.run_shard].tolist()
         return algnames
-    
+
     return algnames
-    
+
 
 def search(seeker):
     args = parse_arguments()
@@ -103,7 +103,7 @@ def search(seeker):
     if args.list_benches:
         list_benches()
         return
-    
+
     run_benches(filter_benchmarks(config.benchmarks, args), workload_sub_space, seeker)
 
 
@@ -130,9 +130,9 @@ class BruteForceSeeker:
             for variant in variants:
                 bench = Bench(algname, variant, list(ct_workload))
                 if bench.build():
-                    score = bench.score(ct_workload, 
+                    score = bench.score(ct_workload,
                                         rt_values,
-                                        self.base_center_estimator, 
+                                        self.base_center_estimator,
                                         self.variant_center_estimator)
 
                     print(bench.label(), score)

@@ -50,11 +50,11 @@ void InitializeSimpleKeyValueSortTest(
   unsorted_keys[4] = 2;  unsorted_values[4] = 4;
   unsorted_keys[5] = 0;  unsorted_values[5] = 5;
   unsorted_keys[6] = 4;  unsorted_values[6] = 6;
-  
+
   sorted_keys.resize(7);
   sorted_values.resize(7);
-  sorted_keys[0] = 0;  sorted_values[1] = 0;  
-  sorted_keys[1] = 1;  sorted_values[3] = 1;  
+  sorted_keys[0] = 0;  sorted_values[1] = 0;
+  sorted_keys[1] = 1;  sorted_values[3] = 1;
   sorted_keys[2] = 2;  sorted_values[6] = 2;
   sorted_keys[3] = 3;  sorted_values[5] = 3;
   sorted_keys[4] = 4;  sorted_values[2] = 4;
@@ -179,7 +179,7 @@ void TestMergeSortAscendingKeyValue(const size_t n)
 #if 0
     thrust::host_vector<T>   h_keys = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_keys = h_keys;
-    
+
     thrust::host_vector<T>   h_values = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_values = h_values;
 
@@ -204,7 +204,7 @@ void TestMergeSortDescendingKeyValue(void)
 
     thrust::host_vector<int>   h_keys = unittest::random_integers<int>(n);
     thrust::device_vector<int> d_keys = h_keys;
-    
+
     thrust::host_vector<int>   h_values = unittest::random_integers<int>(n);
     thrust::device_vector<int> d_values = h_values;
 

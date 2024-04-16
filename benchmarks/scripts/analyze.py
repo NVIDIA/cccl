@@ -131,7 +131,7 @@ def compute_workload_score(rt_axes_values, rt_axes_ids, weights, row):
     rt_workload = []
     for rt_axis in rt_axes_values:
         rt_workload.append("{}={}".format(rt_axis, row[rt_axis]))
-    
+
     weight = cccl.bench.get_workload_weight(rt_workload, rt_axes_values, rt_axes_ids, weights)
     return row['speedup'] * weight
 
@@ -188,7 +188,7 @@ def remove_matching_distributions(alpha, df):
 def get_filenames_map(arr):
     if not arr:
         return []
-        
+
     prefix = arr[0]
     for string in arr:
         while not string.startswith(prefix):
@@ -225,7 +225,7 @@ def iterate_case_dfs(args, callable):
     for algname in algnames:
         if not pattern.match(algname):
             continue
-        
+
         case_dfs = {}
         for subbench in storage.subbenches(algname):
             for file in storages:
@@ -260,7 +260,7 @@ def iterate_case_dfs(args, callable):
                                 case_dfs[point_str][subbench] = case_df
                             else:
                                 case_dfs[point_str][subbench] = pd.concat([case_dfs[point_str][subbench], case_df])
-            
+
         for point_str in case_dfs:
             callable(algname, point_str, case_dfs[point_str])
 
@@ -415,7 +415,7 @@ def case_coverage_plot(algname, ct_point_name, case_dfs):
             data_dict['speedup'] = speedup
             # data_dict['variant'] = variant
             data_list.append(data_dict)
-    
+
     df = pd.DataFrame(data_list)
     parallel_coordinates_plot(df, "{} ({})".format(algname, ct_point_name))
 
@@ -447,7 +447,7 @@ def case_pair_plot(algname, ct_point_name, case_dfs):
 
             data_dict['speedup'] = speedup
             data_list.append(data_dict)
-    
+
     df = pd.DataFrame(data_list)
     sns.pairplot(df, hue='speedup')
     plt.title("{} ({})".format(algname, ct_point_name))
@@ -460,7 +460,7 @@ def pair_plot(args):
 
 def qrde_hd(samples):
     """
-    Computes quantile-respectful density estimation based on the Harrell-Davis 
+    Computes quantile-respectful density estimation based on the Harrell-Davis
     quantile estimator. The implementation is based on the following post:
     https://aakinshin.net/posts/qrde-hd by Andrey Akinshin
     """
@@ -517,7 +517,7 @@ def extract_modes(samples):
         width = bin_lower[right + 1] - bin_lower[left]
         total_area = width * min_height
         total_bin_area = (right - left + 1) * bin_area
-        
+
         if total_bin_area / total_area < sensitivity:
             mode_ids.append(mode_candidate)
             return True
@@ -550,7 +550,7 @@ def hd_displot(samples, label, ax):
     mode_ids = extract_modes(samples)
 
     min_sample, max_sample = min(samples), max(samples)
-    
+
     xs = [min_sample]
     ys = [0]
 
@@ -609,7 +609,7 @@ def variant_ratio(data, variant, ax):
         variant_x += variant_widths[i] / 2
         quantiles.append(i * precision)
         ratios.append(base_x / variant_x)
-    
+
     ax.plot(quantiles, ratios, label=variant, color=color)
     ax.axhline(1, color='red', alpha=0.7)
     ax.legend()
@@ -635,7 +635,7 @@ def case_variants(pattern, mode, algname, ct_point_name, case_dfs):
             vertical_axis_name = 'Elements{io}[pow2]'
         horizontal_axes = rt_axes
         horizontal_axes.remove(vertical_axis_name)
-        vertical_axis_values = rt_axes_values[vertical_axis_name] 
+        vertical_axis_values = rt_axes_values[vertical_axis_name]
 
         vertical_axis_ids = {}
         for idx, val in enumerate(vertical_axis_values):
@@ -800,7 +800,7 @@ def main():
     if args.pair_plot:
         pair_plot(args)
         return
-    
+
     if args.variants_pdf:
         variants(args, 'pdf')
         return
@@ -808,7 +808,7 @@ def main():
     if args.variants_ratio:
         variants(args, 'ratio')
         return
-    
+
     if args.offload:
         offload(args)
         return

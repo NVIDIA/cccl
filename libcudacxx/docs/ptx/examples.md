@@ -6,5 +6,3 @@ has_toc: true
 ---
 
 # Examples
-
-

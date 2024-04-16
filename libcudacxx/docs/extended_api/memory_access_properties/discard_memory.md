@@ -14,7 +14,7 @@ __device__ void discard_memory(void volatile* ptr, size_t nbytes);
 
 **Effects**: equivalent to `memset(ptr, _indeterminate_, nbytes)`.
 
-**Hint**: to discard modified cache lines without writing back the cached data to memory. 
+**Hint**: to discard modified cache lines without writing back the cached data to memory.
 Enables using global memory as temporary scratch space.
 Does **not** generate any HW store operations.
 

@@ -19,7 +19,7 @@ if(GIT_FOUND)
   endif()
 endif()
 
-# Sometimes this script is used outside of a Git repository. 
+# Sometimes this script is used outside of a Git repository.
 # In this case, we read the revision from cccl/cccl_version instead.
 if ("${cccl_revision}" STREQUAL "")
   file(READ "${CMAKE_SOURCE_DIR}/cccl_version" cccl_revision)

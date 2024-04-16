@@ -157,4 +157,3 @@ endif
 $(info #### CCBIN         : $(CCBIN))
 $(info #### CCBIN VERSION : $(shell $(CCBIN_ENVIRONMENT) $(CCBIN) $(VERSION_FLAG)))
 $(info #### CXX_STD       : $(CXX_STD))
-

@@ -18,7 +18,7 @@
 #include <string>
 
 // clang-format off
-const size_t standard_test_sizes[] = 
+const size_t standard_test_sizes[] =
 {
   0, 1, 2, 3, 4, 5, 8, 10, 13, 16, 17, 19, 27, 30, 31, 32,
   33, 35, 42, 53, 58, 63, 64, 65, 72, 97, 100, 127, 128, 129, 142, 183, 192, 201, 240, 255, 256,

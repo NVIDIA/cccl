@@ -9,4 +9,3 @@ add_custom_target(
     get-sm ALL
     COMMAND getsm
 )
-

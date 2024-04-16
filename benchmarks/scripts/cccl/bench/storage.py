@@ -30,7 +30,7 @@ class StorageBase:
         with self.conn:
             rows = self.conn.execute('SELECT DISTINCT algorithm FROM subbenches').fetchall()
             return [row[0] for row in rows]
-    
+
     def subbenches(self, algname):
         with self.conn:
             rows = self.conn.execute('SELECT DISTINCT bench FROM subbenches WHERE algorithm=?', (algname,)).fetchall()
@@ -43,7 +43,7 @@ class StorageBase:
             df['samples'] = df['samples'].apply(blob_to_samples)
 
         return df
-    
+
     def store_df(self, algname, df):
         df['samples'] = df['samples'].apply(fpzip.compress)
         df.to_sql(algname, self.conn, if_exists='replace', index=False)
