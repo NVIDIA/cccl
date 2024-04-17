@@ -13,4 +13,3 @@ do
     sed -i "${file}" ${header_replacements}
     perl -pi -e 's/((?<!cuda::))std::/\1cuda::std::/g' "${file}"
 done
-

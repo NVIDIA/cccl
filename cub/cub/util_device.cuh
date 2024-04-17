@@ -825,7 +825,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
  *   Dynamically allocated shared memory in bytes. Default is 0.
  */
 template <typename KernelPtr>
-_CCCL_ATTRIBUTE_HIDDEN CUB_RUNTIME_FUNCTION inline cudaError_t
+_CCCL_VISIBILITY_HIDDEN CUB_RUNTIME_FUNCTION inline cudaError_t
 MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, int dynamic_smem_bytes = 0)
 {
   return CubDebug(
@@ -854,7 +854,7 @@ struct KernelConfig
   {}
 
   template <typename AgentPolicyT, typename KernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t Init(KernelPtrT kernel_ptr)
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t Init(KernelPtrT kernel_ptr)
   {
     block_threads      = AgentPolicyT::BLOCK_THREADS;
     items_per_thread   = AgentPolicyT::ITEMS_PER_THREAD;

@@ -43,7 +43,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cccl_config> // _LIBCUDACXX_CUDACC_VER
+#include <cuda/__cccl_config> // _CCCL_CUDACC_VER
 #include <cuda/std/limits>
 
 #if !_NVHPC_CUDA
@@ -53,7 +53,7 @@
 #if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
 #  include <cuda_bf16.h>
 // cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
-#  if _LIBCUDACXX_CUDACC_VER >= 1108000
+#  if _CCCL_CUDACC_VER >= 1108000
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 #    if defined(_CCCL_COMPILER_MSVC)
 #      pragma warning(push)
@@ -85,7 +85,7 @@ CUB_NAMESPACE_BEGIN
 #      define CUB_IS_INT128_ENABLED 1
 #    endif // !defined(__CUDACC_RTC_INT128__)
 #  else // !defined(__CUDACC_RTC__)
-#    if _LIBCUDACXX_CUDACC_VER >= 1105000
+#    if _CCCL_CUDACC_VER >= 1105000
 #      if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_ICC) \
         || defined(_CCCL_COMPILER_NVHPC)
 #        define CUB_IS_INT128_ENABLED 1

@@ -10,7 +10,7 @@ Warp-Wide "Collective" Primitives
 
    ${repo_docs_api_path}/*Warp*
 
-CUB warp-level algorithms are specialized for execution by threads in the same CUDA warp. 
+CUB warp-level algorithms are specialized for execution by threads in the same CUDA warp.
 These algorithms may only be invoked by ``1 <= n <= 32`` *consecutive* threads in the same warp:
 
 * :cpp:struct:`cub::WarpExchange <cub::WarpExchange>` rearranges data partitioned across a CUDA warp

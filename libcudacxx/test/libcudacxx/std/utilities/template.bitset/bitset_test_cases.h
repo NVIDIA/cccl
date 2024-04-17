@@ -14,7 +14,7 @@
 #include "template_cost_testing.h" // for base cases of REPEAT_*
 #include "test_macros.h"
 
-#ifdef _LIBCUDACXX_CUDACC_BELOW_11_4 // 11.4 introduced support for constexpr device variables
+#ifdef _CCCL_CUDACC_BELOW_11_4 // 11.4 introduced support for constexpr device variables
 #  define BITSET_TEST_CONSTEXPR
 #else
 #  define BITSET_TEST_CONSTEXPR TEST_CONSTEXPR_CXX14

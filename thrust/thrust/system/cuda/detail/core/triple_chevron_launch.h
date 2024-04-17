@@ -46,7 +46,7 @@ namespace cuda_cub
 namespace launcher
 {
 
-struct _CCCL_ATTRIBUTE_HIDDEN triple_chevron
+struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 {
   typedef size_t Size;
   dim3 const grid;

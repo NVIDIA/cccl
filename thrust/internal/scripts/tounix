@@ -4,4 +4,3 @@
 
 #find . -type f \( -name "*.h" -o -name "*.inl" -o -name "*.cu" \) -a \( -not -wholename "*\.hg/*" \) -print
 find . -type f \( -name "*.h" -o -name "*.inl" -o -name "*.cu" \) -a \( -not -wholename "*\.hg/*" \) -exec fromdos -d {} \;
-

@@ -12,4 +12,3 @@ else
     include $(ROOTDIR)/build/config/$(PROFILE).mk
   endif  # VULCAN_TOOLKIT_BASE
 endif  # THRUST_TEST
-

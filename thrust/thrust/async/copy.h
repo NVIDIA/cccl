@@ -112,8 +112,7 @@ struct copy_fn final
               THRUST_FWD(output)))
 
               template <typename... Args>
-              THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const
-    THRUST_RETURNS(call(THRUST_FWD(args)...))
+              _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace copy_detail

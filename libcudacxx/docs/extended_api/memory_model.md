@@ -116,10 +116,10 @@ The following example passes a message stored to the `x` variable by a thread in
 `int f = 0;`
 </td></tr>
 <tr class="header">
-<td markdown="span" align="center"> 
-**Thread 0 Block 0** 
-</td><td markdown="span" align="center"> 
-**Thread 0 Block 1** 
+<td markdown="span" align="center">
+**Thread 0 Block 0**
+</td><td markdown="span" align="center">
+**Thread 0 Block 1**
 </td>
 </tr>
 <tr>
@@ -144,10 +144,10 @@ In the following variation of the previous example, two threads concurrently acc
 `int f = 0;`
 </td></tr>
 <tr>
-<td markdown="span" align="center"> 
-**Thread 0 Block 0** 
-</td><td markdown="span" align="center"> 
-**Thread 0 Block 1** 
+<td markdown="span" align="center">
+**Thread 0 Block 0**
+</td><td markdown="span" align="center">
+**Thread 0 Block 1**
 </td>
 </tr>
 <tr>
@@ -164,11 +164,11 @@ In the following variation of the previous example, two threads concurrently acc
 </tr>
 </table>
 
-While the memory operations on `f` - the store and the loads - are atomic, the scope of the store operation is "block scope". Since the store is performed by Thread 0 of Block 0, it only includes all other threads of Block 0. However, the thread doing the loads is in Block 1, i.e., it is not in a scope included by the store operation performed in Block 0, causing the store and the load to not be "atomic", and introducing a data-race. 
+While the memory operations on `f` - the store and the loads - are atomic, the scope of the store operation is "block scope". Since the store is performed by Thread 0 of Block 0, it only includes all other threads of Block 0. However, the thread doing the loads is in Block 1, i.e., it is not in a scope included by the store operation performed in Block 0, causing the store and the load to not be "atomic", and introducing a data-race.
 
 For more examples see the [PTX memory consistency model litmus tests].
 
-[PTX memory consistency model litmus tests]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#axioms 
+[PTX memory consistency model litmus tests]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#axioms
 [intro.races paragraph 21]: https://eel.is/c++draft/intro.races#21
 [thread.barrier.class paragraph 4]: https://eel.is/c++draft/thread.barrier.class#4
 [thread.latch.class paragraph 2]: https://eel.is/c++draft/thread.latch.class#2

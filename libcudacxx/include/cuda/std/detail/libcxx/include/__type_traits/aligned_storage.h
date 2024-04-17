@@ -60,7 +60,7 @@ typedef __type_list<
   __all_types;
 
 template <size_t _Align>
-struct _ALIGNAS(_Align) __fallback_overaligned
+struct _CCCL_ALIGNAS(_Align) __fallback_overaligned
 {};
 
 template <class _TL, size_t _Align>
@@ -121,7 +121,7 @@ using aligned_storage_t = typename aligned_storage<_Len, _Align>::type;
   template <size_t _Len>                                   \
   struct _LIBCUDACXX_TEMPLATE_VIS aligned_storage<_Len, n> \
   {                                                        \
-    struct _ALIGNAS(n) type                                \
+    struct _CCCL_ALIGNAS(n) type                           \
     {                                                      \
       unsigned char __lx[(_Len + n - 1) / n * n];          \
     };                                                     \

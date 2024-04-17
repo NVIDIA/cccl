@@ -28,4 +28,3 @@ Sorting Performance (keys per second)
 double,      9700181,     27153626,    224345568
 
 The reported numbers are performance rates in "elements per second" (higher is better).
-

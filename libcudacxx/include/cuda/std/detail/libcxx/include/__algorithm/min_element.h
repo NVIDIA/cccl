@@ -60,7 +60,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter __min_element(_Iter __
 }
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value, "std::min_element requires a ForwardIterator");
@@ -72,7 +72,7 @@ min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::min_element(__first, __last, __less{});

@@ -56,8 +56,8 @@ int main(int, char**)
 {
   test();
   test_flip_one<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars
-                                                                   // needed here
+#if TEST_STD_VER > 2011 && !defined(_CCCL_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars
+                                                             // needed here
   static_assert(test(), "");
 #endif
 

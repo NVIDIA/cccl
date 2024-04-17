@@ -26,9 +26,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  _ForwardIterator
-  remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
+_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
   __first = _CUDA_VSTD::find(__first, __last, __value_);
   if (__first != __last)

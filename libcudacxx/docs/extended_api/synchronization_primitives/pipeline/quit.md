@@ -31,4 +31,3 @@ After the completion of a call to `cuda::pipeline::quit`, no other operations
 [`cuda::pipeline::~pipeline`]: ./destructor.md
 
 [`cuda::pipeline_shared_state`]: ../pipeline_shared_state.md
-

@@ -1,6 +1,6 @@
-:: RUN_PM_MODULE must always be at the same spot for packman update to work (batch reloads file during update!) 
+:: RUN_PM_MODULE must always be at the same spot for packman update to work (batch reloads file during update!)
 :: [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-:: Reset errorlevel status (don't inherit from caller) 
+:: Reset errorlevel status (don't inherit from caller)
 @call :ECHO_AND_RESET_ERROR
 :: You can remove the call below if you do your own manual configuration of the dev machines
 call "%~dp0\bootstrap\configure.bat"

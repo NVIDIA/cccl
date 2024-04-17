@@ -136,7 +136,7 @@ struct stable_sort_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD _CCCL_HOST
+  _CCCL_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)
@@ -249,7 +249,7 @@ struct sort_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD _CCCL_HOST
+  _CCCL_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)

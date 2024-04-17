@@ -71,7 +71,7 @@ def merge_dicts(d0, d1):
 
 def change_key_in_dict(d, old_key, new_key):
   """Change the key of the entry in `d` with key `old_key` to `new_key`. If
-  there is an existing entry 
+  there is an existing entry
 
   Returns:
     The modified dict `d`.
@@ -221,7 +221,7 @@ def percent_change_uncertainty(old, old_unc, new, new_unc):
   change and the percent change uncertainty.
   """
   # Let's break this down into a few sub-operations:
-  # 
+  #
   #   absolute_change = new - old         <- Additive propagation.
   #   relative_change = change / abs(old) <- Multiplicative propagation.
   #   percent_change  = 100 * y           <- Multiplicative propagation.
@@ -372,7 +372,7 @@ def sample_variance(X, u = None):
   """
   if u is None: u = arithmetic_mean(X)
   return sum(imap(lambda X_i: (X_i - u) ** 2, X)) / (len(X) - 1)
- 
+
 def sample_standard_deviation(X, u = None, v = None):
   """Computes the sample standard deviation of the sequence `X`.
 
@@ -429,7 +429,7 @@ def combine_arithmetic_mean(As, n = None):
   """
   if n is None: n = combine_sample_size(As)
   return sum(imap(unpack_tuple(lambda u_i, s_i, n_i, t_i: n_i * u_i), As)) / n
-  
+
 def combine_sample_variance(As, n = None, u = None):
   """Computes the combined sample variance of a group of `measured_value`s.
 
@@ -536,7 +536,7 @@ def process_program_arguments():
             "for that variable. The baseline results may be a superset of the "
             "observed performance results, but the reverse is not true. The "
             "baseline results must contain data for every datapoint in the "
-            "observed performance results."),            
+            "observed performance results."),
     type = str
   )
 
@@ -644,9 +644,9 @@ class io_manager(object):
     observed_input_file (`file`) :
       `file` object for the observed results..
     variable_names (`list` of `str`s) :
-      Names of the variables, in order. 
+      Names of the variables, in order.
     variable_units (`list` of `str`s) :
-      Units of the variables, in order. 
+      Units of the variables, in order.
   """
 
   def __init__(self,
@@ -774,11 +774,11 @@ class io_manager(object):
 
   def baseline(self):
     """Return an iterator to the baseline results input sequence."""
-    return imap(lambda row: strip_dict(row), self.baseline_reader) 
+    return imap(lambda row: strip_dict(row), self.baseline_reader)
 
   def observed(self):
     """Return an iterator to the observed results input sequence."""
-    return imap(lambda row: strip_dict(row), self.observed_reader) 
+    return imap(lambda row: strip_dict(row), self.observed_reader)
 
   #############################################################################
   # Output.
@@ -806,7 +806,7 @@ class dependent_variable_parser(object):
   # Parse a variable_name.
   variable_name_rule = r'[^,]+'
 
-  # Parse a variable classification.        
+  # Parse a variable classification.
   dependent_variable_rule = r'(' + variable_name_rule + r')'   \
                           + r','                               \
                           + r'(' + variable_name_rule + r')'   \
@@ -821,7 +821,7 @@ class dependent_variable_parser(object):
     """Parses the string `s` with the form "AVG,STDEV,TRIALS".
 
     Returns:
-      A `measured_variable`. 
+      A `measured_variable`.
 
     Raises:
       AssertionError : If parsing fails.
@@ -850,7 +850,7 @@ class record_aggregator(object):
       A list of control variables provided on the command line.
     dataset (`dict`) :
       A mapping of distinguishing (e.g. control + independent) values (`tuple`s
-      of variable-quantity pairs) to `list`s of dependent values (`dict`s from 
+      of variable-quantity pairs) to `list`s of dependent values (`dict`s from
       variables to lists of cells).
     in_order_dataset_keys :
       A list of unique dataset keys (e.g. distinguishing variables) in order of
@@ -1012,7 +1012,7 @@ class record_aggregator(object):
 
     return combined_dependent_values
 
-  ############################################################################# 
+  #############################################################################
   # Output Stream.
 
   def __iter__(self):
@@ -1101,7 +1101,7 @@ for var in args.dependent_variables:
   dependent_variables.append(parse_dependent_variable(var))
 
 # Read input files and open the output file.
-with io_manager(args.baseline_input_file, 
+with io_manager(args.baseline_input_file,
                 args.observed_input_file,
                 args.output_file,
                 args.preserve_whitespace) as iom:
@@ -1197,7 +1197,7 @@ with io_manager(args.baseline_input_file,
   # Add all baseline input data to the `record_aggregator`.
   for record in iom.baseline():
     baseline_ra.append(record)
-  
+
   for record in iom.observed():
     observed_ra.append(record)
 
@@ -1207,7 +1207,7 @@ with io_manager(args.baseline_input_file,
   for distinguishing_values, observed_dependent_values in observed_ra:
     try:
       baseline_dependent_values = baseline_ra[distinguishing_values]
-    except KeyError: 
+    except KeyError:
       assert False,                                                           \
         "Distinguishing value `"                                            + \
         str(baseline_ra.key_from_dict(distinguishing_values))               + \
@@ -1305,4 +1305,3 @@ with io_manager(args.baseline_input_file,
     # `--output-all-datapoints` option was specified.
     if args.output_all_datapoints or statistically_significant_change:
       iom.write(record)
-

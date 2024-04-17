@@ -34,27 +34,27 @@ using n32_t = _CUDA_VSTD::integral_constant<int, __n>;
  * Conversion from generic pointer -> state space "pointer"
  *
  **************************************************************/
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
+inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
 {
   // Consider adding debug asserts here.
   return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
 }
 
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_dsmem(const void* __ptr)
+inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
   return __as_ptr_smem(__ptr);
 }
 
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
+inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
   return __as_ptr_smem(__ptr);
 }
 
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
+inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
 {
   // Consider adding debug asserts here.
   return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
@@ -66,28 +66,28 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
  *
  **************************************************************/
 template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_smem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_smem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(__ptr));
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_dsmem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_dsmem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_remote_dsmem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_remote_dsmem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(__cvta_global_to_generic(__ptr));
@@ -99,7 +99,7 @@ inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
  *
  **************************************************************/
 template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
+inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 {
 #if _CCCL_STD_VER >= 2017
   static_assert(sizeof(_Tp) == 4, "");
@@ -109,7 +109,7 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
 }
 
 template <typename _Tp>
-inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
+inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
 {
 #if _CCCL_STD_VER >= 2017
   static_assert(sizeof(_Tp) == 8, "");

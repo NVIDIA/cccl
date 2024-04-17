@@ -60,7 +60,7 @@ class CMakeCache:
 
 class CMake:
   def __init__(self):
-    pass 
+    pass
 
   def do_build(self, bench, timeout):
       logger = Logger()
@@ -125,4 +125,3 @@ class CMake:
 
       if p.returncode != 0:
           raise Exception("Unable to clean build directory")
-

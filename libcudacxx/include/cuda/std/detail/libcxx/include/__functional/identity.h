@@ -34,7 +34,7 @@ struct __is_identity : false_type
 struct __identity
 {
   template <class _Tp>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
     return _CUDA_VSTD::forward<_Tp>(__t);
   }
@@ -57,7 +57,7 @@ struct __is_identity<reference_wrapper<const __identity>> : true_type
 struct identity
 {
   template <class _Tp>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
     return _CUDA_VSTD::forward<_Tp>(__t);
   }

@@ -1,4 +1,4 @@
-This example shows how to link a Thrust program contained in 
+This example shows how to link a Thrust program contained in
 a .cu file with a C++ program contained in a .cpp file.  Note
 that device_vector only appears in the .cu file while host_vector
 appears in both.  This relects the fact that algorithms on device
@@ -18,4 +18,3 @@ Alternatively, we can use g++ to perform final linking step.
   $ nvcc -O2 -c device.cu
   $ g++  -O2 -c host.cpp   -I/usr/local/cuda/include/
   $ g++ -o tester device.o host.o -L/usr/local/cuda/lib64 -lcudart
-

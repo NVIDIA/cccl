@@ -245,10 +245,10 @@ private:
     _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Empty(_Tp) noexcept
     {}
   };
-  using _Size = conditional_t<_StoreSize, make_unsigned_t<iter_difference_t<_Iter>>, _Empty>;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Iter __begin_ = _Iter();
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Sent __end_   = _Sent();
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Size __size_  = 0;
+  using _Size                            = conditional_t<_StoreSize, make_unsigned_t<iter_difference_t<_Iter>>, _Empty>;
+  _CCCL_NO_UNIQUE_ADDRESS _Iter __begin_ = _Iter();
+  _CCCL_NO_UNIQUE_ADDRESS _Sent __end_   = _Sent();
+  _CCCL_NO_UNIQUE_ADDRESS _Size __size_  = 0;
 
 public:
 #  if _CCCL_STD_VER >= 2020
@@ -323,7 +323,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES((!copyable<_It>) )
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin()
   {
     return _CUDA_VSTD::move(__begin_);
   }
@@ -333,7 +333,7 @@ public:
     return __end_;
   }
 
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const
   {
     return __begin_ == __end_;
   }
@@ -351,14 +351,14 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
-#  if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+#  if defined(_CCCL_CUDACC_BELOW_11_3)
     _LIBCUDACXX_UNREACHABLE();
-#  endif // _LIBCUDACXX_CUDACC_BELOW_11_3
+#  endif // _CCCL_CUDACC_BELOW_11_3
   }
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(forward_iterator<_It>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
   next(iter_difference_t<_Iter> __n = 1) const&
   {
     auto __tmp = *this;
@@ -366,7 +366,7 @@ public:
     return __tmp;
   }
 
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
   next(iter_difference_t<_Iter> __n = 1) &&
   {
     advance(__n);
@@ -375,7 +375,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(bidirectional_iterator<_It>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
   prev(iter_difference_t<_Iter> __n = 1) const
   {
     auto __tmp = *this;

@@ -119,7 +119,7 @@ struct __fn
 {
   // `[range.prim.size]`: the array case (for rvalues).
   template <class _Tp, size_t _Sz>
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t
   operator()(_Tp (&&)[_Sz]) const noexcept
   {
     return _Sz;
@@ -127,7 +127,7 @@ struct __fn
 
   // `[range.prim.size]`: the array case (for lvalues).
   template <class _Tp, size_t _Sz>
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t
   operator()(_Tp (&)[_Sz]) const noexcept
   {
     return _Sz;
@@ -136,8 +136,8 @@ struct __fn
   // `[range.prim.size]`: `auto(t.size())` is a valid expression.
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_size<_Tp>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
-  operator()(_Tp&& __t) const noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.size());
   }
@@ -145,8 +145,8 @@ struct __fn
   // `[range.prim.size]`: `auto(size(t))` is a valid expression.
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_size<_Tp>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
-  operator()(_Tp&& __t) const noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(size(__t));
   }
@@ -154,8 +154,7 @@ struct __fn
   // [range.prim.size]: the `to-unsigned-like` case.
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__difference<_Tp>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
-  operator()(_Tp&& __t) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__t) - _CUDA_VRANGES::begin(__t))))
       -> decltype(_CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__t) - _CUDA_VRANGES::begin(__t)))
   {
@@ -188,8 +187,8 @@ struct __fn
 {
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__can_ssize<_Tp>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
-  operator()(_Tp&& __t) const noexcept(noexcept(_CUDA_VRANGES::size(__t)))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(_CUDA_VRANGES::size(__t)))
   {
     using _Signed = make_signed_t<decltype(_CUDA_VRANGES::size(__t))>;
     if constexpr (sizeof(ptrdiff_t) > sizeof(_Signed))

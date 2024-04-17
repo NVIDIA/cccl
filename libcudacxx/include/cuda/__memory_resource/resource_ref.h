@@ -222,7 +222,7 @@ struct _Alloc_base
       , __static_vtable(__static_vtabl_)
   {}
 
-  void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CCCL_NODISCARD void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return __static_vtable->__alloc_fn(__object, __bytes, __alignment);
   }
@@ -246,12 +246,12 @@ struct _Async_alloc_base : public _Alloc_base<_Vtable>
       : _Alloc_base<_Vtable>(__object_, __static_vtabl_)
   {}
 
-  void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_NODISCARD void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
     return this->__static_vtable->__async_alloc_fn(this->__object, __bytes, __alignment, __stream);
   }
 
-  void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
+  _CCCL_NODISCARD void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
   {
     return this->__static_vtable->__async_alloc_fn(this->__object, __bytes, alignof(max_align_t), __stream);
   }
@@ -350,7 +350,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
-  bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
+  _CCCL_NODISCARD bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
   {
     return (this->__static_vtable->__equal_fn == __right.__static_vtable->__equal_fn) //
         && this->__static_vtable->__equal_fn(this->__object, __right.__object);
@@ -359,7 +359,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
-  bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
+  _CCCL_NODISCARD bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
   {
     return !(*this == __right);
   }
@@ -371,7 +371,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
-  friend __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
+  _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
   }

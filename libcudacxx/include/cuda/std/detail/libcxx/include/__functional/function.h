@@ -63,7 +63,7 @@ public:
 #  endif
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_function_call()
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_function_call()
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_function_call();

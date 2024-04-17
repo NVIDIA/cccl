@@ -20,7 +20,7 @@ on:
     # Run this action when a PR is opened or edited
     # Issues do not have a graphQL connection to linked PRs so we can't use that event
     types: [ready_for_review]
-      
+
 env:
  ORG: ${{ github.event.repository.owner.login }}
  PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -36,7 +36,7 @@ env:
 jobs:
   query_and_mutate_project_fields:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Generate token
         id: generate_token
@@ -48,7 +48,7 @@ jobs:
       - name: Wait 1 Second
         id: sleep
         run: sleep 1
-        
+
       - name: Get PR Project ID
         id: get_pr_id
         env:
@@ -77,7 +77,7 @@ jobs:
                   }
                 }
               }' > project_data.json
-            
+
             # Filter the json result to only the project-specific ID for the PR
             # A PR can be in multiple projects so we need to filter by the project ID we want
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
@@ -88,7 +88,7 @@ jobs:
 
       - name: Set PR to In Review
         id: set_pr_in_review
-        env: 
+        env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Update the PR status to In Review
@@ -151,7 +151,7 @@ jobs:
             issue_ids=$(jq -r '.data.organization.repository.issueOrPullRequest.closingIssuesReferences.edges[].node.projectItems.edges[] |
                                select(.node.project.id == "${{ env.PROJECT_ID }}") |
                                .node.id' linked_issue_data.json)
-            
+
             # Set Linked Issues to In Review
             for issue_id in $issue_ids; do
               # The query below is constructed differently than the others due to bash variable syntax + github actions syntax interactions

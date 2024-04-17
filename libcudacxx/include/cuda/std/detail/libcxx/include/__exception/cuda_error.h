@@ -50,8 +50,7 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void
-__throw_cuda_error(::cudaError_t __status, const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t __status, const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,

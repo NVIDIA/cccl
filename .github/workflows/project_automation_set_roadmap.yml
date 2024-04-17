@@ -22,7 +22,7 @@ on:
   issues:
     # Run this action when an issue is closed
     types: [closed]
-      
+
 env:
  ORG: ${{ github.event.repository.owner.login }}
  PR_NUMBER: ${{ github.event.pull_request.number }} # evaluates to null for issues
@@ -38,7 +38,7 @@ env:
 jobs:
   set_roadmap_value:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Generate token
         id: generate_token
@@ -46,7 +46,7 @@ jobs:
         with:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
           private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
-        
+
       - name: Get PR Project ID
         if: github.event_name == 'pull_request_target'
         id: get_pr_id
@@ -76,7 +76,7 @@ jobs:
                   }
                 }
               }' > project_data.json
-            
+
             # Filter the json result to only the project-specific ID for the PR
             # A PR can be in multiple projects so we need to filter by the project ID we want
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
@@ -84,7 +84,7 @@ jobs:
                            .node.id' project_data.json)
             echo "ITEM_ID=$pr_id" >> $GITHUB_ENV
         continue-on-error: true
-    
+
       - name: Get Issue Project ID
         if: github.event_name == 'issues'
         id: get_issue_id
@@ -114,7 +114,7 @@ jobs:
                   }
                 }
               }' > project_data.json
-            
+
             # Filter the json result to only the project-specific ID for the PR
             # A PR can be in multiple projects so we need to filter by the project ID we want
             issue_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
@@ -127,7 +127,7 @@ jobs:
         id: get_current_release
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |            
+        run: |
             # Get current roadmap id
             # We maintain the roadmap as a single select field in the project, with the first value being the upcoming release
 
@@ -153,7 +153,7 @@ jobs:
 
       - name: Set Item Roadmap
         id: set_item_roadmap
-        env: 
+        env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
             # Update the PR status to In Review

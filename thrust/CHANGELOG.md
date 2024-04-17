@@ -2312,4 +2312,3 @@ First production release of Thrust.
     crash.
 - Komrade 7: Fix an issue where `const_iterator`s could not be passed to
     `thrust::transform`.
-

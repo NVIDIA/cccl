@@ -155,7 +155,7 @@ struct reduce_fn final
           thrust::plus<remove_cvref_t<typename iterator_traits<remove_cvref_t<ForwardIt>>::value_type>>{}))
 
           template <typename... Args>
-          THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+          _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace reduce_detail
@@ -291,7 +291,7 @@ struct reduce_into_fn final
         thrust::is_execution_policy<thrust::remove_cvref_t<T1>>{}))
 
         template <typename... Args>
-        THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
+        _CCCL_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
 } // namespace reduce_into_detail
