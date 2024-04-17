@@ -184,7 +184,7 @@ void flatten_static_test()
   constexpr auto grid_z    = 1;
 
   auto static_dims = cuda_next::block_dims<block_cnt>() & cuda_next::grid_dims<grid_x, grid_y, grid_z>();
-  using dims_type            = decltype(static_dims);
+  using dims_type  = decltype(static_dims);
 
   test_host_dev(static_dims, [=] __host__ __device__(const dims_type& dims) {
     static_assert(dims_type::static_count() == block_cnt * 1024);
