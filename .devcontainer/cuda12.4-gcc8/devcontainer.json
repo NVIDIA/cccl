@@ -35,10 +35,13 @@
       ],
       "settings": {
         "editor.defaultFormatter": "xaver.clang-format",
+        "editor.formatOnSave": true,
         "clang-format.executable": "/usr/local/bin/clang-format",
         "clangd.arguments": [
           "--compile-commands-dir=${workspaceFolder}"
-        ]
+        ],
+        "files.eol": "\n",
+        "files.trimTrailingWhitespace": true
       }
     }
   },

@@ -282,7 +282,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_runtime_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_runtime_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -293,7 +293,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_runtime_e
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_logic_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_logic_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -304,7 +304,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_logic_err
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_domain_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_domain_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -315,7 +315,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_domain_er
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_invalid_argument(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_invalid_argument(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -327,7 +327,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_invalid_a
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_length_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_length_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -338,7 +338,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_length_er
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_out_of_range(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_out_of_range(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -349,7 +349,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_out_of_ra
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_range_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_range_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -360,7 +360,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_range_err
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_overflow_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_overflow_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -372,7 +372,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_overflow_
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_underflow_error(const char* __msg)
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_underflow_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,

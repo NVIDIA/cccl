@@ -79,7 +79,7 @@ public:
 
 #if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template <class _Tp>
-_LIBCUDACXX_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
+_CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 #endif
 
 template <class _Tp>

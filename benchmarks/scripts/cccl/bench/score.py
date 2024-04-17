@@ -65,18 +65,18 @@ def compute_raw_weight_matrix(rt_axes_values, rt_axes_ids):
 
     num_rt_axes = len(rt_axes_ids)
     for rt_axis in rt_axes_weights:
-        shape = [1] * num_rt_axes 
+        shape = [1] * num_rt_axes
         shape[rt_axes_ids[rt_axis]] = -1
         rt_axes_weights[rt_axis] = rt_axes_weights[rt_axis].reshape(*shape)
-    
+
     weights_matrix = rt_axes_weights[first_rt_axis_name]
     for rt_axis in rt_axes_weights:
         if rt_axis == first_rt_axis_name:
             continue
 
         weights_matrix = weights_matrix * rt_axes_weights[rt_axis]
-    
-    return weights_matrix 
+
+    return weights_matrix
 
 def compute_weight_matrices(rt_axes_values, rt_axes_ids):
     matrices = {}

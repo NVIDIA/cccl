@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Generate set of projects mk files. 
+# Generate set of projects mk files.
 # Usage: python generate_mk.py PROJECTS_MK_DIR  THRUST_SOURCE_DIR
 #   The program scans through unit tests and examples in THRUST_SOURCE_DIR
 #   and generates project mk for each of the tests and examples in PROJECTS_MK_DIR
@@ -136,11 +136,3 @@ for e in examples_all:
 f = open(os.path.join(mk_path,"examples.mk"),'w')
 f.write(examples_mk)
 f.close()
-
-
-
-
-
-
-
-

@@ -652,7 +652,7 @@ struct DispatchReduce : SelectedPolicy
    *   cub::DeviceReduceSingleTileKernel
    */
   template <typename ActivePolicyT, typename SingleTileKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeSingleTile(SingleTileKernelT single_tile_kernel)
   {
     cudaError error = cudaSuccess;
@@ -721,7 +721,7 @@ struct DispatchReduce : SelectedPolicy
    *   cub::DeviceReduceSingleTileKernel
    */
   template <typename ActivePolicyT, typename ReduceKernelT, typename SingleTileKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(ReduceKernelT reduce_kernel, SingleTileKernelT single_tile_kernel)
   {
     cudaError error = cudaSuccess;
@@ -1198,7 +1198,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
    *   cub::DeviceSegmentedReduceKernel
    */
   template <typename ActivePolicyT, typename DeviceSegmentedReduceKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(DeviceSegmentedReduceKernelT segmented_reduce_kernel)
   {
     cudaError error = cudaSuccess;

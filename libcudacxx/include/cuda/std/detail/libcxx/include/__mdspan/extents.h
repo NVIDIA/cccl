@@ -55,9 +55,9 @@
 #endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
-#endif
+#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__mdspan/standard_layout_static_array.h>
@@ -98,7 +98,7 @@ struct __count_dynamic_extents<>
 };
 
 template <size_t... _Extents, size_t... _OtherExtents>
-_LIBCUDACXX_HOST_DEVICE static constexpr false_type __check_compatible_extents(
+_CCCL_HOST_DEVICE static constexpr false_type __check_compatible_extents(
   false_type,
   _CUDA_VSTD::integer_sequence<size_t, _Extents...>,
   _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>) noexcept
@@ -115,11 +115,10 @@ struct __compare_extent_compatible
 template <size_t... _Extents, size_t... _OtherExtents>
 static integral_constant<bool,
                          __MDSPAN_FOLD_AND((__compare_extent_compatible<_Extents, _OtherExtents>::value) /* && ... */
-                                           )>
-  _LIBCUDACXX_HOST_DEVICE __check_compatible_extents(
-    true_type,
-    _CUDA_VSTD::integer_sequence<size_t, _Extents...>,
-    _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>) noexcept
+                                           )> _CCCL_HOST_DEVICE
+__check_compatible_extents(true_type,
+                           _CUDA_VSTD::integer_sequence<size_t, _Extents...>,
+                           _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>) noexcept
 {
   return {};
 }
@@ -131,7 +130,7 @@ struct __extents_tag
 
 template <class _ThisIndexType, size_t... _Extents>
 class extents
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     : private __detail::__no_unique_address_emulation<
         __detail::__partially_static_sizes_tagged<__detail::__extents_tag, _ThisIndexType, size_t, _Extents...>>
 #  endif
@@ -145,8 +144,8 @@ public:
   using __storage_t =
     __detail::__partially_static_sizes_tagged<__detail::__extents_tag, index_type, size_t, _Extents...>;
 
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __storage_t __storage_;
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  _CCCL_NO_UNIQUE_ADDRESS __storage_t __storage_;
 #  else
   using __base_t = __detail::__no_unique_address_emulation<__storage_t>;
 #  endif
@@ -156,7 +155,7 @@ public:
 private:
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __storage_t& __storage() noexcept
   {
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __storage_;
 #  else
     return this->__base_t::__ref();
@@ -165,7 +164,7 @@ private:
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr __storage_t const& __storage() const noexcept
   {
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __storage_;
 #  else
     return this->__base_t::__ref();
@@ -220,7 +219,7 @@ private:
     );
   }
 
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   __MDSPAN_INLINE_FUNCTION constexpr explicit extents(__base_t&& __b) noexcept
       : __base_t(_CUDA_VSTD::move(__b))
   {}
@@ -267,7 +266,7 @@ public:
     (((_Extents != dynamic_extent) && (_OtherExtents == dynamic_extent)) || ...)
     || (_CUDA_VSTD::numeric_limits<index_type>::max() < _CUDA_VSTD::numeric_limits<_OtherIndexType>::max()))
   constexpr extents(const extents<_OtherIndexType, _OtherExtents...>& __other) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
       : __base_t(__base_t {
@@ -275,7 +274,7 @@ public:
         {
 #  endif
         __other.__storage().__enable_psa_conversion()
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #  else
         }
@@ -312,7 +311,7 @@ public:
 #  endif
   __MDSPAN_INLINE_FUNCTION
   explicit constexpr extents(_Integral... __exts) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
       : __base_t(__base_t {
@@ -323,7 +322,7 @@ public:
                                   __detail::__construct_psa_from_dynamic_exts_values_tag_t,
                                   __detail::__construct_psa_from_all_exts_values_tag_t>(),
         static_cast<index_type>(__exts)...
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #  else
         }
@@ -361,7 +360,7 @@ public:
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   __MDSPAN_INLINE_FUNCTION
   constexpr extents(_CUDA_VSTD::array<_IndexType, _Np> const& __exts) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
       : __base_t(__base_t {
@@ -372,7 +371,7 @@ public:
                                   __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
                                   __detail::__construct_psa_from_all_exts_array_tag_t>(),
         _CUDA_VSTD::array<_IndexType, _Np>{__exts}
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #  else
         }
@@ -410,7 +409,7 @@ public:
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   __MDSPAN_INLINE_FUNCTION
   constexpr extents(_CUDA_VSTD::span<_IndexType, _Np> __exts) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
       : __base_t(__base_t {
@@ -421,7 +420,7 @@ public:
                                   __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
                                   __detail::__construct_psa_from_all_exts_array_tag_t>(),
         __exts
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #  else
         }
@@ -440,13 +439,13 @@ public:
   // for the layout_stride case where I use an extents object for strides
   __MDSPAN_INLINE_FUNCTION
   constexpr explicit extents(__storage_t const& __sto) noexcept
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
       : __base_t(__base_t {
 #  endif
         __sto
-#  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #  else
       })
@@ -504,11 +503,11 @@ public: // (but not really)
     // strides could accidentally end up with the same types in their hierarchies
     // somehow (which would cause layout_stride::mapping to not be standard_layout)
     return extents(
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       __base_t{
 #  endif
         _CUDA_VSTD::move(__bs.template __with_tag<__detail::__extents_tag>())
-#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       }
 #  endif
     );
@@ -555,7 +554,7 @@ using dextents = typename __detail::__make_dextents<_IndexType, _Rank>::type;
 
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 template <class... _IndexTypes>
-_LIBCUDACXX_HOST_DEVICE extents(_IndexTypes...)
+_CCCL_HOST_DEVICE extents(_IndexTypes...)
   // Workaround for nvcc
   //-> extents<size_t, __detail::__make_dynamic_extent<_IndexTypes>()...>;
   // Adding "(void)" so that clang doesn't complain this is unused

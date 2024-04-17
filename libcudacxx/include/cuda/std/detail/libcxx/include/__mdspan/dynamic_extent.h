@@ -70,13 +70,13 @@ namespace __detail
 {
 
 template <class>
-_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent()
+_CCCL_HOST_DEVICE constexpr auto __make_dynamic_extent()
 {
   return dynamic_extent;
 }
 
 template <size_t>
-_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral()
+_CCCL_HOST_DEVICE constexpr auto __make_dynamic_extent_integral()
 {
   return dynamic_extent;
 }

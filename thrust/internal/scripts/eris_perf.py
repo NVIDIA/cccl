@@ -17,7 +17,7 @@
 # limitations under the License.
 ###############################################################################
 
-from sys import exit 
+from sys import exit
 
 from os.path import join, dirname, basename, realpath
 
@@ -30,7 +30,7 @@ from argparse import ArgumentParser as argument_parser
 ###############################################################################
 
 def printable_cmd(c):
-  """Converts a `list` of `str`s representing a shell command to a printable 
+  """Converts a `list` of `str`s representing a shell command to a printable
   `str`."""
   return " ".join(map(lambda e: '"' + str(e) + '"', c))
 
@@ -54,15 +54,15 @@ ap = argument_parser(
 )
 
 ap.add_argument(
-  "-b", "--benchmark", 
+  "-b", "--benchmark",
   help = ("The location of the benchmark suite executable to run."),
   type = str,
-  default = join(dirname(realpath(__file__)), "bench"), 
+  default = join(dirname(realpath(__file__)), "bench"),
   metavar = "R"
 )
 
 ap.add_argument(
-  "-p", "--postprocess", 
+  "-p", "--postprocess",
   help = ("The location of the postprocessing script to run to combine the "
           "results."),
   type = str,
@@ -71,9 +71,9 @@ ap.add_argument(
 )
 
 ap.add_argument(
-  "-r", "--runs", 
+  "-r", "--runs",
   help = ("Run the benchmark suite `R` times.a),"),
-  type = int, default = 5, 
+  type = int, default = 5,
   metavar = "R"
 )
 
@@ -132,7 +132,7 @@ post_cmd += ["-dSTL Average Throughput,STL Throughput Uncertainty,STL Trials"]
 post_cmd += ["-dThrust Average Walltime,Thrust Walltime Uncertainty,Thrust Trials"]
 post_cmd += ["-dThrust Average Throughput,Thrust Throughput Uncertainty,Thrust Trials"]
 
-post_cmd += [OUTPUT_FILE_NAME(i) for i in range(args.runs)] 
+post_cmd += [OUTPUT_FILE_NAME(i) for i in range(args.runs)]
 
 print '#### CMD {0}'.format(printable_cmd(post_cmd))
 
@@ -184,6 +184,5 @@ with open(COMBINED_OUTPUT_FILE_NAME, "w") as output_file:
         )
 
 ###############################################################################
-                  
-print '&&&& PASSED {0}'.format(BENCHMARK_NAME)
 
+print '&&&& PASSED {0}'.format(BENCHMARK_NAME)

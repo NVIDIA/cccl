@@ -224,5 +224,3 @@ __device__ static inline void red_async(
   const int64_t& value,
   int64_t* remote_bar);
 ```
-
-

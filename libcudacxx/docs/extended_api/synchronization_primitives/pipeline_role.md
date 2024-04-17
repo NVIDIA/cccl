@@ -30,4 +30,3 @@ See the [`cuda::make_pipeline` example].
 [asynchronous operations]: ../asynchronous_operations.md
 
 [`cuda::make_pipeline` example]: ./make_pipeline.md#example
-

@@ -42,11 +42,7 @@
 #  define THRUST_TRAILING_RETURN(...) ->__VA_ARGS__
 #endif
 
-#if _CCCL_STD_VER >= 2014 && __has_cpp_attribute(nodiscard)
-#  define THRUST_NODISCARD [[nodiscard]]
-#else
-#  define THRUST_NODISCARD
-#endif
+#define THRUST_NODISCARD _CCCL_NODISCARD
 
 // FIXME: Combine THRUST_INLINE_CONSTANT and
 // THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT into one macro when NVCC properly

@@ -1120,7 +1120,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 // stable_partition
 
 template <class _Predicate, class _ForwardIterator, class _Distance, class _Pair>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 _ForwardIterator
 __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred,
                    _Distance __len, _Pair __p, forward_iterator_tag __fit)
@@ -1213,7 +1213,7 @@ struct __return_temporary_buffer
 };
 
 template <class _Predicate, class _ForwardIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 _ForwardIterator
 __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred,
                    forward_iterator_tag)
@@ -1245,7 +1245,7 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
 }
 
 template <class _Predicate, class _BidirectionalIterator, class _Distance, class _Pair>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 _BidirectionalIterator
 __stable_partition(_BidirectionalIterator __first, _BidirectionalIterator __last, _Predicate __pred,
                    _Distance __len, _Pair __p, bidirectional_iterator_tag __bit)
@@ -1354,7 +1354,7 @@ __second_half_done:
 }
 
 template <class _Predicate, class _BidirectionalIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 _BidirectionalIterator
 __stable_partition(_BidirectionalIterator __first, _BidirectionalIterator __last, _Predicate __pred,
                    bidirectional_iterator_tag)
@@ -1408,7 +1408,7 @@ stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate _
 // stable, 2-3 compares, 0-2 swaps
 
 template <class _Compare, class _ForwardIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 unsigned
 __sort3(_ForwardIterator __x, _ForwardIterator __y, _ForwardIterator __z, _Compare __c)
 {
@@ -1446,7 +1446,7 @@ __sort3(_ForwardIterator __x, _ForwardIterator __y, _ForwardIterator __z, _Compa
 // stable, 3-6 compares, 0-5 swaps
 
 template <class _Compare, class _ForwardIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 unsigned
 __sort4(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
             _ForwardIterator __x4, _Compare __c)
@@ -1474,7 +1474,7 @@ __sort4(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
 
 template <class _Compare, class _ForwardIterator>
 _LIBCUDACXX_HIDDEN
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 unsigned
 __sort5(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
             _ForwardIterator __x4, _ForwardIterator __x5, _Compare __c)
@@ -1505,7 +1505,7 @@ __sort5(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3,
 
 // Assumes size > 0
 template <class _Compare, class _BirdirectionalIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __selection_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last, _Compare __comp)
 {
@@ -1521,7 +1521,7 @@ __selection_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last
 }
 
 template <class _Compare, class _BirdirectionalIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __insertion_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last, _Compare __comp)
 {
@@ -1541,7 +1541,7 @@ __insertion_sort(_BirdirectionalIterator __first, _BirdirectionalIterator __last
 }
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __insertion_sort_3(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -1567,7 +1567,7 @@ __insertion_sort_3(_RandomAccessIterator __first, _RandomAccessIterator __last, 
 }
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 bool
 __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -1617,7 +1617,7 @@ __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator
 }
 
 template <class _Compare, class _BirdirectionalIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __insertion_sort_move(_BirdirectionalIterator __first1, _BirdirectionalIterator __last1,
                       typename iterator_traits<_BirdirectionalIterator>::value_type* __first2, _Compare __comp)
@@ -1653,7 +1653,7 @@ __insertion_sort_move(_BirdirectionalIterator __first1, _BirdirectionalIterator 
 }
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
@@ -1927,7 +1927,7 @@ _LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less&, long 
 
 template <class _Compare, class _InputIterator1, class _InputIterator2,
           class _OutputIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void __half_inplace_merge(_InputIterator1 __first1, _InputIterator1 __last1,
                           _InputIterator2 __first2, _InputIterator2 __last2,
                           _OutputIterator __result, _Compare __comp)
@@ -1955,7 +1955,7 @@ void __half_inplace_merge(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _Compare, class _BidirectionalIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __buffered_inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last,
                 _Compare __comp, typename iterator_traits<_BidirectionalIterator>::difference_type __len1,
@@ -1986,7 +1986,7 @@ __buffered_inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator 
 }
 
 template <class _Compare, class _BidirectionalIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last,
                 _Compare __comp, typename iterator_traits<_BidirectionalIterator>::difference_type __len1,
@@ -2104,7 +2104,7 @@ inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _
 // stable_sort
 
 template <class _Compare, class _InputIterator1, class _InputIterator2>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __merge_move_construct(_InputIterator1 __first1, _InputIterator1 __last1,
         _InputIterator2 __first2, _InputIterator2 __last2,
@@ -2145,7 +2145,7 @@ __merge_move_construct(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __merge_move_assign(_InputIterator1 __first1, _InputIterator1 __last1,
         _InputIterator2 __first2, _InputIterator2 __last2,
@@ -2175,14 +2175,14 @@ __merge_move_assign(_InputIterator1 __first1, _InputIterator1 __last1,
 }
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
               typename iterator_traits<_RandomAccessIterator>::difference_type __len,
               typename iterator_traits<_RandomAccessIterator>::value_type* __buff, ptrdiff_t __buff_size);
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __stable_sort_move(_RandomAccessIterator __first1, _RandomAccessIterator __last1, _Compare __comp,
                    typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -2235,7 +2235,7 @@ struct __stable_sort_switch
 };
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
               typename iterator_traits<_RandomAccessIterator>::difference_type __len,
@@ -2311,7 +2311,7 @@ stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 // nth_element
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void
 __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last, _Compare __comp)
 {

@@ -228,7 +228,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_optional_access()
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_optional_access()
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -1025,7 +1025,7 @@ public:
 
 #if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _Tp>
-_LIBCUDACXX_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
+_CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
 #endif
 
 // Comparisons between optionals

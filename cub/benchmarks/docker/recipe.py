@@ -11,4 +11,3 @@ Stage0 += hpccm.building_blocks.cmake(eula=True, version='3.26.3')
 # Stage0 += hpccm.building_blocks.nsight_compute(eula=True, version='2023.1.1')
 Stage0 += hpccm.building_blocks.pip(packages=['fpzip', 'numpy', 'pandas', 'pynvml'], pip='pip3')
 Stage0 += hpccm.primitives.environment(variables={'CUDA_MODULE_LOADING': 'EAGER'})
-

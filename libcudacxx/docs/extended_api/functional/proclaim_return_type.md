@@ -17,7 +17,7 @@ unspecified<Ret, Fn> proclaim_return_type(Fn&& fn) {
 
 `cuda::proclaim_return_type` creates a forwarding call wrapper that uses
 `Ret` as a return type. The wrapper is useful in the case of extended device
-lambdas since an attempt to determine the return type of their `operator()` 
+lambdas since an attempt to determine the return type of their `operator()`
 function may work incorrectly in host code.
 
 ## Template Parameters
@@ -43,7 +43,7 @@ __host__ void example() {
   auto fn = cuda::proclaim_return_type<char>([] __device__ () { return 'd'; });
   using rt = cuda::std::invoke_result_t<decltype(fn)>;
 
-  rt* out {}; 
+  rt* out {};
   cudaMalloc(&out, sizeof(rt));
 
   example_kernel<<<1, 1>>>(out, fn);
@@ -52,4 +52,3 @@ __host__ void example() {
 }
 
 ```
-

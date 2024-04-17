@@ -118,9 +118,9 @@ union __expected_union_t
   // the __expected_destruct's destructor handles this
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __empty_t __empty_;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Tp __val_;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Err __unex_;
+  _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
+  _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
 };
 
 template <class _Tp, class _Err>
@@ -172,9 +172,9 @@ union __expected_union_t<_Tp, _Err, true>
       : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __empty_t __empty_;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Tp __val_;
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS _Err __unex_;
+  _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
+  _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
 };
 
 template <class _Tp,
@@ -186,7 +186,7 @@ struct __expected_destruct;
 template <class _Tp, class _Err>
 struct __expected_destruct<_Tp, _Err, false, false>
 {
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
+  _CCCL_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
   constexpr __expected_destruct() = default;
@@ -252,7 +252,7 @@ struct __expected_destruct<_Tp, _Err, false, false>
 template <class _Tp, class _Err>
 struct __expected_destruct<_Tp, _Err, true, false>
 {
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
+  _CCCL_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
   constexpr __expected_destruct() = default;
@@ -314,7 +314,7 @@ struct __expected_destruct<_Tp, _Err, true, false>
 template <class _Tp, class _Err>
 struct __expected_destruct<_Tp, _Err, false, true>
 {
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
+  _CCCL_NO_UNIQUE_ADDRESS __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
   constexpr __expected_destruct() = default;
@@ -377,7 +377,7 @@ template <class _Tp, class _Err>
 struct __expected_destruct<_Tp, _Err, true, true>
 {
   // This leads to an ICE with nvcc, see nvbug4103076
-  /* _LIBCUDACXX_NO_UNIQUE_ADDRESS */ __expected_union_t<_Tp, _Err> __union_{};
+  /* _CCCL_NO_UNIQUE_ADDRESS */ __expected_union_t<_Tp, _Err> __union_{};
   bool __has_val_{true};
 
   constexpr __expected_destruct() = default;
@@ -704,7 +704,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 template <class _Err>
 struct __expected_destruct<void, _Err, false, false>
 {
-  _LIBCUDACXX_NO_UNIQUE_ADDRESS union __expected_union_t
+  _CCCL_NO_UNIQUE_ADDRESS union __expected_union_t
   {
     struct __empty_t
     {};
@@ -731,8 +731,8 @@ struct __expected_destruct<void, _Err, false, false>
     // the __expected_destruct's destructor handles this
     _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
-    _LIBCUDACXX_NO_UNIQUE_ADDRESS __empty_t __empty_;
-    _LIBCUDACXX_NO_UNIQUE_ADDRESS _Err __unex_;
+    _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+    _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
   } __union_{};
   bool __has_val_{true};
 
@@ -774,8 +774,8 @@ struct __expected_destruct<void, _Err, false, false>
 template <class _Err>
 struct __expected_destruct<void, _Err, false, true>
 {
-  // Using `_LIBCUDACXX_NO_UNIQUE_ADDRESS` here crashes nvcc
-  /* _LIBCUDACXX_NO_UNIQUE_ADDRESS */ union __expected_union_t
+  // Using `_CCCL_NO_UNIQUE_ADDRESS` here crashes nvcc
+  /* _CCCL_NO_UNIQUE_ADDRESS */ union __expected_union_t
   {
     struct __empty_t
     {};
@@ -799,8 +799,8 @@ struct __expected_destruct<void, _Err, false, true>
         : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
     {}
 
-    _LIBCUDACXX_NO_UNIQUE_ADDRESS __empty_t __empty_;
-    _LIBCUDACXX_NO_UNIQUE_ADDRESS _Err __unex_;
+    _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
+    _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
   } __union_{};
   bool __has_val_{true};
 

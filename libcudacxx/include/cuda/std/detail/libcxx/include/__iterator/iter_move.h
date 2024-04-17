@@ -94,7 +94,7 @@ struct __fn
 {
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(__unqualified_iter_move<_Ip>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(auto) operator()(_Ip&& __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(auto) operator()(_Ip&& __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
   {
     return iter_move(_CUDA_VSTD::forward<_Ip>(__i));
@@ -102,7 +102,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(__move_deref<_Ip>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
       -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
@@ -111,7 +111,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(__just_deref<_Ip>)
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(*_CUDA_VSTD::forward<_Ip>(__i))) -> decltype(*_CUDA_VSTD::forward<_Ip>(__i))
   {
     return *_CUDA_VSTD::forward<_Ip>(__i);

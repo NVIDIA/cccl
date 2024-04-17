@@ -1,5 +1,5 @@
 #!/bin/sh
-MEMCHECK=/work/nightly/memcheck/bin/x86_64_Linux_release/cuda-memcheck 
+MEMCHECK=/work/nightly/memcheck/bin/x86_64_Linux_release/cuda-memcheck
 
 #########################
 

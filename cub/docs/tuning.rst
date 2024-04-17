@@ -1,15 +1,15 @@
 CUB Tuning Infrastructure
 ================================================================================
 
-Device-scope algorithms in CUB have many knobs that do not affect the algorithms' correctness but can significantly impact performance. For instance, the number of threads per block and items per thread can be tuned to maximize performance for a given device and data type. 
-This document describes CUB Tuning Infrastructure, a set of tools facilitating the process of 
+Device-scope algorithms in CUB have many knobs that do not affect the algorithms' correctness but can significantly impact performance. For instance, the number of threads per block and items per thread can be tuned to maximize performance for a given device and data type.
+This document describes CUB Tuning Infrastructure, a set of tools facilitating the process of
 selecting optimal tuning parameters for a given device and data type.
 
 Definitions
 --------------------------------------------------------------------------------
 
-Terms might be ambiguous in a generic context. Below, we omit the word "tuning" but assume it in all definitions. 
-Algorithms are tuned for different workloads. For instance, radix sort can be tuned for different key types, different number of keys, and different distribution of keys. We separate tuning parameters into two categories: 
+Terms might be ambiguous in a generic context. Below, we omit the word "tuning" but assume it in all definitions.
+Algorithms are tuned for different workloads. For instance, radix sort can be tuned for different key types, different number of keys, and different distribution of keys. We separate tuning parameters into two categories:
 
 * **Compile-time (ct) Workload** - a workload that can be recognized at compile time. For instance, the combination of key type and offset type is a compile-time workload for radix sort.
 
@@ -29,16 +29,16 @@ Algorithms are tuned for different workloads. For instance, radix sort can be tu
 
 * **Score** - a single number representing the performance for a given compile-time workload and all runtime workloads. For instance, a weighted-sum of speedups of a given variant compared to its base for all runtime workloads is a score.
 
-* **Search** - a process consisting of covering all variants for all compile-time workloads to find a variant with maximal score. 
+* **Search** - a process consisting of covering all variants for all compile-time workloads to find a variant with maximal score.
 
 
 Contributing Benchmarks
 --------------------------------------------------------------------------------
 
 There are a few constraints on benchmarks. First of all, all benchmarks in a single
-file should share type axes. Only alphabetical characters, numbers and underscore are allowed in the 
-benchmark name.  The name of the file is represets the name of the algorithm. 
-For instance, the :code:`benchmarks/bench/radix_sort/keys.cu` file name is going to be transformed 
+file should share type axes. Only alphabetical characters, numbers and underscore are allowed in the
+benchmark name.  The name of the file is represets the name of the algorithm.
+For instance, the :code:`benchmarks/bench/radix_sort/keys.cu` file name is going to be transformed
 into :code:`cub.bench.radix_sort.keys` that's further used in the infrastructure.
 
 You start writing a benchmark by including :code:`nvbench_helper.cuh` file. It contains all
@@ -48,7 +48,7 @@ necessary includes and definitions.
 
   #include <nvbench_helper.cuh>
 
-The next step is to define a search space. The search space is represented by a number of comments. 
+The next step is to define a search space. The search space is represented by a number of comments.
 The format consists of :code:`%RANGE%` keyword, a parameter name, and a range. The range is
 represented by three numbers: start, end, and step. For instance, the following code defines a search
 space for the number of threads per block and items per thread.
@@ -59,7 +59,7 @@ space for the number of threads per block and items per thread.
   // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 
 Next, you need to define a benchmark function. The function accepts :code:`nvbench::state &state` and
-a :code:`nvbench::type_list`. For more details on the benchmark signature, take a look at the 
+a :code:`nvbench::type_list`. For more details on the benchmark signature, take a look at the
 nvbench docs.
 
 .. code:: c++
@@ -68,9 +68,9 @@ nvbench docs.
   void algname(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   {
 
-Now we have to specialize the dispatch layer. The tuning infrastructure will use `TUNE_BASE` macro 
-to distinguish between the base and the variant. When base is used, do not specify the policy, so 
-that the default one is used. If the macro is not defined, specify custom policy using macro 
+Now we have to specialize the dispatch layer. The tuning infrastructure will use `TUNE_BASE` macro
+to distinguish between the base and the variant. When base is used, do not specify the policy, so
+that the default one is used. If the macro is not defined, specify custom policy using macro
 names defined at the search space specification step.
 
 .. code:: c++
@@ -83,8 +83,8 @@ names defined at the search space specification step.
   #endif
 
 If possible, do not initialize the input data in the benchmark function. Instead, use the
-:code:`gen` function. This function will fill the input vector with random data on GPU with no 
-compile-time overhead. 
+:code:`gen` function. This function will fill the input vector with random data on GPU with no
+compile-time overhead.
 
 .. code:: c++
 
@@ -94,7 +94,7 @@ compile-time overhead.
 
     gen(seed_t{}, in);
 
-You can optionally add memory usage to the state: 
+You can optionally add memory usage to the state:
 
 .. code:: c++
 
@@ -133,7 +133,7 @@ Finally, we can run the algorithm:
 
 Having the benchmark function, we can tell nvbench about it. A few things to note here. First of all,
 compile-time axes should be annotated as :code:`{ct}`. The runtime axes might be optionally annotated
-as :code:`{io}` which stands for importance-ordered. This will tell the tuning infrastructure that 
+as :code:`{io}` which stands for importance-ordered. This will tell the tuning infrastructure that
 the later values on the axis are more important. If the axis is not annotated, each value will be
 treated as equally important.
 
@@ -145,10 +145,10 @@ treated as equally important.
     .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
 
-When you define a type axis that's annotated as :code:`{ct}`, you might want to consider optimizing 
-the build time. Many variants are going to be build, but the search is considering one compile-time 
-use case at a time. This means, that if you have many types to tune for, you'll end up having 
-many specializations that you don't need. To avoid this, for each compile time axis, you can 
+When you define a type axis that's annotated as :code:`{ct}`, you might want to consider optimizing
+the build time. Many variants are going to be build, but the search is considering one compile-time
+use case at a time. This means, that if you have many types to tune for, you'll end up having
+many specializations that you don't need. To avoid this, for each compile time axis, you can
 expect a `TUNE_AxisName` macro with the type that's currently being tuned. For instance, if you
 have a type axes :code:`T{ct}` and :code:`OffsetT` (as shown above), you can use the following
 construct:
@@ -168,8 +168,8 @@ construct:
   #endif
 
 
-This logic is automatically applied to :code:`all_types`, :code:`offset_types`, and 
-:code:`fundamental_types` lists when you use matching names for the axes. You can define 
+This logic is automatically applied to :code:`all_types`, :code:`offset_types`, and
+:code:`fundamental_types` lists when you use matching names for the axes. You can define
 your own axis names and use the logic above for them (see sort pairs example).
 
 
@@ -177,12 +177,12 @@ Search Process
 --------------------------------------------------------------------------------
 
 To get started with tuning / benchmarking, you need to configure CMake. The following options are
-available: 
+available:
 
 * :code:`CUB_ENABLE_BENCHMARKS` - enable bases (default: OFF).
 * :code:`CUB_ENABLE_TUNING` - enable variants (default: OFF).
 
-Having configured CMake, you can start the search process. Note that the search has to be started 
+Having configured CMake, you can start the search process. Note that the search has to be started
 from the build directory.
 
 .. code:: bash
@@ -191,20 +191,20 @@ from the build directory.
   $ cmake -DThrust_DIR=path-to-thrust/thrust/cmake -DCUB_ENABLE_TUNING=YES -DCUB_ENABLE_BENCHMARKS=YES -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES="90" ..
   $ ../benchmarks/scripts/search.py -a "T{ct}=[I8,I16]" -R ".*algname.*"
 
-Both :code:`-a` and :code:`-R` options are optional. The first one is used to specify types to tune 
-for. The second one is used to specify benchmarks to be tuned. If not specified, all benchmarks are 
+Both :code:`-a` and :code:`-R` options are optional. The first one is used to specify types to tune
+for. The second one is used to specify benchmarks to be tuned. If not specified, all benchmarks are
 going to be tuned.
 
-The result of the search is stored in the :code:`build/cccl_meta_bench.db` file. To analyze the 
+The result of the search is stored in the :code:`build/cccl_meta_bench.db` file. To analyze the
 result you can use the :code:`analyze.py` script:
 
-.. code:: bash 
+.. code:: bash
 
-  $ ../benchmarks/scripts/analyze.py --coverage                     
+  $ ../benchmarks/scripts/analyze.py --coverage
     cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I32] coverage: 167 / 522 (31.9923%)
     cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I64] coverage: 152 / 522 (29.1188%)
-  
-  $ ../benchmarks/scripts/analyze.py --top=5   
+
+  $ ../benchmarks/scripts/analyze.py --top=5
     cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I32]:
               variant     score      mins     means      maxs
     97  ipt_19.tpb_512  1.141015  1.039052  1.243448  1.679558
@@ -219,7 +219,7 @@ result you can use the :code:`analyze.py` script:
     55  ipt_17.tpb_512  1.244399  1.152033  1.327424  1.692091
     98  ipt_21.tpb_448  1.231045  1.152798  1.298332  1.621110
     85  ipt_20.tpb_480  1.229382  1.135447  1.294937  1.631225
-  
+
   $ ../benchmarks/scripts/analyze.py --variant='ipt_(18|19).tpb_512'
 
 The last command plots distribution of the elapsed times for the specified variants.

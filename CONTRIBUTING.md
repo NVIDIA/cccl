@@ -95,11 +95,60 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 2. Create a pull request targeting the `main` branch of the original CCCL repository. Refer to [GitHub's documentation](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for more information on creating a pull request.
 3. Describe the purpose and context of the changes in the pull request description.
 
+## Code Formatting (pre-commit hooks)
+
+CCCL uses [pre-commit](https://pre-commit.com/) to execute all code linters and formatters. These
+tools ensure a consistent coding style throughout the project. Using pre-commit ensures that linter
+versions and options are aligned for all developers. Additionally, there is a CI check in place to
+enforce that committed code follows our standards.
+
+The linters used by CCCL are listed in `.pre-commit-config.yaml`.
+For example, C++ and CUDA code is formatted with [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html).
+
+To use `pre-commit`, install via `conda` or `pip`:
+
+```bash
+conda config --add channels conda-forge
+conda install pre-commit
+```
+
+```bash
+pip install pre-commit
+```
+
+Then run pre-commit hooks before committing code:
+
+```bash
+pre-commit run
+```
+
+By default, pre-commit runs on staged files (only changes and additions that will be committed).
+To run pre-commit checks on all files, execute:
+
+```bash
+pre-commit run --all-files
+```
+
+Optionally, you may set up the pre-commit hooks to run automatically when you make a git commit. This can be done by running:
+
+```bash
+pre-commit install
+```
+
+Now code linters and formatters will be run each time you commit changes.
+
+You can skip these checks with `git commit --no-verify` or with the short version `git commit -n`.
+
 ## Continuous Integration (CI)
 
 CCCL's CI pipeline tests across various CUDA versions, compilers, and GPU architectures.
 For external contributors, the CI pipeline will not begin until a maintainer leaves an `/ok to test` comment. For members of the NVIDIA GitHub enterprise, the CI pipeline will begin immediately.
 For a detailed overview of CCCL's CI, see [ci-overview.md](ci-overview.md).
+
+There is a CI check for pre-commit, called [pre-commit.ci](pre-commit.ci).
+This enforces that all linters (such as `clang-format`) pass.
+If pre-commit.ci is failing, you can comment `pre-commit.ci autofix` on a pull request to trigger the auto-fixer.
+The auto-fixer will push a commit to your pull request that applies changes made by pre-commit hooks.
 
 ## Review Process
 

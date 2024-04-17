@@ -25,4 +25,3 @@ The pipeline is in a _quitted state_ (see [`cuda::pipeline::quit`]), the
 
 
 [`cuda::pipeline::quit`]: ./quit.md
-

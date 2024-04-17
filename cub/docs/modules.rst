@@ -8,9 +8,9 @@ CUB Modules
    warp_wide
    block_wide
    device_wide
-   
 
-CUB provides state-of-the-art, reusable software components for every layer 
+
+CUB provides state-of-the-art, reusable software components for every layer
 of the CUDA programming model:
 
 * **Parallel primitives**
@@ -22,10 +22,10 @@ of the CUDA programming model:
 
   * :ref:`Block-wide <block-module>` "collective" primitives
 
-    * Cooperative I/O, sort, scan, reduction, histogram, etc.  
-    * Compatible with arbitrary thread block sizes and types 
+    * Cooperative I/O, sort, scan, reduction, histogram, etc.
+    * Compatible with arbitrary thread block sizes and types
 
   * :ref:`Device-wide <device-module>` primitives
 
-    * Parallel sort, prefix scan, reduction, histogram, etc.  
+    * Parallel sort, prefix scan, reduction, histogram, etc.
     * Compatible with CUDA dynamic parallelism

@@ -3,7 +3,7 @@
 * @nvidia/cccl-codeowners
 
 # Libraries
-thrust/ @nvidia/cccl-thrust-codeowners @nvidia/cccl-codeowners 
+thrust/ @nvidia/cccl-thrust-codeowners @nvidia/cccl-codeowners
 cub/ @nvidia/cccl-cub-codeowners @nvidia/cccl-codeowners
 libcudacxx/ @nvidia/cccl-libcudacxx-codeowners @nvidia/cccl-codeowners
 

@@ -17,4 +17,3 @@ No additional compiler flags are needed.
 libcu++ is an open source project developed on GitHub, which is where you'll
   find the latest versions and the development branch.
 Our GitHub repository is [github.com/nvidia/libcudacxx](https://github.com/nvidia/libcudacxx).
-

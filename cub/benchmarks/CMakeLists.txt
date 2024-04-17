@@ -1,6 +1,6 @@
 include(${CMAKE_SOURCE_DIR}/benchmarks/cmake/CCCLBenchmarkRegistry.cmake)
 
-# Defer dependencies collection to nvbench helper 
+# Defer dependencies collection to nvbench helper
 add_subdirectory(nvbench_helper)
 
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
@@ -90,7 +90,7 @@ function(add_bench_dir bench_dir)
     # base tuning
     get_filename_component(bench_name "${bench_src}" NAME_WLE)
     string(PREPEND bench_name "cub.${bench_prefix}.")
-    
+
     set(base_bench_name "${bench_name}.base")
     add_bench(base_bench_target ${base_bench_name} "${bench_src}")
     add_dependencies(${benches_meta_target} ${base_bench_target})

@@ -17,7 +17,7 @@ class cuda::barrier;
 The class template `cuda::barrier` is an extended form of [`cuda::std::barrier`]
   that takes an additional [`cuda::thread_scope`] argument.
 If `!(scope == thread_block_scope && __isShared(this))`, then the semantics are
-the same as [`cuda::std::barrier`]; otherwise, see below. 
+the same as [`cuda::std::barrier`]; otherwise, see below.
 The `cuda::barrier` class templates extends `cuda::std::barrier` with the following additional operations:
 
 | [`cuda::barrier::init`]                 | Initialize a `cuda::barrier`. `(friend function)`                                                 |

@@ -72,4 +72,3 @@ __global__ void example_kernel() {
 [`cuda::thread_scope`]: ./memory_model.md
 [Tracking asynchronous operations by the mbarrier object]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tracking-asynchronous-operations-by-the-mbarrier-object
 [thread.barrier.class paragraph 12]: https://eel.is/c++draft/thread.barrier.class#12
-

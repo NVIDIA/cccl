@@ -42,7 +42,7 @@ git clone -q git://github.com/NVIDIA/thrust.git -b ${branch} /tmp/thrust-${branc
 cd `dirname $0`/../..
 echo "Changed current directory to `pwd`"
 
-vulcan_files=`echo *.vlcc *.vlct` 
+vulcan_files=`echo *.vlcc *.vlct`
 logdir=`mktemp -d /tmp/tmp.XXXXXXXX`
 echo "Logging p4 command outputs to temporary directory $logdir"
 for i in *; do
