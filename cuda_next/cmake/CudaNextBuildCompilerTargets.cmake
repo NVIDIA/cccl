@@ -47,7 +47,8 @@ function(CudaNext_build_compiler_targets)
 
     append_option_if_available("-Werror" cxx_compile_options)
     append_option_if_available("-Wall" cxx_compile_options)
-    append_option_if_available("-Wextra" cxx_compile_options)
+    # No Wextra for now because of a extended lambda warning with nvcc + clang
+    #append_option_if_available("-Wextra" cxx_compile_options)
     append_option_if_available("-Winit-self" cxx_compile_options)
     append_option_if_available("-Woverloaded-virtual" cxx_compile_options)
     append_option_if_available("-Wcast-qual" cxx_compile_options)
