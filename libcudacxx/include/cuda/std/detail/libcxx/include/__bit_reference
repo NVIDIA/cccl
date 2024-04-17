@@ -46,7 +46,10 @@ struct __has_storage_type
   static const bool value = false;
 };
 
-template <class _Cp, bool = __has_storage_type<_Cp>::value = 0>
+template <class _Cp, bool _IsConst, typename _Cp::__storage_type = 0>
+class __bit_iterator;
+
+template <class _Cp, bool = __has_storage_type<_Cp>::value>
 class __bit_reference
 {
   using __storage_type    = typename _Cp::__storage_type;
