@@ -167,10 +167,10 @@ DEFINE_CASES(
 
 #define REPEAT_8(DO_IT) DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT()
 #define REPEAT_9(DO_IT) REPEAT_8(DO_IT) DO_IT()
-#define REPEAT_90(DO_IT)                                                                                \
-  REPEAT_10(DO_IT)                                                                                      \
-  REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) \
-    REPEAT_10(DO_IT) REPEAT_10(DO_IT)
+#define REPEAT_90(DO_IT) \
+  REPEAT_10(DO_IT)       \
+  REPEAT_10(DO_IT)       \
+  REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT)
 #define REPEAT_99(DO_IT)  REPEAT_90(DO_IT) REPEAT_9(DO_IT)
 #define REPEAT_400(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
 #define REPEAT_499(DO_IT) REPEAT_400(DO_IT) REPEAT_99(DO_IT)
