@@ -44,6 +44,7 @@
 
 #include <cub/config.cuh>
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_spmv_orig.cuh>
 #include <cub/util_deprecated.cuh>
 
@@ -188,6 +189,8 @@ struct DeviceSpmv
     int num_nonzeros,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSpmv::CsrMV");
+
     SpmvParams<ValueT, int> spmv_params;
     spmv_params.d_values          = d_values;
     spmv_params.d_row_end_offsets = d_row_offsets + 1;
