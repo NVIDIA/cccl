@@ -32,7 +32,7 @@ struct __atomic_storage {
     "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
-  _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
+  _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 
   _CCCL_HOST_DEVICE
   __atomic_storage() noexcept
