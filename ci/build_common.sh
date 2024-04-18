@@ -167,7 +167,7 @@ function configure_preset()
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE "${GLOBAL_CMAKE_OPTIONS[@]}" $CMAKE_OPTIONS
+    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}"
     status=$?
     popd > /dev/null
     return $status
