@@ -443,7 +443,7 @@ public:
   template <typename Invocable>
   _CCCL_HOST DevicePayload operator()(Invocable&& f, int device)
   {
-    if (device >= DeviceCount())
+    if (device >= DeviceCount() || device < 0)
     {
       return DevicePayload{0, cudaErrorInvalidDevice};
     }
