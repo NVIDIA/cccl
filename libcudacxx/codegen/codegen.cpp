@@ -305,7 +305,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
               {
                 out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
                 out << "_CCCL_DEVICE bool __atomic_compare_exchange_cuda(" << cv
-                    << "_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int "
+                    << "_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int "
                        "__failure_memorder, "
                     << scopenametag(s.first) << ") {\n";
                 out << "    uint" << sz << "_t __tmp = 0, __old = 0, __old_tmp;\n";
