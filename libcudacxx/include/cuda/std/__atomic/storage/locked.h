@@ -25,10 +25,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Locked atomics must override the dispatch to be able to implement RMW primitives around the embedded lock.
 struct __atomic_locked_tag {};
 
-template<typename _Tp>
+template <typename _Tp, typename _Tag = __atomic_locked_tag>
 struct __atomic_locked_storage {
   using __underlying_t = typename remove_cv<_Tp>::type;
-  using __tag_t = typename __atomic_locked_tag;
 
   _CCCL_HOST_DEVICE
   __atomic_locked_storage() noexcept
@@ -60,34 +59,34 @@ struct __atomic_locked_storage {
   }
 };
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp>
 _CCCL_HOST_DEVICE
-void __atomic_init_dispatch(_Tp& __a,  __atomic_underlying_t<_Tp> __val, _Sco, __atomic_locked_tag) {
+void __atomic_init_dispatch(_Sto<_Tp>& __a,  _Tp __val) {
   __atomic_assign_volatile(__a.__a_value, __val);
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-void __atomic_store_dispatch(_Tp& __a,  __atomic_underlying_t<_Tp> __val, memory_order, _Sco, __atomic_locked_tag) {
+void __atomic_store_dispatch(_Sto<_Tp>& __a,  _Tp __val, memory_order, _Sco) {
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__a.__a_value, __val);
   __a.__unlock(_Sco{});
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_load_dispatch(const _Tp& __a, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_load_dispatch(const _Sto<_Tp>& __a, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
   __a.__unlock(_Sco{});
   return __old;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_exchange_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __value, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_exchange_dispatch(_Sto<_Tp>& __a, _Tp __value, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
   __atomic_assign_volatile(__a.__a_value, __value);
@@ -95,11 +94,11 @@ __atomic_underlying_t<_Tp> __atomic_exchange_dispatch(_Tp& __a, __atomic_underly
   return __old;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-bool __atomic_compare_exchange_strong_dispatch(_Tp& __a,
-                                          __atomic_underlying_t<_Tp>* __expected, __atomic_underlying_t<_Tp> __value, memory_order, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __temp;
+bool __atomic_compare_exchange_strong_dispatch(_Sto<_Tp>& __a,
+                                          _Tp* __expected, _Tp __value, memory_order, memory_order, _Sco) {
+  _Tp __temp;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__temp, __a.__a_value);
   bool __ret = __temp == *__expected;
@@ -111,11 +110,11 @@ bool __atomic_compare_exchange_strong_dispatch(_Tp& __a,
   return __ret;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-bool __atomic_compare_exchange_weak_dispatch(_Tp& __a,
-                                        __atomic_underlying_t<_Tp>* __expected, __atomic_underlying_t<_Tp> __value, memory_order, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __temp;
+bool __atomic_compare_exchange_weak_dispatch(_Sto<_Tp>& __a,
+                                        _Tp* __expected, _Tp __value, memory_order, memory_order, _Sco) {
+  _Tp __temp;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__temp, __a.__a_value);
   bool __ret = __temp == *__expected;
@@ -129,21 +128,21 @@ bool __atomic_compare_exchange_weak_dispatch(_Tp& __a,
 
 template <typename _Tp, typename _Td, typename _Sco>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
-                           _Td __delta, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_fetch_add_dispatch(_Sto<_Tp>& __a,
+                           _Td __delta, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
-  __atomic_assign_volatile(__a.__a_value, __atomic_underlying_t<_Tp>(__old + __delta));
+  __atomic_assign_volatile(__a.__a_value, _Tp(__old + __delta));
   __a.__unlock(_Sco{});
   return __old;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
-                           ptrdiff_t __delta, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_fetch_add_dispatch(_Sto<_Tp>& __a,
+                           ptrdiff_t __delta, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
   __atomic_assign_volatile(__a.__a_value, __old + __delta);
@@ -153,45 +152,45 @@ __atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
 
 template <typename _Tp, typename _Td, typename _Sco>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_fetch_sub_dispatch(_Tp& __a,
-                           __atomic_underlying_t<_Tp> __delta, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_fetch_sub_dispatch(_Sto<_Tp>& __a,
+                           _Tp __delta, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
-  __atomic_assign_volatile(__a.__a_value, __atomic_underlying_t<_Tp>(__old - __delta));
+  __atomic_assign_volatile(__a.__a_value, _Tp(__old - __delta));
   __a.__unlock(_Sco{});
   return __old;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_fetch_and_dispatch(_Tp& __a,
-                           __atomic_underlying_t<_Tp> __pattern, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_fetch_and_dispatch(_Sto<_Tp>& __a,
+                           _Tp __pattern, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
-  __atomic_assign_volatile(__a.__a_value, __atomic_underlying_t<_Tp>(__old & __pattern));
+  __atomic_assign_volatile(__a.__a_value, _Tp(__old & __pattern));
   __a.__unlock(_Sco{});
   return __old;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_fetch_or_dispatch(_Tp& __a,
-                          __atomic_underlying_t<_Tp> __pattern, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_fetch_or_dispatch(_Sto<_Tp>& __a,
+                          _Tp __pattern, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
-  __atomic_assign_volatile(__a.__a_value, __atomic_underlying_t<_Tp>(__old | __pattern));
+  __atomic_assign_volatile(__a.__a_value, _Tp(__old | __pattern));
   __a.__unlock(_Sco{});
   return __old;
 }
 
-template <typename _Tp, typename _Sco>
+template <template <typename, typename = __atomic_locked_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
 _CCCL_HOST_DEVICE
-__atomic_underlying_t<_Tp> __atomic_fetch_xor_dispatch(_Tp& __a,
-                           __atomic_underlying_t<_Tp> __pattern, memory_order, _Sco, __atomic_locked_tag) {
-  __atomic_underlying_t<_Tp> __old;
+_Tp __atomic_fetch_xor_dispatch(_Sto<_Tp>& __a,
+                           _Tp __pattern, memory_order, _Sco) {
+  _Tp __old;
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__old, __a.__a_value);
   __atomic_assign_volatile(__a.__a_value, _Tp(__old ^ __pattern));

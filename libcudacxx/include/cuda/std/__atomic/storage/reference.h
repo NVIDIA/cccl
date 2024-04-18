@@ -22,10 +22,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Reference is compatible with __atomic_base_tag and uses default dispatch
 
-template <typename _Tp>
+template <typename _Tp, typename _Tag = __atomic_base_tag>
 struct __atomic_ref_storage {
   using __underlying_t = _Tp;
-  using __tag_t = __atomic_base_tag;
 
 #if !defined(_CCCL_COMPILER_GCC) || (__GNUC__ >= 5)
   static_assert(is_trivially_copyable<_Tp>::value,

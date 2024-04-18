@@ -38,9 +38,6 @@ _CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile
 template <typename _Tp>
 using __atomic_underlying_t = typename __remove_cvref_t<_Tp>::__underlying_t;
 
-template <typename _Tp>
-using __atomic_tag_t = typename __remove_cvref_t<_Tp>::__tag_t;
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___ATOMIC_STORAGE_COMMON_H
