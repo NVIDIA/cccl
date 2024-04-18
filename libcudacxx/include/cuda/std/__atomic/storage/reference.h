@@ -38,7 +38,7 @@ struct __atomic_ref_storage {
   __atomic_ref_storage(_Tp& value) noexcept
     : __a_value(&value) {}
 
-  _LIBCUDACXX_HOST_DEVICE inline auto operator()() -> __underlying_t* {
+  _LIBCUDACXX_HOST_DEVICE inline auto get() -> __underlying_t* {
     return __a_value;
   }
 };

@@ -41,16 +41,16 @@ struct __atomic_storage {
   __atomic_storage(_Tp value) noexcept
     : __a_value(value) {}
 
-  _LIBCUDACXX_HOST_DEVICE inline auto operator()() -> __underlying_t* {
+  _LIBCUDACXX_HOST_DEVICE inline auto get() -> __underlying_t* {
     return &__a_value;
   }
-  _LIBCUDACXX_HOST_DEVICE inline auto operator()() volatile -> volatile __underlying_t* {
+  _LIBCUDACXX_HOST_DEVICE inline auto get() volatile -> volatile __underlying_t* {
     return &__a_value;
   }
-  _LIBCUDACXX_HOST_DEVICE inline auto operator()() const -> const __underlying_t* {
+  _LIBCUDACXX_HOST_DEVICE inline auto get() const -> const __underlying_t* {
     return &__a_value;
   }
-  _LIBCUDACXX_HOST_DEVICE inline auto operator()() const volatile -> const volatile __underlying_t* {
+  _LIBCUDACXX_HOST_DEVICE inline auto get() const volatile -> const volatile __underlying_t* {
     return &__a_value;
   }
 };

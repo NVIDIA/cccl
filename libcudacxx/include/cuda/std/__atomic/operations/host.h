@@ -38,14 +38,14 @@ inline void __atomic_store_host(_Tp* __a,  _Up __val, memory_order __order) {
 }
 
 template <typename _Tp>
-inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> _Tp {
+inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> __remove_cvref_t<_Tp> {
   __remove_cvref_t<_Tp> __ret{};
   __atomic_load(__a, &__ret, __atomic_order_to_int(__order));
   return __ret;
 }
 
 template <typename _Tp, typename _Up>
-inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> _Tp {
+inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> __remove_cvref_t<_Tp> {
   __remove_cvref_t<_Tp> __ret{};
   __atomic_exchange(__a, &__val, &__ret, __atomic_order_to_int(__order));
   return __ret;
