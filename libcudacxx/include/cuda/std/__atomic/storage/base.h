@@ -34,23 +34,23 @@ struct __atomic_storage {
 
   _ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 
-  _LIBCUDACXX_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   __atomic_storage() noexcept
     : __a_value() {}
-  _LIBCUDACXX_HOST_DEVICE constexpr explicit
+  _CCCL_HOST_DEVICE constexpr explicit
   __atomic_storage(_Tp value) noexcept
     : __a_value(value) {}
 
-  _LIBCUDACXX_HOST_DEVICE inline auto get() -> __underlying_t* {
+  _CCCL_HOST_DEVICE inline auto get() -> __underlying_t* {
     return &__a_value;
   }
-  _LIBCUDACXX_HOST_DEVICE inline auto get() volatile -> volatile __underlying_t* {
+  _CCCL_HOST_DEVICE inline auto get() volatile -> volatile __underlying_t* {
     return &__a_value;
   }
-  _LIBCUDACXX_HOST_DEVICE inline auto get() const -> const __underlying_t* {
+  _CCCL_HOST_DEVICE inline auto get() const -> const __underlying_t* {
     return &__a_value;
   }
-  _LIBCUDACXX_HOST_DEVICE inline auto get() const volatile -> const volatile __underlying_t* {
+  _CCCL_HOST_DEVICE inline auto get() const volatile -> const volatile __underlying_t* {
     return &__a_value;
   }
 };

@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 inline
  void __atomic_thread_fence_dispatch(memory_order __order) {
     NV_DISPATCH_TARGET(
@@ -42,7 +42,7 @@ inline
     )
 }
 
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 inline
  void __atomic_signal_fence_dispatch(memory_order __order) {
     NV_DISPATCH_TARGET(
@@ -64,13 +64,13 @@ template <typename _Tp>
 using __atomic_enable_if_default_base_t = __enable_if_t<is_same<__atomic_tag_t<_Tp>, __atomic_base_tag>::value, __atomic_tag_t<_Tp>>;
 
 template <typename _Tp, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  void __atomic_init_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __val, _Tag = {}) {
     __atomic_assign_volatile(__a.get(), __val);
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  void __atomic_store_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __val, memory_order __order, _Sco = {}, _Tag = {}) {
     alignas(_Tp) auto __tmp = __val;
     NV_DISPATCH_TARGET(
@@ -84,7 +84,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  auto __atomic_load_dispatch(_Tp const& __a, memory_order __order, _Sco = {}, _Tag = {}) -> __atomic_underlying_t<_Tp> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -97,7 +97,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_exchange_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __value, memory_order __order, _Sco = {}, _Tag = {}) {
     alignas(_Tp) auto __tmp = __value;
     NV_DISPATCH_TARGET(
@@ -111,7 +111,7 @@ __atomic_underlying_t<_Tp> __atomic_exchange_dispatch(_Tp& __a, __atomic_underly
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  bool __atomic_compare_exchange_strong_dispatch(_Tp& __a, __atomic_underlying_t<_Tp>* __expected, __atomic_underlying_t<_Tp> __val, memory_order __success, memory_order __failure, _Sco = {}, _Tag = {}) {
     bool __result = false;
     NV_DISPATCH_TARGET(
@@ -126,7 +126,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  bool __atomic_compare_exchange_weak_dispatch(_Tp& __a, __atomic_underlying_t<_Tp>* __expected, __atomic_underlying_t<_Tp> __val, memory_order __success, memory_order __failure, _Sco = {}, _Tag = {}) {
     bool __result = false;
     NV_DISPATCH_TARGET(
@@ -146,7 +146,7 @@ template <typename _Tp>
 using __atomic_enable_if_not_ptr = __enable_if_t<!is_pointer<__atomic_underlying_t<_Tp>>::value, __atomic_underlying_t<_Tp>>;
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_enable_if_not_ptr<_Tp> __atomic_fetch_add_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __delta, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -159,7 +159,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_enable_if_ptr<_Tp> __atomic_fetch_add_dispatch(_Tp& __a, ptrdiff_t __delta, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -172,7 +172,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_enable_if_not_ptr<_Tp> __atomic_fetch_sub_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __delta, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -185,7 +185,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_enable_if_ptr<_Tp> __atomic_fetch_sub_dispatch(_Tp& __a, ptrdiff_t __delta, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -198,7 +198,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_underlying_t<_Tp> __atomic_fetch_and_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __pattern, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -211,7 +211,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_underlying_t<_Tp> __atomic_fetch_or_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __pattern, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -224,7 +224,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_underlying_t<_Tp> __atomic_fetch_xor_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __pattern, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -237,7 +237,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_underlying_t<_Tp> __atomic_fetch_max_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __val, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_IF_TARGET(
         NV_IS_DEVICE, (
@@ -249,7 +249,7 @@ _LIBCUDACXX_HOST_DEVICE
 }
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag, typename _Tag = __atomic_enable_if_default_base_t<_Tp>>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
  __atomic_underlying_t<_Tp> __atomic_fetch_min_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __val, memory_order __order, _Sco = {}, _Tag = {}) {
     NV_IF_TARGET(
         NV_IS_DEVICE, (

@@ -30,10 +30,10 @@ struct __atomic_locked_storage {
   using __underlying_t = typename remove_cv<_Tp>::type;
   using __tag_t = typename __atomic_locked_tag;
 
-  _LIBCUDACXX_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   __atomic_locked_storage() noexcept
     : __a_value(), __a_lock(0) {}
-  _LIBCUDACXX_HOST_DEVICE constexpr explicit
+  _CCCL_HOST_DEVICE constexpr explicit
   __atomic_locked_storage(_Tp value) noexcept
     : __a_value(value), __a_lock(0) {}
 
@@ -41,33 +41,33 @@ struct __atomic_locked_storage {
   mutable __atomic_storage<_LIBCUDACXX_ATOMIC_FLAG_TYPE> __a_lock;
 
   template <typename _Sco>
-  _LIBCUDACXX_HOST_DEVICE void __lock(_Sco) const volatile {
+  _CCCL_HOST_DEVICE void __lock(_Sco) const volatile {
     while(1 == __atomic_exchange_dispatch(__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
         /*spin*/;
   }
   template <typename _Sco>
-  _LIBCUDACXX_HOST_DEVICE void __lock(_Sco) const {
+  _CCCL_HOST_DEVICE void __lock(_Sco) const {
     while(1 == __atomic_exchange_dispatch(__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
         /*spin*/;
   }
   template <typename _Sco>
-  _LIBCUDACXX_HOST_DEVICE void __unlock(_Sco) const volatile {
+  _CCCL_HOST_DEVICE void __unlock(_Sco) const volatile {
     __atomic_store_dispatch(__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
   template <typename _Sco>
-  _LIBCUDACXX_HOST_DEVICE void __unlock(_Sco) const {
+  _CCCL_HOST_DEVICE void __unlock(_Sco) const {
     __atomic_store_dispatch(__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
 };
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void __atomic_init_dispatch(_Tp& __a,  __atomic_underlying_t<_Tp> __val, _Sco, __atomic_locked_tag) {
   __atomic_assign_volatile(__a.__a_value, __val);
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 void __atomic_store_dispatch(_Tp& __a,  __atomic_underlying_t<_Tp> __val, memory_order, _Sco, __atomic_locked_tag) {
   __a.__lock(_Sco{});
   __atomic_assign_volatile(__a.__a_value, __val);
@@ -75,7 +75,7 @@ void __atomic_store_dispatch(_Tp& __a,  __atomic_underlying_t<_Tp> __val, memory
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_load_dispatch(const _Tp& __a, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
   __a.__lock(_Sco{});
@@ -85,7 +85,7 @@ __atomic_underlying_t<_Tp> __atomic_load_dispatch(const _Tp& __a, memory_order, 
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_exchange_dispatch(_Tp& __a, __atomic_underlying_t<_Tp> __value, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
   __a.__lock(_Sco{});
@@ -96,7 +96,7 @@ __atomic_underlying_t<_Tp> __atomic_exchange_dispatch(_Tp& __a, __atomic_underly
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 bool __atomic_compare_exchange_strong_dispatch(_Tp& __a,
                                           __atomic_underlying_t<_Tp>* __expected, __atomic_underlying_t<_Tp> __value, memory_order, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __temp;
@@ -112,7 +112,7 @@ bool __atomic_compare_exchange_strong_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 bool __atomic_compare_exchange_weak_dispatch(_Tp& __a,
                                         __atomic_underlying_t<_Tp>* __expected, __atomic_underlying_t<_Tp> __value, memory_order, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __temp;
@@ -128,7 +128,7 @@ bool __atomic_compare_exchange_weak_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Td, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
                            _Td __delta, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
@@ -140,7 +140,7 @@ __atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
                            ptrdiff_t __delta, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
@@ -152,7 +152,7 @@ __atomic_underlying_t<_Tp> __atomic_fetch_add_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Td, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_fetch_sub_dispatch(_Tp& __a,
                            __atomic_underlying_t<_Tp> __delta, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
@@ -164,7 +164,7 @@ __atomic_underlying_t<_Tp> __atomic_fetch_sub_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_fetch_and_dispatch(_Tp& __a,
                            __atomic_underlying_t<_Tp> __pattern, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
@@ -176,7 +176,7 @@ __atomic_underlying_t<_Tp> __atomic_fetch_and_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_fetch_or_dispatch(_Tp& __a,
                           __atomic_underlying_t<_Tp> __pattern, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;
@@ -188,7 +188,7 @@ __atomic_underlying_t<_Tp> __atomic_fetch_or_dispatch(_Tp& __a,
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_HOST_DEVICE
+_CCCL_HOST_DEVICE
 __atomic_underlying_t<_Tp> __atomic_fetch_xor_dispatch(_Tp& __a,
                            __atomic_underlying_t<_Tp> __pattern, memory_order, _Sco, __atomic_locked_tag) {
   __atomic_underlying_t<_Tp> __old;

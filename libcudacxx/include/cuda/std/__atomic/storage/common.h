@@ -21,13 +21,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // is required.
 template <typename _Tp, typename _Tv>
 __enable_if_t<is_assignable<_Tp&, _Tv>::value>
-_LIBCUDACXX_HOST_DEVICE __atomic_assign_volatile(_Tp& __a_value, _Tv const& __val) {
+_CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp& __a_value, _Tv const& __val) {
   __a_value = __val;
 }
 
 template <typename _Tp, typename _Tv>
 __enable_if_t<is_assignable<_Tp&, _Tv>::value>
-_LIBCUDACXX_HOST_DEVICE __atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val) {
+_CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val) {
   volatile char* __to = reinterpret_cast<volatile char*>(&__a_value);
   volatile char* __end = __to + sizeof(_Tp);
   volatile const char* __from = reinterpret_cast<volatile const char*>(&__val);
