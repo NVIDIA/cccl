@@ -21,7 +21,7 @@
 
 // This test checks for LWG 2510.
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 cuda::std::allocator_arg_t f()
 {

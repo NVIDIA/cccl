@@ -15,7 +15,7 @@
 //   constexpr bool   // constexpr after C++17
 //   is_heap_until(Iter first, Iter last, Compare comp);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

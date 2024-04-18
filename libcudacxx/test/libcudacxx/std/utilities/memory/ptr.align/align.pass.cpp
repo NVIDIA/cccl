@@ -11,7 +11,7 @@
 
 // void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 

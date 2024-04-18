@@ -16,7 +16,7 @@
 // allocator:
 // T* allocate(size_t n);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 __host__ __device__ void f()
 {

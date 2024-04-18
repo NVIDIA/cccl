@@ -25,7 +25,7 @@
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
 
-#include <cuda/std/detail/libcxx/include/__exception/cuda_error.h>
+#include <cuda/std/__exception/cuda_error.h>
 
 #define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)           \
   {                                                    \

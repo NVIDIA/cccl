@@ -13,7 +13,7 @@
 // template<ForwardIterator Iter>
 //   max_element(Iter first, Iter last);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

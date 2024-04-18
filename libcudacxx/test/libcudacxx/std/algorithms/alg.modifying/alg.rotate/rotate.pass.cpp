@@ -14,7 +14,7 @@
 //   Iter
 //   rotate(Iter first, Iter middle, Iter last);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
 #include "MoveOnly.h"
