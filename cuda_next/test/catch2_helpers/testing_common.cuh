@@ -18,6 +18,8 @@
 
 #include <catch2/catch.hpp>
 
+namespace cudax = cuda::experimental;
+
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
 // TODO make it work on NVC++
@@ -86,12 +88,12 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
-    config.blockDim = dims.flatten(cuda_next::thread, cuda_next::block);
-    config.gridDim  = dims.flatten(cuda_next::block, cuda_next::grid);
+    config.blockDim = dims.flatten(cudax::thread, cudax::block);
+    config.gridDim  = dims.flatten(cudax::block, cudax::grid);
 
-    if constexpr (cuda_next::has_level<cuda_next::cluster_level, decltype(dims)>)
+    if constexpr (cudax::has_level<cudax::cluster_level, decltype(dims)>)
     {
-      dim3 cluster_dims                            = dims.flatten(cuda_next::block, cuda_next::cluster);
+      dim3 cluster_dims                            = dims.flatten(cudax::block, cudax::cluster);
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
       config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
       config.numAttrs                              = 1;

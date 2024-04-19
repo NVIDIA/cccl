@@ -14,55 +14,55 @@
 #include "catch2_helpers/testing_common.cuh"
 #include <cooperative_groups.h>
 
-struct custom_level : public cuda_next::hierarchy_level
+struct custom_level : public cudax::hierarchy_level
 {
   using product_type  = unsigned int;
-  using allowed_above = cuda_next::allowed_levels<cuda_next::grid_level>;
-  using allowed_below = cuda_next::allowed_levels<cuda_next::block_level>;
+  using allowed_above = cudax::allowed_levels<cudax::grid_level>;
+  using allowed_below = cudax::allowed_levels<cudax::block_level>;
 };
 
 template <typename Level, typename Dims>
-struct custom_level_dims : public cuda_next::level_dimensions<Level, Dims>
+struct custom_level_dims : public cudax::level_dimensions<Level, Dims>
 {
   int dummy;
   constexpr custom_level_dims()
-      : cuda_next::level_dimensions<Level, Dims>(){};
+      : cudax::level_dimensions<Level, Dims>(){};
 };
 
 template <typename Dims>
 __global__ void kernel_custom_level(Dims dims)
 {
-  auto cnt = dims.count(cuda_next::grid, custom_level());
+  auto cnt = dims.count(cudax::grid, custom_level());
 }
 
 void custom_level_test()
 {
   // Check extending level_dimensions with custom info
-  custom_level_dims<cuda_next::block_level, cuda_next::detail::dims<64>> custom_block;
+  custom_level_dims<cudax::block_level, cudax::detail::dims<64>> custom_block;
   custom_block.dummy     = 2;
-  auto custom_dims       = cuda_next::grid_dims<256>() & cuda_next::cluster_dims<8>() & custom_block;
-  auto custom_block_back = custom_dims.level(cuda_next::block);
+  auto custom_dims       = cudax::grid_dims<256>() & cudax::cluster_dims<8>() & custom_block;
+  auto custom_block_back = custom_dims.level(cudax::block);
   REQUIRE(custom_block_back.dummy == 2);
 
-  auto custom_dims_fragment = custom_dims.fragment(cuda_next::thread, cuda_next::block);
-  auto custom_block_back2   = custom_dims_fragment.level(cuda_next::block);
+  auto custom_dims_fragment = custom_dims.fragment(cudax::thread, cudax::block);
+  auto custom_block_back2   = custom_dims_fragment.level(cudax::block);
   REQUIRE(custom_block_back2.dummy == 2);
 
   // Check creating a custom level type works
-  auto custom_level_dims = cuda_next::dimensions<cuda_next::dimensions_index_type, 2, 2, 2>();
-  auto custom_hierarchy  = cuda_next::make_hierarchy(
-    cuda_next::grid_dims(42),
-    cuda_next::level_dimensions<custom_level, decltype(custom_level_dims)>(custom_level_dims),
-    cuda_next::block_dims<256>());
+  auto custom_level_dims = cudax::dimensions<cudax::dimensions_index_type, 2, 2, 2>();
+  auto custom_hierarchy  = cudax::make_hierarchy(
+    cudax::grid_dims(42),
+    cudax::level_dimensions<custom_level, decltype(custom_level_dims)>(custom_level_dims),
+    cudax::block_dims<256>());
 
-  static_assert(custom_hierarchy.flatten(cuda_next::thread, custom_level()) == dim3(512, 2, 2));
-  static_assert(custom_hierarchy.count(cuda_next::thread, custom_level()) == 2048);
+  static_assert(custom_hierarchy.flatten(cudax::thread, custom_level()) == dim3(512, 2, 2));
+  static_assert(custom_hierarchy.count(cudax::thread, custom_level()) == 2048);
 
   test_host_dev(custom_hierarchy, [] __host__ __device__(const decltype(custom_hierarchy)& dims) {
     HOST_DEV_REQUIRE(dims.count() == 84 * 1024);
-    HOST_DEV_REQUIRE(dims.count(custom_level(), cuda_next::grid) == 42);
+    HOST_DEV_REQUIRE(dims.count(custom_level(), cudax::grid) == 42);
     HOST_DEV_REQUIRE(dims.flatten() == dim3(42 * 512, 2, 2));
-    HOST_DEV_REQUIRE(dims.flatten(custom_level(), cuda_next::grid) == dim3(42, 1, 1));
+    HOST_DEV_REQUIRE(dims.flatten(custom_level(), cudax::grid) == dim3(42, 1, 1));
   });
 }
 
@@ -72,10 +72,10 @@ TEST_CASE("Custom level", "[hierarchy]")
 }
 
 template <typename Level, typename Dims>
-struct level_disabled_copy : public cuda_next::level_dimensions<Level, Dims>
+struct level_disabled_copy : public cudax::level_dimensions<Level, Dims>
 {
   constexpr __host__ __device__ level_disabled_copy(const Dims& d)
-      : cuda_next::level_dimensions<Level, Dims>(d)
+      : cudax::level_dimensions<Level, Dims>(d)
   {}
 
   constexpr level_disabled_copy(const level_disabled_copy<Level, Dims>& d) = delete;
@@ -86,18 +86,18 @@ TEST_CASE("Disabled lvalue copy", "hierarchy")
 {
   auto ext               = cuda::std::extents<size_t, cuda::std::dynamic_extent, 1, 1>(64, 1, 1);
   auto ext_static        = cuda::std::extents<size_t, 64, 1, 1>();
-  auto block_dims        = level_disabled_copy<cuda_next::block_level, decltype(ext)>(ext);
-  auto block_dims2       = level_disabled_copy<cuda_next::block_level, decltype(ext)>(ext);
-  auto block_dims_static = level_disabled_copy<cuda_next::block_level, decltype(ext_static)>(ext_static);
+  auto block_dims        = level_disabled_copy<cudax::block_level, decltype(ext)>(ext);
+  auto block_dims2       = level_disabled_copy<cudax::block_level, decltype(ext)>(ext);
+  auto block_dims_static = level_disabled_copy<cudax::block_level, decltype(ext_static)>(ext_static);
 
-  auto hierarchy     = cuda_next::make_hierarchy(cuda_next::grid_dims(256), std::move(block_dims));
-  auto hierarchy_rev = cuda_next::make_hierarchy(std::move(block_dims2), cuda_next::grid_dims(256));
+  auto hierarchy     = cudax::make_hierarchy(cudax::grid_dims(256), std::move(block_dims));
+  auto hierarchy_rev = cudax::make_hierarchy(std::move(block_dims2), cudax::grid_dims(256));
   static_assert(std::is_same_v<decltype(hierarchy), decltype(hierarchy_rev)>);
 
   REQUIRE(hierarchy.count() == 256 * 64);
   REQUIRE(hierarchy_rev.count() == 256 * 64);
 
-  auto hierarchy_static = cuda_next::make_hierarchy(std::move(block_dims_static), cuda_next::grid_dims(256));
+  auto hierarchy_static = cudax::make_hierarchy(std::move(block_dims_static), cudax::grid_dims(256));
 
-  static_assert(hierarchy_static.count(cuda_next::thread, cuda_next::block) == 64);
+  static_assert(hierarchy_static.count(cudax::thread, cudax::block) == 64);
 }

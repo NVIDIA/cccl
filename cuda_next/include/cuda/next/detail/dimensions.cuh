@@ -13,7 +13,7 @@
 
 #include <cuda/std/mdspan>
 
-namespace cuda_next
+namespace cuda::experimental
 {
 
 template <typename T, size_t... Extents>
@@ -107,5 +107,5 @@ __device__ constexpr auto index_to_linear(const Index& index, const Dims& dims)
 }
 
 } // namespace detail
-} // namespace cuda_next
+} // namespace cuda::experimental
 #endif

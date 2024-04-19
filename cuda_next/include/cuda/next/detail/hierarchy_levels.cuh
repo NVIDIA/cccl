@@ -14,7 +14,7 @@
 #include "dimensions.cuh"
 #include <nv/target>
 
-namespace cuda_next
+namespace cuda::experimental
 {
 
 // Base type for all hierarchy levels
@@ -312,5 +312,5 @@ auto __device__ index(const Unit&, const Level&)
   return hierarchy_query_result(detail::index_impl<Unit, Level>());
 }
 } // namespace hierarchy
-} // namespace cuda_next
+} // namespace cuda::experimental
 #endif

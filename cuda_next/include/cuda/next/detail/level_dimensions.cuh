@@ -15,7 +15,7 @@
 
 #include "hierarchy_levels.cuh"
 
-namespace cuda_next
+namespace cuda::experimental
 {
 
 namespace detail
@@ -139,5 +139,5 @@ _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
   return level_dimensions<block_level, decltype(dims)>(dims);
 }
 
-} // namespace cuda_next
+} // namespace cuda::experimental
 #endif

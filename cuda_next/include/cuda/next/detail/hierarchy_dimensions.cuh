@@ -16,7 +16,7 @@
 #include "level_dimensions.cuh"
 #include <nv/target>
 
-namespace cuda_next
+namespace cuda::experimental
 {
 
 // TODO right now operator stacking can end up with a wrong unit, we could use below type, but we would need an explicit
@@ -478,7 +478,7 @@ public:
   }
 
   template <typename Level>
-  _CCCL_HOST_DEVICE constexpr auto level(const Level& /*level*/)
+  _CCCL_HOST_DEVICE constexpr auto level(const Level& /*level*/) const noexcept
   {
     static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
 
@@ -499,5 +499,5 @@ auto constexpr _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<Level
   }
 }
 
-} // namespace cuda_next
+} // namespace cuda::experimental
 #endif
