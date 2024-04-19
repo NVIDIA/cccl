@@ -29,8 +29,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 
-// comes last
-#include <cuda/std/detail/__pragma_push>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -107,6 +106,6 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY __common_type_t<_Tp, _Up> lc
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/detail/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___NUMERIC_GCD_LCM_H

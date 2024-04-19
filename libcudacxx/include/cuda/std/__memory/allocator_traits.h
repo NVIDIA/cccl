@@ -33,9 +33,10 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/detail/__pragma_push>
 #include <cuda/std/detail/libcxx/include/cstring>
 #include <cuda/std/limits>
+
+_CCCL_PUSH_MACROS
 
 _CCCL_NV_DIAG_SUPPRESS(1215)
 
@@ -599,6 +600,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_NV_DIAG_DEFAULT(1215)
 
-#include <cuda/std/detail/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATOR_TRAITS_H

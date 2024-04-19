@@ -33,8 +33,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-// comes last
-#include <cuda/std/detail/__pragma_push>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -97,6 +96,6 @@ _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/detail/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___NUMERIC_MIDPOINT_H

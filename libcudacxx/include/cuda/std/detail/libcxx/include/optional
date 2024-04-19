@@ -209,7 +209,7 @@ template<class T>
 #  include <cuda/std/compare>
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#include <cuda/std/detail/libcxx/include/__pragma_push>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
@@ -1363,6 +1363,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER > 2011
 
-#include <cuda/std/detail/libcxx/include/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX_OPTIONAL

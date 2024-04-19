@@ -125,8 +125,7 @@ template <size_t N> struct hash<std::bitset<N>>;
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_PUSH_MACROS
-#include <__undef_macros>
+_CCCL_POP_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1023,6 +1022,6 @@ basic_ostream<_CharT, _Traits>& operator<<(basic_ostream<_CharT, _Traits>& __os,
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_LIBCUDACXX_POP_MACROS
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX_BITSET

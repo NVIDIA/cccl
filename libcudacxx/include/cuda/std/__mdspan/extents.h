@@ -70,10 +70,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
-#if defined(_LIBCUDACXX_PUSH_MACROS)
-_LIBCUDACXX_PUSH_MACROS
-#endif
-#include <cuda/std/detail/libcxx/include/__undef_macros>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -594,8 +591,6 @@ using __extents_to_partially_static_sizes_t = typename __extents_to_partially_st
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_POP_MACROS)
-_LIBCUDACXX_POP_MACROS
-#endif
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___MDSPAN_EXTENTS_HPP
