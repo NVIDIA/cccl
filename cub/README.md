@@ -35,8 +35,8 @@ __global__ void BlockSortKernel(int *d_in, int *d_out)
      // Specialize BlockRadixSort, BlockLoad, and BlockStore for 128 threads
      // owning 16 integer items each
      typedef BlockRadixSort<int, 128, 16>                     BlockRadixSort;
-     typedef BlockLoad<int, 128, 16, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
-     typedef BlockStore<int, 128, 16, BLOCK_STORE_TRANSPOSE> BlockStore;
+     typedef BlockLoad<int, 128, 16, cub::BLOCK_LOAD_TRANSPOSE>   BlockLoad;
+     typedef BlockStore<int, 128, 16, cub::BLOCK_STORE_TRANSPOSE> BlockStore;
 
      // Allocate shared memory
      __shared__ union {
