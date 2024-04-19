@@ -22,7 +22,7 @@
 
 // UNSUPPORTED: nvrtc
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 

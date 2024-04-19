@@ -13,7 +13,7 @@
 // template <class InputIt, class ForwardIt>
 // ForwardIt uninitialized_move(InputIt, InputIt, ForwardIt);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 

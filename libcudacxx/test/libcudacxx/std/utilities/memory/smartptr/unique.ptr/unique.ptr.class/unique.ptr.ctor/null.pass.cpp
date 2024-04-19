@@ -17,7 +17,7 @@
 // The behavior demonstrated in this test is not meant to be standard; It simply
 // tests the current status quo in libc++.
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

@@ -21,7 +21,7 @@
 // test move assignment.  Should only require a MoveConstructible deleter, or if
 //    deleter is a reference, not even that.
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 

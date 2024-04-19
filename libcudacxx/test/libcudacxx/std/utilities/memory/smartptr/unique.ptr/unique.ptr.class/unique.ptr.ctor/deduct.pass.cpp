@@ -20,7 +20,7 @@
 // constexpr unique_ptr(pointer p, const D& d) noexcept // constexpr since C++23
 // constexpr unique_ptr(pointer p, remove_reference_t<D>&& d) noexcept // constexpr since C++23
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 #include "deduction_guides_sfinae_checks.h"
 

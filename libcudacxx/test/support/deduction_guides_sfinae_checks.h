@@ -11,7 +11,7 @@
 #ifndef TEST_SUPPORT_DEDUCTION_GUIDES_SFINAE_CHECKS_H
 #define TEST_SUPPORT_DEDUCTION_GUIDES_SFINAE_CHECKS_H
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/initializer_list>

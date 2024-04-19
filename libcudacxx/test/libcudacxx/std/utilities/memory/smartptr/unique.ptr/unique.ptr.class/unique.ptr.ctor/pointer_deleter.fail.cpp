@@ -15,7 +15,7 @@
 
 // UNSUPPORTED: nvrtc
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 struct Deleter
 {

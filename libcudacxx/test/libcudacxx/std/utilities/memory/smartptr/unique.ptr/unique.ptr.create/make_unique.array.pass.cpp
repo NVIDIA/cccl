@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING

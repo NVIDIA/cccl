@@ -13,7 +13,7 @@
 
 // The deleter is not called if get() == 0
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

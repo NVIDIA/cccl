@@ -13,7 +13,7 @@
 
 // Test unique_ptr move ctor
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 

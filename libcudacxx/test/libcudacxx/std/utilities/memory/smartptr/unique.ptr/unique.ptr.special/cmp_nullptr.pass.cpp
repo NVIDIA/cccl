@@ -40,7 +40,7 @@
 //   constexpr compare_three_way_result_t<typename unique_ptr<T, D>::pointer>
 //     operator<=>(const unique_ptr<T, D>& x, nullptr_t);                        // C++20
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

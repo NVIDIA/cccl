@@ -23,7 +23,7 @@
 //  2 Default construct a unique_ptr with an incomplete element_type and
 //    various deleter types (C-1,2)
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "deleter_types.h"

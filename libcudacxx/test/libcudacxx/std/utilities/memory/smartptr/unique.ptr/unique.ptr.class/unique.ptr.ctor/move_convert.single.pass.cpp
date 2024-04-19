@@ -16,7 +16,7 @@
 // NOTE: unique_ptr does not provide converting constructors in C++03
 // UNSUPPORTED: c++03
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>

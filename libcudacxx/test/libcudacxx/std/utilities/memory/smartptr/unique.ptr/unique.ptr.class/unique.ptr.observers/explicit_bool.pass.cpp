@@ -13,7 +13,7 @@
 
 // test constexpr explicit operator bool() const noexcept; // constexpr since C++23
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

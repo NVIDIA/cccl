@@ -13,7 +13,7 @@
 
 // unique_ptr
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/iterator>
 
 static_assert(cuda::std::indirectly_readable<cuda::std::unique_ptr<int>>);

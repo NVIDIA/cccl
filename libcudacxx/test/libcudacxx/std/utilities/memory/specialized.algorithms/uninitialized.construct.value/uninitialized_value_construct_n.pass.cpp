@@ -13,7 +13,7 @@
 // template <class ForwardIt>
 // void uninitialized_value_construct(ForwardIt, ForwardIt);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 

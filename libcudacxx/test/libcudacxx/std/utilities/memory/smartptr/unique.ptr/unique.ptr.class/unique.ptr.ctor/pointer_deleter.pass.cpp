@@ -23,7 +23,7 @@
 //   6 unique_ptr(pointer, deleter) should work with function pointers.
 //   7 unique_ptr<void> should work.
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

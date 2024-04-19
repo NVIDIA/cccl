@@ -21,7 +21,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 // #include <cuda/std/cstring>
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/utility>
 
 #include "test_macros.h"

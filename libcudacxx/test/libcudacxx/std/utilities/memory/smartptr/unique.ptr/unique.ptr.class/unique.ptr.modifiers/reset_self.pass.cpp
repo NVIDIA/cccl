@@ -13,7 +13,7 @@
 
 // test reset against resetting self
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 #include "test_macros.h"
 

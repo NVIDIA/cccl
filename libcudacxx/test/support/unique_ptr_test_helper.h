@@ -9,7 +9,7 @@
 #ifndef TEST_SUPPORT_UNIQUE_PTR_TEST_HELPER_H
 #define TEST_SUPPORT_UNIQUE_PTR_TEST_HELPER_H
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/type_traits>
 
 #include "deleter_types.h"

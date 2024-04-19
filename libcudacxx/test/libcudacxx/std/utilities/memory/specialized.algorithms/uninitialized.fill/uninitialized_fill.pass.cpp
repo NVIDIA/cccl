@@ -15,7 +15,7 @@
 //   uninitialized_fill(ForwardIterator first, ForwardIterator last,
 //                      const T& x);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

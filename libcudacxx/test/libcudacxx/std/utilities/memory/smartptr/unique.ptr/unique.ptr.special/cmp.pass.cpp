@@ -42,7 +42,7 @@
 //                              typename unique_ptr<T2, D2>::pointer>
 //     operator<=>(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "deleter_types.h"

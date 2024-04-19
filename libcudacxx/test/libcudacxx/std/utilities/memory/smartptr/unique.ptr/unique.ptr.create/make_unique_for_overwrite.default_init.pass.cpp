@@ -18,7 +18,7 @@
 
 // Test the object is not value initialized
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>

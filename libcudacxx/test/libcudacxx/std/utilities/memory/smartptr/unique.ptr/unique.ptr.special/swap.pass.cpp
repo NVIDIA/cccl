@@ -13,7 +13,7 @@
 
 // Test swap
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "deleter_types.h"

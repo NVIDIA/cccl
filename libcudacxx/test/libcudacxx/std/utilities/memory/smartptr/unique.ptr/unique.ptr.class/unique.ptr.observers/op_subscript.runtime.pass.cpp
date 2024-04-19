@@ -13,7 +13,7 @@
 
 // test op[](size_t)
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 // TODO: Move TEST_IS_CONSTANT_EVALUATED into it's own header
