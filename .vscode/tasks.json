@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "tasks": [
+    {
+      "label": "build debug",
+      "type": "shell",
+      "command": "/bin/bash",
+      "args": [
+          "-c",
+          "${command:cmake.tasksBuildCommand}"
+      ],
+      "options": {
+          "cwd": "${command:cmake.buildDirectory}"
+      }
+    }
+  ]
+}
