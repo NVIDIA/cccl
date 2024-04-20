@@ -21,6 +21,7 @@ base_sha=$(git merge-base $head_sha $base_sha)
 
 # Define a list of subproject directories:
 subprojects=(
+  cccl
   libcudacxx
   cub
   thrust
@@ -28,15 +29,31 @@ subprojects=(
 
 # ...and their dependencies:
 declare -A dependencies=(
+  [cccl]=""
   [libcudacxx]="cccl"
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
+)
+
+declare -A project_names=(
+  [cccl]="CCCL Infrastructure"
+  [libcudacxx]="libcu++"
+  [cub]="CUB"
+  [thrust]="Thrust"
 )
 
 write_output() {
   local key="$1"
   local value="$2"
   echo "$key=$value" | tee --append "${GITHUB_OUTPUT:-/dev/null}"
+}
+
+tee_to_step_summary() {
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    tee -a "${GITHUB_STEP_SUMMARY}"
+  else
+    cat
+  fi
 }
 
 dirty_files() {
@@ -90,26 +107,14 @@ add_dependencies() {
   return 0
 }
 
-# write_subproject_status <subproject>
-# Write the output <subproject_uppercase>_DIRTY={true|false}
-write_subproject_status() {
-  local subproject="$1"
-  local dirty_flag=${subproject^^}_DIRTY
-
-  if [[ ${!dirty_flag} -ne 0 ]]; then
-    write_output "${dirty_flag}" "true"
-  else
-    write_output "${dirty_flag}" "false"
-  fi
-}
-
 main() {
   # Print the list of subprojects and all of their dependencies:
   echo "Subprojects: ${subprojects[*]}"
   echo
   echo "Dependencies:"
   for subproject in "${subprojects[@]}"; do
-    echo "  - ${subproject} -> ${dependencies[$subproject]}"
+    printf "  - %-27s -> %s\n" "$subproject (${project_names[$subproject]})" "${dependencies[$subproject]}"
+
   done
   echo
 
@@ -117,36 +122,74 @@ main() {
   echo "HEAD SHA: ${head_sha}"
   echo
 
-  # Print the list of files that have changed:
-  echo "Dirty files:"
-  dirty_files | sed 's/^/  - /'
-  echo ""
+  check="+/-"
+  no_check="   "
+  get_checkmark() {
+    if [[ $1 -eq 0 ]]; then
+      echo "$no_check"
+    else
+      echo "$check"
+    fi
+  }
 
-  echo "Modifications in project?"
+  # Print the list of files that have changed:
+  echo "::group::Dirty files"
+  dirty_files | sed 's/^/  - /'
+  echo "::endgroup::"
+  echo
+
+
+  echo "<details><summary><h3>👃 Inspect Changes</h3></summary>" | tee_to_step_summary
+  echo | tee_to_step_summary
+
+  echo -e "### Modifications in project?\n" | tee_to_step_summary
+  echo "|     | Project" | tee_to_step_summary
+  echo "|-----|---------" | tee_to_step_summary
+
   # Assign the return value of `inspect_cccl` to the variable `CCCL_DIRTY`:
   inspect_cccl
   CCCL_DIRTY=$?
-  echo "$(if [[ ${CCCL_DIRTY} -eq 0 ]]; then echo " "; else echo "X"; fi) - CCCL Infrastructure"
+  checkmark="$(get_checkmark ${CCCL_DIRTY})"
+  echo "| ${checkmark} | ${project_names[cccl]}" | tee_to_step_summary
 
   # Check for changes in each subprojects directory:
   for subproject in "${subprojects[@]}"; do
-    inspect_subdir $subproject
-    declare ${subproject^^}_DIRTY=$?
-    echo "$(if [[ ${subproject^^}_DIRTY -eq 0 ]]; then echo " "; else echo "X"; fi) - ${subproject}"
-  done
-  echo
+    if [[ ${subproject} == "cccl" ]]; then
+      # Special case handled above.
+      continue
+    fi
 
-  echo "Modifications in project or dependencies?"
+    inspect_subdir $subproject
+    local dirty=$?
+    declare ${subproject^^}_DIRTY=${dirty}
+    checkmark="$(get_checkmark ${dirty})"
+    echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
+  done
+  echo | tee_to_step_summary
+
+  echo -e "### Modifications in project or dependencies?\n" | tee_to_step_summary
+  echo "|     | Project" | tee_to_step_summary
+  echo "|-----|---------" | tee_to_step_summary
+
   for subproject in "${subprojects[@]}"; do
     add_dependencies ${subproject}
-    declare ${subproject^^}_DIRTY=$?
-    echo "$(if [[ ${subproject^^}_DIRTY -eq 0 ]]; then echo " "; else echo "X"; fi) - ${subproject}"
+    local dirty=$?
+    declare ${subproject^^}_DIRTY=${dirty}
+    checkmark="$(get_checkmark ${dirty})"
+    echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
   done
-  echo
 
+  echo "</details>" | tee_to_step_summary
+
+  declare -a dirty_subprojects=()
   for subproject in "${subprojects[@]}"; do
-    write_subproject_status ${subproject}
+    var_name="${subproject^^}_DIRTY"
+    if [[ ${!var_name} -ne 0 ]]; then
+      dirty_subprojects+=("$subproject")
+    fi
   done
+
+  write_output "DIRTY_PROJECTS" "${dirty_subprojects[*]}"
 }
 
 main "$@"

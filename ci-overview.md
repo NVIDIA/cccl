@@ -33,6 +33,8 @@ Special commands are provided that can be included in commit messages to direct 
    - **Example:** `git commit -m "[skip ci] Update README."`
 
 - `[skip-tests]`: Skips CI jobs that execute tests, but runs all other jobs. Useful to avoid time-consuming tests when changes are unlikely to affect them.
+- `[all-projects]`: CI normally skips projects that don't have changes in themselves or their dependencies. This forces all projects to build.
+- `[workflow:<workflow>]`:  Execute jobs from the named workflow. Example: `[workflow:nightly]` runs all jobs defined in `matrix.yaml`'s `workflows.nightly` list.
 
 Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
 

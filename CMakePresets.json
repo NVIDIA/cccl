@@ -60,7 +60,7 @@
       "name": "all-dev-debug",
       "displayName": "all-dev debug",
       "inherits": "all-dev",
-      "cacheVariables":{
+      "cacheVariables": {
         "CCCL_ENABLE_BENCHMARKS": false,
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CUDA_FLAGS": "-G"
