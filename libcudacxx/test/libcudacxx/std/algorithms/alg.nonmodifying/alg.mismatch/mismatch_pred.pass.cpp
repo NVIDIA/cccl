@@ -18,7 +18,7 @@
 //   constexpr pair<Iter1, Iter2>   // constexpr after c++17
 //   mismatch(Iter1 first1, Iter1 last1, Iter2 first2, Iter2 last2, Pred pred); // C++14
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

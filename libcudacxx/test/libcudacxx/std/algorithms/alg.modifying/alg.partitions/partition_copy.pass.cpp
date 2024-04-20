@@ -17,7 +17,7 @@
 //                    OutputIterator1 out_true, OutputIterator2 out_false,
 //                    Predicate pred);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

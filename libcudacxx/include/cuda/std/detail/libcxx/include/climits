@@ -47,7 +47,7 @@ Macros:
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__cuda/climits_prelude.h>
+#include <cuda/std/__cuda/climits_prelude.h>
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #if defined(_CCCL_COMPILER_MSVC)

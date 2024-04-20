@@ -17,8 +17,8 @@
 //     ...
 // };
 
-#include <cuda/std/__memory>
-#include <cuda/std/__new>
+#include <cuda/std/__memory_>
+#include <cuda/std/__new_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>

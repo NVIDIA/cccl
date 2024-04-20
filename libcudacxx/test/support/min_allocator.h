@@ -9,7 +9,7 @@
 #ifndef MIN_ALLOCATOR_H
 #define MIN_ALLOCATOR_H
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>

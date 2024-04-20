@@ -19,4 +19,4 @@
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // This file tests that the respective header is includable on its own with a cuda compiler
-#include <cuda/std/detail/libcxx/include/${header}>
+#include <cuda/${header}>

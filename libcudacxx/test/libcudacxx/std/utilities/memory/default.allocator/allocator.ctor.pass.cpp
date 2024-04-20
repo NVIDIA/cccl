@@ -20,7 +20,7 @@
 // ...
 // };
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cstddef>
 
 #include "test_macros.h"

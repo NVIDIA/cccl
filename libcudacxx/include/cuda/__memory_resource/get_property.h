@@ -23,10 +23,10 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#  include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/remove_const_ref.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
-#  include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__type_traits/remove_const_ref.h>
+#  include <cuda/std/__type_traits/void_t.h>
+#  include <cuda/std/__utility/declval.h>
 
 #  if _CCCL_STD_VER >= 2014
 

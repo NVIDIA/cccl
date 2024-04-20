@@ -27,7 +27,7 @@
 
 // REQUIRES: c++17
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 __host__ __device__ void f()
 {

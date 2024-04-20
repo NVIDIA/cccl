@@ -13,7 +13,7 @@
 //    constexpr InputIterator      // constexpr after C++17
 //    for_each_n(InputIterator first, Size n, Function f);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

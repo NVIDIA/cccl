@@ -137,15 +137,15 @@ template <size_t N> struct hash<_CUDA_VSTD::bitset<N>>;
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__algorithm/count.h>
-#include <cuda/std/detail/libcxx/include/__algorithm/fill.h>
-#include <cuda/std/detail/libcxx/include/__algorithm/find.h>
+#include <cuda/std/__algorithm/count.h>
+#include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__algorithm/find.h>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__bit_reference>
-#include <cuda/std/detail/libcxx/include/__functional/hash.h>
-#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/__functional/hash.h>
+#include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/detail/libcxx/include/__string>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_char_like_type.h>
+#include <cuda/std/__type_traits/is_char_like_type.h>
 #include <cuda/std/detail/libcxx/include/climits>
 #include <cuda/std/detail/libcxx/include/cstddef>
 #include <cuda/std/detail/libcxx/include/stdexcept>

@@ -249,36 +249,36 @@ template <class T>
 
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/detail/libcxx/include/__functional/binary_function.h>
-#include <cuda/std/detail/libcxx/include/__functional/hash.h>
-#include <cuda/std/detail/libcxx/include/__functional/reference_wrapper.h>
-#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
-#include <cuda/std/detail/libcxx/include/__functional/unwrap_ref.h>
-#include <cuda/std/detail/libcxx/include/__functional/weak_result_type.h>
-#include <cuda/std/detail/libcxx/include/__fwd/get.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
-#include <cuda/std/detail/libcxx/include/__utility/as_const.h>
-#include <cuda/std/detail/libcxx/include/__utility/auto_cast.h>
-#include <cuda/std/detail/libcxx/include/__utility/cmp.h>
-#include <cuda/std/detail/libcxx/include/__utility/convert_to_integral.h>
-#include <cuda/std/detail/libcxx/include/__utility/declval.h>
-#include <cuda/std/detail/libcxx/include/__utility/exchange.h>
-#include <cuda/std/detail/libcxx/include/__utility/forward_like.h>
-#include <cuda/std/detail/libcxx/include/__utility/forward.h>
-#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
-#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
-#include <cuda/std/detail/libcxx/include/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__utility/pair.h>
-#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
-#include <cuda/std/detail/libcxx/include/__utility/priority_tag.h>
-#include <cuda/std/detail/libcxx/include/__utility/rel_ops.h>
-#include <cuda/std/detail/libcxx/include/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__utility/to_underlying.h>
-#include <cuda/std/detail/libcxx/include/__utility/unreachable.h>
+#include <cuda/std/__functional/binary_function.h>
+#include <cuda/std/__functional/hash.h>
+#include <cuda/std/__functional/reference_wrapper.h>
+#include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__functional/unwrap_ref.h>
+#include <cuda/std/__functional/weak_result_type.h>
+#include <cuda/std/__fwd/get.h>
+#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__tuple_dir/structured_bindings.h>
+#include <cuda/std/__utility/as_const.h>
+#include <cuda/std/__utility/auto_cast.h>
+#include <cuda/std/__utility/cmp.h>
+#include <cuda/std/__utility/convert_to_integral.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/forward_like.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/__utility/piecewise_construct.h>
+#include <cuda/std/__utility/priority_tag.h>
+#include <cuda/std/__utility/rel_ops.h>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/__utility/to_underlying.h>
+#include <cuda/std/__utility/unreachable.h>
 
-#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
-#include <cuda/std/detail/libcxx/include/__memory/voidify.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/voidify.h>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -295,7 +295,7 @@ template <class T>
 #include <cuda/std/initializer_list>
 
 // [tuple.helper]
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 
 #endif  // _LIBCUDACXX_UTILITY

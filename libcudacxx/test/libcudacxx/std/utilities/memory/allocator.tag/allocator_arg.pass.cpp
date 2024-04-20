@@ -13,7 +13,7 @@
 // struct allocator_arg_t { explicit allocator_arg_t() = default; };
 // const allocator_arg_t allocator_arg = allocator_arg_t();
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 #include "test_macros.h"
 
