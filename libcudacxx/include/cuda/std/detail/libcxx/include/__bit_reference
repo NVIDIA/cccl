@@ -335,15 +335,8 @@ __copy_aligned(__bit_iterator<_Cp, _IsConst> __first,
     {
       _CUDA_VSTD::copy_n(std::__to_address(__first.__seg_), __nw, std::__to_address(__result.__seg_));
       __result.__seg_ += __nw;
-#if !(defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900)
-      __n -= __nw * __bits_per_word;
-#endif
     }
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
-      // NOTE(mdominiak): this should very much be inside the condition above, buuut... then it
-      // miscompiles on the host under GCC <9. Fun.
     __n -= __nw * __bits_per_word;
-#endif
     // do last word
     if (__n > 0)
     {
