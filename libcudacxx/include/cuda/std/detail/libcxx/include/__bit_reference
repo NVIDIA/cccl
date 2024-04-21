@@ -491,8 +491,13 @@ __copy_backward_aligned(
       __result.__seg_ -= __nw;
       __last.__seg_ -= __nw;
       _CUDA_VSTD::copy_n(std::__to_address(__last.__seg_), __nw, std::__to_address(__result.__seg_));
-      __n -= __nw * __bits_per_word;
+#if !(defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900)
     }
+#endif
+    __n -= __nw * __bits_per_word;
+#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+    }
+#endif
     // do last word
     if (__n > 0)
     {
