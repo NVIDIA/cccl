@@ -27,13 +27,11 @@ template <cuda::std::size_t N>
 __host__ __device__ void test_char_pointer_ctor_throw()
 {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  try
-  {
-    cuda::std::bitset<N> v("xxx1010101010xxxx");
-    assert(false);
-  }
-  catch (cuda::std::invalid_argument&)
-  {}
+  NV_IF_TARGET(
+    NV_IS_HOST, try {
+      cuda::std::bitset<N> v("xxx1010101010xxxx");
+      assert(false);
+    } catch (cuda::std::invalid_argument&){})
 #endif
 }
 
