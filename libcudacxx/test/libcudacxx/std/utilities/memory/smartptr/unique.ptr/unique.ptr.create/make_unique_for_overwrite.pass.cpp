@@ -60,7 +60,7 @@ static_assert(!HasMakeUniqueForOverwrite<int[2]>, "");
 static_assert(!HasMakeUniqueForOverwrite<int[2], cuda::std::size_t>, "");
 static_assert(!HasMakeUniqueForOverwrite<int[2], int>, "");
 static_assert(!HasMakeUniqueForOverwrite<int[2], int, int>, "");
-static_assert(!HasMakeUniqueForOverwrite<Foo[2]>);
+static_assert(!HasMakeUniqueForOverwrite<Foo[2]>, "");
 static_assert(!HasMakeUniqueForOverwrite<Foo[2], cuda::std::size_t>, "");
 static_assert(!HasMakeUniqueForOverwrite<Foo[2], int>, "");
 static_assert(!HasMakeUniqueForOverwrite<Foo[2], int, int>, "");

@@ -26,6 +26,10 @@
 
 #include "test_macros.h"
 
+#if defined(TEST_COMPILER_MSVC)
+#  pragma warning(disable : 4310) // cast truncates constant value
+#endif // TEST_COMPILER_MSVC
+
 constexpr char pattern = (char) 0xDE;
 
 __host__ __device__ void* operator new(cuda::std::size_t count)
