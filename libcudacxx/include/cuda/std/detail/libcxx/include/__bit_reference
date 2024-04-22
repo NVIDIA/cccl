@@ -608,7 +608,7 @@ __copy_backward_unaligned(
         _CCCL_DIAG_POP
         __m             = ~__storage_type(0) << __result.__ctz_;
         *__result.__seg_ &= ~__m;
-        __last.__ctz_ -= __dn + __ddn;
+        __last.__ctz_ -= static_cast<unsigned int>(__dn + __ddn);
         *__result.__seg_ |= __b << (__result.__ctz_ - __last.__ctz_);
       }
       // __last.__ctz_ = 0
