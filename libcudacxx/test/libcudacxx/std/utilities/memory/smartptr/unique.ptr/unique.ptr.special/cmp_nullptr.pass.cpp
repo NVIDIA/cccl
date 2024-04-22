@@ -48,9 +48,13 @@
 #include "test_macros.h"
 
 #if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
-#  pragma nv_diag_suppress 3060 // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
-                                // produces "false"
+TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function
 #endif // TEST_COMPILER_NVCC || TEST_COMPILER_NVRTC
+#if defined(TEST_COMPILER_GCC)
+#  pragma GCC diagnostic ignored "-Wtautological-compare"
+#elif defined(TEST_COMPILER_CLANG)
+#  pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
 
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {
