@@ -438,10 +438,13 @@ protected:
       : __first_(0)
   {}
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4293)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __bitset(unsigned long long __v) noexcept
       : __first_(_Size == __bits_per_word ? static_cast<__storage_type>(__v)
                                           : static_cast<__storage_type>(__v) & ((__storage_type(1) << _Size) - 1))
   {}
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
   __make_ref(size_t __pos) noexcept
