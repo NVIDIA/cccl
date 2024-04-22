@@ -362,12 +362,12 @@ private:
       __throw_overflow_error("bitset to_ulong overflow error");
     }
 
-    return __first_[0];
+    return static_cast<unsigned long>(__first_[0]);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long to_ulong(true_type) const
   {
-    return __first_[0];
+    return static_cast<unsigned long>(__first_[0]);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long long
@@ -494,7 +494,15 @@ protected:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long to_ulong() const
   {
+#ifdef _CCCL_COMPILER_MSVC
+    if (static_cast<unsigned long>(__first_) != __first_)
+    {
+      __throw_overflow_error("bitset to_ulong overflow error");
+    }
+    return static_cast<unsigned long>(__first_);
+#else
     return __first_;
+#endif
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long long to_ullong() const
