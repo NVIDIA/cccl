@@ -30,17 +30,20 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_val_ctor()
     {
       assert(v[i] == ((i & 1) != 0));
     }
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = M; i < v.size(); ++i)
     {
-      assert(v[i] == false);
+      _CCCL_DIAG_POP
+      {
+        assert(v[i] == false);
+      }
     }
   }
-#if TEST_STD_VER >= 11
   {
     constexpr cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
     static_assert(v.size() == N, "");
   }
-#endif
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()

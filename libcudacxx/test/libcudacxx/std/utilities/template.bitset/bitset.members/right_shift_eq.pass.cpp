@@ -34,11 +34,16 @@ __host__ __device__ BITSET_TEST_CONSTEXPR bool test_right_shift()
       cuda::std::bitset<N> v1(cases[c]);
       cuda::std::bitset<N> v2 = v1;
       v1 >>= s;
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_ICC(186)
       for (cuda::std::size_t i = 0; i < v1.size(); ++i)
       {
         if (i + s < v1.size())
         {
-          assert(v1[i] == v2[i + s]);
+          _CCCL_DIAG_POP
+          {
+            assert(v1[i] == v2[i + s]);
+          }
         }
         else
         {

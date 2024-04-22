@@ -26,11 +26,16 @@ __host__ __device__ BITSET_TEST_CONSTEXPR void test_count()
     const cuda::std::bitset<N> v(cases[c]);
     cuda::std::size_t c1 = v.count();
     cuda::std::size_t c2 = 0;
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 0; i < v.size(); ++i)
     {
-      if (v[i])
+      _CCCL_DIAG_POP
       {
-        ++c2;
+        if (v[i])
+        {
+          ++c2;
+        }
       }
     }
     assert(c1 == c2);

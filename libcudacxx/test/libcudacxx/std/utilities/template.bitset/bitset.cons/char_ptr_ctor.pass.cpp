@@ -48,9 +48,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char_pointer_ctor()
     {
       assert(v[i] == (s[M - 1 - i] == '1'));
     }
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 10; i < v.size(); ++i)
     {
-      assert(v[i] == false);
+      _CCCL_DIAG_POP
+      {
+        assert(v[i] == false);
+      }
     }
   }
   {
@@ -61,9 +66,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char_pointer_ctor()
     {
       assert(v[i] == (s[M - 1 - i] == '1'));
     }
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 10; i < v.size(); ++i)
     {
-      assert(v[i] == false);
+      _CCCL_DIAG_POP
+      {
+        assert(v[i] == false);
+      }
     }
   }
   {
@@ -74,9 +84,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char_pointer_ctor()
     {
       assert(v[i] == (s[M - 1 - i] == '1'));
     }
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 10; i < v.size(); ++i)
     {
-      assert(v[i] == false);
+      _CCCL_DIAG_POP
+      {
+        assert(v[i] == false);
+      }
     }
   }
   {
@@ -87,9 +102,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char_pointer_ctor()
     {
       assert(v[i] == (s[M - 1 - i] == 'b'));
     }
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
     for (cuda::std::size_t i = 10; i < v.size(); ++i)
     {
-      assert(v[i] == false);
+      _CCCL_DIAG_POP
+      {
+        assert(v[i] == false);
+      }
     }
   }
 }
