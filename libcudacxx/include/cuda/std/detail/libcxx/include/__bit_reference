@@ -1247,7 +1247,7 @@ public:
   operator-(const __bit_iterator& __x, const __bit_iterator& __y)
   {
 #if defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 800 && _GNUC_VER < 900
-    if (__y.__seg_ != nullptr)
+    if (__y.__seg_ && __y.__seg_ != __x.__seg_)
     {
       return (__x.__seg_ == __y.__seg_ + 1 ? 1 : __x.__seg_ - __y.__seg_) * __bits_per_word + __x.__ctz_ - __y.__ctz_;
     }
