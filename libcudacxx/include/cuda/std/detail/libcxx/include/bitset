@@ -736,22 +736,22 @@ public:
     return *this;
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186)
-  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset&
   set(size_t __pos, bool __val = true)
   {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset set argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
+    _CCCL_DIAG_POP
 
     (*this)[__pos] = __val;
     return *this;
   }
-  _CCCL_NV_DIAG_DEFAULT(186)
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& reset() noexcept
   {
@@ -759,21 +759,21 @@ public:
     return *this;
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186)
-  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& reset(size_t __pos)
   {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset reset argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
+    _CCCL_DIAG_POP
 
     (*this)[__pos] = false;
     return *this;
   }
-  _CCCL_NV_DIAG_DEFAULT(186)
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset operator~() const noexcept
   {
@@ -788,22 +788,22 @@ public:
     return *this;
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186)
-  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& flip(size_t __pos)
   {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset flip argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
+    _CCCL_DIAG_POP
 
     reference __r = base::__make_ref(__pos);
     __r           = ~__r;
     return *this;
   }
-  _CCCL_NV_DIAG_DEFAULT(186)
-  _CCCL_DIAG_POP
 
   // element access:
 #ifdef _LIBCUDACXX_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
@@ -893,20 +893,20 @@ public:
   }
 #endif
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186)
-  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool test(size_t __pos) const
   {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_ICC(186)
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset test argument out of range");
     }
+    _CCCL_NV_DIAG_DEFAULT(186)
+    _CCCL_DIAG_POP
 
     return (*this)[__pos];
   }
-  _CCCL_NV_DIAG_DEFAULT(186)
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool all() const noexcept
   {
