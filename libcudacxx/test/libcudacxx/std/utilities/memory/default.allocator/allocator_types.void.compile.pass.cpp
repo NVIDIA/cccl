@@ -27,6 +27,8 @@
 
 // ADDITIONAL_COMPILE_FLAGS: -D_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
+#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+
 #include <cuda/std/__memory_>
 #include <cuda/std/type_traits>
 
