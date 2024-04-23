@@ -1319,7 +1319,7 @@ private:
   friend struct __bit_array;
   template <bool _FillVal, class _Dp>
   _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY friend void
-  __fill_n(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
+  __fill_n_impl(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
 
   template <class _Dp, bool _IC>
   _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false> __copy_aligned(
