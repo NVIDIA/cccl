@@ -736,26 +736,22 @@ public:
     return *this;
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_ICC(186)
+  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset&
   set(size_t __pos, bool __val = true)
   {
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-#endif
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset set argument out of range");
     }
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
-#endif
 
     (*this)[__pos] = __val;
     return *this;
   }
+  _CCCL_NV_DIAG_DEFAULT(186)
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& reset() noexcept
   {
@@ -763,25 +759,21 @@ public:
     return *this;
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_ICC(186)
+  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& reset(size_t __pos)
   {
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-#endif
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset reset argument out of range");
     }
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
-#endif
 
     (*this)[__pos] = false;
     return *this;
   }
+  _CCCL_NV_DIAG_DEFAULT(186)
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset operator~() const noexcept
   {
@@ -796,26 +788,22 @@ public:
     return *this;
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_ICC(186)
+  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& flip(size_t __pos)
   {
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-#endif
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset flip argument out of range");
     }
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
-#endif
 
     reference __r = base::__make_ref(__pos);
     __r           = ~__r;
     return *this;
   }
+  _CCCL_NV_DIAG_DEFAULT(186)
+  _CCCL_DIAG_POP
 
   // element access:
 #ifdef _LIBCUDACXX_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
@@ -903,26 +891,22 @@ public:
   {
     return !(*this == __rhs);
   }
-
 #endif
+
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_ICC(186)
+  _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool test(size_t __pos) const
   {
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-#endif
     if (_Size == 0 || __pos >= _Size)
     {
       __throw_out_of_range("bitset test argument out of range");
     }
-#ifndef _CCCL_COMPILER_MSVC
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
-#endif
 
     return (*this)[__pos];
   }
+  _CCCL_NV_DIAG_DEFAULT(186)
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool all() const noexcept
   {

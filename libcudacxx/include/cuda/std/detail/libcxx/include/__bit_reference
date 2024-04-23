@@ -46,10 +46,7 @@ struct __has_storage_type
   static const bool value = false;
 };
 
-template <class _Tp>
-using __storage_type_t = typename _Tp::__storage_type;
-
-template <class _Cp, bool _IsConst, __storage_type_t<_Cp> = 0>
+template <class _Cp, bool _IsConst>
 class __bit_iterator;
 
 template <class _Cp, bool = __has_storage_type<_Cp>::value>
@@ -222,7 +219,7 @@ private:
 
 template <bool _FillVal, class _Cp>
 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void
-__fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n)
+__fill_n_impl(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n)
 {
   using _It            = __bit_iterator<_Cp, false>;
   using __storage_type = typename _It::__storage_type;
@@ -273,11 +270,11 @@ fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n, bool __v
   {
     if (__value)
     {
-      _CUDA_VSTD::__fill_n<true>(__first, __n);
+      _CUDA_VSTD::__fill_n_impl<true>(__first, __n);
     }
     else
     {
-      _CUDA_VSTD::__fill_n<false>(__first, __n);
+      _CUDA_VSTD::__fill_n_impl<false>(__first, __n);
     }
   }
 }
@@ -1103,7 +1100,7 @@ equal(__bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __b
   return _CUDA_VSTD::__equal_unaligned(__first1, __last1, __first2);
 }
 
-template <class _Cp, bool _IsConst, __storage_type_t<_Cp>>
+template <class _Cp, bool _IsConst>
 class __bit_iterator
 {
 public:
