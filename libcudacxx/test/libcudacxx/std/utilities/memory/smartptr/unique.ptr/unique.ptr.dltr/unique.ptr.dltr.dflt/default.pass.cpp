@@ -21,14 +21,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::default_delete<A> d;
   A* p = new A;
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 1);
   }
 
   d(p);
 
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }

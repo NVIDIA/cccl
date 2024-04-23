@@ -23,7 +23,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     cuda::std::unique_ptr<A> p(new A);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 1);
       assert(B_count == 0);
@@ -31,20 +31,20 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     A* i = p.get();
     assert(i != nullptr);
     p.reset(new B);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 1);
       assert(B_count == 1);
     }
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);
   }
   {
     cuda::std::unique_ptr<A> p(new B);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 1);
       assert(B_count == 1);
@@ -52,13 +52,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     A* i = p.get();
     assert(i != nullptr);
     p.reset(new B);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 1);
       assert(B_count == 1);
     }
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);

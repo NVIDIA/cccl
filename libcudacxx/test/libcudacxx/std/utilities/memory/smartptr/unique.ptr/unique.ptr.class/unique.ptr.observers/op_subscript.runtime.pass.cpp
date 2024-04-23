@@ -17,7 +17,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-// TODO: Move TEST_IS_CONSTANT_EVALUATED into it's own header
+// TODO: Move TEST_IS_CONSTANT_EVALUATED_CXX23() into it's own header
 #include "test_macros.h"
 
 #if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
@@ -38,7 +38,7 @@ public:
   __host__ __device__ TEST_CONSTEXPR_CXX23 A()
       : state_(0)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       state_ = ++A_next_;
     }
@@ -64,7 +64,7 @@ public:
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::unique_ptr<A[]> p(new A[3]);
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(p[0] == 1);
     assert(p[1] == 2);

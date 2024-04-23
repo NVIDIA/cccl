@@ -36,7 +36,7 @@ struct A
   __host__ __device__ TEST_CONSTEXPR_CXX23 A()
       : state_(0)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       ++A_count;
     }
@@ -44,7 +44,7 @@ struct A
   __host__ __device__ TEST_CONSTEXPR_CXX23 explicit A(int i)
       : state_(i)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       ++A_count;
     }
@@ -52,7 +52,7 @@ struct A
   __host__ __device__ TEST_CONSTEXPR_CXX23 A(const A& a)
       : state_(a.state_)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       ++A_count;
     }
@@ -64,7 +64,7 @@ struct A
   }
   __host__ __device__ TEST_CONSTEXPR_CXX23 ~A()
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       --A_count;
     }
@@ -110,12 +110,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     assert(s2.get() == p1);
     assert(*s2 == A(1));
     assert(s2.get_deleter().state() == 1);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 2);
     }
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }
@@ -133,12 +133,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     assert(s1.get_deleter().state() == 2);
     assert(s2.get() == p1);
     assert(s2.get_deleter().state() == 1);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 6);
     }
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }

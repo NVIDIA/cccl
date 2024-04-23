@@ -53,7 +53,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* R
 {
   assert(lhs.get() == RHSVal);
   assert(rhs.get() == nullptr);
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 1);
     assert(B_count == 1);
@@ -62,7 +62,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* R
 
 __host__ __device__ TEST_CONSTEXPR_CXX23 void checkNoneAlive()
 {
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);

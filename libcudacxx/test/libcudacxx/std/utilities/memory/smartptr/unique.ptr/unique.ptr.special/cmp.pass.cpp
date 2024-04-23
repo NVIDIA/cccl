@@ -66,7 +66,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 
     assert(!(p1 == p2));
     assert(p1 != p2);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 < p2) == (ptr1 < ptr2));
       assert((p1 <= p2) == (ptr1 <= ptr2));
@@ -86,7 +86,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     const cuda::std::unique_ptr<B, Deleter<B>> p2(ptr2);
     assert(!(p1 == p2));
     assert(p1 != p2);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 < p2) == (ptr1 < ptr2));
       assert((p1 <= p2) == (ptr1 <= ptr2));
@@ -106,7 +106,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     const cuda::std::unique_ptr<A[], Deleter<A[]>> p2(ptr2);
     assert(!(p1 == p2));
     assert(p1 != p2);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 < p2) == (ptr1 < ptr2));
       assert((p1 <= p2) == (ptr1 <= ptr2));
@@ -126,7 +126,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     const cuda::std::unique_ptr<B[], Deleter<B[]>> p2(ptr2);
     assert(!(p1 == p2));
     assert(p1 != p2);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 < p2) == (ptr1 < ptr2));
       assert((p1 <= p2) == (ptr1 <= ptr2));
@@ -144,7 +144,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     const cuda::std::unique_ptr<A, Deleter<A>> p2;
     assert(p1 == p2);
 #if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 <=> p2) == cuda::std::strong_ordering::equal);
     }
@@ -156,7 +156,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     const cuda::std::unique_ptr<B, Deleter<B>> p2;
     assert(p1 == p2);
 #if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 <=> p2) == cuda::std::strong_ordering::equal);
     }

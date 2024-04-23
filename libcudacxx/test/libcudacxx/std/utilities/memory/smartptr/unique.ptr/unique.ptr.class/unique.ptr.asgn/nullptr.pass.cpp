@@ -28,18 +28,18 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   const int expect_alive = IsArray ? 5 : 1;
   {
     cuda::std::unique_ptr<VT> s2(newValue<VT>(expect_alive));
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == expect_alive);
     }
     s2 = nullptr;
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == 0);
     }
     assert(s2.get() == 0);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }

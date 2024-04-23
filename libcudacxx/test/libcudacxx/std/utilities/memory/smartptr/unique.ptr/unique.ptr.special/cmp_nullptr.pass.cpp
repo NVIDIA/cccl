@@ -58,7 +58,7 @@ TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing
 
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     AssertEqualityAreNoexcept<cuda::std::unique_ptr<int>, cuda::std::nullptr_t>();
     AssertEqualityAreNoexcept<cuda::std::nullptr_t, cuda::std::unique_ptr<int>>();
@@ -74,7 +74,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
   assert(!(p1 == nullptr));
   assert(!(nullptr == p1));
   // A pointer to allocated storage and a nullptr can't be compared at compile-time
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(!(p1 < nullptr));
     assert((nullptr < p1));

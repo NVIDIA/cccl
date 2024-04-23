@@ -24,7 +24,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
   cuda::std::default_delete<B> d2;
   cuda::std::default_delete<A> d1 = d2;
   A* p                            = new B;
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 1);
     assert(B_count == 1);
@@ -32,7 +32,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 
   d1(p);
 
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);

@@ -151,12 +151,18 @@
 #endif
 
 #if defined(__cpp_lib_is_constant_evaluated) && __cpp_lib_is_constant_evaluated >= 201811L
-#  define TEST_IS_CONSTANT_EVALUATED cuda::std::is_constant_evaluated()
+#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #elif TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
-#  define TEST_IS_CONSTANT_EVALUATED __builtin_is_constant_evaluated()
+#  define TEST_IS_CONSTANT_EVALUATED() __builtin_is_constant_evaluated()
 #else
-#  define TEST_IS_CONSTANT_EVALUATED false
+#  define TEST_IS_CONSTANT_EVALUATED() false
 #endif
+
+#if TEST_STD_VER >= 2023
+#  define TEST_IS_CONSTANT_EVALUATED_CXX23() TEST_IS_CONSTANT_EVALUATED()
+#else // ^^^ C++23 ^^^ / vvv C++20 vvv
+#  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
+#endif // ^^^ TEST_STD_VER <= 2020
 
 #define TEST_ALIGNOF(...)       alignof(__VA_ARGS__)
 #define TEST_ALIGNAS(...)       alignas(__VA_ARGS__)

@@ -43,19 +43,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     cuda::std::unique_ptr<VT> s1(newValue<VT>(expect_alive));
     A* p = s1.get();
     cuda::std::unique_ptr<VT> s2(newValue<VT>(expect_alive));
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == (expect_alive * 2));
     }
     s2 = cuda::std::move(s1);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == expect_alive);
     }
     assert(s2.get() == p);
     assert(s1.get() == 0);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }
@@ -63,21 +63,21 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     cuda::std::unique_ptr<VT, Deleter<VT>> s1(newValue<VT>(expect_alive), Deleter<VT>(5));
     A* p = s1.get();
     cuda::std::unique_ptr<VT, Deleter<VT>> s2(newValue<VT>(expect_alive));
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == (expect_alive * 2));
     }
     s2 = cuda::std::move(s1);
     assert(s2.get() == p);
     assert(s1.get() == 0);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == expect_alive);
     }
     assert(s2.get_deleter().state() == 5);
     assert(s1.get_deleter().state() == 0);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }
@@ -90,14 +90,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     s2 = cuda::std::move(s1);
     assert(s2.get() == p);
     assert(s1.get() == 0);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == expect_alive);
     }
     assert(d1.state() == 5);
     assert(d2.state() == 5);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }
@@ -105,13 +105,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     cuda::std::unique_ptr<VT> s(newValue<VT>(expect_alive));
     A* p = s.get();
     s    = cuda::std::move(s);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(A_count == expect_alive);
     }
     assert(s.get() == p);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
   }

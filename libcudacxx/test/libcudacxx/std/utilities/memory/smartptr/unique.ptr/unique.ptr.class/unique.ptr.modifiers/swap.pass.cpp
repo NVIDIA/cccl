@@ -27,7 +27,7 @@ struct TT
   __host__ __device__ TEST_CONSTEXPR_CXX23 TT()
       : state_(-1)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       ++TT_count;
     }
@@ -35,7 +35,7 @@ struct TT
   __host__ __device__ TEST_CONSTEXPR_CXX23 explicit TT(int i)
       : state_(i)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       ++TT_count;
     }
@@ -43,7 +43,7 @@ struct TT
   __host__ __device__ TEST_CONSTEXPR_CXX23 TT(const TT& a)
       : state_(a.state_)
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       ++TT_count;
     }
@@ -55,7 +55,7 @@ struct TT
   }
   __host__ __device__ TEST_CONSTEXPR_CXX23 ~TT()
   {
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       --TT_count;
     }
@@ -109,12 +109,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(s2.get() == p1);
     assert(*s2.get() == TT(1));
     assert(s2.get_deleter().state() == 1);
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert(TT_count == (expect_alive * 2));
     }
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(TT_count == 0);
   }

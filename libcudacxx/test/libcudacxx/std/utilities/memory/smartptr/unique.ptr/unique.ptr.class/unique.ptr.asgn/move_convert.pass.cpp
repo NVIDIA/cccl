@@ -450,7 +450,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
   {
     test_sfinae</*IsArray*/ false>();
     test_noexcept<false>();
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       test_deleter_value_category<false>();
     }
@@ -458,7 +458,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
   {
     test_sfinae</*IsArray*/ true>();
     test_noexcept<true>();
-    if (!TEST_IS_CONSTANT_EVALUATED)
+    if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       test_deleter_value_category<true>();
     }

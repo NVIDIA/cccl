@@ -27,14 +27,14 @@ template <class APtr, class BPtr>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
 {
   A* p = bptr.get();
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 2);
   }
   aptr = cuda::std::move(bptr);
   assert(aptr.get() == p);
   assert(bptr.get() == 0);
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 1);
     assert(B_count == 1);
@@ -137,7 +137,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     cuda::std::unique_ptr<A> aptr(new A);
     testAssign(aptr, bptr);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);
@@ -149,7 +149,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     testAssign(aptr, bptr);
     checkDeleter(aptr, bptr, 42, 0);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);
@@ -162,7 +162,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     testAssign(aptr, bptr);
     checkDeleter(aptr, bptr, 42, 42);
   }
-  if (!TEST_IS_CONSTANT_EVALUATED)
+  if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
     assert(A_count == 0);
     assert(B_count == 0);
