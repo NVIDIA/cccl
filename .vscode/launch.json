@@ -8,7 +8,6 @@
             "program": "${command:cmake.launchTargetPath}",
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "build debug",
             "initCommands": ["set cuda api_failures stop"]
 
         }
