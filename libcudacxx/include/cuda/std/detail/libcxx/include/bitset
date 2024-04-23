@@ -613,6 +613,21 @@ template <size_t _Size>
 struct hash<bitset<_Size>>;
 
 template <size_t _Size>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range(size_t __pos, const char * __msg)
+{
+    if (__pos >= _Size)
+    {
+      __throw_out_of_range(__msg);
+    }
+}
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range<0>(size_t __pos, const char * __msg)
+{
+  __throw_out_of_range(__msg);
+}
+
+template <size_t _Size>
 class _LIBCUDACXX_TEMPLATE_VIS bitset
     : private __bitset<_Size == 0 ? 0 : (_Size - 1) / (sizeof(size_t) * CHAR_BIT) + 1, _Size>
 {
@@ -739,15 +754,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset&
   set(size_t __pos, bool __val = true)
   {
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-    if (_Size == 0 || __pos >= _Size)
-    {
-      __throw_out_of_range("bitset set argument out of range");
-    }
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
+    __throw_if_out_of_range<_Size>(__pos, "bitset set argument out of range");
 
     (*this)[__pos] = __val;
     return *this;
@@ -761,15 +768,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& reset(size_t __pos)
   {
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-    if (_Size == 0 || __pos >= _Size)
-    {
-      __throw_out_of_range("bitset reset argument out of range");
-    }
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
+    __throw_if_out_of_range<_Size>(__pos, "bitset reset argument out of range");
 
     (*this)[__pos] = false;
     return *this;
@@ -790,15 +789,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& flip(size_t __pos)
   {
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-    if (_Size == 0 || __pos >= _Size)
-    {
-      __throw_out_of_range("bitset flip argument out of range");
-    }
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
+    __throw_if_out_of_range<_Size>(__pos, "bitset flip argument out of range");
 
     reference __r = base::__make_ref(__pos);
     __r           = ~__r;
@@ -895,15 +886,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool test(size_t __pos) const
   {
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_ICC(186)
-    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
-    if (_Size == 0 || __pos >= _Size)
-    {
-      __throw_out_of_range("bitset test argument out of range");
-    }
-    _CCCL_NV_DIAG_DEFAULT(186)
-    _CCCL_DIAG_POP
+    __throw_if_out_of_range<_Size>(__pos, "bitset test argument out of range");
 
     return (*this)[__pos];
   }
