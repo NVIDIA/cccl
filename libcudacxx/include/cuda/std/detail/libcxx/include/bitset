@@ -613,7 +613,7 @@ template <size_t _Size>
 struct hash<bitset<_Size>>;
 
 template <size_t _Size>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range(size_t __pos, const char * __msg)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range(size_t __pos, const char * __msg)
 {
     if (__pos >= _Size)
     {
@@ -622,7 +622,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 vo
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range<0>(size_t __pos, const char * __msg)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range<0>(size_t __pos, const char * __msg)
 {
   __throw_out_of_range(__msg);
 }
