@@ -10,6 +10,7 @@
     "CUDA": "12.2",
     "CUDAARCHS": "RAPIDS",
     "PYTHON_PACKAGE_MANAGER": "conda",
+    "DEFAULT_CONDA_ENV": "rapids",
     "PYTHONSAFEPATH": "1",
     "PYTHONUNBUFFERED": "1",
     "PYTHONDONTWRITEBYTECODE": "1",
@@ -26,7 +27,7 @@
   ],
   "initializeCommand": ["/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/../.{conda/pkgs,conda/${localWorkspaceFolderBasename}-cuda12.2-envs,log/devcontainer-utils} ${localWorkspaceFolder}/../{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,wholegraph,cugraph,cuspatial}"],
   "postAttachCommand": ["/bin/bash", "-c", "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"],
-  "workspaceFolder": "/home/coder",
+  "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
   "mounts": [
     "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
