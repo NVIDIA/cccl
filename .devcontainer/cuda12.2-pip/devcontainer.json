@@ -1,24 +1,19 @@
 {
-  "image": "rapidsai/devcontainers:24.06-cpp-cuda12.2-ubuntu22.04",
+  "build": {
+    "context": "${localWorkspaceFolder}/.devcontainer",
+    "dockerfile": "${localWorkspaceFolder}/.devcontainer/rapids.Dockerfile",
+    "args": {
+      "CUDA": "12.2",
+      "PYTHON_PACKAGE_MANAGER": "pip",
+      "BASE": "rapidsai/devcontainers:24.06-cpp-cuda12.2-ubuntu22.04"
+    }
+  },
   "runArgs": [
     "--rm",
     "--name",
     "${localEnv:USER}-rapids-${localWorkspaceFolderBasename}-24.06-cuda12.2-pip"
   ],
   "hostRequirements": {"gpu": "optional"},
-  "containerEnv": {
-    "CUDA": "12.2",
-    "CUDAARCHS": "RAPIDS",
-    "PYTHON_PACKAGE_MANAGER": "pip",
-    "DEFAULT_VIRTUAL_ENV": "rapids",
-    "PYTHONSAFEPATH": "1",
-    "PYTHONUNBUFFERED": "1",
-    "PYTHONDONTWRITEBYTECODE": "1",
-    "SCCACHE_REGION": "us-east-2",
-    "SCCACHE_BUCKET": "rapids-sccache-devs",
-    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
-    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history"
-  },
   "features": {
     "ghcr.io/rapidsai/devcontainers/features/ucx:24.6": {"version": "1.15.0"},
     "ghcr.io/rapidsai/devcontainers/features/cuda:24.6": {"version": "12.2", "installcuBLAS": true, "installcuDNN": true, "installcuSOLVER": true, "installcuRAND": true, "installcuSPARSE": true},
