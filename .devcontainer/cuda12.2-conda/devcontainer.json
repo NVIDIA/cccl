@@ -42,9 +42,6 @@
     "source=${localWorkspaceFolder}/../wholegraph,target=/home/coder/wholegraph,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../cuspatial,target=/home/coder/cuspatial,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.conda/pkgs,target=/home/coder/.conda/pkgs,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.conda/${localWorkspaceFolderBasename}-cuda12.2-envs,target=/home/coder/.conda/envs,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind,consistency=consistent"
