@@ -226,6 +226,8 @@ jobs:
       actions: read
       packages: read
       id-token: write
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.

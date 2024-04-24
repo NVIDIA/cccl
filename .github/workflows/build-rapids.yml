@@ -32,6 +32,8 @@ jobs:
       actions: read
       packages: read
       id-token: write
+      contents: read
+      pull-requests: read
     with:
       arch: '["amd64"]'
       cuda: '["12.2"]'
