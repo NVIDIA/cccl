@@ -222,6 +222,10 @@ jobs:
   build-rapids:
     name: Build RAPIDS
     secrets: inherit
+    permissions:
+      actions: read
+      packages: read
+      id-token: write
     uses: ./.github/workflows/build-rapids.yml
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
