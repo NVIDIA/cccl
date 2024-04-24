@@ -27,7 +27,9 @@ jobs:
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
+    # TODO: this is temporary
+    uses: ./.github/workflows/build-in-devcontainer.yml
+    # uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
     permissions:
       actions: read
       packages: read
