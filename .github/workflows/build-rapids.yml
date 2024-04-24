@@ -1,0 +1,55 @@
+name: Build all RAPIDS repositories
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_call:
+
+jobs:
+  check-event:
+    name: Check GH Event
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check_gh_event.outputs.ok }}
+    steps:
+      - id: check_gh_event
+        name: Check GH Event
+        shell: bash
+        run: |
+          [[ '${{ github.event_name }}' == 'push' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'schedule' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'pull_request' && '${{ github.repository }}' != 'NVIDIA/cccl' ]] \
+          && echo "ok=true"  | tee -a $GITHUB_OUTPUT \
+          || echo "ok=false" | tee -a $GITHUB_OUTPUT;
+
+  build-rapids:
+    name: Build all RAPIDS repos
+    if: needs.check-event.outputs.ok == 'true'
+    needs: check-event
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
+    with:
+      arch: '["amd64"]'
+      cuda: '["12.2"]'
+      node_type: cpu32
+      build_command: |
+        # Remove cumlprims_mg and cugraph-ops from /opt/rapids-build-utils/manifest.yaml
+        sudo yq -i '.repos |= filter(.name != "cumlprims_mg" and .name != "cugraph-ops")' /opt/rapids-build-utils/manifest.yaml;
+        # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
+        rapids-generate-scripts;
+        # Clone all the RAPIDS repos
+        clone-all -j$(nproc) -v -q --clone-upstream --single-branch --shallow-submodules;
+        # Build the RAPIDS repos using the local CCCL mount
+        sccache -z;
+        sccache --show-adv-stats;
+        build-all \
+          -v \
+          -j$(nproc --ignore=1) \
+          -DBUILD_TESTS=ON \
+          -DBUILD_BENCHMARKS=ON \
+          -DBUILD_ANN_BENCH=ON \
+          -DBUILD_PRIMS_BENCH=ON \
+          -DBUILD_SHARED_LIBS=ON \
+          -DCPM_CCCL_SOURCE="${HOME}/cccl" \
+          ;
+        sccache --show-adv-stats;

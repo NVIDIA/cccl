@@ -219,6 +219,11 @@ jobs:
           export CXX="g++"
           ./ci/verify_codegen.sh
 
+  build-rapids:
+    name: Build RAPIDS
+    secrets: inherit
+    uses: ./.github/workflows/build-rapids.yml
+
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
   # https://github.com/orgs/community/discussions/26822#discussioncomment-5122101

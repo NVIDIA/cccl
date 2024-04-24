@@ -1,0 +1,81 @@
+{
+  "image": "rapidsai/devcontainers:24.06-cpp-mambaforge-ubuntu22.04",
+  "runArgs": [
+    "--rm",
+    "--name",
+    "${localEnv:USER}-rapids-${localWorkspaceFolderBasename}-24.06-cuda12.2-conda"
+  ],
+  "hostRequirements": {"gpu": "optional"},
+  "containerEnv": {
+    "CUDA": "12.2",
+    "CUDAARCHS": "RAPIDS",
+    "PYTHON_PACKAGE_MANAGER": "conda",
+    "PYTHONSAFEPATH": "1",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history"
+  },
+  "features": {
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:24.6": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
+  ],
+  "initializeCommand": ["/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/../.{conda/pkgs,conda/${localWorkspaceFolderBasename}-cuda12.2-envs,log/devcontainer-utils} ${localWorkspaceFolder}/../{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,wholegraph,cugraph,cuspatial}"],
+  "postAttachCommand": ["/bin/bash", "-c", "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"],
+  "workspaceFolder": "/home/coder",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../rmm,target=/home/coder/rmm,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../kvikio,target=/home/coder/kvikio,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../ucxx,target=/home/coder/ucxx,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../cudf,target=/home/coder/cudf,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../raft,target=/home/coder/raft,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../cuvs,target=/home/coder/cuvs,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../cuml,target=/home/coder/cuml,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../wholegraph,target=/home/coder/wholegraph,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../cuspatial,target=/home/coder/cuspatial,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.conda/pkgs,target=/home/coder/.conda/pkgs,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.conda/${localWorkspaceFolderBasename}-cuda12.2-envs,target=/home/coder/.conda/envs,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/../.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind,consistency=consistent"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "augustocdias.tasks-shell-input",
+        "ms-python.flake8",
+        "nvidia.nsight-vscode-edition"
+      ],
+      "files.watcherExclude": {
+        "**/build/**": true,
+        "**/_skbuild/**": true,
+        "**/target/**": true,
+        "/home/coder/.aws/**/*": true,
+        "/home/coder/.cache/**/*": true,
+        "/home/coder/.conda/**/*": true,
+        "/home/coder/.local/share/**/*": true,
+        "/home/coder/.vscode-server/**/*": true
+      },
+      "search.exclude": {
+        "**/build/**": true,
+        "**/_skbuild/**": true,
+        "**/*.code-search": true,
+        "/home/coder/.aws/**/*": true,
+        "/home/coder/.cache/**/*": true,
+        "/home/coder/.conda/**/*": true,
+        "/home/coder/.local/share/**/*": true,
+        "/home/coder/.vscode-server/**/*": true
+      }
+    }
+  }
+}
