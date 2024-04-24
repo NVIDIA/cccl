@@ -50,6 +50,8 @@ jobs:
           -DBUILD_ANN_BENCH=ON \
           -DBUILD_PRIMS_BENCH=ON \
           -DBUILD_SHARED_LIBS=ON \
+          -DENABLE_CUMLPRIMS_MG=OFF \
+          -DUSE_CUGRAPH_OPS=OFF \
           -DCPM_CCCL_SOURCE="${HOME}/cccl" \
           ;
         sccache --show-adv-stats;
