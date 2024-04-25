@@ -10,6 +10,7 @@
 // This code triggers https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104568
 // UNSUPPORTED: msvc
 // UNSUPPORTED: nvrtc
+// UNSUPPORTED: icc
 
 // Test the fix for https://llvm.org/PR54100
 
