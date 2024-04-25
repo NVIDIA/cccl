@@ -759,17 +759,15 @@ template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VISIBILITY typename __unique_if<_Tp>::__unique_array_known_bound make_unique(_Args&&...) = delete;
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  typename __unique_if<_Tp>::__unique_single
-  make_unique_for_overwrite()
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single
+make_unique_for_overwrite()
 {
   return unique_ptr<_Tp>(new _Tp);
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  typename __unique_if<_Tp>::__unique_array_unknown_bound
-  make_unique_for_overwrite(size_t __n)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
+make_unique_for_overwrite(size_t __n)
 {
   return unique_ptr<_Tp>(new __remove_extent_t<_Tp>[__n]);
 }
