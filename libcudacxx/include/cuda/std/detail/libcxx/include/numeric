@@ -162,6 +162,7 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 #include <cuda/std/__numeric/inner_product.h>
 #include <cuda/std/__numeric/partial_sum.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__numeric/transform_exclusive_scan.h>
 #include <cuda/std/__numeric/transform_reduce.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cmath> // for isnormal
@@ -176,23 +177,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #ifndef __cuda_std__
 
 #  if _CCCL_STD_VER > 2014
-template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator transform_exclusive_scan(
-  _InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init, _BinaryOp __b, _UnaryOp __u)
-{
-  if (__first != __last)
-  {
-    _Tp __saved = __init;
-    do
-    {
-      __init    = __b(__init, __u(*__first));
-      *__result = __saved;
-      __saved   = __init;
-      ++__result;
-    } while (++__first != __last);
-  }
-  return __result;
-}
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
 _OutputIterator transform_inclusive_scan(
