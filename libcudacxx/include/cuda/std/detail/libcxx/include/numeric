@@ -157,6 +157,7 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__numeric/accumulate.h>
+#include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__numeric/inner_product.h>
 #include <cuda/std/__numeric/partial_sum.h>
 #include <cuda/std/__numeric/reduce.h>
@@ -174,31 +175,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #ifndef __cuda_std__
 
 #  if _CCCL_STD_VER > 2014
-template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator
-exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init, _BinaryOp __b)
-{
-  if (__first != __last)
-  {
-    _Tp __saved = __init;
-    do
-    {
-      __init    = __b(__init, *__first);
-      *__result = __saved;
-      __saved   = __init;
-      ++__result;
-    } while (++__first != __last);
-  }
-  return __result;
-}
-
-template <class _InputIterator, class _OutputIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator
-exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init)
-{
-  return _CUDA_VSTD::exclusive_scan(__first, __last, __result, __init, _CUDA_VSTD::plus<>());
-}
-
 template <class _InputIterator, class _OutputIterator, class _BinaryOp, class _Tp>
 _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _Tp __init)
@@ -320,7 +296,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator adjacent_difference(
 #endif // __cuda_std__
 
 template <class _ForwardIterator, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY void iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+iota(_ForwardIterator __first, _ForwardIterator __last, _Tp __value_)
 {
   for (; __first != __last; ++__first, (void) ++__value_)
   {
