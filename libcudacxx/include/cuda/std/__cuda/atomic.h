@@ -12,6 +12,7 @@
 #define _LIBCUDACXX___CUDA_ATOMIC_H
 
 #include <cuda/std/detail/__config>
+#include <cuda/std/atomic>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,100 +24,85 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-using std::__detail::thread_scope;
-using std::__detail::thread_scope_block;
-using std::__detail::thread_scope_device;
-using std::__detail::thread_scope_system;
-using std::__detail::thread_scope_thread;
-
-namespace __detail
-{
-using std::__detail::__thread_scope_block_tag;
-using std::__detail::__thread_scope_device_tag;
-using std::__detail::__thread_scope_system_tag;
-} // namespace __detail
-
-using memory_order = std::memory_order;
-
-constexpr memory_order memory_order_relaxed = std::memory_order_relaxed;
-constexpr memory_order memory_order_consume = std::memory_order_consume;
-constexpr memory_order memory_order_acquire = std::memory_order_acquire;
-constexpr memory_order memory_order_release = std::memory_order_release;
-constexpr memory_order memory_order_acq_rel = std::memory_order_acq_rel;
-constexpr memory_order memory_order_seq_cst = std::memory_order_seq_cst;
-
 // atomic<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic : public std::__atomic_base<_Tp, _Sco>
+struct atomic
+  : public std::__atomic_impl<_Tp, _Sco>
 {
-  typedef std::__atomic_base<_Tp, _Sco> __base;
+  using value_type = _Tp;
 
-  constexpr atomic() noexcept = default;
-  _CCCL_HOST_DEVICE constexpr atomic(_Tp __d) noexcept
-      : __base(__d)
-  {}
+  _CCCL_HOST_DEVICE
+  constexpr atomic() noexcept
+      : std::__atomic_impl<_Tp, _Sco>() {}
+  _CCCL_HOST_DEVICE
+  constexpr atomic(_Tp __d) noexcept
+      : std::__atomic_impl<_Tp, _Sco>(__d) {}
 
   _CCCL_HOST_DEVICE _Tp operator=(_Tp __d) volatile noexcept
   {
-    __base::store(__d);
+    this->store(__d);
     return __d;
   }
   _CCCL_HOST_DEVICE _Tp operator=(_Tp __d) noexcept
   {
-    __base::store(__d);
+    this->store(__d);
     return __d;
   }
 
   _CCCL_HOST_DEVICE _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
+    return std::__atomic_fetch_max_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
   _CCCL_HOST_DEVICE _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
+    return std::__atomic_fetch_min_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
 };
 
 // atomic<T*>
 
 template <class _Tp, thread_scope _Sco>
-struct atomic<_Tp*, _Sco> : public std::__atomic_base<_Tp*, _Sco>
+struct atomic<_Tp*, _Sco>
+  : public std::__atomic_impl<_Tp*, _Sco>
 {
-  typedef std::__atomic_base<_Tp*, _Sco> __base;
+  using value_type = _Tp*;
 
-  constexpr atomic() noexcept = default;
-  _CCCL_HOST_DEVICE constexpr atomic(_Tp* __d) noexcept
-      : __base(__d)
-  {}
+  _CCCL_HOST_DEVICE
+  constexpr atomic() noexcept
+      : std::__atomic_impl<_Tp*, _Sco>() {}
+
+  _CCCL_HOST_DEVICE
+  constexpr atomic(_Tp* __d) noexcept
+      : std::__atomic_impl<_Tp*, _Sco>(__d) {}
 
   _CCCL_HOST_DEVICE _Tp* operator=(_Tp* __d) volatile noexcept
   {
-    __base::store(__d);
+    this->store(__d);
     return __d;
   }
   _CCCL_HOST_DEVICE _Tp* operator=(_Tp* __d) noexcept
   {
-    __base::store(__d);
+    this->store(__d);
     return __d;
   }
 
   _CCCL_HOST_DEVICE _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return __cxx_atomic_fetch_add(&this->__a_, __op, __m);
+    return std::__atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
   _CCCL_HOST_DEVICE _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) noexcept
   {
-    return __cxx_atomic_fetch_add(&this->__a_, __op, __m);
+    return std::__atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
   _CCCL_HOST_DEVICE _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);
+    return std::__atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
   _CCCL_HOST_DEVICE _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) noexcept
   {
-    return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);
+    return std::__atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
   _CCCL_HOST_DEVICE _Tp* operator++(int) volatile noexcept
@@ -172,9 +158,9 @@ struct atomic<_Tp*, _Sco> : public std::__atomic_base<_Tp*, _Sco>
 // atomic_ref<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic_ref : public std::__atomic_base_ref<_Tp, _Sco>
+struct atomic_ref : public std::__atomic_ref_impl<_Tp, _Sco>
 {
-  typedef std::__atomic_base_ref<_Tp, _Sco> __base;
+  typedef std::__atomic_ref_impl<_Tp, _Sco> __base;
 
   _CCCL_HOST_DEVICE constexpr atomic_ref(_Tp& __d) noexcept
       : __base(__d)
@@ -182,27 +168,27 @@ struct atomic_ref : public std::__atomic_base_ref<_Tp, _Sco>
 
   _CCCL_HOST_DEVICE _Tp operator=(_Tp __d) const noexcept
   {
-    __base::store(__d);
+    this->store(__d);
     return __d;
   }
 
   _CCCL_HOST_DEVICE _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
+    return std::__atomic_fetch_max_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
   _CCCL_HOST_DEVICE _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
+    return std::__atomic_fetch_min_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
 };
 
 // atomic_ref<T*>
 
 template <class _Tp, thread_scope _Sco>
-struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
+struct atomic_ref<_Tp*, _Sco> : public std::__atomic_ref_impl<_Tp*, _Sco>
 {
-  typedef std::__atomic_base_ref<_Tp*, _Sco> __base;
+  typedef std::__atomic_ref_impl<_Tp*, _Sco> __base;
 
   _CCCL_HOST_DEVICE constexpr atomic_ref(_Tp*& __d) noexcept
       : __base(__d)
@@ -210,17 +196,17 @@ struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
 
   _CCCL_HOST_DEVICE _Tp* operator=(_Tp* __d) const noexcept
   {
-    __base::store(__d);
+    this->store(__d);
     return __d;
   }
 
   _CCCL_HOST_DEVICE _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return __cxx_atomic_fetch_add(&this->__a_, __op, __m);
+    return __atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
   _CCCL_HOST_DEVICE _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);
+    return __atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
   _CCCL_HOST_DEVICE _Tp* operator++(int) const noexcept
@@ -256,13 +242,13 @@ atomic_thread_fence(memory_order __m, thread_scope _Scope = thread_scope::thread
     NV_IS_DEVICE,
     (switch (_Scope) {
       case thread_scope::thread_scope_system:
-        std::__detail::__atomic_thread_fence_cuda((int) __m, __detail::__thread_scope_system_tag());
+        std::__atomic_thread_fence_cuda((int) __m, __thread_scope_system_tag{});
         break;
       case thread_scope::thread_scope_device:
-        std::__detail::__atomic_thread_fence_cuda((int) __m, __detail::__thread_scope_device_tag());
+        std::__atomic_thread_fence_cuda((int) __m, __thread_scope_device_tag{});
         break;
       case thread_scope::thread_scope_block:
-        std::__detail::__atomic_thread_fence_cuda((int) __m, __detail::__thread_scope_block_tag());
+        std::__atomic_thread_fence_cuda((int) __m, __thread_scope_block_tag{});
         break;
       // Atomics scoped to themselves do not require fencing
       case thread_scope::thread_scope_thread:

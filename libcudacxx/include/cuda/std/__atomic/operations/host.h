@@ -74,22 +74,29 @@ inline bool __atomic_compare_exchange_weak_host(
 }
 
 template <typename _Tp>
-struct __atomic_ptr_inc { enum {value = 1}; };
+struct __atomic_ptr_skip {
+  static constexpr auto __skip = 1;
+};
 
 template <typename _Tp>
-struct __atomic_ptr_inc<_Tp*> { enum {value = sizeof(_Tp)}; };
+struct __atomic_ptr_skip<_Tp*> {
+  static constexpr auto __skip = sizeof(_Tp);
+};
 
 // FIXME: Haven't figured out what the spec says about using arrays with
 // atomic_fetch_add. Force a failure rather than creating bad behavior.
 template <typename _Tp>
-struct __atomic_ptr_inc<_Tp[]> { };
+struct __atomic_ptr_skip<_Tp[]> { };
 template <typename _Tp, int n>
-struct __atomic_ptr_inc<_Tp[n]> { };
+struct __atomic_ptr_skip<_Tp[n]> { };
+
+template <typename _Tp>
+using __atomic_ptr_skip_t = __atomic_ptr_skip<__remove_cvref_t<_Tp>>;
 
 template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
 inline _Tp __atomic_fetch_add_host(_Tp* __a, _Td __delta,
                            memory_order __order) {
-  constexpr auto __skip_v = __atomic_ptr_inc<_Tp>::value;
+  constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_add(__a, __delta * __skip_v,
                             __atomic_order_to_int(__order));
 }
@@ -110,7 +117,7 @@ inline _Tp __atomic_fetch_add_host(_Tp* __a, _Td __delta,
 template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
 inline _Tp __atomic_fetch_sub_host(_Tp* __a, _Td __delta,
                            memory_order __order) {
-  constexpr auto __skip_v = __atomic_ptr_inc<_Tp>::value;
+  constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_sub(__a, __delta * __skip_v,
                             __atomic_order_to_int(__order));
 }

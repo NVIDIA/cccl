@@ -11,6 +11,6 @@
 #ifndef _CUDA_ATOMIC
 #define _CUDA_ATOMIC
 
-#include <cuda/std/atomic>
+#include <cuda/std/__cuda/atomic.h>
 
 #endif // _CUDA_ATOMIC

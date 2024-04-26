@@ -11,6 +11,10 @@
 #ifndef __LIBCUDACXX_ATOMIC_ORDER_H
 #define __LIBCUDACXX_ATOMIC_ORDER_H
 
+#include <cuda/std/detail/__config>
+
+#include <cuda/std/__type_traits/underlying_type.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m) \
@@ -122,5 +126,19 @@ static_assert((is_same<underlying_type<memory_order>::type, __memory_order_under
   "unexpected underlying type for std::memory_order");
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+using memory_order = _CUDA_VSTD::memory_order;
+
+constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
+constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
+constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
+constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
+constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
+constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
 
 #endif // __LIBCUDACXX_ATOMIC_ORDER_H

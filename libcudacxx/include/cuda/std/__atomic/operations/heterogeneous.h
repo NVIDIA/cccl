@@ -29,9 +29,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_HOST_DEVICE
-inline
- void __atomic_thread_fence_dispatch(memory_order __order) {
+_CCCL_HOST_DEVICE inline
+void __atomic_thread_fence_dispatch(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             __atomic_thread_fence_cuda(static_cast<__memory_order_underlying_t>(__order), __thread_scope_system_tag());
@@ -42,9 +41,8 @@ inline
     )
 }
 
-_CCCL_HOST_DEVICE
-inline
- void __atomic_signal_fence_dispatch(memory_order __order) {
+_CCCL_HOST_DEVICE inline
+void __atomic_signal_fence_dispatch(memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             __atomic_signal_fence_cuda(static_cast<__memory_order_underlying_t>(__order));
@@ -55,200 +53,201 @@ inline
     )
 }
 
-// automatically dispatch based on default argument of '_Sto<_Tp, tag_t>'
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp>
-_CCCL_HOST_DEVICE
- void __atomic_init_dispatch(_Sto<_Tp>& __a, _Tp __val) {
-    __atomic_assign_volatile(__a.get(), __val);
+// Extract the storage tag and SFINAE on the tag inside the storage object
+template <typename _Sto>
+using __atomic_storage_is_base = __enable_if_t<__atomic_tag::__atomic_base_tag == __remove_cvref_t<_Sto>::__tag, int>;
+
+template <typename _Sto, typename _Up, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+void __atomic_init_dispatch(_Sto* __a, _Up __val) {
+    __atomic_assign_volatile(__a->get(), __val);
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- void __atomic_store_dispatch(_Sto<_Tp>& __a, _Tp __val, memory_order __order, _Sco = {}) {
-    alignas(_Tp) auto __tmp = __val;
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {}) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            __atomic_store_n_cuda(__a.get(), __val, static_cast<__memory_order_underlying_t>(__order),  _Sco{});
+            __atomic_store_n_cuda(__a->get(), __val, static_cast<__memory_order_underlying_t>(__order),  _Sco{});
         ),
         NV_IS_HOST, (
-            __atomic_store_host(__a.get(), __val, __order);
+            __atomic_store_host(__a->get(), __val, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- auto __atomic_load_dispatch(_Sto<_Tp> const& __a, memory_order __order, _Sco = {}) -> _Tp {
+template <typename _Sto, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_load_n_cuda(__a.get(), static_cast<__memory_order_underlying_t>(__order),  _Sco{});
+            return __atomic_load_n_cuda(__a->get(), static_cast<__memory_order_underlying_t>(__order),  _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_load_host(__a.get(), __order);
+            return __atomic_load_host(__a->get(), __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
-_Tp __atomic_exchange_dispatch(_Sto<_Tp>& __a, _Tp __value, memory_order __order, _Sco = {}) {
-    alignas(_Tp) auto __tmp = __value;
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})  -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_exchange_n_cuda(__a.get(), __tmp, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_exchange_n_cuda(__a->get(), __value, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_exchange_host(__a.get(), __tmp, __order);
+            return __atomic_exchange_host(__a->get(), __value, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- bool __atomic_compare_exchange_strong_dispatch(_Sto<_Tp>& __a, _Tp* __expected, _Tp __val, memory_order __success, memory_order __failure, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+bool __atomic_compare_exchange_strong_dispatch(_Sto* __a, _Up* __expected, _Up __val, memory_order __success, memory_order __failure, _Sco = {}) {
     bool __result = false;
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            __result = __atomic_compare_exchange_cuda(__a.get(), __expected, __val, false, static_cast<__memory_order_underlying_t>(__success), static_cast<__memory_order_underlying_t>(__failure), _Sco{});
+            __result = __atomic_compare_exchange_cuda(__a->get(), __expected, __val, false, static_cast<__memory_order_underlying_t>(__success), static_cast<__memory_order_underlying_t>(__failure), _Sco{});
         ),
         NV_IS_HOST, (
-            __result = __atomic_compare_exchange_strong_host(__a.get(), __expected, __val, __success, __failure);
+            __result = __atomic_compare_exchange_strong_host(__a->get(), __expected, __val, __success, __failure);
         )
     )
     return __result;
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- bool __atomic_compare_exchange_weak_dispatch(_Sto<_Tp>& __a, _Tp* __expected, _Tp __val, memory_order __success, memory_order __failure, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+bool __atomic_compare_exchange_weak_dispatch(_Sto* __a, _Up* __expected, _Up __val, memory_order __success, memory_order __failure, _Sco = {}) {
     bool __result = false;
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            __result = __atomic_compare_exchange_cuda(__a.get(), __expected, __val,  true, static_cast<__memory_order_underlying_t>(__success), static_cast<__memory_order_underlying_t>(__failure), _Sco{});
+            __result = __atomic_compare_exchange_cuda(__a->get(), __expected, __val,  true, static_cast<__memory_order_underlying_t>(__success), static_cast<__memory_order_underlying_t>(__failure), _Sco{});
         ),
         NV_IS_HOST, (
-            __result = __atomic_compare_exchange_weak_host(__a.get(), __expected, __val, __success, __failure);
+            __result = __atomic_compare_exchange_weak_host(__a->get(), __expected, __val, __success, __failure);
         )
     )
     return __result;
 }
 
 template <typename _Tp>
-using __atomic_enable_if_ptr = __enable_if_t<is_pointer<_Tp>::value, _Tp>;
+using __atomic_enable_if_ptr = __enable_if_t<is_pointer<__atomic_underlying_t<_Tp>>::value, int>;
 template <typename _Tp>
-using __atomic_enable_if_not_ptr = __enable_if_t<!is_pointer<_Tp>::value, _Tp>;
+using __atomic_enable_if_not_ptr = __enable_if_t<!is_pointer<__atomic_underlying_t<_Tp>>::value, int>;
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- __atomic_enable_if_not_ptr<_Tp> __atomic_fetch_add_dispatch(_Sto<_Tp>& __a, _Tp __delta, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_not_ptr<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_add_cuda(__a.get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_add_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_add_host(__a.get(), __delta, __order);
+            return __atomic_fetch_add_host(__a->get(), __delta, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- __atomic_enable_if_ptr<_Tp> __atomic_fetch_add_dispatch(_Sto<_Tp>& __a, ptrdiff_t __delta, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_ptr<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_add_dispatch(_Sto* __a, ptrdiff_t __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_add_cuda(__a.get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_add_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_add_host(__a.get(), __delta, __order);
+            return __atomic_fetch_add_host(__a->get(), __delta, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- __atomic_enable_if_not_ptr<_Tp> __atomic_fetch_sub_dispatch(_Sto<_Tp>& __a, _Tp __delta, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_not_ptr<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_sub_cuda(__a.get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_sub_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_sub_cuda(__a.get(), __delta, __order);
+            return __atomic_fetch_sub_host(__a->get(), __delta, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- __atomic_enable_if_ptr<_Tp> __atomic_fetch_sub_dispatch(_Sto<_Tp>& __a, ptrdiff_t __delta, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_ptr<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_sub_dispatch(_Sto* __a, ptrdiff_t __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_sub_cuda(__a.get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_sub_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_sub_host(__a.get(), __delta, __order);
+            return __atomic_fetch_sub_host(__a->get(), __delta, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- _Tp __atomic_fetch_and_dispatch(_Sto<_Tp>& __a, _Tp __pattern, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})  -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_and_cuda(__a.get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_and_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_and_host(__a.get(), __pattern, __order);
+            return __atomic_fetch_and_host(__a->get(), __pattern, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- _Tp __atomic_fetch_or_dispatch(_Sto<_Tp>& __a, _Tp __pattern, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})  -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_or_cuda(__a.get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_or_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_or_host(__a.get(), __pattern, __order);
+            return __atomic_fetch_or_host(__a->get(), __pattern, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- _Tp __atomic_fetch_xor_dispatch(_Sto<_Tp>& __a, _Tp __pattern, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})  -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_xor_cuda(__a.get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_xor_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ),
         NV_IS_HOST, (
-            return __atomic_fetch_xor_host(__a.get(), __pattern, __order);
+            return __atomic_fetch_xor_host(__a->get(), __pattern, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- _Tp __atomic_fetch_max_dispatch(_Sto<_Tp>& __a, _Tp __val, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})  -> __atomic_underlying_t<_Sto> {
     NV_IF_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_max_cuda(__a.get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_max_cuda(__a->get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ), (
-            return __atomic_fetch_max_host(__a.get(), __val, __order);
+            return __atomic_fetch_max_host(__a->get(), __val, __order);
         )
     )
 }
 
-template <template <typename, typename = __atomic_base_tag> _Sto, typename _Tp, typename _Sco = __thread_scope_system_tag>
-_CCCL_HOST_DEVICE
- _Tp __atomic_fetch_min_dispatch(_Sto<_Tp>& __a, _Tp __val, memory_order __order, _Sco = {}) {
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
+_CCCL_HOST_DEVICE inline
+auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})  -> __atomic_underlying_t<_Sto> {
     NV_IF_TARGET(
         NV_IS_DEVICE, (
-            return __atomic_fetch_min_cuda(__a.get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});
+            return __atomic_fetch_min_cuda(__a->get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});
         ), (
-            return __atomic_fetch_min_host(__a.get(), __val, __order);
+            return __atomic_fetch_min_host(__a->get(), __val, __order);
         )
     )
 }

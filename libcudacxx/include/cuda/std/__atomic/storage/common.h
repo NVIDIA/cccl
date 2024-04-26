@@ -16,19 +16,25 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+enum class __atomic_tag {
+  __atomic_base_tag,
+  __atomic_locked_tag,
+  __atomic_small_tag,
+};
+
 // [atomics.types.generic]p1 guarantees _Tp is trivially copyable. Because
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
 template <typename _Tp, typename _Tv>
 __enable_if_t<is_assignable<_Tp&, _Tv>::value>
-_CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp& __a_value, _Tv const& __val) {
-  __a_value = __val;
+_CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp* __a_value, _Tv const& __val) {
+  *__a_value = __val;
 }
 
 template <typename _Tp, typename _Tv>
 __enable_if_t<is_assignable<_Tp&, _Tv>::value>
-_CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile const& __val) {
-  volatile char* __to = reinterpret_cast<volatile char*>(&__a_value);
+_CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val) {
+  volatile char* __to = reinterpret_cast<volatile char*>(__a_value);
   volatile char* __end = __to + sizeof(_Tp);
   volatile const char* __from = reinterpret_cast<volatile const char*>(&__val);
   while (__to != __end)
@@ -37,6 +43,26 @@ _CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp volatile& __a_value, _Tv volatile
 
 template <typename _Tp>
 using __atomic_underlying_t = typename __remove_cvref_t<_Tp>::__underlying_t;
+
+_CCCL_HOST_DEVICE
+inline int __atomic_memcmp(void const * __lhs, void const * __rhs, size_t __count) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            auto __lhs_c = reinterpret_cast<unsigned char const *>(__lhs);
+            auto __rhs_c = reinterpret_cast<unsigned char const *>(__rhs);
+            while (__count--) {
+                auto const __lhs_v = *__lhs_c++;
+                auto const __rhs_v = *__rhs_c++;
+                if (__lhs_v < __rhs_v) { return -1; }
+                if (__lhs_v > __rhs_v) { return 1; }
+            }
+            return 0;
+        ),
+        NV_IS_HOST, (
+            return memcmp(__lhs, __rhs, __count);
+        )
+    )
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

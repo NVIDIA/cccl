@@ -32,21 +32,40 @@ template<int _Scope>  struct __scope_enum_to_tag { };
 template<> struct __scope_enum_to_tag<(int)thread_scope_thread> {
     using type = __thread_scope_thread_tag; };
 Until then: */
-template<> struct __scope_enum_to_tag<(int)thread_scope_thread> {
-    using type = __thread_scope_block_tag; };
-template<> struct __scope_enum_to_tag<(int)thread_scope_block> {
-    using type = __thread_scope_block_tag; };
-template<> struct __scope_enum_to_tag<(int)thread_scope_device> {
-    using type = __thread_scope_device_tag; };
-template<> struct __scope_enum_to_tag<(int)thread_scope_system> {
-    using type = __thread_scope_system_tag; };
+template<>
+struct __scope_enum_to_tag<(int)thread_scope_thread> {
+    using __tag = __thread_scope_block_tag;
+};
+template<>
+struct __scope_enum_to_tag<(int)thread_scope_block> {
+    using __tag = __thread_scope_block_tag;
+};
+template<>
+struct __scope_enum_to_tag<(int)thread_scope_device> {
+    using __tag = __thread_scope_device_tag;
+};
+template<>
+struct __scope_enum_to_tag<(int)thread_scope_system> {
+    using __tag = __thread_scope_system_tag;
+};
 
 template <int _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY auto constexpr __scope_tag() ->
-        typename __scope_enum_to_tag<_Scope>::type {
-    return typename __scope_enum_to_tag<_Scope>::type();
-}
+using __scope_to_tag = typename __scope_enum_to_tag<_Scope>::__tag;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+using _CUDA_VSTD::thread_scope;
+using _CUDA_VSTD::thread_scope_block;
+using _CUDA_VSTD::thread_scope_device;
+using _CUDA_VSTD::thread_scope_system;
+using _CUDA_VSTD::thread_scope_thread;
+
+using _CUDA_VSTD::__thread_scope_block_tag;
+using _CUDA_VSTD::__thread_scope_device_tag;
+using _CUDA_VSTD::__thread_scope_system_tag;
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // __LIBCUDACXX_ATOMIC_SCOPES_H

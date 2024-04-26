@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/std/__atomic/api/atomic_impl.h>
+
 #if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
@@ -124,7 +126,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <>
 class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __block_scope_barrier_base
 {
-  using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int) thread_scope_block>;
+  using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
   _CCCL_DEVICE friend inline _CUDA_VSTD::uint64_t*
