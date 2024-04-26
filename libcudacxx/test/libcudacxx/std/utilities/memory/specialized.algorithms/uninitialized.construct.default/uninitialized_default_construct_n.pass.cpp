@@ -45,16 +45,17 @@ struct Counted
   __host__ __device__ friend void operator&(Counted) = delete;
 };
 
-STATIC_TEST_GLOBAL_VAR int ThrowsCounted_count       = 0;
-STATIC_TEST_GLOBAL_VAR int ThrowsCounted_constructed = 0;
-STATIC_TEST_GLOBAL_VAR int ThrowsCounted_throw_after = 0;
+#ifndef TEST_HAS_NO_EXCEPTIONS
+static int ThrowsCounted_count       = 0;
+static int ThrowsCounted_constructed = 0;
+static int ThrowsCounted_throw_after = 0;
 struct ThrowsCounted
 {
-  __host__ __device__ static void reset()
+  static void reset()
   {
     ThrowsCounted_count = ThrowsCounted_constructed = ThrowsCounted_throw_after = 0;
   }
-  __host__ __device__ explicit ThrowsCounted(int&& x)
+  explicit ThrowsCounted(int&& x)
   {
     ++ThrowsCounted_constructed;
     if (ThrowsCounted_throw_after > 0 && --ThrowsCounted_throw_after == 0)
@@ -64,21 +65,21 @@ struct ThrowsCounted
     ++ThrowsCounted_count;
     x = 0;
   }
-  __host__ __device__ ThrowsCounted(ThrowsCounted const&)
+
+  ThrowsCounted(ThrowsCounted const&)
   {
     assert(false);
   }
-  __host__ __device__ ~ThrowsCounted()
+  ~ThrowsCounted()
   {
     assert(ThrowsCounted_count > 0);
     --ThrowsCounted_count;
   }
-  __host__ __device__ friend void operator&(ThrowsCounted) = delete;
+  friend void operator&(ThrowsCounted) = delete;
 };
 
-__host__ __device__ void test_ctor_throws()
+void test_ctor_throws()
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using It                                                    = forward_iterator<ThrowsCounted*>;
   const int N                                                 = 5;
   alignas(ThrowsCounted) char pool[sizeof(ThrowsCounted) * N] = {};
@@ -93,8 +94,8 @@ __host__ __device__ void test_ctor_throws()
   {}
   assert(ThrowsCounted_count == 0);
   assert(ThrowsCounted_constructed == 4); // Fourth construction throws
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ void test_counted()
 {
@@ -117,7 +118,9 @@ __host__ __device__ void test_counted()
 int main(int, char**)
 {
   test_counted();
-  test_ctor_throws();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_ctor_throws();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }
