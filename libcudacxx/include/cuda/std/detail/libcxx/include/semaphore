@@ -68,7 +68,7 @@ using binary_semaphore = counting_semaphore<1>;
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template<int _Sco, ptrdiff_t __least_max_value>
+template<thread_scope _Sco, ptrdiff_t __least_max_value>
 class __atomic_semaphore_base
 {
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -111,7 +111,7 @@ class __atomic_semaphore_base
             return __old != 0 && __fetch_sub_if_slow(__old);
         }, __rel_time);
     }
-    __atomic_base<ptrdiff_t, _Sco> __count;
+    __atomic_impl<ptrdiff_t, _Sco> __count;
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -175,7 +175,7 @@ public:
 
 #ifndef _LIBCUDACXX_USE_NATIVE_SEMAPHORES
 
-template<int _Sco>
+template<thread_scope _Sco>
 class __atomic_semaphore_base<_Sco, 1> {
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -185,7 +185,7 @@ class __atomic_semaphore_base<_Sco, 1> {
             return try_acquire();
         }, __rel_time);
     }
-    __atomic_base<int, _Sco> __available;
+    __atomic_impl<int, _Sco> __available;
 
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -244,7 +244,7 @@ public:
 
 #else
 
-template<int _Sco>
+template<thread_scope _Sco>
 class __sem_semaphore_base {
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -325,10 +325,10 @@ class __sem_semaphore_base {
 
     __libcpp_semaphore_t __semaphore;
 #ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-    __atomic_base<ptrdiff_t, _Sco> __frontbuffer;
+    __atomic_impl<ptrdiff_t, _Sco> __frontbuffer;
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_BACK_BUFFER
-    __atomic_base<ptrdiff_t, _Sco> __backbuffer;
+    __atomic_impl<ptrdiff_t, _Sco> __backbuffer;
 #endif
 
 public:
@@ -414,7 +414,7 @@ public:
 
 #endif //_LIBCUDACXX_HAS_NO_SEMAPHORES
 
-template<ptrdiff_t __least_max_value, int _Sco>
+template<ptrdiff_t __least_max_value, thread_scope _Sco>
 using __semaphore_base =
 #ifdef _LIBCUDACXX_USE_NATIVE_SEMAPHORES
     __conditional_t<__least_max_value <= __sem_semaphore_base<_Sco>::max(),
@@ -426,12 +426,12 @@ using __semaphore_base =
     ;
 
 template<ptrdiff_t __least_max_value = INT_MAX>
-class counting_semaphore : public __semaphore_base<__least_max_value, 0>
+class counting_semaphore : public __semaphore_base<__least_max_value, thread_scope_system>
 {
-    static_assert(__least_max_value <= __semaphore_base<__least_max_value, 0>::max(), "");
+    static_assert(__least_max_value <= __semaphore_base<__least_max_value, thread_scope_system>::max(), "");
 public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
-    counting_semaphore(ptrdiff_t __count = 0) : __semaphore_base<__least_max_value, 0>(__count) { }
+    counting_semaphore(ptrdiff_t __count = 0) : __semaphore_base<__least_max_value, thread_scope_system>(__count) { }
     ~counting_semaphore() = default;
 
     counting_semaphore(const counting_semaphore&) = delete;
