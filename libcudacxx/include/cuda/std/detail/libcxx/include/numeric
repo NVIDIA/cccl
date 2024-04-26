@@ -158,6 +158,7 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
+#include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/inner_product.h>
 #include <cuda/std/__numeric/partial_sum.h>
 #include <cuda/std/__numeric/reduce.h>
@@ -175,40 +176,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #ifndef __cuda_std__
 
 #  if _CCCL_STD_VER > 2014
-template <class _InputIterator, class _OutputIterator, class _BinaryOp, class _Tp>
-_OutputIterator
-inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _Tp __init)
-{
-  for (; __first != __last; ++__first, (void) ++__result)
-  {
-    __init    = __b(__init, *__first);
-    *__result = __init;
-  }
-  return __result;
-}
-
-template <class _InputIterator, class _OutputIterator, class _BinaryOp>
-_OutputIterator inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b)
-{
-  if (__first != __last)
-  {
-    typename std::iterator_traits<_InputIterator>::value_type __init = *__first;
-    *__result++                                                      = __init;
-    if (++__first != __last)
-    {
-      return _CUDA_VSTD::inclusive_scan(__first, __last, __result, __b, __init);
-    }
-  }
-
-  return __result;
-}
-
-template <class _InputIterator, class _OutputIterator>
-_OutputIterator inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
-{
-  return _CUDA_VSTD::inclusive_scan(__first, __last, __result, std::plus<>());
-}
-
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator transform_exclusive_scan(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init, _BinaryOp __b, _UnaryOp __u)
