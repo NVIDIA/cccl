@@ -55,7 +55,7 @@ struct ThrowsCounted
   {
     ThrowsCounted_count = ThrowsCounted_constructed = ThrowsCounted_throw_after = 0;
   }
-  explicit ThrowsCounted(int&& x)
+  explicit ThrowsCounted()
   {
     ++ThrowsCounted_constructed;
     if (ThrowsCounted_throw_after > 0 && --ThrowsCounted_throw_after == 0)
@@ -63,7 +63,6 @@ struct ThrowsCounted
       TEST_THROW(1);
     }
     ++ThrowsCounted_count;
-    x = 0;
   }
   ThrowsCounted(ThrowsCounted const&)
   {
