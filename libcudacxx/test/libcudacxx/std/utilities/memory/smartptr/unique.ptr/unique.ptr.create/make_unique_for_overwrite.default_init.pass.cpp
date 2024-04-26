@@ -10,6 +10,9 @@
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: sanitizer-new-delete
 
+// It is not possible to overwrite device operator new
+// UNSUPPORTED: true
+
 // template<class T>
 //   constexpr unique_ptr<T> make_unique_for_overwrite(); // T is not array
 //
@@ -32,7 +35,7 @@
 
 constexpr char pattern = (char) 0xDE;
 
-__host__ __device__ void* operator new(cuda::std::size_t count)
+void* operator new(cuda::std::size_t count)
 {
   void* ptr = malloc(count);
   for (cuda::std::size_t i = 0; i < count; ++i)
@@ -42,27 +45,27 @@ __host__ __device__ void* operator new(cuda::std::size_t count)
   return ptr;
 }
 
-__host__ __device__ void* operator new[](cuda::std::size_t count)
+void* operator new[](cuda::std::size_t count)
 {
   return ::operator new(count);
 }
 
-__host__ __device__ void operator delete(void* ptr) noexcept
+void operator delete(void* ptr) noexcept
 {
   free(ptr);
 }
 
-__host__ __device__ void operator delete[](void* ptr) noexcept
+void operator delete[](void* ptr) noexcept
 {
   ::operator delete(ptr);
 }
 
 #ifdef TEST_COMPILER_GCC
-__host__ __device__ void operator delete(void* ptr, cuda::std::size_t) noexcept
+void operator delete(void* ptr, cuda::std::size_t) noexcept
 {
   free(ptr);
 }
-__host__ __device__ void operator delete[](void* ptr, cuda::std::size_t) noexcept
+void operator delete[](void* ptr, cuda::std::size_t) noexcept
 {
   ::operator delete(ptr);
 }
@@ -73,14 +76,14 @@ __host__ __device__ void test()
   {
     decltype(auto) ptr = cuda::std::make_unique_for_overwrite<int>();
     static_assert(cuda::std::same_as<cuda::std::unique_ptr<int>, decltype(ptr)>, "");
-    assert(*(reinterpret_cast<char*>(ptr.get())) == pattern);
+    NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(ptr.get())) == pattern);))
   }
   {
     decltype(auto) ptr = cuda::std::make_unique_for_overwrite<int[]>(3);
     static_assert(cuda::std::same_as<cuda::std::unique_ptr<int[]>, decltype(ptr)>, "");
-    assert(*(reinterpret_cast<char*>(&ptr[0])) == pattern);
-    assert(*(reinterpret_cast<char*>(&ptr[1])) == pattern);
-    assert(*(reinterpret_cast<char*>(&ptr[2])) == pattern);
+    NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(&ptr[0])) == pattern);))
+    NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(&ptr[1])) == pattern);))
+    NV_IF_TARGET(NV_IS_HOST, (assert(*(reinterpret_cast<char*>(&ptr[2])) == pattern);))
   }
 }
 
