@@ -158,6 +158,7 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__numeric/inner_product.h>
+#include <cuda/std/__numeric/partial_sum.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__numeric/transform_reduce.h>
 #include <cuda/std/__utility/move.h>
@@ -171,40 +172,6 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef __cuda_std__
-
-template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator
-partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
-{
-  if (__first != __last)
-  {
-    typename iterator_traits<_InputIterator>::value_type __t(*__first);
-    *__result = __t;
-    for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
-    {
-      __t       = __t + *__first;
-      *__result = __t;
-    }
-  }
-  return __result;
-}
-
-template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator
-partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOperation __binary_op)
-{
-  if (__first != __last)
-  {
-    typename iterator_traits<_InputIterator>::value_type __t(*__first);
-    *__result = __t;
-    for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
-    {
-      __t       = __binary_op(__t, *__first);
-      *__result = __t;
-    }
-  }
-  return __result;
-}
 
 #  if _CCCL_STD_VER > 2014
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
