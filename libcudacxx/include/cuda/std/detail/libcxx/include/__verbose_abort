@@ -29,14 +29,16 @@
 //
 // We can't provide a great implementation because it needs to be pretty much
 // dependency-free (this is included everywhere else in the library).
-#if defined(_LIBCUDACXX_HAS_NO_VERBOSE_ABORT_IN_LIBRARY) && !defined(_LIBCUDACXX_AVAILABILITY_CUSTOM_VERBOSE_ABORT_PROVIDED)
+#if defined(_LIBCUDACXX_HAS_NO_VERBOSE_ABORT_IN_LIBRARY) \
+  && !defined(_LIBCUDACXX_AVAILABILITY_CUSTOM_VERBOSE_ABORT_PROVIDED)
 
 extern "C" void abort();
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_ATTRIBUTE_FORMAT(__printf__, 1, 2) _LIBCUDACXX_HIDE_FROM_ABI inline
-void __libcpp_verbose_abort(const char *, ...) {
+_CCCL_NORETURN _LIBCUDACXX_ATTRIBUTE_FORMAT(__printf__, 1, 2)
+  _LIBCUDACXX_HIDE_FROM_ABI inline void __libcpp_verbose_abort(const char*, ...)
+{
   ::abort();
   __builtin_unreachable(); // never reached, but needed to tell the compiler that the function never returns
 }
@@ -47,8 +49,8 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_ATTRIBUTE_FORMAT(__printf__, 1, 2)
-void __libcpp_verbose_abort(const char *__format, ...);
+_CCCL_NORETURN _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
+  _LIBCUDACXX_ATTRIBUTE_FORMAT(__printf__, 1, 2) void __libcpp_verbose_abort(const char* __format, ...);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

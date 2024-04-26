@@ -35,6 +35,7 @@
 #include <cuda/std/detail/libcxx/include/exception>
 #include <cuda/std/detail/libcxx/include/new>
 
+// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -43,4 +44,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/detail/libcxx/include/__pragma_pop>
 
-#endif  // _LIBCUDACXX_FUNCTIONAL_BASE
+#endif // _LIBCUDACXX_FUNCTIONAL_BASE
