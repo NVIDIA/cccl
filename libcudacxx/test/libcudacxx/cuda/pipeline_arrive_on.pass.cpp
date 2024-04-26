@@ -95,7 +95,7 @@ __device__ bool arrive_on_test(char* global_buffer, size_t buffer_size)
   return true;
 }
 
-#ifdef __CUDACC_RTC__
+#ifdef TEST_COMPILER_NVRTC
 __device__ void arrive_on_nvrtc(size_t buffer_size)
 {
   auto scramble_buffer = [](char* buffer, size_t buffer_size, size_t base_value) {

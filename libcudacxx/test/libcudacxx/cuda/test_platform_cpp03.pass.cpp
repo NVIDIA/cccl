@@ -12,7 +12,7 @@
 
 #include <nv/target>
 
-#if !defined(__CUDACC_RTC__)
+#if !defined(TEST_COMPILER_NVRTC)
 #  include <assert.h>
 #  include <stdio.h>
 #endif
