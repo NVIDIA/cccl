@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
@@ -126,6 +127,48 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSegmentedSort
 {
+private:
+  // Name reported for NVTX ranges
+  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  {
+    return "cub::DeviceSegmentedRadixSort";
+  }
+
+  // Internal version without NVTX range
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = false;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @name Keys-only
   //! @{
 
@@ -250,24 +293,16 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
-    constexpr bool is_overwrite_okay = false;
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
-    return DispatchT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
       num_items,
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      is_overwrite_okay,
       stream);
   }
 
@@ -298,6 +333,42 @@ struct DeviceSegmentedSort
       stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = true;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``num_items + 2 * num_segments`` auxiliary storage required.
@@ -417,24 +488,16 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
-    constexpr bool is_overwrite_okay = false;
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
-    return DispatchT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysDescendingNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
       num_items,
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      is_overwrite_okay,
       stream);
   }
 
@@ -465,6 +528,41 @@ struct DeviceSegmentedSort
       stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = false;
+    constexpr bool is_overwrite_okay = true;
+
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @rst
   //! Sorts segments of keys into ascending order. Approximately ``2 * num_segments`` auxiliary storage required.
   //!
@@ -595,25 +693,9 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
-    constexpr bool is_overwrite_okay = true;
-
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    DoubleBuffer<NullType> d_values;
-
-    return DispatchT::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysNoNVTX(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
@@ -634,6 +716,41 @@ struct DeviceSegmentedSort
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = true;
+    constexpr bool is_overwrite_okay = true;
+
+    using DispatchT =
+      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``2 * num_segments`` auxiliary storage required.
@@ -765,25 +882,9 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
-    constexpr bool is_overwrite_okay = true;
-
-    using DispatchT =
-      DispatchSegmentedSort<is_descending, KeyT, cub::NullType, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    DoubleBuffer<NullType> d_values;
-
-    return DispatchT::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysDescendingNoNVTX(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
@@ -927,7 +1028,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1089,7 +1191,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1261,7 +1364,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -1415,7 +1519,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -1437,6 +1542,43 @@ struct DeviceSegmentedSort
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = false;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @}  end member group
   //! @name Key-value pairs
   //! @{
@@ -1584,23 +1726,18 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
-    constexpr bool is_overwrite_okay = false;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-    return DispatchT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
       num_items,
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      is_overwrite_okay,
       stream);
   }
 
@@ -1635,6 +1772,43 @@ struct DeviceSegmentedSort
       stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = true;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
@@ -1778,23 +1952,18 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
-    constexpr bool is_overwrite_okay = false;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-    return DispatchT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsDescendingNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
       num_items,
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      is_overwrite_okay,
       stream);
   }
 
@@ -1829,6 +1998,38 @@ struct DeviceSegmentedSort
       stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = false;
+    constexpr bool is_overwrite_okay = true;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
@@ -1979,11 +2180,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = false;
-    constexpr bool is_overwrite_okay = true;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    return DispatchT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1992,7 +2190,6 @@ struct DeviceSegmentedSort
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      is_overwrite_okay,
       stream);
   }
 
@@ -2023,6 +2220,38 @@ struct DeviceSegmentedSort
       stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescendingNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
+  {
+    constexpr bool is_descending     = true;
+    constexpr bool is_overwrite_okay = true;
+    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+    return DispatchT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      is_overwrite_okay,
+      stream);
+  }
+
+public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
@@ -2172,11 +2401,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    constexpr bool is_descending     = true;
-    constexpr bool is_overwrite_okay = true;
-    using DispatchT = DispatchSegmentedSort<is_descending, KeyT, ValueT, int, BeginOffsetIteratorT, EndOffsetIteratorT>;
-
-    return DispatchT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsDescendingNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2185,7 +2411,6 @@ struct DeviceSegmentedSort
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      is_overwrite_okay,
       stream);
   }
 
@@ -2359,7 +2584,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortPairs<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2547,7 +2773,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortPairsDescending<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -2743,7 +2970,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortPairs<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2932,7 +3160,8 @@ struct DeviceSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    return SortPairsDescending<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,

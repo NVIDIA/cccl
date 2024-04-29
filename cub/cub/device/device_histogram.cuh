@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 #include <cub/util_deprecated.cuh>
 
@@ -796,6 +797,8 @@ struct DeviceHistogram
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
+
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
     Int2Type<sizeof(SampleT) == 1> is_byte_sample;
@@ -1533,6 +1536,8 @@ struct DeviceHistogram
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
+
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
     Int2Type<sizeof(SampleT) == 1> is_byte_sample;

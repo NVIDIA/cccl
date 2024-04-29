@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
@@ -187,6 +188,8 @@ struct DeviceRunLengthEncode
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
+
     using offset_t     = int; // Signed integer type for global offsets
     using equality_op  = Equality; // Default == operator
     using reduction_op = cub::Sum; // Value reduction operator
@@ -357,6 +360,8 @@ struct DeviceRunLengthEncode
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
+
     using OffsetT    = int; // Signed integer type for global offsets
     using EqualityOp = Equality; // Default == operator
 
