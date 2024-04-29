@@ -266,7 +266,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
 #endif // !_CCCL_COMPILER_NVRTC
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifdef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS

@@ -93,7 +93,6 @@ typedef ratio<1000000000000000000000000, 1> yotta;  // not supported
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

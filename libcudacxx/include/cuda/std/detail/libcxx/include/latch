@@ -52,7 +52,6 @@ namespace std
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__debug>
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS

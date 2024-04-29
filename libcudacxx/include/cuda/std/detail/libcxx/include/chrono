@@ -854,7 +854,6 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 // #include <cuda/std/concepts>
 #include <cuda/std/version>
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 // Silence NVCC warnings `long double` arising from chrono floating pointer

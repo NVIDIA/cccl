@@ -707,7 +707,6 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 // standard-mandated includes
 #include <cuda/std/version>
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifndef __cuda_std__

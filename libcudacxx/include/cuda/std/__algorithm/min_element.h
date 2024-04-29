@@ -27,6 +27,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
+
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

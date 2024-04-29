@@ -95,7 +95,6 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #  include <cstdlib>
 #endif // !_CCCL_COMPILER_NVRTC
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #if defined(_CCCL_CUDA_COMPILER_CLANG)

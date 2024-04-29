@@ -117,7 +117,6 @@ template<> class numeric_limits<cv long double>;
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-// comes last after internal headers
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #if defined(_CCCL_COMPILER_MSVC)

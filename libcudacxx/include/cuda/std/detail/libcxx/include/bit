@@ -70,7 +70,6 @@ namespace std {
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-// comes last
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #if defined(_CCCL_COMPILER_MSVC)
