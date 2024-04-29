@@ -27,9 +27,9 @@ template <typename T>
 using device_ignore_shutdown_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<device_ignore_shutdown_memory_resource>>;
 
-thrust::device_vector<double, device_ignore_shutdown_allocator<double>> d;
+thrust::device_vector<double, device_ignore_shutdown_allocator<double>> d_vec;
 
 int main()
 {
-  d.resize(25);
+  d_vec.resize(25);
 }
