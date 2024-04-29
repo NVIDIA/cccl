@@ -10,6 +10,7 @@
 
 // UNSUPPORTED: c++03
 
+#include "test_macros.h"
 #include <nv/target>
 
 #if !defined(TEST_COMPILER_NVRTC)

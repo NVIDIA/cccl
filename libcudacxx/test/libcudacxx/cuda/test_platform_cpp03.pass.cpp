@@ -10,6 +10,7 @@
 
 // UNSUPPORTED: nvhpc, nvc++
 
+#include "test_macros.h"
 #include <nv/target>
 
 #if !defined(TEST_COMPILER_NVRTC)
@@ -22,12 +23,6 @@
 #else
 #  define HD_ANNO
 #endif
-
-template <typename T>
-HD_ANNO bool unused(T)
-{
-  return true;
-}
 
 // Assert macro interferes with preprocessing, wrap it in a function
 HD_ANNO inline void check_v(bool result)
