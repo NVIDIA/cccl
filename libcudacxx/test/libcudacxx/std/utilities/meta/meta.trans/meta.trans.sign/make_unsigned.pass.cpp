@@ -26,12 +26,12 @@ enum BigEnum : unsigned long long // MSVC's ABI doesn't follow the Standard
   big = 0xFFFFFFFFFFFFFFFFULL
 };
 
-#if !defined(_LIBCUDACXX_HAS_NO_INT128) && !defined(_LIBCUDACXX_HAS_NO_STRONG_ENUMS)
+#if !defined(_LIBCUDACXX_HAS_NO_INT128)
 enum HugeEnum : __int128_t
 {
   hugezero
 };
-#endif
+#endif // !_LIBCUDACXX_HAS_NO_INT128
 
 template <class T, class U>
 __host__ __device__ void test_make_unsigned()
@@ -65,10 +65,8 @@ int main(int, char**)
 #ifndef _LIBCUDACXX_HAS_NO_INT128
   test_make_unsigned<__int128_t, __uint128_t>();
   test_make_unsigned<__uint128_t, __uint128_t>();
-#  ifndef _LIBCUDACXX_HAS_NO_STRONG_ENUMS
   test_make_unsigned<HugeEnum, __uint128_t>();
-#  endif
-#endif
+#endif // _LIBCUDACXX_HAS_NO_INT128
 
   return 0;
 }
