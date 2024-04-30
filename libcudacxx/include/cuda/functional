@@ -68,6 +68,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/functional>
 #include <cuda/std/utility>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/max.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 namespace __detail
