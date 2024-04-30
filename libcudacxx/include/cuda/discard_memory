@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/cstdint>
-#include <cuda/ptx>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

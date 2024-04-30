@@ -31,6 +31,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include "catch2/catch.hpp"
 #include "catch2_test_helper.h"
