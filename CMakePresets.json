@@ -279,8 +279,7 @@
       "cacheVariables":{
         "CCCL_ENABLE_BENCHMARKS": false,
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CUDA_FLAGS": "-G",
-        "CMAKE_CUDA_ARCHITECTURES": "86"
+        "CMAKE_CUDA_FLAGS": "-G"
       }
     }
   ],
