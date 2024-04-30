@@ -41,6 +41,8 @@
  email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
  */
 
+#pragma once
+
 #include <stdio.h>
 
 namespace mersenne
