@@ -39,6 +39,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
 #include <cstdint>
@@ -172,6 +173,7 @@ struct DeviceMemcpy
     uint32_t num_buffers,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
     static_assert(std::is_pointer<cub::detail::value_t<InputBufferIt>>::value,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");

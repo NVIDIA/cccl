@@ -56,7 +56,14 @@
 #  define _CCCL_CUDA_COMPILER
 #endif // cuda compiler available
 
-#if defined(__CUDACC__) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+// clang-cuda does not define __CUDACC_VER_MAJOR__ and friends
+#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  define _CCCL_CUDACC
+#  define _CCCL_CUDACC_VER_MAJOR CUDA_VERSION / 1000
+#  define _CCCL_CUDACC_VER_MINOR (CUDA_VERSION % 1000) / 10
+#  define _CCCL_CUDACC_VER_BUILD 0
+#  define _CCCL_CUDACC_VER       CUDA_VERSION * 100
+#elif defined(_CCCL_CUDA_COMPILER)
 #  define _CCCL_CUDACC
 #  define _CCCL_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
 #  define _CCCL_CUDACC_VER_MINOR __CUDACC_VER_MINOR__

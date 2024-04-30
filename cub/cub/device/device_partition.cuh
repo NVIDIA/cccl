@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 #include <cub/util_deprecated.cuh>
@@ -178,6 +179,7 @@ struct DevicePartition
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
     using OffsetT    = int; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
@@ -337,6 +339,7 @@ struct DevicePartition
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     using OffsetT      = int; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
@@ -382,6 +385,63 @@ struct DevicePartition
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
 
+private:
+  template <bool IS_DESCENDING,
+            typename KeyT,
+            typename ValueT,
+            typename OffsetT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename SelectedPolicy>
+  friend class DispatchSegmentedSort;
+
+  // Internal version without NVTX range
+  template <typename InputIteratorT,
+            typename FirstOutputIteratorT,
+            typename SecondOutputIteratorT,
+            typename UnselectedOutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectFirstPartOp,
+            typename SelectSecondPartOp>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t IfNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FirstOutputIteratorT d_first_part_out,
+    SecondOutputIteratorT d_second_part_out,
+    UnselectedOutputIteratorT d_unselected_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
+    cudaStream_t stream = 0)
+  {
+    using OffsetT                      = int;
+    using DispatchThreeWayPartitionIfT = DispatchThreeWayPartitionIf<
+      InputIteratorT,
+      FirstOutputIteratorT,
+      SecondOutputIteratorT,
+      UnselectedOutputIteratorT,
+      NumSelectedIteratorT,
+      SelectFirstPartOp,
+      SelectSecondPartOp,
+      OffsetT>;
+
+    return DispatchThreeWayPartitionIfT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_first_part_out,
+      d_second_part_out,
+      d_unselected_out,
+      d_num_selected_out,
+      select_first_part_op,
+      select_second_part_op,
+      num_items,
+      stream);
+  }
+
+public:
   //! @rst
   //! Uses two functors to split the corresponding items from ``d_in`` into a three partitioned sequences
   //! ``d_first_part_out``, ``d_second_part_out``, and ``d_unselected_out``.
@@ -581,18 +641,8 @@ struct DevicePartition
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream = 0)
   {
-    using OffsetT                      = int;
-    using DispatchThreeWayPartitionIfT = DispatchThreeWayPartitionIf<
-      InputIteratorT,
-      FirstOutputIteratorT,
-      SecondOutputIteratorT,
-      UnselectedOutputIteratorT,
-      NumSelectedIteratorT,
-      SelectFirstPartOp,
-      SelectSecondPartOp,
-      OffsetT>;
-
-    return DispatchThreeWayPartitionIfT::Dispatch(
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
+    return IfNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -600,9 +650,9 @@ struct DevicePartition
       d_second_part_out,
       d_unselected_out,
       d_num_selected_out,
+      num_items,
       select_first_part_op,
       select_second_part_op,
-      num_items,
       stream);
   }
 

@@ -264,6 +264,7 @@ struct __optional_destruct_base<_Tp, false>
     };
     bool __engaged_;
 
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_INLINE_VISIBILITY
     _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base()
     {

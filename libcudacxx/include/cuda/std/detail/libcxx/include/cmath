@@ -310,7 +310,7 @@ long double    truncl(long double x);
 #  pragma system_header
 #endif // no system header
 
-#if !defined(__CUDACC_RTC__) || !defined(__cuda_std__)
+#if !defined(_CCCL_COMPILER_NVRTC) || !defined(__cuda_std__)
 #include <math.h>
 #endif
 
@@ -685,7 +685,7 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
     return isfinite(__lcpp_x);
 }
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_copysign(_A1 __x, _A1 __y) noexcept
@@ -717,9 +717,9 @@ _CCCL_CONSTEXPR_CXX14 __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_
     static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
     return __builtin_copysign((__result_type)__x, (__result_type)__y);
 }
-#endif // !_MSC_VER
+#endif // !_CCCL_COMPILER_MSVC
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_fabs(_A1 __x) noexcept
@@ -747,9 +747,9 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 _CCCL_CONSTEXPR_CXX14 double __constexpr_fabs(_Tp __x) noexcept {
     return __builtin_fabs(static_cast<double>(__x));
 }
-#endif // !_MSC_VER
+#endif // !_CCCL_COMPILER_MSVC
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
@@ -806,9 +806,9 @@ __constexpr_fmax(_Tp __x, _Up __y) noexcept {
   using __result_type = __promote_t<_Tp, _Up>;
   return _CUDA_VSTD::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
-#endif // !_MSC_VER
+#endif // !_CCCL_COMPILER_MSVC
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
 template <class _A1>
 _LIBCUDACXX_INLINE_VISIBILITY
 _A1 __constexpr_logb(_A1 __x)
@@ -845,7 +845,7 @@ _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp __x) {
 }
 #endif // !_MSVC
 
-#if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 _Tp __constexpr_scalbn(_Tp __x, int __i) {
@@ -913,7 +913,7 @@ _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __exp) {
 #endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   return __builtin_scalbn(__x, __exp);
 }
-#endif // !_MSC_VER
+#endif // !_CCCL_COMPILER_MSVC
 
 #if _CCCL_STD_VER > 2017
 template <typename _Fp>
