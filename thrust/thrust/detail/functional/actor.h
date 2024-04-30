@@ -65,7 +65,7 @@ struct actor : Eval
 {
   typedef Eval eval_type;
 
-  _CCCL_HOST_DEVICE constexpr actor();
+  constexpr actor() = default;
 
   _CCCL_HOST_DEVICE actor(const Eval& base);
 
