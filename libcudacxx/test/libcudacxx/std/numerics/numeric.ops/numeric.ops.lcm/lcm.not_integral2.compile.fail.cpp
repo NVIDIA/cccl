@@ -14,7 +14,7 @@
 // Remarks: If either M or N is not an integer type,
 // or if either is (a possibly cv-qualified) bool, the program is ill-formed.
 
-#include <cuda/std/__numeric_>
+#include <cuda/std/numeric>
 
 int main(int, char**)
 {

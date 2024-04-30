@@ -16,9 +16,9 @@
 //                       BinaryOperation1 binary_op1, BinaryOperation2 binary_op2);
 //
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
+#include <cuda/std/numeric>
 
 #include "MoveOnly.h"
 #include "test_iterators.h"

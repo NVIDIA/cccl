@@ -12,10 +12,10 @@
 // template<class _M, class _N>
 // constexpr common_type_t<_M,_N> gcd(_M __m, _N __n)
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
+#include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

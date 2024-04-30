@@ -15,9 +15,9 @@
 //                       T init, BinaryOperation binary_op, UnaryOperation unary_op);
 //
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
+#include <cuda/std/numeric>
 #include <cuda/std/utility>
 
 #include "MoveOnly.h"

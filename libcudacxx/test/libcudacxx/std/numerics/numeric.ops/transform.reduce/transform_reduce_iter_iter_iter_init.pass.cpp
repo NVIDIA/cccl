@@ -13,9 +13,9 @@
 //   T transform_reduce(InputIterator1 first1, InputIterator1 last1,
 //                      InputIterator2 first2, T init);
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
+#include <cuda/std/numeric>
 
 #include "MoveOnly.h"
 #include "test_iterators.h"

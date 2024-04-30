@@ -12,8 +12,8 @@
 // template <class ForwardIterator, class T>
 //     void iota(ForwardIterator first, ForwardIterator last, T value);
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
+#include <cuda/std/numeric>
 
 #include "test_iterators.h"
 #include "test_macros.h"

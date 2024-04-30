@@ -15,11 +15,11 @@
 //
 
 #include <cuda/std/__algorithm_>
-#include <cuda/std/__numeric_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/iterator>
+#include <cuda/std/numeric>
 
 #include "test_iterators.h"
 #include "test_macros.h"

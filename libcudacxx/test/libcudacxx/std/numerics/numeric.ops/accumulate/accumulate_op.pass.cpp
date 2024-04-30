@@ -16,9 +16,9 @@
 //   T
 //   accumulate(Iter first, Iter last, T init, BinaryOperation binary_op);
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
+#include <cuda/std/numeric>
 #ifdef _LIBCUDACXX_HAS_STRING
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING

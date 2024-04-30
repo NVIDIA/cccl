@@ -19,8 +19,8 @@
 //   T
 //   inner_product(Iter1 first1, Iter1 last1, Iter2 first2, T init);
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
+#include <cuda/std/numeric>
 
 #include "test_iterators.h"
 #include "test_macros.h"

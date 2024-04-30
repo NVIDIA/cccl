@@ -13,7 +13,7 @@
 
 // An overload exists for each of char and all arithmetic types except bool.
 
-#include <cuda/std/__numeric_>
+#include <cuda/std/numeric>
 
 #include "test_macros.h"
 

@@ -12,9 +12,9 @@
 // _Tp midpoint(_Float __a, _Float __b) noexcept
 //
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/numeric>
 
 #include "fp_compare.h"
 #include "test_macros.h"

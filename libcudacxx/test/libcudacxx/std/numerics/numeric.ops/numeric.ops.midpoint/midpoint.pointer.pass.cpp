@@ -12,8 +12,8 @@
 // _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 //
 
-#include <cuda/std/__numeric_>
 #include <cuda/std/cassert>
+#include <cuda/std/numeric>
 
 #include "test_macros.h"
 
