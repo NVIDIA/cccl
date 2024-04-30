@@ -311,11 +311,11 @@ long double    truncl(long double x);
 #endif // no system header
 
 #if !defined(_CCCL_COMPILER_NVRTC) || !defined(__cuda_std__)
-#include <math.h>
+#  include <math.h>
 #endif
 
 #if defined(__cuda_std__) && defined(_CCCL_COMPILER_NVHPC)
-#include <cmath>
+#  include <cmath>
 #endif
 
 #include <cuda/std/limits>
@@ -323,36 +323,36 @@ long double    truncl(long double x);
 #include <cuda/std/version>
 
 #ifdef _LIBCUDACXX_HAS_NVFP16
-#include <cuda/std/__cuda/cmath_nvfp16.h>
+#  include <cuda/std/__cuda/cmath_nvfp16.h>
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #ifdef _LIBCUDACXX_HAS_NVBF16
-#include <cuda/std/__cuda/cmath_nvbf16.h>
+#  include <cuda/std/__cuda/cmath_nvbf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifdef _CCCL_COMPILER_NVRTC
-#include <cuda/std/climits>
-#define INFINITY __builtin_huge_val()
-#define NAN      __builtin_nan()
+#  include <cuda/std/climits>
+#  define INFINITY __builtin_huge_val()
+#  define NAN      __builtin_nan()
 #endif // _CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-using ::signbit;
 using ::isfinite;
 using ::isinf;
 using ::isnan;
+using ::signbit;
 
 using ::acos;
 using ::acosf;
 using ::asin;
 using ::asinf;
 using ::atan;
-using ::atanf;
 using ::atan2;
 using ::atan2f;
+using ::atanf;
 using ::ceil;
 using ::ceilf;
 using ::cos;
@@ -399,17 +399,17 @@ using ::abs;
 #ifndef _CCCL_COMPILER_NVRTC
 
 using ::fpclassify;
-using ::isnormal;
 using ::isgreater;
 using ::isgreaterequal;
 using ::isless;
 using ::islessequal;
 using ::islessgreater;
+using ::isnormal;
 
 using ::isunordered;
 
-using ::float_t;
 using ::double_t;
+using ::float_t;
 
 using ::fabs;
 using ::fabsf;
@@ -461,17 +461,17 @@ using ::copysign;
 using ::copysignf;
 
 using ::erf;
-using ::erff;
 using ::erfc;
 using ::erfcf;
+using ::erff;
 using ::exp2;
 using ::exp2f;
 using ::expm1;
 using ::expm1f;
 using ::fdim;
 using ::fdimf;
-using ::fmaf;
 using ::fma;
+using ::fmaf;
 using ::fmax;
 using ::fmaxf;
 using ::fmin;
@@ -523,36 +523,36 @@ using ::truncf;
 
 using ::acosl;
 using ::asinl;
-using ::atanl;
 using ::atan2l;
+using ::atanl;
 using ::ceill;
-using ::cosl;
 using ::coshl;
+using ::cosl;
 using ::expl;
 using ::fabsl;
 using ::floorl;
 using ::fmodl;
 using ::frexpl;
 using ::ldexpl;
-using ::logl;
 using ::log10l;
+using ::logl;
 using ::modfl;
 using ::powl;
-using ::sinl;
 using ::sinhl;
+using ::sinl;
 using ::sqrtl;
 using ::tanl;
 
-using ::tanhl;
 using ::acoshl;
 using ::asinhl;
 using ::atanhl;
 using ::cbrtl;
+using ::tanhl;
 
 using ::copysignl;
 
-using ::erfl;
 using ::erfcl;
+using ::erfl;
 using ::exp2l;
 using ::expm1l;
 using ::fdiml;
@@ -585,224 +585,244 @@ using ::truncl;
 #endif // _CCCL_COMPILER_NVRTC
 
 #if _CCCL_STD_VER > 2014 && !defined(__cuda_std__)
-inline _LIBCUDACXX_INLINE_VISIBILITY float       hypot(       float x,       float y,       float z ) { return sqrt(x*x + y*y + z*z); }
-inline _LIBCUDACXX_INLINE_VISIBILITY double      hypot(      double x,      double y,      double z ) { return sqrt(x*x + y*y + z*z); }
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-inline _LIBCUDACXX_INLINE_VISIBILITY long double hypot( long double x, long double y, long double z ) { return sqrt(x*x + y*y + z*z); }
-#endif
+inline _LIBCUDACXX_INLINE_VISIBILITY float hypot(float x, float y, float z)
+{
+  return sqrt(x * x + y * y + z * z);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY double hypot(double x, double y, double z)
+{
+  return sqrt(x * x + y * y + z * z);
+}
+#  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+inline _LIBCUDACXX_INLINE_VISIBILITY long double hypot(long double x, long double y, long double z)
+{
+  return sqrt(x * x + y * y + z * z);
+}
+#  endif
 
 template <class _A1, class _A2, class _A3>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t
-<
-    is_arithmetic<_A1>::value &&
-    is_arithmetic<_A2>::value &&
-    is_arithmetic<_A3>::value,
-    __promote<_A1, _A2, _A3>
->
-hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
+  __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value && is_arithmetic<_A3>::value,
+                __promote<_A1, _A2, _A3>>
+  hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 {
-    using __result_type = __promote_t<_A1, _A2, _A3>;
-    static_assert((!(is_same<_A1, __result_type>::value &&
-                     is_same<_A2, __result_type>::value &&
-                     is_same<_A3, __result_type>::value)), "");
-    return ::hypot((__result_type)__lcpp_x, (__result_type)__lcpp_y, (__result_type)__lcpp_z);
+  using __result_type = __promote_t<_A1, _A2, _A3>;
+  static_assert(
+    (!(is_same<_A1, __result_type>::value && is_same<_A2, __result_type>::value && is_same<_A3, __result_type>::value)),
+    "");
+  return ::hypot((__result_type) __lcpp_x, (__result_type) __lcpp_y, (__result_type) __lcpp_z);
 }
 #endif
 
 #ifndef _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#define _CCCL_CONSTEXPR_CXX14_COMPLEX _CCCL_CONSTEXPR_CXX14
+#  define _CCCL_CONSTEXPR_CXX14_COMPLEX _CCCL_CONSTEXPR_CXX14
 #else
-#define _CCCL_CONSTEXPR_CXX14_COMPLEX
+#  define _CCCL_CONSTEXPR_CXX14_COMPLEX
 #endif // _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
 #if defined(_CCCL_CUDACC_BELOW_11_8)
-    return __isnan(__lcpp_x);
+  return __isnan(__lcpp_x);
 #elif __has_builtin(__builtin_isnan)
-    // nvcc at times has issues determining the type of __lcpp_x
-    return __builtin_isnan(static_cast<double>(__lcpp_x));
+  // nvcc at times has issues determining the type of __lcpp_x
+  return __builtin_isnan(static_cast<double>(__lcpp_x));
 #else
-    return ::isnan(__lcpp_x);
+  return ::isnan(__lcpp_x);
 #endif
 }
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
 __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
-    return ::isnan(__lcpp_x);
+  return ::isnan(__lcpp_x);
 }
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
 #if defined(_CCCL_CUDACC_BELOW_11_8)
-    return __isinf(__lcpp_x);
+  return __isinf(__lcpp_x);
 #elif __has_builtin(__builtin_isinf)
-    // nvcc at times has issues determining the type of __lcpp_x
-    return __builtin_isinf(static_cast<double>(__lcpp_x));
+  // nvcc at times has issues determining the type of __lcpp_x
+  return __builtin_isinf(static_cast<double>(__lcpp_x));
 #else
-    return ::isinf(__lcpp_x);
+  return ::isinf(__lcpp_x);
 #endif
 }
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
 __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
-    return ::isinf(__lcpp_x);
+  return ::isinf(__lcpp_x);
 }
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
 #if defined(_CCCL_CUDACC_BELOW_11_8)
-    return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
+  return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
 #elif __has_builtin(__builtin_isfinite)
-    // nvcc at times has issues determining the type of __lcpp_x
-    return __builtin_isfinite(static_cast<double>(__lcpp_x));
+  // nvcc at times has issues determining the type of __lcpp_x
+  return __builtin_isfinite(static_cast<double>(__lcpp_x));
 #else
-    return ::isfinite(__lcpp_x);
+  return ::isfinite(__lcpp_x);
 #endif
 }
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<!is_floating_point<_A1>::value, bool>
 __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
-    return isfinite(__lcpp_x);
+  return isfinite(__lcpp_x);
 }
 
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-_A1 __constexpr_copysign(_A1 __x, _A1 __y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _A1 __constexpr_copysign(_A1 __x, _A1 __y) noexcept
 {
-    return ::copysign(__x, __y);
+  return ::copysign(__x, __y);
 }
 #else
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 float __constexpr_copysign(float __x, float __y) noexcept {
-    return __builtin_copysignf(__x, __y);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 float
+__constexpr_copysign(float __x, float __y) noexcept
+{
+  return __builtin_copysignf(__x, __y);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 double __constexpr_copysign(double __x, double __y) noexcept {
-    return __builtin_copysign(__x, __y);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 double
+__constexpr_copysign(double __x, double __y) noexcept
+{
+  return __builtin_copysign(__x, __y);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 long double __constexpr_copysign(long double __x, long double __y) noexcept {
-    return __builtin_copysignl(__x, __y);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 long double
+__constexpr_copysign(long double __x, long double __y) noexcept
+{
+  return __builtin_copysignl(__x, __y);
 }
 
 template <class _A1, class _A2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value,
-                                __promote_t<_A1, _A2>>
-    __constexpr_copysign(_A1 __x, _A2 __y) noexcept {
-    using __result_type = __promote_t<_A1, _A2>;
-    static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
-    return __builtin_copysign((__result_type)__x, (__result_type)__y);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value, __promote_t<_A1, _A2>>
+  __constexpr_copysign(_A1 __x, _A2 __y) noexcept
+{
+  using __result_type = __promote_t<_A1, _A2>;
+  static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
+  return __builtin_copysign((__result_type) __x, (__result_type) __y);
 }
 #endif // !_CCCL_COMPILER_MSVC
 
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-_A1 __constexpr_fabs(_A1 __x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _A1 __constexpr_fabs(_A1 __x) noexcept
 {
-    return ::fabs(__x);
+  return ::fabs(__x);
 }
 #else
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 float __constexpr_fabs(float __x) noexcept {
-    return __builtin_fabsf(__x);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 float
+__constexpr_fabs(float __x) noexcept
+{
+  return __builtin_fabsf(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 double __constexpr_fabs(double __x) noexcept {
-    return __builtin_fabs(__x);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 double
+__constexpr_fabs(double __x) noexcept
+{
+  return __builtin_fabs(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 long double __constexpr_fabs(long double __x) noexcept {
-    return __builtin_fabsl(__x);
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 long double
+__constexpr_fabs(long double __x) noexcept
+{
+  return __builtin_fabsl(__x);
 }
 
 template <class _Tp, __enable_if_t<is_integral<_Tp>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 double __constexpr_fabs(_Tp __x) noexcept {
-    return __builtin_fabs(static_cast<double>(__x));
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 double
+__constexpr_fabs(_Tp __x) noexcept
+{
+  return __builtin_fabs(static_cast<double>(__x));
 }
 #endif // !_CCCL_COMPILER_MSVC
 
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-_A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _A1 __constexpr_fmax(_A1 __x, _A1 __y) noexcept
 {
-    return ::fmax(__x, __y);
+  return ::fmax(__x, __y);
 }
 #else
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(float __x, float __y) noexcept {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX float
+__constexpr_fmax(float __x, float __y) noexcept
+{
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+  {
     if (__constexpr_isnan(__x))
+    {
       return __y;
+    }
     if (__constexpr_isnan(__y))
+    {
       return __x;
+    }
     return __x < __y ? __y : __x;
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   return __builtin_fmaxf(__x, __y);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(double __x, double __y) noexcept {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX double
+__constexpr_fmax(double __x, double __y) noexcept
+{
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+  {
     if (__constexpr_isnan(__x))
+    {
       return __y;
+    }
     if (__constexpr_isnan(__y))
+    {
       return __x;
+    }
     return __x < __y ? __y : __x;
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   return __builtin_fmax(__x, __y);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX long double __constexpr_fmax(long double __x, long double __y) noexcept {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX long double
+__constexpr_fmax(long double __x, long double __y) noexcept
+{
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+  {
     if (__constexpr_isnan(__x))
+    {
       return __y;
+    }
     if (__constexpr_isnan(__y))
+    {
       return __x;
+    }
     return __x < __y ? __y : __x;
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   return __builtin_fmax(__x, __y);
 }
 
 template <class _Tp, class _Up, __enable_if_t<is_arithmetic<_Tp>::value && is_arithmetic<_Up>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up>
-__constexpr_fmax(_Tp __x, _Up __y) noexcept {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up>
+__constexpr_fmax(_Tp __x, _Up __y) noexcept
+{
   using __result_type = __promote_t<_Tp, _Up>;
   return _CUDA_VSTD::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
@@ -810,156 +830,193 @@ __constexpr_fmax(_Tp __x, _Up __y) noexcept {
 
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-_A1 __constexpr_logb(_A1 __x)
+_LIBCUDACXX_INLINE_VISIBILITY _A1 __constexpr_logb(_A1 __x)
 {
-    return ::logb(__x);
+  return ::logb(__x);
 }
 #else
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp __x) {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
-    if (__x == _Tp(0)) {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp
+__constexpr_logb(_Tp __x)
+{
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+  {
+    if (__x == _Tp(0))
+    {
       // raise FE_DIVBYZERO
       return -numeric_limits<_Tp>::infinity();
     }
 
     if (__constexpr_isinf(__x))
+    {
       return numeric_limits<_Tp>::infinity();
+    }
 
     if (__constexpr_isnan(__x))
+    {
       return numeric_limits<_Tp>::quiet_NaN();
+    }
 
-    __x = __constexpr_fabs(__x);
+    __x                      = __constexpr_fabs(__x);
     unsigned long long __exp = 0;
-    while (__x >= _Tp(numeric_limits<_Tp>::radix)) {
+    while (__x >= _Tp(numeric_limits<_Tp>::radix))
+    {
       __x /= numeric_limits<_Tp>::radix;
       __exp += 1;
     }
     return _Tp(__exp);
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   return __builtin_logb(__x);
 }
 #endif // !_MSVC
 
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_Tp __constexpr_scalbn(_Tp __x, int __i) {
-    return static_cast<_Tp>(::scalbn(static_cast<double>(__x), __i));
+inline _LIBCUDACXX_INLINE_VISIBILITY _Tp __constexpr_scalbn(_Tp __x, int __i)
+{
+  return static_cast<_Tp>(::scalbn(static_cast<double>(__x), __i));
 }
 
 template <>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-float __constexpr_scalbn<float>(float __x, int __i) {
-    return ::scalbnf(__x, __i);
+inline _LIBCUDACXX_INLINE_VISIBILITY float __constexpr_scalbn<float>(float __x, int __i)
+{
+  return ::scalbnf(__x, __i);
 }
 
 template <>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-double __constexpr_scalbn<double>(double __x, int __i) {
-    return ::scalbn(__x, __i);
+inline _LIBCUDACXX_INLINE_VISIBILITY double __constexpr_scalbn<double>(double __x, int __i)
+{
+  return ::scalbn(__x, __i);
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 template <>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-long double __constexpr_scalbn<long double>(long double __x, int __i) {
-    return ::scalbnl(__x, __i);
+inline _LIBCUDACXX_INLINE_VISIBILITY long double __constexpr_scalbn<long double>(long double __x, int __i)
+{
+  return ::scalbnl(__x, __i);
 }
-#endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #else
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __exp) {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
- if (_LIBCUDACXX_IS_CONSTANT_EVALUATED()) {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp
+__constexpr_scalbn(_Tp __x, int __exp)
+{
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+  if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+  {
     if (__x == _Tp(0))
+    {
       return __x;
+    }
 
     if (__constexpr_isinf(__x))
+    {
       return __x;
+    }
 
     if (_Tp(__exp) == _Tp(0))
+    {
       return __x;
+    }
 
     if (__constexpr_isnan(__x))
+    {
       return numeric_limits<_Tp>::quiet_NaN();
+    }
 
     _Tp __mult(1);
-    if (__exp > 0) {
+    if (__exp > 0)
+    {
       __mult = numeric_limits<_Tp>::radix;
       --__exp;
-    } else {
+    }
+    else
+    {
       ++__exp;
       __exp = -__exp;
       __mult /= numeric_limits<_Tp>::radix;
     }
 
-    while (__exp > 0) {
-      if (!(__exp & 1)) {
+    while (__exp > 0)
+    {
+      if (!(__exp & 1))
+      {
         __mult *= __mult;
         __exp >>= 1;
-      } else {
+      }
+      else
+      {
         __x *= __mult;
         --__exp;
       }
     }
     return __x;
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   return __builtin_scalbn(__x, __exp);
 }
 #endif // !_CCCL_COMPILER_MSVC
 
 #if _CCCL_STD_VER > 2017
 template <typename _Fp>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept {
-    if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0))
-        return __t * __b + (1 - __t) * __a;
+_LIBCUDACXX_INLINE_VISIBILITY constexpr _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept
+{
+  if ((__a <= 0 && __b >= 0) || (__a >= 0 && __b <= 0))
+  {
+    return __t * __b + (1 - __t) * __a;
+  }
 
-    if (__t == 1) return __b;
-    const _Fp __x = __a + __t * (__b - __a);
-    if (__t > 1 == __b > __a)
-    	return __b < __x ? __x : __b;
-    else
-    	return __x < __b ? __x : __b;
+  if (__t == 1)
+  {
+    return __b;
+  }
+  const _Fp __x = __a + __t * (__b - __a);
+  if (__t > 1 == __b > __a)
+  {
+    return __b < __x ? __x : __b;
+  }
+  else
+  {
+    return __x < __b ? __x : __b;
+  }
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr float
-lerp(float __a, float __b, float __t)                   noexcept { return __lerp(__a, __b, __t); }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr float lerp(float __a, float __b, float __t) noexcept
+{
+  return __lerp(__a, __b, __t);
+}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr double
-lerp(double __a, double __b, double __t)                noexcept { return __lerp(__a, __b, __t); }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr double lerp(double __a, double __b, double __t) noexcept
+{
+  return __lerp(__a, __b, __t);
+}
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr long double
-lerp(long double __a, long double __b, long double __t) noexcept { return __lerp(__a, __b, __t); }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr long double lerp(long double __a, long double __b, long double __t) noexcept
+{
+  return __lerp(__a, __b, __t);
+}
 
 #endif // _CCCL_STD_VER > 2017
 
-template <class _IntT, class _FloatT,
-    bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits),
-    int _Bits = (numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits)>
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr _IntT __max_representable_int_for_float() noexcept {
+template <class _IntT,
+          class _FloatT,
+          bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits),
+          int _Bits         = (numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits)>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr _IntT __max_representable_int_for_float() noexcept
+{
   static_assert(is_floating_point<_FloatT>::value, "must be a floating point type");
   static_assert(is_integral<_IntT>::value, "must be an integral type");
   static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-  static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value
-                 || _IsSame<_FloatT,long double>::value), "unsupported floating point type");
+  static_assert(
+    (_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value || _IsSame<_FloatT, long double>::value),
+    "unsupported floating point type");
 #else
-  static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value),
-                 "unsupported floating point type");
+  static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value), "unsupported floating point type");
 #endif
-  return _FloatBigger ? numeric_limits<_IntT>::max() :  (numeric_limits<_IntT>::max() >> _Bits << _Bits);
+  return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _Bits << _Bits);
 }
 
 // Convert a floating point number to the specified integral type after
@@ -967,13 +1024,16 @@ constexpr _IntT __max_representable_int_for_float() noexcept {
 //
 // The behavior is undefined if `__r` is NaN.
 template <class _IntT, class _RealT>
-_LIBCUDACXX_INLINE_VISIBILITY
-_IntT __clamp_to_integral(_RealT __r) noexcept {
-  using _Lim = _CUDA_VSTD::numeric_limits<_IntT>;
+_LIBCUDACXX_INLINE_VISIBILITY _IntT __clamp_to_integral(_RealT __r) noexcept
+{
+  using _Lim          = _CUDA_VSTD::numeric_limits<_IntT>;
   const _IntT _MaxVal = _CUDA_VSTD::__max_representable_int_for_float<_IntT, _RealT>();
-  if (__r >= ::nextafter(static_cast<_RealT>(_MaxVal), INFINITY)) {
+  if (__r >= ::nextafter(static_cast<_RealT>(_MaxVal), INFINITY))
+  {
     return _Lim::max();
-  } else if (__r <= _Lim::lowest()) {
+  }
+  else if (__r <= _Lim::lowest())
+  {
     return _Lim::min();
   }
   return static_cast<_IntT>(__r);
@@ -983,4 +1043,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/detail/libcxx/include/__pragma_pop>
 
-#endif  // _LIBCUDACXX_CMATH
+#endif // _LIBCUDACXX_CMATH

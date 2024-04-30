@@ -12,11 +12,8 @@
 #define _CUDA_STD_MEMORY
 
 #include "detail/__config"
-
-#include "detail/__pragma_push"
-
-#include "detail/libcxx/include/memory"
-
 #include "detail/__pragma_pop"
+#include "detail/__pragma_push"
+#include "detail/libcxx/include/memory"
 
 #endif // _CUDA_STD_MEMORY

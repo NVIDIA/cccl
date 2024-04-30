@@ -13,10 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/detail/__pragma_push>
-
-#include <cuda/std/detail/libcxx/include/ctime>
-
 #include <cuda/std/detail/__pragma_pop>
+#include <cuda/std/detail/__pragma_push>
+#include <cuda/std/detail/libcxx/include/ctime>
 
 #endif // _CUDA_STD_CTIME
