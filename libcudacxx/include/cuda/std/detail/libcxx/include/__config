@@ -1255,170 +1255,57 @@ typedef __char32_t char32_t;
 #    endif // __cuda_std__
 #  endif // _LIBCUDACXX_ABI_NAMESPACE
 
-#  ifdef __cuda_std__
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION \
-      namespace cuda                                  \
-      {                                               \
-      namespace std                                   \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION \
-      }                                             \
-      }
-#    define _CUDA_VSTD_NOVERSION ::cuda::std
-#    define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VIEWS          ::cuda::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
-#    define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
+// clang-format off
+#  define _CUDA_VSTD_NOVERSION ::cuda::std
+#  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VIEWS          ::cuda::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
+#  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
+
+// Standard namespaces with or without versioning
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace cuda { namespace std {
+#  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace cuda { namespace std { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_STD } } }
+
+// cuda specific namespaces
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA namespace cuda { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR namespace cuda { namespace mr { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_MR } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX namespace cuda { namespace ptx { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL } } } }
+
+// Namespaces related to <ranges>
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES namespace cuda { namespace std { namespace ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_RANGES } } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS namespace cuda { namespace std { namespace ranges { namespace views { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_VIEWS } } } } }
+
+#  if _CCCL_STD_VER >= 2020
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI inline namespace __cxx20 {
 #  else
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION \
-      namespace std                                   \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION }
-#    define _CUDA_VSTD_NOVERSION                    ::std
-#    define _CUDA_VSTD                              ::std::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VRANGES                           ::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VIEWS                             ::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
-#  endif
-
-#  ifdef __cuda_std__
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA     \
-      namespace cuda                             \
-      {                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA \
-      }                                    \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR  \
-      namespace cuda                             \
-      {                                          \
-      namespace mr                               \
-      {                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_MR \
-      }                                       \
-      }                                       \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE \
-      namespace cuda                                \
-      {                                             \
-      namespace device                              \
-      {                                             \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE    \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE \
-      }                                           \
-      }                                           \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX \
-      namespace cuda                             \
-      {                                          \
-      namespace ptx                              \
-      {                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX \
-      }                                        \
-      }                                        \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL \
-      namespace cuda                                             \
-      {                                                          \
-      namespace device                                           \
-      {                                                          \
-      namespace experimental                                     \
-      {                                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE                 \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL \
-      }                                                        \
-      }                                                        \
-      }                                                        \
-      }
-#  endif
-
-// Inline namespaces are available in Clang/GCC/MSVC regardless of C++ dialect.
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD      \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  \
-    inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-    {
-#  define _LIBCUDACXX_END_NAMESPACE_STD \
-    }                                   \
-    _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-#  ifndef __cuda_std__
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
-#  endif
-
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES   \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  \
-    namespace ranges                           \
-    {                                          \
-    inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-    {
-#  define _LIBCUDACXX_END_NAMESPACE_RANGES \
-    }                                      \
-    }                                      \
-    _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS         \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION       \
-    namespace ranges                                \
-    {                                               \
-    namespace views                                 \
-    {                                               \
-    inline namespace _LIBCUDACXX_CUDA_ABI_NAMESPACE \
-    {
-#  define _LIBCUDACXX_END_NAMESPACE_VIEWS \
-    }                                     \
-    }                                     \
-    }                                     \
-    _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-#  if _CCCL_STD_VER > 2017
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI \
-      inline namespace __cxx20                     \
-      {
-#  else
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI \
-      inline namespace __cxx17                     \
-      {
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI inline namespace __cxx17 {
 #  endif
 #  define _LIBCUDACXX_END_NAMESPACE_RANGES_ABI }
 
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CPO(_CPO) \
-    namespace _CPO                              \
-    {                                           \
-    _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-#  define _LIBCUDACXX_END_NAMESPACE_CPO \
-    }                                   \
-    }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CPO(_CPO) namespace _CPO { _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
+#  define _LIBCUDACXX_END_NAMESPACE_CPO } _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 #  if _CCCL_STD_VER >= 2017
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM \
-      _LIBCUDACXX_BEGIN_NAMESPACE_STD              \
-      inline namespace __fs                        \
-      {                                            \
-      namespace filesystem                         \
-      {
-#  else
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM \
-      _LIBCUDACXX_BEGIN_NAMESPACE_STD              \
-      namespace __fs                               \
-      {                                            \
-      namespace filesystem                         \
-      {
-#  endif
-
-#  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM \
-    _LIBCUDACXX_END_NAMESPACE_STD              \
-    }                                          \
-    }
-
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM _LIBCUDACXX_BEGIN_NAMESPACE_STD inline namespace __fs { namespace filesystem {
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace __fs { namespace filesystem {
+#  endif // _CCCL_STD_VER <= 2014
+#  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM _LIBCUDACXX_END_NAMESPACE_STD } }
 #  define _CUDA_VSTD_FS _CUDA_VSTD::__fs::filesystem
+
+// clang-format on
 
 #  ifndef _LIBCUDACXX_PREFERRED_OVERLOAD
 #    if __has_attribute(__enable_if__)
