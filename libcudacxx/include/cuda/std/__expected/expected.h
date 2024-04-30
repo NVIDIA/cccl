@@ -54,6 +54,7 @@
 #include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
@@ -551,6 +552,8 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp& value() const&
   {
+    static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
+                  "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(this->__union_.__unex_);
@@ -560,15 +563,21 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp& value() &
   {
+    static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
+                  "expected::value() & requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      __throw_bad_expected_access<_Err>(_CUDA_VSTD::as_const(this->__union_.__unex_));
     }
     return this->__union_.__val_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp&& value() const&&
   {
+    static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
+                  "expected::value() const&& requires is_copy_constructible_v<E>");
+    static_assert(_LIBCUDACXX_TRAIT(is_constructible, _Err, decltype(_CUDA_VSTD::move(error()))),
+                  "expected::value() const&& requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
@@ -578,6 +587,10 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&& value() &&
   {
+    static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
+                  "expected::value() && requires is_copy_constructible_v<E>");
+    static_assert(_LIBCUDACXX_TRAIT(is_constructible, _Err, decltype(_CUDA_VSTD::move(error()))),
+                  "expected::value() && requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
@@ -1473,6 +1486,8 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void value() const&
   {
+    static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
+                  "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(this->__union_.__unex_);
@@ -1481,6 +1496,10 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void value() &&
   {
+    static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
+                  "expected::value() && requires is_copy_constructible_v<E>");
+    static_assert(_LIBCUDACXX_TRAIT(is_move_constructible, _Err),
+                  "expected::value() && requires is_move_constructible_v<E>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));

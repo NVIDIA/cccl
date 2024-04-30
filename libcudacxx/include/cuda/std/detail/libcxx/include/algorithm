@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
@@ -739,6 +740,8 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__iterator/wrap_iter.h>
+#include <cuda/std/__memory/destruct_n.h>
+#include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -1281,15 +1284,6 @@ __second_half_done:
   // TTTTTTTTFFFFFFFFFF
   //         |
 }
-
-struct __return_temporary_buffer
-{
-  template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY void operator()(_Tp* __p) const
-  {
-    _CUDA_VSTD::return_temporary_buffer(__p);
-  }
-};
 
 template <class _Predicate, class _ForwardIterator>
 _CCCL_HOST_DEVICE _ForwardIterator

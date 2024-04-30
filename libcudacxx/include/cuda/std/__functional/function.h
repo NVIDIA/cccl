@@ -25,6 +25,10 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/allocator_destructor.h>
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/builtin_new_allocator.h>
+#include <cuda/std/__memory/compressed_pair.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
