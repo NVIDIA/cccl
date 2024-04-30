@@ -11,6 +11,7 @@
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
