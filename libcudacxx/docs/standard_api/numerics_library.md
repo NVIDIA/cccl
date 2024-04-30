@@ -8,11 +8,4 @@ Any Standard C++ header not listed below is omitted.
 | [`<cuda/std/cfloat>`](https://en.cppreference.com/w/cpp/header/cfloat)     | Limits of floating point types.   <br/><br/> 1.0.0 / CUDA 10.2 |
 | [`<cuda/std/climits>`](https://en.cppreference.com/w/cpp/header/climits)   | Limits of integral types.         <br/><br/> 1.0.0 / CUDA 10.2 |
 | [`<cuda/std/cstdint>`](https://en.cppreference.com/w/cpp/header/cstdint)   | Fixed-width integer types.        <br/><br/> 1.0.0 / CUDA 10.2 |
-
-
-[`<cuda/std/complex>`]: https://en.cppreference.com/w/cpp/header/complex
-[`<cuda/std/ccomplex>`]: https://en.cppreference.com/w/cpp/header/ccomplex
-[`<cuda/std/ratio>`]: https://en.cppreference.com/w/cpp/header/ratio
-[`<cuda/std/cfloat>`]: https://en.cppreference.com/w/cpp/header/cfloat
-[`<cuda/std/climits>`]: https://en.cppreference.com/w/cpp/header/climits
-[`<cuda/std/cstdint>`]: https://en.cppreference.com/w/cpp/header/cstdint
+| [`<cuda/std/numeric>`](https://en.cppreference.com/w/cpp/header/numeric)   | Numeric algorithms (see also: [libcu++ Specifics]({{ "standard_api/numerics_library/numeric.html" | relative_url }})).               <br/><br/> 2.5.0 |
