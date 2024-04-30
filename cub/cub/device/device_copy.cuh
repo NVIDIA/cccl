@@ -39,6 +39,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
@@ -170,6 +171,8 @@ struct DeviceCopy
     uint32_t num_ranges,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
+
     // Integer type large enough to hold any offset in [0, num_ranges)
     using RangeOffsetT = uint32_t;
 

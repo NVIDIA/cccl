@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -180,6 +181,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
+
     // Signed integer type for global offsets
     using OffsetT = int;
     using InitT   = cub::detail::value_t<InputIteratorT>;
@@ -407,6 +410,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -683,6 +688,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -933,6 +940,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1146,6 +1155,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1389,6 +1400,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
     using InitT   = cub::detail::value_t<ValuesInputIteratorT>;
@@ -1590,6 +1603,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1757,6 +1772,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1938,6 +1955,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 

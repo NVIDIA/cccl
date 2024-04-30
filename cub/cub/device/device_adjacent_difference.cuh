@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
 #include <cub/util_deprecated.cuh>
@@ -256,6 +257,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
+
     constexpr bool may_alias = false;
     constexpr bool read_left = true;
 
@@ -381,6 +384,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
+
     constexpr bool may_alias = true;
     constexpr bool read_left = true;
 
@@ -524,6 +529,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
+
     constexpr bool may_alias = false;
     constexpr bool read_left = false;
 
@@ -638,6 +645,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
+
     constexpr bool may_alias = true;
     constexpr bool read_left = false;
 
