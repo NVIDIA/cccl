@@ -159,6 +159,7 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 #include <cuda/std/__numeric/accumulate.h>
 #include <cuda/std/__numeric/inner_product.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__numeric/transform_reduce.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cmath> // for isnormal
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
@@ -170,43 +171,6 @@ floating_point  midpoint(floating_point a, floating_point b);    // C++20
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef __cuda_std__
-
-#  if _CCCL_STD_VER > 2014
-template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp
-transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b, _UnaryOp __u)
-{
-  for (; __first != __last; ++__first)
-  {
-    __init = __b(__init, __u(*__first));
-  }
-  return __init;
-}
-
-template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOp1, class _BinaryOp2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp transform_reduce(
-  _InputIterator1 __first1,
-  _InputIterator1 __last1,
-  _InputIterator2 __first2,
-  _Tp __init,
-  _BinaryOp1 __b1,
-  _BinaryOp2 __b2)
-{
-  for (; __first1 != __last1; ++__first1, (void) ++__first2)
-  {
-    __init = __b1(__init, __b2(*__first1, *__first2));
-  }
-  return __init;
-}
-
-template <class _InputIterator1, class _InputIterator2, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp
-transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
-{
-  return _CUDA_VSTD::transform_reduce(
-    __first1, __last1, __first2, _CUDA_VSTD::move(__init), _CUDA_VSTD::plus<>(), _CUDA_VSTD::multiplies<>());
-}
-#  endif
 
 template <class _InputIterator, class _OutputIterator>
 inline _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator
