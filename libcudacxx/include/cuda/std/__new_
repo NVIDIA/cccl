@@ -12,8 +12,11 @@
 #define _CUDA_STD_NEW
 
 #include "detail/__config"
-#include "detail/__pragma_pop"
+
 #include "detail/__pragma_push"
+
 #include "detail/libcxx/include/new"
+
+#include "detail/__pragma_pop"
 
 #endif // _CUDA_STD_NEW

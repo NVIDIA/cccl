@@ -12,8 +12,10 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/detail/__pragma_pop>
 #include <cuda/std/detail/__pragma_push>
+
 #include <cuda/std/detail/libcxx/include/iterator>
+
+#include <cuda/std/detail/__pragma_pop>
 
 #endif // _CUDA_STD_ITERATOR

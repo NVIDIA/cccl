@@ -118,14 +118,15 @@ struct common_type<pair<T1, T2>, pair<U1, U2>>;                                 
 template<class T1, class T2> pair(T1, T2) -> pair<T1, T2>;
 
 template <class T1, class T2> bool operator==(const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14
-template <class T1, class T2> bool operator!=(const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14, removed in
-C++20 template <class T1, class T2> bool operator< (const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14,
-removed in C++20 template <class T1, class T2> bool operator> (const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in
-C++14, removed in C++20 template <class T1, class T2> bool operator>=(const pair<T1,T2>&, const pair<T1,T2>&); //
-constexpr in C++14, removed in C++20 template <class T1, class T2> bool operator<=(const pair<T1,T2>&, const
-pair<T1,T2>&); // constexpr in C++14, removed in C++20 template <class T1, class T2> constexpr
-common_comparison_type_t<synth-three-way-result<T1>, synth-three-way-result<T2>> operator<=>(const pair<T1,T2>&, const
-pair<T1,T2>&);                               // C++20
+template <class T1, class T2> bool operator!=(const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14, removed in C++20
+template <class T1, class T2> bool operator< (const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14, removed in C++20
+template <class T1, class T2> bool operator> (const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14, removed in C++20
+template <class T1, class T2> bool operator>=(const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14, removed in C++20
+template <class T1, class T2> bool operator<=(const pair<T1,T2>&, const pair<T1,T2>&); // constexpr in C++14, removed in C++20
+template <class T1, class T2>
+  constexpr common_comparison_type_t<synth-three-way-result<T1>,
+                                     synth-three-way-result<T2>>
+    operator<=>(const pair<T1,T2>&, const pair<T1,T2>&);                               // C++20
 
 template <class T1, class T2> pair<V1, V2> make_pair(T1&&, T2&&);                // constexpr in C++14
 template <class T1, class T2>
@@ -208,8 +209,7 @@ template<class... T>
 
 template<class T, class U=T>
     constexpr T exchange(T& obj, U&& new_value)
-      noexcept(is_nothrow_move_constructible<T>::value && is_nothrow_assignable<T&, U>::value); // constexpr in C++17,
-noexcept in C++23
+      noexcept(is_nothrow_move_constructible<T>::value && is_nothrow_assignable<T&, U>::value); // constexpr in C++17, noexcept in C++23
 
 // 20.2.7, in-place construction // C++17
 struct in_place_t {
@@ -247,6 +247,8 @@ template <class T>
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/reference_wrapper.h>
@@ -254,8 +256,6 @@ template <class T>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__functional/weak_result_type.h>
 #include <cuda/std/__fwd/get.h>
-#include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__memory/voidify.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/__utility/as_const.h>
@@ -264,8 +264,8 @@ template <class T>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/forward_like.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -276,8 +276,10 @@ template <class T>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/__utility/unreachable.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__debug>
+
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/voidify.h>
+
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
@@ -288,7 +290,7 @@ template <class T>
 
 // [utility.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include <cuda/std/compare>
+#include <cuda/std/compare>
 #endif
 #include <cuda/std/initializer_list>
 
@@ -296,4 +298,4 @@ template <class T>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 
-#endif // _LIBCUDACXX_UTILITY
+#endif  // _LIBCUDACXX_UTILITY

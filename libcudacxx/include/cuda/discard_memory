@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/ptx>
 #include <cuda/std/cstdint>
+#include <cuda/ptx>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -37,14 +37,14 @@ inline _CCCL_HOST_DEVICE void discard_memory(volatile void* __ptr, size_t __nbyt
     NV_PROVIDES_SM_80,
     (if (!__isGlobal((void*) __ptr)) return;
 
-     char* __p                          = reinterpret_cast<char*>(const_cast<void*>(__ptr));
-     char* const __end_p                = __p + __nbytes;
+     char* __p                               = reinterpret_cast<char*>(const_cast<void*>(__ptr));
+     char* const __end_p                     = __p + __nbytes;
      static constexpr size_t _LINE_SIZE = 128;
 
      // Trim the first block and last block if they're not 128 bytes aligned
-     size_t __misalignment     = reinterpret_cast<uintptr_t>(__p) % _LINE_SIZE;
-     char* __start_aligned     = __misalignment == 0 ? __p : __p + (_LINE_SIZE - __misalignment);
-     char* const __end_aligned = __end_p - (reinterpret_cast<uintptr_t>(__end_p) % _LINE_SIZE);
+     size_t __misalignment = reinterpret_cast<uintptr_t>(__p) % _LINE_SIZE;
+     char* __start_aligned      = __misalignment == 0 ? __p : __p + (_LINE_SIZE - __misalignment);
+     char* const __end_aligned  = __end_p - (reinterpret_cast<uintptr_t>(__end_p) % _LINE_SIZE);
 
      while (__start_aligned < __end_aligned) {
        asm volatile("discard.global.L2 [%0], 128;" ::"l"(__start_aligned) :);
