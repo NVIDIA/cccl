@@ -502,6 +502,9 @@ public:
     return span<byte, _Extent * sizeof(element_type)>{reinterpret_cast<byte*>(data()), size_bytes()};
   }
 
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(span, iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(span, reverse_iterator);
+
 private:
   pointer __data_;
 };
@@ -728,6 +731,9 @@ public:
   {
     return {reinterpret_cast<byte*>(data()), size_bytes()};
   }
+
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(span, iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(span, reverse_iterator);
 
 private:
   pointer __data_;

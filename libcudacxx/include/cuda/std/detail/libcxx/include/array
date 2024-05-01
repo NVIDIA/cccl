@@ -323,6 +323,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
   {
     return __elems_;
   }
+
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(array, const_iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(array, const_reverse_iterator);
 };
 
 template <class _Tp>
@@ -498,6 +501,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
     return *data();
   }
   _CCCL_DIAG_POP
+
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(array, const_iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(array, const_reverse_iterator);
 };
 
 #if _CCCL_STD_VER >= 2017

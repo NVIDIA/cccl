@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -176,6 +177,42 @@ public:
   operator[](range_difference_t<_RARange> __index) const
   {
     return _CUDA_VRANGES::begin(__derived())[__index];
+  }
+
+  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_D2&>()))>
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ret begin(_Derived& __range)
+  {
+    return _CUDA_VRANGES::begin(__range);
+  }
+
+  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<const _D2&>()))>
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ret begin(const _Derived& __range)
+  {
+    return _CUDA_VRANGES::begin(__range);
+  }
+
+  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::cbegin(_CUDA_VSTD::declval<const _D2&>()))>
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto cbegin(const _Derived& __range)
+  {
+    return _CUDA_VRANGES::cbegin(__range);
+  }
+
+  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::end(_CUDA_VSTD::declval<_D2&>()))>
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto end(_Derived& __range)
+  {
+    return _CUDA_VRANGES::end(__range);
+  }
+
+  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::end(_CUDA_VSTD::declval<const _D2&>()))>
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto end(const _Derived& __range)
+  {
+    return _CUDA_VRANGES::end(__range);
+  }
+
+  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::cend(_CUDA_VSTD::declval<const _D2&>()))>
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto cend(const _Derived& __range)
+  {
+    return _CUDA_VRANGES::cend(__range);
   }
 };
 
