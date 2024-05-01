@@ -69,7 +69,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
-#include <cuda/std/detail/libcxx/include/numeric>
+#include <cuda/std/numeric>
 #if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
 #  include <cuda/std/concepts>
 #endif // __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20

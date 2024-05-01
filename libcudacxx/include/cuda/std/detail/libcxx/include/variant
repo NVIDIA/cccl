@@ -228,8 +228,8 @@ C++20
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_cv.h>
@@ -266,7 +266,7 @@ C++20
 // [variant.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/detail/libcxx/include/compare>
-#endif
+#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
@@ -614,7 +614,7 @@ struct __variant
       _CUDA_VSTD::forward<_Vs>(__vs)...);
   }
 
-_CCCL_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
+  _CCCL_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
   // This overload is needed to tell the compiler that the recursion is indeed limited
   template <class _Visitor, class... _Vs, size_t... _ProcessedIndices, size_t... _UnprocessedIndices>
   inline _LIBCUDACXX_HIDDEN _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_impl(
@@ -638,7 +638,7 @@ _CCCL_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
     }
     _LIBCUDACXX_UNREACHABLE();
   }
-_CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
+  _CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
 
   template <class _Visitor, class... _Vs>
   inline _LIBCUDACXX_HIDDEN _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto)

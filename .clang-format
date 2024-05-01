@@ -111,6 +111,9 @@ IncludeCategories:
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0
+  - Regex:           '^<cuda/std/detail/libcxx/include/__pragma_push>'
+    Priority:            6
+    SortPriority:        5
   - Regex:           '^<cub/'
     Priority:            2
     SortPriority:        1

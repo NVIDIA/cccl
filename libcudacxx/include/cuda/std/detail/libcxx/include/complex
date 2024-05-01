@@ -242,7 +242,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -250,10 +249,11 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/climits>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
@@ -424,13 +424,15 @@ public:
 };
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
+operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs * complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
 }
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
+operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -840,7 +842,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp real(const comple
 
 // 26.3.7 values:
 
-template <class _Tp, bool = _LIBCUDACXX_TRAIT(is_integral, _Tp), bool = _LIBCUDACXX_TRAIT(is_floating_point, _Tp) >
+template <class _Tp, bool = _LIBCUDACXX_TRAIT(is_integral, _Tp), bool = _LIBCUDACXX_TRAIT(is_floating_point, _Tp)>
 struct __libcpp_complex_overload_traits
 {};
 
@@ -904,14 +906,14 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _Tp arg(const complex<_Tp>& __c)
 
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t< is_same<_Tp, long double>::value, long double > arg(_Tp __re)
+inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_same<_Tp, long double>::value, long double> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2l(0.L, __re);
 }
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t< is_integral<_Tp>::value || is_same<_Tp, double>::value, double >
+inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_integral<_Tp>::value || is_same<_Tp, double>::value, double>
 arg(_Tp __re)
 {
   // integrals need to be promoted to double
@@ -919,7 +921,7 @@ arg(_Tp __re)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t< is_same<_Tp, float>::value, float > arg(_Tp __re)
+inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_same<_Tp, float>::value, float> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2f(0.F, __re);
 }
@@ -1115,7 +1117,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<__promote_t<_Tp, _Up>> pow(const co
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t< __is_complex_arithmetic<_Up>::value, complex<__promote_t<_Tp, _Up>> >
+inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<__is_complex_arithmetic<_Up>::value, complex<__promote_t<_Tp, _Up>>>
 pow(const complex<_Tp>& __x, const _Up& __y)
 {
   using __result_type = complex<__promote_t<_Tp, _Up>>;
@@ -1123,7 +1125,7 @@ pow(const complex<_Tp>& __x, const _Up& __y)
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t< __is_complex_arithmetic<_Tp>::value, complex<__promote_t<_Tp, _Up>> >
+inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<__is_complex_arithmetic<_Tp>::value, complex<__promote_t<_Tp, _Up>>>
 pow(const _Tp& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<__promote_t<_Tp, _Up>>;
