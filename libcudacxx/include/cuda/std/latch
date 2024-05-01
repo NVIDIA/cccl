@@ -13,14 +13,12 @@
 #endif
 
 #ifndef _CUDA_STD_LATCH
-#define _CUDA_STD_LATCH
+#  define _CUDA_STD_LATCH
 
-#include <cuda/std/detail/__config>
+#  include <cuda/std/detail/__config>
 
-#include <cuda/std/detail/__pragma_push>
-
-#include <cuda/std/detail/libcxx/include/latch>
-
-#include <cuda/std/detail/__pragma_pop>
+#  include <cuda/std/detail/__pragma_pop>
+#  include <cuda/std/detail/__pragma_push>
+#  include <cuda/std/detail/libcxx/include/latch>
 
 #endif // _CUDA_STD_LATCH

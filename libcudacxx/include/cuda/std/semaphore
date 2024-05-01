@@ -13,14 +13,12 @@
 #endif
 
 #ifndef _CUDA_STD_SEMAPHORE
-#define _CUDA_STD_SEMAPHORE
+#  define _CUDA_STD_SEMAPHORE
 
-#include <cuda/std/detail/__config>
+#  include <cuda/std/detail/__config>
 
-#include <cuda/std/detail/__pragma_push>
-
-#include <cuda/std/detail/libcxx/include/semaphore>
-
-#include <cuda/std/detail/__pragma_pop>
+#  include <cuda/std/detail/__pragma_pop>
+#  include <cuda/std/detail/__pragma_push>
+#  include <cuda/std/detail/libcxx/include/semaphore>
 
 #endif // _CUDA_STD_SEMAPHORE

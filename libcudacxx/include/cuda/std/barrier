@@ -17,10 +17,8 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/detail/__pragma_push>
-
-#include <cuda/std/detail/libcxx/include/barrier>
-
 #include <cuda/std/detail/__pragma_pop>
+#include <cuda/std/detail/__pragma_push>
+#include <cuda/std/detail/libcxx/include/barrier>
 
 #endif // _CUDA_STD_BARRIER
