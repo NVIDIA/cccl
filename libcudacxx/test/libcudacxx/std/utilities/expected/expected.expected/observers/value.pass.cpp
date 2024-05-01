@@ -65,34 +65,110 @@ __host__ __device__ constexpr bool test()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-void test_exceptions()
+struct Error
 {
-  // int
+  enum
   {
-    const cuda::std::expected<int, int> e(cuda::std::unexpect, 5);
-    try
+    Default,
+    MutableRefCalled,
+    ConstRefCalled,
+    MutableRvalueCalled,
+    ConstRvalueCalled
+  } From  = Default;
+  Error() = default;
+  Error(const Error& e)
+      : From(e.From)
+  {
+    if (e.From == Default)
     {
-      (void) e.value();
-      assert(false);
-    }
-    catch (const cuda::std::bad_expected_access<int>& ex)
-    {
-      assert(ex.error() == 5);
+      From = ConstRefCalled;
     }
   }
-
-  // MoveOnly
+  Error(Error& e)
+      : From(e.From)
   {
-    cuda::std::expected<int, MoveOnly> e(cuda::std::unexpect, 5);
-    try
+    if (e.From == Default)
     {
-      (void) cuda::std::move(e).value();
-      assert(false);
+      From = MutableRefCalled;
     }
-    catch (const cuda::std::bad_expected_access<MoveOnly>& ex)
+  }
+  Error(const Error&& e)
+      : From(e.From)
+  {
+    if (e.From == Default)
     {
-      assert(ex.error() == 5);
+      From = ConstRvalueCalled;
     }
+  }
+  Error(Error&& e)
+      : From(e.From)
+  {
+    if (e.From == Default)
+    {
+      From = MutableRvalueCalled;
+    }
+  }
+};
+
+void test_exceptions()
+{
+  try
+  {
+    const cuda::std::expected<int, int> e(cuda::std::unexpect, 5);
+    (void) e.value();
+    assert(false);
+  }
+  catch (const cuda::std::bad_expected_access<int>& ex)
+  {
+    assert(ex.error() == 5);
+  }
+
+  // Test & overload
+  try
+  {
+    cuda::std::expected<int, Error> e(cuda::std::unexpect);
+    (void) e.value();
+    assert(false);
+  }
+  catch (const cuda::std::bad_expected_access<Error>& ex)
+  {
+    assert(ex.error().From == Error::ConstRefCalled);
+  }
+
+  // Test const& overload
+  try
+  {
+    const cuda::std::expected<int, Error> e(cuda::std::unexpect);
+    (void) e.value();
+    assert(false);
+  }
+  catch (const cuda::std::bad_expected_access<Error>& ex)
+  {
+    assert(ex.error().From == Error::ConstRefCalled);
+  }
+
+  // Test && overload
+  try
+  {
+    cuda::std::expected<int, Error> e(cuda::std::unexpect);
+    (void) cuda::std::move(e).value();
+    assert(false);
+  }
+  catch (const cuda::std::bad_expected_access<Error>& ex)
+  {
+    assert(ex.error().From == Error::MutableRvalueCalled);
+  }
+
+  // Test const&& overload
+  try
+  {
+    const cuda::std::expected<int, Error> e(cuda::std::unexpect);
+    (void) cuda::std::move(e).value();
+    assert(false);
+  }
+  catch (const cuda::std::bad_expected_access<Error>& ex)
+  {
+    assert(ex.error().From == Error::ConstRvalueCalled);
   }
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS

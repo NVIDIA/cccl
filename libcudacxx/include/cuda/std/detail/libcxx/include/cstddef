@@ -43,10 +43,10 @@ Types:
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/__cuda/cstddef_prelude.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/version>
 
 #include <cuda/std/detail/libcxx/include/__pragma_push>
@@ -56,8 +56,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using ::ptrdiff_t;
 using ::size_t;
 
-#if defined(__CLANG_MAX_ALIGN_T_DEFINED) || defined(_GCC_MAX_ALIGN_T) || \
-    defined(__DEFINED_max_align_t) || defined(__NetBSD__)
+#if defined(__CLANG_MAX_ALIGN_T_DEFINED) || defined(_GCC_MAX_ALIGN_T) || defined(__DEFINED_max_align_t) \
+  || defined(__NetBSD__)
 // Re-use the compiler's <stddef.h> max_align_t where possible.
 using ::max_align_t;
 #else
@@ -67,98 +67,95 @@ typedef long double max_align_t;
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
-#ifdef _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+#  ifdef _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
-#else
-namespace std  // purposefully not versioned
+#  else
+namespace std // purposefully not versioned
 {
-#endif //_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
-enum class byte : unsigned char {};
+#  endif //_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+enum class byte : unsigned char
+{
+};
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte  operator| (byte  __lhs, byte __rhs) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte operator|(byte __lhs, byte __rhs) noexcept
 {
-    return static_cast<byte>(
-      static_cast<unsigned char>(
-         static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs)
-    ));
+  return static_cast<byte>(
+    static_cast<unsigned char>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte& operator|=(byte& __lhs, byte __rhs) noexcept
-{ return __lhs = __lhs | __rhs; }
-
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte  operator& (byte  __lhs, byte __rhs) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte& operator|=(byte& __lhs, byte __rhs) noexcept
 {
-    return static_cast<byte>(
-      static_cast<unsigned char>(
-         static_cast<unsigned int>(__lhs) & static_cast<unsigned int>(__rhs)
-    ));
+  return __lhs = __lhs | __rhs;
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte& operator&=(byte& __lhs, byte __rhs) noexcept
-{ return __lhs = __lhs & __rhs; }
-
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte  operator^ (byte  __lhs, byte __rhs) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte operator&(byte __lhs, byte __rhs) noexcept
 {
-    return static_cast<byte>(
-      static_cast<unsigned char>(
-         static_cast<unsigned int>(__lhs) ^ static_cast<unsigned int>(__rhs)
-    ));
+  return static_cast<byte>(
+    static_cast<unsigned char>(static_cast<unsigned int>(__lhs) & static_cast<unsigned int>(__rhs)));
 }
 
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte& operator^=(byte& __lhs, byte __rhs) noexcept
-{ return __lhs = __lhs ^ __rhs; }
-
-_LIBCUDACXX_INLINE_VISIBILITY
-constexpr byte  operator~ (byte __b) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte& operator&=(byte& __lhs, byte __rhs) noexcept
 {
-    return static_cast<byte>(
-      static_cast<unsigned char>(
-        ~static_cast<unsigned int>(__b)
-    ));
+  return __lhs = __lhs & __rhs;
+}
+
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte operator^(byte __lhs, byte __rhs) noexcept
+{
+  return static_cast<byte>(
+    static_cast<unsigned char>(static_cast<unsigned int>(__lhs) ^ static_cast<unsigned int>(__rhs)));
+}
+
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte& operator^=(byte& __lhs, byte __rhs) noexcept
+{
+  return __lhs = __lhs ^ __rhs;
+}
+
+_LIBCUDACXX_INLINE_VISIBILITY constexpr byte operator~(byte __b) noexcept
+{
+  return static_cast<byte>(static_cast<unsigned char>(~static_cast<unsigned int>(__b)));
 }
 
 template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr __enable_if_t<is_integral_v<_Integer>, byte> &
-  operator<<=(byte& __lhs, _Integer __shift) noexcept
-  { return __lhs = __lhs << __shift; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_integral_v<_Integer>, byte>&
+operator<<=(byte& __lhs, _Integer __shift) noexcept
+{
+  return __lhs = __lhs << __shift;
+}
 
 template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr __enable_if_t<is_integral_v<_Integer>, byte>
-  operator<< (byte  __lhs, _Integer __shift) noexcept
-  { return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift)); }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_integral_v<_Integer>, byte>
+operator<<(byte __lhs, _Integer __shift) noexcept
+{
+  return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift));
+}
 
 template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr __enable_if_t<is_integral_v<_Integer>, byte> &
-  operator>>=(byte& __lhs, _Integer __shift) noexcept
-  { return __lhs = __lhs >> __shift; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_integral_v<_Integer>, byte>&
+operator>>=(byte& __lhs, _Integer __shift) noexcept
+{
+  return __lhs = __lhs >> __shift;
+}
 
 template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr __enable_if_t<is_integral_v<_Integer>, byte>
-  operator>> (byte  __lhs, _Integer __shift) noexcept
-  { return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift)); }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_integral_v<_Integer>, byte>
+operator>>(byte __lhs, _Integer __shift) noexcept
+{
+  return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift));
+}
 
 template <class _Integer>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr __enable_if_t<is_integral_v<_Integer>, _Integer>
-  to_integer(byte __b) noexcept { return static_cast<_Integer>(__b); }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_integral_v<_Integer>, _Integer> to_integer(byte __b) noexcept
+{
+  return static_cast<_Integer>(__b);
+}
 
-#ifdef _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+#  ifdef _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-#else
+#  else
 }
-#endif //_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+#  endif //_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 #endif // _CCCL_STD_VER > 2011
 
 #include <cuda/std/detail/libcxx/include/__pragma_pop> //__cuda_std__
 
-#endif  // _LIBCUDACXX_CSTDDEF
+#endif // _LIBCUDACXX_CSTDDEF

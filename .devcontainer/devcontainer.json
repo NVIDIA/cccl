@@ -31,7 +31,9 @@
     "vscode": {
       "extensions": [
         "llvm-vs-code-extensions.vscode-clangd",
-        "xaver.clang-format"
+        "xaver.clang-format",
+        "nvidia.nsight-vscode-edition",
+        "ms-vscode.cmake-tools"
       ],
       "settings": {
         "editor.defaultFormatter": "xaver.clang-format",

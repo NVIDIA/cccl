@@ -562,7 +562,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
 };
 
 template <class _Traits, class _Tp>
-using __rebind_alloc _LIBCUDACXX_NODEBUG = typename _Traits::template rebind_alloc<_Tp>;
+using __rebind_alloc _LIBCUDACXX_NODEBUG_TYPE = typename _Traits::template rebind_alloc<_Tp>;
 
 template <class _Traits, class _Tp>
 struct __rebind_alloc_helper

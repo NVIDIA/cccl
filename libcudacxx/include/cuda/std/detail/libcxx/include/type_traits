@@ -425,10 +425,9 @@ namespace std
 #endif // no system header
 
 #include <cuda/std/__algorithm/iter_swap.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_cv.h>
@@ -505,14 +504,14 @@ namespace std
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_polymorphic.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
-#include <cuda/std/__type_traits/is_reference_wrapper.h>
 #include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_reference_wrapper.h>
 #include <cuda/std/__type_traits/is_referenceable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/is_scoped_enum.h>
-#include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_standard_layout.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivial.h>
@@ -527,14 +526,14 @@ namespace std
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_unbounded_array.h>
 #include <cuda/std/__type_traits/is_union.h>
-#include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/lazy.h>
-#include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 #include <cuda/std/__type_traits/make_32_64_or_128_bit.h>
+#include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/maybe_const.h>
@@ -543,10 +542,10 @@ namespace std
 #include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/__type_traits/rank.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
-#include <cuda/std/__type_traits/remove_const_ref.h>
 #include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_const_ref.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -561,21 +560,26 @@ namespace std
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/cstdint>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/version>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> class _LIBCUDACXX_TEMPLATE_VIS reference_wrapper;
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS hash;
+template <class _Tp>
+class _LIBCUDACXX_TEMPLATE_VIS reference_wrapper;
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS hash;
 
-template <bool> struct _MetaBase;
+template <bool>
+struct _MetaBase;
 template <>
-struct _MetaBase<true> {
+struct _MetaBase<true>
+{
   template <class _Tp, class _Up>
   using _SelectImpl _LIBCUDACXX_NODEBUG_TYPE = _Tp;
-  template <template <class...> class _FirstFn, template <class...> class, class ..._Args>
+  template <template <class...> class _FirstFn, template <class...> class, class... _Args>
   using _SelectApplyImpl _LIBCUDACXX_NODEBUG_TYPE = _FirstFn<_Args...>;
   template <class _First, class...>
   using _FirstImpl _LIBCUDACXX_NODEBUG_TYPE = _First;
@@ -583,73 +587,73 @@ struct _MetaBase<true> {
   using _SecondImpl _LIBCUDACXX_NODEBUG_TYPE = _Second;
   template <class _Tp = void>
   using _EnableIfImpl _LIBCUDACXX_NODEBUG_TYPE = _Tp;
-  template <class _Result, class _First, class ..._Rest>
-  using _OrImpl _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_First::value != true && sizeof...(_Rest) != 0>::template _OrImpl<_First, _Rest...>;
-  template <class _Result, class _First, class ..._Rest>
-  using _AndImpl _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_First::value == true && sizeof...(_Rest) != 0>::template _AndImpl<_First, _Rest...>;
+  template <class _Result, class _First, class... _Rest>
+  using _OrImpl _LIBCUDACXX_NODEBUG_TYPE =
+    typename _MetaBase<_First::value != true && sizeof...(_Rest) != 0>::template _OrImpl<_First, _Rest...>;
+  template <class _Result, class _First, class... _Rest>
+  using _AndImpl _LIBCUDACXX_NODEBUG_TYPE =
+    typename _MetaBase<_First::value == true && sizeof...(_Rest) != 0>::template _AndImpl<_First, _Rest...>;
 };
 
 template <>
-struct _MetaBase<false> {
+struct _MetaBase<false>
+{
   template <class _Tp, class _Up>
   using _SelectImpl _LIBCUDACXX_NODEBUG_TYPE = _Up;
-  template <template <class...> class, template <class...> class _SecondFn, class ..._Args>
+  template <template <class...> class, template <class...> class _SecondFn, class... _Args>
   using _SelectApplyImpl _LIBCUDACXX_NODEBUG_TYPE = _SecondFn<_Args...>;
-  template <class _Result, class ...>
+  template <class _Result, class...>
   using _OrImpl _LIBCUDACXX_NODEBUG_TYPE = _Result;
-  template <class _Result, class ...>
+  template <class _Result, class...>
   using _AndImpl _LIBCUDACXX_NODEBUG_TYPE = _Result;
 };
 template <bool _Cond, class _Ret = void>
 using _EnableIf _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<_Cond>::template _EnableIfImpl<_Ret>;
-template <class ..._Args>
+template <class... _Args>
 using _FirstType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 1)>::template _FirstImpl<_Args...>;
-template <class ..._Args>
-using _SecondType _LIBCUDACXX_NODEBUG_TYPE = typename _MetaBase<(sizeof...(_Args) >= 2)>::template _SecondImpl<_Args...>;
+template <class... _Args>
+using _SecondType _LIBCUDACXX_NODEBUG_TYPE =
+  typename _MetaBase<(sizeof...(_Args) >= 2)>::template _SecondImpl<_Args...>;
 
 // helper class:
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__decay_t<_Tp> __decay_copy(_Tp&& __t)
+inline _LIBCUDACXX_INLINE_VISIBILITY __decay_t<_Tp> __decay_copy(_Tp&& __t)
 {
-    return _CUDA_VSTD::forward<_Tp>(__t);
+  return _CUDA_VSTD::forward<_Tp>(__t);
 }
 
 template <class _Tp>
 struct __has_operator_addressof_member_imp
 {
-    template <class _Up>
-        _LIBCUDACXX_INLINE_VISIBILITY
-        static auto __test(int)
-            -> typename __select_2nd<decltype(_CUDA_VSTD::declval<_Up>().operator&()), true_type>::type;
-    template <class>
-        _LIBCUDACXX_INLINE_VISIBILITY
-        static auto __test(long) -> false_type;
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY static auto __test(int) ->
+    typename __select_2nd<decltype(_CUDA_VSTD::declval<_Up>().operator&()), true_type>::type;
+  template <class>
+  _LIBCUDACXX_INLINE_VISIBILITY static auto __test(long) -> false_type;
 
-    static const bool value = decltype(__test<_Tp>(0))::value;
+  static const bool value = decltype(__test<_Tp>(0))::value;
 };
 
 template <class _Tp>
 struct __has_operator_addressof_free_imp
 {
-    template <class _Up>
-        _LIBCUDACXX_INLINE_VISIBILITY
-        static auto __test(int)
-            -> typename __select_2nd<decltype(operator&(_CUDA_VSTD::declval<_Up>())), true_type>::type;
-    template <class>
-        _LIBCUDACXX_INLINE_VISIBILITY
-        static auto __test(long) -> false_type;
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY static auto __test(int) ->
+    typename __select_2nd<decltype(operator&(_CUDA_VSTD::declval<_Up>())), true_type>::type;
+  template <class>
+  _LIBCUDACXX_INLINE_VISIBILITY static auto __test(long) -> false_type;
 
-    static const bool value = decltype(__test<_Tp>(0))::value;
+  static const bool value = decltype(__test<_Tp>(0))::value;
 };
 
 template <class _Tp>
 struct __has_operator_addressof
-    : public integral_constant<bool, __has_operator_addressof_member_imp<_Tp>::value
-                                  || __has_operator_addressof_free_imp<_Tp>::value>
+    : public integral_constant<bool,
+                               __has_operator_addressof_member_imp<_Tp>::value
+                                 || __has_operator_addressof_free_imp<_Tp>::value>
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif  // _LIBCUDACXX_TYPE_TRAITS
+#endif // _LIBCUDACXX_TYPE_TRAITS

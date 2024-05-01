@@ -37,11 +37,9 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS __is_nullptr_t : public __is_nullptr_t_impl<__remove_cv_t<_Tp>>
 {};
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_null_pointer : public __is_nullptr_t_impl<__remove_cv_t<_Tp>>
 {};
-#endif
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
