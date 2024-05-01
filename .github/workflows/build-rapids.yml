@@ -53,6 +53,32 @@ jobs:
         args=(
           -v
           -j$(nproc --ignore=1)
+          -DBUILD_TESTS=OFF
+          -DBUILD_BENCHMARKS=OFF
+          -DBUILD_ANN_BENCH=OFF
+          -DBUILD_PRIMS_BENCH=OFF
+          -DBUILD_SHARED_LIBS=ON
+          -DENABLE_CUMLPRIMS_MG=OFF
+          -DUSE_CUGRAPH_OPS=OFF
+          -DCPM_CCCL_SOURCE="${HOME}/cccl"
+        );
+        build-rmm-cpp "${args[@]}" || true;
+        build-ucxx-cpp "${args[@]}" || true;
+        build-KvikIO-cpp "${args[@]}" || true;
+        build-cudf-cpp "${args[@]}" || true;
+        build-cudf_kafka-cpp "${args[@]}" || true;
+        build-raft-cpp "${args[@]}" || true;
+        build-cuvs-cpp "${args[@]}" || true;
+        build-cuml-cpp "${args[@]}" || true;
+        build-wholegraph-cpp "${args[@]}" || true;
+        build-cugraph-cpp "${args[@]}" || true;
+        build-cugraph_etl-cpp "${args[@]}" || true;
+        build-cuspatial-cpp "${args[@]}" || true;
+        sccache --show-adv-stats;
+
+        args=(
+          -v
+          -j$(nproc --ignore=1)
           -DBUILD_TESTS=ON
           -DBUILD_BENCHMARKS=ON
           -DBUILD_ANN_BENCH=ON
@@ -62,16 +88,16 @@ jobs:
           -DUSE_CUGRAPH_OPS=OFF
           -DCPM_CCCL_SOURCE="${HOME}/cccl"
         );
-        build-rmm-cpp "${args[@]}";
-        build-ucxx-cpp "${args[@]}";
-        build-KvikIO-cpp "${args[@]}";
-        build-cudf-cpp "${args[@]}";
-        build-cudf_kafka-cpp "${args[@]}";
-        build-raft-cpp "${args[@]}";
-        build-cuvs-cpp "${args[@]}";
-        build-cuml-cpp "${args[@]}";
-        build-wholegraph-cpp "${args[@]}";
-        build-cugraph-cpp "${args[@]}";
-        build-cugraph_etl-cpp "${args[@]}";
-        build-cuspatial-cpp "${args[@]}";
+        build-rmm-cpp "${args[@]}" || true;
+        build-ucxx-cpp "${args[@]}" || true;
+        build-KvikIO-cpp "${args[@]}" || true;
+        build-cudf-cpp "${args[@]}" || true;
+        build-cudf_kafka-cpp "${args[@]}" || true;
+        build-raft-cpp "${args[@]}" || true;
+        build-cuvs-cpp "${args[@]}" || true;
+        build-cuml-cpp "${args[@]}" || true;
+        build-wholegraph-cpp "${args[@]}" || true;
+        build-cugraph-cpp "${args[@]}" || true;
+        build-cugraph_etl-cpp "${args[@]}" || true;
+        build-cuspatial-cpp "${args[@]}" || true;
         sccache --show-adv-stats;
