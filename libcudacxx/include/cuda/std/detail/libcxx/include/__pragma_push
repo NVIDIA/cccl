@@ -8,18 +8,18 @@
 //===----------------------------------------------------------------------===//
 
 #ifdef _LIBCUDACXX_IMPLICIT_SYSTEM_HEADER
-  #pragma GCC system_header
+#  pragma GCC system_header
 #endif
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
-  #pragma warning(push)
-  #pragma warning(disable : _LIBCUDACXX_MSVC_DISABLED_WARNINGS)
+#  pragma warning(push)
+#  pragma warning(disable : _LIBCUDACXX_MSVC_DISABLED_WARNINGS)
 #endif
 
 #if defined(_LIBCUDACXX_PUSH_MACROS)
-  _LIBCUDACXX_PUSH_MACROS
+_LIBCUDACXX_PUSH_MACROS
 #endif
 
 #ifndef __cuda_std__
-#include <__undef_macros>
+#  include <__undef_macros>
 #endif

@@ -48,74 +48,74 @@ namespace std
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/atomic>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/atomic>
 
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
-# error <latch> is not supported on this single threaded system
+#  error <latch> is not supported on this single threaded system
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-# if _LIBCUDACXX_CUDA_ABI_VERSION < 3
+#if _LIBCUDACXX_CUDA_ABI_VERSION < 3
 #  define _LIBCUDACXX_LATCH_ALIGNMENT alignas(64)
-# else
+#else
 #  define _LIBCUDACXX_LATCH_ALIGNMENT
-# endif
+#endif
 
-template<int _Sco = 0>
+template <int _Sco = 0>
 class __latch_base
 {
-    _LIBCUDACXX_LATCH_ALIGNMENT __atomic_base<ptrdiff_t, _Sco> __counter;
+  _LIBCUDACXX_LATCH_ALIGNMENT __atomic_base<ptrdiff_t, _Sco> __counter;
+
 public:
-    inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
-    explicit __latch_base(ptrdiff_t __expected)
-        : __counter(__expected) { }
+  inline _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __latch_base(ptrdiff_t __expected)
+      : __counter(__expected)
+  {}
 
-    ~__latch_base() = default;
-    __latch_base(const __latch_base&) = delete;
-    __latch_base& operator=(const __latch_base&) = delete;
+  ~__latch_base()                              = default;
+  __latch_base(const __latch_base&)            = delete;
+  __latch_base& operator=(const __latch_base&) = delete;
 
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    void count_down(ptrdiff_t __update = 1)
+  inline _LIBCUDACXX_INLINE_VISIBILITY void count_down(ptrdiff_t __update = 1)
+  {
+    _LIBCUDACXX_ASSERT(__update > 0, "");
+    auto const __old = __counter.fetch_sub(__update, memory_order_release);
+    _LIBCUDACXX_ASSERT(__old >= __update, "");
+    if (__old == __update)
     {
-        _LIBCUDACXX_ASSERT(__update > 0, "");
-        auto const __old = __counter.fetch_sub(__update, memory_order_release);
-        _LIBCUDACXX_ASSERT(__old >= __update, "");
-        if(__old == __update)
-            __counter.notify_all();
+      __counter.notify_all();
     }
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    bool try_wait() const noexcept
+  }
+  inline _LIBCUDACXX_INLINE_VISIBILITY bool try_wait() const noexcept
+  {
+    return __counter.load(memory_order_acquire) == 0;
+  }
+  inline _LIBCUDACXX_INLINE_VISIBILITY void wait() const
+  {
+    while (1)
     {
-        return __counter.load(memory_order_acquire) == 0;
+      auto const __current = __counter.load(memory_order_acquire);
+      if (__current == 0)
+      {
+        return;
+      }
+      __counter.wait(__current, memory_order_relaxed);
     }
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    void wait() const
-    {
-        while(1) {
-            auto const __current = __counter.load(memory_order_acquire);
-            if(__current == 0)
-                return;
-            __counter.wait(__current, memory_order_relaxed)
-            ;
-        }
-    }
-    inline _LIBCUDACXX_INLINE_VISIBILITY
-    void arrive_and_wait(ptrdiff_t __update = 1)
-    {
-        count_down(__update);
-        wait();
-    }
+  }
+  inline _LIBCUDACXX_INLINE_VISIBILITY void arrive_and_wait(ptrdiff_t __update = 1)
+  {
+    count_down(__update);
+    wait();
+  }
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static constexpr ptrdiff_t max() noexcept
-    {
-        return numeric_limits<ptrdiff_t>::max();
-    }
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr ptrdiff_t max() noexcept
+  {
+    return numeric_limits<ptrdiff_t>::max();
+  }
 };
 
 using latch = __latch_base<>;
