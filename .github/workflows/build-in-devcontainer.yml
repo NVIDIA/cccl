@@ -50,7 +50,7 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.arch) }}
         cuda: ${{ fromJSON(inputs.cuda) }}
-        pkgr: ["conda", "pip"]
+        pkgr: ["conda"]
     runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     steps:
       - uses: actions/checkout@v4
