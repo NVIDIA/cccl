@@ -50,16 +50,28 @@ jobs:
         # Build the RAPIDS repos using the local CCCL mount
         sccache -z;
         sccache --show-adv-stats;
-        build-all \
-          -v \
-          -j$(nproc --ignore=1) \
-          -DBUILD_TESTS=ON \
-          -DBUILD_BENCHMARKS=ON \
-          -DBUILD_ANN_BENCH=ON \
-          -DBUILD_PRIMS_BENCH=ON \
-          -DBUILD_SHARED_LIBS=ON \
-          -DENABLE_CUMLPRIMS_MG=OFF \
-          -DUSE_CUGRAPH_OPS=OFF \
-          -DCPM_CCCL_SOURCE="${HOME}/cccl" \
-          ;
+        args=(
+          -v
+          -j$(nproc --ignore=1)
+          -DBUILD_TESTS=ON
+          -DBUILD_BENCHMARKS=ON
+          -DBUILD_ANN_BENCH=ON
+          -DBUILD_PRIMS_BENCH=ON
+          -DBUILD_SHARED_LIBS=ON
+          -DENABLE_CUMLPRIMS_MG=OFF
+          -DUSE_CUGRAPH_OPS=OFF
+          -DCPM_CCCL_SOURCE="${HOME}/cccl"
+        );
+        build-rmm-cpp "${args[@]}";
+        build-ucxx-cpp "${args[@]}";
+        build-KvikIO-cpp "${args[@]}";
+        build-cudf-cpp "${args[@]}";
+        build-cudf_kafka-cpp "${args[@]}";
+        build-raft-cpp "${args[@]}";
+        build-cuvs-cpp "${args[@]}";
+        build-cuml-cpp "${args[@]}";
+        build-wholegraph-cpp "${args[@]}";
+        build-cugraph-cpp "${args[@]}";
+        build-cugraph_etl-cpp "${args[@]}";
+        build-cuspatial-cpp "${args[@]}";
         sccache --show-adv-stats;
