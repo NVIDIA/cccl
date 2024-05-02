@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -9,18 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_STORAGE_SMALL_H
-#define _LIBCUDACXX___ATOMIC_STORAGE_SMALL_H
+#ifndef _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
+#define _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
 
 #include <cuda/std/detail/__config>
 
 #include <cuda/std/type_traits>
 
-#include <cuda/std/__atomic/storage/base.h>
+#include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
-
-#include <cuda/std/__atomic/operations/heterogeneous.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -72,10 +69,6 @@ struct __atomic_small_storage {
 
     __atomic_storage<__proxy_t> __a_value;
 };
-
-// Extract the storage tag and SFINAE on the tag inside the storage object
-template <typename _Sto>
-using __atomic_storage_is_small = __enable_if_t<__atomic_tag::__atomic_small_tag == __remove_cvref_t<_Sto>::__tag, int>;
 
 template <typename _Sto, typename _Up, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline
@@ -184,4 +177,4 @@ auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sc
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___ATOMIC_STORAGE_SMALL_H
+#endif // _LIBCUDACXX___ATOMIC_TYPES_SMALL_H

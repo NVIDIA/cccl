@@ -8,26 +8,58 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_DISPATCH_H
-#define __LIBCUDACXX___ATOMIC_DISPATCH_H
+#ifndef _LIBCUDACXX___ATOMIC_TYPES_BASE_H
+#define _LIBCUDACXX___ATOMIC_TYPES_BASE_H
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/storage/common.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
-#include <cuda/std/__atomic/operations/host.h>
-#include <cuda/std/__atomic/operations/atomic_cuda_ptx_generated.h>
-#include <cuda/std/__atomic/operations/atomic_cuda_ptx_derived.h>
+#include <cuda/std/__atomic/functions.h>
 
-// Dispatch directly calls PTX/Host backends for atomic objects.
-// By default these objects support extracting the address contained with operator()()
-// this provides some amount of syntactic sugar to avoid duplicating every function that requires `volatile`.
-// `_Tp` is able to be volatile and will simply be instatiated into a new function.
-// It is up to the underlying backends to implement the correct volatile behavior
+#include <cuda/std/__atomic/types/common.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <typename _Tp>
+struct __atomic_storage {
+  using __underlying_t = _Tp;
+  static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
+
+#if !defined(_CCCL_COMPILER_GCC) || (__GNUC__ >= 5)
+  static_assert(is_trivially_copyable<_Tp>::value,
+    "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
+#endif
+
+  _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
+
+  _CCCL_HOST_DEVICE constexpr explicit inline
+  __atomic_storage() noexcept
+    : __a_value{} {}
+
+  _CCCL_HOST_DEVICE constexpr explicit inline
+  __atomic_storage(_Tp value) noexcept
+    : __a_value(value) {}
+
+  _CCCL_HOST_DEVICE inline
+  auto get() -> __underlying_t* {
+    return &__a_value;
+  }
+  _CCCL_HOST_DEVICE inline
+  auto get() const -> const __underlying_t* {
+    return &__a_value;
+  }
+  _CCCL_HOST_DEVICE inline
+  auto get() volatile -> volatile __underlying_t* {
+    return &__a_value;
+  }
+  _CCCL_HOST_DEVICE inline
+  auto get() const volatile -> const volatile __underlying_t* {
+    return &__a_value;
+  }
+};
 
 _CCCL_HOST_DEVICE inline
 void __atomic_thread_fence_dispatch(memory_order __order) {
@@ -53,9 +85,6 @@ void __atomic_signal_fence_dispatch(memory_order __order) {
     )
 }
 
-// Extract the storage tag and SFINAE on the tag inside the storage object
-template <typename _Sto>
-using __atomic_storage_is_base = __enable_if_t<__atomic_tag::__atomic_base_tag == __remove_cvref_t<_Sto>::__tag, int>;
 
 template <typename _Sto, typename _Up, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE inline
@@ -132,12 +161,7 @@ bool __atomic_compare_exchange_weak_dispatch(_Sto* __a, _Up* __expected, _Up __v
     return __result;
 }
 
-template <typename _Tp>
-using __atomic_enable_if_ptr = __enable_if_t<is_pointer<__atomic_underlying_t<_Tp>>::value, int>;
-template <typename _Tp>
-using __atomic_enable_if_not_ptr = __enable_if_t<!is_pointer<__atomic_underlying_t<_Tp>>::value, int>;
-
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_not_ptr<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE inline
 auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
@@ -150,35 +174,9 @@ auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _
     )
 }
 
-template <typename _Sto, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_ptr<_Sto> = 0>
-_CCCL_HOST_DEVICE inline
-auto __atomic_fetch_add_dispatch(_Sto* __a, ptrdiff_t __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
-    NV_DISPATCH_TARGET(
-        NV_IS_DEVICE, (
-            return __atomic_fetch_add_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
-        ),
-        NV_IS_HOST, (
-            return __atomic_fetch_add_host(__a->get(), __delta, __order);
-        )
-    )
-}
-
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_not_ptr<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0>
 _CCCL_HOST_DEVICE inline
 auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
-    NV_DISPATCH_TARGET(
-        NV_IS_DEVICE, (
-            return __atomic_fetch_sub_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
-        ),
-        NV_IS_HOST, (
-            return __atomic_fetch_sub_host(__a->get(), __delta, __order);
-        )
-    )
-}
-
-template <typename _Sto, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_base<_Sto> = 0, __atomic_enable_if_ptr<_Sto> = 0>
-_CCCL_HOST_DEVICE inline
-auto __atomic_fetch_sub_dispatch(_Sto* __a, ptrdiff_t __delta, memory_order __order, _Sco = {}) -> __atomic_underlying_t<_Sto> {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             return __atomic_fetch_sub_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});
@@ -254,4 +252,4 @@ auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sc
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // __LIBCUDACXX___ATOMIC_DISPATCH_H
+#endif // _LIBCUDACXX___ATOMIC_TYPES_BASE_H

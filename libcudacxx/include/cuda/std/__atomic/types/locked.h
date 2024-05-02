@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -9,15 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_STORAGE_LOCKED_H
-#define _LIBCUDACXX___ATOMIC_STORAGE_LOCKED_H
+#ifndef _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
+#define _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/remove_cv.h>
 
-#include <cuda/std/__atomic/storage/common.h>
-#include <cuda/std/__atomic/storage/base.h>
+#include <cuda/std/__atomic/types/common.h>
+#include <cuda/std/__atomic/types/base.h>
+
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 
@@ -26,7 +26,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Locked atomics must override the dispatch to be able to implement RMW primitives around the embedded lock.
 template <typename _Tp>
 struct __atomic_locked_storage {
-  using __underlying_t = typename remove_cv<_Tp>::type;
+  using __underlying_t = typename __remove_cv_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_locked_tag;
 
   _Tp __a_value;
@@ -63,10 +63,6 @@ struct __atomic_locked_storage {
     __atomic_store_dispatch(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
 };
-
-// Extract the storage tag and SFINAE on the tag inside the storage object
-template <typename _Sto>
-using __atomic_storage_is_locked = __enable_if_t<__atomic_tag::__atomic_locked_tag == __remove_cvref_t<_Sto>::__tag, int>;
 
 template <typename _Sto, typename _Up, __atomic_storage_is_locked<_Sto> = 0>
 _CCCL_HOST_DEVICE inline
@@ -201,4 +197,4 @@ auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = 
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___ATOMIC_STORAGE_LOCKED_H
+#endif // _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H

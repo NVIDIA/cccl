@@ -53,7 +53,7 @@ namespace std
 
 #include <cuda/std/limits>
 
-#include <cuda/std/__atomic/api/atomic_impl.h>
+#include <cuda/std/__atomic/api/owned.h>
 
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
@@ -72,7 +72,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template<thread_scope _Sco = thread_scope_system>
 class __latch_base
 {
-    _LIBCUDACXX_LATCH_ALIGNMENT __atomic_impl<ptrdiff_t, _Sco> __counter;
+    _LIBCUDACXX_LATCH_ALIGNMENT __atomic_impl<volatile ptrdiff_t, _Sco> __counter;
 public:
     inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
     explicit __latch_base(ptrdiff_t __expected)

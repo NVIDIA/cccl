@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX_ATOMIC_ORDER_H
-#define __LIBCUDACXX_ATOMIC_ORDER_H
+#ifndef __LIBCUDACXX___ATOMIC_ORDER_H
+#define __LIBCUDACXX___ATOMIC_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -141,4 +141,4 @@ constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 
-#endif // __LIBCUDACXX_ATOMIC_ORDER_H
+#endif // __LIBCUDACXX___ATOMIC_ORDER_H

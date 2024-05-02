@@ -13,7 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__atomic/api/atomic_impl.h>
+#include <cuda/std/__atomic/api/owned.h>
 
 #if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."

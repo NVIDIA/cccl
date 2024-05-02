@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -14,11 +13,10 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__atomic/storage/common.h>
+#include <cuda/std/__atomic/types.h>
+
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
-
-#include <cuda/std/__atomic/operations/heterogeneous.h>
 
 #include <cuda/std/detail/libcxx/include/__threading_support>
 

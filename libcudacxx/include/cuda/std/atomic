@@ -43,16 +43,16 @@ template <class T> T kill_dependency(T y) noexcept;
 
 // lock-free property
 
-#define ATOMIC_BOOL_LOCK_FREE unspecified
-#define ATOMIC_CHAR_LOCK_FREE unspecified
-#define ATOMIC_CHAR16_T_LOCK_FREE unspecified
-#define ATOMIC_CHAR32_T_LOCK_FREE unspecified
-#define ATOMIC_WCHAR_T_LOCK_FREE unspecified
-#define ATOMIC_SHORT_LOCK_FREE unspecified
-#define ATOMIC_INT_LOCK_FREE unspecified
-#define ATOMIC_LONG_LOCK_FREE unspecified
-#define ATOMIC_LLONG_LOCK_FREE unspecified
-#define ATOMIC_POINTER_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_BOOL_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_CHAR_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_CHAR16_T_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_CHAR32_T_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_WCHAR_T_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_SHORT_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_INT_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_LONG_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_LLONG_LOCK_FREE unspecified
+#define LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE unspecified
 
 // flag type and operations
 
@@ -556,25 +556,6 @@ void atomic_signal_fence(memory_order m) noexcept;
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/detail/libcxx/include/__threading_support>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_assignable.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/underlying_type.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/detail/libcxx/include/cstring>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
-#include <cuda/std/version>
-
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
@@ -590,19 +571,16 @@ void atomic_signal_fence(memory_order m) noexcept;
 # error C++ standard library is incompatible with <stdatomic.h>
 #endif
 
+#include <cuda/std/__atomic/platform.h>
+
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
-
-#include <cuda/std/__atomic/storage/common.h>
-#include <cuda/std/__atomic/storage/base.h>
-#include <cuda/std/__atomic/storage/locked.h>
-#include <cuda/std/__atomic/storage/reference.h>
-#include <cuda/std/__atomic/storage/small.h>
 
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__atomic/wait/notify_wait.h>
 
-#include <cuda/std/__atomic/api/atomic_impl.h>
+#include <cuda/std/__atomic/api/owned.h>
+#include <cuda/std/__atomic/api/reference.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -616,17 +594,21 @@ _Tp kill_dependency(_Tp __y) noexcept
 // atomic<T>
 template <class _Tp>
 struct atomic
-    : public __atomic_impl<_Tp, thread_scope_system>
+    : public __atomic_impl<_Tp>
 {
     using value_type = _Tp;
 
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr atomic() noexcept
-        : __atomic_impl<_Tp, thread_scope_system>() {}
+        : __atomic_impl<_Tp>() {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr atomic(_Tp __d) noexcept
-        : __atomic_impl<_Tp, thread_scope_system>(__d) {}
+        : __atomic_impl<_Tp>(__d) {}
+
+    atomic(const atomic&) = delete;
+    atomic& operator=(const atomic&) = delete;
+    atomic& operator=(const atomic&) volatile = delete;
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator=(_Tp __d) volatile noexcept
@@ -636,73 +618,10 @@ struct atomic
         {this->store(__d); return __d;}
 };
 
-// atomic<T*>
-
-template <class _Tp>
-struct atomic<_Tp*>
-    : public __atomic_impl<_Tp*, thread_scope_system>
-{
-    using value_type = _Tp*;
-
-    atomic() noexcept = default;
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr atomic(_Tp* __d) noexcept : __atomic_impl<_Tp*, thread_scope_system>(__d) {}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator=(_Tp* __d) volatile noexcept
-        {this->store(__d); return __d;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator=(_Tp* __d) noexcept
-        {this->store(__d); return __d;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        volatile noexcept
-        {return __atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, __thread_scope_system_tag{});}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        noexcept
-        {return __atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, __thread_scope_system_tag{});}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        volatile noexcept
-        {return __atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, __thread_scope_system_tag{});}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        noexcept
-        {return __atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, __thread_scope_system_tag{});}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++(int) volatile noexcept            {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++(int) noexcept                     {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--(int) volatile noexcept            {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--(int) noexcept                     {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++() volatile noexcept               {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++() noexcept                        {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--() volatile noexcept               {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--() noexcept                        {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator+=(ptrdiff_t __op) volatile noexcept {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator+=(ptrdiff_t __op) noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator-=(ptrdiff_t __op) volatile noexcept {return fetch_sub(__op) - __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator-=(ptrdiff_t __op) noexcept          {return fetch_sub(__op) - __op;}
-};
-
 // atomic_ref<T>
 template <class _Tp>
 struct atomic_ref
-    : public __atomic_ref_impl<_Tp, thread_scope_system>
+    : public __atomic_ref_impl<_Tp>
 {
     using value_type = _Tp;
 
@@ -711,50 +630,14 @@ struct atomic_ref
     static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    explicit atomic_ref(_Tp& __ref) : __atomic_ref_impl<_Tp, thread_scope_system>(__ref) {}
+    explicit atomic_ref(_Tp& __ref) : __atomic_ref_impl<_Tp>(__ref) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator=(_Tp __v) const noexcept {this->store(__v); return __v;}
-};
 
-// atomic_ref<T*>
-template <class _Tp>
- struct atomic_ref<_Tp*>
-    : public __atomic_ref_impl<_Tp*, thread_scope_system>
-{
-    using value_type = _Tp*;
-
-    static constexpr size_t required_alignment = sizeof(_Tp*);
-
-    static constexpr bool is_always_lock_free = sizeof(_Tp*) <= 8;
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit atomic_ref(_Tp*& __ref) : __atomic_ref_impl<_Tp*, thread_scope_system>(__ref) {}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator=(_Tp* __v) const noexcept {this->store(__v); return __v;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        const noexcept
-        {return __atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, __thread_scope_system_tag{});}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        const noexcept
-        {return __atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, __thread_scope_system_tag{});}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++(int) const noexcept                     {return fetch_add(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--(int) const noexcept                     {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++() const noexcept                        {return fetch_add(1) + 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--() const noexcept                        {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator+=(ptrdiff_t __op) const noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator-=(ptrdiff_t __op) const noexcept          {return fetch_sub(__op) - __op;}
+    atomic_ref(const atomic_ref&) noexcept = default;
+    atomic_ref& operator=(const atomic_ref&) = delete;
+    atomic_ref& operator=(const atomic_ref&) const = delete;
 };
 
 // atomic_is_lock_free
@@ -782,7 +665,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 void
 atomic_init(volatile atomic<_Tp>* __o, _Tp __d) noexcept
 {
-    __atomic_init_dispatch(__o->__this_atom(), __d);
+    __atomic_init_dispatch(&__o->__a, __d);
 }
 
 template <class _Tp>
@@ -790,7 +673,7 @@ _LIBCUDACXX_INLINE_VISIBILITY
 void
 atomic_init(atomic<_Tp>* __o, _Tp __d) noexcept
 {
-    __atomic_init_dispatch(__o->__this_atom(), __d);
+    __atomic_init_dispatch(&__o->__a, __d);
 }
 
 // atomic_store
@@ -1386,59 +1269,59 @@ atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 
 // flag type and operations
 
-typedef struct atomic_flag
-    : protected __atomic_impl<_LIBCUDACXX_ATOMIC_FLAG_TYPE, thread_scope_system>
+struct atomic_flag
 {
+    __atomic_storage_t<_LIBCUDACXX_ATOMIC_FLAG_TYPE> __a;
+
     _LIBCUDACXX_INLINE_VISIBILITY
     bool test(memory_order __m = memory_order_seq_cst) const volatile noexcept
-        {return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true)==__atomic_load_dispatch(this->__get_atom(), __m, __thread_scope_system_tag{});}
+        {return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true)==__atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool test(memory_order __m = memory_order_seq_cst) const noexcept
-        {return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true)==__atomic_load_dispatch(this->__get_atom(), __m, __thread_scope_system_tag{});}
+        {return _LIBCUDACXX_ATOMIC_FLAG_TYPE(true)==__atomic_load_dispatch(&__a, __m, __thread_scope_system_tag{});}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     bool test_and_set(memory_order __m = memory_order_seq_cst) volatile noexcept
-        {return __atomic_exchange_dispatch(this->__get_atom(), _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});}
+        {return __atomic_exchange_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     bool test_and_set(memory_order __m = memory_order_seq_cst) noexcept
-        {return __atomic_exchange_dispatch(this->__get_atom(), _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});}
+        {return __atomic_exchange_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), __m, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     void clear(memory_order __m = memory_order_seq_cst) volatile noexcept
-        {__atomic_store_dispatch(this->__get_atom(), _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});}
+        {__atomic_store_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     void clear(memory_order __m = memory_order_seq_cst) noexcept
-        {__atomic_store_dispatch(this->__get_atom(), _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});}
+        {__atomic_store_dispatch(&__a, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), __m, __thread_scope_system_tag{});}
 
-#if !defined(__CUDA_MINIMUM_ARCH__) || __CUDA_MINIMUM_ARCH__ >= 700
     _LIBCUDACXX_INLINE_VISIBILITY
-    void wait(bool __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
-        {__atomic_wait(this->__get_atom(), _LIBCUDACXX_ATOMIC_FLAG_TYPE(__v), __m, __thread_scope_system_tag{});}
+    void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const volatile noexcept
+        {__atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
-    void wait(bool __v, memory_order __m = memory_order_seq_cst) const noexcept
-        {__atomic_wait(this->__get_atom(), _LIBCUDACXX_ATOMIC_FLAG_TYPE(__v), __m, __thread_scope_system_tag{});}
+    void wait(_LIBCUDACXX_ATOMIC_FLAG_TYPE __v, memory_order __m = memory_order_seq_cst) const noexcept
+        {__atomic_wait(&__a, __v, __m, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     void notify_one() volatile noexcept
-        {__atomic_notify_one(this->__get_atom(), __thread_scope_system_tag{});}
+        {__atomic_notify_one(&__a, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     void notify_one() noexcept
-        {__atomic_notify_one(this->__get_atom(), __thread_scope_system_tag{});}
+        {__atomic_notify_one(&__a, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     void notify_all() volatile noexcept
-        {__atomic_notify_all(this->__get_atom(), __thread_scope_system_tag{});}
+        {__atomic_notify_all(&__a, __thread_scope_system_tag{});}
     _LIBCUDACXX_INLINE_VISIBILITY
     void notify_all() noexcept
-        {__atomic_notify_all(this->__get_atom(), __thread_scope_system_tag{});}
-#endif
+        {__atomic_notify_all(&__a, __thread_scope_system_tag{});}
+
 
     atomic_flag() noexcept = default;
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr
-    atomic_flag(bool __b) noexcept : __atomic_impl<_LIBCUDACXX_ATOMIC_FLAG_TYPE, thread_scope_system>(__b) {} // EXTENSION
+    atomic_flag(bool __b) noexcept : __a(__b) {} // EXTENSION
 
     atomic_flag(const atomic_flag&) = delete;
     atomic_flag& operator=(const atomic_flag&) = delete;
     atomic_flag& operator=(const atomic_flag&) volatile = delete;
-} atomic_flag;
+};
 
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1655,7 +1538,7 @@ typedef atomic<ptrdiff_t> atomic_ptrdiff_t;
 typedef atomic<intmax_t>  atomic_intmax_t;
 typedef atomic<uintmax_t> atomic_uintmax_t;
 
-static_assert(ATOMIC_INT_LOCK_FREE, "This library assumes atomic<int> is lock-free.");
+static_assert(LIBCUDACXX_ATOMIC_INT_LOCK_FREE, "This library assumes atomic<int> is lock-free.");
 
 typedef atomic<int>       atomic_signed_lock_free;
 typedef atomic<unsigned>  atomic_unsigned_lock_free;

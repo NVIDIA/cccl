@@ -1,5 +1,17 @@
-#ifndef __LIBCUDACXX_ATOMIC_SCOPES_H
-#define __LIBCUDACXX_ATOMIC_SCOPES_H
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef __LIBCUDACXX___ATOMIC_SCOPES_H
+#define __LIBCUDACXX___ATOMIC_SCOPES_H
+
+#include <cuda/std/detail/__config>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -18,9 +30,6 @@ enum thread_scope {
     thread_scope_block = __ATOMIC_BLOCK,
     thread_scope_thread = __ATOMIC_THREAD
 };
-
-#define _LIBCUDACXX_ATOMIC_SCOPE_TYPE ::cuda::thread_scope
-#define _LIBCUDACXX_ATOMIC_SCOPE_DEFAULT ::cuda::thread_scope::system
 
 struct __thread_scope_thread_tag { };
 struct __thread_scope_block_tag { };
@@ -68,4 +77,4 @@ using _CUDA_VSTD::__thread_scope_system_tag;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // __LIBCUDACXX_ATOMIC_SCOPES_H
+#endif // __LIBCUDACXX___ATOMIC_SCOPES_H

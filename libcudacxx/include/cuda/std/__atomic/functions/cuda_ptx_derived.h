@@ -8,10 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_OPERATIONS_DERIVED_H
-#define __LIBCUDACXX___ATOMIC_OPERATIONS_DERIVED_H
+#ifndef __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
+#define __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
 
 #include <cuda/std/detail/__config>
+#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -198,4 +199,4 @@ static inline _CCCL_DEVICE void __atomic_signal_fence_cuda(int)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif __LIBCUDACXX___ATOMIC_OPERATIONS_DERIVED_H
+#endif __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H

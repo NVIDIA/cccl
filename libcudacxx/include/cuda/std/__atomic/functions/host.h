@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -9,10 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMICS_HOST_H
-#define _LIBCUDACXX___ATOMICS_HOST_H
+#ifndef _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#define _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
 
-#include <cuda/std/__atomic/platform/platform.h>
+#include <cuda/std/detail/__config>
+
+#include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__atomic/order.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -186,4 +187,4 @@ inline _Tp __atomic_fetch_min_host(_Tp* __a, _Td __val,
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___ATOMICS_HOST_H
+#endif // _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H

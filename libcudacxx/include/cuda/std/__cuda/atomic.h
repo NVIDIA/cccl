@@ -30,208 +30,81 @@ template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
 struct atomic
   : public std::__atomic_impl<_Tp, _Sco>
 {
-  using value_type = _Tp;
+    using value_type = _Tp;
 
-  _CCCL_HOST_DEVICE
-  constexpr atomic() noexcept
-      : std::__atomic_impl<_Tp, _Sco>() {}
-  _CCCL_HOST_DEVICE
+  constexpr atomic() noexcept = default;
+
+  _LIBCUDACXX_INLINE_VISIBILITY
   constexpr atomic(_Tp __d) noexcept
       : std::__atomic_impl<_Tp, _Sco>(__d) {}
 
-  _CCCL_HOST_DEVICE _Tp operator=(_Tp __d) volatile noexcept
+  atomic(const atomic&) = delete;
+  atomic& operator=(const atomic&) = delete;
+  atomic& operator=(const atomic&) volatile = delete;
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp operator=(_Tp __d) volatile noexcept
+      {this->store(__d); return __d;}
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp operator=(_Tp __d) noexcept
+      {this->store(__d); return __d;}
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
-    this->store(__d);
-    return __d;
+    return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
-  _CCCL_HOST_DEVICE _Tp operator=(_Tp __d) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    this->store(__d);
-    return __d;
+    return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
-  _CCCL_HOST_DEVICE _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
-    return std::__atomic_fetch_max_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
+    return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
-
-  _CCCL_HOST_DEVICE _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return std::__atomic_fetch_min_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-};
-
-// atomic<T*>
-
-template <class _Tp, thread_scope _Sco>
-struct atomic<_Tp*, _Sco>
-  : public std::__atomic_impl<_Tp*, _Sco>
-{
-  using value_type = _Tp*;
-
-  _CCCL_HOST_DEVICE
-  constexpr atomic() noexcept
-      : std::__atomic_impl<_Tp*, _Sco>() {}
-
-  _CCCL_HOST_DEVICE
-  constexpr atomic(_Tp* __d) noexcept
-      : std::__atomic_impl<_Tp*, _Sco>(__d) {}
-
-  _CCCL_HOST_DEVICE _Tp* operator=(_Tp* __d) volatile noexcept
-  {
-    this->store(__d);
-    return __d;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator=(_Tp* __d) noexcept
-  {
-    this->store(__d);
-    return __d;
-  }
-
-  _CCCL_HOST_DEVICE _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) volatile noexcept
-  {
-    return std::__atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-  _CCCL_HOST_DEVICE _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) noexcept
-  {
-    return std::__atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-  _CCCL_HOST_DEVICE _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) volatile noexcept
-  {
-    return std::__atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-  _CCCL_HOST_DEVICE _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) noexcept
-  {
-    return std::__atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-
-  _CCCL_HOST_DEVICE _Tp* operator++(int) volatile noexcept
-  {
-    return fetch_add(1);
-  }
-  _CCCL_HOST_DEVICE _Tp* operator++(int) noexcept
-  {
-    return fetch_add(1);
-  }
-  _CCCL_HOST_DEVICE _Tp* operator--(int) volatile noexcept
-  {
-    return fetch_sub(1);
-  }
-  _CCCL_HOST_DEVICE _Tp* operator--(int) noexcept
-  {
-    return fetch_sub(1);
-  }
-  _CCCL_HOST_DEVICE _Tp* operator++() volatile noexcept
-  {
-    return fetch_add(1) + 1;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator++() noexcept
-  {
-    return fetch_add(1) + 1;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator--() volatile noexcept
-  {
-    return fetch_sub(1) - 1;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator--() noexcept
-  {
-    return fetch_sub(1) - 1;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator+=(ptrdiff_t __op) volatile noexcept
-  {
-    return fetch_add(__op) + __op;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator+=(ptrdiff_t __op) noexcept
-  {
-    return fetch_add(__op) + __op;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator-=(ptrdiff_t __op) volatile noexcept
-  {
-    return fetch_sub(__op) - __op;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator-=(ptrdiff_t __op) noexcept
-  {
-    return fetch_sub(__op) - __op;
+    return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
 };
 
 // atomic_ref<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic_ref : public std::__atomic_ref_impl<_Tp, _Sco>
+struct atomic_ref
+  : public std::__atomic_ref_impl<_Tp, _Sco>
 {
-  typedef std::__atomic_ref_impl<_Tp, _Sco> __base;
+  using value_type = _Tp;
 
-  _CCCL_HOST_DEVICE constexpr atomic_ref(_Tp& __d) noexcept
-      : __base(__d)
-  {}
+  static constexpr size_t required_alignment = sizeof(_Tp);
 
-  _CCCL_HOST_DEVICE _Tp operator=(_Tp __d) const noexcept
+  static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  explicit atomic_ref(_Tp& __ref)
+    : std::__atomic_ref_impl<_Tp, _Sco>(__ref) {}
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp operator=(_Tp __v) const noexcept {this->store(__v); return __v;}
+
+  atomic_ref(const atomic_ref&) noexcept = default;
+  atomic_ref& operator=(const atomic_ref&) = delete;
+  atomic_ref& operator=(const atomic_ref&) const = delete;
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    this->store(__d);
-    return __d;
-  }
-
-  _CCCL_HOST_DEVICE _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
-  {
-    return std::__atomic_fetch_max_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-
-  _CCCL_HOST_DEVICE _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
-  {
-    return std::__atomic_fetch_min_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-};
-
-// atomic_ref<T*>
-
-template <class _Tp, thread_scope _Sco>
-struct atomic_ref<_Tp*, _Sco> : public std::__atomic_ref_impl<_Tp*, _Sco>
-{
-  typedef std::__atomic_ref_impl<_Tp*, _Sco> __base;
-
-  _CCCL_HOST_DEVICE constexpr atomic_ref(_Tp*& __d) noexcept
-      : __base(__d)
-  {}
-
-  _CCCL_HOST_DEVICE _Tp* operator=(_Tp* __d) const noexcept
-  {
-    this->store(__d);
-    return __d;
+    return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
-  _CCCL_HOST_DEVICE _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return __atomic_fetch_add_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-  _CCCL_HOST_DEVICE _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const noexcept
-  {
-    return __atomic_fetch_sub_dispatch(this->__this_atom(), __op, __m, std::__scope_to_tag<_Sco>{});
-  }
-
-  _CCCL_HOST_DEVICE _Tp* operator++(int) const noexcept
-  {
-    return fetch_add(1);
-  }
-  _CCCL_HOST_DEVICE _Tp* operator--(int) const noexcept
-  {
-    return fetch_sub(1);
-  }
-  _CCCL_HOST_DEVICE _Tp* operator++() const noexcept
-  {
-    return fetch_add(1) + 1;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator--() const noexcept
-  {
-    return fetch_sub(1) - 1;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator+=(ptrdiff_t __op) const noexcept
-  {
-    return fetch_add(__op) + __op;
-  }
-  _CCCL_HOST_DEVICE _Tp* operator-=(ptrdiff_t __op) const noexcept
-  {
-    return fetch_sub(__op) - __op;
+    return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
 };
 

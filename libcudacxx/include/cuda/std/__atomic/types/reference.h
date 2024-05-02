@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -9,19 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_STORAGE_REF_H
-#define _LIBCUDACXX___ATOMIC_STORAGE_REF_H
+#ifndef _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H
+#define _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
 #include <cuda/std/type_traits>
 
-#include <cuda/std/__atomic/storage/base.h>
+#include <cuda/std/__atomic/types/base.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// Reference is compatible with __atomic_base_tag and uses default dispatch
-
+// Reference is compatible with __atomic_base_tag and uses the default dispatch
 template <typename _Tp>
 struct __atomic_ref_storage {
   using __underlying_t = _Tp;
@@ -60,4 +58,4 @@ struct __atomic_ref_storage {
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___ATOMIC_STORAGE_REF_H
+#endif // _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H

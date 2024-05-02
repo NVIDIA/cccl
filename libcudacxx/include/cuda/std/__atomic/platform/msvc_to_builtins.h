@@ -1,4 +1,3 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -12,12 +11,16 @@
 #ifndef __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
 #define __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
 
+#include <cuda/std/detail/__config>
+
 #ifndef _MSC_VER
 #  error "This file is only for CL.EXE's benefit"
 #endif
 
 #include <intrin.h>
 #include <cuda/std/cassert>
+
+#include <cuda/std/__atomic/order.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
