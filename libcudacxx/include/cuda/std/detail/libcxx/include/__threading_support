@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/__cuda/atomic_prelude.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/chrono>
 #include <cuda/std/climits>
