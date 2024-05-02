@@ -40,6 +40,7 @@
 #endif // no system header
 
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include <tuple>
@@ -178,6 +179,23 @@ struct tuple : public _CUDA_VSTD::tuple<Ts...>
     super_t::operator=(_CUDA_VSTD::forward<TupleLike>(other));
     return *this;
   }
+
+#if defined(_CCCL_COMPILER_MSVC_2017)
+  // MSVC2017 needs some help to convert tuples
+  template <class... Us,
+            _CUDA_VSTD::__enable_if_t<!_CUDA_VSTD::is_same<tuple<Us...>, tuple>::value, int> = 0,
+            _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__tuple_convertible<_CUDA_VSTD::tuple<Us...>, super_t>::value, int> = 0>
+  _CCCL_HOST_DEVICE constexpr operator tuple<Us...>()
+  {
+    return __to_tuple<Us...>(typename _CUDA_VSTD::__make_tuple_indices<sizeof...(Ts)>::type{});
+  }
+
+  template <class... Us, size_t... Id>
+  _CCCL_HOST_DEVICE constexpr tuple<Us...> __to_tuple(_CUDA_VSTD::__tuple_indices<Id...>) const
+  {
+    return tuple<Us...>{_CUDA_VSTD::get<Id>(*this)...};
+  }
+#endif // _CCCL_COMPILER_MSVC_2017
 };
 
 #if _CCCL_STD_VER >= 2017
