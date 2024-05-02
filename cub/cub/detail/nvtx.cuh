@@ -43,11 +43,13 @@
 // * C++14 is availabl for cuda::std::optional
 #if __has_include(<nvtx3/nvToolsExt.h>) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014
 // Include our NVTX3 C++ wrapper if not available from the CTK
+#  define NVTX3_CPP_REQUIRE_EXPLICIT_VERSION
 #  if __has_include(<nvtx3/nvtx3.hpp>) // TODO(bgruber): replace by a check for the first CTK version shipping the header
 #    include <nvtx3/nvtx3.hpp>
 #  else // __has_include(<nvtx3/nvtx3.hpp>)
 #    include "nvtx3.hpp"
 #  endif // __has_include(<nvtx3/nvtx3.hpp>)
+#  undef NVTX3_CPP_REQUIRE_EXPLICIT_VERSION
 
 #  include <cuda/std/optional>
 
@@ -70,14 +72,15 @@ CUB_NAMESPACE_END
 // nothing in device code.
 // The optional is needed to defer the construction of an NVTX range (host-only code) and message string registration
 // into a dispatch region running only on the host, while preserving the semantic scope where the range is declared.
-#  define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)                                                               \
-    CUB_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                            \
-    ::cuda::std::optional<::nvtx3::scoped_range_in<CUB_NS_QUALIFIER::detail::NVTXCCCLDomain>> __cub_nvtx3_range;        \
-    NV_IF_TARGET(                                                                                                       \
-      NV_IS_HOST,                                                                                                       \
-      static const ::nvtx3::registered_string_in<CUB_NS_QUALIFIER::detail::NVTXCCCLDomain> __cub_nvtx3_func_name{name}; \
-      static const ::nvtx3::event_attributes __cub_nvtx3_func_attr{__cub_nvtx3_func_name};                              \
-      if (condition) __cub_nvtx3_range.emplace(__cub_nvtx3_func_attr);                                                  \
+#  define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)                                                             \
+    CUB_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                          \
+    ::cuda::std::optional<::nvtx3::v1::scoped_range_in<CUB_NS_QUALIFIER::detail::NVTXCCCLDomain>> __cub_nvtx3_range;  \
+    NV_IF_TARGET(                                                                                                     \
+      NV_IS_HOST,                                                                                                     \
+      static const ::nvtx3::v1::registered_string_in<CUB_NS_QUALIFIER::detail::NVTXCCCLDomain> __cub_nvtx3_func_name{ \
+        name};                                                                                                        \
+      static const ::nvtx3::v1::event_attributes __cub_nvtx3_func_attr{__cub_nvtx3_func_name};                        \
+      if (condition) __cub_nvtx3_range.emplace(__cub_nvtx3_func_attr);                                                \
       (void) __cub_nvtx3_range;)
 
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE(name) CUB_DETAIL_NVTX_RANGE_SCOPE_IF(true, name)
