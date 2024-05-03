@@ -48,7 +48,7 @@ declare -A project_names=(
 # Usage checks:
 for subproject in "${subprojects[@]}"; do
   # Check that the subproject directory exists
-  if [ ! -d "$subproject" ]; then
+  if [ "$dependency" != "cccl" ] && [ ! -d "$subproject" ]; then
     echo "Error: Subproject directory '$subproject' does not exist."
     exit 1
   fi
