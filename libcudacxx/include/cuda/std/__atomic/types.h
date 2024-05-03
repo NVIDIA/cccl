@@ -18,6 +18,8 @@
 #include <cuda/std/__atomic/types/small.h>
 #include <cuda/std/__atomic/types/reference.h>
 
+#include <cuda/std/__type_traits/conditional.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
@@ -28,9 +30,9 @@ struct __atomic_traits {
 };
 
 template <typename _Tp>
-using __atomic_storage_t = typename _If<__atomic_traits<_Tp>::__atomic_requires_small,
+using __atomic_storage_t = typename _CUDA_VSTD::_If<__atomic_traits<_Tp>::__atomic_requires_small,
                                             __atomic_small_storage<_Tp>,
-                                            _If<__atomic_traits<_Tp>::__atomic_requires_lock,
+                                            _CUDA_VSTD::_If<__atomic_traits<_Tp>::__atomic_requires_lock,
                                                 __atomic_locked_storage<_Tp>,
                                                 __atomic_storage<_Tp>
                                                 >>;
