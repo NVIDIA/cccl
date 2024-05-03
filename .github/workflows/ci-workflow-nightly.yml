@@ -94,7 +94,7 @@ jobs:
     steps:
       - name: Check results
         run: |
-          status="passed"
+          status="success"
 
           check_result() {
             name=$1
