@@ -60,10 +60,12 @@ jobs:
         ###
         filters=(${{ matrix.libs }});
         # prefix each element
-        filters=("${filters[@]/#/'.name == "'}");
+        filters=("${filters[@]/#/'"'}");
         # suffix each element
-        filters=("${filters[@]/%/'" or'}");
-        sudo yq -i ".repos |= filter(${filters[*]} false)" /opt/rapids-build-utils/manifest.yaml;
+        filters=("${filters[@]/%/'",'}");
+        # Remove trailing comma
+        filters="$(cut -d',' -f1-${#filters[@]} <<< "${filters[*]}")";
+        sudo yq -i ".repos |= filter(.cpp[].name | contains(${filters[*]}))" /opt/rapids-build-utils/manifest.yaml;
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
 
