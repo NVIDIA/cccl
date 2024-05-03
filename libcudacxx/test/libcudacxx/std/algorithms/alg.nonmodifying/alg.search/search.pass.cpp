@@ -17,7 +17,7 @@
 //   ForwardIterator search(ForwardIterator first, ForwardIterator last,
 //                          const Searcher& searcher); // C++17
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

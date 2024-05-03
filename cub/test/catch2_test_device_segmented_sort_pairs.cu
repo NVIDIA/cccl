@@ -25,6 +25,9 @@
  *
  ******************************************************************************/
 
+#include "insert_nested_NVTX_range_guard.h"
+// above header needs to be included first
+
 #include <catch2_segmented_sort_helper.cuh>
 #include <catch2_test_helper.h>
 

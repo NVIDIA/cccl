@@ -11,7 +11,6 @@ set -euo pipefail
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
-
 function usage {
     echo "Usage: $0 [--clean] [-h/--help] [-v/--verbose]"
     echo "  --clean   Remove stale devcontainer subdirectories"
@@ -19,11 +18,6 @@ function usage {
     echo "  -v, --verbose  Enable verbose mode (set -x)"
     exit 1
 }
-
-matrix_sections=(
-    'pull_request.nvcc'
-    'pull_request."nvcc-cuda-next"'
-)
 
 # Function to update the devcontainer.json file with the provided parameters
 update_devcontainer() {
@@ -58,33 +52,6 @@ make_name() {
     echo "cuda$cuda_version-$compiler_name$compiler_version"
 }
 
-get_devcontainer_version_from_matrix() {
-    local matrix_file="$1"
-
-    # Read matrix.yaml and convert it to json
-    matrix_json=$(yq -o json ${matrix_file})
-
-    # Get the devcontainer image version
-    echo "$matrix_json" | jq -r '.devcontainer_version'
-}
-
-get_container_info_from_matrix() {
-    local matrix_file="$1"
-
-    # Read matrix.yaml and convert it to json
-    local matrix_json=$(yq -o json ${matrix_file})
-
-    # Extract the requested matrix_sections
-    sections_query=$(printf '.%s + ' "${matrix_sections[@]}" | sed 's/ + $//')
-    matrix_json=$(echo "$matrix_json" | jq -c "$sections_query")
-
-    # Exclude Windows environments
-    matrix_json=$(echo "$matrix_json" | jq 'del(.[] | select(.os | contains("windows")))')
-
-    # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-    echo "$matrix_json" | jq -c '[.[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_exe: .compiler.exe, compiler_version: .compiler.version, os: .os}] | unique | .[]'
-}
-
 CLEAN=false
 VERBOSE=false
 while [[ $# -gt 0 ]]; do
@@ -106,6 +73,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 MATRIX_FILE="../ci/matrix.yaml"
+COMPUTE_MATRIX="../.github/actions/workflow-build/build-workflow.py"
 
 # Enable verbose mode if requested
 if [ "$VERBOSE" = true ]; then
@@ -113,8 +81,14 @@ if [ "$VERBOSE" = true ]; then
     cat ${MATRIX_FILE}
 fi
 
-readonly DEVCONTAINER_VERSION=$(get_devcontainer_version_from_matrix ${MATRIX_FILE})
-readonly combinations=$(get_container_info_from_matrix "${MATRIX_FILE}")
+# Read matrix.yaml and convert it to json
+matrix_json=$(python3 ${COMPUTE_MATRIX} ${MATRIX_FILE} --devcontainer-info)
+
+# Get the devcontainer image version and define image tag root
+readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
+
+# Get unique combinations of cuda version, compiler name/version, and Ubuntu version
+readonly combinations=$(echo "$matrix_json" | jq -c '.combinations[]')
 
 # Update the base devcontainer with the default values
 # The root devcontainer.json file is used as the default container as well as a template for all

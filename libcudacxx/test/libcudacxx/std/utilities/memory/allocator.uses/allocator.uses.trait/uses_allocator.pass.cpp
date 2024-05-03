@@ -11,7 +11,7 @@
 
 // template <class T, class Alloc> struct uses_allocator;
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_VECTOR)
 #  include <cuda/std/vector>
 #endif // _LIBCUDACXX_HAS_VECTOR

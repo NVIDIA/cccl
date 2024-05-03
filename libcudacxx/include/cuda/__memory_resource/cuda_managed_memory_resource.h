@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017)
+#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #    include <cuda_runtime_api.h>
@@ -32,7 +32,7 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/resource_ref.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
+#  include <cuda/std/__new/bad_alloc.h>
 
 #  if _CCCL_STD_VER >= 2014
 
@@ -186,6 +186,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H

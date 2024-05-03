@@ -20,7 +20,7 @@
 //   constexpr bool
 //   operator!=(const allocator<T1>&, const allocator<T2>&) throw();
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

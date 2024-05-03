@@ -15,7 +15,7 @@
 // [[nodiscard]] constexpr allocation_result<typename allocator_traits<Allocator>::pointer>
 //   allocate_at_least(Allocator& a, size_t n);
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>

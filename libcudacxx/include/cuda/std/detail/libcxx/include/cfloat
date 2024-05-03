@@ -70,8 +70,9 @@ Macros:
 */
 
 #ifndef _CCCL_COMPILER_NVRTC
-#include <cfloat>
-#include <float.h>
+#  include <cfloat>
+
+#  include <float.h>
 #endif // _CCCL_COMPILER_NVRTC
 
-#endif  // _LIBCUDACXX_CFLOAT
+#endif // _LIBCUDACXX_CFLOAT

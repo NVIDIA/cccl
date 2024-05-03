@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
@@ -111,6 +112,34 @@ CUB_NAMESPACE_BEGIN
  */
 struct DeviceMergeSort
 {
+private:
+  // Name reported for NVTX ranges
+  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  {
+    return "cub::DeviceMergeSort";
+  }
+
+  // Internal version without NVTX range
+  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    ValueIteratorT d_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
+
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
+  }
+
+public:
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -213,13 +242,8 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
-
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
@@ -367,6 +391,7 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
@@ -416,6 +441,35 @@ struct DeviceMergeSort
       stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
+  }
+
+public:
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -508,21 +562,8 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
-
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      static_cast<NullType*>(nullptr),
-      d_keys,
-      static_cast<NullType*>(nullptr),
-      num_items,
-      compare_op,
-      stream);
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -541,6 +582,36 @@ struct DeviceMergeSort
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopyNoNVTX(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
+
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
+
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      static_cast<NullType*>(nullptr),
+      d_output_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
+  }
+
+public:
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -647,21 +718,9 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
-
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_keys,
-      static_cast<NullType*>(nullptr),
-      d_output_keys,
-      static_cast<NullType*>(nullptr),
-      num_items,
-      compare_op,
-      stream);
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    return SortKeysCopyNoNVTX(
+      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -783,9 +842,10 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortPairs<KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>(
+    return SortPairsNoNVTX<KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
@@ -899,9 +959,10 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortKeys<KeyIteratorT, PromotedOffsetT, CompareOpT>(
+    return SortKeysNoNVTX<KeyIteratorT, PromotedOffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
@@ -1028,9 +1089,9 @@ struct DeviceMergeSort
     CompareOpT compare_op,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
-
-    return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(
+    return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 };

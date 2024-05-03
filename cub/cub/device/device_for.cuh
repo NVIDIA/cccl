@@ -37,6 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -574,11 +575,30 @@ public:
   template <class ShapeT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral<ShapeT>::value, "ShapeT must be an integral type");
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
 
+private:
+  // Internal version without NVTX raNGE
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  {
+    using offset_t            = NumItemsT;
+    using use_vectorization_t = ::cuda::std::integral_constant<bool, false>;
+
+    // Disable auto-vectorization for now:
+    // constexpr bool use_vectorization =
+    //   detail::for_each::can_regain_copy_freedom<detail::value_t<RandomAccessIteratorT>, OpT>::value
+    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
+
+    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+  }
+
+public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -630,15 +650,8 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    using offset_t            = NumItemsT;
-    using use_vectorization_t = ::cuda::std::integral_constant<bool, false>;
-
-    // Disable auto-vectorization for now:
-    // constexpr bool use_vectorization =
-    //   detail::for_each::can_regain_copy_freedom<detail::value_t<RandomAccessIteratorT>, OpT>::value
-    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
-
-    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
+    return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
   //! @rst
@@ -689,13 +702,31 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
+
     using offset_t = typename THRUST_NS_QUALIFIER::iterator_traits<RandomAccessIteratorT>::difference_type;
 
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
 
-    return ForEachN(first, num_items, op, stream);
+    return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
+private:
+  // Internal version without NVTX range
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopyNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  {
+    static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value,
+                  "Iterator must be contiguous");
+
+    using offset_t            = NumItemsT;
+    using use_vectorization_t = ::cuda::std::integral_constant<bool, true>;
+
+    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+  }
+
+public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -750,13 +781,8 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value,
-                  "Iterator must be contiguous");
-
-    using offset_t            = NumItemsT;
-    using use_vectorization_t = ::cuda::std::integral_constant<bool, true>;
-
-    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
+    return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 
   //! @rst
@@ -810,6 +836,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value,
                   "Iterator must be contiguous");
 
@@ -817,7 +844,7 @@ public:
 
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
 
-    return ForEachCopyN(first, num_items, op, stream);
+    return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 };
 

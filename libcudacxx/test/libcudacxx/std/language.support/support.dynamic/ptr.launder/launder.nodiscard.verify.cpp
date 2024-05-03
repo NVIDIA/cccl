@@ -10,7 +10,7 @@
 
 // template <class T> constexpr T* launder(T* p) noexcept;
 
-#include <cuda/std/__new>
+#include <cuda/std/__new_>
 
 __host__ __device__ void f()
 {

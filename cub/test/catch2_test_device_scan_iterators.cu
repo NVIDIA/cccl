@@ -25,6 +25,9 @@
  *
  ******************************************************************************/
 
+#include "insert_nested_NVTX_range_guard.h"
+// above header needs to be included first
+
 #include <cub/device/device_scan.cuh>
 
 #include <thrust/iterator/constant_iterator.h>

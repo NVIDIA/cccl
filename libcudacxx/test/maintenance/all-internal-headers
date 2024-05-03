@@ -4,7 +4,7 @@
 
 set -e
 
-internal_headers=$(find ../../include -path "*cuda/std/detail/libcxx/include/__*/*" -not -path "*/__cuda/*")
+internal_headers=$(find ../../include -path "*cuda/std/__*/*" -not -path "*/__cuda/*")
 
 cd ../../test/libcxx/selftest/internal_headers
 

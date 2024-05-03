@@ -9,7 +9,7 @@
 
 // test bad_alloc
 
-#include <cuda/std/__exception> // #include <cuda/std/__new>
+#include <cuda/std/__exception_> // #include <cuda/std/__new_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
