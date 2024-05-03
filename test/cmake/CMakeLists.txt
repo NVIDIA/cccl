@@ -16,7 +16,7 @@ foreach (root_type IN ITEMS SOURCE INSTALL)
 
   set(comps DEFAULT Thrust CUB libcudacxx)
   if (CCCL_ENABLE_UNSTABLE)
-    list(APPEND comps CudaNext)
+    list(APPEND comps cudax)
   endif()
 
   foreach (components IN LISTS comps)

@@ -1,10 +1,10 @@
-include("${CudaNext_SOURCE_DIR}/cmake/CPM.cmake")
+include("${cudax_SOURCE_DIR}/cmake/CPM.cmake")
 CPMAddPackage("gh:catchorg/Catch2@2.13.9")
 
 add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
 target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
 
-## CudaNext_add_test
+## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
 #
@@ -12,19 +12,19 @@ target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
 #   target. Useful for post-processing target information.
 # test_name: A unique name for the executable that will be appended to
 #  "<config_prefix>.test.".
-# cn_target: The reference CudaNext target with configuration information.
+# cn_target: The reference cudax target with configuration information.
 #
 # Additional arguments will be processed as test sources.
 #
-function(CudaNext_add_catch2_test target_name_var test_name cn_target) # ARGN=test sources
-  CudaNext_get_target_property(config_prefix ${cn_target} PREFIX)
+function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test sources
+  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
 
   set(test_target ${config_prefix}.${test_name})
   set(test_sources ${ARGN})
 
   add_executable(${test_target} ${test_sources})
   target_link_libraries(${test_target} PRIVATE ${cn_target} Catch2::Catch2 catch2_main)
-  CudaNext_clone_target_properties(${test_target} ${cn_target})
+  cudax_clone_target_properties(${test_target} ${cn_target})
   set_target_properties(${test_target} PROPERTIES
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
   )
@@ -38,8 +38,8 @@ function(CudaNext_add_catch2_test target_name_var test_name cn_target) # ARGN=te
 endfunction()
 
 # Create tests for each enabled configuration:
-foreach(cn_target IN LISTS CudaNext_TARGETS)
-  CudaNext_get_target_property(config_prefix ${cn_target} PREFIX)
+foreach(cn_target IN LISTS cudax_TARGETS)
+  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
 
   # Metatarget for the current configuration's tests:
   set(config_meta_target ${config_prefix}.tests)
@@ -47,7 +47,7 @@ foreach(cn_target IN LISTS CudaNext_TARGETS)
   add_dependencies(${config_prefix}.all ${config_meta_target})
 
   # Add tests:
-  CudaNext_add_catch2_test(test_target hierarchy_tests ${cn_target}
+  cudax_add_catch2_test(test_target hierarchy_tests ${cn_target}
     hierarchy_smoke.cu
     hierarchy_custom_types.cu
   )

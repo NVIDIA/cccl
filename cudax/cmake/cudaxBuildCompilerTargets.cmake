@@ -1,14 +1,14 @@
 #
-# This file defines the `CudaNext_build_compiler_targets()` function, which
+# This file defines the `cudax_build_compiler_targets()` function, which
 # creates the following interface targets:
 #
-# CudaNext.compiler_interface
+# cudax.compiler_interface
 # - Interface target providing compiler-specific options needed to build
-#   CudaNext's tests, examples, etc.
+#   cudax's tests, examples, etc.
 
-include("${CudaNext_SOURCE_DIR}/cmake/AppendOptionIfAvailable.cmake")
+include("${cudax_SOURCE_DIR}/cmake/AppendOptionIfAvailable.cmake")
 
-function(CudaNext_build_compiler_targets)
+function(cudax_build_compiler_targets)
   set(cxx_compile_definitions)
   set(cxx_compile_options)
   set(cuda_compile_options)
@@ -39,7 +39,7 @@ function(CudaNext_build_compiler_targets)
     # C4848: support for attribute 'msvc::no_unique_address' in C++17 and earlier is a vendor extension
     append_option_if_available("/wd4848" cxx_compile_options)
 
-    # CudaNext requires dim3 to be usable from a constexpr context, and the CUDART headers require
+    # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
     # __cplusplus to be defined for this to work:
     append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
   else()
@@ -69,34 +69,34 @@ function(CudaNext_build_compiler_targets)
   endif()
 
   if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    option(CudaNext_ENABLE_CT_PROFILING "Enable compilation time profiling" OFF)
-    if (CudaNext_ENABLE_CT_PROFILING)
+    option(cudax_ENABLE_CT_PROFILING "Enable compilation time profiling" OFF)
+    if (cudax_ENABLE_CT_PROFILING)
       append_option_if_available("-ftime-trace" cxx_compile_options)
     endif()
   endif()
 
-  add_library(CudaNext.compiler_interface INTERFACE)
+  add_library(cudax.compiler_interface INTERFACE)
 
   foreach (cxx_option IN LISTS cxx_compile_options)
-    target_compile_options(CudaNext.compiler_interface INTERFACE
+    target_compile_options(cudax.compiler_interface INTERFACE
       $<$<COMPILE_LANGUAGE:CXX>:${cxx_option}>
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${cxx_option}>
     )
   endforeach()
 
   foreach (cuda_option IN LISTS cuda_compile_options)
-    target_compile_options(CudaNext.compiler_interface INTERFACE
+    target_compile_options(cudax.compiler_interface INTERFACE
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:${cuda_option}>
     )
   endforeach()
 
   # Add these for both CUDA and CXX targets:
-  target_compile_definitions(CudaNext.compiler_interface INTERFACE
+  target_compile_definitions(cudax.compiler_interface INTERFACE
     ${cxx_compile_definitions}
   )
 
   # Promote warnings and display diagnostic numbers for nvcc:
-  target_compile_options(CudaNext.compiler_interface INTERFACE
+  target_compile_options(cudax.compiler_interface INTERFACE
     # If using CUDA w/ NVCC...
     # Display diagnostic numbers.
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcudafe=--display_error_number>
@@ -107,7 +107,7 @@ function(CudaNext_build_compiler_targets)
   )
 
   # Clang-cuda only:
-  target_compile_options(CudaNext.compiler_interface INTERFACE
+  target_compile_options(cudax.compiler_interface INTERFACE
     $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
     $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno_unknown-cuda-version>
   )

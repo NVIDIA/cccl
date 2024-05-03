@@ -4,10 +4,10 @@ source "$(dirname "$0")/build_common.sh"
 
 print_environment_details
 
-./build_cuda_next.sh "$@"
+./build_cudax.sh "$@"
 
-PRESET="cuda-next-cpp$CXX_STANDARD"
+PRESET="cudax-cpp$CXX_STANDARD"
 
-test_preset "CudaNext" ${PRESET}
+test_preset "CUDA Experimental" ${PRESET}
 
 print_time_summary

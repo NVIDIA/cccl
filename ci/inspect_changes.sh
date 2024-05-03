@@ -42,7 +42,7 @@ declare -A project_names=(
   [libcudacxx]="libcu++"
   [cub]="CUB"
   [thrust]="Thrust"
-  [cudax]="CUDA Experimental Library"
+  [cudax]="CUDA Experimental"
 )
 
 # Usage checks:

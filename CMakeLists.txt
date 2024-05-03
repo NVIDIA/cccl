@@ -41,7 +41,7 @@ option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
 
 if (CCCL_ENABLE_UNSTABLE)
-  option(CCCL_ENABLE_CudaNext "Enable the CUDA Next developer build." ON)
+  option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ON)
 endif()
 
 
@@ -63,8 +63,8 @@ if (CCCL_ENABLE_THRUST)
   set(THRUST_TOPLEVEL_PROJECT ON)
 endif()
 
-if (CCCL_ENABLE_CudaNext)
-  set(CudaNext_TOPLEVEL_PROJECT ON)
+if (CCCL_ENABLE_CUDAX)
+  set(cudax_TOPLEVEL_PROJECT ON)
 endif()
 
 add_subdirectory(libcudacxx)
@@ -72,7 +72,7 @@ add_subdirectory(cub)
 add_subdirectory(thrust)
 
 if (CCCL_ENABLE_UNSTABLE)
-  add_subdirectory(cuda_next)
+  add_subdirectory(cudax)
 endif()
 
 if (CCCL_ENABLE_TESTING)
