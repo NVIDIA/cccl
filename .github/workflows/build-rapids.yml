@@ -23,13 +23,21 @@ jobs:
           || echo "ok=false" | tee -a $GITHUB_OUTPUT;
 
   build-rapids:
-    name: Build all RAPIDS repos
+    name: Build RAPIDS (${{ matrix.libs }})
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
     secrets: inherit
     # TODO: this is temporary
     uses: ./.github/workflows/build-in-devcontainer.yml
     # uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { libs: 'rmm KvikIO cudf cudf_kafka cuspatial',         args: 'BUILD_TESTS BUILD_BENCHMARKS' }
+          - { libs: 'rmm ucxx raft cuvs',                           args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
+          - { libs: 'rmm ucxx raft cumlprims_mg cuml',              args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
+          - { libs: 'rmm ucxx raft cugraph-ops cugraph wholegraph', args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
     permissions:
       actions: read
       packages: read
@@ -40,64 +48,66 @@ jobs:
       arch: '["amd64"]'
       cuda: '["12.2"]'
       node_type: cpu32
+      extra-repo-deploy-key: RAPIDSAI_CUMLPRIMS_DEPLOY_KEY
+      extra-repo-deploy-key-2: RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY
       build_command: |
-        # Remove cumlprims_mg and cugraph-ops from /opt/rapids-build-utils/manifest.yaml
-        sudo yq -i '.repos |= filter(.name != "cumlprims_mg" and .name != "cugraph-ops")' /opt/rapids-build-utils/manifest.yaml;
+        set -x;
+
+        ###
+        # Remove libs from /opt/rapids-build-utils/manifest.yaml
+        ###
+        filters=(${{ matrix.libs }});
+        # prefix each element
+        filters=("${filters[@]/#/'.name == "'}");
+        # suffix each element
+        filters=("${filters[@]/%/'" or'}");
+        sudo yq -i ".repos |= filter(${filters[*]} false)" /opt/rapids-build-utils/manifest.yaml;
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
-        # Clone all the RAPIDS repos
-        clone-all -j$(nproc) -v -q --clone-upstream --single-branch --shallow-submodules;
-        # Build the RAPIDS repos using the local CCCL mount
-        sccache -z;
-        sccache --show-adv-stats;
-        args=(
-          -v
-          -j$(nproc --ignore=1)
-          -DBUILD_TESTS=OFF
-          -DBUILD_BENCHMARKS=OFF
-          -DBUILD_ANN_BENCH=OFF
-          -DBUILD_PRIMS_BENCH=OFF
-          -DBUILD_SHARED_LIBS=ON
-          -DENABLE_CUMLPRIMS_MG=OFF
-          -DUSE_CUGRAPH_OPS=OFF
-          -DCPM_CCCL_SOURCE="${HOME}/cccl"
-        );
-        build-rmm-cpp "${args[@]}" || true;
-        build-ucxx-cpp "${args[@]}" || true;
-        build-KvikIO-cpp "${args[@]}" || true;
-        build-cudf-cpp "${args[@]}" || true;
-        build-cudf_kafka-cpp "${args[@]}" || true;
-        build-raft-cpp "${args[@]}" || true;
-        build-cuvs-cpp "${args[@]}" || true;
-        build-cuml-cpp "${args[@]}" || true;
-        build-wholegraph-cpp "${args[@]}" || true;
-        build-cugraph-cpp "${args[@]}" || true;
-        build-cugraph_etl-cpp "${args[@]}" || true;
-        build-cuspatial-cpp "${args[@]}" || true;
-        sccache --show-adv-stats;
 
-        args=(
-          -v
-          -j$(nproc --ignore=1)
-          -DBUILD_TESTS=ON
-          -DBUILD_BENCHMARKS=ON
-          -DBUILD_ANN_BENCH=ON
-          -DBUILD_PRIMS_BENCH=ON
-          -DBUILD_SHARED_LIBS=ON
-          -DENABLE_CUMLPRIMS_MG=OFF
-          -DUSE_CUGRAPH_OPS=OFF
-          -DCPM_CCCL_SOURCE="${HOME}/cccl"
-        );
-        build-rmm-cpp "${args[@]}" || true;
-        build-ucxx-cpp "${args[@]}" || true;
-        build-KvikIO-cpp "${args[@]}" || true;
-        build-cudf-cpp "${args[@]}" || true;
-        build-cudf_kafka-cpp "${args[@]}" || true;
-        build-raft-cpp "${args[@]}" || true;
-        build-cuvs-cpp "${args[@]}" || true;
-        build-cuml-cpp "${args[@]}" || true;
-        build-wholegraph-cpp "${args[@]}" || true;
-        build-cugraph-cpp "${args[@]}" || true;
-        build-cugraph_etl-cpp "${args[@]}" || true;
-        build-cuspatial-cpp "${args[@]}" || true;
-        sccache --show-adv-stats;
+        ###
+        # Clone all the RAPIDS repos
+        ###
+        clone-all -j$(nproc) -v -q --clone-upstream --single-branch --shallow-submodules;
+
+        ###
+        # Build the RAPIDS repos using the local CCCL mount without and then with tests and benchmarks
+        ###
+
+        # Build up to 6 device archs in parallel
+        export INFER_NUM_DEVICE_ARCHITECTURES=1;
+        export MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=6;
+
+        declare -A failures;
+
+        for opt in OFF ON; do
+
+          # Build arguments list
+          args=(${{ matrix.args }});
+          # Enable/disable tests
+          args=("${args[@]/%/"=${opt}"}");
+          # Use the local CCCL mount
+          args+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
+          args+=(-v -j);
+
+          for lib in ${{ matrix.libs }}; do
+
+            # cuGraph device objects use lots of memory, so tell the scaler to
+            # take that into account when calculating -j/-t
+            if test "${lib}" = "cugraph"; then
+              args+=(--max-device-obj-memory-usage 5);
+            fi
+
+            sccache -z;
+            if ! build-${lib}-cpp "${args[@]}"; then
+              failures["${lib}"]=1;
+            fi
+            sccache --show-adv-stats;
+          done
+        done
+
+        # Print failures and exit
+        if test "${#failures[*]}" -gt 0; then
+          echo "Failures: ${!failures[*]}";
+          exit 1;
+        fi
