@@ -89,6 +89,7 @@ jobs:
           # Build arguments list
           args=(${{ matrix.args }});
           # Enable/disable tests
+          args=("${args[@]/#/"-D"}");
           args=("${args[@]/%/"=${opt}"}");
           # Use the local CCCL mount
           args+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
