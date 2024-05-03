@@ -61,10 +61,11 @@ jobs:
       name: ${{ matrix.name }}
       jobs: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)[matrix.name]) }}
 
-  # Check all other job statuses. This job gates branch protection checks.
-  ci:
-    name: CI
-    if: ${{ always() || !cancelled() }}
+  # This job acts as a sentry and will fail if any leaf job in the workflow tree fails, as
+  # run-workflow always succeeds. Use this job when checking for successful matrix workflow job completion.
+  verify-workflow:
+    name: Verify and summarize workflow results
+    if: ${{ always() && !cancelled() }}
     needs:
       - build-workflow
       - run-workflow
@@ -78,12 +79,22 @@ jobs:
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
+  # Check all other job statuses. This job gates branch protection checks.
+  ci:
+    name: CI
+    # !! Important: This job is used for branch protection checks.
+    # !! Need to use always() instead of !cancelled() because skipped jobs count as success
+    # !! for Github branch protection checks. Yes, really: by default, branch protections
+    # !! can be bypassed by cancelling CI. See NVIDIA/cccl#605.
+    if: ${{ always() }}
+    needs:
+      - verify-workflow
+    runs-on: ubuntu-latest
+    steps:
       - name: Check results
         run: |
-          status="passed"
+          status="success"
 
           check_result() {
             name=$1
@@ -98,10 +109,8 @@ jobs:
             fi
           }
 
-          # Note that run-workflow is different:
-          check_result "build-workflow" "success" "${{needs.build-workflow.result}}"
-          check_result "run-workflow" "true" "${{steps.check-workflow.outputs.success}}"
+          check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
 
-          if [[ "$status" == "failed" ]]; then
+          if [[ "$status" != "success" ]]; then
             exit 1
           fi
