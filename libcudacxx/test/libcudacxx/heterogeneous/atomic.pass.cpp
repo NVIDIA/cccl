@@ -10,6 +10,7 @@
 // UNSUPPORTED: windows && pre-sm-70
 
 #include <cuda/std/atomic>
+#include <cuda/std/cassert>
 
 #include "helpers.h"
 
@@ -144,18 +145,18 @@ using basic_testers =
               exchange_tester<-12, 17>>;
 
 using arithmetic_atomic_testers =
-  extend_tester_list<basic_testers,
-                     fetch_add_tester<17, 13, 30>,
-                     fetch_sub_tester<30, 21, 9>,
-                     fetch_sub_tester<9, 17, -8>>;
+  append<basic_testers,
+        fetch_add_tester<17, 13, 30>,
+        fetch_sub_tester<30, 21, 9>,
+        fetch_sub_tester<9, 17, -8>>;
 
 using bitwise_atomic_testers =
-  extend_tester_list<arithmetic_atomic_testers,
-                     fetch_add_tester<-8, 10, 2>,
-                     fetch_or_tester<2, 13, 15>,
-                     fetch_and_tester<15, 8, 8>,
-                     fetch_and_tester<8, 13, 8>,
-                     fetch_xor_tester<8, 12, 4>>;
+  append<arithmetic_atomic_testers,
+        fetch_add_tester<-8, 10, 2>,
+        fetch_or_tester<2, 13, 15>,
+        fetch_and_tester<15, 8, 8>,
+        fetch_and_tester<8, 13, 8>,
+        fetch_xor_tester<8, 12, 4>>;
 
 class big_not_lockfree_type
 {
@@ -197,39 +198,39 @@ __host__ __device__ void validate_not_lock_free()
 
 void kernel_invoker()
 {
-  validate_not_movable<cuda::std::atomic<signed char>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<signed short>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<signed int>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<signed long>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<signed long long>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<signed char>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<signed short>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<signed int>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<signed long>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<signed long long>, arithmetic_atomic_testers>();
 
-  validate_not_movable<cuda::std::atomic<unsigned char>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<unsigned short>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<unsigned int>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<unsigned long>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<unsigned long long>, bitwise_atomic_testers>();
+  validate_pinned<cuda::std::atomic<unsigned char>, bitwise_atomic_testers>();
+  validate_pinned<cuda::std::atomic<unsigned short>, bitwise_atomic_testers>();
+  validate_pinned<cuda::std::atomic<unsigned int>, bitwise_atomic_testers>();
+  validate_pinned<cuda::std::atomic<unsigned long>, bitwise_atomic_testers>();
+  validate_pinned<cuda::std::atomic<unsigned long long>, bitwise_atomic_testers>();
 
-  validate_not_movable<cuda::std::atomic<float>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::std::atomic<double>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<float>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::std::atomic<double>, arithmetic_atomic_testers>();
 
-  validate_not_movable<cuda::std::atomic<big_not_lockfree_type>, basic_testers>();
+  validate_pinned<cuda::std::atomic<big_not_lockfree_type>, basic_testers>();
 
-  validate_not_movable<cuda::atomic<signed char, cuda::thread_scope_system>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::atomic<signed short, cuda::thread_scope_system>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::atomic<signed int, cuda::thread_scope_system>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::atomic<signed long, cuda::thread_scope_system>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::atomic<signed long long, cuda::thread_scope_system>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<signed char, cuda::thread_scope_system>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<signed short, cuda::thread_scope_system>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<signed int, cuda::thread_scope_system>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<signed long, cuda::thread_scope_system>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<signed long long, cuda::thread_scope_system>, arithmetic_atomic_testers>();
 
-  validate_not_movable<cuda::atomic<unsigned char, cuda::thread_scope_system>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::atomic<unsigned short, cuda::thread_scope_system>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::atomic<unsigned int, cuda::thread_scope_system>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::atomic<unsigned long, cuda::thread_scope_system>, bitwise_atomic_testers>();
-  validate_not_movable<cuda::atomic<unsigned long long, cuda::thread_scope_system>, bitwise_atomic_testers>();
+  validate_pinned<cuda::atomic<unsigned char, cuda::thread_scope_system>, bitwise_atomic_testers>();
+  validate_pinned<cuda::atomic<unsigned short, cuda::thread_scope_system>, bitwise_atomic_testers>();
+  validate_pinned<cuda::atomic<unsigned int, cuda::thread_scope_system>, bitwise_atomic_testers>();
+  validate_pinned<cuda::atomic<unsigned long, cuda::thread_scope_system>, bitwise_atomic_testers>();
+  validate_pinned<cuda::atomic<unsigned long long, cuda::thread_scope_system>, bitwise_atomic_testers>();
 
-  validate_not_movable<cuda::atomic<float>, arithmetic_atomic_testers>();
-  validate_not_movable<cuda::atomic<double>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<float>, arithmetic_atomic_testers>();
+  validate_pinned<cuda::atomic<double>, arithmetic_atomic_testers>();
 
-  validate_not_movable<cuda::atomic<big_not_lockfree_type, cuda::thread_scope_system>, basic_testers>();
+  validate_pinned<cuda::atomic<big_not_lockfree_type, cuda::thread_scope_system>, basic_testers>();
 }
 
 int main(int arg, char** argv)

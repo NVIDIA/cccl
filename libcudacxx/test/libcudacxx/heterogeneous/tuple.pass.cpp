@@ -56,7 +56,7 @@ using w_r_w_r = performer_list<Write<10>, Read<10>, Write<30>, Read<30>>;
 void kernel_invoker()
 {
   tuple_t t(0, {0}, 0);
-  validate_not_movable<tuple_t, w_r_w_r>(t);
+  validate_pinned<tuple_t, w_r_w_r>(t);
 }
 
 int main(int arg, char** argv)

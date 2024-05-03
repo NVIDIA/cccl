@@ -53,7 +53,7 @@ using testers =
 void kernel_invoker()
 {
   variant_t v;
-  validate_not_movable<variant_t, testers>(v);
+  validate_pinned<variant_t, testers>(v);
 }
 
 int main(int arg, char** argv)
