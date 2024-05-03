@@ -118,7 +118,8 @@ jobs:
               if test -n '${{ inputs.extra-repo-deploy-key-2 }}'; then
                 ssh-add - <<< '${{ secrets[inputs.extra-repo-deploy-key-2] }}';
               fi
-              bash -x devcontainer-utils-init-ssh-deploy-keys || true;
+              devcontainer_utils_debug=init-deploy-keys \
+              devcontainer-utils-init-ssh-deploy-keys || true;
             fi
 
             cd ~/"${REPOSITORY}";
