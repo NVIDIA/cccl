@@ -95,7 +95,7 @@ _CCCL_HOST_DEVICE inline bool operator>(const null_type&, const null_type&)
  *  \tparam N This parameter selects the element of interest.
  *  \tparam T A \c tuple type of interest.
  *
- *  \see tuple
+ *  \see pair
  *  \see tuple
  */
 template <size_t N, class T>
@@ -120,7 +120,7 @@ struct __is_tuple_of_iterator_references : _CUDA_VSTD::false_type
  *  arguments. Each template argument specifies the type of element in the \p
  *  tuple. Consequently, tuples are heterogeneous, fixed-size collections of
  *  values. An instantiation of \p tuple with two arguments is similar to an
- *  instantiation of \p tuple with the same two arguments. Individual elements
+ *  instantiation of \p pair with the same two arguments. Individual elements
  *  of a \p tuple may be accessed with the \p get function.
  *
  *  \tparam TN The type of the <tt>N</tt> \c tuple element. Thrust's \p tuple
@@ -148,7 +148,7 @@ struct __is_tuple_of_iterator_references : _CUDA_VSTD::false_type
  *  }
  *  \endcode
  *
- *  \see tuple
+ *  \see pair
  *  \see get
  *  \see make_tuple
  *  \see tuple_element
