@@ -16,7 +16,7 @@
 //   T
 //   max(initializer_list<T> t);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 

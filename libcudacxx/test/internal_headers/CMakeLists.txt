@@ -8,9 +8,10 @@ find_package(CUDAToolkit)
 
 # Grep all internal headers
 file(GLOB_RECURSE internal_headers
-  RELATIVE "${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include"
+  RELATIVE "${libcudacxx_SOURCE_DIR}/include/cuda/"
   CONFIGURE_DEPENDS
-  ${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/__*/*.h
+  ${libcudacxx_SOURCE_DIR}/include/cuda/__*/*.h
+  ${libcudacxx_SOURCE_DIR}/include/cuda/std/__*/*.h
 )
 
 # headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
@@ -27,7 +28,13 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
   endif()
 
   set(headertest_${header_name} verify_${header_name})
-  add_library(headertest_${header_name} SHARED "${headertest_src}.cu" "${headertest_src}.cpp")
+  # cuda internal headers should not be tested against a host compiler
+  if(header_name MATCHES "__ptx.*")
+    add_library(headertest_${header_name} SHARED "${headertest_src}.cu")
+  else()
+    add_library(headertest_${header_name} SHARED "${headertest_src}.cu" "${headertest_src}.cpp")
+  endif()
+
   target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_options(headertest_${header_name}
     PRIVATE
@@ -63,7 +70,7 @@ function(libcudacxx_add_internal_header_test header)
   endif()
 
   # Seach the file for a fallback definition
-  file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/${header} header_file)
+  file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/${header} header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
   if(fallback)
     libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, ${fallback})

@@ -11,7 +11,7 @@
 
 // test set_terminate
 
-#include <cuda/std/__exception>
+#include <cuda/std/__exception_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

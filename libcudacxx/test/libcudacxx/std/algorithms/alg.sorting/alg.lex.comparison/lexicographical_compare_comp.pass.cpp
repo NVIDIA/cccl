@@ -15,7 +15,7 @@
 //   lexicographical_compare(Iter1 first1, Iter1 last1,
 //                           Iter2 first2, Iter2 last2, Compare comp);
 
-#include <cuda/std/__algorithm>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

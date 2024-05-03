@@ -150,6 +150,19 @@
 #  endif
 #endif
 
+#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 900) \
+  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
+#  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
+#else
+#  define TEST_IS_CONSTANT_EVALUATED() false
+#endif
+
+#if TEST_STD_VER >= 2023
+#  define TEST_IS_CONSTANT_EVALUATED_CXX23() TEST_IS_CONSTANT_EVALUATED()
+#else // ^^^ C++23 ^^^ / vvv C++20 vvv
+#  define TEST_IS_CONSTANT_EVALUATED_CXX23() false
+#endif // ^^^ TEST_STD_VER <= 2020
+
 #define TEST_ALIGNOF(...)       alignof(__VA_ARGS__)
 #define TEST_ALIGNAS(...)       alignas(__VA_ARGS__)
 #define TEST_CONSTEXPR          constexpr
@@ -171,11 +184,10 @@
 #else
 #  define TEST_CONSTEXPR_CXX20
 #endif
-#if defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && TEST_STD_VER >= 2020 \
-  && !defined(TEST_COMPILER_NVRTC)
-#  define TEST_CONSTEXPR_CXX20_ALLOC constexpr
+#if TEST_STD_VER >= 2023
+#  define TEST_CONSTEXPR_CXX23 constexpr
 #else
-#  define TEST_CONSTEXPR_CXX20_ALLOC
+#  define TEST_CONSTEXPR_CXX23
 #endif
 #if TEST_STD_VER > 2014
 #  define TEST_THROW_SPEC(...)

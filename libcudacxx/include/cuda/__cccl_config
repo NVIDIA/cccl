@@ -4,13 +4,21 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDA__CCCL_CONFIG
 #define _CUDA__CCCL_CONFIG
 
-#include <cuda/std/detail/libcxx/include/__cccl_config>
+#include <cuda/std/__cccl/attributes.h>
+#include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/dialect.h>
+#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__cccl/ptx_isa.h>
+#include <cuda/std/__cccl/system_header.h>
+#include <cuda/std/__cccl/version.h>
+#include <cuda/std/__cccl/visibility.h>
 
 #endif // _CUDA__CCCL_CONFIG

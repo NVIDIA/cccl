@@ -1,16 +1,17 @@
-// -*- C++ -*-
-//===--------------------------- __config ---------------------------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX_CONFIG
 #define _LIBCUDACXX_CONFIG
 
-#include <cuda/std/detail/libcxx/include/__cccl_config>
+#include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -1891,11 +1892,13 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#elif defined(__CUDACC_RTC__)
+#elif defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#elif defined(_MSC_VER)
+#elif defined(_CCCL_COMPILER_MSVC)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #elif defined(_CCCL_CUDACC_BELOW_11_8)
+#define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
+#elif defined(_CCCL_CUDA_COMPILER_CLANG)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #endif
 

@@ -17,7 +17,7 @@
 //
 // See https://llvm.org/PR50299.
 
-#include <cuda/std/__memory>
+#include <cuda/std/__memory_>
 
 #include "test_macros.h"
 

@@ -33,7 +33,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include "cuda/std/detail/libcxx/include/__cccl/diagnostic.h"
+#include "cuda/std/__cccl/diagnostic.h"
 #include "test_util_vec.h"
 #include <metal.hpp>
 

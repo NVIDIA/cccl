@@ -9,7 +9,7 @@
 
 // test bad_exception
 
-#include <cuda/std/__exception>
+#include <cuda/std/__exception_>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

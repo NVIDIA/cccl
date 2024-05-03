@@ -26,7 +26,7 @@ if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]; then
 fi
 
 # Version file paths
-CCCL_VERSION_FILE="libcudacxx/include/cuda/std/detail/libcxx/include/__cccl/version.h"
+CCCL_VERSION_FILE="libcudacxx/include/cuda/std/__cccl/version.h"
 THRUST_VERSION_FILE="thrust/thrust/version.h"
 CUB_VERSION_FILE="cub/cub/version.cuh"
 CCCL_CMAKE_VERSION_FILE="lib/cmake/cccl/cccl-config-version.cmake"

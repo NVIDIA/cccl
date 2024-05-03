@@ -26,6 +26,15 @@ option(METAL_BUILD_EXAMPLES OFF)
 option(METAL_BUILD_TESTS OFF)
 CPMAddPackage("gh:brunocodutra/metal@2.1.4")
 
+CPMAddPackage(
+  NAME NVTX
+  GITHUB_REPOSITORY NVIDIA/NVTX
+  GIT_TAG release-v3
+  DOWNLOAD_ONLY
+  SYSTEM
+)
+include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
+
 find_package(CUDAToolkit)
 
 set(curand_default OFF)
@@ -279,6 +288,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     cub_clone_target_properties(${test_target} ${cub_target})
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
     target_compile_definitions(${test_target} PRIVATE CUB_DETAIL_DEBUG_ENABLE_SYNC)
+
+    if ("${test_target}" MATCHES "nvtx_in_usercode")
+      target_link_libraries(${test_target} nvtx3-cpp)
+    endif()
 
     if (CUB_IN_THRUST)
       thrust_fix_clang_nvcc_build_for(${test_target})

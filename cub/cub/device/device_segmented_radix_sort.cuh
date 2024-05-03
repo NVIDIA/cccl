@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 #include <cub/util_deprecated.cuh>
 
@@ -83,6 +84,14 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSegmentedRadixSort
 {
+private:
+  // Name reported for NVTX ranges
+  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  {
+    return "cub::DeviceSegmentedRadixSort";
+  }
+
+public:
   //! @name Key-value pairs
   //! @{
 
@@ -232,6 +241,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -442,6 +453,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -642,6 +655,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -856,6 +871,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1042,6 +1059,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1238,6 +1257,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1422,6 +1443,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1615,6 +1638,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 

@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017)
+#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/__concepts/_One_of.h>
+#  include <cuda/std/__concepts/all_of.h>
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/cstddef>
-#  include <cuda/std/detail/libcxx/include/__concepts/_One_of.h>
-#  include <cuda/std/detail/libcxx/include/__concepts/all_of.h>
-#  include <cuda/std/detail/libcxx/include/__memory/addressof.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
 #  include <cuda/stream_ref>
 
 #  if _CCCL_STD_VER >= 2014
@@ -390,6 +390,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_REF_H
