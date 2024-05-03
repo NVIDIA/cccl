@@ -90,7 +90,7 @@ jobs:
           args=("${args[@]/%/"=${opt}"}");
           # Use the local CCCL mount
           args+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
-          args+=(-v -j);
+          args+=(-DBUILD_SHARED_LIBS=ON -v -j);
 
           for lib in ${{ matrix.libs }}; do
 
