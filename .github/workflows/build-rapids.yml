@@ -37,7 +37,7 @@ jobs:
           - { libs: 'rmm KvikIO cudf cudf_kafka cuspatial',         args: 'BUILD_TESTS BUILD_BENCHMARKS' }
           - { libs: 'rmm ucxx raft cuvs',                           args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
           - { libs: 'rmm ucxx raft cumlprims_mg cuml',              args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
-          - { libs: 'rmm ucxx raft cugraph-ops cugraph wholegraph', args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
+          - { libs: 'rmm ucxx raft cugraph-ops wholegraph cugraph', args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
     permissions:
       actions: read
       packages: read
