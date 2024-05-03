@@ -48,7 +48,7 @@ jobs:
       dir: 'ci/rapids'
       arch: '["amd64"]'
       cuda: '["12.2"]'
-      pkgr: ["conda"]
+      pkgr: '["conda"]'
       node_type: cpu32
       extra-repo-deploy-key: RAPIDSAI_CUMLPRIMS_DEPLOY_KEY
       extra-repo-deploy-key-2: RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY
