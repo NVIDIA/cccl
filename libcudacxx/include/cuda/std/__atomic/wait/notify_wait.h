@@ -64,7 +64,7 @@ bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs) {
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __atomic_wait(_Tp const volatile* __a, __atomic_underlying_t<_Tp> const __val, memory_order __order, _Sco = {}) {
+_LIBCUDACXX_INLINE_VISIBILITY void __atomic_wait(_Tp const volatile* __a, __remove_cv_t<__atomic_underlying_t<_Tp>> const __val, memory_order __order, _Sco = {}) {
     for(int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i) {
         if(!__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
             return;
