@@ -16,18 +16,7 @@
 #include <thread>
 #include <vector>
 
-#include <stdlib.h>
-
 #include "meta.h"
-
-template <typename ... T>
-struct void_sink{};
-
-template <typename T, typename = int>
-struct has_threadcount : std::false_type { };
-
-template <typename T>
-struct has_threadcount <T, decltype((void) T::threadcount, (int)0)> : std::true_type {};
 
 #define DEFINE_ASYNC_TRAIT(...)                                             \
   template <typename T, typename = cuda::std::true_type>                    \
@@ -49,6 +38,13 @@ DEFINE_ASYNC_TRAIT()
 DEFINE_ASYNC_TRAIT(_initialize)
 DEFINE_ASYNC_TRAIT(_validate)
 
+#undef DEFINE_ASYNC_TRAIT
+
+template <typename T, typename = int>
+struct has_threadcount : std::false_type { };
+template <typename T>
+struct has_threadcount <T, decltype((void) T::threadcount, (int)0)> : std::true_type {};
+
 template <typename T, bool = has_threadcount<T>::value>
 struct threadcount_trait_impl
 {
@@ -63,8 +59,6 @@ struct threadcount_trait_impl<T, true>
 
 template <typename T>
 using threadcount_trait = threadcount_trait_impl<T>;
-
-#undef DEFINE_ASYNC_TRAIT
 
 #define HETEROGENEOUS_SAFE_CALL(...)                                                  \
   do                                                                                  \
