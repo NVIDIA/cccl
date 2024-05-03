@@ -41,9 +41,11 @@ DEFINE_ASYNC_TRAIT(_validate)
 #undef DEFINE_ASYNC_TRAIT
 
 template <typename T, typename = int>
-struct has_threadcount : std::false_type { };
+struct has_threadcount : std::false_type
+{};
 template <typename T>
-struct has_threadcount <T, decltype((void) T::threadcount, (int)0)> : std::true_type {};
+struct has_threadcount<T, decltype((void) T::threadcount, (int) 0)> : std::true_type
+{};
 
 template <typename T, bool = has_threadcount<T>::value>
 struct threadcount_trait_impl
