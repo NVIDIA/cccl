@@ -646,7 +646,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   const int* offset_begin_it                  = d_begin_offsets;
   thrust::device_ptr<const int> offset_end_it = thrust::device_pointer_cast(d_end_offsets);
 
-  cudaError_t status = cudaErrorNotYetImplemented;
+  cudaError_t status = cudaErrorInvalidValue;
 
   if (stable_sort)
   {
