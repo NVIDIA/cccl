@@ -80,9 +80,10 @@ class resource_ref {
 */
 // clang-format on
 
-#include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
+#include <cuda_runtime_api.h>
+// cuda_runtime_api needs to come first
 
-#include "__cccl_config"
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
