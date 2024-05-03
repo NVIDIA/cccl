@@ -8,6 +8,7 @@ install(DIRECTORY "${CUB_SOURCE_DIR}/cub"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   FILES_MATCHING
     PATTERN "*.cuh"
+    PATTERN "*.hpp"
 )
 
 install(DIRECTORY "${CUB_SOURCE_DIR}/cub/cmake/"
