@@ -90,14 +90,16 @@ jobs:
           args=("${args[@]/%/"=${opt}"}");
           # Use the local CCCL mount
           args+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
-          args+=(-DBUILD_SHARED_LIBS=ON -v -j);
+          args+=(-DBUILD_SHARED_LIBS=ON);
 
           for lib in ${{ matrix.libs }}; do
 
-            # cuGraph device objects use lots of memory, so tell the scaler to
-            # take that into account when calculating -j/-t
-            if test "${lib}" = "cugraph"; then
-              args+=(--max-device-obj-memory-usage 5);
+            if test "${lib}" != "cugraph"; then
+              args=(-v -j "${args[@]}");
+            else
+              # cuGraph device objects use lots of memory, so tell the scaler to
+              # take that into account when calculating -j/-t
+              args=(-v -j --max-device-obj-memory-usage 5 "${args[@]}");
             fi
 
             sccache -z;
