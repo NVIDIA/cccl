@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 #include <cuda/std/__atomic/functions.h>
