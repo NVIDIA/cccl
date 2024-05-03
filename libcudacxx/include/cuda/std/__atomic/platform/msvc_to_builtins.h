@@ -38,10 +38,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // hardware
 
 // MSVC Does not have compiler intrinsics for lock-free checking
-#ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
-#  define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) (__x <= 8)
-#endif
-
 inline int __stronger_order_msvc(int __a, int __b)
 {
   int const __max = __a > __b ? __a : __b;

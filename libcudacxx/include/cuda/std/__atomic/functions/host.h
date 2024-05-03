@@ -19,10 +19,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
-#ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE
-#define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(__x) __atomic_is_lock_free(__x, 0)
-#endif
-
 inline
 void __atomic_thread_fence_host(memory_order __order) {
   __atomic_thread_fence(__atomic_order_to_int(__order));
