@@ -55,9 +55,12 @@ Coming soon!
 
 ## Building and Testing
 
-CCCL components are header-only libraries. This means there isn't a traditional build process for the library itself. However, before submitting contributions, it's a good idea to build and run tests. Dedicated build and test scripts for each component are provided in the `ci/` directory.
+CCCL components are header-only libraries. This means there isn't a traditional build process for the library itself. However, before submitting contributions, it's a good idea to build and run tests.
 
-### Building
+There are multiple options for building and running our tests, which you choose depends on your preferences and if you are using [CCCL's DevContainers](.devcontainer/README.md) (highly recommended!).
+
+### Using Manual Builds Scripts
+#### Building
 
 Use the build scripts provided in the `ci/` directory to build tests for each component. Building tests does not require a GPU.
 
@@ -76,7 +79,7 @@ Use the build scripts provided in the `ci/` directory to build tests for each co
 ./ci/build_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
 
-### Testing
+#### Testing
 
 Use the test scripts provided in the `ci/` directory to run tests for each component. These take the same arguments as the build scripts and will automatically build the tests if they haven't already been built. Running tests requires a GPU.
 
@@ -88,6 +91,60 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 ```bash
 ./ci/test_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
+
+### Using CMake Presets
+
+[CMake Presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html) are a set of configurations defined in a JSON file that specify project-wide build details for CMake. They provide a standardized and sharable way to configure, build, and test projects across different platforms and development environments. Presets are available from CMake version 3.19 and later.
+
+There are three kinds of Presets:
+
+- Configure Presets: specify options for the `cmake` command.
+
+- Builds Presets: specify options for the `cmake --build` command.
+
+- Test Presets: specify options for the `ctest` command.
+
+In CCCL we provide many presets to be used out of the box. You can find the complete list in the our corresponding [CMakePresets.json](./CMakePresets.json) file.
+
+#### Using CMake Presets via Command Line
+
+Once you have created your `build` directory and navigated into it, you can configure your project for a specific preset (e.g. `thrust-cpp11`) by executing the following command:
+
+```bash
+cmake --preset=thrust-cpp11 <path/to/cccl/root>
+```
+
+This command configures the project using the thrust-cpp11 preset. Please replace `<path/to/cccl/root>` with the actual path to the root directory of your CCCL project.
+
+Upon successful configuration, initiate the build process with:
+
+```bash
+cmake --build .
+```
+
+#### Using CMake Presets via VS Code GUI extension (Recommended when using DevContainers)
+
+The recommended way to use CMake Presets is via the VS Code extension [CMake Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools). As soon as you install the extension you would be able to see the sidebar menu below.
+
+   ![cmaketools sidebar](/.devcontainer/img/cmaketools_sidebar.png)
+
+You can specify the desire CMake Preset by clicking the "Select Configure Preset" button under the "Configure" drop down option (see image below).
+
+   ![cmaketools presets](.devcontainer/img/cmaketools_presets.png)
+
+After that you can select the default build target from the "Build" drop down option. As soon as you click the button a drop down menu will appear with all the available targets that are included within the preset you selected. For example if you had selected the `all-dev` preset VS Code will display all the available targets we have in cccl.
+
+   ![cmaketools presets](.devcontainer/img/cmaketools_targets.png)
+
+You can build the selected target by pressing the gear button ![gear](.devcontainer/img/build_button.png) at the bottom of the VS Code window.
+
+Alternatively you can select the desired target from either the "Debug" or "Launch" drop down menu (for debugging or running correspondingly). <b>In that case after you select the target and either press "Run" ![run](.devcontainer/img/run.png) or "Debug" ![debug](.devcontainer/img/debug.png) the target will build on its own before running without the user having to build it explicitly from the gear button.</b>
+
+---
+
+We encourage users who want to debug device code to install the [Nsight Visual Studio Code Edition extension](https://marketplace.visualstudio.com/items?itemName=NVIDIA.nsight-vscode-edition) that enables the VS Code frontend for `cuda-gdb`. <u>To enable that you should avoid pressing the "Debug" button from the bottom menu and try launching it from the sidebar menu</u>.
+
+![nsight](.devcontainer/img/nsight.png)
 
 ## Creating a Pull Request
 
