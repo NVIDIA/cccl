@@ -12,6 +12,7 @@
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
 
+#include <cuda/std/cassert>
 #include <cuda/barrier>
 
 #include "helpers.h"
@@ -148,23 +149,23 @@ using cuda_barrier_system = cuda::barrier<cuda::thread_scope_system, Completion>
 
 void kernel_invoker()
 {
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, a_aw_w>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_aw_w>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_aw_w>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_aw_w>(2);
 
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, aw_aw>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, aw_aw>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, aw_aw>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, aw_aw>(2);
 
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, a_w_aw>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_aw>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_w_aw>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_aw>(2);
 
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, a_w_a_w>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_a_w>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_w_a_w>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_a_w>(2);
 
-  validate_not_movable<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_a>(2);
-  validate_not_movable<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_a>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_a>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_a>(2);
 
-  validate_not_movable<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_b>(2);
-  validate_not_movable<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_b>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_b>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_b>(2);
 }
 
 int main(int arg, char** argv)

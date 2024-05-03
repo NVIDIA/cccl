@@ -14,6 +14,7 @@
 #define _LIBCUDACXX_CUDA_ABI_VERSION 2
 
 #include <cuda/std/latch>
+#include <cuda/std/cassert>
 
 #include "helpers.h"
 
@@ -76,14 +77,14 @@ using r3_aw1_aw1_aw1 = performer_list<reset<3>, arrive_and_wait<1>, arrive_and_w
 
 void kernel_invoker()
 {
-  validate_not_movable<cuda::std::latch, r0_w>(0);
-  validate_not_movable<cuda::latch<cuda::thread_scope_system>, r0_w>(0);
+  validate_pinned<cuda::std::latch, r0_w>(0);
+  validate_pinned<cuda::latch<cuda::thread_scope_system>, r0_w>(0);
 
-  validate_not_movable<cuda::std::latch, r5_cd1_aw2_w_cd2>(0);
-  validate_not_movable<cuda::latch<cuda::thread_scope_system>, r5_cd1_aw2_w_cd2>(0);
+  validate_pinned<cuda::std::latch, r5_cd1_aw2_w_cd2>(0);
+  validate_pinned<cuda::latch<cuda::thread_scope_system>, r5_cd1_aw2_w_cd2>(0);
 
-  validate_not_movable<cuda::std::latch, r3_aw1_aw1_aw1>(0);
-  validate_not_movable<cuda::latch<cuda::thread_scope_system>, r3_aw1_aw1_aw1>(0);
+  validate_pinned<cuda::std::latch, r3_aw1_aw1_aw1>(0);
+  validate_pinned<cuda::latch<cuda::thread_scope_system>, r3_aw1_aw1_aw1>(0);
 }
 
 int main(int arg, char** argv)
