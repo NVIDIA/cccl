@@ -87,16 +87,17 @@ jobs:
         for opt in OFF ON; do
 
           # Build arguments list
-          args=(${{ matrix.args }});
+          args_=(${{ matrix.args }});
           # Enable/disable tests
-          args=("${args[@]/#/"-D"}");
-          args=("${args[@]/%/"=${opt}"}");
+          args_=("${args_[@]/#/"-D"}");
+          args_=("${args_[@]/%/"=${opt}"}");
           # Use the local CCCL mount
-          args+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
-          args+=(-DBUILD_SHARED_LIBS=ON);
+          args_+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
+          args_+=(-DBUILD_SHARED_LIBS=ON);
 
           for lib in ${{ matrix.libs }}; do
 
+            args=("${args_[@]}")
             if test "${lib}" != "cugraph"; then
               args=(-v -j "${args[@]}");
             else
