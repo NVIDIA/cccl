@@ -3,12 +3,18 @@ on:
     inputs:
       sha:
         type: string
+      dir:
+        type: string
+        default: '.devcontainer'
       arch:
         type: string
         default: '["amd64"]'
       cuda:
         type: string
         default: '["12.0"]'
+      pkgr:
+        type: string
+        default: '["conda", "pip"]'
       repo:
         type: string
       node_type:
@@ -50,7 +56,7 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.arch) }}
         cuda: ${{ fromJSON(inputs.cuda) }}
-        pkgr: ["conda"]
+        pkgr: ${{ fromJSON(inputs.pkgr) }}
     runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +71,7 @@ jobs:
       - name: Check if repo has devcontainer
         run: |
           echo "REPOSITORY=$(basename $(pwd))" | tee -a "${GITHUB_ENV}";
-          if test -f .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json; then
+          if test -f ${{ inputs.dir }}/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json; then
             echo "HAS_DEVCONTAINER=true" >> "${GITHUB_ENV}";
           else
             echo "HAS_DEVCONTAINER=false" >> "${GITHUB_ENV}";
@@ -86,7 +92,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           push: never
-          configFile: .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json
+          configFile: ${{ inputs.dir }}/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json
           env: |
             REPOSITORY=${{ env.REPOSITORY }}
             SCCACHE_REGION=us-east-2

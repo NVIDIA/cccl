@@ -1,7 +1,7 @@
 {
   "build": {
-    "context": "${localWorkspaceFolder}/.devcontainer",
-    "dockerfile": "${localWorkspaceFolder}/.devcontainer/rapids.Dockerfile",
+    "context": "${localWorkspaceFolder}/ci/rapids",
+    "dockerfile": "${localWorkspaceFolder}/ci/rapids/rapids.Dockerfile",
     "args": {
       "CUDA": "12.2",
       "PYTHON_PACKAGE_MANAGER": "conda",
