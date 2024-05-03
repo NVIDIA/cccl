@@ -12,6 +12,7 @@
 #define _LIBCUDACXX___CUDA_ATOMIC_H
 
 #include <cuda/std/detail/__config>
+
 #include <cuda/std/atomic>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -27,46 +28,45 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 // atomic<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic
-  : public std::__atomic_impl<_Tp, _Sco>
+struct atomic : public std::__atomic_impl<_Tp, _Sco>
 {
-    using value_type = _Tp;
+  using value_type = _Tp;
 
   constexpr atomic() noexcept = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  constexpr atomic(_Tp __d) noexcept
-      : std::__atomic_impl<_Tp, _Sco>(__d) {}
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr atomic(_Tp __d) noexcept
+      : std::__atomic_impl<_Tp, _Sco>(__d)
+  {}
 
-  atomic(const atomic&) = delete;
-  atomic& operator=(const atomic&) = delete;
+  atomic(const atomic&)                     = delete;
+  atomic& operator=(const atomic&)          = delete;
   atomic& operator=(const atomic&) volatile = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp operator=(_Tp __d) volatile noexcept
-      {this->store(__d); return __d;}
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp operator=(_Tp __d) noexcept
-      {this->store(__d); return __d;}
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp operator=(_Tp __d) volatile noexcept
+  {
+    this->store(__d);
+    return __d;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp operator=(_Tp __d) noexcept
+  {
+    this->store(__d);
+    return __d;
+  }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
     return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
     return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
     return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
     return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
@@ -75,8 +75,7 @@ struct atomic
 // atomic_ref<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic_ref
-  : public std::__atomic_ref_impl<_Tp, _Sco>
+struct atomic_ref : public std::__atomic_ref_impl<_Tp, _Sco>
 {
   using value_type = _Tp;
 
@@ -84,25 +83,26 @@ struct atomic_ref
 
   static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  explicit atomic_ref(_Tp& __ref)
-    : std::__atomic_ref_impl<_Tp, _Sco>(__ref) {}
+  _LIBCUDACXX_INLINE_VISIBILITY explicit atomic_ref(_Tp& __ref)
+      : std::__atomic_ref_impl<_Tp, _Sco>(__ref)
+  {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp operator=(_Tp __v) const noexcept {this->store(__v); return __v;}
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp operator=(_Tp __v) const noexcept
+  {
+    this->store(__v);
+    return __v;
+  }
 
-  atomic_ref(const atomic_ref&) noexcept = default;
-  atomic_ref& operator=(const atomic_ref&) = delete;
+  atomic_ref(const atomic_ref&) noexcept         = default;
+  atomic_ref& operator=(const atomic_ref&)       = delete;
   atomic_ref& operator=(const atomic_ref&) const = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
   }

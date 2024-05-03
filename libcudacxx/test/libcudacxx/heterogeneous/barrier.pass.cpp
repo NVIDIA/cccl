@@ -12,8 +12,8 @@
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
 
-#include <cuda/std/cassert>
 #include <cuda/barrier>
+#include <cuda/std/cassert>
 
 #include "helpers.h"
 

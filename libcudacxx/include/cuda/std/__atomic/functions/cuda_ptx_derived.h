@@ -13,21 +13,14 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/cstdint>
-
 #include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
 bool _CCCL_DEVICE __atomic_compare_exchange_cuda(
-  _Tp volatile* __ptr,
-  _Tp* __expected,
-  const _Tp __desired,
-  bool,
-  int __success_memorder,
-  int __failure_memorder,
-  _Sco)
+  _Tp volatile* __ptr, _Tp* __expected, const _Tp __desired, bool, int __success_memorder, int __failure_memorder, _Sco)
 {
   auto const __aligned = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
   auto const __offset  = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * 8;
@@ -43,7 +36,8 @@ bool _CCCL_DEVICE __atomic_compare_exchange_cuda(
       break;
     }
     uint32_t const __attempt = (__old & ~__mask) | (*__desired << __offset);
-    if (__atomic_compare_exchange_cuda(__aligned, &__old, &__attempt, true, __success_memorder, __failure_memorder, _Sco{}))
+    if (__atomic_compare_exchange_cuda(
+          __aligned, &__old, &__attempt, true, __success_memorder, __failure_memorder, _Sco{}))
     {
       return true;
     }
@@ -73,11 +67,10 @@ _Tp _CCCL_DEVICE __atomic_fetch_add_cuda(_Tp volatile* __ptr, _Up __val, int __m
   return __expected;
 }
 
-template <
-  typename _Tp,
-  typename _Up,
-  typename _Sco,
-  __enable_if_t<sizeof(_Tp) <= 2 || _CUDA_VSTD::is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp,
+          typename _Up,
+          typename _Sco,
+          __enable_if_t<sizeof(_Tp) <= 2 || _CUDA_VSTD::is_floating_point<_Tp>::value, int> = 0>
 _Tp _CCCL_HOST_DEVICE __atomic_fetch_max_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
@@ -92,11 +85,10 @@ _Tp _CCCL_HOST_DEVICE __atomic_fetch_max_cuda(_Tp volatile* __ptr, _Up __val, in
   return __expected;
 }
 
-template <
-  typename _Tp,
-  typename _Up,
-  typename _Sco,
-  __enable_if_t<sizeof(_Tp) <= 2 || _CUDA_VSTD::is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp,
+          typename _Up,
+          typename _Sco,
+          __enable_if_t<sizeof(_Tp) <= 2 || _CUDA_VSTD::is_floating_point<_Tp>::value, int> = 0>
 _Tp _CCCL_HOST_DEVICE __atomic_fetch_min_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
@@ -175,13 +167,7 @@ void _CCCL_DEVICE __atomic_store_n_cuda(_Tp volatile* __ptr, _Tp __val, int __me
 
 template <typename _Tp, typename _Sco>
 bool _CCCL_DEVICE __atomic_compare_exchange_n_cuda(
-  _Tp volatile* __ptr,
-  _Tp* __expected,
-  _Tp __desired,
-  bool __weak,
-  int __success_memorder,
-  int __failure_memorder,
-  _Sco)
+  _Tp volatile* __ptr, _Tp* __expected, _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder, _Sco)
 {
   return __atomic_compare_exchange_cuda(
     __ptr, __expected, __desired, __weak, __success_memorder, __failure_memorder, _Sco{});

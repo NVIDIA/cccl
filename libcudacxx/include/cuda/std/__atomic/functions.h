@@ -16,8 +16,8 @@
 #include <cuda/std/__atomic/platform.h>
 
 // Device atomics
-#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_derived.h>
+#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
 
 // Host atomics
 #include <cuda/std/__atomic/functions/host.h>

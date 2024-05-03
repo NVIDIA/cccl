@@ -158,7 +158,8 @@ __host__ __device__ void run()
   static_assert(cuda::std::atomic<unsigned long>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_LONG_LOCK_FREE), "");
   checkLongLongTypes();
   static_assert(cuda::std::atomic<void*>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE), "");
-  static_assert(cuda::std::atomic<cuda::std::nullptr_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE), "");
+  static_assert(
+    cuda::std::atomic<cuda::std::nullptr_t>::is_always_lock_free == (2 == LIBCUDACXX_ATOMIC_POINTER_LOCK_FREE), "");
 }
 
 int main(int, char**)

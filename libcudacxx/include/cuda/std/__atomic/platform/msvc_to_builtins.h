@@ -17,10 +17,10 @@
 #  error "This file is only for CL.EXE's benefit"
 #endif
 
-#include <intrin.h>
+#include <cuda/std/__atomic/order.h>
 #include <cuda/std/cassert>
 
-#include <cuda/std/__atomic/order.h>
+#include <intrin.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

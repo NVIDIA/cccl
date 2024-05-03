@@ -13,111 +13,121 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__type_traits/conditional.h>
-
-#include <cuda/std/__atomic/wait/polling.h>
-#include <cuda/std/__atomic/wait/notify_wait.h>
-
+#include <cuda/std/__atomic/api/common.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-
-#include <cuda/std/__atomic/api/common.h>
+#include <cuda/std/__atomic/wait/notify_wait.h>
+#include <cuda/std/__atomic/wait/polling.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp, typename _Sco>
-struct __atomic_common {
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_common(_Tp __v) : __a(__v) {}
+struct __atomic_common
+{
+  _CCCL_HOST_DEVICE constexpr inline __atomic_common(_Tp __v)
+      : __a(__v)
+  {}
 
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_common() : __a() {}
+  _CCCL_HOST_DEVICE constexpr inline __atomic_common()
+      : __a()
+  {}
 
-    __atomic_storage_t<_Tp> __a;
+  __atomic_storage_t<_Tp> __a;
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-    static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,)
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag>
-struct __atomic_arithmetic {
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_arithmetic(_Tp __v) : __a(__v) {}
+struct __atomic_arithmetic
+{
+  _CCCL_HOST_DEVICE constexpr inline __atomic_arithmetic(_Tp __v)
+      : __a(__v)
+  {}
 
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_arithmetic() : __a() {}
+  _CCCL_HOST_DEVICE constexpr inline __atomic_arithmetic()
+      : __a()
+  {}
 
-    __atomic_storage_t<_Tp> __a;
+  __atomic_storage_t<_Tp> __a;
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-    static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,)
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
 
-    _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(,)
-    _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag>
-struct __atomic_bitwise {
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_bitwise(_Tp __v) : __a(__v) {}
+struct __atomic_bitwise
+{
+  _CCCL_HOST_DEVICE constexpr inline __atomic_bitwise(_Tp __v)
+      : __a(__v)
+  {}
 
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_bitwise() : __a() {}
+  _CCCL_HOST_DEVICE constexpr inline __atomic_bitwise()
+      : __a()
+  {}
 
-    __atomic_storage_t<_Tp> __a;
+  __atomic_storage_t<_Tp> __a;
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-    static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,)
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
 
-    _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(,)
-    _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, )
+  _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
 
-    _LIBCUDACXX_ATOMIC_BITWISE_IMPL(,)
-    _LIBCUDACXX_ATOMIC_BITWISE_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, )
+  _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, volatile)
 };
 
 template <typename _Tp, typename _Sco = __thread_scope_system_tag>
-struct __atomic_pointer {
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_pointer(_Tp __v) : __a(__v) {}
+struct __atomic_pointer
+{
+  _CCCL_HOST_DEVICE constexpr inline __atomic_pointer(_Tp __v)
+      : __a(__v)
+  {}
 
-    _CCCL_HOST_DEVICE constexpr inline
-    __atomic_pointer() : __a() {}
+  _CCCL_HOST_DEVICE constexpr inline __atomic_pointer()
+      : __a()
+  {}
 
-    __atomic_storage_t<_Tp> __a;
+  __atomic_storage_t<_Tp> __a;
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
-    static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
+  static constexpr bool is_always_lock_free = _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(sizeof(_Tp), 0);
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,)
-    _LIBCUDACXX_ATOMIC_COMMON_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, )
+  _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
 
-    _LIBCUDACXX_ATOMIC_POINTER_IMPL(,)
-    _LIBCUDACXX_ATOMIC_POINTER_IMPL(,volatile)
+  _LIBCUDACXX_ATOMIC_POINTER_IMPL(, )
+  _LIBCUDACXX_ATOMIC_POINTER_IMPL(, volatile)
 };
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
-using __atomic_impl = _If<is_pointer<_Tp>::value,
-                        __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
-                        _If<is_floating_point<_Tp>::value,
-                            __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
-                            _If<is_integral<_Tp>::value,
-                                __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>,
-                                __atomic_common<_Tp, __scope_to_tag<_Sco>> >>>;
+using __atomic_impl =
+  _If<is_pointer<_Tp>::value,
+      __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
+      _If<is_floating_point<_Tp>::value,
+          __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
+          _If<is_integral<_Tp>::value,
+              __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>,
+              __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

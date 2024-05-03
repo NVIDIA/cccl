@@ -13,9 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/order.h>
-
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/wait/polling.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -23,58 +22,59 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 extern "C" _CCCL_DEVICE void __atomic_try_wait_unsupported_before_SM_70__();
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __atomic_try_wait_slow(_Tp const volatile* __a, __atomic_underlying_t<_Tp> __val, memory_order __order, _Sco) {
-    NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_70,
-            __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});,
-        NV_IS_HOST,
-            __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});,
-        NV_ANY_TARGET,
-            __atomic_try_wait_unsupported_before_SM_70__();
-    );
+_LIBCUDACXX_INLINE_VISIBILITY void
+__atomic_try_wait_slow(_Tp const volatile* __a, __atomic_underlying_t<_Tp> __val, memory_order __order, _Sco)
+{
+  NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
+                     , NV_IS_HOST, __atomic_try_wait_slow_fallback(__a, __val, __order, _Sco{});
+                     , NV_ANY_TARGET, __atomic_try_wait_unsupported_before_SM_70__(););
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __atomic_notify_one(_Tp const volatile*, _Sco) {
-    NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_70,,
-        NV_IS_HOST,,
-        NV_ANY_TARGET,
-            __atomic_try_wait_unsupported_before_SM_70__();
-    );
+_LIBCUDACXX_INLINE_VISIBILITY void __atomic_notify_one(_Tp const volatile*, _Sco)
+{
+  NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, , NV_IS_HOST, , NV_ANY_TARGET, __atomic_try_wait_unsupported_before_SM_70__(););
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __atomic_notify_all(_Tp const volatile*, _Sco) {
-    NV_DISPATCH_TARGET(
-        NV_PROVIDES_SM_70,,
-        NV_IS_HOST,,
-        NV_ANY_TARGET,
-            __atomic_try_wait_unsupported_before_SM_70__();
-    );
+_LIBCUDACXX_INLINE_VISIBILITY void __atomic_notify_all(_Tp const volatile*, _Sco)
+{
+  NV_DISPATCH_TARGET(NV_PROVIDES_SM_70, , NV_IS_HOST, , NV_ANY_TARGET, __atomic_try_wait_unsupported_before_SM_70__(););
 }
 
-template <typename _Tp> _LIBCUDACXX_INLINE_VISIBILITY
-bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs) {
+template <typename _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs)
+{
 #if defined(_CCCL_CUDA_COMPILER)
-    return __lhs == __rhs;
+  return __lhs == __rhs;
 #else
-    return memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
+  return memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
 #endif
 }
 
 template <typename _Tp, typename _Sco>
-_LIBCUDACXX_INLINE_VISIBILITY void __atomic_wait(_Tp const volatile* __a, __remove_cv_t<__atomic_underlying_t<_Tp>> const __val, memory_order __order, _Sco = {}) {
-    for(int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i) {
-        if(!__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
-            return;
-        if(__i < 12)
-            __libcpp_thread_yield_processor();
-        else
-            __libcpp_thread_yield();
+_LIBCUDACXX_INLINE_VISIBILITY void __atomic_wait(
+  _Tp const volatile* __a, __remove_cv_t<__atomic_underlying_t<_Tp>> const __val, memory_order __order, _Sco = {})
+{
+  for (int __i = 0; __i < _LIBCUDACXX_POLLING_COUNT; ++__i)
+  {
+    if (!__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
+    {
+      return;
     }
-    while(__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
-        __atomic_try_wait_slow(__a, __val, __order, _Sco{});
+    if (__i < 12)
+    {
+      __libcpp_thread_yield_processor();
+    }
+    else
+    {
+      __libcpp_thread_yield();
+    }
+  }
+  while (__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
+  {
+    __atomic_try_wait_slow(__a, __val, __order, _Sco{});
+  }
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

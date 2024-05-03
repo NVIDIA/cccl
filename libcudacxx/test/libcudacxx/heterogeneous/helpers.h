@@ -16,18 +16,20 @@
 #include <thread>
 #include <vector>
 
+#include "meta.h"
 #include <stdlib.h>
 
-#include "meta.h"
-
-template <typename ... T>
-struct void_sink{};
+template <typename... T>
+struct void_sink
+{};
 
 template <typename T, typename = int>
-struct has_threadcount : std::false_type { };
+struct has_threadcount : std::false_type
+{};
 
 template <typename T>
-struct has_threadcount <T, decltype((void) T::threadcount, (int)0)> : std::true_type {};
+struct has_threadcount<T, decltype((void) T::threadcount, (int) 0)> : std::true_type
+{};
 
 #define DEFINE_ASYNC_TRAIT(...)                                             \
   template <typename T, typename = cuda::std::true_type>                    \
@@ -202,7 +204,8 @@ void device_destroy(T* object)
   HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
 }
 template <typename Fn>
-void device_launch_async(Fn& launcher) {
+void device_launch_async(Fn& launcher)
+{
   auto streamManager = [launcher]() {
     cudaStream_t stream;
     HETEROGENEOUS_SAFE_CALL(cudaStreamCreate(&stream));
@@ -227,7 +230,7 @@ void device_initialize(T& object)
   auto kernel_launcher = [&object](cudaStream_t stream) {
     constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-    printf("%i device init threads launched\r\n", (int)tc);
+    printf("%i device init threads launched\r\n", (int) tc);
     fflush(stdout);
 #endif
     initialization_kernel<Tester><<<1, tc, 0, stream>>>(object);
@@ -257,7 +260,7 @@ void device_validate(T& object)
   auto kernel_launcher = [&object](cudaStream_t stream) {
     constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-    printf("%i device validate threads launched\r\n", (int)tc);
+    printf("%i device validate threads launched\r\n", (int) tc);
     fflush(stdout);
 #endif
     validation_kernel<Tester><<<1, tc, 0, stream>>>(object);
@@ -286,11 +289,12 @@ void host_initialize(T& object)
 
   constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-  printf("%i host init threads launched\r\n", (int)tc);
+  printf("%i host init threads launched\r\n", (int) tc);
   fflush(stdout);
 #endif
 
-  for (size_t i = 0; i < tc; i++) {
+  for (size_t i = 0; i < tc; i++)
+  {
     host_threads().emplace_back([&] {
       initialize<Tester>(object);
     });
@@ -317,11 +321,12 @@ void host_validate(T& object)
 
   constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-    printf("%i host validate threads launched\r\n", (int)tc);
-    fflush(stdout);
+  printf("%i host validate threads launched\r\n", (int) tc);
+  fflush(stdout);
 #endif
 
-  for (size_t i = 0; i < tc; i++) {
+  for (size_t i = 0; i < tc; i++)
+  {
     host_threads().emplace_back([&] {
       validate<Tester>(object);
     });
@@ -345,28 +350,34 @@ template <typename T>
 using performer = void (*)(T&);
 
 template <typename T>
-struct initializer_validator {
+struct initializer_validator
+{
   performer<T> initializer;
   performer<T> validator;
 };
 
-struct host_launcher {
+struct host_launcher
+{
   template <typename T, typename Tester>
-  static initializer_validator<T> get_exec() {
+  static initializer_validator<T> get_exec()
+  {
     return initializer_validator<T>{host_initialize<Tester>, host_validate<Tester>};
   }
 };
 
-struct device_launcher {
+struct device_launcher
+{
   template <typename T, typename Tester>
-  static initializer_validator<T> get_exec() {
+  static initializer_validator<T> get_exec()
+  {
     return initializer_validator<T>{device_initialize<Tester>, device_validate<Tester>};
   }
 };
 
-template <typename T, typename ... Testers, typename ... Launchers, typename... Args>
-void do_heterogeneous_test(type_list<Testers...>, type_list<Launchers...>, Args... args) {
-  void *pointer = nullptr;
+template <typename T, typename... Testers, typename... Launchers, typename... Args>
+void do_heterogeneous_test(type_list<Testers...>, type_list<Launchers...>, Args... args)
+{
+  void* pointer = nullptr;
   HETEROGENEOUS_SAFE_CALL(cudaMallocHost(&pointer, sizeof(T)));
   T& object = *device_construct<T>(pointer, args...);
 
@@ -388,25 +399,38 @@ void do_heterogeneous_test(type_list<Testers...>, type_list<Launchers...>, Args.
 }
 
 template <size_t Idx>
-using enable_if_permutations_remain = typename std::enable_if<Idx!=0, int>::type;
+using enable_if_permutations_remain = typename std::enable_if<Idx != 0, int>::type;
 template <size_t Idx>
-using enable_if_no_permutations_remain = typename std::enable_if<Idx==0, int>::type;
+using enable_if_no_permutations_remain = typename std::enable_if<Idx == 0, int>::type;
 
-template <size_t Idx, typename T, typename ... Testers, typename ... Launchers, typename... Args, enable_if_permutations_remain<Idx> = 0>
-void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args) {
+template <size_t Idx,
+          typename T,
+          typename... Testers,
+          typename... Launchers,
+          typename... Args,
+          enable_if_permutations_remain<Idx> = 0>
+void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args)
+{
 #ifdef DEBUG_TESTERS
   printf("Testing permutation %zu of %zu\r\n", Idx, sizeof...(Testers));
   fflush(stdout);
 #endif
   do_heterogeneous_test<T>(type_list<Testers...>{}, type_list<Launchers...>{}, args...);
-  permute_tests<Idx-1, T>(type_list<Testers...>{}, rotl<Launchers...>{}, args...);
+  permute_tests<Idx - 1, T>(type_list<Testers...>{}, rotl<Launchers...>{}, args...);
 }
 
-template <size_t Idx, typename T, typename ... Testers, typename ... Launchers, typename... Args, enable_if_no_permutations_remain<Idx> = 0>
-void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args) {}
+template <size_t Idx,
+          typename T,
+          typename... Testers,
+          typename... Launchers,
+          typename... Args,
+          enable_if_no_permutations_remain<Idx> = 0>
+void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args)
+{}
 
-template <typename T, typename ... Testers, typename ... Launchers, typename... Args>
-void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args) {
+template <typename T, typename... Testers, typename... Launchers, typename... Args>
+void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args)
+{
   permute_tests<sizeof...(Testers), T>(type_list<Testers...>{}, type_list<Launchers...>{}, args...);
 }
 
@@ -414,7 +438,7 @@ template <typename T, typename... Testers, typename... Args>
 void validate_device_dynamic(tester_list<Testers...>, Args... args)
 {
   // ex: type_list<device_launcher, host_launcher, host_launcher>
-  using initial_launcher_list = append_n<sizeof...(Testers)-1, type_list<device_launcher>, host_launcher>;
+  using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher>, host_launcher>;
   permute_tests<T>(type_list<Testers...>{}, initial_launcher_list{}, args...);
 }
 
@@ -644,7 +668,7 @@ struct performer_adapter<Performer, performer_side::initialize>
   using async_initialize = async_trait<Performer>;
   using async_validate   = async_trait<Performer>;
 
-  static constexpr auto threadcount   = threadcount_trait<Performer>::value;
+  static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
   __host__ __device__ static void initialize(T& t)
@@ -659,7 +683,7 @@ struct performer_adapter<Performer, performer_side::validate>
   using async_initialize = async_trait<Performer>;
   using async_validate   = async_trait<Performer>;
 
-  static constexpr auto threadcount   = threadcount_trait<Performer>::value;
+  static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
   __host__ __device__ static void initialize(T&)

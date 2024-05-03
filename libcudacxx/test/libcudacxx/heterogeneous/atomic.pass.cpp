@@ -145,18 +145,15 @@ using basic_testers =
               exchange_tester<-12, 17>>;
 
 using arithmetic_atomic_testers =
-  append<basic_testers,
-        fetch_add_tester<17, 13, 30>,
-        fetch_sub_tester<30, 21, 9>,
-        fetch_sub_tester<9, 17, -8>>;
+  append<basic_testers, fetch_add_tester<17, 13, 30>, fetch_sub_tester<30, 21, 9>, fetch_sub_tester<9, 17, -8>>;
 
 using bitwise_atomic_testers =
   append<arithmetic_atomic_testers,
-        fetch_add_tester<-8, 10, 2>,
-        fetch_or_tester<2, 13, 15>,
-        fetch_and_tester<15, 8, 8>,
-        fetch_and_tester<8, 13, 8>,
-        fetch_xor_tester<8, 12, 4>>;
+         fetch_add_tester<-8, 10, 2>,
+         fetch_or_tester<2, 13, 15>,
+         fetch_and_tester<15, 8, 8>,
+         fetch_and_tester<8, 13, 8>,
+         fetch_xor_tester<8, 12, 4>>;
 
 class big_not_lockfree_type
 {

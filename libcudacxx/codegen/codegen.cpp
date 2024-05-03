@@ -68,7 +68,7 @@ int main()
 
   std::ofstream out("cuda_ptx_generated.h");
 
-    out << R"XXX(//===----------------------------------------------------------------------===//
+  out << R"XXX(//===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
