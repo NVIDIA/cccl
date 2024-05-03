@@ -26,7 +26,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Locked atomics must override the dispatch to be able to implement RMW primitives around the embedded lock.
 template <typename _Tp>
 struct __atomic_locked_storage {
-  using __underlying_t = typename __remove_cv_t<_Tp>;
+  using __underlying_t = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_locked_tag;
 
   _Tp __a_value;

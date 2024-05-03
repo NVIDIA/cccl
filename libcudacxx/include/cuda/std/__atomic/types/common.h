@@ -14,7 +14,7 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile
 
 // The 'value_type' of the atomic may be 'volatile blah', so remove the volatile portion for now.
 template <typename _Tp>
-using __atomic_underlying_t = typename  __remove_cvref_t<__remove_cvref_t<_Tp>::__underlying_t>;
+using __atomic_underlying_t = typename _Tp::__underlying_t;
 
 _CCCL_HOST_DEVICE
 inline int __atomic_memcmp(void const * __lhs, void const * __rhs, size_t __count) {
