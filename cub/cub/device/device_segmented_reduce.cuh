@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
@@ -249,6 +250,8 @@ public:
     T initial_value,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
+
     // Integer type for global offsets
     using OffsetT               = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
@@ -391,6 +394,8 @@ public:
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
+
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -525,6 +530,8 @@ public:
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
+
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -666,6 +673,8 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
+
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
@@ -822,6 +831,8 @@ public:
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
+
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -966,6 +977,8 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
+
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615

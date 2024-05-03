@@ -29,11 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Arithmetic operations
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS plus : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -45,7 +41,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
 {
@@ -59,7 +54,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp = void>
@@ -93,11 +87,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
 };
 #endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -109,7 +99,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
 {
@@ -123,7 +112,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp = void>
@@ -189,11 +177,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
 };
 #endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS negate : __unary_function<_Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -205,7 +189,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate : __unary_function<_Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
 {
@@ -218,7 +201,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 // Bitwise operations
 

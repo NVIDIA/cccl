@@ -67,9 +67,9 @@ size_t strlen(const char* s);
 #endif // no system header
 
 #if defined(_CCCL_COMPILER_MSVC)
-#include <cstring>
+#  include <cstring>
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#include <cuda/std/detail/libcxx/include/string.h>
+#  include <cuda/std/detail/libcxx/include/string.h>
 #endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -96,9 +96,9 @@ using ::strrchr;
 using ::strspn;
 using ::strstr;
 using ::strxfrm;
-#ifndef _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
+#  ifndef _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
 using ::strtok;
-#endif
+#  endif
 using ::strerror;
 using ::strlen;
 #endif // _CCCL_COMPILER_NVRTC

@@ -138,7 +138,6 @@ template<class R>
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__fwd/string.h>
@@ -167,9 +166,10 @@ template<class R>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for ptrdiff_t
-#include <cuda/std/version>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 
 // standard-mandated includes
+#include <cuda/std/version>
 
 // [iterator.range]
 #include <cuda/std/__iterator/access.h>
@@ -254,8 +254,8 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_span_compatible_container<
     decltype(data(declval<_Tp>())),
     decltype(size(declval<_Tp>())),
     // remove_pointer_t<decltype(data(cont))>(*)[] is convertible to ElementType(*)[]
-    enable_if_t< is_convertible<remove_pointer_t<decltype(data(declval<_Tp&>()))> (*)[], _ElementType (*)[]>::value,
-                 nullptr_t> >> = true;
+    enable_if_t<is_convertible<remove_pointer_t<decltype(data(declval<_Tp&>()))> (*)[], _ElementType (*)[]>::value,
+                nullptr_t>>> = true;
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
 
 template <typename _Tp, size_t _Extent>
@@ -340,8 +340,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
-  span(const array<_OtherElementType, _Extent>& __arr) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 span(const array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
@@ -578,8 +577,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _Sz)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
-  span(const array<_OtherElementType, _Sz>& __arr) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 span(const array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
@@ -765,13 +763,13 @@ _CCCL_HOST_DEVICE span(array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
 template <class _Tp, size_t _Sz>
 _CCCL_HOST_DEVICE span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
 
-#if defined(_CCCL_COMPILER_MSVC_2017)
-template<class _Container>
+#  if defined(_CCCL_COMPILER_MSVC_2017)
+template <class _Container>
 _CCCL_HOST_DEVICE span(_Container&) -> span<typename _Container::value_type>;
 
-template<class _Container>
+template <class _Container>
 _CCCL_HOST_DEVICE span(const _Container&) -> span<const typename _Container::value_type>;
-#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
 _LIBCUDACXX_TEMPLATE(class _It, class _EndOrSize)
 _LIBCUDACXX_REQUIRES(contiguous_iterator<_It>)
 _CCCL_HOST_DEVICE span(_It, _EndOrSize) -> span<remove_reference_t<iter_reference_t<_It>>>;
@@ -779,7 +777,7 @@ _CCCL_HOST_DEVICE span(_It, _EndOrSize) -> span<remove_reference_t<iter_referenc
 _LIBCUDACXX_TEMPLATE(class _Range)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
 _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>>>;
-#endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER_MSVC_2017
 
 #endif // _CCCL_STD_VER >= 2017
 

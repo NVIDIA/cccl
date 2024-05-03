@@ -25,6 +25,9 @@
  *
  ******************************************************************************/
 
+#include "insert_nested_NVTX_range_guard.h"
+// above header needs to be included first
+
 #include <cub/device/device_run_length_encode.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
