@@ -84,6 +84,10 @@ fi
 # Read matrix.yaml and convert it to json
 matrix_json=$(python3 ${COMPUTE_MATRIX} ${MATRIX_FILE} --devcontainer-info)
 
+if [ "$VERBOSE" = true ]; then
+    echo "$matrix_json"
+fi
+
 # Get the devcontainer image version and define image tag root
 readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
 
