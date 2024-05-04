@@ -28,6 +28,7 @@
 #include <thrust/detail/cstdint.h>
 #include <thrust/detail/function.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/omp/detail/pragma_omp.h>
 #include <thrust/system/omp/detail/reduce_intervals.h>
 
 THRUST_NAMESPACE_BEGIN
