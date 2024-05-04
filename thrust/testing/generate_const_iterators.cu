@@ -7,7 +7,7 @@
 
 struct generator
 {
-  __host__ __device__ int operator()() const
+  _CCCL_HOST_DEVICE int operator()() const
   {
     return 1;
   }

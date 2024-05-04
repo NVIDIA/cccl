@@ -34,7 +34,7 @@ THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<std::wstring_view::iterator
 THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<std::vector<bool>::iterator>::value));
 
 template <typename T>
-__host__ void test_is_contiguous_iterator()
+_CCCL_HOST void test_is_contiguous_iterator()
 {
   THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<T*>::value));
 
@@ -75,7 +75,7 @@ __host__ void test_is_contiguous_iterator()
 DECLARE_GENERIC_UNITTEST(test_is_contiguous_iterator);
 
 template <typename Vector>
-__host__ void test_is_contiguous_iterator_vectors()
+_CCCL_HOST void test_is_contiguous_iterator_vectors()
 {
   THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<typename Vector::iterator>::value));
 }

@@ -8,11 +8,11 @@
 template <typename Engine>
 struct ValidateEngine
 {
-  __host__ __device__ ValidateEngine(const typename Engine::result_type value_10000)
+  _CCCL_HOST_DEVICE ValidateEngine(const typename Engine::result_type value_10000)
       : m_value_10000(value_10000)
   {}
 
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     Engine e;
     e.discard(9999);
@@ -27,7 +27,7 @@ struct ValidateEngine
 template <typename Engine, bool trivial_min = (Engine::min == 0)>
 struct ValidateEngineMin
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     Engine e;
 
@@ -45,7 +45,7 @@ struct ValidateEngineMin
 template <typename Engine>
 struct ValidateEngineMin<Engine, true>
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     return true;
   }
@@ -54,7 +54,7 @@ struct ValidateEngineMin<Engine, true>
 template <typename Engine>
 struct ValidateEngineMax
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     Engine e;
 
@@ -72,7 +72,7 @@ struct ValidateEngineMax
 template <typename Engine>
 struct ValidateEngineEqual
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     bool result = true;
 
@@ -104,7 +104,7 @@ struct ValidateEngineEqual
 template <typename Engine>
 struct ValidateEngineUnequal
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     bool result = true;
 
@@ -144,11 +144,11 @@ struct ValidateDistributionMin
 {
   typedef Engine random_engine;
 
-  __host__ __device__ ValidateDistributionMin(const Distribution& dd)
+  _CCCL_HOST_DEVICE ValidateDistributionMin(const Distribution& dd)
       : d(dd)
   {}
 
-  __host__ __device__ bool operator()(void)
+  _CCCL_HOST_DEVICE bool operator()(void)
   {
     Engine e;
 
@@ -170,11 +170,11 @@ struct ValidateDistributionMax
 {
   typedef Engine random_engine;
 
-  __host__ __device__ ValidateDistributionMax(const Distribution& dd)
+  _CCCL_HOST_DEVICE ValidateDistributionMax(const Distribution& dd)
       : d(dd)
   {}
 
-  __host__ __device__ bool operator()(void)
+  _CCCL_HOST_DEVICE bool operator()(void)
   {
     Engine e;
 
@@ -194,7 +194,7 @@ struct ValidateDistributionMax
 template <typename Distribution>
 struct ValidateDistributionEqual
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     return d0 == d1;
   }
@@ -205,7 +205,7 @@ struct ValidateDistributionEqual
 template <typename Distribution>
 struct ValidateDistributionUnqual
 {
-  __host__ __device__ bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()(void) const
   {
     return d0 != d1;
   }

@@ -246,7 +246,7 @@ DECLARE_VECTOR_UNITTEST(TestCopyListTo);
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return (x & 1) == 0;
   }
@@ -255,7 +255,7 @@ struct is_even
 template <typename T>
 struct is_true
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return x ? true : false;
   }
@@ -264,7 +264,7 @@ struct is_true
 template <typename T>
 struct mod_3
 {
-  __host__ __device__ unsigned int operator()(T x)
+  _CCCL_HOST_DEVICE unsigned int operator()(T x)
   {
     return x % 3;
   }
@@ -469,12 +469,12 @@ struct object_with_non_trivial_ctor
   int field;
   int magic;
 
-  __host__ __device__ object_with_non_trivial_ctor()
+  _CCCL_HOST_DEVICE object_with_non_trivial_ctor()
   {
     magic = MAGIC;
     field = 0;
   }
-  __host__ __device__ object_with_non_trivial_ctor(int f)
+  _CCCL_HOST_DEVICE object_with_non_trivial_ctor(int f)
   {
     magic = MAGIC;
     field = f;
@@ -484,7 +484,7 @@ struct object_with_non_trivial_ctor
 
   // This non-trivial assignment requires that `this` points to initialized
   // memory
-  __host__ __device__ object_with_non_trivial_ctor& operator=(const object_with_non_trivial_ctor& x)
+  _CCCL_HOST_DEVICE object_with_non_trivial_ctor& operator=(const object_with_non_trivial_ctor& x)
   {
     // To really copy over x's field value, require we have magic value set.
     // If copy_if copies to uninitialized bits, the field will rarely be 923390.
@@ -498,7 +498,7 @@ struct object_with_non_trivial_ctor
 
 struct always_true
 {
-  __host__ __device__ bool operator()(const object_with_non_trivial_ctor&)
+  _CCCL_HOST_DEVICE bool operator()(const object_with_non_trivial_ctor&)
   {
     return true;
   };
@@ -730,31 +730,31 @@ struct only_set_when_expected_it
   long long expected;
   bool* flag;
 
-  __host__ __device__ only_set_when_expected_it operator++() const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator++() const
   {
     return *this;
   }
-  __host__ __device__ only_set_when_expected_it operator*() const
-  {
-    return *this;
-  }
-  template <typename Difference>
-  __host__ __device__ only_set_when_expected_it operator+(Difference) const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator*() const
   {
     return *this;
   }
   template <typename Difference>
-  __host__ __device__ only_set_when_expected_it operator+=(Difference) const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator+(Difference) const
+  {
+    return *this;
+  }
+  template <typename Difference>
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator+=(Difference) const
   {
     return *this;
   }
   template <typename Index>
-  __host__ __device__ only_set_when_expected_it operator[](Index) const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator[](Index) const
   {
     return *this;
   }
 
-  __device__ void operator=(long long value) const
+  _CCCL_DEVICE void operator=(long long value) const
   {
     if (value == expected)
     {

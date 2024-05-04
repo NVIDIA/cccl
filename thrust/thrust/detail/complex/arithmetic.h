@@ -30,7 +30,7 @@ THRUST_NAMESPACE_BEGIN
 /* --- Binary Arithmetic Operators --- */
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const complex<T0>& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -38,7 +38,7 @@ operator+(const complex<T0>& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const complex<T0>& x, const T1& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -46,7 +46,7 @@ operator+(const complex<T0>& x, const T1& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const T0& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -54,7 +54,7 @@ operator+(const T0& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const complex<T0>& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -62,7 +62,7 @@ operator-(const complex<T0>& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const complex<T0>& x, const T1& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -70,7 +70,7 @@ operator-(const complex<T0>& x, const T1& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const T0& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -78,7 +78,7 @@ operator-(const T0& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const complex<T0>& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -86,7 +86,7 @@ operator*(const complex<T0>& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const complex<T0>& x, const T1& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -94,7 +94,7 @@ operator*(const complex<T0>& x, const T1& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const T0& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -102,7 +102,7 @@ operator*(const T0& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const complex<T0>& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -128,7 +128,7 @@ operator/(const complex<T0>& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const complex<T0>& x, const T1& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -136,7 +136,7 @@ operator/(const complex<T0>& x, const T1& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const T0& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -146,13 +146,13 @@ operator/(const T0& x, const complex<T1>& y)
 /* --- Unary Arithmetic Operators --- */
 
 template <typename T>
-__host__ __device__ complex<T> operator+(const complex<T>& y)
+_CCCL_HOST_DEVICE complex<T> operator+(const complex<T>& y)
 {
   return y;
 }
 
 template <typename T>
-__host__ __device__ complex<T> operator-(const complex<T>& y)
+_CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y)
 {
   return y * -T(1);
 }
@@ -161,7 +161,7 @@ __host__ __device__ complex<T> operator-(const complex<T>& y)
 
 // As std::hypot is only C++11 we have to use the C interface
 template <typename T>
-__host__ __device__ T abs(const complex<T>& z)
+_CCCL_HOST_DEVICE T abs(const complex<T>& z)
 {
   return hypot(z.real(), z.imag());
 }
@@ -172,12 +172,12 @@ namespace detail
 namespace complex
 {
 
-__host__ __device__ inline float abs(const thrust::complex<float>& z)
+_CCCL_HOST_DEVICE inline float abs(const thrust::complex<float>& z)
 {
   return hypotf(z.real(), z.imag());
 }
 
-__host__ __device__ inline double abs(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE inline double abs(const thrust::complex<double>& z)
 {
   return hypot(z.real(), z.imag());
 }
@@ -186,19 +186,19 @@ __host__ __device__ inline double abs(const thrust::complex<double>& z)
 } // end namespace detail
 
 template <>
-__host__ __device__ inline float abs(const complex<float>& z)
+_CCCL_HOST_DEVICE inline float abs(const complex<float>& z)
 {
   return detail::complex::abs(z);
 }
 
 template <>
-__host__ __device__ inline double abs(const complex<double>& z)
+_CCCL_HOST_DEVICE inline double abs(const complex<double>& z)
 {
   return detail::complex::abs(z);
 }
 
 template <typename T>
-__host__ __device__ T arg(const complex<T>& z)
+_CCCL_HOST_DEVICE T arg(const complex<T>& z)
 {
   // Find `atan2` by ADL.
   using std::atan2;
@@ -206,20 +206,20 @@ __host__ __device__ T arg(const complex<T>& z)
 }
 
 template <typename T>
-__host__ __device__ complex<T> conj(const complex<T>& z)
+_CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z)
 {
   return complex<T>(z.real(), -z.imag());
 }
 
 template <typename T>
-__host__ __device__ T norm(const complex<T>& z)
+_CCCL_HOST_DEVICE T norm(const complex<T>& z)
 {
   return z.real() * z.real() + z.imag() * z.imag();
 }
 
 // XXX Why specialize these, we could just rely on ADL.
 template <>
-__host__ __device__ inline float norm(const complex<float>& z)
+_CCCL_HOST_DEVICE inline float norm(const complex<float>& z)
 {
   // Find `abs` and `sqrt` by ADL.
   using std::abs;
@@ -236,7 +236,7 @@ __host__ __device__ inline float norm(const complex<float>& z)
 }
 
 template <>
-__host__ __device__ inline double norm(const complex<double>& z)
+_CCCL_HOST_DEVICE inline double norm(const complex<double>& z)
 {
   // Find `abs` and `sqrt` by ADL.
   using std::abs;
@@ -253,7 +253,7 @@ __host__ __device__ inline double norm(const complex<double>& z)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type> polar(const T0& m, const T1& theta)
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type> polar(const T0& m, const T1& theta)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
 

@@ -3,7 +3,7 @@
 #include <unittest/unittest.h>
 
 template <class VecT>
-__host__ __device__ void universal_vector_access(VecT& in, thrust::universal_vector<bool>& out)
+_CCCL_HOST_DEVICE void universal_vector_access(VecT& in, thrust::universal_vector<bool>& out)
 {
   const int expected_front = 4;
   const int expected_back  = 2;

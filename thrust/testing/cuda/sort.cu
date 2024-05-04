@@ -7,7 +7,7 @@
 template <typename T>
 struct my_less
 {
-  __host__ __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs;
   }

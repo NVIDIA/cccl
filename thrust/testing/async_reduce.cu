@@ -15,7 +15,7 @@
 template <typename T>
 struct custom_plus
 {
-  __host__ __device__ T operator()(T lhs, T rhs) const
+  _CCCL_HOST_DEVICE T operator()(T lhs, T rhs) const
   {
     return lhs + rhs;
   }
@@ -45,7 +45,7 @@ struct custom_plus
       }                                                                                  \
                                                                                          \
       template <typename ForwardIt, typename Sentinel>                                   \
-      __host__ auto operator()(ForwardIt&& first, Sentinel&& last)                       \
+      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last)                     \
         THRUST_DECLTYPE_RETURNS(::thrust::async::reduce(__VA_ARGS__))                    \
     };                                                                                   \
     /**/
@@ -55,13 +55,13 @@ struct custom_plus
       NAME, THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), __VA_ARGS__) \
     /**/
 
-#  define DEFINE_SYNC_REDUCE_INVOKER(NAME, ...)                                                                  \
-    template <typename T>                                                                                        \
-    struct NAME                                                                                                  \
-    {                                                                                                            \
-      template <typename ForwardIt, typename Sentinel>                                                           \
-      __host__ auto operator()(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::reduce(__VA_ARGS__)) \
-    };                                                                                                           \
+#  define DEFINE_SYNC_REDUCE_INVOKER(NAME, ...)                                                                    \
+    template <typename T>                                                                                          \
+    struct NAME                                                                                                    \
+    {                                                                                                              \
+      template <typename ForwardIt, typename Sentinel>                                                             \
+      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::reduce(__VA_ARGS__)) \
+    };                                                                                                             \
     /**/
 
 DEFINE_ASYNC_REDUCE_INVOKER(reduce_async_invoker, THRUST_FWD(first), THRUST_FWD(last));
@@ -304,7 +304,7 @@ struct test_async_reduce
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::host_vector<T> h0(unittest::random_integers<T>(n));
       thrust::device_vector<T> d0a(h0);
@@ -443,7 +443,7 @@ struct test_async_reduce_counting_iterator
   template <typename T>
   struct tester
   {
-    __host__ void operator()()
+    _CCCL_HOST void operator()()
     {
       constexpr std::size_t n = 15 * sizeof(T);
 
@@ -524,7 +524,7 @@ DECLARE_GENERIC_UNITTEST_WITH_TYPES_AND_NAME(
 template <typename T>
 struct test_async_reduce_using
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0(unittest::random_integers<T>(n));
     thrust::device_vector<T> d0a(h0);
@@ -565,7 +565,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_reduce_using, NumericTypes)
 template <typename T>
 struct test_async_reduce_after
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0(unittest::random_integers<T>(n));
     thrust::device_vector<T> d0(h0);
@@ -611,7 +611,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_reduce_after, NumericTypes)
 template <typename T>
 struct test_async_reduce_on_then_after
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0(unittest::random_integers<T>(n));
     thrust::device_vector<T> d0(h0);
@@ -660,7 +660,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_reduce_on_then_after, Numer
 template <typename T>
 struct test_async_reduce_allocator_on_then_after
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0(unittest::random_integers<T>(n));
     thrust::device_vector<T> d0(h0);
@@ -718,7 +718,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_reduce_allocator_on_then_af
 template <typename T>
 struct test_async_reduce_caching
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     constexpr std::int64_t m = 32;
 
@@ -764,7 +764,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_reduce_caching, NumericType
 template <typename T>
 struct test_async_copy_then_reduce
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0a(unittest::random_integers<T>(n));
     thrust::host_vector<T> h0b(unittest::random_integers<T>(n));

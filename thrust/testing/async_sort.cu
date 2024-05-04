@@ -24,26 +24,26 @@ enum wait_policy
 template <typename T>
 struct custom_greater
 {
-  __host__ __device__ bool operator()(T rhs, T lhs) const
+  _CCCL_HOST_DEVICE bool operator()(T rhs, T lhs) const
   {
     return lhs > rhs;
   }
 };
 
-#  define DEFINE_SORT_INVOKER(name, ...)                                                                   \
-    template <typename T>                                                                                  \
-    struct name                                                                                            \
-    {                                                                                                      \
-      template <typename ForwardIt, typename Sentinel>                                                     \
-      __host__ static void sync(ForwardIt&& first, Sentinel&& last)                                        \
-      {                                                                                                    \
-        ::thrust::sort(THRUST_FWD(first), THRUST_FWD(last));                                               \
-      }                                                                                                    \
-                                                                                                           \
-      template <typename ForwardIt, typename Sentinel>                                                     \
-      __host__ static auto async(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::async::sort( \
-        __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first), THRUST_FWD(last))) \
-    };                                                                                                     \
+#  define DEFINE_SORT_INVOKER(name, ...)                                                                     \
+    template <typename T>                                                                                    \
+    struct name                                                                                              \
+    {                                                                                                        \
+      template <typename ForwardIt, typename Sentinel>                                                       \
+      _CCCL_HOST static void sync(ForwardIt&& first, Sentinel&& last)                                        \
+      {                                                                                                      \
+        ::thrust::sort(THRUST_FWD(first), THRUST_FWD(last));                                                 \
+      }                                                                                                      \
+                                                                                                             \
+      template <typename ForwardIt, typename Sentinel>                                                       \
+      _CCCL_HOST static auto async(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::async::sort( \
+        __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first), THRUST_FWD(last)))   \
+    };                                                                                                       \
     /**/
 
 DEFINE_SORT_INVOKER(sort_invoker);
@@ -54,13 +54,13 @@ DEFINE_SORT_INVOKER(sort_invoker_device, thrust::device);
     struct name                                                                                                     \
     {                                                                                                               \
       template <typename ForwardIt, typename Sentinel>                                                              \
-      __host__ static void sync(ForwardIt&& first, Sentinel&& last)                                                 \
+      _CCCL_HOST static void sync(ForwardIt&& first, Sentinel&& last)                                               \
       {                                                                                                             \
         ::thrust::sort(THRUST_FWD(first), THRUST_FWD(last), op<T>{});                                               \
       }                                                                                                             \
                                                                                                                     \
       template <typename ForwardIt, typename Sentinel>                                                              \
-      __host__ static auto async(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::async::sort(          \
+      _CCCL_HOST static auto async(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::async::sort(        \
         __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first), THRUST_FWD(last), op<T>{})) \
     };                                                                                                              \
     /**/
@@ -85,7 +85,7 @@ struct test_async_sort
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::host_vector<T> h0_data(unittest::random_integers<T>(n));
       thrust::device_vector<T> d0_data(h0_data);

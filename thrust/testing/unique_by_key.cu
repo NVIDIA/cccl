@@ -9,7 +9,7 @@ template <typename ValueT>
 struct index_to_value_t
 {
   template <typename IndexT>
-  __host__ __device__ __forceinline__ ValueT operator()(IndexT index)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ValueT operator()(IndexT index)
   {
     if (static_cast<std::uint64_t>(index) == 4300000000ULL)
     {
@@ -110,7 +110,7 @@ DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchImplicit);
 template <typename T>
 struct is_equal_div_10_unique
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }

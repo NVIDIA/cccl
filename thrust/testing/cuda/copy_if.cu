@@ -8,7 +8,7 @@
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return (static_cast<unsigned int>(x) & 1) == 0;
   }
@@ -17,7 +17,7 @@ struct is_even
 template <typename T>
 struct mod_3
 {
-  __host__ __device__ unsigned int operator()(T x)
+  _CCCL_HOST_DEVICE unsigned int operator()(T x)
   {
     return static_cast<unsigned int>(x) % 3;
   }
@@ -27,7 +27,7 @@ template <typename T>
 struct mod_n
 {
   T mod;
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return (x % mod == 0) ? true : false;
   }
@@ -37,7 +37,7 @@ template <typename T>
 struct multiply_n
 {
   T multiplier;
-  __host__ __device__ T operator()(T x)
+  _CCCL_HOST_DEVICE T operator()(T x)
   {
     return x * multiplier;
   }

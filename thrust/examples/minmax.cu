@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include "include/host_device.h"
+
 // compute minimum and maximum values in a single reduction
 
 // minmax_pair stores the minimum and maximum

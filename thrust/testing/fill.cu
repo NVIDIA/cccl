@@ -325,7 +325,7 @@ struct TypeWithNonTrivialAssigment
 {
   int x, y, z;
 
-  __host__ __device__ TypeWithNonTrivialAssigment()
+  _CCCL_HOST_DEVICE TypeWithNonTrivialAssigment()
       : x(0)
       , y(0)
       , z(0)
@@ -333,7 +333,7 @@ struct TypeWithNonTrivialAssigment
 
   TypeWithNonTrivialAssigment(const TypeWithNonTrivialAssigment&) = default;
 
-  __host__ __device__ TypeWithNonTrivialAssigment& operator=(const TypeWithNonTrivialAssigment& t)
+  _CCCL_HOST_DEVICE TypeWithNonTrivialAssigment& operator=(const TypeWithNonTrivialAssigment& t)
   {
     x = t.x;
     y = t.y;
@@ -341,7 +341,7 @@ struct TypeWithNonTrivialAssigment
     return *this;
   }
 
-  __host__ __device__ bool operator==(const TypeWithNonTrivialAssigment& t) const
+  _CCCL_HOST_DEVICE bool operator==(const TypeWithNonTrivialAssigment& t) const
   {
     return x == t.x && y == t.y && z == t.z;
   }

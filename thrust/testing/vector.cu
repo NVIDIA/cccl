@@ -850,7 +850,7 @@ struct LargeStruct
 {
   int data[N];
 
-  __host__ __device__ bool operator==(const LargeStruct& ls) const
+  _CCCL_HOST_DEVICE bool operator==(const LargeStruct& ls) const
   {
     for (int i = 0; i < N; i++)
     {
