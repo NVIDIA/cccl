@@ -6,6 +6,7 @@ set -eo pipefail
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # Script defaults
+VERBOSE=${VERBOSE:-}
 HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
 CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
@@ -122,7 +123,8 @@ print_environment_details() {
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
       CCCL_BUILD_INFIX \
-      GLOBAL_CMAKE_OPTIONS
+      GLOBAL_CMAKE_OPTIONS \
+      TBB_ROOT
 
   echo "Current commit is:"
   git log -1 || echo "Not a repository"
@@ -131,6 +133,18 @@ print_environment_details() {
     nvidia-smi
   else
     echo "nvidia-smi not found"
+  fi
+
+  if command -v cmake &> /dev/null; then
+    cmake --version
+  else
+    echo "cmake not found"
+  fi
+
+  if command -v ctest &> /dev/null; then
+    ctest --version
+  else
+    echo "ctest not found"
   fi
 
   end_group "⚙️ Environment Details"
