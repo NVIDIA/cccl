@@ -12,7 +12,7 @@
 #if defined(_MSC_VER) // MSVC
 
 // Fake up an error for MSVC
-#  define CUDAX_MACRO_CHECK_IMPL(msg)         \
+#  define CUDAX_MACRO_CHECK_IMPL(msg)             \
     /* Print message that looks like an error: */ \
     __pragma(message(__FILE__ ":" CUDAX_MACRO_CHECK_IMPL0(__LINE__) ": error: " #msg)) static_assert(false, #msg);
 #  define CUDAX_MACRO_CHECK_IMPL0(x) CUDAX_MACRO_CHECK_IMPL1(x)
