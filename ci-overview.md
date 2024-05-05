@@ -38,6 +38,22 @@ Special commands are provided that can be included in commit messages to direct 
 
 Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
 
+### Temporarily Overriding the Pull Requeest Matrix
+
+If a workflow named `override` exists in the matrix.yaml file, this matrix will be used for pull requests instead of the `pull_request` matrix.
+This is useful for reducing resource usage when launching many CI workflows from a PR (for example, while testing CI features).
+The overridden CI job will be marked as a failure until the override is removed.
+
+Example:
+
+```
+workflows:
+  override:
+    - {jobs: ['test'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16, *msvc2022]}
+  pull_request:
+    - <...>
+```
+
 ### Accelerating Build Times with `sccache`
 
 CCCL's CI uses [`sccache`](https://github.com/mozilla/sccache) to cache compiler artifacts for files that haven't changed and dramatically accelerate build times. Local builds inside [CCCL's Dev Containers](.devcontainer/README.md) can share the same cache such that local builds and CI jobs mutually benefit from accelerated build times. Follow the [GitHub Authentication](.devcontainer/README.md#optional-authenticate-with-github-for-sccache) guide to enable this feature.

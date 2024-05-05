@@ -88,9 +88,17 @@ runs:
       id: check-dispatch
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        if "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json; then
-          echo "success=true" >> "${GITHUB_OUTPUT}"
-        else
+        if ! "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json; then
           echo "success=false" >> "${GITHUB_OUTPUT}"
           exit 1
         fi
+
+        if [ -f workflow/override.json ]; then
+          echo "::notice::Workflow matrix was overridden. Failing jobs."
+          echo "Override matrix:"
+          cat workflow/override.json | jq -c '.'
+          echo "success=false" >> "${GITHUB_OUTPUT}"
+          exit 1
+        fi
+
+        echo "success=true" >> "${GITHUB_OUTPUT}"

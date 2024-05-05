@@ -38,6 +38,16 @@ oneapi: &oneapi { name: 'oneapi', version: '2023.2.0', exe: 'icpc' }
 
 # GHA Workflow job matrices:
 workflows:
+  # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
+  # This is useful for limiting resource usage when a full matrix is not needed.
+  # The branch protection checks will fail when using this override workflow.
+  #
+  # Example:
+  # override:
+  #   - {jobs: ['build'], project['thrust'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
+  #
+  override:
+
   pull_request:
     # default_projects: nvcc
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}
