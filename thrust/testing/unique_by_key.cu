@@ -447,9 +447,6 @@ struct TestUniqueCopyByKeyLargeOutCount
 {
   void operator()()
   {
-    using type       = std::int32_t;
-    using index_type = std::int64_t;
-
     constexpr std::size_t num_items = 4400000000ULL;
 
     auto keys_in   = thrust::make_counting_iterator(0ULL);
