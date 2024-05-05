@@ -409,6 +409,9 @@ struct TestUniqueCopyByKeyToDiscardIterator
 };
 VariableUnitTest<TestUniqueCopyByKeyToDiscardIterator, IntegralTypes> TestUniqueCopyByKeyToDiscardIteratorInstance;
 
+// OpenMP has issues with these tests, NVIDIA/cccl#1715
+#if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_OMP
+
 template <typename K>
 struct TestUniqueCopyByKeyLargeInput
 {
@@ -465,3 +468,5 @@ struct TestUniqueCopyByKeyLargeOutCount
   }
 };
 SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;
+
+#endif // non-OpenMP backend
