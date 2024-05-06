@@ -181,6 +181,12 @@ public:
 
 #  endif // _CCCL_STD_VER
 
+  //! Returns a reference to the underlying function.
+  _CCCL_HOST_DEVICE Function& underlying_function() const
+  {
+    return func;
+  }
+
 private:
   mutable Function func;
 };
