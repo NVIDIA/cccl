@@ -57,6 +57,16 @@
       }
     },
     {
+      "name": "all-dev-debug",
+      "displayName": "all-dev debug",
+      "inherits": "all-dev",
+      "cacheVariables": {
+        "CCCL_ENABLE_BENCHMARKS": false,
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CUDA_FLAGS": "-G"
+      }
+    },
+    {
       "name": "libcudacxx-codegen",
       "displayName": "libcu++: codegen",
       "inherits": "base",
@@ -271,22 +281,16 @@
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
       }
-    },
-    {
-      "name": "all-dev-debug",
-      "displayName": "all-dev debug",
-      "inherits": "all-dev",
-      "cacheVariables":{
-        "CCCL_ENABLE_BENCHMARKS": false,
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CUDA_FLAGS": "-G"
-      }
     }
   ],
   "buildPresets": [
     {
       "name": "all-dev",
       "configurePreset": "all-dev"
+    },
+    {
+      "name": "all-dev-debug",
+      "configurePreset": "all-dev-debug"
     },
     {
       "name": "libcudacxx-codegen",
@@ -410,6 +414,11 @@
       "name": "all-dev",
       "configurePreset": "all-dev",
       "inherits": "base"
+    },
+    {
+      "name": "all-dev-debug",
+      "configurePreset": "all-dev-debug",
+      "inherits": "all-dev"
     },
     {
       "name": "libcudacxx-ctest-base",

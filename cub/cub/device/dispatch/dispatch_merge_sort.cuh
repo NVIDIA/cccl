@@ -42,6 +42,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/integer_math.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>

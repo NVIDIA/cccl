@@ -394,6 +394,7 @@ CUB_TEST("DeviceSelect::If works with a different output type", "[device][select
 }
 
 CUB_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]", offset_types)
+try
 {
   using type     = std::int64_t;
   using offset_t = typename c2h::get<0, TestType>;
@@ -434,8 +435,13 @@ CUB_TEST("DeviceSelect::If works for very large number of items", "[device][sele
   bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
+}
 
 CUB_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]", offset_types)
+try
 {
   using type     = std::uint8_t;
   using offset_t = typename c2h::get<0, TestType>;
@@ -471,4 +477,8 @@ CUB_TEST("DeviceSelect::If works for very large number of output items", "[devic
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(in == out);
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }

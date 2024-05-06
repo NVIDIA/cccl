@@ -1,0 +1,96 @@
+name: "CCCL Workflow Sentinal"
+description: "Check the results of the dispatched jobs and comment on the PR."
+
+inputs:
+  github_token:
+    description: "The GitHub token to use for commenting on the PR. No comment will be made if not provided."
+    required: false
+  pr_number:
+    description: "The PR number to comment on, if applicable. No comment will be made if not provided."
+    required: false
+
+outputs:
+  success:
+    description: "Whether any jobs failed."
+    value: ${{ steps.check-dispatch.outputs.success }}
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Download workflow artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: workflow
+        path: workflow/
+
+    - name: Download job success artifacts
+      continue-on-error: true # This may fail if no jobs succeed. The checks below will catch this.
+      uses: actions/download-artifact@v3
+      with:
+        name: dispatch-job-success
+        path: dispatch-job-success/
+
+    - name: Prepare execution summary
+      id: job-summary
+      continue-on-error: true
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "Generating job summary..."
+        python3 "${GITHUB_ACTION_PATH}/prepare-execution-summary.py" workflow/workflow.json
+
+    - name: Prepare final summary
+      id: final-summary
+      continue-on-error: true
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "::group::Final Summary"
+        python3 "${GITHUB_ACTION_PATH}/final-summary.py" | tee final_summary.md
+        echo "::endgroup::"
+
+        # This allows multiline strings and special characters to be passed through the GHA outputs:
+        url_encode_string() {
+          python3 -c "import sys; from urllib.parse import quote; print(quote(sys.stdin.read()))"
+        }
+
+        echo "::group::GHA Output: SUMMARY"
+        printf "SUMMARY=%s\n" "$(cat final_summary.md | url_encode_string)" | tee -a "${GITHUB_OUTPUT}"
+        echo "::endgroup::"
+
+        cp final_summary.md ${GITHUB_STEP_SUMMARY}
+
+    - name: Comment on PR
+      if: ${{ !cancelled() && inputs.pr_number != '' && inputs.github_token != ''}}
+      continue-on-error: true
+      env:
+        PR_NUMBER: ${{ fromJSON(inputs.pr_number) }}
+        COMMENT_BODY: ${{ steps.final-summary.outputs.SUMMARY }}
+      uses: actions/github-script@v4
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const pr_number = process.env.PR_NUMBER;
+          const owner = 'NVIDIA';
+          const repo = 'cccl';
+          // Decode URL-encoded string for proper display in comments
+          const commentBody = decodeURIComponent(process.env.COMMENT_BODY);
+          console.log('::group::Commenting on PR #' + pr_number + ' with the following message:')
+          console.log(commentBody);
+          console.log('::endgroup::');
+          github.issues.createComment({
+              owner: owner,
+              repo: repo,
+              issue_number: pr_number,
+              body: commentBody
+          });
+
+    - name: Check for job success
+      id: check-dispatch
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        if "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json; then
+          echo "success=true" >> "${GITHUB_OUTPUT}"
+        else
+          echo "success=false" >> "${GITHUB_OUTPUT}"
+          exit 1
+        fi

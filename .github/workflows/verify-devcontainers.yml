@@ -77,10 +77,23 @@ jobs:
         if [[ "$src" != "$dst" ]]; then
           cp "$src" "$dst"
         fi
+
       # We don't really need sccache configured, but we need the AWS credentials envvars to be set
       # in order to avoid the devcontainer hanging waiting for GitHub authentication
-    - name: Configure credentials and environment variables for sccache
-      uses: ./.github/actions/configure_cccl_sccache
+    - name: Get AWS credentials for sccache bucket
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+        aws-region: us-east-2
+        role-duration-seconds: 43200 # 12 hours)
+    - name: Set environment variables
+      run: |
+        echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
+        echo "SCCACHE_REGION=us-east-2" >> $GITHUB_ENV
+        echo "SCCACHE_IDLE_TIMEOUT=32768" >> $GITHUB_ENV
+        echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
+        echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
+
     - name: Run in devcontainer
       uses: devcontainers/ci@v0.3
       with:

@@ -322,4 +322,16 @@ void TestPairStructuredBindings(void)
   ASSERT_EQUAL(b, b2);
 }
 DECLARE_UNITTEST(TestPairStructuredBindings);
-#endif
+
+void TestPairCTAD(void)
+{
+  const int a = 42;
+  const int b = 1337;
+  thrust::pair p(a, b);
+
+  auto [a2, b2] = p;
+  ASSERT_EQUAL(a, a2);
+  ASSERT_EQUAL(b, b2);
+}
+DECLARE_UNITTEST(TestPairCTAD);
+#endif // _CCCL_STD_VER >= 2017

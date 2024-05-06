@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/ptx>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA

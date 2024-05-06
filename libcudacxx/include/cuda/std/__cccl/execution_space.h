@@ -27,12 +27,12 @@
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
 #  define _CCCL_FORCEINLINE __forceinline__
-#else // ^^^ __CUDACC__ || _NVHPC_CUDA ^^^ / vvv !__CUDACC__ && !_NVHPC_CUDA
+#else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER
 #  define _CCCL_HOST
 #  define _CCCL_DEVICE
 #  define _CCCL_HOST_DEVICE
-#  define _CCCL_FORCEINLINE
-#endif // !__CUDACC__ && !_NVHPC_CUDA
+#  define _CCCL_FORCEINLINE inline
+#endif // !_CCCL_CUDA_COMPILER
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if defined(_CCCL_CUDA_COMPILER_NVCC)
