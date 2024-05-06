@@ -69,25 +69,20 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/tuple.h>
  *  #include <thrust/device_vector.h>
  *  ...
- *  thrust::device_vector<int> int_v(3);
- *  int_v[0] = 0; int_v[1] = 1; int_v[2] = 2;
+ *  thrust::device_vector<int> int_v{0, 1, 2};
+ *  thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
+ *  thrust::device_vector<char> char_v{'a', 'b', 'c'};
  *
- *  thrust::device_vector<float> float_v(3);
- *  float_v[0] = 0.0f; float_v[1] = 1.0f; float_v[2] = 2.0f;
+ *  // aliases for iterators
+ *  using IntIterator = thrust::device_vector<int>::iterator;
+ *  using FloatIterator = thrust::device_vector<float>::iterator;
+ *  using CharIterator = thrust::device_vector<char>::iterator;
  *
- *  thrust::device_vector<char> char_v(3);
- *  char_v[0] = 'a'; char_v[1] = 'b'; char_v[2] = 'c';
- *
- *  // typedef these iterators for shorthand
- *  typedef thrust::device_vector<int>::iterator   IntIterator;
- *  typedef thrust::device_vector<float>::iterator FloatIterator;
- *  typedef thrust::device_vector<char>::iterator  CharIterator;
- *
- *  // typedef a tuple of these iterators
- *  typedef thrust::tuple<IntIterator, FloatIterator, CharIterator> IteratorTuple;
+ *  // alias for a tuple of these iterators
+ *  using IteratorTuple = thrust::tuple<IntIterator, FloatIterator, CharIterator>;
  *
  *  // typedef the zip_iterator of this tuple
- *  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+ *  using ZipIterator = thrust::zip_iterator<IteratorTuple>;
  *
  *  // finally, create the zip_iterator
  *  ZipIterator iter(thrust::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
@@ -116,15 +111,8 @@ THRUST_NAMESPACE_BEGIN
  *
  *  int main()
  *  {
- *    thrust::device_vector<int> int_in(3), int_out(3);
- *    int_in[0] = 0;
- *    int_in[1] = 1;
- *    int_in[2] = 2;
- *
- *    thrust::device_vector<float> float_in(3), float_out(3);
- *    float_in[0] =  0.0f;
- *    float_in[1] = 10.0f;
- *    float_in[2] = 20.0f;
+ *    thrust::device_vector<int> int_in{0, 1, 2}, int_out(3);
+ *    thrust::device_vector<float> float_in{0.0f, 10.0f, 20.0f}, float_out(3);
  *
  *    thrust::copy(thrust::make_zip_iterator(thrust::make_tuple(int_in.begin(), float_in.begin())),
  *                 thrust::make_zip_iterator(thrust::make_tuple(int_in.end(),   float_in.end())),
