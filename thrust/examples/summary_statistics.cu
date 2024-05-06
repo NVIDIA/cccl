@@ -129,7 +129,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   std::cout << "\n";
 }
 
-int main(void)
+int main()
 {
   typedef float T;
 

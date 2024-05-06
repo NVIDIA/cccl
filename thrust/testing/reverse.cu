@@ -7,7 +7,7 @@
 typedef unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t> ReverseTypes;
 
 template <typename Vector>
-void TestReverseSimple(void)
+void TestReverseSimple()
 {
   Vector data(5);
   data[0] = 1;
@@ -63,7 +63,7 @@ void TestReverseDispatchImplicit()
 DECLARE_UNITTEST(TestReverseDispatchImplicit);
 
 template <typename Vector>
-void TestReverseCopySimple(void)
+void TestReverseCopySimple()
 {
 #if defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 80000 && THRUST_GCC_VERSION < 100000
 

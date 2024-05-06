@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestMergeByKeySimple(void)
+void TestMergeByKeySimple()
 {
   typedef typename Vector::iterator Iterator;
 

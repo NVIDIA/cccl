@@ -40,12 +40,12 @@ public:
       , stride(stride)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), stride_functor(stride)));
   }
 
-  iterator end(void) const
+  iterator end() const
   {
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
@@ -57,7 +57,7 @@ protected:
 };
 
 template <class Vector>
-void TestSortPermutationIterator(void)
+void TestSortPermutationIterator()
 {
   typedef typename Vector::iterator Iterator;
 
@@ -91,7 +91,7 @@ void TestSortPermutationIterator(void)
 DECLARE_VECTOR_UNITTEST(TestSortPermutationIterator);
 
 template <class Vector>
-void TestStableSortPermutationIterator(void)
+void TestStableSortPermutationIterator()
 {
   typedef typename Vector::iterator Iterator;
 
@@ -125,7 +125,7 @@ void TestStableSortPermutationIterator(void)
 DECLARE_VECTOR_UNITTEST(TestStableSortPermutationIterator);
 
 template <class Vector>
-void TestSortByKeyPermutationIterator(void)
+void TestSortByKeyPermutationIterator()
 {
   typedef typename Vector::iterator Iterator;
 
@@ -173,7 +173,7 @@ void TestSortByKeyPermutationIterator(void)
 DECLARE_VECTOR_UNITTEST(TestSortByKeyPermutationIterator);
 
 template <class Vector>
-void TestStableSortByKeyPermutationIterator(void)
+void TestStableSortByKeyPermutationIterator()
 {
   typedef typename Vector::iterator Iterator;
 

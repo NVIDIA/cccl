@@ -85,7 +85,7 @@ struct policy_wrapper_t : PolicyT
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
-CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel(void)
+CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS

@@ -31,7 +31,7 @@ void test(Iterator first, Iterator last)
 }
 
 template <class Vector>
-void TestTrivialSequence(void)
+void TestTrivialSequence()
 {
   Vector A(5);
   A[0] = 0;

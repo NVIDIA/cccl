@@ -8,11 +8,11 @@
 
 struct Foo
 {
-  __host__ __device__ Foo(void)
+  __host__ __device__ Foo()
       : set_me_upon_destruction{nullptr}
   {}
 
-  __host__ __device__ ~Foo(void)
+  __host__ __device__ ~Foo()
   {
     NV_IF_TARGET(NV_IS_DEVICE, (if (set_me_upon_destruction != nullptr) { *set_me_upon_destruction = true; }));
   }
@@ -21,7 +21,7 @@ struct Foo
 };
 
 #if !defined(__QNX__)
-void TestDeviceDeleteDestructorInvocation(void)
+void TestDeviceDeleteDestructorInvocation()
 {
   KNOWN_FAILURE;
   //

@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMinMaxElementSimple(void)
+void TestMinMaxElementSimple()
 {
   Vector data(6);
   data[0] = 3;
@@ -22,7 +22,7 @@ void TestMinMaxElementSimple(void)
 DECLARE_VECTOR_UNITTEST(TestMinMaxElementSimple);
 
 template <class Vector>
-void TestMinMaxElementWithTransform(void)
+void TestMinMaxElementWithTransform()
 {
   typedef typename Vector::value_type T;
 

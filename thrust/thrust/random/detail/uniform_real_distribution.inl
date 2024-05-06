@@ -44,7 +44,7 @@ _CCCL_HOST_DEVICE uniform_real_distribution<RealType>::uniform_real_distribution
 {} // end uniform_real_distribution::uniform_real_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::reset(void)
+_CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::reset()
 {} // end uniform_real_distribution::reset()
 
 template <typename RealType>
@@ -76,21 +76,21 @@ uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& ur
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
-uniform_real_distribution<RealType>::a(void) const
+uniform_real_distribution<RealType>::a() const
 {
   return m_param.first;
 } // end uniform_real::a()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
-uniform_real_distribution<RealType>::b(void) const
+uniform_real_distribution<RealType>::b() const
 {
   return m_param.second;
 } // end uniform_real_distribution::b()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::param_type
-uniform_real_distribution<RealType>::param(void) const
+uniform_real_distribution<RealType>::param() const
 {
   return m_param;
   ;
@@ -104,14 +104,14 @@ _CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::param(const param_ty
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::min
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return a();
 } // end uniform_real_distribution::min()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::max
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return b();
 } // end uniform_real_distribution::max()

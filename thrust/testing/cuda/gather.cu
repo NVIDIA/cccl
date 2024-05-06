@@ -184,7 +184,7 @@ void TestGatherIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherIfDeviceDevice);
 #endif
 
-void TestGatherIfCudaStreams(void)
+void TestGatherIfCudaStreams()
 {
   thrust::device_vector<int> flg(5); // predicate array
   thrust::device_vector<int> map(5); // gather indices

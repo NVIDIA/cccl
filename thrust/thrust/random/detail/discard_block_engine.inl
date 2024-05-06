@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE discard_block_engine<Engine, p, r>::discard_block_engine(const
 {}
 
 template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed(void)
+_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed()
 {
   m_e.seed();
   m_n = 0;
@@ -94,7 +94,7 @@ _CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::discard(unsigned long
 
 template <typename Engine, size_t p, size_t r>
 _CCCL_HOST_DEVICE const typename discard_block_engine<Engine, p, r>::base_type&
-discard_block_engine<Engine, p, r>::base(void) const
+discard_block_engine<Engine, p, r>::base() const
 {
   return m_e;
 }

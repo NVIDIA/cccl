@@ -20,7 +20,7 @@ struct max_functor
 };
 
 template <class Vector>
-void TestScanSimple(void)
+void TestScanSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -211,7 +211,7 @@ void TestExclusiveScanDispatchImplicit()
 }
 DECLARE_UNITTEST(TestExclusiveScanDispatchImplicit);
 
-void TestInclusiveScan32(void)
+void TestInclusiveScan32()
 {
   typedef int T;
   size_t n = 32;
@@ -229,7 +229,7 @@ void TestInclusiveScan32(void)
 }
 DECLARE_UNITTEST(TestInclusiveScan32);
 
-void TestExclusiveScan32(void)
+void TestExclusiveScan32()
 {
   typedef int T;
   size_t n = 32;
@@ -249,7 +249,7 @@ void TestExclusiveScan32(void)
 DECLARE_UNITTEST(TestExclusiveScan32);
 
 template <class IntVector, class FloatVector>
-void TestScanMixedTypes(void)
+void TestScanMixedTypes()
 {
   // make sure we get types for default args and operators correct
   IntVector int_input(4);
@@ -310,12 +310,12 @@ void TestScanMixedTypes(void)
   ASSERT_EQUAL(float_output[2], 8.5f); // out: 8.0f  in: 3 accum: 11.5f
   ASSERT_EQUAL(float_output[3], 11.5f); // out: 11.f  in: 4 accum: 15.5f
 }
-void TestScanMixedTypesHost(void)
+void TestScanMixedTypesHost()
 {
   TestScanMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
 DECLARE_UNITTEST(TestScanMixedTypesHost);
-void TestScanMixedTypesDevice(void)
+void TestScanMixedTypesDevice()
 {
   TestScanMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
@@ -445,7 +445,7 @@ struct TestScanToDiscardIterator
 VariableUnitTest<TestScanToDiscardIterator, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
   TestScanToDiscardIteratorInstance;
 
-void TestScanMixedTypes(void)
+void TestScanMixedTypes()
 {
   const unsigned int n = 113;
 
@@ -485,7 +485,7 @@ void TestScanMixedTypes(void)
 DECLARE_UNITTEST(TestScanMixedTypes);
 
 template <typename T, unsigned int N>
-void _TestScanWithLargeTypes(void)
+void _TestScanWithLargeTypes()
 {
   size_t n = (1024 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -511,7 +511,7 @@ void _TestScanWithLargeTypes(void)
   ASSERT_EQUAL_QUIET(h_output, d_output);
 }
 
-void TestScanWithLargeTypes(void)
+void TestScanWithLargeTypes()
 {
   _TestScanWithLargeTypes<int, 1>();
 
@@ -540,7 +540,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestInclusiveScanWithIndirection(void)
+void TestInclusiveScanWithIndirection()
 {
   // add numbers modulo 3 with external lookup table
   typedef typename Vector::value_type T;
@@ -590,7 +590,7 @@ struct const_ref_plus_mod3
 };
 
 template <typename Vector>
-void TestInclusiveScanWithConstAccumulator(void)
+void TestInclusiveScanWithConstAccumulator()
 {
   // add numbers modulo 3 with external lookup table
   typedef typename Vector::value_type T;

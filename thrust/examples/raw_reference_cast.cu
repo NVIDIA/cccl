@@ -75,7 +75,7 @@ void print(const std::string& name, const Vector& v)
   std::cout << "\n";
 }
 
-int main(void)
+int main()
 {
   typedef thrust::device_vector<int> Vector;
   typedef Vector::iterator Iterator;

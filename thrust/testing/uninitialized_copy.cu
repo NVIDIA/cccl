@@ -77,7 +77,7 @@ void TestUninitializedCopyNDispatchImplicit()
 DECLARE_UNITTEST(TestUninitializedCopyNDispatchImplicit);
 
 template <class Vector>
-void TestUninitializedCopySimplePOD(void)
+void TestUninitializedCopySimplePOD()
 {
   Vector v1(5);
   v1[0] = 0;
@@ -98,7 +98,7 @@ void TestUninitializedCopySimplePOD(void)
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopySimplePOD);
 
 template <typename Vector>
-void TestUninitializedCopyNSimplePOD(void)
+void TestUninitializedCopyNSimplePOD()
 {
   Vector v1(5);
   v1[0] = 0;
@@ -120,7 +120,7 @@ DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
 
 struct CopyConstructTest
 {
-  __host__ __device__ CopyConstructTest(void)
+  __host__ __device__ CopyConstructTest()
       : copy_constructed_on_host(false)
       , copy_constructed_on_device(false)
   {}

@@ -66,7 +66,7 @@ struct ScaledIntegerToValue
   }
 };
 
-int main(void)
+int main()
 {
   const size_t size = 4;
   thrust::device_vector<int> A(size);
