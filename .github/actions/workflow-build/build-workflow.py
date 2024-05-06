@@ -257,8 +257,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     if device_compiler_name != 'nvcc':
         command += f" -cuda \"{device_compiler_exe}\""
     if cmake_options:
-        cmake_args = " ".join([f"{key}={value}" for key, value in cmake_options.items()])
-        command += f" -cmake-options \"{cmake_args}\""
+        command += f" -cmake-options \"{cmake_options}\""
 
     return command
 
