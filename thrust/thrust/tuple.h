@@ -106,7 +106,7 @@ using tuple_element = _CUDA_VSTD::tuple_element<N, T>;
  *
  *  \tparam T A \c tuple type of interest.
  *
- *  \see tuple
+ *  \see pair
  *  \see tuple
  */
 template <class T>
