@@ -40,6 +40,7 @@
 #endif // no system header
 
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include <tuple>
@@ -98,7 +99,7 @@ _CCCL_HOST_DEVICE inline bool operator>(const null_type&, const null_type&)
  *  \see tuple
  */
 template <size_t N, class T>
-using tuple_element = ::cuda::std::tuple_element<N, T>;
+using tuple_element = _CUDA_VSTD::tuple_element<N, T>;
 
 /*! This metafunction returns the number of elements
  *  of a \p tuple type of interest.
@@ -109,7 +110,11 @@ using tuple_element = ::cuda::std::tuple_element<N, T>;
  *  \see tuple
  */
 template <class T>
-using tuple_size = ::cuda::std::tuple_size<T>;
+using tuple_size = _CUDA_VSTD::tuple_size<T>;
+
+template <class>
+struct __is_tuple_of_iterator_references : _CUDA_VSTD::false_type
+{};
 
 /*! \brief \p tuple is a class template that can be instantiated with up to ten
  *  arguments. Each template argument specifies the type of element in the \p
@@ -150,12 +155,82 @@ using tuple_size = ::cuda::std::tuple_size<T>;
  *  \see tuple_size
  *  \see tie
  */
-template <class... T>
-using tuple = ::cuda::std::tuple<T...>;
+template <class... Ts>
+struct tuple : public _CUDA_VSTD::tuple<Ts...>
+{
+  using super_t = _CUDA_VSTD::tuple<Ts...>;
+  using super_t::super_t;
 
-using ::cuda::std::get;
-using ::cuda::std::make_tuple;
-using ::cuda::std::tie;
+  tuple() = default;
+
+  template <class _TupleOfIteratorReferences,
+            _CUDA_VSTD::__enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
+            _CUDA_VSTD::__enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(Ts)), int>     = 0>
+  _CCCL_HOST_DEVICE tuple(_TupleOfIteratorReferences&& tup)
+      : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(tup).template __to_tuple<Ts...>(
+        _CUDA_VSTD::__make_tuple_indices_t<sizeof...(Ts)>()))
+  {}
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class TupleLike,
+            _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__tuple_assignable<TupleLike, super_t>::value, int> = 0>
+  _CCCL_HOST_DEVICE tuple& operator=(TupleLike&& other)
+  {
+    super_t::operator=(_CUDA_VSTD::forward<TupleLike>(other));
+    return *this;
+  }
+
+#if defined(_CCCL_COMPILER_MSVC_2017)
+  // MSVC2017 needs some help to convert tuples
+  template <class... Us,
+            _CUDA_VSTD::__enable_if_t<!_CUDA_VSTD::is_same<tuple<Us...>, tuple>::value, int> = 0,
+            _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__tuple_convertible<_CUDA_VSTD::tuple<Us...>, super_t>::value, int> = 0>
+  _CCCL_HOST_DEVICE constexpr operator tuple<Us...>()
+  {
+    return __to_tuple<Us...>(typename _CUDA_VSTD::__make_tuple_indices<sizeof...(Ts)>::type{});
+  }
+
+  template <class... Us, size_t... Id>
+  _CCCL_HOST_DEVICE constexpr tuple<Us...> __to_tuple(_CUDA_VSTD::__tuple_indices<Id...>) const
+  {
+    return tuple<Us...>{_CUDA_VSTD::get<Id>(*this)...};
+  }
+#endif // _CCCL_COMPILER_MSVC_2017
+};
+
+#if _CCCL_STD_VER >= 2017
+template <class... Ts>
+_CCCL_HOST_DEVICE tuple(Ts...) -> tuple<Ts...>;
+
+template <class T1, class T2>
+struct pair;
+
+template <class T1, class T2>
+_CCCL_HOST_DEVICE tuple(pair<T1, T2>) -> tuple<T1, T2>;
+#endif // _CCCL_STD_VER >= 2017
+
+template <class... Ts>
+inline _CCCL_HOST_DEVICE
+  _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__all<_CUDA_VSTD::__is_swappable<Ts>::value...>::value, void>
+  swap(tuple<Ts...>& __x,
+       tuple<Ts...>& __y) noexcept((_CUDA_VSTD::__all<_CUDA_VSTD::__is_nothrow_swappable<Ts>::value...>::value))
+{
+  __x.swap(__y);
+}
+
+template <class... Ts>
+inline _CCCL_HOST_DEVICE tuple<typename _CUDA_VSTD::__unwrap_ref_decay<Ts>::type...> make_tuple(Ts&&... __t)
+{
+  return tuple<typename _CUDA_VSTD::__unwrap_ref_decay<Ts>::type...>(_CUDA_VSTD::forward<Ts>(__t)...);
+}
+
+template <class... Ts>
+inline _CCCL_HOST_DEVICE tuple<Ts&...> tie(Ts&... ts) noexcept
+{
+  return tuple<Ts&...>(ts...);
+}
+
+using _CUDA_VSTD::get;
 
 /*! \endcond
  */
@@ -169,6 +244,18 @@ using ::cuda::std::tie;
 THRUST_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <class... Ts>
+struct tuple_size<THRUST_NS_QUALIFIER::tuple<Ts...>> : tuple_size<tuple<Ts...>>
+{};
+
+template <size_t Id, class... Ts>
+struct tuple_element<Id, THRUST_NS_QUALIFIER::tuple<Ts...>> : tuple_element<Id, tuple<Ts...>>
+{};
+
+template <class... Ts>
+struct __tuple_like_ext<THRUST_NS_QUALIFIER::tuple<Ts...>> : true_type
+{};
 
 template <>
 struct tuple_size<tuple<THRUST_NS_QUALIFIER::null_type,
@@ -278,3 +365,19 @@ struct tuple_size<tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, THRUST_NS_QUALIFIER:
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+// This is a workaround for the fact that structured bindings require that the specializations of
+// `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
+// See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
+#if _CCCL_STD_VER >= 2017
+namespace std
+{
+template <class... Ts>
+struct tuple_size<THRUST_NS_QUALIFIER::tuple<Ts...>> : tuple_size<tuple<Ts...>>
+{};
+
+template <size_t Id, class... Ts>
+struct tuple_element<Id, THRUST_NS_QUALIFIER::tuple<Ts...>> : tuple_element<Id, tuple<Ts...>>
+{};
+} // namespace std
+#endif // _CCCL_STD_VER >= 2017

@@ -511,7 +511,21 @@ void TestTupleStructuredBindings(void)
   ASSERT_EQUAL(c, c2);
 }
 DECLARE_UNITTEST(TestTupleStructuredBindings);
-#endif
+
+void TestTupleCTAD(void)
+{
+  const int a   = 0;
+  const char b  = 42;
+  const short c = 1337;
+  thrust::tuple t(a, b, c);
+
+  auto [a2, b2, c2] = t;
+  ASSERT_EQUAL(a, a2);
+  ASSERT_EQUAL(b, b2);
+  ASSERT_EQUAL(c, c2);
+}
+DECLARE_UNITTEST(TestTupleCTAD);
+#endif // _CCCL_STD_VER >= 2017
 
 // Ensure that we are backwards compatible with the old thrust::tuple implementation
 static_assert(

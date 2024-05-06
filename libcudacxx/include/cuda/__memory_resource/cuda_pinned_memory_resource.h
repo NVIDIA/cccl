@@ -25,6 +25,7 @@
 
 #  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
 #  endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
 
 #  include <cuda/__memory_resource/get_property.h>
