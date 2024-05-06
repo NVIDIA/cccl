@@ -36,7 +36,7 @@ struct saxpy_functor : public thrust::binary_function<float, float, float>
   }
 };
 
-int main(void)
+int main()
 {
   // input data
   float a    = 2.0f;

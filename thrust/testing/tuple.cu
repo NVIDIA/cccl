@@ -458,7 +458,7 @@ struct TestTupleTie
 };
 SimpleUnitTest<TestTupleTie, NumericTypes> TestTupleTieInstance;
 
-void TestTupleSwap(void)
+void TestTupleSwap()
 {
   int a = 7;
   int b = 13;
@@ -498,7 +498,7 @@ void TestTupleSwap(void)
 DECLARE_UNITTEST(TestTupleSwap);
 
 #if _CCCL_STD_VER >= 2017
-void TestTupleStructuredBindings(void)
+void TestTupleStructuredBindings()
 {
   const int a = 0;
   const int b = 42;

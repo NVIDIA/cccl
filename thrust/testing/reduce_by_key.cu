@@ -45,7 +45,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestReduceByKeySimple(void)
+void TestReduceByKeySimple()
 {
   typedef typename Vector::value_type T;
 

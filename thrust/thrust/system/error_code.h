@@ -167,7 +167,7 @@ class error_category
 public:
   /*! Destructor does nothing.
    */
-  inline virtual ~error_category(void);
+  inline virtual ~error_category();
 
   // XXX enable upon c++0x
   // error_category(const error_category &) = delete;
@@ -175,7 +175,7 @@ public:
 
   /*! \return A string naming the error category.
    */
-  inline virtual const char* name(void) const = 0;
+  inline virtual const char* name() const = 0;
 
   /*! \return \p error_condition(ev, *this).
    */
@@ -214,7 +214,7 @@ public:
  *        shall behave as specified for the class \p error_category. The object's
  *        \p name virtual function shall return a pointer to the string <tt>"generic"</tt>.
  */
-inline const error_category& generic_category(void);
+inline const error_category& generic_category();
 
 /*! \return A reference to an object of a type derived from class \p error_category.
  *  \note The object's \p equivalent virtual functions shall behave as specified for
@@ -227,7 +227,7 @@ inline const error_category& generic_category(void);
  *        Otherwise, the function shall return <tt>error_condition(ev,system_category())</tt>.
  *        What constitutes correspondence for any given operating system is unspecified.
  */
-inline const error_category& system_category(void);
+inline const error_category& system_category();
 
 // [19.5.2] Class error_code
 
@@ -243,7 +243,7 @@ public:
   /*! Effects: Constructs an object of type \p error_code.
    *  \post <tt>value() == 0</tt> and <tt>category() == &system_category()</tt>.
    */
-  inline error_code(void);
+  inline error_code();
 
   /*! Effects: Constructs an object of type \p error_code.
    *  \post <tt>value() == val</tt> and <tt>category() == &cat</tt>.
@@ -281,32 +281,32 @@ public:
 
   /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
    */
-  inline void clear(void);
+  inline void clear();
 
   // [19.5.2.4] observers:
 
   /*! \return An integral value of this \p error_code object.
    */
-  inline int value(void) const;
+  inline int value() const;
 
   /*! \return An \p error_category describing the category of this \p error_code object.
    */
-  inline const error_category& category(void) const;
+  inline const error_category& category() const;
 
   /*! \return <tt>category().default_error_condition()</tt>.
    */
-  inline error_condition default_error_condition(void) const;
+  inline error_condition default_error_condition() const;
 
   /*! \return <tt>category().message(value())</tt>.
    */
-  inline std::string message(void) const;
+  inline std::string message() const;
 
   // XXX replace the below upon c++0x
   // inline explicit operator bool (void) const;
 
   /*! \return <tt>value() != 0</tt>.
    */
-  inline operator bool(void) const;
+  inline operator bool() const;
 
   /*! \cond
    */
@@ -351,7 +351,7 @@ public:
    *  \post <tt>value() == 0</tt>.
    *  \post <tt>category() == generic_category()</tt>.
    */
-  inline error_condition(void);
+  inline error_condition();
 
   /*! Constructs an object of type \p error_condition.
    *  \post <tt>value() == val</tt>.
@@ -402,28 +402,28 @@ public:
    *  \post <tt>value == 0</tt>
    *  \post <tt>category() == generic_category()</tt>.
    */
-  inline void clear(void);
+  inline void clear();
 
   // [19.5.3.4] observers
 
   /*! \return The value encoded by this \p error_condition.
    */
-  inline int value(void) const;
+  inline int value() const;
 
   /*! \return A <tt>const</tt> reference to the \p error_category encoded by this \p error_condition.
    */
-  inline const error_category& category(void) const;
+  inline const error_category& category() const;
 
   /*! \return <tt>category().message(value())</tt>.
    */
-  inline std::string message(void) const;
+  inline std::string message() const;
 
   // XXX replace below with this upon c++0x
   // explicit operator bool (void) const;
 
   /*! \return <tt>value() != 0</tt>.
    */
-  inline operator bool(void) const;
+  inline operator bool() const;
 
   /*! \cond
    */

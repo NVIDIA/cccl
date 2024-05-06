@@ -49,7 +49,7 @@ void TestSetDifferenceDispatchImplicit()
 DECLARE_UNITTEST(TestSetDifferenceDispatchImplicit);
 
 template <typename Vector>
-void TestSetDifferenceSimple(void)
+void TestSetDifferenceSimple()
 {
   typedef typename Vector::iterator Iterator;
 

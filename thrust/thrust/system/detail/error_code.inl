@@ -33,7 +33,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system
 {
 
-error_code ::error_code(void)
+error_code ::error_code()
     : m_val(0)
     , m_cat(&system_category())
 {
@@ -78,33 +78,33 @@ error_code ::operator=(ErrorCodeEnum e)
   return *this;
 } // end error_code::operator=()
 
-void error_code ::clear(void)
+void error_code ::clear()
 {
   m_val = 0;
   m_cat = &system_category();
 } // end error_code::clear()
 
-int error_code ::value(void) const
+int error_code ::value() const
 {
   return m_val;
 } // end error_code::value()
 
-const error_category& error_code ::category(void) const
+const error_category& error_code ::category() const
 {
   return *m_cat;
 } // end error_code::category()
 
-error_condition error_code ::default_error_condition(void) const
+error_condition error_code ::default_error_condition() const
 {
   return category().default_error_condition(value());
 } // end error_code::default_error_condition()
 
-std::string error_code ::message(void) const
+std::string error_code ::message() const
 {
   return category().message(value());
 } // end error_code::message()
 
-error_code ::operator bool(void) const
+error_code ::operator bool() const
 {
   return value() != 0;
 } // end error_code::operator bool ()

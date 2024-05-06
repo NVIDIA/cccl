@@ -60,7 +60,7 @@ struct estimate_pi : public thrust::unary_function<unsigned int, float>
   }
 };
 
-int main(void)
+int main()
 {
   // use 30K independent seeds
   int M = 30000;

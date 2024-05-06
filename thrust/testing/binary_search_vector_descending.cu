@@ -21,7 +21,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundDescendingSimple(void)
+void TestVectorLowerBoundDescendingSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -60,7 +60,7 @@ void TestVectorLowerBoundDescendingSimple(void)
 DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
 
 template <class Vector>
-void TestVectorUpperBoundDescendingSimple(void)
+void TestVectorUpperBoundDescendingSimple()
 {
   Vector vec(5);
 
@@ -98,7 +98,7 @@ void TestVectorUpperBoundDescendingSimple(void)
 DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
 
 template <class Vector>
-void TestVectorBinarySearchDescendingSimple(void)
+void TestVectorBinarySearchDescendingSimple()
 {
   Vector vec(5);
 

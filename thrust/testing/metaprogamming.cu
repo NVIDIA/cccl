@@ -2,7 +2,7 @@
 
 #include <unittest/unittest.h>
 
-void TestLog2(void)
+void TestLog2()
 {
   unsigned int result;
 

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iterator>
 
-int main(void)
+int main()
 {
   // this example computes indices for all the nonzero values in a sequence
 

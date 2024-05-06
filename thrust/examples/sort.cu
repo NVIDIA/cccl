@@ -108,7 +108,7 @@ struct evens_before_odds
   }
 };
 
-int main(void)
+int main()
 {
   size_t N = 16;
 

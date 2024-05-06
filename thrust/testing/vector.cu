@@ -12,7 +12,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestVectorZeroSize(void)
+void TestVectorZeroSize()
 {
   Vector v;
   ASSERT_EQUAL(v.size(), 0lu);
@@ -20,7 +20,7 @@ void TestVectorZeroSize(void)
 }
 DECLARE_VECTOR_UNITTEST(TestVectorZeroSize);
 
-void TestVectorBool(void)
+void TestVectorBool()
 {
   thrust::host_vector<bool> h(3);
   thrust::device_vector<bool> d(3);
@@ -43,7 +43,7 @@ void TestVectorBool(void)
 DECLARE_UNITTEST(TestVectorBool);
 
 template <class Vector>
-void TestVectorInitializerList(void)
+void TestVectorInitializerList()
 {
   Vector v{1, 2, 3};
   ASSERT_EQUAL(v.size(), 3lu);
@@ -68,7 +68,7 @@ void TestVectorInitializerList(void)
 DECLARE_VECTOR_UNITTEST(TestVectorInitializerList);
 
 template <class Vector>
-void TestVectorFrontBack(void)
+void TestVectorFrontBack()
 {
   typedef typename Vector::value_type T;
 
@@ -83,7 +83,7 @@ void TestVectorFrontBack(void)
 DECLARE_VECTOR_UNITTEST(TestVectorFrontBack);
 
 template <class Vector>
-void TestVectorData(void)
+void TestVectorData()
 {
   typedef typename Vector::pointer PointerT;
   typedef typename Vector::const_pointer PointerConstT;
@@ -112,7 +112,7 @@ void TestVectorData(void)
 DECLARE_VECTOR_UNITTEST(TestVectorData);
 
 template <class Vector>
-void TestVectorElementAssignment(void)
+void TestVectorElementAssignment()
 {
   Vector v(3);
 
@@ -142,7 +142,7 @@ void TestVectorElementAssignment(void)
 DECLARE_VECTOR_UNITTEST(TestVectorElementAssignment);
 
 template <class Vector>
-void TestVectorFromSTLVector(void)
+void TestVectorFromSTLVector()
 {
   typedef typename Vector::value_type T;
 
@@ -168,7 +168,7 @@ void TestVectorFromSTLVector(void)
 DECLARE_VECTOR_UNITTEST(TestVectorFromSTLVector);
 
 template <class Vector>
-void TestVectorFillAssign(void)
+void TestVectorFillAssign()
 {
   typedef typename Vector::value_type T;
 
@@ -183,7 +183,7 @@ void TestVectorFillAssign(void)
 DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
 
 template <class Vector>
-void TestVectorAssignFromSTLVector(void)
+void TestVectorAssignFromSTLVector()
 {
   typedef typename Vector::value_type T;
 
@@ -203,7 +203,7 @@ void TestVectorAssignFromSTLVector(void)
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromSTLVector);
 
 template <class Vector>
-void TestVectorFromBiDirectionalIterator(void)
+void TestVectorFromBiDirectionalIterator()
 {
   typedef typename Vector::value_type T;
 
@@ -222,7 +222,7 @@ void TestVectorFromBiDirectionalIterator(void)
 DECLARE_VECTOR_UNITTEST(TestVectorFromBiDirectionalIterator);
 
 template <class Vector>
-void TestVectorAssignFromBiDirectionalIterator(void)
+void TestVectorAssignFromBiDirectionalIterator()
 {
   typedef typename Vector::value_type T;
 
@@ -242,7 +242,7 @@ void TestVectorAssignFromBiDirectionalIterator(void)
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromBiDirectionalIterator);
 
 template <class Vector>
-void TestVectorAssignFromHostVector(void)
+void TestVectorAssignFromHostVector()
 {
   typedef typename Vector::value_type T;
 
@@ -259,7 +259,7 @@ void TestVectorAssignFromHostVector(void)
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromHostVector);
 
 template <class Vector>
-void TestVectorToAndFromHostVector(void)
+void TestVectorToAndFromHostVector()
 {
   typedef typename Vector::value_type T;
 
@@ -300,7 +300,7 @@ void TestVectorToAndFromHostVector(void)
 DECLARE_VECTOR_UNITTEST(TestVectorToAndFromHostVector);
 
 template <class Vector>
-void TestVectorAssignFromDeviceVector(void)
+void TestVectorAssignFromDeviceVector()
 {
   typedef typename Vector::value_type T;
 
@@ -317,7 +317,7 @@ void TestVectorAssignFromDeviceVector(void)
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromDeviceVector);
 
 template <class Vector>
-void TestVectorToAndFromDeviceVector(void)
+void TestVectorToAndFromDeviceVector()
 {
   typedef typename Vector::value_type T;
 
@@ -358,7 +358,7 @@ void TestVectorToAndFromDeviceVector(void)
 DECLARE_VECTOR_UNITTEST(TestVectorToAndFromDeviceVector);
 
 template <class Vector>
-void TestVectorWithInitialValue(void)
+void TestVectorWithInitialValue()
 {
   typedef typename Vector::value_type T;
 
@@ -374,7 +374,7 @@ void TestVectorWithInitialValue(void)
 DECLARE_VECTOR_UNITTEST(TestVectorWithInitialValue);
 
 template <class Vector>
-void TestVectorSwap(void)
+void TestVectorSwap()
 {
   Vector v(3);
   v[0] = 0;
@@ -398,7 +398,7 @@ void TestVectorSwap(void)
 DECLARE_VECTOR_UNITTEST(TestVectorSwap);
 
 template <class Vector>
-void TestVectorErasePosition(void)
+void TestVectorErasePosition()
 {
   Vector v(5);
   v[0] = 0;
@@ -440,7 +440,7 @@ void TestVectorErasePosition(void)
 DECLARE_VECTOR_UNITTEST(TestVectorErasePosition);
 
 template <class Vector>
-void TestVectorEraseRange(void)
+void TestVectorEraseRange()
 {
   Vector v(6);
   v[0] = 0;
@@ -475,7 +475,7 @@ void TestVectorEraseRange(void)
 }
 DECLARE_VECTOR_UNITTEST(TestVectorEraseRange);
 
-void TestVectorEquality(void)
+void TestVectorEquality()
 {
   thrust::host_vector<int> h_a(3);
   thrust::host_vector<int> h_b(3);
@@ -597,7 +597,7 @@ void TestVectorEquality(void)
 }
 DECLARE_UNITTEST(TestVectorEquality);
 
-void TestVectorInequality(void)
+void TestVectorInequality()
 {
   thrust::host_vector<int> h_a(3);
   thrust::host_vector<int> h_b(3);
@@ -720,7 +720,7 @@ void TestVectorInequality(void)
 DECLARE_UNITTEST(TestVectorInequality);
 
 template <class Vector>
-void TestVectorResizing(void)
+void TestVectorResizing()
 {
   Vector v;
 
@@ -778,7 +778,7 @@ void TestVectorResizing(void)
 DECLARE_VECTOR_UNITTEST(TestVectorResizing);
 
 template <class Vector>
-void TestVectorReserving(void)
+void TestVectorReserving()
 {
   Vector v;
 
@@ -809,7 +809,7 @@ void TestVectorReserving(void)
 DECLARE_VECTOR_UNITTEST(TestVectorReserving)
 
 template <class Vector>
-void TestVectorUninitialisedCopy(void)
+void TestVectorUninitialisedCopy()
 {
   thrust::device_vector<int> v;
   std::vector<int> std_vector;
@@ -821,7 +821,7 @@ void TestVectorUninitialisedCopy(void)
 DECLARE_VECTOR_UNITTEST(TestVectorUninitialisedCopy);
 
 template <class Vector>
-void TestVectorShrinkToFit(void)
+void TestVectorShrinkToFit()
 {
   typedef typename Vector::value_type T;
 
@@ -863,7 +863,7 @@ struct LargeStruct
   }
 };
 
-void TestVectorContainingLargeType(void)
+void TestVectorContainingLargeType()
 {
   // Thrust issue #5
   // http://code.google.com/p/thrust/issues/detail?id=5
@@ -904,7 +904,7 @@ void TestVectorContainingLargeType(void)
 DECLARE_UNITTEST(TestVectorContainingLargeType);
 
 template <typename Vector>
-void TestVectorReversed(void)
+void TestVectorReversed()
 {
   Vector v(3);
   v[0] = 0;
@@ -928,7 +928,7 @@ void TestVectorReversed(void)
 DECLARE_VECTOR_UNITTEST(TestVectorReversed);
 
 template <class Vector>
-void TestVectorMove(void)
+void TestVectorMove()
 {
   // test move construction
   Vector v1(3);

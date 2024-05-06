@@ -49,7 +49,7 @@ thrust::host_vector<int> random_vector(size_t N)
   return vec;
 }
 
-int main(void)
+int main()
 {
   size_t N = 20;
 

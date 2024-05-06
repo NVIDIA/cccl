@@ -85,7 +85,7 @@ struct bit_negate_reference
 };
 
 template <typename Vector>
-void TestFunctionalPlaceholdersBitNegate(void)
+void TestFunctionalPlaceholdersBitNegate()
 {
   typedef typename Vector::value_type T;
   typedef typename rebind_vector<Vector, bool>::type bool_vector;

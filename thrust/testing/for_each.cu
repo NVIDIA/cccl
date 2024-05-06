@@ -23,7 +23,7 @@ public:
 };
 
 template <class Vector>
-void TestForEachSimple(void)
+void TestForEachSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -88,7 +88,7 @@ void TestForEachDispatchImplicit()
 DECLARE_UNITTEST(TestForEachDispatchImplicit);
 
 template <class Vector>
-void TestForEachNSimple(void)
+void TestForEachNSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -152,7 +152,7 @@ void TestForEachNDispatchImplicit()
 }
 DECLARE_UNITTEST(TestForEachNDispatchImplicit);
 
-void TestForEachSimpleAnySystem(void)
+void TestForEachSimpleAnySystem()
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -173,7 +173,7 @@ void TestForEachSimpleAnySystem(void)
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
 
-void TestForEachNSimpleAnySystem(void)
+void TestForEachNSimpleAnySystem()
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -273,7 +273,7 @@ struct SetFixedVectorToConstant
 };
 
 template <typename T, unsigned int N>
-void _TestForEachWithLargeTypes(void)
+void _TestForEachWithLargeTypes()
 {
   size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -294,7 +294,7 @@ void _TestForEachWithLargeTypes(void)
   ASSERT_EQUAL_QUIET(h_data, d_data);
 }
 
-void TestForEachWithLargeTypes(void)
+void TestForEachWithLargeTypes()
 {
   _TestForEachWithLargeTypes<int, 1>();
   _TestForEachWithLargeTypes<int, 2>();
@@ -314,7 +314,7 @@ void TestForEachWithLargeTypes(void)
 DECLARE_UNITTEST(TestForEachWithLargeTypes);
 
 template <typename T, unsigned int N>
-void _TestForEachNWithLargeTypes(void)
+void _TestForEachNWithLargeTypes()
 {
   size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -335,7 +335,7 @@ void _TestForEachNWithLargeTypes(void)
   ASSERT_EQUAL_QUIET(h_data, d_data);
 }
 
-void TestForEachNWithLargeTypes(void)
+void TestForEachNWithLargeTypes()
 {
   _TestForEachNWithLargeTypes<int, 1>();
   _TestForEachNWithLargeTypes<int, 2>();

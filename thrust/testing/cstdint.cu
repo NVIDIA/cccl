@@ -4,7 +4,7 @@
 
 #include <unittest/unittest.h>
 
-void TestStandardIntegerTypes(void)
+void TestStandardIntegerTypes()
 {
   ASSERT_EQUAL(sizeof(thrust::detail::int8_t), 1lu);
   ASSERT_EQUAL(sizeof(thrust::detail::int16_t), 2lu);

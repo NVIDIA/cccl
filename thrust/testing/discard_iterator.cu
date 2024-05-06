@@ -4,7 +4,7 @@
 
 #include <unittest/unittest.h>
 
-void TestDiscardIteratorIncrement(void)
+void TestDiscardIteratorIncrement()
 {
   thrust::discard_iterator<> lhs(0);
   thrust::discard_iterator<> rhs(0);
@@ -32,7 +32,7 @@ DECLARE_UNITTEST(TestDiscardIteratorIncrement);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value, "");
 static_assert(cuda::std::is_trivially_copyable<thrust::discard_iterator<>>::value, "");
 
-void TestDiscardIteratorComparison(void)
+void TestDiscardIteratorComparison()
 {
   thrust::discard_iterator<> iter1(0);
   thrust::discard_iterator<> iter2(0);
@@ -58,7 +58,7 @@ void TestDiscardIteratorComparison(void)
 }
 DECLARE_UNITTEST(TestDiscardIteratorComparison);
 
-void TestMakeDiscardIterator(void)
+void TestMakeDiscardIterator()
 {
   thrust::discard_iterator<> iter0 = thrust::make_discard_iterator(13);
 
@@ -72,7 +72,7 @@ void TestMakeDiscardIterator(void)
 }
 DECLARE_UNITTEST(TestMakeDiscardIterator);
 
-void TestZippedDiscardIterator(void)
+void TestZippedDiscardIterator()
 {
   using namespace thrust;
 

@@ -147,7 +147,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestUniqueByKeySimple(void)
+void TestUniqueByKeySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -195,7 +195,7 @@ void TestUniqueByKeySimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
 
 template <typename Vector>
-void TestUniqueCopyByKeySimple(void)
+void TestUniqueCopyByKeySimple()
 {
   typedef typename Vector::value_type T;
 

@@ -10,7 +10,7 @@
 //
 // [1] http://en.wikipedia.org/wiki/Run-length_encoding
 
-int main(void)
+int main()
 {
   // input data on the host
   const char data[] = "aaabbbbbcddeeeeeeeeeff";

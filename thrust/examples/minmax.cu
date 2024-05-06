@@ -47,7 +47,7 @@ struct minmax_binary_op : public thrust::binary_function<minmax_pair<T>, minmax_
   }
 };
 
-int main(void)
+int main()
 {
   // input size
   size_t N = 10;
