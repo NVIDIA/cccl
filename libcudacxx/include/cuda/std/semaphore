@@ -31,5 +31,6 @@
 #include <cuda/std/detail/libcxx/include/semaphore>
 
 #include <cuda/std/detail/__pragma_pop>
+// clang-format on
 
 #endif // _CUDA_STD_SEMAPHORE

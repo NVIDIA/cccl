@@ -27,5 +27,6 @@
 #include <cuda/std/detail/libcxx/include/utility>
 
 #include <cuda/std/detail/__pragma_pop>
+// clang-format on
 
 #endif // _CUDA_STD_UTILITY
