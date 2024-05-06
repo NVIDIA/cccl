@@ -2773,13 +2773,11 @@ public:
   ///
   /// \group emplace
   _CCCL_EXEC_CHECK_DISABLE
-  template <class... Args>
-  _CCCL_HOST_DEVICE T& emplace(Args&&... args) noexcept
+  template <class U>
+  _CCCL_HOST_DEVICE T& emplace(U& u) noexcept
   {
-    static_assert(std::is_constructible<T, Args&&...>::value, "T must be constructible with Args");
-
-    *this = nullopt;
-    this->construct(std::forward<Args>(args)...);
+    m_value = thrust::addressof(u);
+    return *m_value;
   }
 
   /// Swaps this optional with the other.
