@@ -95,9 +95,9 @@
                  _NV_EVAL(_NV_HAS_COMMA(__VA_ARGS__)), /* test if _TRIGGER_PARENTHESIS_ together with the argument    \
                                                           adds a comma */                                             \
                  _NV_EVAL(_NV_HAS_COMMA(_NV_TRIGGER_PARENTHESIS_ __VA_ARGS__)), /* test if the argument together with \
-                                                                                   a parenthesis adds a comma */                                                                                                      \
+                                                                                   a parenthesis adds a comma */      \
                  _NV_EVAL(_NV_HAS_COMMA(__VA_ARGS__(/*empty*/))), /* test if placing it between _TRIGGER_PARENTHESIS_ \
-                                                                     and the parenthesis adds a comma */                                                                                          \
+                                                                     and the parenthesis adds a comma */              \
                  _NV_EVAL(_NV_HAS_COMMA(_NV_TRIGGER_PARENTHESIS_ __VA_ARGS__(/*empty*/))))
 
 #  define _NV_PASTE5(_0, _1, _2, _3, _4) _0##_1##_2##_3##_4
