@@ -154,6 +154,9 @@ template <typename Function>
 class zip_function
 {
 public:
+  //! Default constructs the contained function object.
+  zip_function() = default;
+
   _CCCL_HOST_DEVICE zip_function(Function func)
       : func(std::move(func))
   {}
