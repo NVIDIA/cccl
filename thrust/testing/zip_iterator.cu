@@ -35,6 +35,7 @@ struct TestZipIteratorManipulation
 
     // test construction
     ZipIterator iter0 = make_zip_iterator(t);
+    ASSERT_EQUAL(true, iter0 == ZipIterator{t});
 
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
