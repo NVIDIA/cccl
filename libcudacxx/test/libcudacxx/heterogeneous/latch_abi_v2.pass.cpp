@@ -13,8 +13,8 @@
 
 #define _LIBCUDACXX_CUDA_ABI_VERSION 2
 
-#include <cuda/std/latch>
 #include <cuda/std/cassert>
+#include <cuda/std/latch>
 
 #include "helpers.h"
 

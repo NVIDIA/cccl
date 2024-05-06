@@ -11,8 +11,8 @@
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
 
-#include <cuda/std/latch>
 #include <cuda/std/cassert>
+#include <cuda/std/latch>
 
 #include "helpers.h"
 
@@ -31,7 +31,7 @@ struct count_down
 template <int N>
 struct arrive_and_wait
 {
-  using async = cuda::std::true_type;
+  using async                         = cuda::std::true_type;
   static constexpr size_t threadcount = N;
 
   template <typename Latch>

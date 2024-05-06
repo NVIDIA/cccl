@@ -155,10 +155,7 @@ using basic_testers =
               exchange_tester<-12, 17>>;
 
 using arithmetic_atomic_testers =
-  append<basic_testers,
-         fetch_add_tester<17, 13, 30>,
-         fetch_sub_tester<30, 21, 9>,
-         fetch_sub_tester<9, 17, -8>>;
+  append<basic_testers, fetch_add_tester<17, 13, 30>, fetch_sub_tester<30, 21, 9>, fetch_sub_tester<9, 17, -8>>;
 
 using bitwise_atomic_testers =
   append<arithmetic_atomic_testers,
