@@ -28,10 +28,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 template <class _Callable>
-class _LIBCUDACXX_DEPRECATED_IN_CXX17 result_of;
+class result_of;
 
 template <class _Fp, class... _Args>
-class _LIBCUDACXX_TEMPLATE_VIS result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
+class _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_TEMPLATE_VIS result_of<_Fp(_Args...)>
+    : public __invoke_of<_Fp, _Args...>
 {};
 
 #  if _CCCL_STD_VER > 2011
