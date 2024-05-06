@@ -134,6 +134,10 @@ template <typename IteratorTuple>
 class zip_iterator : public detail::zip_iterator_base<IteratorTuple>::type
 {
 public:
+  /*! The underlying iterator tuple type. Alias to zip_iterator's first template argument.
+   */
+  using iterator_tuple = IteratorTuple;
+
   /*! Default constructor does nothing.
    */
 #if defined(_CCCL_COMPILER_MSVC_2017)
