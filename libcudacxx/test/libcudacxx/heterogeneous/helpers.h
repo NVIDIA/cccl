@@ -694,24 +694,6 @@ template <typename... Ts>
 struct performer_list
 {};
 
-template <typename... Lists>
-struct cat_tester_lists_t;
-
-template <typename... Only>
-struct cat_tester_lists_t<tester_list<Only...>>
-{
-  using type = tester_list<Only...>;
-};
-
-template <typename... First, typename... Second, typename... Tail>
-struct cat_tester_lists_t<tester_list<First...>, tester_list<Second...>, Tail...>
-{
-  using type = typename cat_tester_lists_t<tester_list<First..., Second...>, Tail...>::type;
-};
-
-template <typename... Lists>
-using cat_tester_lists = typename cat_tester_lists_t<Lists...>::type;
-
 template <typename Front, typename... Performers>
 struct generate_variants_t;
 
@@ -724,7 +706,7 @@ struct generate_variants_t<tester_list<Fronts...>>
 template <typename... Fronts, typename First, typename... Performers>
 struct generate_variants_t<tester_list<Fronts...>, First, Performers...>
 {
-  using type = cat_tester_lists<
+  using type = append<
     typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::initialize>>,
                                  Performers...>::type,
     typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::validate>>,
