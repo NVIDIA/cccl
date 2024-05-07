@@ -5,7 +5,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
-int main(void)
+int main()
 {
   size_t N = 10;
 

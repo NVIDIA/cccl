@@ -89,7 +89,7 @@ void InitializeSimpleStableKeySortTest(Vector& unsorted_keys, Vector& sorted_key
   sorted_keys[8] = 36;
 }
 
-void TestMergeSortKeySimple(void)
+void TestMergeSortKeySimple()
 {
 #if 0
     typedef thrust::device_vector<int> Vector;
@@ -110,7 +110,7 @@ void TestMergeSortKeySimple(void)
 }
 DECLARE_UNITTEST(TestMergeSortKeySimple);
 
-void TestMergeSortKeyValueSimple(void)
+void TestMergeSortKeyValueSimple()
 {
 #if 0
     typedef thrust::device_vector<int> Vector;
@@ -132,7 +132,7 @@ void TestMergeSortKeyValueSimple(void)
 }
 DECLARE_UNITTEST(TestMergeSortKeyValueSimple);
 
-void TestMergeSortStableKeySimple(void)
+void TestMergeSortStableKeySimple()
 {
 #if 0
     typedef thrust::device_vector<int> Vector;
@@ -153,7 +153,7 @@ void TestMergeSortStableKeySimple(void)
 }
 DECLARE_UNITTEST(TestMergeSortStableKeySimple);
 
-void TestMergeSortDescendingKey(void)
+void TestMergeSortDescendingKey()
 {
 #if 0
     const size_t n = 10027;
@@ -197,7 +197,7 @@ void TestMergeSortAscendingKeyValue(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeSortAscendingKeyValue);
 
-void TestMergeSortDescendingKeyValue(void)
+void TestMergeSortDescendingKeyValue()
 {
 #if 0
     const size_t n = 10027;

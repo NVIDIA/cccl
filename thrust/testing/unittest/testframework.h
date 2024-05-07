@@ -291,7 +291,7 @@ enum TestStatus
 typedef std::set<std::string> ArgumentSet;
 typedef std::map<std::string, std::string> ArgumentMap;
 
-std::vector<size_t> get_test_sizes(void);
+std::vector<size_t> get_test_sizes();
 void set_test_sizes(const std::string&);
 
 class UnitTest
@@ -331,7 +331,7 @@ public:
 
   void register_test(UnitTest* test);
   virtual bool run_tests(const ArgumentSet& args, const ArgumentMap& kwargs);
-  void list_tests(void);
+  void list_tests();
 
   static UnitTestDriver& s_driver();
 };
@@ -368,7 +368,7 @@ public:
 // Macro to create host and device versions of a
 // unit test for a bunch of data types
 #define DECLARE_VECTOR_UNITTEST(VTEST)                                                                                  \
-  void VTEST##Host(void)                                                                                                \
+  void VTEST##Host()                                                                                                    \
   {                                                                                                                     \
     VTEST<thrust::host_vector<signed char>>();                                                                          \
     VTEST<thrust::host_vector<short>>();                                                                                \
@@ -378,7 +378,7 @@ public:
     /* MR vectors */                                                                                                    \
     VTEST<thrust::host_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::host_memory_resource>>>();     \
   }                                                                                                                     \
-  void VTEST##Device(void)                                                                                              \
+  void VTEST##Device()                                                                                                  \
   {                                                                                                                     \
     VTEST<thrust::device_vector<signed char>>();                                                                        \
     VTEST<thrust::device_vector<short>>();                                                                              \
@@ -388,7 +388,7 @@ public:
     /* MR vectors */                                                                                                    \
     VTEST<thrust::device_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::device_memory_resource>>>(); \
   }                                                                                                                     \
-  void VTEST##Universal(void)                                                                                           \
+  void VTEST##Universal()                                                                                               \
   {                                                                                                                     \
     VTEST<thrust::universal_vector<int>>();                                                                             \
     VTEST<thrust::device_vector<                                                                                        \
@@ -401,19 +401,19 @@ public:
 
 // Same as above, but only for integral types
 #define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST)                                                         \
-  void VTEST##Host(void)                                                                                \
+  void VTEST##Host()                                                                                    \
   {                                                                                                     \
     VTEST<thrust::host_vector<signed char>>();                                                          \
     VTEST<thrust::host_vector<short>>();                                                                \
     VTEST<thrust::host_vector<int>>();                                                                  \
   }                                                                                                     \
-  void VTEST##Device(void)                                                                              \
+  void VTEST##Device()                                                                                  \
   {                                                                                                     \
     VTEST<thrust::device_vector<signed char>>();                                                        \
     VTEST<thrust::device_vector<short>>();                                                              \
     VTEST<thrust::device_vector<int>>();                                                                \
   }                                                                                                     \
-  void VTEST##Universal(void)                                                                           \
+  void VTEST##Universal()                                                                               \
   {                                                                                                     \
     VTEST<thrust::universal_vector<int>>();                                                             \
     VTEST<thrust::device_vector<                                                                        \

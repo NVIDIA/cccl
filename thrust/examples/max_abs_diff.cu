@@ -17,7 +17,7 @@ struct abs_diff : public thrust::binary_function<T, T, T>
   }
 };
 
-int main(void)
+int main()
 {
   thrust::device_vector<float> d_a(4);
   thrust::device_vector<float> d_b(4);

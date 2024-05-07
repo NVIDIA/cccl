@@ -207,7 +207,7 @@ void display_time(timer& t)
   std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << std::endl;
 }
 
-int main(void)
+int main()
 {
   int m = 2048; // number of rows
   int n = 2048; // number of columns

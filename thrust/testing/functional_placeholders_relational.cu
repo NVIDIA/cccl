@@ -31,7 +31,7 @@ struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
 
 #define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)                        \
   template <typename Vector>                                                                          \
-  void TestFunctionalPlaceholdersBinary##name(void)                                                   \
+  void TestFunctionalPlaceholdersBinary##name()                                                       \
   {                                                                                                   \
     typedef typename Vector::value_type T;                                                            \
     typedef typename rebind_vector<Vector, bool>::type bool_vector;                                   \

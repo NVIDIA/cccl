@@ -72,7 +72,7 @@ struct reduce_tuple
   }
 };
 
-int main(void)
+int main()
 {
   int M = 10; // number of rows
   int n = 11; // number of columns excluding padding

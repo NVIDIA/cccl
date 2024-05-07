@@ -434,11 +434,11 @@ extern "C++" {
 #    define _LIBCUDACXX_ALWAYS_INLINE __attribute__((__always_inline__))
 #  endif // !_CCCL_COMPILER_MSVC
 
-#  if defined(__cuda_std__)
+#  if defined(_CCCL_CUDA_COMPILER)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #  elif defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
-#  endif // __cuda_std__
+#  endif // _CCCL_CUDA_COMPILER
 
 // https://bugs.llvm.org/show_bug.cgi?id=44517
 #  define __check_builtin(__x) (__has_builtin(__##__x) || __has_keyword(__##__x) || __has_feature(__x))
@@ -776,10 +776,6 @@ typedef __char16_t char16_t;
 typedef __char32_t char32_t;
 #    endif
 
-#    if !(__has_feature(cxx_strong_enums))
-#      define _LIBCUDACXX_HAS_NO_STRONG_ENUMS
-#    endif
-
 #    if !(__has_feature(cxx_lambdas))
 #      define _LIBCUDACXX_HAS_NO_LAMBDAS
 #    endif
@@ -932,37 +928,31 @@ typedef __char32_t char32_t;
 
 #  endif // _CCCL_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
 
-#  if defined(_CCCL_COMPILER_NVHPC) && !defined(__cuda_std__)
+#  if defined(_CCCL_CUDA_COMPILER_NVHPC)
 // Forcefully disable visibility controls when used as the standard library with NVC++.
 // TODO: reevaluate.
 #    define _LIBCUDACXX_HIDE_FROM_ABI
 #    ifndef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
 #      define _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
-#    endif
-#  endif
+#    endif // !_LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
+#  endif // _CCCL_CUDA_COMPILER_NVHPC
 
 #  ifndef _LIBCUDACXX_FREESTANDING
-#    if defined(__cuda_std__) || !defined(__STDC_HOSTED__)
-#      define _LIBCUDACXX_FREESTANDING
-#    endif
+#    define _LIBCUDACXX_FREESTANDING
 #  endif // !_LIBCUDACXX_FREESTANDING
 
 #  ifndef _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
-#    if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_COMPILER_NVHPC) && !defined(__cuda_std__))
+#    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
 #      define _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
 #    endif
 #  endif // _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
 
 #  ifndef _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
-#    endif
+#    define _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
 #  endif // _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
 
 #  ifndef _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-#    endif
+#    define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 #  endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
@@ -980,9 +970,7 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_ASAN
 
 #  ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-#    if defined(__cuda_std__) || (defined(_CCCL_COMPILER_CLANG) && _LIBCUDACXX_CLANG_VER < 800)
-#      define _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-#    endif // __cuda_std__
+#    define _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 #  endif // _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
@@ -1000,7 +988,6 @@ typedef __char32_t char32_t;
 
 #  ifndef _LIBCUDACXX_HAS_NVFP16
 #    if __has_include(<cuda_fp16.h>)                                                           \
-      && defined(__cuda_std__)                                                                 \
       && (defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || !defined(_CCCL_CUDACC_BELOW_12_2)) \
       && (!defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || CUDA_VERSION >= 12020)                  \
       && (defined(_CCCL_CUDACC) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
@@ -1010,7 +997,6 @@ typedef __char32_t char32_t;
 
 #  ifndef _LIBCUDACXX_HAS_NVBF16
 #    if __has_include(<cuda_bf16.h>)        \
-      && defined(__cuda_std__)              \
       && defined(_LIBCUDACXX_HAS_NVFP16)    \
       && !defined(CUB_DISABLE_BF16_SUPPORT)
 #      define _LIBCUDACXX_HAS_NVBF16
@@ -1018,15 +1004,11 @@ typedef __char32_t char32_t;
 #  endif // !_LIBCUDACXX_HAS_NVBF16
 
 #  ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
-#    endif
+#    define _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
 #  endif // _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
 
 #  ifndef _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
-#    endif
+#    define _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
 #  endif // _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
 
 #  ifndef _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
@@ -1037,21 +1019,15 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
 
 #  ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
-#    endif
+#    define _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 #  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 
 #  ifndef _LIBCUDACXX_HAS_NO_TREE_BARRIER
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_NO_TREE_BARRIER
-#    endif
+#    define _LIBCUDACXX_HAS_NO_TREE_BARRIER
 #  endif // _LIBCUDACXX_HAS_NO_TREE_BARRIER
 
 #  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_HAS_NO_WCHAR_H
-#    endif
+#    define _LIBCUDACXX_HAS_NO_WCHAR_H
 #  endif // _LIBCUDACXX_HAS_NO_WCHAR_H
 
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -1064,10 +1040,7 @@ typedef __char32_t char32_t;
 // Try to find out if RTTI is disabled.
 // g++ and cl.exe have RTTI on by default and define a macro when it is.
 #  ifndef _LIBCUDACXX_NO_RTTI
-#    if defined(__cuda_std__) || (defined(_CCCL_COMPILER_CLANG) && !(__has_feature(cxx_rtti))) \
-      || (defined(_CCCL_COMPILER_GCC) && !defined(__GXX_RTTI)) || (defined(_CCCL_COMPILER_MSVC) && !defined(_CPPRTTI))
-#      define _LIBCUDACXX_NO_RTTI
-#    endif
+#    define _LIBCUDACXX_NO_RTTI
 #  endif // !_LIBCUDACXX_NO_RTTI
 
 #  ifndef _LIBCUDACXX_NODEBUG_TYPE
@@ -1278,179 +1251,57 @@ typedef __char32_t char32_t;
 #    endif // __cuda_std__
 #  endif // _LIBCUDACXX_ABI_NAMESPACE
 
-#  ifdef __cuda_std__
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION \
-      namespace cuda                                  \
-      {                                               \
-      namespace std                                   \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION \
-      }                                             \
-      }
-#    define _CUDA_VSTD_NOVERSION ::cuda::std
-#    define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VIEWS          ::cuda::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
-#    define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
+// clang-format off
+#  define _CUDA_VSTD_NOVERSION ::cuda::std
+#  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VIEWS          ::cuda::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
+#  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
+
+// Standard namespaces with or without versioning
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace cuda { namespace std {
+#  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace cuda { namespace std { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_STD } } }
+
+// cuda specific namespaces
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA namespace cuda { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR namespace cuda { namespace mr { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_MR } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX namespace cuda { namespace ptx { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL } } } }
+
+// Namespaces related to <ranges>
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES namespace cuda { namespace std { namespace ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_RANGES } } } }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS namespace cuda { namespace std { namespace ranges { namespace views { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_VIEWS } } } } }
+
+#  if _CCCL_STD_VER >= 2020
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI inline namespace __cxx20 {
 #  else
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION \
-      namespace std                                   \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION }
-#    define _CUDA_VSTD_NOVERSION                    ::std
-#    define _CUDA_VSTD                              ::std::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VRANGES                           ::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
-#    define _CUDA_VIEWS                             ::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
-#  endif
-
-#  ifdef __cuda_std__
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA     \
-      namespace cuda                             \
-      {                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA \
-      }                                    \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR  \
-      namespace cuda                             \
-      {                                          \
-      namespace mr                               \
-      {                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_MR \
-      }                                       \
-      }                                       \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE \
-      namespace cuda                                \
-      {                                             \
-      namespace device                              \
-      {                                             \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE    \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE \
-      }                                           \
-      }                                           \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX \
-      namespace cuda                             \
-      {                                          \
-      namespace ptx                              \
-      {                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX \
-      }                                        \
-      }                                        \
-      }
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL \
-      namespace cuda                                             \
-      {                                                          \
-      namespace device                                           \
-      {                                                          \
-      namespace experimental                                     \
-      {                                                          \
-      inline namespace _LIBCUDACXX_ABI_NAMESPACE                 \
-      {
-#    define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL \
-      }                                                        \
-      }                                                        \
-      }                                                        \
-      }
-#  endif
-
-// Inline namespaces are available in Clang/GCC/MSVC regardless of C++ dialect.
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_STD      \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  \
-    inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-    {
-#  define _LIBCUDACXX_END_NAMESPACE_STD \
-    }                                   \
-    _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-#  ifndef __cuda_std__
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
-#  endif
-
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES   \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  \
-    namespace ranges                           \
-    {                                          \
-    inline namespace _LIBCUDACXX_ABI_NAMESPACE \
-    {
-#  define _LIBCUDACXX_END_NAMESPACE_RANGES \
-    }                                      \
-    }                                      \
-    _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-
-#  if !defined(__cuda_std__)
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_END_NAMESPACE_RANGES
-#  endif
-
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS         \
-    _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION       \
-    namespace ranges                                \
-    {                                               \
-    namespace views                                 \
-    {                                               \
-    inline namespace _LIBCUDACXX_CUDA_ABI_NAMESPACE \
-    {
-#  define _LIBCUDACXX_END_NAMESPACE_VIEWS \
-    }                                     \
-    }                                     \
-    }                                     \
-    _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
-#  if !defined(__cuda_std__)
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_END_NAMESPACE_VIEWS
-#  endif
-
-#  if _CCCL_STD_VER > 2017
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI \
-      inline namespace __cxx20                     \
-      {
-#  else
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI \
-      inline namespace __cxx17                     \
-      {
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI inline namespace __cxx17 {
 #  endif
 #  define _LIBCUDACXX_END_NAMESPACE_RANGES_ABI }
 
-#  define _LIBCUDACXX_BEGIN_NAMESPACE_CPO(_CPO) \
-    namespace _CPO                              \
-    {                                           \
-    _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-#  define _LIBCUDACXX_END_NAMESPACE_CPO \
-    }                                   \
-    }
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CPO(_CPO) namespace _CPO { _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
+#  define _LIBCUDACXX_END_NAMESPACE_CPO } _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 #  if _CCCL_STD_VER >= 2017
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM \
-      _LIBCUDACXX_BEGIN_NAMESPACE_STD              \
-      inline namespace __fs                        \
-      {                                            \
-      namespace filesystem                         \
-      {
-#  else
-#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM \
-      _LIBCUDACXX_BEGIN_NAMESPACE_STD              \
-      namespace __fs                               \
-      {                                            \
-      namespace filesystem                         \
-      {
-#  endif
-
-#  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM \
-    _LIBCUDACXX_END_NAMESPACE_STD              \
-    }                                          \
-    }
-
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM _LIBCUDACXX_BEGIN_NAMESPACE_STD inline namespace __fs { namespace filesystem {
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#    define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM _LIBCUDACXX_BEGIN_NAMESPACE_STD namespace __fs { namespace filesystem {
+#  endif // _CCCL_STD_VER <= 2014
+#  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM _LIBCUDACXX_END_NAMESPACE_STD } }
 #  define _CUDA_VSTD_FS _CUDA_VSTD::__fs::filesystem
+
+// clang-format on
 
 #  ifndef _LIBCUDACXX_PREFERRED_OVERLOAD
 #    if __has_attribute(__enable_if__)
@@ -1480,29 +1331,8 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
 #  endif
 
-#  ifdef _LIBCUDACXX_HAS_NO_STRONG_ENUMS
-#    define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) \
-      struct _LIBCUDACXX_TYPE_VIS x            \
-      {                                        \
-        enum __lx
-#    define _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(x)    \
-      __lx __v_;                                         \
-      _LIBCUDACXX_INLINE_VISIBILITY x(__lx __v)          \
-          : __v_(__v)                                    \
-      {}                                                 \
-      _LIBCUDACXX_INLINE_VISIBILITY explicit x(int __v)  \
-          : __v_(static_cast<__lx>(__v))                 \
-      {}                                                 \
-      _LIBCUDACXX_INLINE_VISIBILITY operator int() const \
-      {                                                  \
-        return __v_;                                     \
-      }                                                  \
-      }                                                  \
-      ;
-#  else // _LIBCUDACXX_HAS_NO_STRONG_ENUMS
-#    define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) enum class _LIBCUDACXX_ENUM_VIS x
-#    define _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(x)
-#  endif // _LIBCUDACXX_HAS_NO_STRONG_ENUMS
+#  define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) enum class _LIBCUDACXX_ENUM_VIS x
+#  define _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(x)
 
 #  ifdef _LIBCUDACXX_DEBUG
 #    if _LIBCUDACXX_DEBUG == 0
@@ -1671,7 +1501,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #  endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_CUDA
-#    if defined(__cuda_std__) && (defined(__CUDA_ARCH__) || defined(__EMSCRIPTEN__))
+#    if (defined(__CUDA_ARCH__) || defined(__EMSCRIPTEN__))
 #      define _LIBCUDACXX_HAS_THREAD_API_CUDA
 #    endif // __cuda_std__
 #  endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
@@ -1941,16 +1771,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    endif
 #  endif // defined(_LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO)
 
-#  if !defined(_LIBCUDACXX_NO_AUTO_LINK) && !defined(__cuda_std__)
-#    if defined(_LIBCUDACXX_ABI_MICROSOFT) && !defined(_LIBCUDACXX_BUILDING_LIBRARY)
-#      if defined(_DLL)
-#        pragma comment(lib, "c++.lib")
-#      else
-#        pragma comment(lib, "libc++.lib")
-#      endif
-#    endif // defined(_LIBCUDACXX_ABI_MICROSOFT) && !defined(_LIBCUDACXX_BUILDING_LIBRARY)
-#  endif // !defined(_LIBCUDACXX_NO_AUTO_LINK)
-
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
 // Configures the fopen close-on-exec mode character, if any. This string will
@@ -1974,11 +1794,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #  endif
 
 #  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
-#    if defined(__cuda_std__)
-#      define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
-#    else
-#      define _LIBCUDACXX_SYS_CLOCK_DURATION microseconds
-#    endif
+#    define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
 #  endif // _LIBCUDACXX_SYS_CLOCK_DURATION
 
 // There are a handful of public standard library types that are intended to

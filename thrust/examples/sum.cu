@@ -5,14 +5,14 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
-int my_rand(void)
+int my_rand()
 {
   static thrust::default_random_engine rng;
   static thrust::uniform_int_distribution<int> dist(0, 9999);
   return dist(rng);
 }
 
-int main(void)
+int main()
 {
   // generate random data on the host
   thrust::host_vector<int> h_vec(100);

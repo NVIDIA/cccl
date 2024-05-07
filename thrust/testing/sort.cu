@@ -60,7 +60,7 @@ void InitializeSimpleKeySortTest(Vector& unsorted_keys, Vector& sorted_keys)
 }
 
 template <class Vector>
-void TestSortSimple(void)
+void TestSortSimple()
 {
   Vector unsorted_keys;
   Vector sorted_keys;
@@ -86,7 +86,7 @@ void TestSortAscendingKey(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestSortAscendingKey);
 
-void TestSortDescendingKey(void)
+void TestSortDescendingKey()
 {
   const size_t n = 10027;
 
@@ -100,7 +100,7 @@ void TestSortDescendingKey(void)
 }
 DECLARE_UNITTEST(TestSortDescendingKey);
 
-void TestSortBool(void)
+void TestSortBool()
 {
   const size_t n = 10027;
 
@@ -114,7 +114,7 @@ void TestSortBool(void)
 }
 DECLARE_UNITTEST(TestSortBool);
 
-void TestSortBoolDescending(void)
+void TestSortBoolDescending()
 {
   const size_t n = 10027;
 

@@ -52,9 +52,9 @@ namespace detail
 class cuda_error_category : public error_category
 {
 public:
-  inline cuda_error_category(void) {}
+  inline cuda_error_category() {}
 
-  inline virtual const char* name(void) const
+  inline virtual const char* name() const
   {
     return "cuda";
   }
@@ -85,7 +85,7 @@ public:
 
 } // end namespace cuda_cub
 
-const error_category& cuda_category(void)
+const error_category& cuda_category()
 {
   static const thrust::system::cuda_cub::detail::cuda_error_category result;
   return result;

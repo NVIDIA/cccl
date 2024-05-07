@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <typename T, unsigned int N>
-void _TestStableSortWithLargeKeys(void)
+void _TestStableSortWithLargeKeys()
 {
   size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -24,7 +24,7 @@ void _TestStableSortWithLargeKeys(void)
   ASSERT_EQUAL_QUIET(h_keys, d_keys);
 }
 
-void TestStableSortWithLargeKeys(void)
+void TestStableSortWithLargeKeys()
 {
   _TestStableSortWithLargeKeys<int, 2>();
   _TestStableSortWithLargeKeys<int, 17>();

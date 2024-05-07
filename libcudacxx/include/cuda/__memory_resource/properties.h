@@ -51,18 +51,6 @@ struct device_accessible
 struct host_accessible
 {};
 
-/**
- * @brief The \c managed_memory property signals that the allocated memory is managed
- */
-struct managed_memory
-{};
-
-/**
- * @brief The \c pinned_memory property signals that the allocated memory is not pageable.
- */
-struct pinned_memory
-{};
-
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014

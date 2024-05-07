@@ -56,7 +56,7 @@ _CCCL_HOST_DEVICE normal_distribution<RealType>::normal_distribution(const param
 {} // end normal_distribution::normal_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void normal_distribution<RealType>::reset(void)
+_CCCL_HOST_DEVICE void normal_distribution<RealType>::reset()
 {
   super_t::reset();
 } // end normal_distribution::reset()
@@ -78,7 +78,7 @@ normal_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng, co
 } // end normal_distribution::operator()()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::param_type normal_distribution<RealType>::param(void) const
+_CCCL_HOST_DEVICE typename normal_distribution<RealType>::param_type normal_distribution<RealType>::param() const
 {
   return m_param;
 } // end normal_distribution::param()
@@ -91,14 +91,14 @@ _CCCL_HOST_DEVICE void normal_distribution<RealType>::param(const param_type& pa
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::min
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return -this->max THRUST_PREVENT_MACRO_SUBSTITUTION();
 } // end normal_distribution::min()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::max
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   // XXX this solution is pretty terrible
   // we can't use numeric_traits<RealType>::max because nvcc will
@@ -115,13 +115,13 @@ THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
 } // end normal_distribution::max()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::mean(void) const
+_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::mean() const
 {
   return m_param.first;
 } // end normal_distribution::mean()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::stddev(void) const
+_CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::stddev() const
 {
   return m_param.second;
 } // end normal_distribution::stddev()

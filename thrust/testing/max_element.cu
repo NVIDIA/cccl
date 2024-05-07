@@ -6,7 +6,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMaxElementSimple(void)
+void TestMaxElementSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -27,7 +27,7 @@ void TestMaxElementSimple(void)
 DECLARE_VECTOR_UNITTEST(TestMaxElementSimple);
 
 template <class Vector>
-void TestMaxElementWithTransform(void)
+void TestMaxElementWithTransform()
 {
   typedef typename Vector::value_type T;
 

@@ -49,12 +49,12 @@ public:
       , tiles(tiles)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), tile_functor(last - first)));
   }
 
-  iterator end(void) const
+  iterator end() const
   {
     return begin() + tiles * (last - first);
   }
@@ -65,7 +65,7 @@ protected:
   difference_type tiles;
 };
 
-int main(void)
+int main()
 {
   thrust::device_vector<int> data(4);
   data[0] = 10;

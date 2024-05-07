@@ -71,7 +71,7 @@ public:
 
   /*! This constructor creates an empty \p device_vector.
    */
-  device_vector(void)
+  device_vector()
       : Parent()
   {}
 
@@ -86,7 +86,7 @@ public:
    */
   //  Define an empty destructor to explicitly specify
   //  its execution space qualifier, as a workaround for nvcc warning
-  ~device_vector(void) {}
+  ~device_vector() {}
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
@@ -288,12 +288,12 @@ public:
 
     /*! Returns the number of elements in this vector.
      */
-    size_type size(void) const;
+    size_type size() const;
 
     /*! Returns the size() of the largest possible vector.
      *  \return The largest possible return value of size().
      */
-    size_type max_size(void) const;
+    size_type max_size() const;
 
     /*! \brief If n is less than or equal to capacity(), this call has no effect.
      *         Otherwise, this method is a request for allocation of additional memory. If
@@ -306,12 +306,12 @@ public:
     /*! Returns the number of elements which have been reserved in this
      *  vector.
      */
-    size_type capacity(void) const;
+    size_type capacity() const;
 
     /*! This method shrinks the capacity of this vector to exactly
      *  fit its elements.
      */
-    void shrink_to_fit(void);
+    void shrink_to_fit();
 
     /*! \brief Subscript access to the data contained in this vector_dev.
      *  \param n The index of the element for which data should be accessed.
@@ -337,119 +337,119 @@ public:
      *  this vector.
      *  \return mStart
      */
-    iterator begin(void);
+    iterator begin();
 
     /*! This method returns a const_iterator pointing to the beginning
      *  of this vector.
      *  \return mStart
      */
-    const_iterator begin(void) const;
+    const_iterator begin() const;
 
     /*! This method returns a const_iterator pointing to the beginning
      *  of this vector.
      *  \return mStart
      */
-    const_iterator cbegin(void) const;
+    const_iterator cbegin() const;
 
     /*! This method returns a reverse_iterator pointing to the beginning of
      *  this vector's reversed sequence.
      *  \return A reverse_iterator pointing to the beginning of this
      *          vector's reversed sequence.
      */
-    reverse_iterator rbegin(void);
+    reverse_iterator rbegin();
 
     /*! This method returns a const_reverse_iterator pointing to the beginning of
      *  this vector's reversed sequence.
      *  \return A const_reverse_iterator pointing to the beginning of this
      *          vector's reversed sequence.
      */
-    const_reverse_iterator rbegin(void) const;
+    const_reverse_iterator rbegin() const;
 
     /*! This method returns a const_reverse_iterator pointing to the beginning of
      *  this vector's reversed sequence.
      *  \return A const_reverse_iterator pointing to the beginning of this
      *          vector's reversed sequence.
      */
-    const_reverse_iterator crbegin(void) const;
+    const_reverse_iterator crbegin() const;
 
     /*! This method returns an iterator pointing to one element past the
      *  last of this vector.
      *  \return begin() + size().
      */
-    iterator end(void);
+    iterator end();
 
     /*! This method returns a const_iterator pointing to one element past the
      *  last of this vector.
      *  \return begin() + size().
      */
-    const_iterator end(void) const;
+    const_iterator end() const;
 
     /*! This method returns a const_iterator pointing to one element past the
      *  last of this vector.
      *  \return begin() + size().
      */
-    const_iterator cend(void) const;
+    const_iterator cend() const;
 
     /*! This method returns a reverse_iterator pointing to one element past the
      *  last of this vector's reversed sequence.
      *  \return rbegin() + size().
      */
-    reverse_iterator rend(void);
+    reverse_iterator rend();
 
     /*! This method returns a const_reverse_iterator pointing to one element past the
      *  last of this vector's reversed sequence.
      *  \return rbegin() + size().
      */
-    const_reverse_iterator rend(void) const;
+    const_reverse_iterator rend() const;
 
     /*! This method returns a const_reverse_iterator pointing to one element past the
      *  last of this vector's reversed sequence.
      *  \return rbegin() + size().
      */
-    const_reverse_iterator crend(void) const;
+    const_reverse_iterator crend() const;
 
     /*! This method returns a const_reference referring to the first element of this
      *  vector.
      *  \return The first element of this vector.
      */
-    const_reference front(void) const;
+    const_reference front() const;
 
     /*! This method returns a reference pointing to the first element of this
      *  vector.
      *  \return The first element of this vector.
      */
-    reference front(void);
+    reference front();
 
     /*! This method returns a const reference pointing to the last element of
      *  this vector.
      *  \return The last element of this vector.
      */
-    const_reference back(void) const;
+    const_reference back() const;
 
     /*! This method returns a reference referring to the last element of
      *  this vector_dev.
      *  \return The last element of this vector.
      */
-    reference back(void);
+    reference back();
 
     /*! This method returns a pointer to this vector's first element.
      *  \return A pointer to the first element of this vector.
      */
-    pointer data(void);
+    pointer data();
 
     /*! This method returns a const_pointer to this vector's first element.
      *  \return a const_pointer to the first element of this vector.
      */
-    const_pointer data(void) const;
+    const_pointer data() const;
 
     /*! This method resizes this vector to 0.
      */
-    void clear(void);
+    void clear();
 
     /*! This method returns true iff size() == 0.
      *  \return true if size() == 0; false, otherwise.
      */
-    bool empty(void) const;
+    bool empty() const;
 
     /*! This method appends the given element to the end of this vector.
      *  \param x The element to append.
@@ -459,7 +459,7 @@ public:
     /*! This method erases the last element of this vector, invalidating
      *  all iterators and references to it.
      */
-    void pop_back(void);
+    void pop_back();
 
     /*! This method swaps the contents of this device_vector with another vector.
      *  \param v The vector with which to swap.
@@ -528,7 +528,7 @@ public:
     /*! This method returns a copy of this vector's allocator.
      *  \return A copy of the alloctor used by this vector.
      */
-    allocator_type get_allocator(void) const;
+    allocator_type get_allocator() const;
 #endif // end doxygen-only members
 };
 

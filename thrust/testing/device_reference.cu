@@ -3,7 +3,7 @@
 
 #include <unittest/unittest.h>
 
-void TestDeviceReferenceConstructorFromDeviceReference(void)
+void TestDeviceReferenceConstructorFromDeviceReference()
 {
   typedef int T;
 
@@ -28,7 +28,7 @@ void TestDeviceReferenceConstructorFromDeviceReference(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceConstructorFromDeviceReference);
 
-void TestDeviceReferenceConstructorFromDevicePointer(void)
+void TestDeviceReferenceConstructorFromDevicePointer()
 {
   typedef int T;
 
@@ -54,7 +54,7 @@ void TestDeviceReferenceConstructorFromDevicePointer(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceConstructorFromDevicePointer);
 
-void TestDeviceReferenceAssignmentFromDeviceReference(void)
+void TestDeviceReferenceAssignmentFromDeviceReference()
 {
   // test same types
   typedef int T0;
@@ -84,7 +84,7 @@ void TestDeviceReferenceAssignmentFromDeviceReference(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceAssignmentFromDeviceReference);
 
-void TestDeviceReferenceManipulation(void)
+void TestDeviceReferenceManipulation()
 {
   typedef int T1;
 
@@ -207,7 +207,7 @@ void TestDeviceReferenceManipulation(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceManipulation);
 
-void TestDeviceReferenceSwap(void)
+void TestDeviceReferenceSwap()
 {
   typedef int T;
 

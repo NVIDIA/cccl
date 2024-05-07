@@ -258,7 +258,7 @@ struct const_ref_plus_mod3
   }
 };
 
-static void TestInclusiveScanWithConstAccumulator(void)
+static void TestInclusiveScanWithConstAccumulator()
 {
   // add numbers modulo 3 with external lookup table
   thrust::device_vector<int> data(7);

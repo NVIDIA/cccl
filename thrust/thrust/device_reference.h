@@ -52,7 +52,7 @@ THRUST_NAMESPACE_BEGIN
  *  \code
  *  #include <thrust/device_vector.h>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
@@ -73,7 +73,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/device_vector.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
@@ -95,7 +95,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/device_vector.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
@@ -125,7 +125,7 @@ THRUST_NAMESPACE_BEGIN
  *    int x;
  *  };
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<foo> foo_vec(1);
  *
@@ -147,7 +147,7 @@ THRUST_NAMESPACE_BEGIN
  *    int x;
  *  };
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<foo> foo_vec(1);
  *
@@ -174,7 +174,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <stdio.h>
  *  #include <thrust/device_vector.h>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1,13);
  *

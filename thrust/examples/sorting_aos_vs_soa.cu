@@ -56,7 +56,7 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
   structures = h_structures;
 }
 
-int main(void)
+int main()
 {
   size_t N = 2 * 1024 * 1024;
 

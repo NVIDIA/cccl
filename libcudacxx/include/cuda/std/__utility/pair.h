@@ -62,9 +62,9 @@
 #include <cuda/std/cstddef>
 
 // Provide compatability between `std::pair` and `cuda::std::pair`
-#if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  include <utility>
-#endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#endif // !defined(_CCCL_COMPILER_NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -359,7 +359,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   {}
 
   // std compatability
-#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
   template <class _U1,
             class _U2,
             class _Constraints                                         = __pair_constructible<const _U1&, const _U2&>,
@@ -397,7 +397,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
-#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
+#endif // !defined(_CCCL_COMPILER_NVRTC)
 
   // assignments
   pair& operator=(const pair&) = default;
@@ -429,7 +429,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   }
 
   // std assignments
-#if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#if !defined(_CCCL_COMPILER_NVRTC)
   template <class _UT1 = _T1, __enable_if_t<is_copy_assignable<_UT1>::value && is_copy_assignable<_T2>::value, int> = 0>
   _CCCL_HOST _CCCL_CONSTEXPR_CXX14 pair& operator=(::std::pair<_T1, _T2> const& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T2))
@@ -447,7 +447,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     this->second = _CUDA_VSTD::forward<_T2>(__p.second);
     return *this;
   }
-#endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#endif // !defined(_CCCL_COMPILER_NVRTC)
 
 #if _CCCL_STD_VER >= 2023
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const pair& operator=(pair const& __p) const
@@ -460,7 +460,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     return *this;
   }
 
-#  if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  if !defined(_CCCL_COMPILER_NVRTC)
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HOST constexpr const pair& operator=(::std::pair<_T1, _T2> const& __p) const
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, const _T1)
              && _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, const _T2))
@@ -470,7 +470,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     this->second = __p.second;
     return *this;
   }
-#  endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  endif // !defined(_CCCL_COMPILER_NVRTC)
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const pair& operator=(pair&& __p) const
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_assignable, const _T1&, _T1)
@@ -482,7 +482,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     return *this;
   }
 
-#  if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  if !defined(_CCCL_COMPILER_NVRTC)
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HOST constexpr const pair& operator=(::std::pair<_T1, _T2>&& __p) const
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_assignable, const _T1&, _T1)
              && _LIBCUDACXX_TRAIT(is_nothrow_assignable, const _T2&, _T2))
@@ -492,7 +492,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     this->second = _CUDA_VSTD::forward<_T2>(__p.second);
     return *this;
   }
-#  endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  endif // !defined(_CCCL_COMPILER_NVRTC)
 
   template <class _U1, class _U2>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const pair&
@@ -504,7 +504,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     return *this;
   }
 
-#  if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  if !defined(_CCCL_COMPILER_NVRTC)
   template <class _U1, class _U2>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HOST constexpr const pair& operator=(const ::std::pair<_U1, _U2>& __p) const
     requires(is_assignable_v<const _T1&, const _U1&> && is_assignable_v<const _T2&, const _U2&>)
@@ -513,7 +513,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     this->second = __p.second;
     return *this;
   }
-#  endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  endif // !defined(_CCCL_COMPILER_NVRTC)
 
   template <class _U1, class _U2>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const pair& operator=(pair<_U1, _U2>&& __p) const
@@ -524,7 +524,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     return *this;
   }
 
-#  if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  if !defined(_CCCL_COMPILER_NVRTC)
   template <class _U1, class _U2>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HOST constexpr const pair& operator=(::std::pair<_U1, _U2>&& __p) const
     requires(is_assignable_v<const _T1&, _U1> && is_assignable_v<const _T2&, _U2>)
@@ -533,7 +533,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     this->second = _CUDA_VSTD::forward<_U2>(__p.second);
     return *this;
   }
-#  endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#  endif // !defined(_CCCL_COMPILER_NVRTC)
 #endif // _CCCL_STD_VER >= 2023
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
@@ -554,12 +554,12 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   }
 #endif // _CCCL_STD_VER >= 2023
 
-#if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#if !defined(_CCCL_COMPILER_NVRTC)
   _CCCL_HOST _CCCL_CONSTEXPR_CXX14 operator ::std::pair<_T1, _T2>() const
   {
     return {this->first, this->second};
   }
-#endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
+#endif // !defined(_CCCL_COMPILER_NVRTC)
 };
 
 #if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
