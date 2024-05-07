@@ -170,10 +170,7 @@ void kernel_invoker()
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (kernel_invoker();)
-  )
+  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
 
   return 0;
 }

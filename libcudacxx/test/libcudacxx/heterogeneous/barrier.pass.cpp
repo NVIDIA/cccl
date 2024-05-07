@@ -17,7 +17,6 @@
 
 #include "helpers.h"
 
-
 template <typename Barrier>
 struct barrier_and_token
 {
@@ -166,10 +165,7 @@ void kernel_invoker()
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (kernel_invoker();)
-  )
+  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
 
   return 0;
 }

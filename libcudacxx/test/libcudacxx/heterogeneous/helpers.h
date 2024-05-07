@@ -706,11 +706,11 @@ struct generate_variants_t<tester_list<Fronts...>>
 template <typename... Fronts, typename First, typename... Performers>
 struct generate_variants_t<tester_list<Fronts...>, First, Performers...>
 {
-  using type = append<
-    typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::initialize>>,
-                                 Performers...>::type,
-    typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::validate>>,
-                                 Performers...>::type>;
+  using type =
+    append<typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::initialize>>,
+                                        Performers...>::type,
+           typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::validate>>,
+                                        Performers...>::type>;
 };
 
 template <typename Front, typename... Performers>
