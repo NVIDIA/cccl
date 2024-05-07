@@ -22,69 +22,67 @@
 #  pragma system_header
 #endif // no system header
 
-// We need to define hidden _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITYs for {cr,r,}{begin,end} of our
-// containers as we will otherwise encounter ambigouities
-#define _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(_ClassName, _ConstIter)                                                 \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY iterator begin(_ClassName& __sequence) noexcept(          \
-    noexcept(__sequence.begin()))                                                                                \
-  {                                                                                                              \
-    return __sequence.begin();                                                                                   \
-  }                                                                                                              \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter begin(const _ClassName& __sequence) noexcept(  \
-    noexcept(__sequence.begin()))                                                                                \
-  {                                                                                                              \
-    return __sequence.begin();                                                                                   \
-  }                                                                                                              \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY iterator end(_ClassName& __sequence) noexcept(            \
-    noexcept(__sequence.end()))                                                                                  \
-  {                                                                                                              \
-    return __sequence.end();                                                                                     \
-  }                                                                                                              \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter end(const _ClassName& __sequence) noexcept(    \
-    noexcept(__sequence.end()))                                                                                  \
-  {                                                                                                              \
-    return __sequence.end();                                                                                     \
-  }                                                                                                              \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter cbegin(const _ClassName& __sequence) noexcept( \
-    noexcept(__sequence.begin()))                                                                                \
-  {                                                                                                              \
-    return __sequence.begin();                                                                                   \
-  }                                                                                                              \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter cend(const _ClassName& __sequence) noexcept(   \
-    noexcept(__sequence.end()))                                                                                  \
-  {                                                                                                              \
-    return __sequence.end();                                                                                     \
+// We need to define hidden friends for {cr,r,}{begin,end} of our containers as we will otherwise encounter ambigouities
+#define _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(_ClassName, _ConstIter)                                                     \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE iterator begin(_ClassName& __sequence) noexcept(                          \
+    noexcept(__sequence.begin()))                                                                                    \
+  {                                                                                                                  \
+    return __sequence.begin();                                                                                       \
+  }                                                                                                                  \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstIter begin(const _ClassName& __sequence) noexcept(                  \
+    noexcept(__sequence.begin()))                                                                                    \
+  {                                                                                                                  \
+    return __sequence.begin();                                                                                       \
+  }                                                                                                                  \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE iterator end(_ClassName& __sequence) noexcept(noexcept(__sequence.end())) \
+  {                                                                                                                  \
+    return __sequence.end();                                                                                         \
+  }                                                                                                                  \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstIter end(const _ClassName& __sequence) noexcept(                    \
+    noexcept(__sequence.end()))                                                                                      \
+  {                                                                                                                  \
+    return __sequence.end();                                                                                         \
+  }                                                                                                                  \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstIter cbegin(const _ClassName& __sequence) noexcept(                 \
+    noexcept(__sequence.begin()))                                                                                    \
+  {                                                                                                                  \
+    return __sequence.begin();                                                                                       \
+  }                                                                                                                  \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstIter cend(const _ClassName& __sequence) noexcept(                   \
+    noexcept(__sequence.end()))                                                                                      \
+  {                                                                                                                  \
+    return __sequence.end();                                                                                         \
   }
-#define _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(_ClassName, _ConstIter)                                          \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY reverse_iterator rbegin(_ClassName& __sequence) noexcept(  \
-    noexcept(__sequence.rbegin()))                                                                                \
-  {                                                                                                               \
-    return __sequence.rbegin();                                                                                   \
-  }                                                                                                               \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter rbegin(const _ClassName& __sequence) noexcept(  \
-    noexcept(__sequence.rbegin()))                                                                                \
-  {                                                                                                               \
-    return __sequence.rbegin();                                                                                   \
-  }                                                                                                               \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY reverse_iterator rend(_ClassName& __sequence) noexcept(    \
-    noexcept(__sequence.rend()))                                                                                  \
-  {                                                                                                               \
-    return __sequence.rend();                                                                                     \
-  }                                                                                                               \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter rend(const _ClassName& __sequence) noexcept(    \
-    noexcept(__sequence.rend()))                                                                                  \
-  {                                                                                                               \
-    return __sequence.rend();                                                                                     \
-  }                                                                                                               \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter crbegin(const _ClassName& __sequence) noexcept( \
-    noexcept(__sequence.rbegin()))                                                                                \
-  {                                                                                                               \
-    return __sequence.rbegin();                                                                                   \
-  }                                                                                                               \
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY _ConstIter crend(const _ClassName& __sequence) noexcept(   \
-    noexcept(__sequence.rend()))                                                                                  \
-  {                                                                                                               \
-    return __sequence.rend();                                                                                     \
+#define _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(_ClassName, _ConstRevIter)                              \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE reverse_iterator rbegin(_ClassName& __sequence) noexcept(     \
+    noexcept(__sequence.rbegin()))                                                                       \
+  {                                                                                                      \
+    return __sequence.rbegin();                                                                          \
+  }                                                                                                      \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstRevIter rbegin(const _ClassName& __sequence) noexcept(  \
+    noexcept(__sequence.rbegin()))                                                                       \
+  {                                                                                                      \
+    return __sequence.rbegin();                                                                          \
+  }                                                                                                      \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE reverse_iterator rend(_ClassName& __sequence) noexcept(       \
+    noexcept(__sequence.rend()))                                                                         \
+  {                                                                                                      \
+    return __sequence.rend();                                                                            \
+  }                                                                                                      \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstRevIter rend(const _ClassName& __sequence) noexcept(    \
+    noexcept(__sequence.rend()))                                                                         \
+  {                                                                                                      \
+    return __sequence.rend();                                                                            \
+  }                                                                                                      \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstRevIter crbegin(const _ClassName& __sequence) noexcept( \
+    noexcept(__sequence.rbegin()))                                                                       \
+  {                                                                                                      \
+    return __sequence.rbegin();                                                                          \
+  }                                                                                                      \
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE _ConstRevIter crend(const _ClassName& __sequence) noexcept(   \
+    noexcept(__sequence.rend()))                                                                         \
+  {                                                                                                      \
+    return __sequence.rend();                                                                            \
   }
 
 #endif // __CCCL_SEQUENCE_ACCESS_H

@@ -178,42 +178,6 @@ public:
   {
     return _CUDA_VRANGES::begin(__derived())[__index];
   }
-
-  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_D2&>()))>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ret begin(_Derived& __range)
-  {
-    return _CUDA_VRANGES::begin(__range);
-  }
-
-  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<const _D2&>()))>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ret begin(const _Derived& __range)
-  {
-    return _CUDA_VRANGES::begin(__range);
-  }
-
-  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::cbegin(_CUDA_VSTD::declval<const _D2&>()))>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto cbegin(const _Derived& __range)
-  {
-    return _CUDA_VRANGES::cbegin(__range);
-  }
-
-  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::end(_CUDA_VSTD::declval<_D2&>()))>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto end(_Derived& __range)
-  {
-    return _CUDA_VRANGES::end(__range);
-  }
-
-  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::end(_CUDA_VSTD::declval<const _D2&>()))>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto end(const _Derived& __range)
-  {
-    return _CUDA_VRANGES::end(__range);
-  }
-
-  template <class _D2 = _Derived, class _Ret = decltype(_CUDA_VRANGES::cend(_CUDA_VSTD::declval<const _D2&>()))>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr auto cend(const _Derived& __range)
-  {
-    return _CUDA_VRANGES::cend(__range);
-  }
 };
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
