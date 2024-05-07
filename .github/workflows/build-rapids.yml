@@ -107,7 +107,7 @@ jobs:
             fi
 
             sccache -z;
-            if ! build-${lib}-cpp "${args[@]}"; then
+            if ! configure-${lib}-cpp "${args[@]}" || ! build-${lib}-cpp "${args[@]}"; then
               failures["${lib}"]=1;
             fi
             sccache --show-adv-stats;
