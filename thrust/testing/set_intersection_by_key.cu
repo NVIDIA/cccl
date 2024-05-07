@@ -73,7 +73,7 @@ void TestSetIntersectionByKeyDispatchImplicit()
 DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchImplicit);
 
 template <typename Vector>
-void TestSetIntersectionByKeySimple(void)
+void TestSetIntersectionByKeySimple()
 {
   typedef typename Vector::iterator Iterator;
 

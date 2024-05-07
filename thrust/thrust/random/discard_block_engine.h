@@ -66,7 +66,7 @@ namespace random
  *  #include <thrust/random/discard_block_engine.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    // create a discard_block_engine from minstd_rand, with a cycle length of 13
  *    // keep every first 10 values, and discard the next 3
@@ -137,7 +137,7 @@ public:
   /*! This method initializes the state of this \p discard_block_engine's adapted base engine
    *  by using its \p default_seed value.
    */
-  _CCCL_HOST_DEVICE void seed(void);
+  _CCCL_HOST_DEVICE void seed();
 
   /*! This method initializes the state of this \p discard_block_engine's adapted base engine
    *  by using the given seed.
@@ -168,7 +168,7 @@ public:
    *
    *  \return A const reference to the base engine this \p discard_block_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base_type& base(void) const;
+  _CCCL_HOST_DEVICE const base_type& base() const;
 
   /*! \cond
    */

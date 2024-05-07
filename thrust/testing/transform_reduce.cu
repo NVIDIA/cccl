@@ -42,7 +42,7 @@ void TestTransformReduceDispatchImplicit()
 DECLARE_UNITTEST(TestTransformReduceDispatchImplicit);
 
 template <class Vector>
-void TestTransformReduceSimple(void)
+void TestTransformReduceSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -89,7 +89,7 @@ void TestTransformReduceFromConst(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestTransformReduceFromConst);
 
 template <class Vector>
-void TestTransformReduceCountingIterator(void)
+void TestTransformReduceCountingIterator()
 {
   typedef typename Vector::value_type T;
   typedef typename thrust::iterator_system<typename Vector::iterator>::type space;

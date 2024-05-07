@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMismatchSimple(void)
+void TestMismatchSimple()
 {
   Vector a(4);
   Vector b(4);

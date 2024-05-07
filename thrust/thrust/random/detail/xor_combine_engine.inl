@@ -35,7 +35,7 @@ namespace random
 {
 
 template <typename Engine1, size_t s1, typename Engine2, size_t s2>
-_CCCL_HOST_DEVICE xor_combine_engine<Engine1, s1, Engine2, s2>::xor_combine_engine(void)
+_CCCL_HOST_DEVICE xor_combine_engine<Engine1, s1, Engine2, s2>::xor_combine_engine()
     : m_b1()
     , m_b2()
 {} // end xor_combine_engine::xor_combine_engine()
@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE xor_combine_engine<Engine1, s1, Engine2, s2>::xor_combine_engi
 {} // end xor_combine_engine::xor_combine_engine()
 
 template <typename Engine1, size_t s1, typename Engine2, size_t s2>
-_CCCL_HOST_DEVICE void xor_combine_engine<Engine1, s1, Engine2, s2>::seed(void)
+_CCCL_HOST_DEVICE void xor_combine_engine<Engine1, s1, Engine2, s2>::seed()
 {
   m_b1.seed();
   m_b2.seed();
@@ -69,14 +69,14 @@ _CCCL_HOST_DEVICE void xor_combine_engine<Engine1, s1, Engine2, s2>::seed(result
 
 template <typename Engine1, size_t s1, typename Engine2, size_t s2>
 _CCCL_HOST_DEVICE const typename xor_combine_engine<Engine1, s1, Engine2, s2>::base1_type&
-xor_combine_engine<Engine1, s1, Engine2, s2>::base1(void) const
+xor_combine_engine<Engine1, s1, Engine2, s2>::base1() const
 {
   return m_b1;
 } // end xor_combine_engine::base1()
 
 template <typename Engine1, size_t s1, typename Engine2, size_t s2>
 _CCCL_HOST_DEVICE const typename xor_combine_engine<Engine1, s1, Engine2, s2>::base2_type&
-xor_combine_engine<Engine1, s1, Engine2, s2>::base2(void) const
+xor_combine_engine<Engine1, s1, Engine2, s2>::base2() const
 {
   return m_b2;
 } // end xor_combine_engine::base2()

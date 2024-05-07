@@ -63,7 +63,7 @@ struct arbitrary_functor2
 };
 #endif // >= C++11
 
-int main(void)
+int main()
 {
   // allocate storage
   thrust::device_vector<float> A(5);

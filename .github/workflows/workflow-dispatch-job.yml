@@ -1,0 +1,177 @@
+name: "Workflow/Dispatch/Job"
+
+# Important note about depending on this workflow: The `result` will be a failure, even if successful.
+#
+# This reusable workflow dispatches to a number of internal jobs. Only one job will run,
+# and some may be in error states due to empty matrices (which are used instead of `if` to keep
+# skipped dispatch jobs out of the GHA UI). The `continue-on-error` flag should prevent these
+# errors from failing the workflow, but this does not work.
+#
+# Thus, the `result` of this workflow will always be a failure, even if the job itself is successful.
+#
+# Instead, the results from each job is uploaded as an artifact. See the workflow_results action for more details.
+# To depend on this job, you should use the `success` output instead:
+#
+# ```
+# dependent_job:
+#   needs: dispatch-job
+#   if: ${{ !cancelled() && needs.dispatch-job.outputs.success }}
+# ```
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    outputs:
+      success:
+        value: ${{ contains(toJSON(jobs.*.outputs.success), 'true') }}
+    inputs:
+      name: {type: string, required: true}
+      image: {type: string, required: true}
+      runner: {type: string, required: true}
+      command: {type: string, required: true}
+      id: {type: string, required: true}
+      env: {type: string, required: false}
+      dummy_matrix: {type: string, required: false, default: '[{"valid": true}]'}
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: ${{inputs.name}}
+    continue-on-error: ${{ ! startsWith(inputs.runner, 'linux') }}
+    outputs:
+      success: ${{ steps.done.outputs.SUCCESS }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      matrix:
+        include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
+    runs-on: ${{inputs.runner}}
+    container:
+      options: -u root
+      image: ${{inputs.image}}
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          path: cccl
+          persist-credentials: false
+      - name: Move files to coder user home directory
+        run: |
+          cp -R cccl /home/coder/cccl
+          chown -R coder:coder /home/coder/
+      - name: Add NVCC problem matcher
+        run: |
+          echo "::add-matcher::cccl/.github/problem-matchers/problem-matcher.json"
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours)
+      - name: Set environment variables
+        run: |
+          echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
+          echo "SCCACHE_REGION=us-east-2" >> $GITHUB_ENV
+          echo "SCCACHE_IDLE_TIMEOUT=32768" >> $GITHUB_ENV
+          echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
+          echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
+      - name: Run command
+        shell: su coder {0}
+        env:
+          # Dereferencing the command from and env var instead of a GHA input avoids issues with escaping
+          # semicolons and other special characters (e.g. `-arch "60;70;80"`).
+          COMMAND: ${{inputs.command}}
+        run: |
+            set -eo pipefail
+            cd ~/cccl
+            echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
+            echo -e "\e[1;34m${COMMAND}\e[0m"
+            eval "${COMMAND}" || exit_code=$?
+            if [ ! -z "$exit_code" ]; then
+              echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+              echo "::error:: To replicate this failure locally, follow the steps below:"
+              echo "1. Clone the repository, and navigate to the correct branch and commit:"
+              echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+              echo ""
+              echo "2. Run the failed command inside the same Docker container used by the CI:"
+              echo "   docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${COMMAND}"
+              echo ""
+              echo "For additional information, see:"
+              echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+              echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+              exit $exit_code
+            fi
+      - name: Mark job as successful
+        id: done
+        run: |
+          echo "SUCCESS=true" | tee -a ${GITHUB_OUTPUT}
+          mkdir dispatch-job-success
+          touch dispatch-job-success/${{inputs.id}}
+      - name: Upload dispatch-job-success
+        uses: actions/upload-artifact@v3
+        with:
+          name: dispatch-job-success
+          path: dispatch-job-success/${{inputs.id}}
+
+  windows:
+    name: ${{inputs.name}}
+    continue-on-error: ${{ ! startsWith(inputs.runner, 'windows') }}
+    outputs:
+      success: ${{ steps.done.outputs.SUCCESS }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(startsWith(inputs.runner, 'windows') && inputs.dummy_matrix || '[]') }}
+    runs-on: ${{inputs.runner}}
+    env:
+      SCCACHE_BUCKET: rapids-sccache-devs
+      SCCACHE_REGION: us-east-2
+      SCCACHE_IDLE_TIMEOUT: 0
+      SCCACHE_S3_USE_SSL: true
+      SCCACHE_S3_NO_CREDENTIALS: false
+    steps:
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+      - name: Fetch ${{ inputs.image }}
+        run: docker pull ${{ inputs.image }}
+      - name: Run Command
+        run: >-
+          docker run ${{ inputs.image }} powershell -c "[System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}')
+                                                        [System.Environment]::SetEnvironmentVariable('AWS_SECRET_ACCESS_KEY','${{env.AWS_SECRET_ACCESS_KEY}}')
+                                                        [System.Environment]::SetEnvironmentVariable('AWS_SESSION_TOKEN','${{env.AWS_SESSION_TOKEN }}')
+                                                        [System.Environment]::SetEnvironmentVariable('SCCACHE_BUCKET','${{env.SCCACHE_BUCKET}}')
+                                                        [System.Environment]::SetEnvironmentVariable('SCCACHE_REGION','${{env.SCCACHE_REGION}}')
+                                                        [System.Environment]::SetEnvironmentVariable('SCCACHE_IDLE_TIMEOUT','${{env.SCCACHE_IDLE_TIMEOUT}}')
+                                                        [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}')
+                                                        [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}')
+                                                        git clone https://github.com/NVIDIA/cccl.git;
+                                                        cd cccl;
+                                                        git fetch --all;
+                                                        git checkout ${{github.ref_name}};
+                                                        ${{inputs.command}}"
+      - name: Mark job as successful
+        id: done
+        run: |
+          echo "SUCCESS=true" | tee -a ${GITHUB_OUTPUT}
+          mkdir dispatch-job-success
+          touch dispatch-job-success/${{inputs.id}}
+      - name: Upload dispatch-job-success
+        uses: actions/upload-artifact@v3
+        with:
+          name: dispatch-job-success
+          path: dispatch-job-success/${{inputs.id}}

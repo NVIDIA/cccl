@@ -79,7 +79,7 @@ void InitializeSimpleStableKeyValueSortTest(
 }
 
 template <class Vector>
-void TestStableSortByKeySimple(void)
+void TestStableSortByKeySimple()
 {
   typedef typename Vector::value_type T;
 

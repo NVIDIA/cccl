@@ -8,9 +8,9 @@
 //===----------------------------------------------------------------------===//
 
 #if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
-  #pragma warning(pop)
+#  pragma warning(pop)
 #endif
 
 #if defined(_LIBCUDACXX_POP_MACROS)
-  _LIBCUDACXX_POP_MACROS
+_LIBCUDACXX_POP_MACROS
 #endif

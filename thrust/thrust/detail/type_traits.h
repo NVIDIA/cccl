@@ -673,20 +673,11 @@ template <typename T>
 struct is_empty : integral_constant<bool, sizeof(is_empty_helper_base) == sizeof(is_empty_helper<T>)>
 {};
 
-template <typename Invokable, typename... Args>
-using invoke_result_t =
-#if _CCCL_STD_VER < 2017
-  typename ::cuda::std::result_of<Invokable(Args...)>::type;
-#else // 2017+
-  ::cuda::std::invoke_result_t<Invokable, Args...>;
-#endif
+template <class F, class... Us>
+using invoke_result = ::cuda::std::__invoke_of<F, Us...>;
 
 template <class F, class... Us>
-struct invoke_result
-{
-  using type = invoke_result_t<F, Us...>;
-};
-
+using invoke_result_t = typename invoke_result<F, Us...>::type;
 } // namespace detail
 
 using detail::false_type;

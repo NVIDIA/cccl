@@ -27,7 +27,7 @@ bool binary_exists_for_current_device()
   return cudaSuccess == error;
 }
 
-void list_devices(void)
+void list_devices()
 {
   int deviceCount;
   cudaGetDeviceCount(&deviceCount);

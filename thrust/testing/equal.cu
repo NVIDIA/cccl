@@ -7,7 +7,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestEqualSimple(void)
+void TestEqualSimple()
 {
   typedef typename Vector::value_type T;
 

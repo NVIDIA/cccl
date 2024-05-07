@@ -49,12 +49,12 @@ public:
       , repeats(repeats)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), repeat_functor(repeats)));
   }
 
-  iterator end(void) const
+  iterator end() const
   {
     return begin() + repeats * (last - first);
   }
@@ -65,7 +65,7 @@ protected:
   difference_type repeats;
 };
 
-int main(void)
+int main()
 {
   thrust::device_vector<int> data(4);
   data[0] = 10;

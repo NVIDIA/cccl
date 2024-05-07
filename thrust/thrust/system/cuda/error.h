@@ -135,7 +135,7 @@ enum errc_t
  *        shall return <tt>error_condition(ev,cuda_category())</tt>.
  *        Otherwise, the function shall return <tt>system_category.default_error_condition(ev)</tt>.
  */
-inline const error_category& cuda_category(void);
+inline const error_category& cuda_category();
 
 // XXX N3000 prefers is_error_code_enum<cuda::errc>
 

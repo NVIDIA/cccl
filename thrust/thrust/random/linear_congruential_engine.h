@@ -65,7 +65,7 @@ namespace random
  *  #include <thrust/random/linear_congruential_engine.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    // create a minstd_rand object, which is an instance of linear_congruential_engine
  *    thrust::minstd_rand rng1;

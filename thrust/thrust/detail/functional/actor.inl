@@ -49,11 +49,6 @@ namespace functional
 {
 
 template <typename Eval>
-_CCCL_HOST_DEVICE constexpr actor<Eval>::actor()
-    : eval_type()
-{}
-
-template <typename Eval>
 _CCCL_HOST_DEVICE actor<Eval>::actor(const Eval& base)
     : eval_type(base)
 {}

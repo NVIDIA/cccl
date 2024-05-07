@@ -12,13 +12,13 @@
 struct non_pod
 {
   // non-pods can have constructors
-  non_pod(void) {}
+  non_pod() {}
 
   int x;
   int y;
 };
 
-void TestIsPlainOldData(void)
+void TestIsPlainOldData()
 {
   // primitive types
   ASSERT_EQUAL((bool) thrust::detail::is_pod<bool>::value, true);
@@ -64,7 +64,7 @@ void TestIsPlainOldData(void)
 }
 DECLARE_UNITTEST(TestIsPlainOldData);
 
-void TestIsContiguousIterator(void)
+void TestIsContiguousIterator()
 {
   typedef thrust::host_vector<int> HostVector;
   typedef thrust::device_vector<int> DeviceVector;
@@ -94,7 +94,7 @@ void TestIsContiguousIterator(void)
 }
 DECLARE_UNITTEST(TestIsContiguousIterator);
 
-void TestIsCommutative(void)
+void TestIsCommutative()
 {
   {
     typedef int T;

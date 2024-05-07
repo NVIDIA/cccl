@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetIntersectionByKeyDescendingSimple(void)
+void TestSetIntersectionByKeyDescendingSimple()
 {
   typedef typename Vector::value_type T;
   typedef typename Vector::iterator Iterator;

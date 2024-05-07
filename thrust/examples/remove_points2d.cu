@@ -30,7 +30,7 @@ struct is_outside_circle
   }
 };
 
-int main(void)
+int main()
 {
   const size_t N = 20;
 

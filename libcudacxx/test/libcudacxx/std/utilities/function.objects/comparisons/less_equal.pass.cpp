@@ -17,7 +17,7 @@
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
-#ifndef __CUDACC_RTC__
+#ifndef TEST_COMPILER_NVRTC
 #  include "pointer_comparison_test_helper.hpp"
 #endif
 

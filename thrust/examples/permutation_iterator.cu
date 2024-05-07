@@ -7,7 +7,7 @@
 // this example fuses a gather operation with a reduction for
 // greater efficiency than separate gather() and reduce() calls
 
-int main(void)
+int main()
 {
   // gather locations
   thrust::device_vector<int> map(4);

@@ -50,7 +50,7 @@ struct less_than_value_pred
 };
 
 template <class Vector>
-void TestFindSimple(void)
+void TestFindSimple()
 {
   Vector vec(5);
   vec[0] = 1;
@@ -104,7 +104,7 @@ void TestFindDispatchImplicit()
 DECLARE_UNITTEST(TestFindDispatchImplicit);
 
 template <class Vector>
-void TestFindIfSimple(void)
+void TestFindIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -160,7 +160,7 @@ void TestFindIfDispatchImplicit()
 DECLARE_UNITTEST(TestFindIfDispatchImplicit);
 
 template <class Vector>
-void TestFindIfNotSimple(void)
+void TestFindIfNotSimple()
 {
   typedef typename Vector::value_type T;
 

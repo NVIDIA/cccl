@@ -1,12 +1,6 @@
-
-cuda_prev_min: &cuda_prev_min '11.1'
-cuda_prev_max:  &cuda_prev_max  '11.8'
-cuda_curr: &cuda_curr '12.4'
-
-# The GPUs to test on
-gpus:
-  - 'a100'
-  - 'v100'
+ctk_11_1: &ctk_11_1 '11.1'
+ctk_11_8: &ctk_11_8 '11.8'
+ctk_curr: &ctk_curr '12.4'
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
 devcontainer_version: '24.06'
@@ -42,54 +36,241 @@ msvc2022: &msvc2022 { name: 'cl', version: '14.39', exe: 'cl++' }
 # oneAPI configs
 oneapi: &oneapi { name: 'oneapi', version: '2023.2.0', exe: 'icpc' }
 
-# Each environment below will generate a unique build/test job
-# See the "compute-matrix" job in the workflow for how this is parsed and used
-# cuda: The CUDA Toolkit version
-# os: The operating system used
-# cpu: The CPU architecture
-# compiler: The compiler to use
-#   name: The compiler name
-#   version: The compiler version
-#   exe: The unverionsed compiler binary name
-# std: The C++ standards to build for
-#    This field is unique as it will generate an independent build/test job for each value
+# GHA Workflow job matrices:
+workflows:
+  pull_request:
+    # default_projects: nvcc
+    - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}
+    - {jobs: ['build'], std: 'all', ctk: *ctk_11_8, cxx: [*gcc11], sm: '60;70;80;90'}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11]}
+    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15]}
+    - {jobs: ['test'],  std: 'all', cxx: [*gcc12, *llvm16]}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc12, *llvm16], cpu: 'arm64'}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc12], sm: '90a'}
+    - {jobs: ['build'], std: 'all', cxx: [*oneapi]}
+    - {jobs: ['build'], std: 'all', cxx: [*msvc2019, *msvc2022]}
+    # default_projects: clang-cuda
+    - {jobs: ['build'], std: [17, 20], cudacxx: *llvm-newest, cxx: *llvm-newest}
+    # nvrtc:
+    - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all'}
+    # verify-codegen:
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
+    # cccl-infra:
+    - {jobs: ['infra'], project: 'cccl', ctk: *ctk_11_1, cxx: [*gcc-oldest, *llvm-oldest]}
+    - {jobs: ['infra'], project: 'cccl', ctk: *ctk_curr, cxx: [*gcc-newest, *llvm-newest]}
+  nightly:
+  # libcudacxx build fails, CUB tests fail:
+    - {jobs: ['build'], ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: *gcc6,   std: [11],     project: ['cub']}
+    - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: *gcc6,   std: [11],     project: ['thrust']}
+  # - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: *gcc6,   std: [11]      }
 
-# Configurations that will run for every PR
-pull_request:
-  nvcc:
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc6,     std: [11, 14],         jobs: ['build']}
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_prev_min, os: 'windows2022', cpu: 'amd64', compiler: *msvc2017, std: [14, 17],         jobs: ['build']}
-    - {cuda: *cuda_prev_max, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17],     jobs: ['build'], extra_build_args: '-cmake-options -DCMAKE_CUDA_ARCHITECTURES=90'}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc10,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build'], extra_build_args: '-cmake-options -DCMAKE_CUDA_ARCHITECTURES=90a'}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build', 'test']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'arm64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm10,   std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm11,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm12,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm13,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm14,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm15,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build', 'test']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'arm64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [14, 17],         jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
-  nvrtc:
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', std: [11, 14, 17, 20]}
-  clang-cuda:
-    - {lib: ['thrust', 'cub', 'libcudacxx'], cuda: *cuda_curr, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest, std: [17, 20]}
-  cccl-infra:
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc-oldest}
-    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm-oldest}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc-newest}
-    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest}
+  # libcudacxx build fails, CUB tests fail:
+    - {jobs: ['build'], ctk: *ctk_11_1, gpu: 't4',       sm: 'gpu', cxx: *llvm9,  std: [17],     project: ['cub']}
+    - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 't4',       sm: 'gpu', cxx: *llvm9,  std: [17],     project: ['thrust']}
+  # - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 't4',       sm: 'gpu', cxx: *llvm9,  std: [17]      }
+
+  # CUB + libcudacxx tests fails:
+    - {jobs: ['build'], ctk: *ctk_11_8, gpu: 'rtx2080',  sm: 'gpu', cxx: *gcc11,  std: [17],     project: ['libcudacxx', 'cub']}
+    - {jobs: ['test'],  ctk: *ctk_11_8, gpu: 'rtx2080',  sm: 'gpu', cxx: *gcc11,  std: [17],     project: ['thrust']}
+  # - {jobs: ['test'],  ctk: *ctk_11_8, gpu: 'rtx2080',  sm: 'gpu', cxx: *gcc11,  std: [17]      }
+
+  # libcudacxx tests fail:
+    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: *gcc7,   std: [14],     project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: *gcc12,  std: 'all',    project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'rtx4090',  sm: 'gpu', cxx: *llvm9,  std: [11],     project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *llvm16, std: [17],     project: ['libcudacxx']}
+    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: *gcc7,   std: [14],     project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: *gcc12,  std: 'all',    project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtx4090',  sm: 'gpu', cxx: *llvm9,  std: [11],     project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *llvm16, std: [17],     project: ['cub', 'thrust']}
+   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: *gcc7,   std: [14]     }
+   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: *gcc12,  std: 'all'    }
+   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtx4090',  sm: 'gpu', cxx: *llvm9,  std: [11]     }
+   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20] }
+   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *llvm16, std: [17]     }
+
+    # nvrtc:
+    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 't4',       sm: 'gpu', cxx: *gcc12,  std: [20],     project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: *gcc12,  std: [20],     project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: *gcc12,  std: 'all',    project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
+
+#
+# Resources for compute_matrix.py. These can be modified to add new jobs, etc.
+#
+# Jobs are executed by running scripts:
+# - Linux:   'ci/<job>_<project>.sh`
+# - Windows: `ci/windows/<job>_<project>.bat`
+
+# A matrix entry must have the following tag.
+required_tags:
+  - 'jobs' # A list of job types to run (e.g. 'build', 'test', 'nvrtc', 'infra', 'verify_codegen', ...) for
+           # the specified configuration(s).
+
+# If a matrix entry omits these tags, a default value (defined later in `default_<tag>`) is used.
+defaulted_tags:
+ - 'ctk'             # CUDA ToolKit version. Will be exploded if a list.
+ - 'cpu'             # CPU architecture. Will be exploded if a list.
+ - 'gpu'             # GPU model. Will be exploded if a list.
+ - 'cxx'             # Host compiler {name, version, exe}. Will be exploded if a list.
+ - 'cudacxx'         # Device compiler as {name, version, exe} or 'nvcc' to use nvcc from the specified `ctk`.
+                     # Will be exploded if a list.
+ - 'project'         # Project name (e.g. libcudacxx, cub, thrust, cccl). Will be exploded if a list.
+ - 'os'              # Operating system. Will be exploded if a list.
+
+# These tags will only exist if needed:
+optional_tags:
+  - 'std'             # C++ standard. Passed to script with `-std <std>`. Will be exploded if a list.
+                      # If set to 'all', all stds supported by the host/device compiler are used.
+  - 'sm'              # `CMAKE_CUDA_ARCHITECTURES` Passed to script with `-arch <sm>`.
+                      # Defaults to use the settings in the CMakePresets.json file.
+                      # Set to 'gpu' to only target the GPU in the `gpu` tag.
+                      # Can pass multiple architectures via "60;70-real;80-virtual"
+                      # Will be exploded if a list (e.g. `sm: ['60;70;80;90', '90a']` creates two jobs)
+  - 'cmake_options'   # Additional CMake options to pass to the build. Passed to script with `-cmake_options "<cmake_options>"`.
+                      # Will be exploded if a list.
+
+# `default_<tag>`: Used when the tag is omitted.
+default_ctk: *ctk_curr
+default_cudacxx: 'nvcc'
+default_cxx: *gcc12
+default_cpu: 'amd64'
+default_gpu: 'v100'
+default_project:
+  - 'libcudacxx'
+  - 'cub'
+  - 'thrust'
+# Special handling: lookup os from ctk/cxx info
+# See `matrix.yml` at https://github.com/rapidsai/devcontainers
+default_os_lookup:
+  'ctk11.1-gcc6': 'ubuntu18.04'
+  'ctk11.1-gcc7': 'ubuntu18.04'
+  'ctk11.1-gcc8': 'ubuntu18.04'
+  'ctk11.1-gcc9': 'ubuntu18.04'
+  'ctk11.1-llvm9': 'ubuntu18.04'
+  'ctk11.1-cl14.16': 'windows2022'
+  'ctk11.8-gcc11': 'ubuntu22.04'
+  'ctk12.4-gcc7': 'ubuntu20.04'
+  'ctk12.4-gcc8': 'ubuntu20.04'
+  'ctk12.4-gcc9': 'ubuntu20.04'
+  'ctk12.4-gcc10': 'ubuntu20.04'
+  'ctk12.4-gcc11': 'ubuntu22.04'
+  'ctk12.4-gcc12': 'ubuntu22.04'
+  'ctk12.4-llvm9': 'ubuntu20.04'
+  'ctk12.4-llvm10': 'ubuntu20.04'
+  'ctk12.4-llvm11': 'ubuntu20.04'
+  'ctk12.4-llvm12': 'ubuntu20.04'
+  'ctk12.4-llvm13': 'ubuntu20.04'
+  'ctk12.4-llvm14': 'ubuntu20.04'
+  'ctk12.4-llvm15': 'ubuntu22.04'
+  'ctk12.4-llvm16': 'ubuntu22.04'
+  'ctk12.4-cl14.29': 'windows2022'
+  'ctk12.4-cl14.39': 'windows2022'
+  'ctk12.4-oneapi2023.2.0': 'ubuntu22.04'
+
+# Lookup supported C++ standards for a given compiler when `std: 'all'`.
+all_stds:           [11, 14, 17, 20]
+lookup_cxx_supported_stds:
+  'gcc6':           [11, 14        ]
+  'gcc7':           [11, 14, 17    ]
+  'gcc8':           [11, 14, 17    ]
+  'gcc9':           [11, 14, 17    ]
+  'gcc10':          [11, 14, 17, 20]
+  'gcc11':          [11, 14, 17, 20]
+  'gcc12':          [11, 14, 17, 20]
+  'llvm9':          [11, 14, 17    ]
+  'llvm10':         [11, 14, 17    ]
+  'llvm11':         [11, 14, 17, 20]
+  'llvm12':         [11, 14, 17, 20]
+  'llvm13':         [11, 14, 17, 20]
+  'llvm14':         [11, 14, 17, 20]
+  'llvm15':         [11, 14, 17, 20]
+  'llvm16':         [11, 14, 17, 20]
+  'cl14.16':        [    14        ]
+  'cl14.29':        [    14, 17    ]
+  'cl14.39':        [    14, 17, 20]
+  'oneapi2023.2.0': [11, 14, 17    ]
+lookup_cudacxx_supported_stds:
+  'nvcc11.1':       [11, 14, 17    ]
+  'nvcc11.8':       [11, 14, 17    ]
+  'nvcc12.4':       [11, 14, 17, 20]
+  'llvm16':         [11, 14, 17, 20]
+
+# Tags that aren't exploded:
+non_exploded_tags:
+  - 'jobs' # Keeping jobs as a list allows for dependency handling of build->test steps.
+
+# Jobs that have an implied prerequisite 'build' job:
+build_required_jobs:
+  - 'test'
+
+# Jobs that require a GPU
+gpu_required_jobs:
+  - 'test'
+  - 'nvrtc'
+  - 'infra' # cccl infra's example project test launches a kernel
+
+# When --skip-tests is given to compute-matrix.py, these jobs are ignored.
+skip_test_jobs:
+  - 'test'
+  - 'nvrtc'
+  - 'infra'
+
+# Human readable name for jobs. Default behavior is to capitalize the first letter.
+formatted_jobs:
+  'nvrtc':          'NVRTC'
+  'verify_codegen': 'VerifyCodegen'
+
+# Human readable name for projects. Default behavior uses the project name as-is.
+formatted_project_names:
+  'libcudacxx': 'libcu++'
+  'cub': 'CUB'
+  'thrust': 'Thrust'
+  'cccl': 'CCCL'
+
+# Human readable name for compilers. Default behavior uses the "compiler.name" tag as-is.
+formatted_cxx_names:
+  'llvm': 'clang'
+  'oneapi': 'Intel'
+  'cl': 'MSVC'
+
+# All known GPUs
+gpus:
+  - 'v100'     # 40 runners
+  - 't4'       #  8 runners
+  - 'rtx2080'  #  8 runners
+  - 'rtxa6000' # 12 runners
+  - 'l4'       # 48 runners
+  - 'rtx4090'  # 10 runners
+  - 'h100'     # 16 runners
+
+# SM versions of GPUs
+gpu_sm:
+  'v100':     '70'
+  't4':       '75'
+  'rtx2080':  '75'
+  'rtxa6000': '86'
+  'l4':       '89'
+  'rtx4090':  '89'
+  'h100':     '90'
+
+# Memory size of GPUs
+gpu_mem_gb:
+  'v100':     '32'
+  't4':       '16'
+  'rtx2080':  '8'
+  'rtxa6000': '48'
+  'l4':       '24'
+  'rtx4090':  '24'
+  'h100':     '80'
+
+# GPUs that require `-testing` at the end of the runner pool name.
+testing_pool_gpus:
+  - 't4'
+  - 'rtx2080'
+  - 'rtxa6000'
+  - 'l4'
+  - 'rtx4090'
+  - 'h100'

@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE uniform_int_distribution<IntType>::uniform_int_distribution(co
 {} // end uniform_int_distribution::uniform_int_distribution()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::reset(void)
+_CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::reset()
 {} // end uniform_int_distribution::reset()
 
 template <typename IntType>
@@ -79,22 +79,19 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
 } // end uniform_int_distribution::operator()()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
-uniform_int_distribution<IntType>::a(void) const
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::a() const
 {
   return m_param.first;
 } // end uniform_int_distribution<IntType>::a()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type
-uniform_int_distribution<IntType>::b(void) const
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::b() const
 {
   return m_param.second;
 } // end uniform_int_distribution::b()
 
 template <typename IntType>
-_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::param_type
-uniform_int_distribution<IntType>::param(void) const
+_CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::param_type uniform_int_distribution<IntType>::param() const
 {
   return m_param;
 } // end uniform_int_distribution::param()
@@ -107,14 +104,14 @@ _CCCL_HOST_DEVICE void uniform_int_distribution<IntType>::param(const param_type
 
 template <typename IntType>
 _CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::min
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return a();
 } // end uniform_int_distribution::min()
 
 template <typename IntType>
 _CCCL_HOST_DEVICE typename uniform_int_distribution<IntType>::result_type uniform_int_distribution<IntType>::max
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return b();
 } // end uniform_int_distribution::max()

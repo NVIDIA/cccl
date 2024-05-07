@@ -107,12 +107,12 @@ struct range
     result += thrust::distance(r.first1, mid1) + thrust::distance(r.first2, mid2);
   }
 
-  bool empty(void) const
+  bool empty() const
   {
     return (first1 == last1) && (first2 == last2);
   }
 
-  bool is_divisible(void) const
+  bool is_divisible() const
   {
     return static_cast<size_t>(thrust::distance(first1, last1) + thrust::distance(first2, last2)) > grain_size;
   }
@@ -216,12 +216,12 @@ struct range
     values_result += thrust::distance(r.keys_first1, mid1) + thrust::distance(r.keys_first2, mid2);
   }
 
-  bool empty(void) const
+  bool empty() const
   {
     return (keys_first1 == keys_last1) && (keys_first2 == keys_last2);
   }
 
-  bool is_divisible(void) const
+  bool is_divisible() const
   {
     return static_cast<size_t>(thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2))
          > grain_size;

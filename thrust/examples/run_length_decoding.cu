@@ -12,7 +12,7 @@
 //
 // [1] http://en.wikipedia.org/wiki/Run-length_encoding
 
-int main(void)
+int main()
 {
   // allocate storage for compressed input and run lengths
   thrust::device_vector<char> input(6);

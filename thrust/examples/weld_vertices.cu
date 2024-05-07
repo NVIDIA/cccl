@@ -36,7 +36,7 @@
 // define a 2d float vector
 typedef thrust::tuple<float, float> vec2;
 
-int main(void)
+int main()
 {
   // allocate memory for input mesh representation
   thrust::device_vector<vec2> input(9);

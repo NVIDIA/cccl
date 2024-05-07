@@ -7,7 +7,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestAdjacentDifferenceSimple(void)
+void TestAdjacentDifferenceSimple()
 {
   typedef typename Vector::value_type T;
 

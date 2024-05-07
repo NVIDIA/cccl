@@ -108,11 +108,11 @@ public:
       , m_end(last)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return m_begin;
   }
-  iterator end(void) const
+  iterator end() const
   {
     return m_end;
   }

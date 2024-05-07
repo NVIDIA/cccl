@@ -82,7 +82,7 @@ typedef void (*FunctionPtr)();
 
 int main(int, char**)
 {
-  test_is_function<void(void)>();
+  test_is_function<void()>();
   test_is_function<int(int)>();
   test_is_function<int(int, double)>();
   test_is_function<int(Abstract*)>();

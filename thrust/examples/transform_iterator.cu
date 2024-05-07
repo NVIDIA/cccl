@@ -55,7 +55,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   std::cout << "\n";
 }
 
-int main(void)
+int main()
 {
   // clamp values to the range [1, 5]
   int lo = 1;

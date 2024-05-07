@@ -42,7 +42,7 @@ struct bit_xor
 } // namespace ref
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
-void TestBinaryFunctional(void)
+void TestBinaryFunctional()
 {
   typedef typename InputVector::value_type InputType;
   typedef typename OutputVector::value_type OutputType;
@@ -93,12 +93,12 @@ Macro(vector_type, operator_name, unittest::uint64_t)
 
 // op(T,T) -> T (for bitwise op and integer T only)
 #define DECLARE_BINARY_BITWISE_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                          \
-  void Test##OperatorName##FunctionalHost(void)                                                          \
+  void Test##OperatorName##FunctionalHost()                                                              \
   {                                                                                                      \
     INSTANTIATE_INTEGER_TYPES(INSTANTIATE_BINARY_BITWISE_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                      \
   DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                                  \
-  void Test##OperatorName##FunctionalDevice(void)                                                        \
+  void Test##OperatorName##FunctionalDevice()                                                            \
   {                                                                                                      \
     INSTANTIATE_INTEGER_TYPES(INSTANTIATE_BINARY_BITWISE_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                      \

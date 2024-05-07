@@ -66,7 +66,7 @@ struct bbox_reduction : public thrust::binary_function<bbox, bbox, bbox>
   }
 };
 
-int main(void)
+int main()
 {
   const size_t N = 40;
   thrust::default_random_engine rng;
