@@ -8,5 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+// clang-format off
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 #include <cuda/std/detail/libcxx/include/__undef_macros>
+// clang-format on
