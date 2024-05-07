@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
-  _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp))
+  _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
 {
   _Tp __t(_CUDA_VSTD::move(__x));
   __x = _CUDA_VSTD::move(__y);

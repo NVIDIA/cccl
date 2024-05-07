@@ -40,8 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __enable_if_t<_LIBCUDACXX_TRAIT(is_integral, _Tp) && !_LIBCUDACXX_TRAIT(is_same, bool, _Tp)
-                  && !_LIBCUDACXX_TRAIT(is_null_pointer, _Tp),
+  __enable_if_t<_CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp),
                 _Tp>
   midpoint(_Tp __a, _Tp __b) noexcept
 {
@@ -59,9 +58,8 @@ _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   }
 }
 
-template <
-  class _Tp,
-  __enable_if_t<_LIBCUDACXX_TRAIT(is_object, _Tp) && !_LIBCUDACXX_TRAIT(is_void, _Tp) && (sizeof(_Tp) > 0), int> = 0>
+template <class _Tp,
+          __enable_if_t<_CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_void, _Tp) && (sizeof(_Tp) > 0), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {
   return __a + _CUDA_VSTD::midpoint(ptrdiff_t(0), __b - __a);
@@ -81,7 +79,7 @@ _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Fp __fp_abs
 
 template <class _Fp>
 _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __enable_if_t<_LIBCUDACXX_TRAIT(is_floating_point, _Fp), _Fp>
+  __enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
   midpoint(_Fp __a, _Fp __b) noexcept
 {
   _CCCL_CONSTEXPR_CXX14 _Fp __lo = numeric_limits<_Fp>::min() * 2;

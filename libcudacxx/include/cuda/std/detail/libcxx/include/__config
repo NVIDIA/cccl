@@ -860,7 +860,7 @@ typedef __char32_t char32_t;
 
 #  elif defined(_CCCL_COMPILER_MSVC)
 
-#    define _LIBCUDACXX_WARNING(x)             __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
+#    define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
 
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
 // warning C4100: 'quack': unreferenced formal parameter
@@ -1823,12 +1823,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr
 #  endif
 
-#  if _CCCL_STD_VER > 2014
-#    define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#  else
-#    define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
-#  endif
-
 // Older nvcc do not handle the constraint of `construct_at` in earlier std modes
 // So to preserve our performance optimization we default to the unconstrained
 // `__construct_at` and only in C++20 use `construct_at`
@@ -1852,13 +1846,13 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                       \
-      using __base = __baseclass<__VA_ARGS__>;                                                                 \
-      template <class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0> \
-      _LIBCUDACXX_INLINE_VISIBILITY constexpr __class(_Args&&... __args) noexcept(                             \
-        _LIBCUDACXX_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
-          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                      \
-      {}                                                                                                       \
+#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                 \
+      using __base = __baseclass<__VA_ARGS__>;                                                           \
+      template <class... _Args, __enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \
+      _LIBCUDACXX_INLINE_VISIBILITY constexpr __class(_Args&&... __args) noexcept(                       \
+        _CCCL_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
+          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                \
+      {}                                                                                                 \
       constexpr __class() noexcept = default;
 #  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \

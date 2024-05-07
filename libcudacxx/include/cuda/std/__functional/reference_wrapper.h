@@ -70,7 +70,7 @@ public:
 #if _CCCL_STD_VER > 2011
     // Since is_nothrow_invocable requires C++11 LWG3764 is not backported
     // to earlier versions.
-    noexcept(_LIBCUDACXX_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
+    noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
 #endif
   {
     return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);

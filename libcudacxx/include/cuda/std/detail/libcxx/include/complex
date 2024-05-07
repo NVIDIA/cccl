@@ -305,7 +305,7 @@ public:
 
   template <class _Up,
             __enable_if_t<!__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0,
-            __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up), int>        = 0>
+            __enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>              = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
@@ -842,7 +842,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp real(const comple
 
 // 26.3.7 values:
 
-template <class _Tp, bool = _LIBCUDACXX_TRAIT(is_integral, _Tp), bool = _LIBCUDACXX_TRAIT(is_floating_point, _Tp)>
+template <class _Tp, bool = _CCCL_TRAIT(is_integral, _Tp), bool = _CCCL_TRAIT(is_floating_point, _Tp)>
 struct __libcpp_complex_overload_traits
 {};
 

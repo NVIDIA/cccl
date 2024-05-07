@@ -611,22 +611,20 @@ __to_array_rvalue_impl(_Tp (&&__arr)[_Size], index_sequence<_Index...>)
 
 template <typename _Tp, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 array<remove_cv_t<_Tp>, _Size>
-to_array(_Tp (&__arr)[_Size]) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Tp&))
+to_array(_Tp (&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Tp&))
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_array, _Tp),
-                "[array.creation]/1: to_array does not accept multidimensional arrays.");
-  static_assert(_LIBCUDACXX_TRAIT(is_constructible, _Tp, _Tp&),
+  static_assert(!_CCCL_TRAIT(is_array, _Tp), "[array.creation]/1: to_array does not accept multidimensional arrays.");
+  static_assert(_CCCL_TRAIT(is_constructible, _Tp, _Tp&),
                 "[array.creation]/1: to_array requires copy constructible elements.");
   return _CUDA_VSTD::__to_array_lvalue_impl(__arr, _CUDA_VSTD::make_index_sequence<_Size>());
 }
 
 template <typename _Tp, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr array<remove_cv_t<_Tp>, _Size>
-to_array(_Tp (&&__arr)[_Size]) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp))
+to_array(_Tp (&&__arr)[_Size]) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_array, _Tp),
-                "[array.creation]/4: to_array does not accept multidimensional arrays.");
-  static_assert(_LIBCUDACXX_TRAIT(is_move_constructible, _Tp),
+  static_assert(!_CCCL_TRAIT(is_array, _Tp), "[array.creation]/4: to_array does not accept multidimensional arrays.");
+  static_assert(_CCCL_TRAIT(is_move_constructible, _Tp),
                 "[array.creation]/4: to_array requires move constructible elements.");
   return _CUDA_VSTD::__to_array_rvalue_impl(_CUDA_VSTD::move(__arr), make_index_sequence<_Size>());
 }

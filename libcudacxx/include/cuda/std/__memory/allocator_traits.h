@@ -63,7 +63,7 @@ _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer);
 template <class _Tp,
           class _Alloc,
           class _RawAlloc = __libcpp_remove_reference_t<_Alloc>,
-          bool            = _LIBCUDACXX_TRAIT(__has_pointer, _RawAlloc)>
+          bool            = _CCCL_TRAIT(__has_pointer, _RawAlloc)>
 struct __pointer
 {
   using type _LIBCUDACXX_NODEBUG_TYPE = typename _RawAlloc::pointer;
@@ -76,7 +76,7 @@ struct __pointer<_Tp, _Alloc, _RawAlloc, false>
 
 // __const_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer);
-template <class _Tp, class _Ptr, class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_const_pointer, _Alloc)>
+template <class _Tp, class _Ptr, class _Alloc, bool = _CCCL_TRAIT(__has_const_pointer, _Alloc)>
 struct __const_pointer
 {
   using type _LIBCUDACXX_NODEBUG_TYPE = typename _Alloc::const_pointer;
@@ -89,7 +89,7 @@ struct __const_pointer<_Tp, _Ptr, _Alloc, false>
 
 // __void_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer);
-template <class _Ptr, class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_void_pointer, _Alloc)>
+template <class _Ptr, class _Alloc, bool = _CCCL_TRAIT(__has_void_pointer, _Alloc)>
 struct __void_pointer
 {
   using type _LIBCUDACXX_NODEBUG_TYPE = typename _Alloc::void_pointer;
@@ -102,7 +102,7 @@ struct __void_pointer<_Ptr, _Alloc, false>
 
 // __const_void_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_void_pointer, const_void_pointer);
-template <class _Ptr, class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_const_void_pointer, _Alloc)>
+template <class _Ptr, class _Alloc, bool = _CCCL_TRAIT(__has_const_void_pointer, _Alloc)>
 struct __const_void_pointer
 {
   using type _LIBCUDACXX_NODEBUG_TYPE = typename _Alloc::const_void_pointer;
@@ -115,7 +115,7 @@ struct __const_void_pointer<_Ptr, _Alloc, false>
 
 // __size_type
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_size_type, size_type);
-template <class _Alloc, class _DiffType, bool = _LIBCUDACXX_TRAIT(__has_size_type, _Alloc)>
+template <class _Alloc, class _DiffType, bool = _CCCL_TRAIT(__has_size_type, _Alloc)>
 struct __size_type : make_unsigned<_DiffType>
 {};
 template <class _Alloc, class _DiffType>
@@ -126,7 +126,7 @@ struct __size_type<_Alloc, _DiffType, true>
 
 // __alloc_traits_difference_type
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_alloc_traits_difference_type, difference_type);
-template <class _Alloc, class _Ptr, bool = _LIBCUDACXX_TRAIT(__has_alloc_traits_difference_type, _Alloc)>
+template <class _Alloc, class _Ptr, bool = _CCCL_TRAIT(__has_alloc_traits_difference_type, _Alloc)>
 struct __alloc_traits_difference_type
 {
   using type _LIBCUDACXX_NODEBUG_TYPE = typename pointer_traits<_Ptr>::difference_type;
@@ -140,7 +140,7 @@ struct __alloc_traits_difference_type<_Alloc, _Ptr, true>
 // __propagate_on_container_copy_assignment
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_copy_assignment,
                                      propagate_on_container_copy_assignment);
-template <class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_propagate_on_container_copy_assignment, _Alloc)>
+template <class _Alloc, bool = _CCCL_TRAIT(__has_propagate_on_container_copy_assignment, _Alloc)>
 struct __propagate_on_container_copy_assignment : false_type
 {};
 template <class _Alloc>
@@ -152,7 +152,7 @@ struct __propagate_on_container_copy_assignment<_Alloc, true>
 // __propagate_on_container_move_assignment
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_move_assignment,
                                      propagate_on_container_move_assignment);
-template <class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_propagate_on_container_move_assignment, _Alloc)>
+template <class _Alloc, bool = _CCCL_TRAIT(__has_propagate_on_container_move_assignment, _Alloc)>
 struct __propagate_on_container_move_assignment : false_type
 {};
 template <class _Alloc>
@@ -163,7 +163,7 @@ struct __propagate_on_container_move_assignment<_Alloc, true>
 
 // __propagate_on_container_swap
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_swap, propagate_on_container_swap);
-template <class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_propagate_on_container_swap, _Alloc)>
+template <class _Alloc, bool = _CCCL_TRAIT(__has_propagate_on_container_swap, _Alloc)>
 struct __propagate_on_container_swap : false_type
 {};
 template <class _Alloc>
@@ -174,7 +174,7 @@ struct __propagate_on_container_swap<_Alloc, true>
 
 // __is_always_equal
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal, is_always_equal);
-template <class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_is_always_equal, _Alloc)>
+template <class _Alloc, bool = _CCCL_TRAIT(__has_is_always_equal, _Alloc)>
 struct __is_always_equal : is_empty<_Alloc>
 {};
 template <class _Alloc>

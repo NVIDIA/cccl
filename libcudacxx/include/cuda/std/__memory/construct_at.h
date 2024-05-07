@@ -89,16 +89,15 @@ struct __is_narrowing_impl<_To, _From, __void_t<decltype(_To{_CUDA_VSTD::declval
 {};
 
 template <class _Tp, class... _Args>
-using __is_narrowing = _If<_LIBCUDACXX_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
+using __is_narrowing = _If<_CCCL_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
 
 // The destination type must be trivially constructible from the arguments and also trivially assignable, because we
 // technically move assign in the optimization
 template <class _Tp, class... _Args>
 struct __can_optimize_construct_at
     : integral_constant<bool,
-                        _LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...)
-                          && _LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Tp)
-                          && !__is_narrowing<_Tp, _Args...>::value>
+                        _CCCL_TRAIT(is_trivially_constructible, _Tp, _Args...)
+                          && _CCCL_TRAIT(is_trivially_move_assignable, _Tp) && !__is_narrowing<_Tp, _Args...>::value>
 {};
 } // namespace __detail
 
