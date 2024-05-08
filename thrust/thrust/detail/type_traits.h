@@ -195,13 +195,6 @@ template <typename T>
 struct is_numeric : and_<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
 {}; // end is_numeric
 
-template <typename>
-struct is_reference_to_const : false_type
-{};
-template <typename T>
-struct is_reference_to_const<const T&> : true_type
-{};
-
 // make_unsigned follows
 
 namespace tt_detail
