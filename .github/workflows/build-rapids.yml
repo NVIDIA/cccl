@@ -66,6 +66,10 @@ jobs:
         # Remove trailing comma
         filters="$(cut -d',' -f1-${#filters[@]} <<< "${filters[*]}")";
         sudo yq -i ".repos |= filter(.cpp[].name | contains(${filters}))" /opt/rapids-build-utils/manifest.yaml;
+
+        # Use the miscco/cudf fork with fixes for latest CCCL (https://github.com/rapidsai/cudf/pull/15552)
+        sudo yq -i '(.repos[] | select(.name == "cudf") | .git) *= {"upstream": "miscco", "tag": "fix_cccl_compat"}' /opt/rapids-build-utils/manifest.yaml;
+
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
 
