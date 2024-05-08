@@ -42,7 +42,7 @@ template <typename Allocator, typename T>
 _CCCL_HOST_DEVICE void destroy_at(Allocator const& alloc, T* location)
 {
   typedef
-    typename detail::allocator_traits<::cuda::std::__remove_cv_t<typename detail::remove_reference<Allocator>::type>>::
+    typename detail::allocator_traits<::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::
       template rebind_traits<T>::other traits;
 
   typename traits::allocator_type alloc_T(alloc);
@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, For
 {
   typedef typename iterator_traits<ForwardIt>::value_type T;
   typedef
-    typename detail::allocator_traits<::cuda::std::__remove_cv_t<typename detail::remove_reference<Allocator>::type>>::
+    typename detail::allocator_traits<::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::
       template rebind_traits<T>::other traits;
 
   typename traits::allocator_type alloc_T(alloc);
@@ -95,7 +95,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, S
 {
   typedef typename iterator_traits<ForwardIt>::value_type T;
   typedef
-    typename detail::allocator_traits<::cuda::std::__remove_cv_t<typename detail::remove_reference<Allocator>::type>>::
+    typename detail::allocator_traits<::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::
       template rebind_traits<T>::other traits;
 
   typename traits::allocator_type alloc_T(alloc);

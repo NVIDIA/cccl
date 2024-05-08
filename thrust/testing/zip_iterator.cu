@@ -293,7 +293,7 @@ DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
 struct SumTwoTuple
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x);
@@ -303,7 +303,7 @@ struct SumTwoTuple
 struct SumThreeTuple
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x);

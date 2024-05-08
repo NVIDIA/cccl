@@ -40,9 +40,9 @@
 
 #if THRUST_CPP_DIALECT >= 2011
 #  define THRUST_STD_COMPLEX_REAL(z) \
-    reinterpret_cast<const typename thrust::detail::remove_reference<decltype(z)>::type::value_type(&)[2]>(z)[0]
+    reinterpret_cast<const typename ::cuda::std::__libcpp_remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
 #  define THRUST_STD_COMPLEX_IMAG(z) \
-    reinterpret_cast<const typename thrust::detail::remove_reference<decltype(z)>::type::value_type(&)[2]>(z)[1]
+    reinterpret_cast<const typename ::cuda::std::__libcpp_remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[1]
 #  define THRUST_STD_COMPLEX_DEVICE _CCCL_DEVICE
 #else
 #  define THRUST_STD_COMPLEX_REAL(z) (z).real()

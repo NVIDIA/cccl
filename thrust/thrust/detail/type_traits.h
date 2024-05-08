@@ -76,18 +76,6 @@ template <typename T>
 struct is_device_reference<thrust::device_reference<T>> : public true_type
 {};
 
-template <typename T>
-struct remove_reference
-{
-  typedef T type;
-}; // end remove_reference
-
-template <typename T>
-struct remove_reference<T&>
-{
-  typedef T type;
-}; // end remove_reference
-
 template <typename T1, typename T2>
 struct is_same : public false_type
 {}; // end is_same
