@@ -345,12 +345,6 @@ template <typename T1, typename T2>
 struct is_assignable : integral_constant<bool, is_assignable_ns::is_assignable<T1, T2>::value>
 {};
 
-template <typename T>
-struct is_copy_assignable
-    : is_assignable<::cuda::std::__add_lvalue_reference_t<T>,
-                    ::cuda::std::__add_lvalue_reference_t<typename ::cuda::std::add_const<T>::type>>
-{};
-
 template <typename T1, typename T2, typename Enable = void>
 struct promoted_numerical_type;
 
