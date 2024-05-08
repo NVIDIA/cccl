@@ -37,6 +37,7 @@
 // typedef atomic<uintmax_t> atomic_uintmax_t;
 
 #include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 

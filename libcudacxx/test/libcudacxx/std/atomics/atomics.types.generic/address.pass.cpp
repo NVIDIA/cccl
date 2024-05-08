@@ -69,6 +69,7 @@
 // };
 
 #include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

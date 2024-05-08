@@ -87,6 +87,7 @@
 // };
 
 #include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

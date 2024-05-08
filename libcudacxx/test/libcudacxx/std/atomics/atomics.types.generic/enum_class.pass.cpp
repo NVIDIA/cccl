@@ -50,6 +50,7 @@
 // };
 
 #include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cassert>
 
 #include "cuda_space_selector.h"
