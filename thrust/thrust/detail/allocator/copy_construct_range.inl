@@ -67,14 +67,16 @@ struct copy_construct_with_allocator
 // 2. T has a non-trivial copy constructor
 template <typename Allocator, typename T>
 struct needs_copy_construct_via_allocator
-    : integral_constant<bool, (has_member_construct2<Allocator, T, T>::value || !has_trivial_copy_constructor<T>::value)>
+    : integral_constant<bool,
+                        (has_member_construct2<Allocator, T, T>::value
+                         || !::cuda::std::is_trivially_copy_constructible<T>::value)>
 {};
 
 // we know that std::allocator::construct's only effect is to call T's
 // copy constructor, so we needn't consider or use its construct() member for copy construction
 template <typename U, typename T>
 struct needs_copy_construct_via_allocator<std::allocator<U>, T>
-    : integral_constant<bool, !has_trivial_copy_constructor<T>::value>
+    : integral_constant<bool, !::cuda::std::is_trivially_copy_constructible<T>::value>
 {};
 
 // XXX it's regrettable that this implementation is copied almost

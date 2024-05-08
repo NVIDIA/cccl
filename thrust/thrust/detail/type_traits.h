@@ -66,20 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct has_trivial_constructor
-    : public integral_constant<bool, ::cuda::std::is_pod<T>::value || ::cuda::std::is_trivially_constructible<T>::value>
-{};
-
-template <typename T>
-struct has_trivial_copy_constructor
-    : public integral_constant<bool, ::cuda::std::is_pod<T>::value || ::cuda::std::is_trivially_copyable<T>::value>
-{};
-
-template <typename T>
-struct has_trivial_destructor : public ::cuda::std::is_pod<T>
-{};
-
-template <typename T>
 struct is_const : public false_type
 {};
 template <typename T>

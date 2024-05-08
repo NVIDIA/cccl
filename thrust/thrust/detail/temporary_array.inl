@@ -39,7 +39,7 @@ namespace temporary_array_detail
 {
 
 template <typename T>
-struct avoid_initialization : thrust::detail::has_trivial_copy_constructor<T>
+struct avoid_initialization : ::cuda::std::is_trivially_copy_constructible<T>
 {};
 
 template <typename T, typename TemporaryArray, typename Size>

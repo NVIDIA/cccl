@@ -63,15 +63,16 @@ struct enable_if_destroy_range_case1
 // case 2: Allocator has no member function "destroy", but T has a non-trivial destructor
 template <typename Allocator, typename Pointer>
 struct enable_if_destroy_range_case2
-    : thrust::detail::enable_if<!has_effectful_member_destroy<Allocator, typename pointer_element<Pointer>::type>::value
-                                && !has_trivial_destructor<typename pointer_element<Pointer>::type>::value>
+    : thrust::detail::enable_if<
+        !has_effectful_member_destroy<Allocator, typename pointer_element<Pointer>::type>::value
+        && !::cuda::std::is_trivially_destructible<typename pointer_element<Pointer>::type>::value>
 {};
 
 // case 3: Allocator has no member function "destroy", and T has a trivial destructor
 template <typename Allocator, typename Pointer>
 struct enable_if_destroy_range_case3
     : thrust::detail::enable_if<!has_effectful_member_destroy<Allocator, typename pointer_element<Pointer>::type>::value
-                                && has_trivial_destructor<typename pointer_element<Pointer>::type>::value>
+                                && ::cuda::std::is_trivially_destructible<typename pointer_element<Pointer>::type>::value>
 {};
 
 template <typename Allocator>
