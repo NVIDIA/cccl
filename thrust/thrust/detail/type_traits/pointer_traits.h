@@ -362,7 +362,7 @@ struct is_pointer_convertible
 
 template <typename FromPtr, typename ToPtr>
 struct is_void_pointer_system_convertible
-    : thrust::detail::and_<thrust::detail::is_same<typename pointer_element<FromPtr>::type, void>,
+    : thrust::detail::and_<::cuda::std::is_same<typename pointer_element<FromPtr>::type, void>,
                            is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 

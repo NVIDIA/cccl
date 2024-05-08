@@ -39,7 +39,7 @@
   struct trait_name<T,                                                                                            \
                     ResultT(Args...),                                                                             \
                     typename thrust::detail::enable_if<                                                           \
-                      thrust::detail::is_same<ResultT, void>::value                                               \
+                      ::cuda::std::is_same<ResultT, void>::value                                                  \
                       || thrust::detail::is_convertible<                                                          \
                         ResultT,                                                                                  \
                         decltype(std::declval<T>().member_function_name(std::declval<Args>()...))>::value>::type> \

@@ -52,7 +52,7 @@ namespace detail
 template <class T, class DefaultNullaryFn>
 struct ia_dflt_help
     : thrust::detail::
-        eval_if<thrust::detail::is_same<T, thrust::use_default>::value, DefaultNullaryFn, thrust::detail::identity_<T>>
+        eval_if<::cuda::std::is_same<T, thrust::use_default>::value, DefaultNullaryFn, thrust::detail::identity_<T>>
 {}; // end ia_dflt_help
 
 // A metafunction which computes an iterator_adaptor's base class,
@@ -73,7 +73,7 @@ struct iterator_adaptor_base
   typedef typename ia_dflt_help<Traversal, thrust::iterator_traversal<Base>>::type traversal;
 
   typedef typename ia_dflt_help<Reference,
-                                thrust::detail::eval_if<thrust::detail::is_same<Value, use_default>::value,
+                                thrust::detail::eval_if<::cuda::std::is_same<Value, use_default>::value,
                                                         thrust::iterator_reference<Base>,
                                                         ::cuda::std::add_lvalue_reference<Value>>>::type reference;
 

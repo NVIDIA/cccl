@@ -110,7 +110,7 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  */
 template <typename From, typename To>
 using is_trivially_relocatable_to =
-  integral_constant<bool, detail::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
+  integral_constant<bool, ::cuda::std::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is

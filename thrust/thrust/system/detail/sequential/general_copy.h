@@ -51,7 +51,7 @@ struct lazy_is_assignable : thrust::detail::is_assignable<typename T1::type, typ
 template <typename InputIterator, typename OutputIterator>
 struct reference_is_assignable
     : thrust::detail::eval_if<
-        thrust::detail::is_same<typename thrust::iterator_reference<OutputIterator>::type, void>::value,
+        ::cuda::std::is_same<typename thrust::iterator_reference<OutputIterator>::type, void>::value,
         thrust::detail::true_type,
         lazy_is_assignable<thrust::iterator_reference<OutputIterator>, thrust::iterator_reference<InputIterator>>>::type
 {};

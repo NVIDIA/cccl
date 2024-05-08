@@ -198,7 +198,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator1>::type zip_iterator_system_type1;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
 
 #if 0
     // test device types

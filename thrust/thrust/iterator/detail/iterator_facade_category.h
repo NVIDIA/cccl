@@ -190,8 +190,8 @@ struct iterator_facade_category_impl
   // otherwise, munge them all together
   typedef typename thrust::detail::eval_if<
     thrust::detail::and_<
-      thrust::detail::is_same<Traversal, typename thrust::detail::iterator_category_to_traversal<category>::type>,
-      thrust::detail::is_same<System, typename thrust::detail::iterator_category_to_system<category>::type>>::value,
+      ::cuda::std::is_same<Traversal, typename thrust::detail::iterator_category_to_traversal<category>::type>,
+      ::cuda::std::is_same<System, typename thrust::detail::iterator_category_to_system<category>::type>>::value,
     thrust::detail::identity_<category>,
     thrust::detail::identity_<
       thrust::detail::iterator_category_with_system_and_traversal<category, System, Traversal>>>::type type;

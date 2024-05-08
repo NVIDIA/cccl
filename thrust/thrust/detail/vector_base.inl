@@ -1150,7 +1150,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
   typedef typename thrust::iterator_system<InputIterator2>::type system2;
 
   // dispatch on the sameness of the two systems
-  return vector_equal(first1, last1, first2, thrust::detail::is_same<system1, system2>());
+  return vector_equal(first1, last1, first2, ::cuda::std::is_same<system1, system2>());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>

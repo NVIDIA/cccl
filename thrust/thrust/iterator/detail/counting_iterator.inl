@@ -47,7 +47,7 @@ struct counting_iterator_base
 {
   typedef typename thrust::detail::eval_if<
     // use any_system_tag if we are given use_default
-    thrust::detail::is_same<System, use_default>::value,
+    ::cuda::std::is_same<System, use_default>::value,
     thrust::detail::identity_<thrust::any_system_tag>,
     thrust::detail::identity_<System>>::type system;
 
