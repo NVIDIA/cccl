@@ -399,10 +399,7 @@ using enable_if_permutations_remain = typename std::enable_if<Idx != 0, int>::ty
 template <size_t Idx>
 using enable_if_no_permutations_remain = typename std::enable_if<Idx == 0, int>::type;
 
-template <size_t Idx,
-          typename Fn,
-          typename Launchers,
-          enable_if_permutations_remain<Idx> = 0>
+template <size_t Idx, typename Fn, typename Launchers, enable_if_permutations_remain<Idx> = 0>
 void permute_tests(const Fn& fn, Launchers launchers)
 {
 #ifdef DEBUG_TESTERS
@@ -413,10 +410,7 @@ void permute_tests(const Fn& fn, Launchers launchers)
   permute_tests<Idx - 1>(fn, rotl<Launchers>{});
 }
 
-template <size_t Idx,
-          typename Fn,
-          typename Launchers,
-          enable_if_no_permutations_remain<Idx> = 0>
+template <size_t Idx, typename Fn, typename Launchers, enable_if_no_permutations_remain<Idx> = 0>
 void permute_tests(const Fn&, Launchers)
 {}
 
