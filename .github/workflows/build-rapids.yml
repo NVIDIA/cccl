@@ -81,10 +81,11 @@ jobs:
         # Tell rapids-cmake to use custom CCCL and cuCollections forks
         rapids_branch="$(yq '.x-git-defaults.tag' /opt/rapids-build-utils/manifest.yaml)";
         rapids_version="${rapids_branch#branch-}";
+        cccl_url="${{ github.repositoryUrl }}";
         curl -fsSL -o- https://raw.githubusercontent.com/trxcllnt/rapids-cmake/branch-24.04-cccl-2.4.0/rapids-cmake/cpm/patches/cccl/revert_pr_211.diff \
           | tee ~/rapids-cmake-revert_pr_211.diff;
         curl -fsSL -o- "https://raw.githubusercontent.com/rapidsai/rapids-cmake/${rapids_branch}/rapids-cmake/cpm/versions.json" \
-          | jq -r '.packages.CCCL *= {"version": "2.5.0", "git_url": "${{ github.repositoryUrl }}", "git_tag": "${{ github.ref_name }}"}' \
+          | jq -r ".packages.CCCL *= {\"version\": \"2.5.0\", \"git_url\": \"${cccl_url/git:/https:}\", \"git_tag\": \"${{ github.ref_name }}\"}" \
           | jq -r "(.packages.CCCL.patches[] | select(.file == \"cccl/revert_pr_211.diff\")).file = \"${HOME}/rapids-cmake-revert_pr_211.diff\"" \
           | jq -r ".packages.cuco *= {\"git_url\": \"https://github.com/trxcllnt/cuCollections.git\", \"git_tag\": \"rapids-${rapids_version}-cccl-2.5.0\"}" \
           | tee ~/rapids-cmake-override-versions.json;
