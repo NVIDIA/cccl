@@ -461,6 +461,7 @@ public:
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cuda/barrier.h>
+
 _CCCL_POP_MACROS
 
 #endif //_LIBCUDACXX_BARRIER

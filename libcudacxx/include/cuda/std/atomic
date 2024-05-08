@@ -50,8 +50,6 @@ _CCCL_PUSH_MACROS
 
 // clang-format on
 
-_CCCL_POP_MACROS
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
