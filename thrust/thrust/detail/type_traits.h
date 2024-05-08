@@ -76,18 +76,6 @@ template <typename T>
 struct is_device_reference<thrust::device_reference<T>> : public true_type
 {};
 
-template <typename T1, typename T2>
-struct is_different : public true_type
-{}; // end is_different
-
-template <typename T>
-struct is_different<T, T> : public false_type
-{}; // end is_different
-
-template <typename T1, typename T2>
-struct lazy_is_different : is_different<typename T1::type, typename T2::type>
-{}; // end lazy_is_different
-
 template <class From, class To>
 using is_convertible = ::cuda::std::is_convertible<From, To>;
 
@@ -202,7 +190,7 @@ struct disable_if_convertible : disable_if<is_convertible<T1, T2>::value, T>
 {};
 
 template <typename T1, typename T2, typename Result = void>
-struct enable_if_different : enable_if<is_different<T1, T2>::value, Result>
+struct enable_if_different : enable_if<!::cuda::std::is_same<T1, T2>::value, Result>
 {};
 
 template <typename T>
