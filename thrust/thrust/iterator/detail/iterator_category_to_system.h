@@ -49,14 +49,14 @@ struct device_iterator_category_to_backend_system;
 template <typename Category>
 struct iterator_category_to_system
     // convertible to host iterator?
-    : eval_if<or_<is_convertible<Category, thrust::input_host_iterator_tag>,
-                  is_convertible<Category, thrust::output_host_iterator_tag>>::value,
+    : eval_if<or_<::cuda::std::is_convertible<Category, thrust::input_host_iterator_tag>,
+                  ::cuda::std::is_convertible<Category, thrust::output_host_iterator_tag>>::value,
 
               detail::identity_<thrust::host_system_tag>,
 
               // convertible to device iterator?
-              eval_if<or_<is_convertible<Category, thrust::input_device_iterator_tag>,
-                          is_convertible<Category, thrust::output_device_iterator_tag>>::value,
+              eval_if<or_<::cuda::std::is_convertible<Category, thrust::input_device_iterator_tag>,
+                          ::cuda::std::is_convertible<Category, thrust::output_device_iterator_tag>>::value,
 
                       detail::identity_<thrust::device_system_tag>,
 

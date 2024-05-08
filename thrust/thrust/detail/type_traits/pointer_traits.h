@@ -350,13 +350,13 @@ struct pointer_traits<const void*>
 
 template <typename FromPtr, typename ToPtr>
 struct is_pointer_system_convertible
-    : thrust::detail::is_convertible<typename iterator_system<FromPtr>::type, typename iterator_system<ToPtr>::type>
+    : ::cuda::std::is_convertible<typename iterator_system<FromPtr>::type, typename iterator_system<ToPtr>::type>
 {};
 
 template <typename FromPtr, typename ToPtr>
 struct is_pointer_convertible
     : thrust::detail::and_<
-        thrust::detail::is_convertible<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>,
+        ::cuda::std::is_convertible<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>,
         is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 

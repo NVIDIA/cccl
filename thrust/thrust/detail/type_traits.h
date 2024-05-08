@@ -76,12 +76,10 @@ template <typename T>
 struct is_device_reference<thrust::device_reference<T>> : public true_type
 {};
 
-template <class From, class To>
-using is_convertible = ::cuda::std::is_convertible<From, To>;
-
 template <typename T1, typename T2>
 struct is_one_convertible_to_the_other
-    : public integral_constant<bool, is_convertible<T1, T2>::value || is_convertible<T2, T1>::value>
+    : public integral_constant<bool,
+                               ::cuda::std::is_convertible<T1, T2>::value || ::cuda::std::is_convertible<T2, T1>::value>
 {};
 
 // mpl stuff
@@ -179,14 +177,14 @@ struct lazy_disable_if : lazy_enable_if<!condition, T>
 {};
 
 template <typename T1, typename T2, typename T = void>
-struct enable_if_convertible : enable_if<is_convertible<T1, T2>::value, T>
+struct enable_if_convertible : enable_if<::cuda::std::is_convertible<T1, T2>::value, T>
 {};
 
 template <typename T1, typename T2, typename T = void>
 using enable_if_convertible_t = typename enable_if_convertible<T1, T2, T>::type;
 
 template <typename T1, typename T2, typename T = void>
-struct disable_if_convertible : disable_if<is_convertible<T1, T2>::value, T>
+struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::value, T>
 {};
 
 template <typename T1, typename T2, typename Result = void>
@@ -194,7 +192,7 @@ struct enable_if_different : enable_if<!::cuda::std::is_same<T1, T2>::value, Res
 {};
 
 template <typename T>
-struct is_numeric : and_<is_convertible<int, T>, is_convertible<T, int>>
+struct is_numeric : and_<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
 {}; // end is_numeric
 
 template <typename>

@@ -244,7 +244,7 @@ struct device_generate_functor
 
 template <typename System, typename Generator>
 struct generate_functor
-    : thrust::detail::eval_if<thrust::detail::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
                               thrust::detail::identity_<host_generate_functor<Generator>>,
                               thrust::detail::identity_<device_generate_functor<Generator>>>
 {};
@@ -421,7 +421,7 @@ struct device_destroy_functor
 
 template <typename System, typename T>
 struct destroy_functor
-    : thrust::detail::eval_if<thrust::detail::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
                               thrust::detail::identity_<host_destroy_functor<T>>,
                               thrust::detail::identity_<device_destroy_functor<T>>>
 {};

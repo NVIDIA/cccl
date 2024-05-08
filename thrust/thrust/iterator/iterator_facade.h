@@ -257,7 +257,7 @@ class iterator_core_access
   {
     // dispatch the implementation of this method upon whether or not
     // Facade2 is convertible to Facade1
-    return distance_from(f1, f2, typename thrust::detail::is_convertible<Facade2, Facade1>::type());
+    return distance_from(f1, f2, typename ::cuda::std::is_convertible<Facade2, Facade1>::type());
   }
 
   //
