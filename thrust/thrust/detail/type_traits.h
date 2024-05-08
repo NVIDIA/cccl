@@ -66,12 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct remove_cv
-{
-  typedef ::cuda::std::__remove_const_t<::cuda::std::__remove_volatile_t<T>> type;
-}; // end remove_cv
-
-template <typename T>
 struct is_reference : public false_type
 {};
 template <typename T>
@@ -338,7 +332,7 @@ template <typename T>
 struct make_unsigned_base
 {
   // remove cv
-  typedef typename remove_cv<T>::type remove_cv_t;
+  using remove_cv_t = ::cuda::std::__remove_cv_t<T>;
 
   // get the simple unsigned type
   typedef typename make_unsigned_simple<remove_cv_t>::type unsigned_remove_cv_t;

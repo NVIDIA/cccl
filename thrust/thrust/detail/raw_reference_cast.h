@@ -77,7 +77,7 @@ struct raw_reference_impl : add_reference<T>
 template <typename T>
 struct raw_reference_impl<
   T,
-  typename thrust::detail::enable_if<is_wrapped_reference<typename remove_cv<T>::type>::value>::type>
+  typename thrust::detail::enable_if<is_wrapped_reference<::cuda::std::__remove_cv_t<T>>::value>::type>
 {
   typedef typename add_reference<typename pointer_element<typename T::pointer>::type>::type type;
 };
@@ -106,7 +106,7 @@ namespace raw_reference_detail
 // wrapped references are unwrapped using raw_reference, otherwise, return T
 template <typename T>
 struct raw_reference_tuple_helper
-    : eval_if<is_unwrappable<typename remove_cv<T>::type>::value, raw_reference<T>, identity_<T>>
+    : eval_if<is_unwrappable<::cuda::std::__remove_cv_t<T>>::value, raw_reference<T>, identity_<T>>
 {};
 
 // recurse on tuples

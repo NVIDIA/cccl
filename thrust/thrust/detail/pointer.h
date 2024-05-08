@@ -90,7 +90,7 @@ struct pointer_base
   // note that we remove_cv from the Element type to get the value_type
   typedef typename thrust::detail::eval_if<::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
                                            thrust::detail::identity_<void>,
-                                           thrust::detail::remove_cv<Element>>::type value_type;
+                                           ::cuda::std::remove_cv<Element>>::type value_type;
 
   // if no Derived type is given, just use pointer
   typedef typename thrust::detail::eval_if<thrust::detail::is_same<Derived, use_default>::value,
