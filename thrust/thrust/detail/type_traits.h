@@ -76,23 +76,6 @@ template <typename T>
 struct is_device_reference<thrust::device_reference<T>> : public true_type
 {};
 
-// NB: Careful with reference to void.
-template <typename _Tp, bool = (::cuda::std::is_void<_Tp>::value || ::cuda::std::is_reference<_Tp>::value)>
-struct __add_reference_helper
-{
-  typedef _Tp& type;
-};
-
-template <typename _Tp>
-struct __add_reference_helper<_Tp, true>
-{
-  typedef _Tp type;
-};
-
-template <typename _Tp>
-struct add_reference : public __add_reference_helper<_Tp>
-{};
-
 template <typename T>
 struct remove_reference
 {
@@ -383,7 +366,7 @@ class is_assignable
   } no_type;
 
   template <typename T>
-  static typename add_reference<T>::type declval();
+  static ::cuda::std::__add_lvalue_reference_t<T> declval();
 
   template <size_t>
   struct helper
@@ -409,8 +392,8 @@ struct is_assignable : integral_constant<bool, is_assignable_ns::is_assignable<T
 
 template <typename T>
 struct is_copy_assignable
-    : is_assignable<typename add_reference<T>::type,
-                    typename add_reference<typename ::cuda::std::add_const<T>::type>::type>
+    : is_assignable<::cuda::std::__add_lvalue_reference_t<T>,
+                    ::cuda::std::__add_lvalue_reference_t<typename ::cuda::std::add_const<T>::type>>
 {};
 
 template <typename T1, typename T2, typename Enable = void>

@@ -225,7 +225,7 @@ template <typename T>
 struct pointer_to_param
     : thrust::detail::eval_if<::cuda::std::is_void<T>::value,
                               thrust::detail::identity_<capture_address<T>>,
-                              thrust::detail::add_reference<T>>
+                              ::cuda::std::add_lvalue_reference<T>>
 {};
 
 } // namespace pointer_traits_detail

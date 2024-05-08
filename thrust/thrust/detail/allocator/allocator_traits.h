@@ -328,7 +328,7 @@ struct allocator_system
 
   // the type that get returns
   typedef typename eval_if<allocator_traits_detail::has_member_system<Alloc>::value, // if Alloc.system() exists
-                           add_reference<type>, // then get() needs to return a reference
+                           ::cuda::std::add_lvalue_reference<type>, // then get() needs to return a reference
                            identity_<type> // else get() needs to return a value
                            >::type get_result_type;
 

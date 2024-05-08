@@ -75,7 +75,7 @@ struct iterator_adaptor_base
   typedef typename ia_dflt_help<Reference,
                                 thrust::detail::eval_if<thrust::detail::is_same<Value, use_default>::value,
                                                         thrust::iterator_reference<Base>,
-                                                        thrust::detail::add_reference<Value>>>::type reference;
+                                                        ::cuda::std::add_lvalue_reference<Value>>>::type reference;
 
   typedef typename ia_dflt_help<Difference, iterator_difference<Base>>::type difference;
 

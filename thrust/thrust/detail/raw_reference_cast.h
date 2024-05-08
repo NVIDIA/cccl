@@ -71,7 +71,7 @@ namespace raw_reference_detail
 {
 
 template <typename T, typename Enable = void>
-struct raw_reference_impl : add_reference<T>
+struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 {};
 
 template <typename T>
@@ -79,7 +79,7 @@ struct raw_reference_impl<
   T,
   typename thrust::detail::enable_if<is_wrapped_reference<::cuda::std::__remove_cv_t<T>>::value>::type>
 {
-  typedef typename add_reference<typename pointer_element<typename T::pointer>::type>::type type;
+  typedef ::cuda::std::__add_lvalue_reference_t<typename pointer_element<typename T::pointer>::type> type;
 };
 
 } // namespace raw_reference_detail
@@ -138,7 +138,7 @@ private:
 public:
   typedef typename eval_if<is_unwrappable<tuple_type>::value,
                            raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
-                           add_reference<tuple_type>>::type type;
+                           ::cuda::std::add_lvalue_reference<tuple_type>>::type type;
 };
 
 template <typename... Ts>
@@ -149,13 +149,6 @@ private:
 
 public:
   typedef typename raw_reference_detail::raw_reference_tuple_helper<tuple_type>::type type;
-
-  // XXX figure out why is_unwrappable seems to be broken for tuple_of_iterator_references
-  // typedef typename eval_if<
-  //  is_unwrappable<tuple_type>::value,
-  //  raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
-  //  add_reference<tuple_type>
-  //>::type type;
 };
 
 } // namespace detail
