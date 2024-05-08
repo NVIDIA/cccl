@@ -191,6 +191,9 @@ void kernel_invoker()
   validate_pinned<unsigned int, bitwise_atomic_testers>();
   validate_pinned<unsigned long, bitwise_atomic_testers>();
   validate_pinned<unsigned long long, bitwise_atomic_testers>();
+
+  validate_pinned<float, arithmetic_atomic_testers>();
+  validate_pinned<double, arithmetic_atomic_testers>();
 }
 
 int main(int arg, char** argv)
