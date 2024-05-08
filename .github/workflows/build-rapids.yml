@@ -86,7 +86,7 @@ jobs:
         curl -fsSL -o- "https://raw.githubusercontent.com/rapidsai/rapids-cmake/${rapids_branch}/rapids-cmake/cpm/versions.json" \
           | jq -r '.packages.CCCL *= {"version": "2.5.0", "git_url": "${{ github.repositoryUrl }}", "git_tag": "${{ github.ref_name }}"}' \
           | jq -r "(.packages.CCCL.patches[] | select(.file == \"cccl/revert_pr_211.diff\")).file = \"${HOME}/rapids-cmake-revert_pr_211.diff\"" \
-          | jq -r '.packages.cuco *= {"git_url": "https://github.com/trxcllnt/cuCollections.git", "git_tag": "rapids-${rapids_version}-cccl-2.5.0"}' \
+          | jq -r ".packages.cuco *= {\"git_url\": \"https://github.com/trxcllnt/cuCollections.git\", \"git_tag\": \"rapids-${rapids_version}-cccl-2.5.0\"}" \
           | tee ~/rapids-cmake-override-versions.json;
 
         ###
