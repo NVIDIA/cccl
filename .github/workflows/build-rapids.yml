@@ -69,6 +69,10 @@ jobs:
 
         # Use the miscco/cudf fork with fixes for latest CCCL (https://github.com/rapidsai/cudf/pull/15552)
         sudo yq -i '(.repos[] | select(.name == "cudf") | .git) *= {"upstream": "miscco", "tag": "fix_cccl_compat"}' /opt/rapids-build-utils/manifest.yaml;
+        # Use the trxcllnt/cuml fork with fixes for latest CCCL (https://github.com/rapidsai/cuml/pull/5886)
+        sudo yq -i '(.repos[] | select(.name == "cuml") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
+        # Use the trxcllnt/cugraph fork with fixes for latest CCCL (https://github.com/rapidsai/cugraph/pull/4404)
+        sudo yq -i '(.repos[] | select(.name == "cugraph") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
 
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
@@ -87,7 +91,7 @@ jobs:
         curl -fsSL -o- "https://raw.githubusercontent.com/rapidsai/rapids-cmake/${rapids_branch}/rapids-cmake/cpm/versions.json" \
           | jq -r ".packages.CCCL *= {\"version\": \"2.5.0\", \"git_url\": \"${cccl_url/git:/https:}\", \"git_tag\": \"${{ github.ref_name }}\"}" \
           | jq -r "(.packages.CCCL.patches[] | select(.file == \"cccl/revert_pr_211.diff\")).file = \"${HOME}/rapids-cmake-revert_pr_211.diff\"" \
-          | jq -r ".packages.cuco *= {\"git_url\": \"https://github.com/trxcllnt/cuCollections.git\", \"git_tag\": \"rapids-${rapids_version}-cccl-2.5.0\"}" \
+          | jq -r ".packages.cuco *= {\"git_url\": \"https://github.com/trxcllnt/cuCollections.git\", \"git_tag\": \"rapids-${rapids_version}-cccl-2.5.0\", \"always_download\": true}" \
           | tee ~/rapids-cmake-override-versions.json;
 
         ###
