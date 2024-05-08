@@ -66,13 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct is_reference : public false_type
-{};
-template <typename T>
-struct is_reference<T&> : public true_type
-{};
-
-template <typename T>
 struct is_proxy_reference : public false_type
 {};
 
@@ -84,7 +77,7 @@ struct is_device_reference<thrust::device_reference<T>> : public true_type
 {};
 
 // NB: Careful with reference to void.
-template <typename _Tp, bool = (::cuda::std::is_void<_Tp>::value || is_reference<_Tp>::value)>
+template <typename _Tp, bool = (::cuda::std::is_void<_Tp>::value || ::cuda::std::is_reference<_Tp>::value)>
 struct __add_reference_helper
 {
   typedef _Tp& type;
