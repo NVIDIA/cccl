@@ -9,10 +9,10 @@
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
-#include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cassert>
 
-#include "helpers.h"
+#include "../helpers.h"
 
 template <int Operand>
 struct store_tester
@@ -20,7 +20,7 @@ struct store_tester
   template <typename A>
   __host__ __device__ static void initialize(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     a.store(static_cast<T>(Operand));
   }
@@ -28,7 +28,7 @@ struct store_tester
   template <typename A>
   __host__ __device__ static void validate(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Operand));
   }
@@ -40,7 +40,7 @@ struct exchange_tester
   template <typename A>
   __host__ __device__ static void initialize(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.exchange(static_cast<T>(Operand)) == static_cast<T>(PreviousValue));
   }
@@ -48,7 +48,7 @@ struct exchange_tester
   template <typename A>
   __host__ __device__ static void validate(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Operand));
   }
@@ -64,7 +64,7 @@ struct strong_cas_tester
   template <typename A>
   __host__ __device__ static void initialize(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T    = decltype(a.load());
     T expected = static_cast<T>(Expected);
     assert(a.compare_exchange_strong(expected, static_cast<T>(Desired)) == ShouldSucceed);
@@ -74,7 +74,7 @@ struct strong_cas_tester
   template <typename A>
   __host__ __device__ static void validate(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Result));
   }
@@ -90,7 +90,7 @@ struct weak_cas_tester
   template <typename A>
   __host__ __device__ static void initialize(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T    = decltype(a.load());
     T expected = static_cast<T>(Expected);
     if (!ShouldSucceed)
@@ -108,7 +108,7 @@ struct weak_cas_tester
   template <typename A>
   __host__ __device__ static void validate(A& v)
   {
-    cuda::std::atomic_ref<A> a(v);
+    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Result));
   }
@@ -121,7 +121,7 @@ struct weak_cas_tester
     template <typename A>                                            \
     __host__ __device__ static void initialize(A& v)                 \
     {                                                                \
-      cuda::std::atomic_ref<A> a(v);                                 \
+      cuda::atomic_ref<A, cuda::thread_scope_system> a(v);           \
       using T = decltype(a.load());                                  \
       assert(a.operation(Operand) == static_cast<T>(PreviousValue)); \
     }                                                                \
@@ -129,7 +129,7 @@ struct weak_cas_tester
     template <typename A>                                            \
     __host__ __device__ static void validate(A& v)                   \
     {                                                                \
-      cuda::std::atomic_ref<A> a(v);                                 \
+      cuda::atomic_ref<A, cuda::thread_scope_system> a(v);           \
       using T = decltype(a.load());                                  \
       assert(a.load() == static_cast<T>(ExpectedValue));             \
     }                                                                \
@@ -141,6 +141,9 @@ ATOMIC_TESTER(fetch_sub);
 ATOMIC_TESTER(fetch_and);
 ATOMIC_TESTER(fetch_or);
 ATOMIC_TESTER(fetch_xor);
+
+ATOMIC_TESTER(fetch_min);
+ATOMIC_TESTER(fetch_max);
 
 using basic_testers =
   tester_list<store_tester<0>,
@@ -155,7 +158,12 @@ using basic_testers =
               exchange_tester<-12, 17>>;
 
 using arithmetic_atomic_testers =
-  append<basic_testers, fetch_add_tester<17, 13, 30>, fetch_sub_tester<30, 21, 9>, fetch_sub_tester<9, 17, -8>>;
+  append<basic_testers,
+         fetch_add_tester<17, 13, 30>,
+         fetch_sub_tester<30, 21, 9>,
+         fetch_min_tester<9, 5, 5>,
+         fetch_max_tester<5, 9, 9>,
+         fetch_sub_tester<9, 17, -8>>;
 
 using bitwise_atomic_testers =
   append<arithmetic_atomic_testers,
@@ -168,22 +176,6 @@ using bitwise_atomic_testers =
 void kernel_invoker()
 {
 // todo
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_pinned<signed char, arithmetic_atomic_testers>();
-  validate_pinned<signed short, arithmetic_atomic_testers>();
-#endif
-  validate_pinned<signed int, arithmetic_atomic_testers>();
-  validate_pinned<signed long, arithmetic_atomic_testers>();
-  validate_pinned<signed long long, arithmetic_atomic_testers>();
-
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_pinned<unsigned char, bitwise_atomic_testers>();
-  validate_pinned<unsigned short, bitwise_atomic_testers>();
-#endif
-  validate_pinned<unsigned int, bitwise_atomic_testers>();
-  validate_pinned<unsigned long, bitwise_atomic_testers>();
-  validate_pinned<unsigned long long, bitwise_atomic_testers>();
-
 #ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
   validate_pinned<signed char, arithmetic_atomic_testers>();
   validate_pinned<signed short, arithmetic_atomic_testers>();
