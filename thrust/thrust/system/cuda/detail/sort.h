@@ -314,7 +314,7 @@ namespace __smart_sort
 
 template <class Key, class CompareOp>
 struct can_use_primitive_sort
-    : thrust::detail::and_<thrust::detail::is_arithmetic<Key>,
+    : thrust::detail::and_<::cuda::std::is_arithmetic<Key>,
                            thrust::detail::or_<thrust::detail::is_same<CompareOp, thrust::less<Key>>,
                                                thrust::detail::is_same<CompareOp, thrust::greater<Key>>>>
 {};

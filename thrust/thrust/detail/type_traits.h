@@ -48,22 +48,6 @@ using true_type         = ::cuda::std::true_type;
 using false_type        = ::cuda::std::false_type;
 
 template <typename T>
-struct is_arithmetic : public ::cuda::std::is_integral<T>
-{};
-template <>
-struct is_arithmetic<float> : public true_type
-{};
-template <>
-struct is_arithmetic<double> : public true_type
-{};
-template <>
-struct is_arithmetic<const float> : public true_type
-{};
-template <>
-struct is_arithmetic<const double> : public true_type
-{};
-
-template <typename T>
 struct is_pointer : public false_type
 {};
 template <typename T>
@@ -92,7 +76,7 @@ struct is_non_bool_integral<bool> : public false_type
 {};
 
 template <typename T>
-struct is_non_bool_arithmetic : public is_arithmetic<T>
+struct is_non_bool_arithmetic : public ::cuda::std::is_arithmetic<T>
 {};
 template <>
 struct is_non_bool_arithmetic<bool> : public false_type
@@ -102,7 +86,7 @@ template <typename T>
 struct is_pod
     : public integral_constant<bool,
                                is_void<T>::value || is_pointer<T>::value
-                                 || is_arithmetic<T>::value
+                                 || ::cuda::std::is_arithmetic<T>::value
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_CLANG)
                                  // use intrinsic type traits
                                  || __is_pod(T)

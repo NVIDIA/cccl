@@ -221,7 +221,7 @@ struct ReduceAgent
 
     ATTEMPT_VECTORIZATION = (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
                          && thrust::detail::is_pointer<InputIt>::value
-                         && thrust::detail::is_arithmetic<typename thrust::detail::remove_cv<T>>::value
+                         && ::cuda::std::is_arithmetic<typename thrust::detail::remove_cv<T>>::value
   };
 
   struct impl

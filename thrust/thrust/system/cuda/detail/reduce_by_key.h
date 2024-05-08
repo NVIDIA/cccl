@@ -259,7 +259,7 @@ struct ReduceByKeyAgent
     // Whether or not the scan operation has a zero-valued identity value
     // (true if we're performing addition on a primitive type)
     HAS_IDENTITY_ZERO =
-      thrust::detail::is_same<ReductionOp, plus<value_type>>::value && thrust::detail::is_arithmetic<value_type>::value
+      thrust::detail::is_same<ReductionOp, plus<value_type>>::value && ::cuda::std::is_arithmetic<value_type>::value
   };
 
   struct impl
