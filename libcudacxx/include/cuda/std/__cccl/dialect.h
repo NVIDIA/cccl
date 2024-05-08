@@ -84,4 +84,10 @@
 #  define _CCCL_ELSE_IF_CONSTEXPR else if
 #endif // _CCCL_STD_VER <= 2014
 
+#if _CCCL_STD_VER >= 2017
+#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
+#endif // _CCCL_STD_VER <= 2014
+
 #endif // __CCCL_DIALECT_H

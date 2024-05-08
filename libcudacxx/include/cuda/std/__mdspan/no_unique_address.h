@@ -88,14 +88,13 @@ struct __no_unique_address_emulation
 // This doesn't work if _Tp is final, of course, but we're not using anything
 // like that currently. That kind of thing could be added pretty easily though
 template <class _Tp, size_t _Disambiguator>
-struct __no_unique_address_emulation<
-  _Tp,
-  _Disambiguator,
-  _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) &&
-                          // If the type isn't trivially destructible, its destructor
-                          // won't be called at the right time, so don't use this
-                          // specialization
-                          _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>>
+struct __no_unique_address_emulation<_Tp,
+                                     _Disambiguator,
+                                     _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_empty, _Tp) &&
+                                                             // If the type isn't trivially destructible, its destructor
+                                                             // won't be called at the right time, so don't use this
+                                                             // specialization
+                                                             _CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>>
     :
 #  ifdef __MDSPAN_COMPILER_MSVC
     // MSVC doesn't allow you to access public static member functions of a type

@@ -98,7 +98,7 @@ struct incrementable_traits
 {};
 
 template <class _Tp>
-struct incrementable_traits<_Tp*, enable_if_t<_LIBCUDACXX_TRAIT(is_object, _Tp)>>
+struct incrementable_traits<_Tp*, enable_if_t<_CCCL_TRAIT(is_object, _Tp)>>
 {
   using difference_type = ptrdiff_t;
 };
@@ -125,16 +125,16 @@ _LIBCUDACXX_INLINE_VAR constexpr bool
     integral<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>;
 
 template <class _Tp>
-struct incrementable_traits<_Tp,
-                            enable_if_t<!_LIBCUDACXX_TRAIT(is_pointer, _Tp) && !_LIBCUDACXX_TRAIT(is_const, _Tp)
-                                        && __has_member_difference_type<_Tp>>>
+struct incrementable_traits<
+  _Tp,
+  enable_if_t<!_CCCL_TRAIT(is_pointer, _Tp) && !_CCCL_TRAIT(is_const, _Tp) && __has_member_difference_type<_Tp>>>
 {
   using difference_type = typename _Tp::difference_type;
 };
 
 template <class _Tp>
 struct incrementable_traits<_Tp,
-                            enable_if_t<!_LIBCUDACXX_TRAIT(is_pointer, _Tp) && !_LIBCUDACXX_TRAIT(is_const, _Tp)
+                            enable_if_t<!_CCCL_TRAIT(is_pointer, _Tp) && !_CCCL_TRAIT(is_const, _Tp)
                                         && !__has_member_difference_type<_Tp> && __has_integral_minus<_Tp>>>
 {
   using difference_type = make_signed_t<decltype(declval<_Tp>() - declval<_Tp>())>;

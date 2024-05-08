@@ -158,7 +158,7 @@ Types:
 #  include <cstdint>
 #endif // _CCCL_COMPILER_NVRTC
 
-#include <cuda/std/detail/libcxx/include/__pragma_push>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -200,6 +200,6 @@ using ::uintmax_t;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/detail/libcxx/include/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX_CSTDINT

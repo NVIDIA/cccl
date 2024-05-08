@@ -36,7 +36,7 @@ template <class _Tp>
 struct __has_allocator_type<_Tp, __void_t<typename _Tp::allocator_type>> : true_type
 {};
 
-template <class _Tp, class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_allocator_type, _Tp)>
+template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
 struct __uses_allocator : false_type
 {};
 template <class _Tp, class _Alloc>
@@ -48,7 +48,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v = false;
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v<_Tp, __void_t<typename _Tp::allocator_type>> = true;
 
-template <class _Tp, class _Alloc, bool = _LIBCUDACXX_TRAIT(__has_allocator_type, _Tp)>
+template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
 _LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v = false;
 template <class _Tp, class _Alloc>
 _LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
@@ -57,12 +57,12 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
 
 template <class _Tp, class _Alloc>
 struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator
-    : public integral_constant<bool, _LIBCUDACXX_TRAIT(__uses_allocator, _Tp, _Alloc)>
+    : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
 {};
 
 #if _CCCL_STD_VER >= 2014
 template <class _Tp, class _Alloc>
-_LIBCUDACXX_INLINE_VAR constexpr bool uses_allocator_v = _LIBCUDACXX_TRAIT(__uses_allocator, _Tp, _Alloc);
+_LIBCUDACXX_INLINE_VAR constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
 #endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD

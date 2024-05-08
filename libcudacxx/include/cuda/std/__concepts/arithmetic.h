@@ -35,16 +35,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // [concepts.arithmetic], arithmetic concepts
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT integral = _LIBCUDACXX_TRAIT(is_integral, _Tp);
+_LIBCUDACXX_CONCEPT integral = _CCCL_TRAIT(is_integral, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT signed_integral = integral<_Tp> && _LIBCUDACXX_TRAIT(is_signed, _Tp);
+_LIBCUDACXX_CONCEPT signed_integral = integral<_Tp> && _CCCL_TRAIT(is_signed, _Tp);
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT floating_point = _LIBCUDACXX_TRAIT(is_floating_point, _Tp);
+_LIBCUDACXX_CONCEPT floating_point = _CCCL_TRAIT(is_floating_point, _Tp);
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __libcpp_signed_integer = __libcpp_is_signed_integer<_Tp>::value;

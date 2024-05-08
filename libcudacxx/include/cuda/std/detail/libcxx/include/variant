@@ -408,7 +408,7 @@ namespace __find_detail
 template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t __find_index()
 {
-  constexpr bool __matches[] = {_LIBCUDACXX_TRAIT(is_same, _Tp, _Types)...};
+  constexpr bool __matches[] = {_CCCL_TRAIT(is_same, _Tp, _Types)...};
   size_t __result            = __not_found;
   for (size_t __i = 0; __i < sizeof...(_Types); ++__i)
   {
@@ -672,7 +672,7 @@ private:
   template <class _Visitor, class... _Values>
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __std_visit_exhaustive_visitor_check()
   {
-    static_assert(_LIBCUDACXX_TRAIT(is_invocable, _Visitor, _Values...),
+    static_assert(_CCCL_TRAIT(is_invocable, _Visitor, _Values...),
                   "`std::visit` requires the visitor to be exhaustive.");
   }
 
@@ -1048,7 +1048,7 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _LIBCUDACXX_INLINE_VISIBILITY __move_constructor(__move_constructor&& __that) noexcept(
-    __all<_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Types)...>::value)
+    __all<_CCCL_TRAIT(is_nothrow_move_constructible, _Types)...>::value)
   : __move_constructor(__valueless_t{}) { this->__generic_construct(*this, _CUDA_VSTD::move(__that)); });
 
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_Unavailable, __move_constructor(__move_constructor&&) = delete;);
@@ -1133,12 +1133,12 @@ public:
   }
 
 protected:
-  template <size_t _Ip,
-            class _Tp,
-            class _Arg,
-            enable_if_t<_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg)
-                          || !_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),
-                        int> = 0>
+  template <
+    size_t _Ip,
+    class _Tp,
+    class _Arg,
+    enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Arg) || !_CCCL_TRAIT(is_nothrow_move_constructible, _Tp),
+                int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY void __assign_alt(__alt<_Ip, _Tp>& __a, _Arg&& __arg)
   {
     if (this->index() == _Ip)
@@ -1151,12 +1151,12 @@ protected:
     }
   }
 
-  template <size_t _Ip,
-            class _Tp,
-            class _Arg,
-            enable_if_t<!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg)
-                          && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),
-                        int> = 0>
+  template <
+    size_t _Ip,
+    class _Tp,
+    class _Arg,
+    enable_if_t<!_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Arg) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp),
+                int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY void __assign_alt(__alt<_Ip, _Tp>& __a, _Arg&& __arg)
   {
     if (this->index() == _Ip)
@@ -1216,8 +1216,8 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _Trait::_Available,
   _LIBCUDACXX_INLINE_VISIBILITY __move_assignment&
   operator=(__move_assignment&& __that) noexcept(
-    __all<(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Types)
-           && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Types))...>::value) {
+    __all<(_CCCL_TRAIT(is_nothrow_move_constructible, _Types)
+           && _CCCL_TRAIT(is_nothrow_move_assignable, _Types))...>::value) {
     this->__generic_assign(_CUDA_VSTD::move(__that));
     return *this;
   });
@@ -1334,7 +1334,7 @@ public:
 private:
   inline _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __move_nothrow() const
   {
-    constexpr bool __results[] = {_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Types)...};
+    constexpr bool __results[] = {_CCCL_TRAIT(is_nothrow_move_constructible, _Types)...};
     return this->valueless_by_exception() || __results[this->index()];
   }
 };
@@ -1366,7 +1366,7 @@ using __check_for_narrowing _LIBCUDACXX_NODEBUG_TYPE = typename _If<
 #  ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
 #  endif
-    _LIBCUDACXX_TRAIT(is_arithmetic, _Dest),
+    _CCCL_TRAIT(is_arithmetic, _Dest),
   __narrowing_check,
   __no_narrowing_check>::template _Apply<_Dest, _Source>;
 
@@ -1382,7 +1382,7 @@ struct __overload_bool
 {
   template <class _Up, class _Ap = __remove_cvref_t<_Up>>
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(bool, _Up&&) const
-    -> enable_if_t<_LIBCUDACXX_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
+    -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
 };
 
 template <size_t _Idx>
@@ -1458,8 +1458,8 @@ struct __variant_constraints
   {
     static constexpr size_t _Ip = __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value;
 
-    static constexpr bool __constructible         = _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Arg);
-    static constexpr bool __nothrow_constructible = _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg);
+    static constexpr bool __constructible         = _CCCL_TRAIT(is_constructible, _Tp, _Arg);
+    static constexpr bool __nothrow_constructible = _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Arg);
   };
 
   template <size_t _Ip, class... _Args>
@@ -1467,8 +1467,8 @@ struct __variant_constraints
   {
     using _Tp = variant_alternative_t<_Ip, variant<_Types...>>;
 
-    static constexpr bool __constructible         = _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Args...);
-    static constexpr bool __nothrow_constructible = _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...);
+    static constexpr bool __constructible         = _CCCL_TRAIT(is_constructible, _Tp, _Args...);
+    static constexpr bool __nothrow_constructible = _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...);
   };
 
   template <size_t _Ip, class _Up, class... _Args>
@@ -1476,9 +1476,9 @@ struct __variant_constraints
   {
     using _Tp = variant_alternative_t<_Ip, variant<_Types...>>;
 
-    static constexpr bool __constructible = _LIBCUDACXX_TRAIT(is_constructible, _Tp, initializer_list<_Up>&, _Args...);
+    static constexpr bool __constructible = _CCCL_TRAIT(is_constructible, _Tp, initializer_list<_Up>&, _Args...);
     static constexpr bool __nothrow_constructible =
-      _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, initializer_list<_Up>&, _Args...);
+      _CCCL_TRAIT(is_nothrow_constructible, _Tp, initializer_list<_Up>&, _Args...);
   };
 
   template <class _Arg, class _Tp = __best_match_t<_Arg, _Types...>>
@@ -1487,43 +1487,40 @@ struct __variant_constraints
     static constexpr size_t _Ip = __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value;
 
     static constexpr bool __assignable =
-      _LIBCUDACXX_TRAIT(is_assignable, _Tp&, _Arg) && _LIBCUDACXX_TRAIT(is_constructible, _Tp, _Arg);
+      _CCCL_TRAIT(is_assignable, _Tp&, _Arg) && _CCCL_TRAIT(is_constructible, _Tp, _Arg);
     static constexpr bool __nothrow_assignable =
-      _LIBCUDACXX_TRAIT(is_nothrow_assignable, _Tp&, _Arg) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Arg);
+      _CCCL_TRAIT(is_nothrow_assignable, _Tp&, _Arg) && _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Arg);
   };
 
   template <bool>
   struct __swappable
   {
     static constexpr bool __is_swappable =
-      __all<(_LIBCUDACXX_TRAIT(is_move_constructible, _Types) && _LIBCUDACXX_TRAIT(is_swappable, _Types))...>::value;
+      __all<(_CCCL_TRAIT(is_move_constructible, _Types) && _CCCL_TRAIT(is_swappable, _Types))...>::value;
 
     static constexpr bool __is_nothrow_swappable =
-      __all<(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Types)
-             && _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Types))...>::value;
+      __all<(_CCCL_TRAIT(is_nothrow_move_constructible, _Types) && _CCCL_TRAIT(is_nothrow_swappable, _Types))...>::value;
   };
 };
 } // namespace __variant_detail
 
 template <class... _Types>
 class _LIBCUDACXX_TEMPLATE_VIS variant
-    : private __sfinae_ctor_base<__all<_LIBCUDACXX_TRAIT(is_copy_constructible, _Types)...>::value,
-                                 __all<_LIBCUDACXX_TRAIT(is_move_constructible, _Types)...>::value>
-    , private __sfinae_assign_base<__all<(_LIBCUDACXX_TRAIT(is_copy_constructible, _Types)
-                                          && _LIBCUDACXX_TRAIT(is_copy_assignable, _Types))...>::value,
-                                   __all<(_LIBCUDACXX_TRAIT(is_move_constructible, _Types)
-                                          && _LIBCUDACXX_TRAIT(is_move_assignable, _Types))...>::value>
+    : private __sfinae_ctor_base<__all<_CCCL_TRAIT(is_copy_constructible, _Types)...>::value,
+                                 __all<_CCCL_TRAIT(is_move_constructible, _Types)...>::value>
+    , private __sfinae_assign_base<
+        __all<(_CCCL_TRAIT(is_copy_constructible, _Types) && _CCCL_TRAIT(is_copy_assignable, _Types))...>::value,
+        __all<(_CCCL_TRAIT(is_move_constructible, _Types) && _CCCL_TRAIT(is_move_assignable, _Types))...>::value>
 {
   static_assert(0 < sizeof...(_Types), "variant must consist of at least one alternative.");
 
-  static_assert(__all<!_LIBCUDACXX_TRAIT(is_array, _Types)...>::value,
+  static_assert(__all<!_CCCL_TRAIT(is_array, _Types)...>::value,
                 "variant can not have an array type as an alternative.");
 
-  static_assert(__all<!_LIBCUDACXX_TRAIT(is_reference, _Types)...>::value,
+  static_assert(__all<!_CCCL_TRAIT(is_reference, _Types)...>::value,
                 "variant can not have a reference type as an alternative.");
 
-  static_assert(__all<!_LIBCUDACXX_TRAIT(is_void, _Types)...>::value,
-                "variant can not have a void type as an alternative.");
+  static_assert(__all<!_CCCL_TRAIT(is_void, _Types)...>::value, "variant can not have a void type as an alternative.");
 
   using __first_type  = variant_alternative_t<0, variant>;
   using __constraints = __variant_detail::__variant_constraints<_Types...>;
@@ -1532,8 +1529,7 @@ public:
   // Needs to be dependent to guard against incomplete types
   template <bool _Dummy = true,
             class       = enable_if_t<__dependent_type<is_default_constructible<__first_type>, _Dummy>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr variant() noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, __first_type))
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr variant() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, __first_type))
       : __impl_(in_place_index<0>)
   {}
 
@@ -1542,8 +1538,7 @@ public:
 
   template <class _Arg>
   using __match_construct =
-    _If<!_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Arg>, variant)
-          && !__is_inplace_type<__remove_cvref_t<_Arg>>::value //
+    _If<!_CCCL_TRAIT(is_same, __remove_cvref_t<_Arg>, variant) && !__is_inplace_type<__remove_cvref_t<_Arg>>::value //
           && !__is_inplace_index<__remove_cvref_t<_Arg>>::value,
         typename __constraints::template __match_construct<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
@@ -1616,7 +1611,7 @@ public:
 
   template <class _Arg>
   using __match_assign =
-    _If<!_LIBCUDACXX_TRAIT(is_same, __remove_cvref_t<_Arg>, variant),
+    _If<!_CCCL_TRAIT(is_same, __remove_cvref_t<_Arg>, variant),
         typename __constraints::template __match_assign<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 
@@ -1649,7 +1644,7 @@ public:
   template <class _Tp,
             class... _Args,
             size_t _Ip = __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
-            enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, _Tp, _Args...), int> = 0>
+            enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Args...), int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _Tp& emplace(_Args&&... __args)
   {
     return __impl_.template __emplace<_Ip>(_CUDA_VSTD::forward<_Args>(__args)...);
@@ -1659,7 +1654,7 @@ public:
             class _Up,
             class... _Args,
             size_t _Ip = __find_detail::__find_unambiguous_index_sfinae<_Tp, _Types...>::value,
-            enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, _Tp, initializer_list<_Up>&, _Args...), int> = 0>
+            enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, initializer_list<_Up>&, _Args...), int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
   {
     return __impl_.template __emplace<_Ip>(__il, _CUDA_VSTD::forward<_Args>(__args)...);
@@ -1730,7 +1725,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS 
 get(variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
+  static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
   return _CUDA_VSTD::__generic_get<_Ip>(__v);
 }
 
@@ -1741,7 +1736,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS 
 get(variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
+  static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
   return _CUDA_VSTD::__generic_get<_Ip>(_CUDA_VSTD::move(__v));
 }
 
@@ -1752,7 +1747,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS 
 get(const variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
+  static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
   return _CUDA_VSTD::__generic_get<_Ip>(__v);
 }
 
@@ -1763,7 +1758,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS 
 get(const variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
+  static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
   return _CUDA_VSTD::__generic_get<_Ip>(_CUDA_VSTD::move(__v));
 }
 
@@ -1771,7 +1766,7 @@ template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Tp&
 get(variant<_Types...>& __v)
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, _Tp), "");
+  static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
@@ -1779,7 +1774,7 @@ template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Tp&&
 get(variant<_Types...>&& __v)
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, _Tp), "");
+  static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
 }
 
@@ -1787,7 +1782,7 @@ template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const _Tp&
 get(const variant<_Types...>& __v)
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, _Tp), "");
+  static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
@@ -1795,7 +1790,7 @@ template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const _Tp&&
 get(const variant<_Types...>&& __v)
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, _Tp), "");
+  static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
 }
 
@@ -1813,7 +1808,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr add_pointer_t<variant_alternative_t<_Ip,
 get_if(variant<_Types...>* __v) noexcept
 {
   static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
+  static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
   return _CUDA_VSTD::__generic_get_if<_Ip>(__v);
 }
 
@@ -1822,21 +1817,21 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr add_pointer_t<const variant_alternative_
 get_if(const variant<_Types...>* __v) noexcept
 {
   static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
+  static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
   return _CUDA_VSTD::__generic_get_if<_Ip>(__v);
 }
 
 template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr add_pointer_t<_Tp> get_if(variant<_Types...>* __v) noexcept
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, _Tp), "");
+  static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr add_pointer_t<const _Tp> get_if(const variant<_Types...>* __v) noexcept
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_void, _Tp), "");
+  static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
@@ -1847,7 +1842,7 @@ struct __convert_to_bool
   _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator()(_T1&& __t1, _T2&& __t2) const
   {
     static_assert(
-      _LIBCUDACXX_TRAIT(
+      _CCCL_TRAIT(
         is_convertible, decltype(_Operator{}(_CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2))), bool),
       "the relational operator does not return a type which is "
       "implicitly convertible to bool");

@@ -10,8 +10,9 @@
 // UNSUPPORTED: windows && pre-sm-70
 
 #include <cuda/std/atomic>
+#include <cuda/std/cassert>
 
-#include "helpers.h"
+#include "../helpers.h"
 
 struct clear
 {
@@ -51,7 +52,7 @@ using atomic_flag_testers = tester_list<clear_tester, clear, test_and_set_tester
 
 void kernel_invoker()
 {
-  validate_not_movable<cuda::std::atomic_flag, atomic_flag_testers>();
+  validate_pinned<cuda::std::atomic_flag, atomic_flag_testers>();
 }
 
 int main(int argc, char** argv)

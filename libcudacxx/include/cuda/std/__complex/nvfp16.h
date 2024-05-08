@@ -82,7 +82,7 @@ public:
 
   template <class _Up,
             __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, value_type, _Up), int>        = 0>
+            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>              = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
       : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
   {}
