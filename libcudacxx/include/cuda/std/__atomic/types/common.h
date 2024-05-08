@@ -43,6 +43,11 @@ using __atomic_storage_is_locked =
 template <typename _Sto>
 using __atomic_storage_is_small = __enable_if_t<__atomic_tag::__atomic_small_tag == __remove_cvref_t<_Sto>::__tag, int>;
 
+template <typename _Tp>
+using __atomic_underlying_t = typename _Tp::__underlying_t;
+template <typename _Tp>
+using __atomic_underlying_remove_cv_t = __remove_cv_t<typename _Tp::__underlying_t>;
+
 // [atomics.types.generic]p1 guarantees _Tp is trivially copyable. Because
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
@@ -65,10 +70,6 @@ __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
     *__to++ = *__from++;
   }
 }
-
-// The 'value_type' of the atomic may be 'volatile blah', so remove the volatile portion for now.
-template <typename _Tp>
-using __atomic_underlying_t = typename _Tp::__underlying_t;
 
 _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rhs, size_t __count)
 {
