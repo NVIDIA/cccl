@@ -175,10 +175,6 @@ struct larger_type
     : thrust::detail::eval_if<(sizeof(T2) > sizeof(T1)), thrust::detail::identity_<T2>, thrust::detail::identity_<T1>>
 {};
 
-template <typename Base, typename Derived, typename Result = void>
-struct enable_if_base_of : ::cuda::std::enable_if<::cuda::std::is_base_of<Base, Derived>::value, Result>
-{};
-
 template <typename T1, typename T2, typename Enable = void>
 struct promoted_numerical_type;
 
