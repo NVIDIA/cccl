@@ -51,9 +51,7 @@ struct generate_random_integer<
 };
 
 template <typename T>
-struct generate_random_integer<
-  T,
-  typename THRUST_NS_QUALIFIER::detail::enable_if<THRUST_NS_QUALIFIER::detail::is_floating_point<T>::value>::type>
+struct generate_random_integer<T, typename ::cuda::std::__enable_if_t<::cuda::std::is_floating_point<T>::value>>
 {
   T operator()(unsigned int i) const
   {
