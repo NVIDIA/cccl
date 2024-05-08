@@ -273,4 +273,3 @@ testing_pool_gpus:
   - 'rtxa6000'
   - 'l4'
   - 'rtx4090'
-  - 'h100'
