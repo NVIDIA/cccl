@@ -66,13 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct is_const : public false_type
-{};
-template <typename T>
-struct is_const<const T> : public true_type
-{};
-
-template <typename T>
 struct is_volatile : public false_type
 {};
 template <typename T>
@@ -401,11 +394,11 @@ struct make_unsigned_base
 
   // add back const, volatile, both, or neither to the simple result
   typedef typename eval_if<
-    is_const<T>::value && is_volatile<T>::value,
+    ::cuda::std::is_const<T>::value && is_volatile<T>::value,
     // add cv back
     add_cv<unsigned_remove_cv_t>,
     // check const & volatile individually
-    eval_if<is_const<T>::value,
+    eval_if<::cuda::std::is_const<T>::value,
             // add c back
             add_const<unsigned_remove_cv_t>,
             eval_if<is_volatile<T>::value,
@@ -534,5 +527,3 @@ using detail::integral_constant;
 using detail::true_type;
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/type_traits/has_trivial_assign.h>
