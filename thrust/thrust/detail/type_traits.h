@@ -52,16 +52,6 @@ struct is_device_ptr : public false_type
 {};
 
 template <typename T>
-struct is_void : public false_type
-{};
-template <>
-struct is_void<void> : public true_type
-{};
-template <>
-struct is_void<const void> : public true_type
-{};
-
-template <typename T>
 struct is_non_bool_integral : public ::cuda::std::is_integral<T>
 {};
 template <>
@@ -78,7 +68,7 @@ struct is_non_bool_arithmetic<bool> : public false_type
 template <typename T>
 struct is_pod
     : public integral_constant<bool,
-                               is_void<T>::value || ::cuda::std::is_pointer<T>::value
+                               ::cuda::std::is_void<T>::value || ::cuda::std::is_pointer<T>::value
                                  || ::cuda::std::is_arithmetic<T>::value
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_CLANG)
                                  // use intrinsic type traits
@@ -187,7 +177,7 @@ struct is_device_reference<thrust::device_reference<T>> : public true_type
 {};
 
 // NB: Careful with reference to void.
-template <typename _Tp, bool = (is_void<_Tp>::value || is_reference<_Tp>::value)>
+template <typename _Tp, bool = (::cuda::std::is_void<_Tp>::value || is_reference<_Tp>::value)>
 struct __add_reference_helper
 {
   typedef _Tp& type;

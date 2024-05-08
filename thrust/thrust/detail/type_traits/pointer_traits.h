@@ -223,7 +223,7 @@ struct capture_address
 // metafunction to compute the type of pointer_to's parameter below
 template <typename T>
 struct pointer_to_param
-    : thrust::detail::eval_if<thrust::detail::is_void<T>::value,
+    : thrust::detail::eval_if<::cuda::std::is_void<T>::value,
                               thrust::detail::identity_<capture_address<T>>,
                               thrust::detail::add_reference<T>>
 {};
