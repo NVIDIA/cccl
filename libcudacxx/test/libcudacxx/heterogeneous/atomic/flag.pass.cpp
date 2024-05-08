@@ -12,7 +12,7 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-#include "helpers.h"
+#include "../helpers.h"
 
 struct clear
 {

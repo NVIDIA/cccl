@@ -43,13 +43,13 @@ template <class _Tp>
 struct __is_complex_float
 {
   static constexpr auto value =
-    _LIBCUDACXX_TRAIT(is_floating_point, _Tp) || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
+    _CCCL_TRAIT(is_floating_point, _Tp) || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
 };
 
 template <class _Tp>
 struct __is_complex_arithmetic
 {
-  static constexpr auto value = _LIBCUDACXX_TRAIT(is_arithmetic, _Tp) || __is_complex_float<_Tp>::value;
+  static constexpr auto value = _CCCL_TRAIT(is_arithmetic, _Tp) || __is_complex_float<_Tp>::value;
 };
 
 template <class _Tp>

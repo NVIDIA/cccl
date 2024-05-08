@@ -118,7 +118,7 @@ template <class _Tp, class _Up>
 struct __compressed_pair<
   _Tp,
   _Up,
-  _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && !_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+  _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_empty, _Tp) && !_CCCL_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
     : private _Tp
 {
   _Up __u_val;
@@ -163,7 +163,7 @@ template <class _Tp, class _Up>
 struct __compressed_pair<
   _Tp,
   _Up,
-  _CUDA_VSTD::enable_if_t<!_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+  _CUDA_VSTD::enable_if_t<!_CCCL_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _CCCL_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
     : private _Up
 {
   _Tp __t_val;
@@ -209,7 +209,7 @@ template <class _Tp, class _Up>
 struct __compressed_pair<
   _Tp,
   _Up,
-  _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+  _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _CCCL_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
 // We need to use the __no_unique_address_emulation wrapper here to avoid
 // base class ambiguities.
 #    ifdef __MDSPAN_COMPILER_MSVC

@@ -560,7 +560,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(convertible_to<decltype(__i++), _Ip const&>),
     requires(same_as<iter_reference_t<_Ip>, decltype(*__i++)>),
     requires(constructible_from<_Ip>),
-    requires(_LIBCUDACXX_TRAIT(is_lvalue_reference, iter_reference_t<_Ip>)),
+    requires(_CCCL_TRAIT(is_lvalue_reference, iter_reference_t<_Ip>)),
     requires(same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>)));
 
 template <class _Ip>

@@ -29,7 +29,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/limits>
 
-#include <cuda/std/detail/libcxx/include/__pragma_push>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -124,6 +124,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool in_range(_Up __u) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/detail/libcxx/include/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___UTILITY_CMP_H

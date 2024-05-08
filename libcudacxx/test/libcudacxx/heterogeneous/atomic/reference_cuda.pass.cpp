@@ -12,7 +12,7 @@
 #include <cuda/atomic>
 #include <cuda/std/cassert>
 
-#include "helpers.h"
+#include "../helpers.h"
 
 template <int Operand>
 struct store_tester
@@ -192,21 +192,8 @@ void kernel_invoker()
   validate_pinned<unsigned long, bitwise_atomic_testers>();
   validate_pinned<unsigned long long, bitwise_atomic_testers>();
 
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_pinned<signed char, arithmetic_atomic_testers>();
-  validate_pinned<signed short, arithmetic_atomic_testers>();
-#endif
-  validate_pinned<signed int, arithmetic_atomic_testers>();
-  validate_pinned<signed long, arithmetic_atomic_testers>();
-  validate_pinned<signed long long, arithmetic_atomic_testers>();
-
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_pinned<unsigned char, bitwise_atomic_testers>();
-  validate_pinned<unsigned short, bitwise_atomic_testers>();
-#endif
-  validate_pinned<unsigned int, bitwise_atomic_testers>();
-  validate_pinned<unsigned long, bitwise_atomic_testers>();
-  validate_pinned<unsigned long long, bitwise_atomic_testers>();
+  validate_pinned<float, arithmetic_atomic_testers>();
+  validate_pinned<double, arithmetic_atomic_testers>();
 }
 
 int main(int arg, char** argv)

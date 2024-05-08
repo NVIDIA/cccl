@@ -195,17 +195,16 @@ template <class _Tp, size_t _Extent>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 
 template <class _From, class _To>
-_LIBCUDACXX_CONCEPT __span_array_convertible = _LIBCUDACXX_TRAIT(is_convertible, _From (*)[], _To (*)[]);
+_LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 template <class _Range, class _ElementType>
 _LIBCUDACXX_CONCEPT __span_compatible_range =
   _CUDA_VRANGES::contiguous_range<_Range> && _CUDA_VRANGES::sized_range<_Range>
-  && (_CUDA_VRANGES::borrowed_range<_Range> || _LIBCUDACXX_TRAIT(is_const, _ElementType))
+  && (_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))
   && !__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>
-  && !_LIBCUDACXX_TRAIT(is_array, remove_cvref_t<_Range>)
-  && _LIBCUDACXX_TRAIT(
-    is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]);
+  && !_CCCL_TRAIT(is_array, remove_cvref_t<_Range>)
+  && _CCCL_TRAIT(is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]);
 
 #    if _CCCL_STD_VER >= 2020
 template <class _It, class _Tp>
@@ -214,7 +213,7 @@ _LIBCUDACXX_CONCEPT __span_compatible_iterator =
 
 template <class _Sentinel, class _It>
 _LIBCUDACXX_CONCEPT __span_compatible_sentinel_for =
-  sized_sentinel_for<_Sentinel, _It> && !_LIBCUDACXX_TRAIT(is_convertible, _Sentinel, size_t);
+  sized_sentinel_for<_Sentinel, _It> && !_CCCL_TRAIT(is_convertible, _Sentinel, size_t);
 #    else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _It, class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -226,9 +225,9 @@ template <class _It, class _Tp>
 _LIBCUDACXX_CONCEPT __span_compatible_iterator = _LIBCUDACXX_FRAGMENT(__span_compatible_iterator_, _It, _Tp);
 
 template <class _Sentinel, class _It>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__span_compatible_sentinel_for_,
-                             requires()(requires(sized_sentinel_for<_Sentinel, _It>),
-                                        requires(!_LIBCUDACXX_TRAIT(is_convertible, _Sentinel, size_t))));
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __span_compatible_sentinel_for_,
+  requires()(requires(sized_sentinel_for<_Sentinel, _It>), requires(!_CCCL_TRAIT(is_convertible, _Sentinel, size_t))));
 
 template <class _Sentinel, class _It>
 _LIBCUDACXX_CONCEPT __span_compatible_sentinel_for =
@@ -249,7 +248,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_span_compatible_container<
     // is not a specialization of array
     enable_if_t<!__is_std_array<_Tp>, nullptr_t>,
     // is_array_v<Container> is false,
-    enable_if_t<!_LIBCUDACXX_TRAIT(is_array, _Tp), nullptr_t>,
+    enable_if_t<!_CCCL_TRAIT(is_array, _Tp), nullptr_t>,
     // data(cont) and size(cont) are well formed
     decltype(data(declval<_Tp>())),
     decltype(size(declval<_Tp>())),

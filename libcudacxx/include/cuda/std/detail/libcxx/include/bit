@@ -70,7 +70,7 @@ namespace std {
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-#include <cuda/std/detail/libcxx/include/__pragma_push>
+_CCCL_PUSH_MACROS
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  include <intrin.h>
@@ -810,6 +810,6 @@ enum class endian
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/detail/libcxx/include/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX_BIT
