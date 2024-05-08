@@ -203,9 +203,8 @@ _CCCL_HOST_DEVICE
 }
 
 template <typename FromSystem, typename Allocator, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE
-  typename enable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
-                     Pointer>::type
+_CCCL_HOST_DEVICE ::cuda::std::
+  __enable_if_t<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value, Pointer>
   copy_construct_range(thrust::execution_policy<FromSystem>& from_system,
                        Allocator& a,
                        InputIterator first,
@@ -216,9 +215,8 @@ _CCCL_HOST_DEVICE
 }
 
 template <typename FromSystem, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE
-  typename enable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
-                     Pointer>::type
+_CCCL_HOST_DEVICE ::cuda::std::
+  __enable_if_t<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value, Pointer>
   copy_construct_range_n(
     thrust::execution_policy<FromSystem>& from_system, Allocator& a, InputIterator first, Size n, Pointer result)
 {

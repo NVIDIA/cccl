@@ -110,12 +110,11 @@ struct counting_iterator_equal
 
 // specialization for floating point equality
 template <typename Difference, typename Incrementable1, typename Incrementable2>
-struct counting_iterator_equal<
-  Difference,
-  Incrementable1,
-  Incrementable2,
-  typename thrust::detail::enable_if<::cuda::std::is_floating_point<Incrementable1>::value
-                                     || ::cuda::std::is_floating_point<Incrementable2>::value>::type>
+struct counting_iterator_equal<Difference,
+                               Incrementable1,
+                               Incrementable2,
+                               ::cuda::std::__enable_if_t<::cuda::std::is_floating_point<Incrementable1>::value
+                                                          || ::cuda::std::is_floating_point<Incrementable2>::value>>
 {
   _CCCL_HOST_DEVICE static bool equal(Incrementable1 x, Incrementable2 y)
   {

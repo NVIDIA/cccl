@@ -285,7 +285,7 @@ struct is_tuple_of_iterator_references<thrust::detail::tuple_of_iterator_referen
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 struct enable_if_non_const_reference_or_tuple_of_iterator_references
-    : thrust::detail::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
+    : ::cuda::std::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
 {};
 
 template <typename UnaryFunction>

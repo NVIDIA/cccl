@@ -321,7 +321,7 @@ struct can_use_primitive_sort
 
 template <class Iterator, class CompareOp>
 struct enable_if_primitive_sort
-    : thrust::detail::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
+    : ::cuda::std::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
 {};
 
 template <class Iterator, class CompareOp>

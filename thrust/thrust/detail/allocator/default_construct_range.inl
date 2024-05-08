@@ -71,8 +71,8 @@ struct needs_default_construct_via_allocator<std::allocator<U>, T>
 {};
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE typename enable_if<
-  needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>::type
+_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+  needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>
 default_construct_range(Allocator& a, Pointer p, Size n)
 {
   thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, construct1_via_allocator<Allocator>(a));

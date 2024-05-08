@@ -44,7 +44,7 @@ namespace stable_primitive_sort_detail
 
 template <typename Iterator>
 struct enable_if_bool_sort
-    : thrust::detail::enable_if<::cuda::std::is_same<bool, typename thrust::iterator_value<Iterator>::type>::value>
+    : ::cuda::std::enable_if<::cuda::std::is_same<bool, typename thrust::iterator_value<Iterator>::type>::value>
 {};
 
 template <typename Iterator>

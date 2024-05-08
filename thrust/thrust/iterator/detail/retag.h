@@ -43,7 +43,7 @@ struct is_retaggable
 {};
 
 template <typename FromTag, typename ToTag, typename Result>
-struct enable_if_retaggable : enable_if<is_retaggable<FromTag, ToTag>::value, Result>
+struct enable_if_retaggable : ::cuda::std::enable_if<is_retaggable<FromTag, ToTag>::value, Result>
 {}; // end enable_if_retaggable
 
 } // namespace detail

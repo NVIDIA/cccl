@@ -133,15 +133,6 @@ struct identity_
   typedef T type;
 }; // end identity
 
-template <bool, typename T = void>
-struct enable_if
-{};
-template <typename T>
-struct enable_if<true, T>
-{
-  typedef T type;
-};
-
 template <bool, typename T>
 struct lazy_enable_if
 {};
@@ -152,14 +143,14 @@ struct lazy_enable_if<true, T>
 };
 
 template <bool condition, typename T = void>
-struct disable_if : enable_if<!condition, T>
+struct disable_if : ::cuda::std::enable_if<!condition, T>
 {};
 template <bool condition, typename T>
 struct lazy_disable_if : lazy_enable_if<!condition, T>
 {};
 
 template <typename T1, typename T2, typename T = void>
-struct enable_if_convertible : enable_if<::cuda::std::is_convertible<T1, T2>::value, T>
+struct enable_if_convertible : ::cuda::std::enable_if<::cuda::std::is_convertible<T1, T2>::value, T>
 {};
 
 template <typename T1, typename T2, typename T = void>
@@ -185,26 +176,28 @@ struct larger_type
 {};
 
 template <typename Base, typename Derived, typename Result = void>
-struct enable_if_base_of : enable_if<::cuda::std::is_base_of<Base, Derived>::value, Result>
+struct enable_if_base_of : ::cuda::std::enable_if<::cuda::std::is_base_of<Base, Derived>::value, Result>
 {};
 
 template <typename T1, typename T2, typename Enable = void>
 struct promoted_numerical_type;
 
 template <typename T1, typename T2>
-struct promoted_numerical_type<T1,
-                               T2,
-                               typename enable_if<and_<typename ::cuda::std::is_floating_point<T1>::type,
-                                                       typename ::cuda::std::is_floating_point<T2>::type>::value>::type>
+struct promoted_numerical_type<
+  T1,
+  T2,
+  ::cuda::std::__enable_if_t<
+    and_<typename ::cuda::std::is_floating_point<T1>::type, typename ::cuda::std::is_floating_point<T2>::type>::value>>
 {
   typedef typename larger_type<T1, T2>::type type;
 };
 
 template <typename T1, typename T2>
-struct promoted_numerical_type<T1,
-                               T2,
-                               typename enable_if<and_<typename ::cuda::std::is_integral<T1>::type,
-                                                       typename ::cuda::std::is_floating_point<T2>::type>::value>::type>
+struct promoted_numerical_type<
+  T1,
+  T2,
+  ::cuda::std::__enable_if_t<
+    and_<typename ::cuda::std::is_integral<T1>::type, typename ::cuda::std::is_floating_point<T2>::type>::value>>
 {
   typedef T2 type;
 };
@@ -212,8 +205,8 @@ struct promoted_numerical_type<T1,
 template <typename T1, typename T2>
 struct promoted_numerical_type<T1,
                                T2,
-                               typename enable_if<and_<typename ::cuda::std::is_floating_point<T1>::type,
-                                                       typename ::cuda::std::is_integral<T2>::type>::value>::type>
+                               ::cuda::std::__enable_if_t<and_<typename ::cuda::std::is_floating_point<T1>::type,
+                                                               typename ::cuda::std::is_integral<T2>::type>::value>>
 {
   typedef T1 type;
 };
