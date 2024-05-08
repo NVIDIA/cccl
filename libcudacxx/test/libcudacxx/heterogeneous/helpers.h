@@ -350,18 +350,20 @@ struct initializer_validator
   performer<T> validator;
 };
 
+template <typename T>
 struct host_launcher
 {
-  template <typename T, typename Tester>
+  template <typename Tester>
   static initializer_validator<T> get_exec()
   {
     return initializer_validator<T>{host_initialize<Tester>, host_validate<Tester>};
   }
 };
 
+template <typename T>
 struct device_launcher
 {
-  template <typename T, typename Tester>
+  template <typename Tester>
   static initializer_validator<T> get_exec()
   {
     return initializer_validator<T>{device_initialize<Tester>, device_validate<Tester>};
@@ -375,7 +377,7 @@ void do_heterogeneous_test(type_list<Testers...>, type_list<Launchers...>, Args.
   HETEROGENEOUS_SAFE_CALL(cudaMallocHost(&pointer, sizeof(T)));
   T& object = *device_construct<T>(pointer, args...);
 
-  initializer_validator<T> performers[] = {{Launchers::template get_exec<T, Testers>()}...};
+  initializer_validator<T> performers[] = {{Launchers::template get_exec<Testers>()}...};
 
   for (auto&& performer : performers)
   {
@@ -398,42 +400,43 @@ template <size_t Idx>
 using enable_if_no_permutations_remain = typename std::enable_if<Idx == 0, int>::type;
 
 template <size_t Idx,
-          typename T,
-          typename... Testers,
-          typename... Launchers,
-          typename... Args,
+          typename Fn,
+          typename Launchers,
           enable_if_permutations_remain<Idx> = 0>
-void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args)
+void permute_tests(const Fn& fn, Launchers launchers)
 {
 #ifdef DEBUG_TESTERS
-  printf("Testing permutation %zu of %zu\r\n", Idx, sizeof...(Testers));
+  printf("Testing permutation %zu of %zu\r\n", Idx, sizeof...(Launchers));
   fflush(stdout);
 #endif
-  do_heterogeneous_test<T>(type_list<Testers...>{}, type_list<Launchers...>{}, args...);
-  permute_tests<Idx - 1, T>(type_list<Testers...>{}, rotl<Launchers...>{}, args...);
+  fn(launchers);
+  permute_tests<Idx - 1>(fn, rotl<Launchers>{});
 }
 
 template <size_t Idx,
-          typename T,
-          typename... Testers,
-          typename... Launchers,
-          typename... Args,
+          typename Fn,
+          typename Launchers,
           enable_if_no_permutations_remain<Idx> = 0>
-void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args)
+void permute_tests(const Fn&, Launchers)
 {}
 
-template <typename T, typename... Testers, typename... Launchers, typename... Args>
-void permute_tests(type_list<Testers...>, type_list<Launchers...>, Args... args)
+template <typename Fn, typename... Launchers>
+void permute_tests(const Fn& fn, type_list<Launchers...> launchers)
 {
-  permute_tests<sizeof...(Testers), T>(type_list<Testers...>{}, type_list<Launchers...>{}, args...);
+  permute_tests<sizeof...(Launchers)>(fn, launchers);
 }
 
 template <typename T, typename... Testers, typename... Args>
-void validate_device_dynamic(tester_list<Testers...>, Args... args)
+void validate_device_dynamic(tester_list<Testers...> testers, Args... args)
 {
   // ex: type_list<device_launcher, host_launcher, host_launcher>
-  using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher>, host_launcher>;
-  permute_tests<T>(type_list<Testers...>{}, initial_launcher_list{}, args...);
+  using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher<T>>, host_launcher<T>>;
+
+  auto test_sequence_launcher = [testers, args...](auto launcher_list) {
+    do_heterogeneous_test<T>(testers, launcher_list, args...);
+  };
+
+  permute_tests(test_sequence_launcher, initial_launcher_list{});
 }
 
 #if __cplusplus >= 201402L
