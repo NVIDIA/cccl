@@ -370,28 +370,21 @@ struct device_launcher
   }
 };
 
-template <typename T, typename... Testers, typename... Launchers, typename... Args>
-void do_heterogeneous_test(type_list<Testers...>, type_list<Launchers...>, Args... args)
+template <typename T, typename... Testers, typename... Launchers>
+void do_heterogeneous_test(T* test_input, type_list<Testers...>, type_list<Launchers...>)
 {
-  void* pointer = nullptr;
-  HETEROGENEOUS_SAFE_CALL(cudaMallocHost(&pointer, sizeof(T)));
-  T& object = *device_construct<T>(pointer, args...);
-
   initializer_validator<T> performers[] = {{Launchers::template get_exec<Testers>()}...};
 
   for (auto&& performer : performers)
   {
-    performer.initializer(object);
-    performer.validator(object);
+    performer.initializer(*test_input);
+    performer.validator(*test_input);
   }
 
   HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
   HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
 
   sync_all();
-
-  device_destroy(&object);
-  HETEROGENEOUS_SAFE_CALL(cudaFreeHost(pointer));
 }
 
 template <size_t Idx>
@@ -420,17 +413,41 @@ void permute_tests(const Fn& fn, type_list<Launchers...> launchers)
   permute_tests<sizeof...(Launchers)>(fn, launchers);
 }
 
+template <typename Testers, typename InputCreator, typename InputDestructor>
+struct test_wrapper
+{
+  InputCreator creator;
+  InputDestructor destructor;
+
+  template <typename Launchers>
+  void operator()(Launchers) const
+  {
+    auto input = creator();
+    do_heterogeneous_test(input, Testers{}, Launchers{});
+    destructor(input);
+  }
+};
+
 template <typename T, typename... Testers, typename... Args>
 void validate_device_dynamic(tester_list<Testers...> testers, Args... args)
 {
-  // ex: type_list<device_launcher, host_launcher, host_launcher>
-  using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher<T>>, host_launcher<T>>;
-
-  auto test_sequence_launcher = [testers, args...](auto launcher_list) {
-    do_heterogeneous_test<T>(testers, launcher_list, args...);
+  auto test_input_creator = [args...]() -> T* {
+    void* pointer = nullptr;
+    HETEROGENEOUS_SAFE_CALL(cudaMallocHost(&pointer, sizeof(T)));
+    return device_construct<T>(pointer, args...);
   };
 
-  permute_tests(test_sequence_launcher, initial_launcher_list{});
+  auto test_input_destructor = [](T* test_input) {
+    device_destroy(test_input);
+    HETEROGENEOUS_SAFE_CALL(cudaFreeHost(test_input));
+  };
+
+  test_wrapper<tester_list<Testers...>, decltype(test_input_creator), decltype(test_input_destructor)> test_harness{
+    test_input_creator, test_input_destructor};
+
+  // ex: type_list<device_launcher, host_launcher, host_launcher>
+  using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher<T>>, host_launcher<T>>;
+  permute_tests(test_harness, initial_launcher_list{});
 }
 
 #if __cplusplus >= 201402L
