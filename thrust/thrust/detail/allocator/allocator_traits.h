@@ -248,7 +248,7 @@ public:
 
   typedef typename eval_if<allocator_traits_detail::has_size_type<allocator_type>::value,
                            allocator_traits_detail::nested_size_type<allocator_type>,
-                           make_unsigned<difference_type>>::type size_type;
+                           ::cuda::std::make_unsigned<difference_type>>::type size_type;
 
   typedef typename eval_if<allocator_traits_detail::has_propagate_on_container_copy_assignment<allocator_type>::value,
                            allocator_traits_detail::nested_propagate_on_container_copy_assignment<allocator_type>,
