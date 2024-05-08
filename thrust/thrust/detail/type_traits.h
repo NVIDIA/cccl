@@ -150,11 +150,7 @@ struct lazy_disable_if : lazy_enable_if<!condition, T>
 {};
 
 template <typename T1, typename T2, typename T = void>
-struct enable_if_convertible : ::cuda::std::enable_if<::cuda::std::is_convertible<T1, T2>::value, T>
-{};
-
-template <typename T1, typename T2, typename T = void>
-using enable_if_convertible_t = typename enable_if_convertible<T1, T2, T>::type;
+using enable_if_convertible_t = ::cuda::std::__enable_if_t<::cuda::std::is_convertible<T1, T2>::value, T>;
 
 template <typename T1, typename T2, typename T = void>
 struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::value, T>
