@@ -116,6 +116,7 @@ union __expected_union_t
   {}
 
   // the __expected_destruct's destructor handles this
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
   _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -236,15 +237,16 @@ struct __expected_destruct<_Tp, _Err, false, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__val_));
+      __union_.__val_.~_Tp();
     }
     else
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
+      __union_.__unex_.~_Err();
     }
   }
 };
@@ -302,11 +304,12 @@ struct __expected_destruct<_Tp, _Err, true, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (!__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
+      __union_.__unex_.~_Err();
     }
   }
 };
@@ -364,11 +367,12 @@ struct __expected_destruct<_Tp, _Err, false, true>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__val_));
+      __union_.__val_.~_Tp();
     }
   }
 };
@@ -729,6 +733,7 @@ struct __expected_destruct<void, _Err, false, false>
     {}
 
     // the __expected_destruct's destructor handles this
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
     _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -762,11 +767,12 @@ struct __expected_destruct<void, _Err, false, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (!__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
+      __union_.__unex_.~_Err();
     }
   }
 };

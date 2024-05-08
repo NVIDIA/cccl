@@ -295,6 +295,7 @@ struct __optional_destruct_base<_Tp, false>
       , __engaged_(true)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void reset() noexcept
   {
     if (__engaged_)
