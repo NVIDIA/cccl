@@ -70,9 +70,6 @@ jobs:
         # Use the miscco/cudf fork with fixes for latest CCCL (https://github.com/rapidsai/cudf/pull/15552)
         sudo yq -i '(.repos[] | select(.name == "cudf") | .git) *= {"upstream": "miscco", "tag": "fix_cccl_compat"}' /opt/rapids-build-utils/manifest.yaml;
 
-        # Clone the trxcllnt/cuCollections fork with fixes for latest CCCL
-        devcontainer-utils-clone-github-repo --branch rapids-24.06-cccl-2.5.0 --clone-upstream -- trxcllnt/cuCollections ~/cuco;
-
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
 
@@ -80,6 +77,17 @@ jobs:
         # Clone all the RAPIDS repos
         ###
         clone-all -j$(nproc) -v -q --clone-upstream --single-branch --shallow-submodules;
+
+        # Tell rapids-cmake to use custom CCCL and cuCollections forks
+        rapids_branch="$(yq '.x-git-defaults.tag' /opt/rapids-build-utils/manifest.yaml)";
+        rapids_version="${rapids_branch#branch-}";
+        curl -fsSL -o- https://raw.githubusercontent.com/trxcllnt/rapids-cmake/branch-24.04-cccl-2.4.0/rapids-cmake/cpm/patches/cccl/revert_pr_211.diff \
+          | tee ~/rapids-cmake-revert_pr_211.diff;
+        curl -fsSL -o- "https://raw.githubusercontent.com/rapidsai/rapids-cmake/${rapids_branch}/rapids-cmake/cpm/versions.json" \
+          | jq -r '.packages.CCCL *= {"version": "2.5.0", "git_url": "${{ github.repositoryUrl }}", "git_tag": "${{ github.ref_name }}"}' \
+          | jq -r "(.packages.CCCL.patches[] | select(.file == \"cccl/revert_pr_211.diff\")).file = \"${HOME}/rapids-cmake-revert_pr_211.diff\"" \
+          | jq -r '.packages.cuco *= {"git_url": "https://github.com/trxcllnt/cuCollections.git", "git_tag": "rapids-${rapids_version}-cccl-2.5.0"}' \
+          | tee ~/rapids-cmake-override-versions.json;
 
         ###
         # Build the RAPIDS repos using the local CCCL mount without and then with tests and benchmarks
@@ -98,11 +106,9 @@ jobs:
           # Enable/disable tests
           args_=("${args_[@]/#/"-D"}");
           args_=("${args_[@]/%/"=${opt}"}");
-          # Use the local CCCL mount
-          args_+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
-          # Use the local cuCollections clone
-          args_+=(-DCPM_cuco_SOURCE="${HOME}/cuco");
           args_+=(-DBUILD_SHARED_LIBS=ON);
+          # Tell rapids-cmake to use custom CCCL and cuCollections forks
+          args_+=(-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE="${HOME}/rapids-cmake-override-versions.json");
 
           for lib in ${{ matrix.libs }}; do
 
