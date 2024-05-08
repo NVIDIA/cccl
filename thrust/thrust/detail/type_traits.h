@@ -66,12 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct add_const
-{
-  typedef T const type;
-}; // end add_const
-
-template <typename T>
 struct remove_const
 {
   typedef T type;
@@ -393,7 +387,7 @@ struct make_unsigned_base
     // check const & volatile individually
     eval_if<::cuda::std::is_const<T>::value,
             // add c back
-            add_const<unsigned_remove_cv_t>,
+            ::cuda::std::add_const<unsigned_remove_cv_t>,
             eval_if<::cuda::std::is_volatile<T>::value,
                     // add v back
                     add_volatile<unsigned_remove_cv_t>,
@@ -464,7 +458,8 @@ struct is_assignable : integral_constant<bool, is_assignable_ns::is_assignable<T
 
 template <typename T>
 struct is_copy_assignable
-    : is_assignable<typename add_reference<T>::type, typename add_reference<typename add_const<T>::type>::type>
+    : is_assignable<typename add_reference<T>::type,
+                    typename add_reference<typename ::cuda::std::add_const<T>::type>::type>
 {};
 
 template <typename T1, typename T2, typename Enable = void>
