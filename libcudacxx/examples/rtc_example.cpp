@@ -50,11 +50,11 @@ template<class T> static constexpr T min(T a, T b) { return a < b ? a : b; }
 
 struct trie {
     struct ref {
-        cuda::std::atomic<trie*> ptr = ATOMIC_VAR_INIT(nullptr);
+        cuda::std::atomic<trie*> ptr = LIBCUDACXX_ATOMIC_VAR_INIT(nullptr);
         // the flag will protect against multiple pointer updates
-        cuda::std::atomic_flag flag = ATOMIC_FLAG_INIT;
+        cuda::std::atomic_flag flag = LIBCUDACXX_ATOMIC_FLAG_INIT;
     } next[26];
-    cuda::std::atomic<int> count = ATOMIC_VAR_INIT(0);
+    cuda::std::atomic<int> count = LIBCUDACXX_ATOMIC_VAR_INIT(0);
 };
 __host__ __device__
 int index_of(char c) {

@@ -62,7 +62,7 @@ struct TestFunc
 #if !defined(_GNUC_VER) || _GNUC_VER >= 409
     // TODO: Figure out why this is failing with GCC 4.8.2 on CentOS 7 only.
     {
-      constexpr Atomic a = ATOMIC_VAR_INIT(t);
+      constexpr Atomic a = LIBCUDACXX_ATOMIC_VAR_INIT(t);
       assert(a == t);
     }
 #endif

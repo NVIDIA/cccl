@@ -88,7 +88,7 @@ class alignas(64) __barrier_base
     struct alignas(64) __state_t
     {
         struct {
-            __atomic_impl<__phase_t, _Sco> __phase = ATOMIC_VAR_INIT(0);
+            __atomic_impl<__phase_t, _Sco> __phase = LIBCUDACXX_ATOMIC_VAR_INIT(0);
         } __tickets[64];
     };
     ::std::vector<__state_t>   __state;
