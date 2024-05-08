@@ -68,7 +68,7 @@ public:
   using is_always_equal =
     typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
                      allocator_traits_detail::nested_is_always_equal<allocator_type>,
-                     is_empty<allocator_type>>::type;
+                     ::cuda::std::is_empty<allocator_type>>::type;
 
   // std::allocator_traits doesn't provide these, but
   // thrust::detail::allocator_traits does. These used to be part of the

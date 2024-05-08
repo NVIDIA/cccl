@@ -264,7 +264,7 @@ public:
 
   typedef typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
                            allocator_traits_detail::nested_is_always_equal<allocator_type>,
-                           is_empty<allocator_type>>::type is_always_equal;
+                           ::cuda::std::is_empty<allocator_type>>::type is_always_equal;
 
   typedef typename eval_if<allocator_traits_detail::has_system_type<allocator_type>::value,
                            allocator_traits_detail::nested_system_type<allocator_type>,

@@ -381,17 +381,6 @@ struct promoted_numerical_type<T1,
   typedef T1 type;
 };
 
-template <typename T>
-struct is_empty_helper : public T
-{};
-
-struct is_empty_helper_base
-{};
-
-template <typename T>
-struct is_empty : integral_constant<bool, sizeof(is_empty_helper_base) == sizeof(is_empty_helper<T>)>
-{};
-
 template <class F, class... Us>
 using invoke_result = ::cuda::std::__invoke_of<F, Us...>;
 
