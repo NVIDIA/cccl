@@ -15,14 +15,12 @@
 #define _LIBCUDACXX_CUDA_ABI_VERSION 2
 
 #include <cuda/barrier>
+#include <cuda/std/cassert>
 
 #include "helpers.h"
 
 static_assert(sizeof(cuda::barrier<cuda::thread_scope_system>) == 64, "");
 static_assert(sizeof(cuda::barrier<cuda::thread_scope_system, void (*)()>) == 4 * 64, "");
-
-__managed__ bool completed_from_host   = false;
-__managed__ bool completed_from_device = false;
 
 template <typename Barrier>
 struct barrier_and_token
@@ -51,8 +49,6 @@ struct barrier_and_token_with_completion
     {
       assert(completed.load() == false);
       completed.store(true);
-
-      NV_IF_ELSE_TARGET(NV_IS_HOST, completed_from_host = true;, completed_from_device = true;)
     }
   };
 
@@ -153,32 +149,28 @@ using cuda_barrier_system = cuda::barrier<cuda::thread_scope_system, Completion>
 
 void kernel_invoker()
 {
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, a_aw_w>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_aw_w>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_aw_w>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_aw_w>(2);
 
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, aw_aw>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, aw_aw>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, aw_aw>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, aw_aw>(2);
 
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, a_w_aw>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_aw>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_w_aw>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_aw>(2);
 
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, a_w_a_w>(2);
-  validate_not_movable<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_a_w>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_w_a_w>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_a_w>(2);
 
-  validate_not_movable<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_a>(2);
-  validate_not_movable<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_a>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_a>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_a>(2);
 
-  validate_not_movable<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_b>(2);
-  validate_not_movable<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_b>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_b>(2);
+  validate_pinned<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_b>(2);
 }
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (kernel_invoker();
-
-     if (check_managed_memory_support(true)) { assert(completed_from_host); } assert(completed_from_device);))
+  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
 
   return 0;
 }

@@ -54,7 +54,7 @@ using w_r_w_r = performer_list<Write<10>, Read<10>, Write<30>, Read<30>>;
 void kernel_invoker()
 {
   pair_t p(0, {0});
-  validate_not_movable<pair_t, w_r_w_r>(p);
+  validate_pinned<pair_t, w_r_w_r>(p);
 }
 
 int main(int arg, char** argv)
