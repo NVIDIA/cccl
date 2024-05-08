@@ -42,12 +42,11 @@ template <class _Tp>
 struct __is_nothrow_swappable;
 
 template <class _Tp>
-using __swap_result_t =
-  __enable_if_t<_LIBCUDACXX_TRAIT(is_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_move_assignable, _Tp)>;
+using __swap_result_t = __enable_if_t<_CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
-  _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp));
+  _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template <class _Tp, size_t _Np>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_swappable<_Tp>::value>
@@ -57,9 +56,7 @@ namespace __detail
 {
 // ALL generic swap overloads MUST already have a declaration available at this point.
 
-template <class _Tp,
-          class _Up     = _Tp,
-          bool _NotVoid = !_LIBCUDACXX_TRAIT(is_void, _Tp) && !_LIBCUDACXX_TRAIT(is_void, _Up)>
+template <class _Tp, class _Up = _Tp, bool _NotVoid = !_CCCL_TRAIT(is_void, _Tp) && !_CCCL_TRAIT(is_void, _Up)>
 struct __swappable_with
 {
   template <class _LHS, class _RHS>

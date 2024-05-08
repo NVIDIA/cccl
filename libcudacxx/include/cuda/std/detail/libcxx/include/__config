@@ -69,13 +69,6 @@
 #  endif
 #endif
 
-#if defined(_CCCL_COMPILER_MSVC)
-#  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
-#  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
-#    define _LIBCUDACXX_USE_PRAGMA_MSVC_WARNING
-#  endif // !_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING
-#endif // _CCCL_COMPILER_MSVC
-
 #ifdef __cplusplus
 
 // __config may be included in `extern "C"` contexts, switch back to include <nv/target>
@@ -860,21 +853,7 @@ typedef __char32_t char32_t;
 
 #  elif defined(_CCCL_COMPILER_MSVC)
 
-#    define _LIBCUDACXX_WARNING(x)             __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
-
-// https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
-// warning C4100: 'quack': unreferenced formal parameter
-// warning C4127: conditional expression is constant
-// warning C4180: qualifier applied to function type has no meaning; ignored
-// warning C4197: 'purr': top-level volatile in cast is ignored
-// warning C4324: 'roar': structure was padded due to alignment specifier
-// warning C4455: literal suffix identifiers that do not start with an underscore are reserved
-// warning C4503: 'hum': decorated name length exceeded, name was truncated
-// warning C4522: 'woof' : multiple assignment operators specified
-// warning C4668: 'meow' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
-// warning C4800: 'boo': forcing value to bool 'true' or 'false' (performance warning)
-// warning C4996: 'meow': was declared deprecated
-#    define _LIBCUDACXX_MSVC_DISABLED_WARNINGS 4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996 /**/
+#    define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
 
 #    if _MSC_VER < 1900
 #      error "MSVC versions prior to Visual Studio 2015 are not supported"
@@ -1010,13 +989,6 @@ typedef __char32_t char32_t;
 #  ifndef _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
 #    define _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
 #  endif // _LIBCUDACXX_HAS_NO_PLATFORM_WAIT
-
-#  ifndef _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
-#    if (defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1920) || defined(_CCCL_COMPILER_NVRTC) \
-      || defined(_CCCL_COMPILER_IBM)
-#      define _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
-#    endif
-#  endif // _LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO
 
 #  ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 #    define _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
@@ -1753,24 +1725,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_DO_NOT_ASSUME_STREAMS_EXPLICIT_INSTANTIATION_IN_DYLIB
 #  endif
 
-#  if defined(_LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO)
-#    define _LIBCUDACXX_PUSH_MACROS
-#    define _LIBCUDACXX_POP_MACROS
-#  else
-// Don't warn about macro conflicts when we can restore them at the
-// end of the header.
-#    ifndef _LIBCUDACXX_DISABLE_MACRO_CONFLICT_WARNINGS
-#      define _LIBCUDACXX_DISABLE_MACRO_CONFLICT_WARNINGS
-#    endif
-#    if defined(_CCCL_COMPILER_MSVC)
-#      define _LIBCUDACXX_PUSH_MACROS __pragma(push_macro("min")) __pragma(push_macro("max"))
-#      define _LIBCUDACXX_POP_MACROS  __pragma(pop_macro("min")) __pragma(pop_macro("max"))
-#    else
-#      define _LIBCUDACXX_PUSH_MACROS _Pragma("push_macro(\"min\")") _Pragma("push_macro(\"max\")")
-#      define _LIBCUDACXX_POP_MACROS  _Pragma("pop_macro(\"min\")") _Pragma("pop_macro(\"max\")")
-#    endif
-#  endif // defined(_LIBCUDACXX_HAS_NO_PRAGMA_PUSH_POP_MACRO)
-
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
 // Configures the fopen close-on-exec mode character, if any. This string will
@@ -1823,12 +1777,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr
 #  endif
 
-#  if _CCCL_STD_VER > 2014
-#    define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#  else
-#    define _LIBCUDACXX_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
-#  endif
-
 // Older nvcc do not handle the constraint of `construct_at` in earlier std modes
 // So to preserve our performance optimization we default to the unconstrained
 // `__construct_at` and only in C++20 use `construct_at`
@@ -1852,13 +1800,13 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                       \
-      using __base = __baseclass<__VA_ARGS__>;                                                                 \
-      template <class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0> \
-      _LIBCUDACXX_INLINE_VISIBILITY constexpr __class(_Args&&... __args) noexcept(                             \
-        _LIBCUDACXX_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
-          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                      \
-      {}                                                                                                       \
+#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                 \
+      using __base = __baseclass<__VA_ARGS__>;                                                           \
+      template <class... _Args, __enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \
+      _LIBCUDACXX_INLINE_VISIBILITY constexpr __class(_Args&&... __args) noexcept(                       \
+        _CCCL_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
+          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                \
+      {}                                                                                                 \
       constexpr __class() noexcept = default;
 #  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \

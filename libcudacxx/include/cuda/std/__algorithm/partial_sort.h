@@ -76,9 +76,8 @@ template <class _RandomAccessIterator, class _Compare>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void partial_sort(
   _RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last, _Compare __comp)
 {
-  static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _RandomAccessIterator),
-                "Iterators must be copy constructible.");
-  static_assert(_LIBCUDACXX_TRAIT(is_copy_assignable, _RandomAccessIterator), "Iterators must be copy assignable.");
+  static_assert(_CCCL_TRAIT(is_copy_constructible, _RandomAccessIterator), "Iterators must be copy constructible.");
+  static_assert(_CCCL_TRAIT(is_copy_assignable, _RandomAccessIterator), "Iterators must be copy assignable.");
 
   (void) _CUDA_VSTD::__partial_sort<_ClassicAlgPolicy>(
     _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__middle), _CUDA_VSTD::move(__last), __comp);
