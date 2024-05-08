@@ -37,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system
 {
 
-error_category ::~error_category(void)
+error_category ::~error_category()
 {
   ;
 } // end error_category::~error_category()
@@ -79,9 +79,9 @@ namespace detail
 class generic_error_category : public error_category
 {
 public:
-  inline generic_error_category(void) {}
+  inline generic_error_category() {}
 
-  inline virtual const char* name(void) const
+  inline virtual const char* name() const
   {
     return "generic";
   }
@@ -102,9 +102,9 @@ public:
 class system_error_category : public error_category
 {
 public:
-  inline system_error_category(void) {}
+  inline system_error_category() {}
 
-  inline virtual const char* name(void) const
+  inline virtual const char* name() const
   {
     return "system";
   }
@@ -284,13 +284,13 @@ public:
 
 } // namespace detail
 
-const error_category& generic_category(void)
+const error_category& generic_category()
 {
   static const detail::generic_error_category result;
   return result;
 }
 
-const error_category& system_category(void)
+const error_category& system_category()
 {
   static const detail::system_error_category result;
   return result;

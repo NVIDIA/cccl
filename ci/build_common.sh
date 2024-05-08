@@ -216,10 +216,13 @@ function test_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
+    local GPU_REQUIRED=${3:-"true"}
+
+    if [ "${GPU_REQUIRED}" == "true" ]; then
+        fail_if_no_gpu
+    fi
+
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
-
-    fail_if_no_gpu
-
 
     ctest_log_dir="${BUILD_DIR}/log/ctest"
     ctest_log="${ctest_log_dir}/${PRESET}"

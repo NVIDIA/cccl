@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestTransformOutputIterator(void)
+void TestTransformOutputIterator()
 {
   typedef typename Vector::value_type T;
 
@@ -39,7 +39,7 @@ void TestTransformOutputIterator(void)
 DECLARE_VECTOR_UNITTEST(TestTransformOutputIterator);
 
 template <class Vector>
-void TestMakeTransformOutputIterator(void)
+void TestMakeTransformOutputIterator()
 {
   typedef typename Vector::value_type T;
 

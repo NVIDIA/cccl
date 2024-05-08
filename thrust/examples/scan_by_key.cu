@@ -25,7 +25,7 @@ void print(const Vector& v)
   std::cout << "\n";
 }
 
-int main(void)
+int main()
 {
   int keys[]   = {0, 0, 0, 1, 1, 2, 2, 2, 2, 3, 4, 4, 5, 5, 5}; // segments represented with keys
   int flags[]  = {1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0}; // segments represented with head flags

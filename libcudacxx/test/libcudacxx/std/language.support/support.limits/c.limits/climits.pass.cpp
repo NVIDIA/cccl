@@ -90,7 +90,7 @@
 
 // test if __CHAR_UNSIGNED__ detection for NVRTC works correctly
 // if not, go take a look at cuda/std/climits
-#ifdef __CUDACC_RTC__
+#ifdef TEST_COMPILER_NVRTC
 #  include <cuda/std/type_traits>
 static_assert(__CHAR_UNSIGNED__ == cuda::std::is_unsigned<char>::value, "");
 #endif

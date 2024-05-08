@@ -36,7 +36,7 @@ void reduce_intervals(InputIterator input, OutputIterator output, BinaryFunction
   }
 }
 
-void TestOmpReduceIntervalsSimple(void)
+void TestOmpReduceIntervalsSimple()
 {
   typedef int T;
   typedef thrust::device_vector<T> Vector;

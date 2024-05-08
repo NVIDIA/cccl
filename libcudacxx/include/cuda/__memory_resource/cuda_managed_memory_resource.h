@@ -158,10 +158,6 @@ public:
 #    endif // _CCCL_STD_VER <= 2017
 
   /**
-   * @brief Enables the `managed_memory` property
-   */
-  friend constexpr void get_property(cuda_managed_memory_resource const&, managed_memory) noexcept {}
-  /**
    * @brief Enables the `device_accessible` property
    */
   friend constexpr void get_property(cuda_managed_memory_resource const&, device_accessible) noexcept {}
@@ -178,7 +174,6 @@ public:
     return __alignment <= default_cuda_malloc_alignment && (default_cuda_malloc_alignment % __alignment == 0);
   }
 };
-static_assert(resource_with<cuda_managed_memory_resource, managed_memory>, "");
 static_assert(resource_with<cuda_managed_memory_resource, device_accessible>, "");
 static_assert(resource_with<cuda_managed_memory_resource, host_accessible>, "");
 

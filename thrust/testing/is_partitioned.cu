@@ -14,7 +14,7 @@ struct is_even
 };
 
 template <typename Vector>
-void TestIsPartitionedSimple(void)
+void TestIsPartitionedSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -50,7 +50,7 @@ void TestIsPartitionedSimple(void)
 DECLARE_VECTOR_UNITTEST(TestIsPartitionedSimple);
 
 template <class Vector>
-void TestIsPartitioned(void)
+void TestIsPartitioned()
 {
   typedef typename Vector::value_type T;
 

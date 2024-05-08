@@ -34,7 +34,6 @@ void function_that_dispatches_to_device(MemoryResource& resource);
 For now, libcu++ provides various commonly used properties:
 
 * `cuda::mr::device_accessible` and `cuda::mr::host_accessible` indicate whether memory allocated using a memory resource is accessible from host or device respectively.
-* `cuda::mr::managed_memory` indicates that the memory resource allocates CUDA unified memory which is both host and device accessible
 
 More properties may be added as the library and the hardware capabilities evolve. However, a user library is free to define custom properties.
 

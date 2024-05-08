@@ -9,7 +9,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestMergeSimple(void)
+void TestMergeSimple()
 {
   typedef typename Vector::iterator Iterator;
 

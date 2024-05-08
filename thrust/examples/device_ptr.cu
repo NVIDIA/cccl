@@ -7,7 +7,7 @@
 #include <cassert>
 #include <iostream>
 
-int main(void)
+int main()
 {
   // allocate memory buffer to store 10 integers on the device
   thrust::device_ptr<int> d_ptr = thrust::device_malloc<int>(10);

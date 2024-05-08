@@ -838,7 +838,12 @@ struct nullopt_t
 /// void foo (thrust::optional<int>);
 /// foo(thrust::nullopt); //pass an empty optional
 /// ```
-static constexpr nullopt_t nullopt{nullopt_t::do_not_use{}, nullopt_t::do_not_use{}};
+#ifdef __CUDA_ARCH__
+__device__ static _LIBCUDACXX_CONSTEXPR_GLOBAL
+#else
+static constexpr
+#endif // __CUDA_ARCH__
+  nullopt_t nullopt{nullopt_t::do_not_use{}, nullopt_t::do_not_use{}};
 
 class bad_optional_access : public std::exception
 {
@@ -2773,13 +2778,11 @@ public:
   ///
   /// \group emplace
   _CCCL_EXEC_CHECK_DISABLE
-  template <class... Args>
-  _CCCL_HOST_DEVICE T& emplace(Args&&... args) noexcept
+  template <class U>
+  _CCCL_HOST_DEVICE T& emplace(U& u) noexcept
   {
-    static_assert(std::is_constructible<T, Args&&...>::value, "T must be constructible with Args");
-
-    *this = nullopt;
-    this->construct(std::forward<Args>(args)...);
+    m_value = thrust::addressof(u);
+    return *m_value;
   }
 
   /// Swaps this optional with the other.

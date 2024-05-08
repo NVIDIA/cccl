@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetSymmetricDifferenceDescendingSimple(void)
+void TestSetSymmetricDifferenceDescendingSimple()
 {
   typedef typename Vector::value_type T;
   typedef typename Vector::iterator Iterator;

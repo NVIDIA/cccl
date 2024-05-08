@@ -48,6 +48,7 @@
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <iterator>
 

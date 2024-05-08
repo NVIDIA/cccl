@@ -717,8 +717,6 @@ __ceil2(_Tp __t) noexcept
                 >> (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits));
 }
 
-#if (_CCCL_STD_VER > 2017) || defined(__cuda_std__)
-
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
 rotl(_Tp __t, unsigned int __cnt) noexcept
@@ -801,16 +799,14 @@ enum class endian
 {
   little = 0xDEAD,
   big    = 0xFACE,
-#  if defined(_LIBCUDACXX_LITTLE_ENDIAN)
+#if defined(_LIBCUDACXX_LITTLE_ENDIAN)
   native = little
-#  elif defined(_LIBCUDACXX_BIG_ENDIAN)
+#elif defined(_LIBCUDACXX_BIG_ENDIAN)
   native = big
-#  else
+#else
   native = 0xCAFE
-#  endif
+#endif
 };
-
-#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

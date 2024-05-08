@@ -52,7 +52,7 @@ int word_count(const thrust::device_vector<char>& input)
   return wc;
 }
 
-int main(void)
+int main()
 {
   // Paragraph from 'The Raven' by Edgar Allan Poe
   // http://en.wikipedia.org/wiki/The_Raven

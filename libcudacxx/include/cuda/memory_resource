@@ -80,17 +80,18 @@ class resource_ref {
 */
 // clang-format on
 
-#  include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
+#include <cuda_runtime_api.h>
+// cuda_runtime_api needs to come first
 
-#  include "__cccl_config"
+#include <cuda/std/detail/__config>
 
-#  if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#    pragma GCC system_header
-#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#    pragma clang system_header
-#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#    pragma system_header
-#  endif // no system header
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/__memory_resource/cuda_managed_memory_resource.h>
 #include <cuda/__memory_resource/cuda_memory_resource.h>

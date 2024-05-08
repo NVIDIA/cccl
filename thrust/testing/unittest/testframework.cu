@@ -42,7 +42,7 @@ const size_t max_threshold     = (std::numeric_limits<size_t>::max)();
 
 std::vector<size_t> test_sizes;
 
-std::vector<size_t> get_test_sizes(void)
+std::vector<size_t> get_test_sizes()
 {
   return test_sizes;
 }
@@ -263,7 +263,7 @@ void report_results(std::vector<TestResult>& test_results, double elapsed_minute
   std::cout << "Time:  " << elapsed_minutes << " minutes" << std::endl;
 }
 
-void UnitTestDriver::list_tests(void)
+void UnitTestDriver::list_tests()
 {
   for (TestMap::iterator iter = test_map.begin(); iter != test_map.end(); iter++)
   {

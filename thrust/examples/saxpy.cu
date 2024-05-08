@@ -50,7 +50,7 @@ void saxpy_slow(float A, thrust::device_vector<float>& X, thrust::device_vector<
   thrust::transform(temp.begin(), temp.end(), Y.begin(), Y.begin(), thrust::plus<float>());
 }
 
-int main(void)
+int main()
 {
   // initialize host arrays
   float x[4] = {1.0, 1.0, 1.0, 1.0};

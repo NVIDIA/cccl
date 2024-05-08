@@ -17,7 +17,7 @@
 //
 // [1] http://en.wikipedia.org/wiki/Mode_(statistics)
 
-int main(void)
+int main()
 {
   const size_t N = 30;
   const size_t M = 10;

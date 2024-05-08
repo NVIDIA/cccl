@@ -14,7 +14,7 @@ template <typename T>
 struct TestZipIteratorManipulation
 {
   template <typename Vector>
-  void test(void)
+  void test()
   {
     using namespace thrust;
 
@@ -35,6 +35,7 @@ struct TestZipIteratorManipulation
 
     // test construction
     ZipIterator iter0 = make_zip_iterator(t);
+    ASSERT_EQUAL(true, iter0 == ZipIterator{t});
 
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
@@ -268,7 +269,7 @@ struct TestZipIteratorSystem
 SimpleUnitTest<TestZipIteratorSystem, NumericTypes> TestZipIteratorSystemInstance;
 
 template <typename Vector>
-void TestZipIteratorCopy(void)
+void TestZipIteratorCopy()
 {
   using namespace thrust;
   using T = typename Vector::value_type;
@@ -352,7 +353,7 @@ struct TestZipIteratorTransform
 };
 VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
 
-void TestZipIteratorCopyAoSToSoA(void)
+void TestZipIteratorCopyAoSToSoA()
 {
   using namespace thrust;
 
@@ -399,7 +400,7 @@ void TestZipIteratorCopyAoSToSoA(void)
 };
 DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
-void TestZipIteratorCopySoAToAoS(void)
+void TestZipIteratorCopySoAToAoS()
 {
   using namespace thrust;
 

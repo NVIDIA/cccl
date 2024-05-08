@@ -80,7 +80,7 @@ struct bind_last_impl
   using type = typename bound<T>::type;
 };
 
-template <template <typename> typename Fn, typename B>
+template <template <typename...> typename Fn, typename B>
 using bind_last = bind_last_impl<Fn, B>;
 
 template <typename TypeList, typename... Tx>

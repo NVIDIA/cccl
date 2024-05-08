@@ -16,7 +16,7 @@ struct Functor
   }
 };
 
-int main(void)
+int main()
 {
   float u[4] = {4, 3, 2, 1};
   float v[4] = {-1, 1, 1, -1};

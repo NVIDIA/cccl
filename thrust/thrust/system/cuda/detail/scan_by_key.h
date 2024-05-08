@@ -85,14 +85,14 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::detail::try_unwrap_contiguous_iterator_return_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesOutIt>;
+  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
+  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
+  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
   using AccumT            = typename thrust::iterator_traits<ValuesInUnwrapIt>::value_type;
 
-  auto keys_unwrap   = thrust::detail::try_unwrap_contiguous_iterator(keys);
-  auto values_unwrap = thrust::detail::try_unwrap_contiguous_iterator(values);
-  auto result_unwrap = thrust::detail::try_unwrap_contiguous_iterator(result);
+  auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
+  auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
+  auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
   using Dispatch32 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -195,13 +195,13 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::detail::try_unwrap_contiguous_iterator_return_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesOutIt>;
+  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
+  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
+  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
 
-  auto keys_unwrap   = thrust::detail::try_unwrap_contiguous_iterator(keys);
-  auto values_unwrap = thrust::detail::try_unwrap_contiguous_iterator(values);
-  auto result_unwrap = thrust::detail::try_unwrap_contiguous_iterator(result);
+  auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
+  auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
+  auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
   using Dispatch32 = cub::DispatchScanByKey<
     KeysInUnwrapIt,

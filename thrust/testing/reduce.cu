@@ -26,7 +26,7 @@ struct is_equal_div_10_reduce
 };
 
 template <class Vector>
-void TestReduceSimple(void)
+void TestReduceSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -96,7 +96,7 @@ struct TestReduce
 VariableUnitTest<TestReduce, IntegralTypes> TestReduceInstance;
 
 template <class IntVector, class FloatVector>
-void TestReduceMixedTypes(void)
+void TestReduceMixedTypes()
 {
   // make sure we get types for default args and operators correct
   IntVector int_input(4);
@@ -117,12 +117,12 @@ void TestReduceMixedTypes(void)
   // int -> float should use using plus<float> operator by default
   ASSERT_EQUAL(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5), 10.5);
 }
-void TestReduceMixedTypesHost(void)
+void TestReduceMixedTypesHost()
 {
   TestReduceMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
 DECLARE_UNITTEST(TestReduceMixedTypesHost);
-void TestReduceMixedTypesDevice(void)
+void TestReduceMixedTypesDevice()
 {
   TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
@@ -162,7 +162,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestReduceWithIndirection(void)
+void TestReduceWithIndirection()
 {
   // add numbers modulo 3 with external lookup table
   typedef typename Vector::value_type T;

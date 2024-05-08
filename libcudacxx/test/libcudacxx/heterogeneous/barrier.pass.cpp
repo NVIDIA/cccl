@@ -17,9 +17,6 @@
 
 #include "helpers.h"
 
-__managed__ bool completed_from_host   = false;
-__managed__ bool completed_from_device = false;
-
 template <typename Barrier>
 struct barrier_and_token
 {
@@ -47,8 +44,6 @@ struct barrier_and_token_with_completion
     {
       assert(completed.load() == false);
       completed.store(true);
-
-      NV_IF_ELSE_TARGET(NV_IS_HOST, completed_from_host = true;, completed_from_device = true;)
     }
   };
 
@@ -170,11 +165,7 @@ void kernel_invoker()
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (kernel_invoker();
-
-     if (check_managed_memory_support(true)) { assert(completed_from_host); } assert(completed_from_device);))
+  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
 
   return 0;
 }

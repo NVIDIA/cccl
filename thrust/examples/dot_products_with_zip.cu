@@ -38,7 +38,7 @@ thrust::host_vector<float> random_vector(const size_t N, unsigned int seed = thr
   return temp;
 }
 
-int main(void)
+int main()
 {
   // number of vectors
   const size_t N = 1000;

@@ -96,9 +96,9 @@ integer keys:
     {
         // Specialize BlockLoad, BlockStore, and BlockRadixSort collective types
         typedef cub::BlockLoad<
-          int*, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_TRANSPOSE> BlockLoadT;
+          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_LOAD_TRANSPOSE> BlockLoadT;
         typedef cub::BlockStore<
-          int*, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_STORE_TRANSPOSE> BlockStoreT;
+          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_STORE_TRANSPOSE> BlockStoreT;
         typedef cub::BlockRadixSort<
           int, BLOCK_THREADS, ITEMS_PER_THREAD> BlockRadixSortT;
 

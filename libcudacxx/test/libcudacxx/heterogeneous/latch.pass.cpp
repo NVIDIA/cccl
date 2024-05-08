@@ -82,8 +82,8 @@ void kernel_invoker()
   validate_pinned<cuda::std::latch, r5_cd1_aw2_w_cd2>(0);
   validate_pinned<cuda::latch<cuda::thread_scope_system>, r5_cd1_aw2_w_cd2>(0);
 
-  validate_pinned<cuda::std::latch, r3_aw3>(0);
-  validate_pinned<cuda::latch<cuda::thread_scope_system>, r3_aw3>(0);
+  validate_pinned<cuda::std::latch, r3_aw1_aw1_aw1>(0);
+  validate_pinned<cuda::latch<cuda::thread_scope_system>, r3_aw1_aw1_aw1>(0);
 
   validate_pinned<cuda::std::latch, r3_aw3>(0);
   validate_pinned<cuda::latch<cuda::thread_scope_system>, r3_aw3>(0);

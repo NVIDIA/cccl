@@ -42,13 +42,13 @@ long               strtol  (const char* restrict nptr, char** restrict endptr, i
 long long          strtoll (const char* restrict nptr, char** restrict endptr, int base); // C99
 unsigned long      strtoul (const char* restrict nptr, char** restrict endptr, int base);
 unsigned long long strtoull(const char* restrict nptr, char** restrict endptr, int base); // C99
-int rand(void);
+int rand();
 void srand(unsigned int seed);
 void* calloc(size_t nmemb, size_t size);
 void free(void* ptr);
 void* malloc(size_t size);
 void* realloc(void* ptr, size_t size);
-void abort(void);
+void abort();
 int atexit(void (*func)(void));
 void exit(int status);
 void _Exit(int status);

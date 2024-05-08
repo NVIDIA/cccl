@@ -70,7 +70,7 @@ public:
 
   /*! This constructor creates an empty vector_base.
    */
-  vector_base(void);
+  vector_base();
 
   /*! This constructor creates an empty vector_base.
    *  \param alloc The allocator to use by this vector_base.
@@ -201,7 +201,7 @@ public:
 
   /*! The destructor erases the elements.
    */
-  ~vector_base(void);
+  ~vector_base();
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
@@ -228,12 +228,12 @@ public:
 
   /*! Returns the number of elements in this vector_base.
    */
-  _CCCL_HOST_DEVICE size_type size(void) const;
+  _CCCL_HOST_DEVICE size_type size() const;
 
   /*! Returns the size() of the largest possible vector_base.
    *  \return The largest possible return value of size().
    */
-  _CCCL_HOST_DEVICE size_type max_size(void) const;
+  _CCCL_HOST_DEVICE size_type max_size() const;
 
   /*! \brief If n is less than or equal to capacity(), this call has no effect.
    *         Otherwise, this method is a request for allocation of additional memory. If
@@ -246,12 +246,12 @@ public:
   /*! Returns the number of elements which have been reserved in this
    *  vector_base.
    */
-  _CCCL_HOST_DEVICE size_type capacity(void) const;
+  _CCCL_HOST_DEVICE size_type capacity() const;
 
   /*! This method shrinks the capacity of this vector_base to exactly
    *  fit its elements.
    */
-  void shrink_to_fit(void);
+  void shrink_to_fit();
 
   /*! \brief Subscript access to the data contained in this vector_dev.
    *  \param n The index of the element for which data should be accessed.
@@ -277,119 +277,119 @@ public:
    *  this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE iterator begin(void);
+  _CCCL_HOST_DEVICE iterator begin();
 
   /*! This method returns a const_iterator pointing to the beginning
    *  of this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE const_iterator begin(void) const;
+  _CCCL_HOST_DEVICE const_iterator begin() const;
 
   /*! This method returns a const_iterator pointing to the beginning
    *  of this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE const_iterator cbegin(void) const;
+  _CCCL_HOST_DEVICE const_iterator cbegin() const;
 
   /*! This method returns a reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE reverse_iterator rbegin(void);
+  _CCCL_HOST_DEVICE reverse_iterator rbegin();
 
   /*! This method returns a const_reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A const_reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator rbegin(void) const;
+  _CCCL_HOST_DEVICE const_reverse_iterator rbegin() const;
 
   /*! This method returns a const_reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A const_reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator crbegin(void) const;
+  _CCCL_HOST_DEVICE const_reverse_iterator crbegin() const;
 
   /*! This method returns an iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE iterator end(void);
+  _CCCL_HOST_DEVICE iterator end();
 
   /*! This method returns a const_iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE const_iterator end(void) const;
+  _CCCL_HOST_DEVICE const_iterator end() const;
 
   /*! This method returns a const_iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE const_iterator cend(void) const;
+  _CCCL_HOST_DEVICE const_iterator cend() const;
 
   /*! This method returns a reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE reverse_iterator rend(void);
+  _CCCL_HOST_DEVICE reverse_iterator rend();
 
   /*! This method returns a const_reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator rend(void) const;
+  _CCCL_HOST_DEVICE const_reverse_iterator rend() const;
 
   /*! This method returns a const_reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator crend(void) const;
+  _CCCL_HOST_DEVICE const_reverse_iterator crend() const;
 
   /*! This method returns a const_reference referring to the first element of this
    *  vector_base.
    *  \return The first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_reference front(void) const;
+  _CCCL_HOST_DEVICE const_reference front() const;
 
   /*! This method returns a reference pointing to the first element of this
    *  vector_base.
    *  \return The first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE reference front(void);
+  _CCCL_HOST_DEVICE reference front();
 
   /*! This method returns a const reference pointing to the last element of
    *  this vector_base.
    *  \return The last element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_reference back(void) const;
+  _CCCL_HOST_DEVICE const_reference back() const;
 
   /*! This method returns a reference referring to the last element of
    *  this vector_dev.
    *  \return The last element of this vector_base.
    */
-  _CCCL_HOST_DEVICE reference back(void);
+  _CCCL_HOST_DEVICE reference back();
 
   /*! This method returns a pointer to this vector_base's first element.
    *  \return A pointer to the first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE pointer data(void);
+  _CCCL_HOST_DEVICE pointer data();
 
   /*! This method returns a const_pointer to this vector_base's first element.
    *  \return a const_pointer to the first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_pointer data(void) const;
+  _CCCL_HOST_DEVICE const_pointer data() const;
 
   /*! This method resizes this vector_base to 0.
    */
-  void clear(void);
+  void clear();
 
   /*! This method returns true iff size() == 0.
    *  \return true if size() == 0; false, otherwise.
    */
-  _CCCL_HOST_DEVICE bool empty(void) const;
+  _CCCL_HOST_DEVICE bool empty() const;
 
   /*! This method appends the given element to the end of this vector_base.
    *  \param x The element to append.
@@ -399,7 +399,7 @@ public:
   /*! This method erases the last element of this vector_base, invalidating
    *  all iterators and references to it.
    */
-  void pop_back(void);
+  void pop_back();
 
   /*! This method swaps the contents of this vector_base with another vector_base.
    *  \param v The vector_base with which to swap.
@@ -470,7 +470,7 @@ public:
   /*! This method returns a copy of this vector's allocator.
    *  \return A copy of the alloctor used by this vector.
    */
-  allocator_type get_allocator(void) const;
+  allocator_type get_allocator() const;
 
 protected:
   // Our storage

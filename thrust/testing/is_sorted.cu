@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestIsSortedSimple(void)
+void TestIsSortedSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -38,7 +38,7 @@ void TestIsSortedSimple(void)
 DECLARE_VECTOR_UNITTEST(TestIsSortedSimple);
 
 template <class Vector>
-void TestIsSortedRepeatedElements(void)
+void TestIsSortedRepeatedElements()
 {
   Vector v(10);
 
@@ -58,7 +58,7 @@ void TestIsSortedRepeatedElements(void)
 DECLARE_VECTOR_UNITTEST(TestIsSortedRepeatedElements);
 
 template <class Vector>
-void TestIsSorted(void)
+void TestIsSorted()
 {
   typedef typename Vector::value_type T;
 

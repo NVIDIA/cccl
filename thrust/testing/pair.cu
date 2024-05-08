@@ -251,7 +251,7 @@ struct TestPairTupleSize
 };
 SimpleUnitTest<TestPairTupleSize, PairConstVolatileTypes> TestPairTupleSizeInstance;
 
-void TestPairTupleElement(void)
+void TestPairTupleElement()
 {
   using type0 = thrust::tuple_element<0, thrust::pair<int, float>>::type;
   using type1 = thrust::tuple_element<1, thrust::pair<int, float>>::type;
@@ -275,7 +275,7 @@ void TestPairTupleElement(void)
 };
 DECLARE_UNITTEST(TestPairTupleElement);
 
-void TestPairSwap(void)
+void TestPairSwap()
 {
   int x = 7;
   int y = 13;
@@ -311,7 +311,7 @@ void TestPairSwap(void)
 DECLARE_UNITTEST(TestPairSwap);
 
 #if _CCCL_STD_VER >= 2017
-void TestPairStructuredBindings(void)
+void TestPairStructuredBindings()
 {
   const int a = 42;
   const int b = 1337;
@@ -322,4 +322,16 @@ void TestPairStructuredBindings(void)
   ASSERT_EQUAL(b, b2);
 }
 DECLARE_UNITTEST(TestPairStructuredBindings);
-#endif
+
+void TestPairCTAD(void)
+{
+  const int a = 42;
+  const int b = 1337;
+  thrust::pair p(a, b);
+
+  auto [a2, b2] = p;
+  ASSERT_EQUAL(a, a2);
+  ASSERT_EQUAL(b, b2);
+}
+DECLARE_UNITTEST(TestPairCTAD);
+#endif // _CCCL_STD_VER >= 2017

@@ -3,7 +3,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/fill.h>
 
-int main(void)
+int main()
 {
   size_t N = 10;
 
