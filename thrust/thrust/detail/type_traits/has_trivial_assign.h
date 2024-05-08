@@ -42,7 +42,7 @@ namespace detail
 template <typename T>
 struct has_trivial_assign
     : public integral_constant<bool,
-                               (is_pod<T>::value && !is_const<T>::value)
+                               (::cuda::std::is_pod<T>::value && !is_const<T>::value)
                                  || ::cuda::std::is_trivially_copy_assignable<T>::value>
 {};
 

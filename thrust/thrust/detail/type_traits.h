@@ -66,34 +66,17 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct is_pod
-    : public integral_constant<bool,
-                               ::cuda::std::is_void<T>::value || ::cuda::std::is_pointer<T>::value
-                                 || ::cuda::std::is_arithmetic<T>::value
-#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_CLANG)
-                                 // use intrinsic type traits
-                                 || __is_pod(T)
-#elif defined(_CCCL_COMPILER_GCC)
-// only use the intrinsic for >= 4.3
-#  if (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)
-                                 || __is_pod(T)
-#  endif // GCC VERSION
-#endif // THRUST_HOST_COMPILER
-                               >
-{};
-
-template <typename T>
 struct has_trivial_constructor
-    : public integral_constant<bool, is_pod<T>::value || ::cuda::std::is_trivially_constructible<T>::value>
+    : public integral_constant<bool, ::cuda::std::is_pod<T>::value || ::cuda::std::is_trivially_constructible<T>::value>
 {};
 
 template <typename T>
 struct has_trivial_copy_constructor
-    : public integral_constant<bool, is_pod<T>::value || ::cuda::std::is_trivially_copyable<T>::value>
+    : public integral_constant<bool, ::cuda::std::is_pod<T>::value || ::cuda::std::is_trivially_copyable<T>::value>
 {};
 
 template <typename T>
-struct has_trivial_destructor : public is_pod<T>
+struct has_trivial_destructor : public ::cuda::std::is_pod<T>
 {};
 
 template <typename T>
