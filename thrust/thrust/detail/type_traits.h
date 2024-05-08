@@ -66,12 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct add_cv
-{
-  typedef const volatile T type;
-}; // end add_cv
-
-template <typename T>
 struct remove_cv
 {
   typedef ::cuda::std::__remove_const_t<::cuda::std::__remove_volatile_t<T>> type;
@@ -353,7 +347,7 @@ struct make_unsigned_base
   typedef typename eval_if<
     ::cuda::std::is_const<T>::value&& ::cuda::std::is_volatile<T>::value,
     // add cv back
-    add_cv<unsigned_remove_cv_t>,
+    ::cuda::std::add_cv<unsigned_remove_cv_t>,
     // check const & volatile individually
     eval_if<::cuda::std::is_const<T>::value,
             // add c back
