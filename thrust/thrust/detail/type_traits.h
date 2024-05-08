@@ -169,10 +169,6 @@ template <typename T1, typename T2, typename T = void>
 struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::value, T>
 {};
 
-template <typename T1, typename T2, typename Result = void>
-struct enable_if_different : enable_if<!::cuda::std::is_same<T1, T2>::value, Result>
-{};
-
 template <typename T>
 struct is_numeric : and_<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
 {}; // end is_numeric
