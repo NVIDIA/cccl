@@ -70,6 +70,9 @@ jobs:
         # Use the miscco/cudf fork with fixes for latest CCCL (https://github.com/rapidsai/cudf/pull/15552)
         sudo yq -i '(.repos[] | select(.name == "cudf") | .git) *= {"upstream": "miscco", "tag": "fix_cccl_compat"}' /opt/rapids-build-utils/manifest.yaml;
 
+        # Clone the trxcllnt/cuCollections fork with fixes for latest CCCL
+        devcontainer-utils-clone-github-repo --branch rapids-24.06-cccl-2.5.0 --clone-upstream -- trxcllnt/cuCollections ~/cuco;
+
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
 
@@ -97,6 +100,8 @@ jobs:
           args_=("${args_[@]/%/"=${opt}"}");
           # Use the local CCCL mount
           args_+=(-DCPM_CCCL_SOURCE="${HOME}/cccl");
+          # Use the local cuCollections clone
+          args_+=(-DCPM_cuco_SOURCE="${HOME}/cuco");
           args_+=(-DBUILD_SHARED_LIBS=ON);
 
           for lib in ${{ matrix.libs }}; do
