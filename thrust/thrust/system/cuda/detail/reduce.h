@@ -149,7 +149,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
                     cub::GRID_MAPPING_DYNAMIC>
     ReducePolicy4B;
 
-  typedef typename thrust::detail::conditional<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>::type type;
+  typedef ::cuda::std::__conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B> type;
 }; // Tuning sm35
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>

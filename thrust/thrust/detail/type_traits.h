@@ -115,18 +115,6 @@ template <typename Boolean>
 struct not_ : public integral_constant<bool, !Boolean::value>
 {}; // end not_
 
-template <bool B, class T, class F>
-struct conditional
-{
-  typedef T type;
-};
-
-template <class T, class F>
-struct conditional<false, T, F>
-{
-  typedef F type;
-};
-
 template <bool, typename Then, typename Else>
 struct eval_if
 {}; // end eval_if
