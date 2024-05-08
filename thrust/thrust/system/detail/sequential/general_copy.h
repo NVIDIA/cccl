@@ -43,7 +43,7 @@ namespace general_copy_detail
 {
 
 template <typename T1, typename T2>
-struct lazy_is_assignable : thrust::detail::is_assignable<typename T1::type, typename T2::type>
+struct lazy_is_assignable : ::cuda::std::is_assignable<typename T1::type, typename T2::type>
 {};
 
 // sometimes OutputIterator's reference type is reported as void
