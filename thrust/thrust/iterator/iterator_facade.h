@@ -331,7 +331,7 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  typedef typename thrust::detail::remove_const<Value>::type value_type;
+  typedef ::cuda::std::__remove_const_t<Value> value_type;
 
   /*! The return type of \p iterator_facade::operator*().
    */

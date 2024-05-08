@@ -104,8 +104,7 @@ double const DEFAULT_ABSOLUTE_TOL = 1e-4;
 template <typename T>
 struct value_type
 {
-  typedef typename THRUST_NS_QUALIFIER::detail::remove_const<
-    typename THRUST_NS_QUALIFIER::detail::remove_reference<T>::type>::type type;
+  typedef ::cuda::std::__remove_const_t<typename THRUST_NS_QUALIFIER::detail::remove_reference<T>::type> type;
 };
 
 template <typename T>

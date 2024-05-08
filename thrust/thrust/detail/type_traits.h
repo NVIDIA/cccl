@@ -66,18 +66,6 @@ struct is_non_bool_arithmetic<bool> : public false_type
 {};
 
 template <typename T>
-struct remove_const
-{
-  typedef T type;
-}; // end remove_const
-
-template <typename T>
-struct remove_const<const T>
-{
-  typedef T type;
-}; // end remove_const
-
-template <typename T>
 struct add_volatile
 {
   typedef volatile T type;
@@ -104,7 +92,7 @@ struct add_cv
 template <typename T>
 struct remove_cv
 {
-  typedef typename remove_const<typename remove_volatile<T>::type>::type type;
+  typedef ::cuda::std::__remove_const_t<typename remove_volatile<T>::type> type;
 }; // end remove_cv
 
 template <typename T>
