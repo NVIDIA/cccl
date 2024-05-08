@@ -62,7 +62,7 @@ struct counting_iterator_base
   typedef typename thrust::detail::ia_dflt_help<
     Difference,
     thrust::detail::eval_if<thrust::detail::is_numeric<Incrementable>::value,
-                            thrust::detail::eval_if<thrust::detail::is_integral<Incrementable>::value,
+                            thrust::detail::eval_if<::cuda::std::is_integral<Incrementable>::value,
                                                     thrust::detail::numeric_difference<Incrementable>,
                                                     thrust::detail::identity_<std::ptrdiff_t>>,
                             thrust::iterator_difference<Incrementable>>>::type difference;

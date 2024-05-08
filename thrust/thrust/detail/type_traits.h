@@ -47,80 +47,6 @@ using integral_constant = ::cuda::std::integral_constant<T, v>;
 using true_type         = ::cuda::std::true_type;
 using false_type        = ::cuda::std::false_type;
 
-// template<typename T> struct is_integral : public std::tr1::is_integral<T> {};
-template <typename T>
-struct is_integral : public false_type
-{};
-template <>
-struct is_integral<bool> : public true_type
-{};
-template <>
-struct is_integral<char> : public true_type
-{};
-template <>
-struct is_integral<signed char> : public true_type
-{};
-template <>
-struct is_integral<unsigned char> : public true_type
-{};
-template <>
-struct is_integral<short> : public true_type
-{};
-template <>
-struct is_integral<unsigned short> : public true_type
-{};
-template <>
-struct is_integral<int> : public true_type
-{};
-template <>
-struct is_integral<unsigned int> : public true_type
-{};
-template <>
-struct is_integral<long> : public true_type
-{};
-template <>
-struct is_integral<unsigned long> : public true_type
-{};
-template <>
-struct is_integral<long long> : public true_type
-{};
-template <>
-struct is_integral<unsigned long long> : public true_type
-{};
-template <>
-struct is_integral<const bool> : public true_type
-{};
-template <>
-struct is_integral<const char> : public true_type
-{};
-template <>
-struct is_integral<const unsigned char> : public true_type
-{};
-template <>
-struct is_integral<const short> : public true_type
-{};
-template <>
-struct is_integral<const unsigned short> : public true_type
-{};
-template <>
-struct is_integral<const int> : public true_type
-{};
-template <>
-struct is_integral<const unsigned int> : public true_type
-{};
-template <>
-struct is_integral<const long> : public true_type
-{};
-template <>
-struct is_integral<const unsigned long> : public true_type
-{};
-template <>
-struct is_integral<const long long> : public true_type
-{};
-template <>
-struct is_integral<const unsigned long long> : public true_type
-{};
-
 template <typename T>
 struct is_floating_point : public false_type
 {};
@@ -135,7 +61,7 @@ struct is_floating_point<long double> : public true_type
 {};
 
 template <typename T>
-struct is_arithmetic : public is_integral<T>
+struct is_arithmetic : public ::cuda::std::is_integral<T>
 {};
 template <>
 struct is_arithmetic<float> : public true_type
@@ -172,7 +98,7 @@ struct is_void<const void> : public true_type
 {};
 
 template <typename T>
-struct is_non_bool_integral : public is_integral<T>
+struct is_non_bool_integral : public ::cuda::std::is_integral<T>
 {};
 template <>
 struct is_non_bool_integral<bool> : public false_type
@@ -648,7 +574,7 @@ template <typename T1, typename T2>
 struct promoted_numerical_type<
   T1,
   T2,
-  typename enable_if<and_<typename is_integral<T1>::type, typename is_floating_point<T2>::type>::value>::type>
+  typename enable_if<and_<typename ::cuda::std::is_integral<T1>::type, typename is_floating_point<T2>::type>::value>::type>
 {
   typedef T2 type;
 };
@@ -657,7 +583,7 @@ template <typename T1, typename T2>
 struct promoted_numerical_type<
   T1,
   T2,
-  typename enable_if<and_<typename is_floating_point<T1>::type, typename is_integral<T2>::type>::value>::type>
+  typename enable_if<and_<typename is_floating_point<T1>::type, typename ::cuda::std::is_integral<T2>::type>::value>::type>
 {
   typedef T1 type;
 };
