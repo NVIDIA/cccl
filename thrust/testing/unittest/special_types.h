@@ -70,7 +70,7 @@ struct key_value
   typedef Key key_type;
   typedef Value value_type;
 
-  __host__ __device__ key_value(void)
+  __host__ __device__ key_value()
       : key()
       , value()
   {}

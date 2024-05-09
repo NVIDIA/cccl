@@ -112,8 +112,8 @@ struct non_trivial
 void kernel_invoker()
 {
   // TODO: add validate_movable
-  validate_not_movable<cuda::std::optional<int>, testers>();
-  validate_not_movable<cuda::std::optional<non_trivial>, testers>();
+  validate_pinned<cuda::std::optional<int>, testers>();
+  validate_pinned<cuda::std::optional<non_trivial>, testers>();
 }
 
 int main(int arg, char** argv)

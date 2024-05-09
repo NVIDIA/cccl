@@ -159,7 +159,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __ro
   _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
-  if (_LIBCUDACXX_TRAIT(is_trivially_move_assignable, value_type))
+  if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
@@ -177,7 +177,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterato
   bidirectional_iterator_tag)
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
-  if (_LIBCUDACXX_TRAIT(is_trivially_move_assignable, value_type))
+  if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
@@ -199,7 +199,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
   random_access_iterator_tag)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
-  if (_LIBCUDACXX_TRAIT(is_trivially_move_assignable, value_type))
+  if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {

@@ -15,7 +15,7 @@
 #  error NULL not defined
 #endif
 
-#ifndef __CUDACC_RTC__
+#ifndef TEST_COMPILER_NVRTC
 #  ifndef CLOCKS_PER_SEC
 #    error CLOCKS_PER_SEC not defined
 #  endif
@@ -41,7 +41,7 @@ int main(int, char**)
   unused(c); // Prevent unused warning
   unused(s); // Prevent unused warning
   unused(t); // Prevent unused warning
-#ifndef __CUDACC_RTC__
+#ifndef TEST_COMPILER_NVRTC
   cuda::std::tm tm = {};
   char str[3];
   unused(tm); // Prevent unused warning

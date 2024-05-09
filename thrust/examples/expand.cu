@@ -60,7 +60,7 @@ void print(const std::string& s, const Vector& v)
   std::cout << std::endl;
 }
 
-int main(void)
+int main()
 {
   int counts[] = {3, 5, 2, 0, 1, 3, 4, 2, 4};
   int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};

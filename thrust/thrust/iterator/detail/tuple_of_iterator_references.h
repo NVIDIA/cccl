@@ -67,9 +67,7 @@ public:
   using super_t = thrust::tuple<Ts...>;
   using super_t::super_t;
 
-  inline _CCCL_HOST_DEVICE tuple_of_iterator_references()
-      : super_t()
-  {}
+  tuple_of_iterator_references() = default;
 
   // allow implicit construction from tuple<refs>
   inline _CCCL_HOST_DEVICE tuple_of_iterator_references(const super_t& other)
@@ -138,14 +136,14 @@ public:
 
 } // namespace detail
 
+template <class... Ts>
+struct __is_tuple_of_iterator_references<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
+    : _CUDA_VSTD::true_type
+{};
+
 THRUST_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class... Ts>
-struct __is_tuple_of_iterator_references<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : integral_constant<bool, true>
-{};
 
 // define tuple_size, tuple_element, etc.
 template <class... Ts>

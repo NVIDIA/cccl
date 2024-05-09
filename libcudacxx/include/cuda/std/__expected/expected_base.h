@@ -66,34 +66,34 @@ struct __expected_construct_from_invoke_tag
 
 template <class _Tp,
           class _Err,
-          bool = _LIBCUDACXX_TRAIT(is_trivially_destructible, _Tp) && _LIBCUDACXX_TRAIT(is_trivially_destructible, _Err)>
+          bool = _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_destructible, _Err)>
 union __expected_union_t
 {
   struct __empty_t
   {};
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-  _LIBCUDACXX_REQUIRES(_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2))
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t() noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp2))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
       : __val_()
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-  _LIBCUDACXX_REQUIRES((!_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2)))
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_default_constructible, _Tp2)))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t() noexcept
       : __empty_()
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t(in_place_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
@@ -102,7 +102,7 @@ union __expected_union_t
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
       : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
@@ -111,11 +111,12 @@ union __expected_union_t
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
   // the __expected_destruct's destructor handles this
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
   _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -130,27 +131,27 @@ union __expected_union_t<_Tp, _Err, true>
   {};
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-  _LIBCUDACXX_REQUIRES(_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2))
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t() noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp2))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
       : __val_()
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-  _LIBCUDACXX_REQUIRES((!_LIBCUDACXX_TRAIT(is_default_constructible, _Tp2)))
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_default_constructible, _Tp2)))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t() noexcept
       : __empty_()
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t(in_place_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
@@ -159,7 +160,7 @@ union __expected_union_t<_Tp, _Err, true>
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
       : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
@@ -168,7 +169,7 @@ union __expected_union_t<_Tp, _Err, true>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
   {}
 
@@ -179,8 +180,8 @@ union __expected_union_t<_Tp, _Err, true>
 
 template <class _Tp,
           class _Err,
-          bool = _LIBCUDACXX_TRAIT(is_trivially_destructible, _Tp),
-          bool = _LIBCUDACXX_TRAIT(is_trivially_destructible, _Err)>
+          bool = _CCCL_TRAIT(is_trivially_destructible, _Tp),
+          bool = _CCCL_TRAIT(is_trivially_destructible, _Err)>
 struct __expected_destruct;
 
 template <class _Tp, class _Err>
@@ -192,20 +193,20 @@ struct __expected_destruct<_Tp, _Err, false, false>
   constexpr __expected_destruct() = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(in_place_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -215,7 +216,7 @@ struct __expected_destruct<_Tp, _Err, false, false>
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -228,7 +229,7 @@ struct __expected_destruct<_Tp, _Err, false, false>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -236,15 +237,16 @@ struct __expected_destruct<_Tp, _Err, false, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__val_));
+      __union_.__val_.~_Tp();
     }
     else
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
+      __union_.__unex_.~_Err();
     }
   }
 };
@@ -258,20 +260,20 @@ struct __expected_destruct<_Tp, _Err, true, false>
   constexpr __expected_destruct() = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(in_place_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -281,7 +283,7 @@ struct __expected_destruct<_Tp, _Err, true, false>
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -294,7 +296,7 @@ struct __expected_destruct<_Tp, _Err, true, false>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -302,11 +304,12 @@ struct __expected_destruct<_Tp, _Err, true, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (!__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
+      __union_.__unex_.~_Err();
     }
   }
 };
@@ -320,20 +323,20 @@ struct __expected_destruct<_Tp, _Err, false, true>
   constexpr __expected_destruct() = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(in_place_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -343,7 +346,7 @@ struct __expected_destruct<_Tp, _Err, false, true>
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -356,7 +359,7 @@ struct __expected_destruct<_Tp, _Err, false, true>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -364,11 +367,12 @@ struct __expected_destruct<_Tp, _Err, false, true>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__val_));
+      __union_.__val_.~_Tp();
     }
   }
 };
@@ -383,20 +387,20 @@ struct __expected_destruct<_Tp, _Err, true, true>
   constexpr __expected_destruct() = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(const bool __has_val) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
       : __has_val_(__has_val)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(in_place_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __union_(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -406,7 +410,7 @@ struct __expected_destruct<_Tp, _Err, true, true>
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  in_place,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -419,7 +423,7 @@ struct __expected_destruct<_Tp, _Err, true, true>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -436,7 +440,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
-  _LIBCUDACXX_REQUIRES(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...))
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_nothrow_constructible, _T1, _Args...))
   static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
   __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept
   {
@@ -445,7 +449,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
-  _LIBCUDACXX_REQUIRES((!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND _LIBCUDACXX_TRAIT(
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND _CCCL_TRAIT(
     is_nothrow_move_constructible, _T1))
   static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
   __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
@@ -456,13 +460,13 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
-  _LIBCUDACXX_REQUIRES((!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND(
-    !_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T1)))
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND(
+    !_CCCL_TRAIT(is_nothrow_move_constructible, _T1)))
   static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
   __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args)
   {
     static_assert(
-      _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T2),
+      _CCCL_TRAIT(is_nothrow_move_constructible, _T2),
       "To provide strong exception guarantee, T2 has to satisfy `is_nothrow_move_constructible_v` so that it can "
       "be reverted to the previous state in case an exception is thrown during the assignment.");
     _T2 __tmp(_CUDA_VSTD::move(__oldval));
@@ -475,7 +479,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-  _LIBCUDACXX_REQUIRES(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2))
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_nothrow_move_constructible, _Err2))
   static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
@@ -493,11 +497,11 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-  _LIBCUDACXX_REQUIRES((!_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2)))
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_nothrow_move_constructible, _Err2)))
   static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
   __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err)
   {
-    static_assert(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),
+    static_assert(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp),
                   "To provide strong exception guarantee, Tp has to satisfy `is_nothrow_move_constructible_v` so "
                   "that it can be reverted to the previous state in case an exception is thrown during swap.");
     _Tp __tmp(_CUDA_VSTD::move(__with_val.__union_.__val_));
@@ -516,8 +520,8 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 
 template <class _Tp,
           class _Err,
-          bool = (_LIBCUDACXX_TRAIT(is_trivially_copy_constructible, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_copy_constructible, _Err)>
+          bool = (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)>
 struct __expected_copy : __expected_storage<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
@@ -529,7 +533,7 @@ struct __expected_copy<_Tp, _Err, false> : __expected_storage<_Tp, _Err>
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __expected_copy(const __expected_copy& __other) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err))
+    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_constructible, _Err))
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
@@ -549,8 +553,8 @@ struct __expected_copy<_Tp, _Err, false> : __expected_storage<_Tp, _Err>
 
 template <class _Tp,
           class _Err,
-          bool = (_LIBCUDACXX_TRAIT(is_trivially_move_constructible, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_move_constructible, _Err)>
+          bool = (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_move_constructible, _Err)>
 struct __expected_move : __expected_copy<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
@@ -564,7 +568,7 @@ struct __expected_move<_Tp, _Err, false> : __expected_copy<_Tp, _Err>
   __expected_move(const __expected_move&) = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __expected_move(__expected_move&& __other) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
+    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_constructible, _Err))
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
@@ -583,12 +587,12 @@ struct __expected_move<_Tp, _Err, false> : __expected_copy<_Tp, _Err>
 
 template <class _Tp,
           class _Err,
-          bool = (_LIBCUDACXX_TRAIT(is_trivially_destructible, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_destructible, _Err)
-              && (_LIBCUDACXX_TRAIT(is_trivially_copy_constructible, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_copy_constructible, _Err)
-              && (_LIBCUDACXX_TRAIT(is_trivially_copy_assignable, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_copy_assignable, _Err)>
+          bool = (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_destructible, _Err)
+              && (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)
+              && (_CCCL_TRAIT(is_trivially_copy_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_copy_assignable, _Err)>
 struct __expected_copy_assign : __expected_move<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
@@ -604,9 +608,9 @@ struct __expected_copy_assign<_Tp, _Err, false> : __expected_move<_Tp, _Err>
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __expected_copy_assign&
   operator=(const __expected_copy_assign& __other) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Tp)
-    && _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _Err)
-    && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
+    _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp)
+    && _CCCL_TRAIT(is_nothrow_copy_assignable, _Err)
+    && _CCCL_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
   {
     if (this->__has_val_ && __other.__has_val_)
     {
@@ -634,12 +638,12 @@ struct __expected_copy_assign<_Tp, _Err, false> : __expected_move<_Tp, _Err>
 
 template <class _Tp,
           class _Err,
-          bool = (_LIBCUDACXX_TRAIT(is_trivially_destructible, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_destructible, _Err)
-              && (_LIBCUDACXX_TRAIT(is_trivially_move_constructible, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_move_constructible, _Err)
-              && (_LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Tp) || _LIBCUDACXX_TRAIT(is_same, _Tp, void))
-              && _LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Err)>
+          bool = (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_destructible, _Err)
+              && (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_move_constructible, _Err)
+              && (_CCCL_TRAIT(is_trivially_move_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+              && _CCCL_TRAIT(is_trivially_move_assignable, _Err)>
 struct __expected_move_assign : __expected_copy_assign<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
@@ -656,9 +660,9 @@ struct __expected_move_assign<_Tp, _Err, false> : __expected_copy_assign<_Tp, _E
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __expected_move_assign&
   operator=(__expected_move_assign&& __other) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp) && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
-    && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Err)
-    && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened
+    _CCCL_TRAIT(is_nothrow_move_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp)
+    && _CCCL_TRAIT(is_nothrow_move_assignable, _Err)
+    && _CCCL_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened
   {
     if (this->__has_val_ && __other.__has_val_)
     {
@@ -684,17 +688,17 @@ struct __expected_move_assign<_Tp, _Err, false> : __expected_copy_assign<_Tp, _E
 
 template <class _Tp, class _Err>
 using __expected_sfinae_ctor_base_t =
-  __sfinae_ctor_base<_LIBCUDACXX_TRAIT(is_copy_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_copy_constructible, _Err),
-                     _LIBCUDACXX_TRAIT(is_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_move_constructible, _Err)>;
+  __sfinae_ctor_base<_CCCL_TRAIT(is_copy_constructible, _Tp) && _CCCL_TRAIT(is_copy_constructible, _Err),
+                     _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_constructible, _Err)>;
 
 template <class _Tp, class _Err>
 using __expected_sfinae_assign_base_t = __sfinae_assign_base<
-  _LIBCUDACXX_TRAIT(is_copy_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_copy_constructible, _Err)
-    && _LIBCUDACXX_TRAIT(is_copy_assignable, _Tp) && _LIBCUDACXX_TRAIT(is_copy_assignable, _Err)
-    && (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) || _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err)),
-  _LIBCUDACXX_TRAIT(is_move_constructible, _Tp) && _LIBCUDACXX_TRAIT(is_move_constructible, _Err)
-    && _LIBCUDACXX_TRAIT(is_move_assignable, _Tp) && _LIBCUDACXX_TRAIT(is_move_assignable, _Err)
-    && (_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) || _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))>;
+  _CCCL_TRAIT(is_copy_constructible, _Tp) && _CCCL_TRAIT(is_copy_constructible, _Err)
+    && _CCCL_TRAIT(is_copy_assignable, _Tp) && _CCCL_TRAIT(is_copy_assignable, _Err)
+    && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err)),
+  _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_constructible, _Err)
+    && _CCCL_TRAIT(is_move_assignable, _Tp) && _CCCL_TRAIT(is_move_assignable, _Err)
+    && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err))>;
 
 // expected<void, E> base classtemplate <class _Tp, class _Err>
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
@@ -715,7 +719,7 @@ struct __expected_destruct<void, _Err, false, false>
 
     template <class... _Args>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
-      _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+      _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
         : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 
@@ -724,11 +728,12 @@ struct __expected_destruct<void, _Err, false, false>
       __expected_construct_from_invoke_tag,
       unexpect_t,
       _Fun&& __fun,
-      _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+      _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
         : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
     {}
 
     // the __expected_destruct's destructor handles this
+    _CCCL_EXEC_CHECK_DISABLE
     _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
     _CCCL_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -744,7 +749,7 @@ struct __expected_destruct<void, _Err, false, false>
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -754,7 +759,7 @@ struct __expected_destruct<void, _Err, false, false>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -762,11 +767,12 @@ struct __expected_destruct<void, _Err, false, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__expected_destruct()
   {
     if (!__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
+      __union_.__unex_.~_Err();
     }
   }
 };
@@ -786,7 +792,7 @@ struct __expected_destruct<void, _Err, false, true>
 
     template <class... _Args>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
-      _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+      _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
         : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 
@@ -795,7 +801,7 @@ struct __expected_destruct<void, _Err, false, true>
       __expected_construct_from_invoke_tag,
       unexpect_t,
       _Fun&& __fun,
-      _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+      _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
         : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...))
     {}
 
@@ -808,14 +814,14 @@ struct __expected_destruct<void, _Err, false, true>
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(in_place_t) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_()
       , __has_val_(true)
   {}
 
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __union_(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
       , __has_val_(false)
   {}
@@ -825,7 +831,7 @@ struct __expected_destruct<void, _Err, false, true>
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
       : __union_(__expected_construct_from_invoke_tag{},
                  unexpect,
                  _CUDA_VSTD::forward<_Fun>(__fun),
@@ -847,7 +853,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 
   static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __swap_val_unex_impl(
     __expected_storage& __with_val,
-    __expected_storage& __with_err) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
+    __expected_storage& __with_err) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Err))
   {
     _LIBCUDACXX_CONSTRUCT_AT(__with_val.__union_.__unex_, _CUDA_VSTD::move(__with_err.__union_.__unex_));
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
@@ -862,7 +868,7 @@ struct __expected_copy<void, _Err, false> : __expected_storage<void, _Err>
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __expected_copy(const __expected_copy& __other) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err))
+  __expected_copy(const __expected_copy& __other) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Err))
       : __base(__other.__has_val_)
   {
     if (!__other.__has_val_)
@@ -884,7 +890,7 @@ struct __expected_move<void, _Err, false> : __expected_copy<void, _Err>
   __expected_move(const __expected_move&) = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __expected_move(__expected_move&& __other) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
+  __expected_move(__expected_move&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Err))
       : __base(__other.__has_val_)
   {
     if (!__other.__has_val_)
@@ -907,8 +913,7 @@ struct __expected_copy_assign<void, _Err, false> : __expected_move<void, _Err>
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __expected_copy_assign&
   operator=(const __expected_copy_assign& __other) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _Err)
-    && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
+    _CCCL_TRAIT(is_nothrow_copy_assignable, _Err) && _CCCL_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
   {
     if (this->__has_val_ && __other.__has_val_)
     {
@@ -945,8 +950,7 @@ struct __expected_move_assign<void, _Err, false> : __expected_copy_assign<void, 
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __expected_move_assign&
   operator=(__expected_move_assign&& __other) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Err)
-    && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened
+    _CCCL_TRAIT(is_nothrow_move_assignable, _Err) && _CCCL_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened
   {
     if (this->__has_val_ && __other.__has_val_)
     {
@@ -972,12 +976,12 @@ struct __expected_move_assign<void, _Err, false> : __expected_copy_assign<void, 
 
 template <class _Err>
 using __expected_void_sfinae_ctor_base_t =
-  __sfinae_ctor_base<_LIBCUDACXX_TRAIT(is_copy_constructible, _Err), _LIBCUDACXX_TRAIT(is_move_constructible, _Err)>;
+  __sfinae_ctor_base<_CCCL_TRAIT(is_copy_constructible, _Err), _CCCL_TRAIT(is_move_constructible, _Err)>;
 
 template <class _Err>
 using __expected_void_sfinae_assign_base_t =
-  __sfinae_assign_base<_LIBCUDACXX_TRAIT(is_copy_constructible, _Err) && _LIBCUDACXX_TRAIT(is_copy_assignable, _Err),
-                       _LIBCUDACXX_TRAIT(is_move_constructible, _Err) && _LIBCUDACXX_TRAIT(is_move_assignable, _Err)>;
+  __sfinae_assign_base<_CCCL_TRAIT(is_copy_constructible, _Err) && _CCCL_TRAIT(is_copy_assignable, _Err),
+                       _CCCL_TRAIT(is_move_constructible, _Err) && _CCCL_TRAIT(is_move_assignable, _Err)>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

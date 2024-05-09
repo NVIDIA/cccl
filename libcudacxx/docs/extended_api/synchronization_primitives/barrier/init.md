@@ -43,7 +43,7 @@ It can be silenced using `#pragma nv_diag_suppress static_var_with_dynamic_init`
 ```cuda
 #include <cuda/barrier>
 
-// Disables `pipeline_shared_state` initialization warning.
+// Disables `cuda::barrier` initialization warning.
 #pragma nv_diag_suppress static_var_with_dynamic_init
 
 __global__ void example_kernel() {
@@ -52,7 +52,7 @@ __global__ void example_kernel() {
 }
 ```
 
-[See it on Godbolt](https://godbolt.org/z/jG8se6Kd8){: .btn }
+[See it on Godbolt](https://godbolt.org/z/nK5q3xh34){: .btn }
 
 
 [`cuda::thread_scope`]: ./memory_model.md

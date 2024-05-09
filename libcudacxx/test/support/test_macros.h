@@ -375,7 +375,7 @@ struct is_same<T, T>
 #  define TEST_HAS_NO_UNICODE_CHARS
 #endif
 
-#if defined(__GNUC__) || defined(__clang__) || defined(__CUDACC_RTC__)
+#if defined(__GNUC__) || defined(__clang__) || defined(TEST_COMPILER_NVRTC)
 template <class Tp>
 __host__ __device__ inline void DoNotOptimize(Tp const& value)
 {

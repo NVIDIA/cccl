@@ -11,7 +11,7 @@ struct return_value
 {
   T val;
 
-  return_value(void) {}
+  return_value() {}
   return_value(T v)
       : val(v)
   {}
@@ -23,7 +23,7 @@ struct return_value
 };
 
 template <class Vector>
-void TestGenerateSimple(void)
+void TestGenerateSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -109,7 +109,7 @@ void TestGenerateToDiscardIterator(const size_t)
 DECLARE_VARIABLE_UNITTEST(TestGenerateToDiscardIterator);
 
 template <class Vector>
-void TestGenerateNSimple(void)
+void TestGenerateNSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -184,7 +184,7 @@ void TestGenerateNToDiscardIterator(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGenerateNToDiscardIterator);
 
 template <typename Vector>
-void TestGenerateZipIterator(void)
+void TestGenerateZipIterator()
 {
   typedef typename Vector::value_type T;
 
@@ -204,7 +204,7 @@ void TestGenerateZipIterator(void)
 };
 DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 
-void TestGenerateTuple(void)
+void TestGenerateTuple()
 {
   typedef int T;
   typedef thrust::tuple<T, T> Tuple;

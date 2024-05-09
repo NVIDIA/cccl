@@ -73,7 +73,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !defined(__CUDACC_RTC__)
+#if TEST_STD_VER > 2017 && !defined(TEST_COMPILER_NVRTC)
   static_assert(test());
 #endif
 

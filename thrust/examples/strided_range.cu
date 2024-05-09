@@ -49,12 +49,12 @@ public:
       , stride(stride)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), stride_functor(stride)));
   }
 
-  iterator end(void) const
+  iterator end() const
   {
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
@@ -65,7 +65,7 @@ protected:
   difference_type stride;
 };
 
-int main(void)
+int main()
 {
   thrust::device_vector<int> data(8);
   data[0] = 10;

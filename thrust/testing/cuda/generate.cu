@@ -8,7 +8,7 @@ struct return_value
 {
   T val;
 
-  return_value(void) {}
+  return_value() {}
   return_value(T v)
       : val(v)
   {}

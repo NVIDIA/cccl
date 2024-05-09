@@ -25,7 +25,7 @@
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/std/detail/libcxx/include/__pragma_push>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,6 +57,6 @@ _CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp m
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/detail/libcxx/include/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___ALGORITHM_MAX_H

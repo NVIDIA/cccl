@@ -42,7 +42,7 @@ void TestSwapRangesDispatchImplicit()
 DECLARE_UNITTEST(TestSwapRangesDispatchImplicit);
 
 template <class Vector>
-void TestSwapRangesSimple(void)
+void TestSwapRangesSimple()
 {
   Vector v1(5);
   v1[0] = 0;
@@ -96,7 +96,7 @@ void TestSwapRanges(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestSwapRanges);
 
 #if (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP)
-void TestSwapRangesForcedIterator(void)
+void TestSwapRangesForcedIterator()
 {
   thrust::device_vector<int> A(3, 0);
   thrust::device_vector<int> B(3, 1);
@@ -155,7 +155,7 @@ inline __host__ __device__ void swap(type_with_swap& a, type_with_swap& b)
   b.m_swapped = true;
 }
 
-void TestSwapRangesUserSwap(void)
+void TestSwapRangesUserSwap()
 {
   thrust::host_vector<type_with_swap> h_A(3, type_with_swap(0));
   thrust::host_vector<type_with_swap> h_B(3, type_with_swap(1));

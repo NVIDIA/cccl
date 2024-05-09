@@ -25,6 +25,7 @@
 
 #  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #    include <cuda_runtime.h>
+#    include <cuda_runtime_api.h>
 #  endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
 
 #  include <cuda/__memory_resource/get_property.h>
@@ -159,10 +160,6 @@ public:
 #    endif // _CCCL_STD_VER <= 2017
 
   /**
-   * @brief Enables the `pinned_memory` property
-   */
-  friend constexpr void get_property(cuda_pinned_memory_resource const&, pinned_memory) noexcept {}
-  /**
    * @brief Enables the `device_accessible` property
    */
   friend constexpr void get_property(cuda_pinned_memory_resource const&, device_accessible) noexcept {}
@@ -179,7 +176,6 @@ public:
     return __alignment <= default_cuda_malloc_host_alignment && (default_cuda_malloc_host_alignment % __alignment == 0);
   }
 };
-static_assert(resource_with<cuda_pinned_memory_resource, pinned_memory>, "");
 static_assert(resource_with<cuda_pinned_memory_resource, device_accessible>, "");
 static_assert(resource_with<cuda_pinned_memory_resource, host_accessible>, "");
 

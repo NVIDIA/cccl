@@ -14,6 +14,7 @@
 // #define DEBUG_TESTERS
 
 #include <cuda/barrier>
+#include <cuda/std/cassert>
 
 #include <atomic>
 
@@ -88,8 +89,8 @@ using aw_aw_pw2 =
 
 void kernel_invoker()
 {
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, aw_aw_pw1>(2);
-  validate_not_movable<barrier_and_token<cuda::std::barrier<>>, aw_aw_pw2>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, aw_aw_pw1>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, aw_aw_pw2>(2);
 }
 
 int main(int arg, char** argv)

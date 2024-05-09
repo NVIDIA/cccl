@@ -31,7 +31,7 @@ template <class _Ty, class... _Others>
 _LIBCUDACXX_CONCEPT _One_of = (is_same_v<_Ty, _Others> || ...);
 #elif _CCCL_STD_VER > 2011
 template <class _Ty, class... _Others>
-_LIBCUDACXX_CONCEPT _One_of = _LIBCUDACXX_TRAIT(disjunction, is_same<_Ty, _Others>...);
+_LIBCUDACXX_CONCEPT _One_of = _CCCL_TRAIT(disjunction, is_same<_Ty, _Others>...);
 #endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD

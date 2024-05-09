@@ -57,7 +57,7 @@ void simple_moving_average(const InputVector& data, size_t w, OutputVector& outp
   thrust::transform(temp.begin() + w, temp.end(), temp.begin(), output.begin(), minus_and_divide<T>(T(w)));
 }
 
-int main(void)
+int main()
 {
   // length of data series
   size_t n = 30;

@@ -6,28 +6,24 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvrtc, pre-sm-60
-// UNSUPPORTED: windows && pre-sm-70
+#include <cuda/std/atomic>
+#include <cuda/std/cassert>
 
-#include <cuda/atomic>
-
-#include "helpers.h"
+#include "../helpers.h"
 
 template <int Operand>
 struct store_tester
 {
   template <typename A>
-  __host__ __device__ static void initialize(A& v)
+  __host__ __device__ static void initialize(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     a.store(static_cast<T>(Operand));
   }
 
   template <typename A>
-  __host__ __device__ static void validate(A& v)
+  __host__ __device__ static void validate(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Operand));
   }
@@ -37,17 +33,15 @@ template <int PreviousValue, int Operand>
 struct exchange_tester
 {
   template <typename A>
-  __host__ __device__ static void initialize(A& v)
+  __host__ __device__ static void initialize(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.exchange(static_cast<T>(Operand)) == static_cast<T>(PreviousValue));
   }
 
   template <typename A>
-  __host__ __device__ static void validate(A& v)
+  __host__ __device__ static void validate(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Operand));
   }
@@ -61,9 +55,8 @@ struct strong_cas_tester
     ShouldSucceed = (Expected == PreviousValue)
   };
   template <typename A>
-  __host__ __device__ static void initialize(A& v)
+  __host__ __device__ static void initialize(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T    = decltype(a.load());
     T expected = static_cast<T>(Expected);
     assert(a.compare_exchange_strong(expected, static_cast<T>(Desired)) == ShouldSucceed);
@@ -71,9 +64,8 @@ struct strong_cas_tester
   }
 
   template <typename A>
-  __host__ __device__ static void validate(A& v)
+  __host__ __device__ static void validate(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Result));
   }
@@ -87,9 +79,8 @@ struct weak_cas_tester
     ShouldSucceed = (Expected == PreviousValue)
   };
   template <typename A>
-  __host__ __device__ static void initialize(A& v)
+  __host__ __device__ static void initialize(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T    = decltype(a.load());
     T expected = static_cast<T>(Expected);
     if (!ShouldSucceed)
@@ -105,9 +96,8 @@ struct weak_cas_tester
   }
 
   template <typename A>
-  __host__ __device__ static void validate(A& v)
+  __host__ __device__ static void validate(A& a)
   {
-    cuda::atomic_ref<A, cuda::thread_scope_system> a(v);
     using T = decltype(a.load());
     assert(a.load() == static_cast<T>(Result));
   }
@@ -118,17 +108,15 @@ struct weak_cas_tester
   struct operation##_tester                                          \
   {                                                                  \
     template <typename A>                                            \
-    __host__ __device__ static void initialize(A& v)                 \
+    __host__ __device__ static void initialize(A& a)                 \
     {                                                                \
-      cuda::atomic_ref<A, cuda::thread_scope_system> a(v);           \
       using T = decltype(a.load());                                  \
       assert(a.operation(Operand) == static_cast<T>(PreviousValue)); \
     }                                                                \
                                                                      \
     template <typename A>                                            \
-    __host__ __device__ static void validate(A& v)                   \
+    __host__ __device__ static void validate(A& a)                   \
     {                                                                \
-      cuda::atomic_ref<A, cuda::thread_scope_system> a(v);           \
       using T = decltype(a.load());                                  \
       assert(a.load() == static_cast<T>(ExpectedValue));             \
     }                                                                \
@@ -140,9 +128,6 @@ ATOMIC_TESTER(fetch_sub);
 ATOMIC_TESTER(fetch_and);
 ATOMIC_TESTER(fetch_or);
 ATOMIC_TESTER(fetch_xor);
-
-ATOMIC_TESTER(fetch_min);
-ATOMIC_TESTER(fetch_max);
 
 using basic_testers =
   tester_list<store_tester<0>,
@@ -157,60 +142,44 @@ using basic_testers =
               exchange_tester<-12, 17>>;
 
 using arithmetic_atomic_testers =
-  extend_tester_list<basic_testers,
-                     fetch_add_tester<17, 13, 30>,
-                     fetch_sub_tester<30, 21, 9>,
-                     fetch_min_tester<9, 5, 5>,
-                     fetch_max_tester<5, 9, 9>,
-                     fetch_sub_tester<9, 17, -8>>;
+  append<basic_testers, fetch_add_tester<17, 13, 30>, fetch_sub_tester<30, 21, 9>, fetch_sub_tester<9, 17, -8>>;
 
 using bitwise_atomic_testers =
-  extend_tester_list<arithmetic_atomic_testers,
-                     fetch_add_tester<-8, 10, 2>,
-                     fetch_or_tester<2, 13, 15>,
-                     fetch_and_tester<15, 8, 8>,
-                     fetch_and_tester<8, 13, 8>,
-                     fetch_xor_tester<8, 12, 4>>;
+  append<arithmetic_atomic_testers,
+         fetch_add_tester<-8, 10, 2>,
+         fetch_or_tester<2, 13, 15>,
+         fetch_and_tester<15, 8, 8>,
+         fetch_and_tester<8, 13, 8>,
+         fetch_xor_tester<8, 12, 4>>;
 
-void kernel_invoker()
+class big_not_lockfree_type
 {
-// todo
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<signed char, arithmetic_atomic_testers>();
-  validate_not_movable<signed short, arithmetic_atomic_testers>();
-#endif
-  validate_not_movable<signed int, arithmetic_atomic_testers>();
-  validate_not_movable<signed long, arithmetic_atomic_testers>();
-  validate_not_movable<signed long long, arithmetic_atomic_testers>();
+public:
+  __host__ __device__ big_not_lockfree_type() noexcept
+      : big_not_lockfree_type(0)
+  {}
 
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<unsigned char, bitwise_atomic_testers>();
-  validate_not_movable<unsigned short, bitwise_atomic_testers>();
-#endif
-  validate_not_movable<unsigned int, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long long, bitwise_atomic_testers>();
+  __host__ __device__ big_not_lockfree_type(int value) noexcept
+  {
+    for (auto&& elem : array)
+    {
+      elem = value++;
+    }
+  }
 
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<signed char, arithmetic_atomic_testers>();
-  validate_not_movable<signed short, arithmetic_atomic_testers>();
-#endif
-  validate_not_movable<signed int, arithmetic_atomic_testers>();
-  validate_not_movable<signed long, arithmetic_atomic_testers>();
-  validate_not_movable<signed long long, arithmetic_atomic_testers>();
+  __host__ __device__ friend bool operator==(const big_not_lockfree_type& lhs, const big_not_lockfree_type& rhs) noexcept
+  {
+    for (int i = 0; i < 128; ++i)
+    {
+      if (lhs.array[i] != rhs.array[i])
+      {
+        return false;
+      }
+    }
 
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<unsigned char, bitwise_atomic_testers>();
-  validate_not_movable<unsigned short, bitwise_atomic_testers>();
-#endif
-  validate_not_movable<unsigned int, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long long, bitwise_atomic_testers>();
-}
+    return true;
+  }
 
-int main(int arg, char** argv)
-{
-  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
-
-  return 0;
-}
+private:
+  int array[128];
+};

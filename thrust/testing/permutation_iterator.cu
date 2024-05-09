@@ -9,7 +9,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestPermutationIteratorSimple(void)
+void TestPermutationIteratorSimple()
 {
   typedef typename Vector::value_type T;
   typedef typename Vector::iterator Iterator;
@@ -59,7 +59,7 @@ static_assert(cuda::std::is_trivially_copy_constructible<thrust::permutation_ite
 static_assert(cuda::std::is_trivially_copyable<thrust::permutation_iterator<int*, int*>>::value, "");
 
 template <class Vector>
-void TestPermutationIteratorGather(void)
+void TestPermutationIteratorGather()
 {
   typedef typename Vector::iterator Iterator;
 
@@ -87,7 +87,7 @@ void TestPermutationIteratorGather(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorGather);
 
 template <class Vector>
-void TestPermutationIteratorScatter(void)
+void TestPermutationIteratorScatter()
 {
   typedef typename Vector::iterator Iterator;
 
@@ -120,7 +120,7 @@ void TestPermutationIteratorScatter(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorScatter);
 
 template <class Vector>
-void TestMakePermutationIterator(void)
+void TestMakePermutationIterator()
 {
   Vector source(8);
   Vector indices(4);
@@ -146,7 +146,7 @@ void TestMakePermutationIterator(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestMakePermutationIterator);
 
 template <typename Vector>
-void TestPermutationIteratorReduce(void)
+void TestPermutationIteratorReduce()
 {
   typedef typename Vector::value_type T;
   typedef typename Vector::iterator Iterator;
@@ -181,7 +181,7 @@ void TestPermutationIteratorReduce(void)
 };
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorReduce);
 
-void TestPermutationIteratorHostDeviceGather(void)
+void TestPermutationIteratorHostDeviceGather()
 {
   typedef int T;
   typedef thrust::host_vector<T> HostVector;
@@ -227,7 +227,7 @@ void TestPermutationIteratorHostDeviceGather(void)
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
 
-void TestPermutationIteratorHostDeviceScatter(void)
+void TestPermutationIteratorHostDeviceScatter()
 {
   typedef int T;
   typedef thrust::host_vector<T> HostVector;
@@ -282,7 +282,7 @@ void TestPermutationIteratorHostDeviceScatter(void)
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
 
 template <typename Vector>
-void TestPermutationIteratorWithCountingIterator(void)
+void TestPermutationIteratorWithCountingIterator()
 {
   using T      = typename Vector::value_type;
   using diff_t = typename thrust::counting_iterator<T>::difference_type;

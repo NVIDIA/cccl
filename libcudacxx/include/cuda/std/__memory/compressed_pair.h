@@ -48,7 +48,7 @@ struct __default_init_tag
 struct __value_init_tag
 {};
 
-template <class _Tp, int _Idx, bool _CanBeEmptyBase = _LIBCUDACXX_TRAIT(is_empty, _Tp) && !__libcpp_is_final<_Tp>::value>
+template <class _Tp, int _Idx, bool _CanBeEmptyBase = _CCCL_TRAIT(is_empty, _Tp) && !__libcpp_is_final<_Tp>::value>
 struct __compressed_pair_elem
 {
   using _ParamT         = _Tp;
@@ -56,16 +56,16 @@ struct __compressed_pair_elem
   using const_reference = const _Tp&;
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(
-    __default_init_tag) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    __default_init_tag) noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(
-    __value_init_tag) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    __value_init_tag) noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
       : __value_()
   {}
 
-  template <class _Up, __enable_if_t<!_LIBCUDACXX_TRAIT(is_same, __compressed_pair_elem, __decay_t<_Up>), int> = 0>
+  template <class _Up, __enable_if_t<!_CCCL_TRAIT(is_same, __compressed_pair_elem, __decay_t<_Up>), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Up))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up))
       : __value_(_CUDA_VSTD::forward<_Up>(__u))
   {}
 
@@ -73,7 +73,7 @@ struct __compressed_pair_elem
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 explicit __compressed_pair_elem(
     piecewise_construct_t,
     tuple<_Args...> __args,
-    __tuple_indices<_Indices...>) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    __tuple_indices<_Indices...>) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indices>(__args))...)
   {}
 
@@ -101,16 +101,16 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair_elem() = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(
-    __default_init_tag) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    __default_init_tag) noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(
-    __value_init_tag) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _Tp))
+    __value_init_tag) noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
       : __value_type()
   {}
 
-  template <class _Up, __enable_if_t<!_LIBCUDACXX_TRAIT(is_same, __compressed_pair_elem, __decay_t<_Up>), int> = 0>
+  template <class _Up, __enable_if_t<!_CCCL_TRAIT(is_same, __compressed_pair_elem, __decay_t<_Up>), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Up))
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up))
       : __value_type(_CUDA_VSTD::forward<_Up>(__u))
   {}
 
@@ -118,7 +118,7 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __compressed_pair_elem(
     piecewise_construct_t,
     tuple<_Args...> __args,
-    __tuple_indices<_Indices...>) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+    __tuple_indices<_Indices...>) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
       : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indices>(__args))...)
   {}
 
@@ -142,7 +142,7 @@ public:
   // is *almost never* used in a scenario where it's possible for T1 == T2.
   // (The exception is std::function where it is possible that the function
   //  object and the allocator have the same type).
-  static_assert((!_LIBCUDACXX_TRAIT(is_same, _T1, _T2)),
+  static_assert((!_CCCL_TRAIT(is_same, _T1, _T2)),
                 "__compressed_pair cannot be instantiated when T1 and T2 are the same type; "
                 "The current implementation is NOT ABI-compatible with the previous implementation for this "
                 "configuration");
@@ -154,16 +154,14 @@ public:
             class       = __enable_if_t<__dependent_type<is_default_constructible<_T1>, _Dummy>::value
                                   && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair() noexcept(
-    _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _T1)
-    && _LIBCUDACXX_TRAIT(is_nothrow_default_constructible, _T2))
+    _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : _Base1(__value_init_tag())
       , _Base2(__value_init_tag())
   {}
 
   template <class _U1, class _U2>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair(
-    _U1&& __t1,
-    _U2&& __t2) noexcept(_LIBCUDACXX_TRAIT(is_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_constructible, _T2, _U2))
+    _U1&& __t1, _U2&& __t2) noexcept(_CCCL_TRAIT(is_constructible, _T1, _U1) && _CCCL_TRAIT(is_constructible, _T2, _U2))
       : _Base1(_CUDA_VSTD::forward<_U1>(__t1))
       , _Base2(_CUDA_VSTD::forward<_U2>(__t2))
   {}
@@ -172,8 +170,8 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 explicit __compressed_pair(
     piecewise_construct_t __pc,
     tuple<_Args1...> __first_args,
-    tuple<_Args2...> __second_args) noexcept(_LIBCUDACXX_TRAIT(is_constructible, _T1, _Args1...)
-                                             && _LIBCUDACXX_TRAIT(is_constructible, _T2, _Args2...))
+    tuple<_Args2...> __second_args) noexcept(_CCCL_TRAIT(is_constructible, _T1, _Args1...)
+                                             && _CCCL_TRAIT(is_constructible, _T2, _Args2...))
       : _Base1(__pc, _CUDA_VSTD::move(__first_args), typename __make_tuple_indices<sizeof...(_Args1)>::type())
       , _Base2(__pc, _CUDA_VSTD::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
   {}

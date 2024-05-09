@@ -53,7 +53,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, thrust::modulus, SmallIntegralTy
 
 #define UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)             \
   template <typename Vector>                                                              \
-  void TestFunctionalPlaceholders##name(void)                                             \
+  void TestFunctionalPlaceholders##name()                                                 \
   {                                                                                       \
     static const size_t num_samples = 10000;                                              \
     typedef typename Vector::value_type T;                                                \

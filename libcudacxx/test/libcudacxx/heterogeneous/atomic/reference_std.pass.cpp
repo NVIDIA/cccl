@@ -10,8 +10,9 @@
 // UNSUPPORTED: windows && pre-sm-70
 
 #include <cuda/std/atomic>
+#include <cuda/std/cassert>
 
-#include "helpers.h"
+#include "../helpers.h"
 
 template <int Operand>
 struct store_tester
@@ -154,53 +155,37 @@ using basic_testers =
               exchange_tester<-12, 17>>;
 
 using arithmetic_atomic_testers =
-  extend_tester_list<basic_testers,
-                     fetch_add_tester<17, 13, 30>,
-                     fetch_sub_tester<30, 21, 9>,
-                     fetch_sub_tester<9, 17, -8>>;
+  append<basic_testers, fetch_add_tester<17, 13, 30>, fetch_sub_tester<30, 21, 9>, fetch_sub_tester<9, 17, -8>>;
 
 using bitwise_atomic_testers =
-  extend_tester_list<arithmetic_atomic_testers,
-                     fetch_add_tester<-8, 10, 2>,
-                     fetch_or_tester<2, 13, 15>,
-                     fetch_and_tester<15, 8, 8>,
-                     fetch_and_tester<8, 13, 8>,
-                     fetch_xor_tester<8, 12, 4>>;
+  append<arithmetic_atomic_testers,
+         fetch_add_tester<-8, 10, 2>,
+         fetch_or_tester<2, 13, 15>,
+         fetch_and_tester<15, 8, 8>,
+         fetch_and_tester<8, 13, 8>,
+         fetch_xor_tester<8, 12, 4>>;
 
 void kernel_invoker()
 {
 // todo
 #ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<signed char, arithmetic_atomic_testers>();
-  validate_not_movable<signed short, arithmetic_atomic_testers>();
+  validate_pinned<signed char, arithmetic_atomic_testers>();
+  validate_pinned<signed short, arithmetic_atomic_testers>();
 #endif
-  validate_not_movable<signed int, arithmetic_atomic_testers>();
-  validate_not_movable<signed long, arithmetic_atomic_testers>();
-  validate_not_movable<signed long long, arithmetic_atomic_testers>();
+  validate_pinned<signed int, arithmetic_atomic_testers>();
+  validate_pinned<signed long, arithmetic_atomic_testers>();
+  validate_pinned<signed long long, arithmetic_atomic_testers>();
 
 #ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<unsigned char, bitwise_atomic_testers>();
-  validate_not_movable<unsigned short, bitwise_atomic_testers>();
+  validate_pinned<unsigned char, bitwise_atomic_testers>();
+  validate_pinned<unsigned short, bitwise_atomic_testers>();
 #endif
-  validate_not_movable<unsigned int, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long long, bitwise_atomic_testers>();
+  validate_pinned<unsigned int, bitwise_atomic_testers>();
+  validate_pinned<unsigned long, bitwise_atomic_testers>();
+  validate_pinned<unsigned long long, bitwise_atomic_testers>();
 
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<signed char, arithmetic_atomic_testers>();
-  validate_not_movable<signed short, arithmetic_atomic_testers>();
-#endif
-  validate_not_movable<signed int, arithmetic_atomic_testers>();
-  validate_not_movable<signed long, arithmetic_atomic_testers>();
-  validate_not_movable<signed long long, arithmetic_atomic_testers>();
-
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
-  validate_not_movable<unsigned char, bitwise_atomic_testers>();
-  validate_not_movable<unsigned short, bitwise_atomic_testers>();
-#endif
-  validate_not_movable<unsigned int, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long, bitwise_atomic_testers>();
-  validate_not_movable<unsigned long long, bitwise_atomic_testers>();
+  validate_pinned<float, arithmetic_atomic_testers>();
+  validate_pinned<double, arithmetic_atomic_testers>();
 }
 
 int main(int arg, char** argv)

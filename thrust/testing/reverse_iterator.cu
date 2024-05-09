@@ -6,7 +6,7 @@
 
 #include <unittest/unittest.h>
 
-void TestReverseIteratorCopyConstructor(void)
+void TestReverseIteratorCopyConstructor()
 {
   thrust::host_vector<int> h_v(1, 13);
 
@@ -28,7 +28,7 @@ DECLARE_UNITTEST(TestReverseIteratorCopyConstructor);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::reverse_iterator<int*>>::value, "");
 static_assert(cuda::std::is_trivially_copyable<thrust::reverse_iterator<int*>>::value, "");
 
-void TestReverseIteratorIncrement(void)
+void TestReverseIteratorIncrement()
 {
   thrust::host_vector<int> h_v(4);
   thrust::sequence(h_v.begin(), h_v.end());
@@ -65,7 +65,7 @@ void TestReverseIteratorIncrement(void)
 DECLARE_UNITTEST(TestReverseIteratorIncrement);
 
 template <typename Vector>
-void TestReverseIteratorCopy(void)
+void TestReverseIteratorCopy()
 {
   Vector source(4);
   source[0] = 10;
@@ -85,7 +85,7 @@ void TestReverseIteratorCopy(void)
 }
 DECLARE_VECTOR_UNITTEST(TestReverseIteratorCopy);
 
-void TestReverseIteratorExclusiveScanSimple(void)
+void TestReverseIteratorExclusiveScanSimple()
 {
   typedef int T;
   const size_t n = 10;

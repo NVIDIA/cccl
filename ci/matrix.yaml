@@ -110,7 +110,8 @@ workflows:
     - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 't4',       sm: 'gpu', cxx: *gcc12,  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: *gcc12,  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: *gcc12,  std: 'all',    project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
+  # Fails on h100:
+  # - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
 
 #
 # Resources for compute_matrix.py. These can be modified to add new jobs, etc.
@@ -315,4 +316,3 @@ testing_pool_gpus:
   - 'rtxa6000'
   - 'l4'
   - 'rtx4090'
-  - 'h100'

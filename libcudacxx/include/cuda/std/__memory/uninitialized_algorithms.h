@@ -351,7 +351,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _BidirIter __last) noexcept
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
-  static_assert(_LIBCUDACXX_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _ValueType),
+  static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _ValueType),
                 "The allocator should already be rebound to the correct type");
 
   if (__first == __last)
@@ -359,7 +359,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
     return;
   }
 
-  _CCCL_IF_CONSTEXPR (_LIBCUDACXX_TRAIT(is_array, _ValueType))
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _ValueType))
   {
     static_assert(!__libcpp_is_unbounded_array<_ValueType>::value,
                   "arrays of unbounded arrays don't exist, but if they did we would mess up here");
@@ -370,8 +370,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
     {
       --__last;
       auto&& __array = *__last;
-      _CUDA_VSTD::__allocator_destroy_multidimensional(
-        __elem_alloc, __array, __array + _LIBCUDACXX_TRAIT(extent, _ValueType));
+      _CUDA_VSTD::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + _CCCL_TRAIT(extent, _ValueType));
     } while (__last != __first);
   }
   else
@@ -395,10 +394,10 @@ template <class _Alloc, class _Tp>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
 {
-  static_assert(_LIBCUDACXX_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
+  static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
                 "The allocator should already be rebound to the correct type");
 
-  _CCCL_IF_CONSTEXPR (_LIBCUDACXX_TRAIT(is_array, _Tp))
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _Tp))
   {
     using _Element = __remove_extent_t<_Tp>;
     __allocator_traits_rebind_t<_Alloc, _Element> __elem_alloc(__alloc);
@@ -410,7 +409,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
       _CUDA_VSTD::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + __i);
     });
 
-    for (; __i != _LIBCUDACXX_TRAIT(extent, _Tp); ++__i)
+    for (; __i != _CCCL_TRAIT(extent, _Tp); ++__i)
     {
       _CUDA_VSTD::__allocator_construct_at_multidimensional(__elem_alloc, _CUDA_VSTD::addressof(__array[__i]));
     }
@@ -436,12 +435,12 @@ template <class _Alloc, class _Tp, class _Arg>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg const& __arg)
 {
-  static_assert(_LIBCUDACXX_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
+  static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
                 "The allocator should already be rebound to the correct type");
 
-  _CCCL_IF_CONSTEXPR (_LIBCUDACXX_TRAIT(is_array, _Tp))
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _Tp))
   {
-    static_assert(_LIBCUDACXX_TRAIT(is_array, _Arg),
+    static_assert(_CCCL_TRAIT(is_array, _Arg),
                   "Provided non-array initialization argument to __allocator_construct_at_multidimensional when "
                   "trying to construct an array.");
 
@@ -454,7 +453,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg cons
     auto __guard = _CUDA_VSTD::__make_exception_guard([&]() {
       _CUDA_VSTD::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + __i);
     });
-    for (; __i != _LIBCUDACXX_TRAIT(extent, _Tp); ++__i)
+    for (; __i != _CCCL_TRAIT(extent, _Tp); ++__i)
     {
       _CUDA_VSTD::__allocator_construct_at_multidimensional(
         __elem_alloc, _CUDA_VSTD::addressof(__array[__i]), __arg[__i]);
@@ -577,16 +576,16 @@ template <class _Type>
 struct __allocator_has_trivial_copy_construct<allocator<_Type>, _Type> : true_type
 {};
 
-template <class _Alloc,
-          class _In,
-          class _RawTypeIn = __remove_const_t<_In>,
-          class _Out,
-          __enable_if_t<
-            // using _RawTypeIn because of the allocator<T const> extension
-            _LIBCUDACXX_TRAIT(is_trivially_copy_constructible, _RawTypeIn)
-            && _LIBCUDACXX_TRAIT(is_trivially_copy_assignable, _RawTypeIn)
-            && _LIBCUDACXX_TRAIT(is_same, __remove_const_t<_In>, __remove_const_t<_Out>)
-            && __allocator_has_trivial_copy_construct<_Alloc, _RawTypeIn>::value>* = nullptr>
+template <
+  class _Alloc,
+  class _In,
+  class _RawTypeIn = __remove_const_t<_In>,
+  class _Out,
+  __enable_if_t<
+    // using _RawTypeIn because of the allocator<T const> extension
+    _CCCL_TRAIT(is_trivially_copy_constructible, _RawTypeIn) && _CCCL_TRAIT(is_trivially_copy_assignable, _RawTypeIn)
+    && _CCCL_TRAIT(is_same, __remove_const_t<_In>, __remove_const_t<_Out>)
+    && __allocator_has_trivial_copy_construct<_Alloc, _RawTypeIn>::value>* = nullptr>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
@@ -658,8 +657,8 @@ template <class _Alloc,
           class _Iter1,
           class _Iter2,
           class _Type = typename iterator_traits<_Iter1>::value_type,
-          class       = __enable_if_t<_LIBCUDACXX_TRAIT(is_trivially_move_constructible, _Type)
-                                && _LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Type)
+          class       = __enable_if_t<_CCCL_TRAIT(is_trivially_move_constructible, _Type)
+                                && _CCCL_TRAIT(is_trivially_move_assignable, _Type)
                                 && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)

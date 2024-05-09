@@ -57,13 +57,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS default_delete
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_function, _Tp), "default_delete cannot be instantiated for function types");
+  static_assert(!_CCCL_TRAIT(is_function, _Tp), "default_delete cannot be instantiated for function types");
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 default_delete(
-    const default_delete<_Up>&, __enable_if_t<_LIBCUDACXX_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  default_delete(const default_delete<_Up>&, __enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
@@ -81,14 +81,13 @@ struct _LIBCUDACXX_TEMPLATE_VIS default_delete<_Tp[]>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  default_delete(const default_delete<_Up[]>&,
-                 __enable_if_t<_LIBCUDACXX_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 default_delete(
+    const default_delete<_Up[]>&, __enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
   {}
 
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-    __enable_if_t<_LIBCUDACXX_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
+    __enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
     operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
@@ -99,7 +98,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS default_delete<_Tp[]>
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
-  static_assert(!_LIBCUDACXX_TRAIT(is_reference, _Deleter), "incorrect specialization");
+  static_assert(!_CCCL_TRAIT(is_reference, _Deleter), "incorrect specialization");
   typedef const _Deleter& __lval_ref_type;
   typedef _Deleter&& __good_rval_ref_type;
   typedef true_type __enable_rval_overload;
@@ -135,7 +134,7 @@ public:
   typedef _Dp deleter_type;
   typedef _LIBCUDACXX_NODEBUG_TYPE typename __pointer<_Tp, deleter_type>::type pointer;
 
-  static_assert(!_LIBCUDACXX_TRAIT(is_rvalue_reference, deleter_type),
+  static_assert(!_CCCL_TRAIT(is_rvalue_reference, deleter_type),
                 "the specified deleter type cannot be an rvalue reference");
 
 private:

@@ -139,7 +139,7 @@ void sparse_histogram(const Vector1& input, Vector2& histogram_values, Vector3& 
   print_vector("histogram counts", histogram_counts);
 }
 
-int main(void)
+int main()
 {
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 9);

@@ -67,7 +67,7 @@ struct estimate_pi : public thrust::unary_function<unsigned int, float>
   }
 };
 
-int main(void)
+int main()
 {
   // use 30K subsequences of random numbers
   int M = 30000;

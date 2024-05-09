@@ -17,7 +17,7 @@
 
 #include <unittest/unittest.h>
 
-void TestCopyFromConstIterator(void)
+void TestCopyFromConstIterator()
 {
   typedef int T;
 
@@ -53,7 +53,7 @@ void TestCopyFromConstIterator(void)
 }
 DECLARE_UNITTEST(TestCopyFromConstIterator);
 
-void TestCopyToDiscardIterator(void)
+void TestCopyToDiscardIterator()
 {
   typedef int T;
 
@@ -73,7 +73,7 @@ void TestCopyToDiscardIterator(void)
 }
 DECLARE_UNITTEST(TestCopyToDiscardIterator);
 
-void TestCopyToDiscardIteratorZipped(void)
+void TestCopyToDiscardIteratorZipped()
 {
   typedef int T;
 
@@ -110,7 +110,7 @@ void TestCopyToDiscardIteratorZipped(void)
 DECLARE_UNITTEST(TestCopyToDiscardIteratorZipped);
 
 template <class Vector>
-void TestCopyMatchingTypes(void)
+void TestCopyMatchingTypes()
 {
   typedef typename Vector::value_type T;
 
@@ -144,7 +144,7 @@ void TestCopyMatchingTypes(void)
 DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
 
 template <class Vector>
-void TestCopyMixedTypes(void)
+void TestCopyMixedTypes()
 {
   Vector v(5);
   v[0] = 0;
@@ -176,7 +176,7 @@ void TestCopyMixedTypes(void)
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
 
-void TestCopyVectorBool(void)
+void TestCopyVectorBool()
 {
   std::vector<bool> v(3);
   v[0] = true;
@@ -200,7 +200,7 @@ void TestCopyVectorBool(void)
 DECLARE_UNITTEST(TestCopyVectorBool);
 
 template <class Vector>
-void TestCopyListTo(void)
+void TestCopyListTo()
 {
   typedef typename Vector::value_type T;
 
@@ -271,7 +271,7 @@ struct mod_3
 };
 
 template <class Vector>
-void TestCopyIfSimple(void)
+void TestCopyIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -399,7 +399,7 @@ void TestCopyIfSequence(const size_t n)
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfSequence);
 
 template <class Vector>
-void TestCopyIfStencilSimple(void)
+void TestCopyIfStencilSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -550,7 +550,7 @@ void TestCopyIfNonTrivial()
 DECLARE_UNITTEST(TestCopyIfNonTrivial);
 
 template <typename Vector>
-void TestCopyCountingIterator(void)
+void TestCopyCountingIterator()
 {
   typedef typename Vector::value_type T;
 
@@ -568,7 +568,7 @@ void TestCopyCountingIterator(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyCountingIterator);
 
 template <typename Vector>
-void TestCopyZipIterator(void)
+void TestCopyZipIterator()
 {
   typedef typename Vector::value_type T;
 
@@ -593,7 +593,7 @@ void TestCopyZipIterator(void)
 DECLARE_VECTOR_UNITTEST(TestCopyZipIterator);
 
 template <typename Vector>
-void TestCopyConstantIteratorToZipIterator(void)
+void TestCopyConstantIteratorToZipIterator()
 {
   typedef typename Vector::value_type T;
 

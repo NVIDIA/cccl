@@ -29,6 +29,20 @@ struct SumThreeTuple
 }; // end SumThreeTuple
 
 template <typename T>
+struct TestZipFunctionCtor
+{
+  void operator()()
+  {
+    ASSERT_EQUAL(thrust::zip_function<SumThree>()(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
+    ASSERT_EQUAL(thrust::zip_function<SumThree>(SumThree{})(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
+#  ifdef __cpp_deduction_guides
+    ASSERT_EQUAL(thrust::zip_function(SumThree{})(thrust::make_tuple(1, 2, 3)), SumThree{}(1, 2, 3));
+#  endif // __cpp_deduction_guides
+  }
+};
+SimpleUnitTest<TestZipFunctionCtor, type_list<int>> TestZipFunctionCtorInstance;
+
+template <typename T>
 struct TestZipFunctionTransform
 {
   void operator()(const size_t n)

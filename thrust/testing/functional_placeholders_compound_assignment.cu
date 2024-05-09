@@ -144,12 +144,12 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitOrEqual, |=, bit_or_equal_reference, Smal
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitXorEqual, ^=, bit_xor_equal_reference, SmallIntegralTypes);
 
 // XXX ptxas produces an error
-void TestFunctionalPlaceholdersBitLshiftEqualDevice(void)
+void TestFunctionalPlaceholdersBitLshiftEqualDevice()
 {
   KNOWN_FAILURE;
 }
 // XXX KNOWN_FAILURE this until the above works
-void TestFunctionalPlaceholdersBitLshiftEqualHost(void)
+void TestFunctionalPlaceholdersBitLshiftEqualHost()
 {
   KNOWN_FAILURE;
 }
@@ -195,7 +195,7 @@ struct suffix_decrement_reference
 
 #define PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)                                \
   template <typename Vector>                                                                                  \
-  void TestFunctionalPlaceholdersPrefix##name(void)                                                           \
+  void TestFunctionalPlaceholdersPrefix##name()                                                               \
   {                                                                                                           \
     const size_t num_samples = 10000;                                                                         \
     typedef typename Vector::value_type T;                                                                    \
@@ -219,7 +219,7 @@ PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, prefix_decrement_reference);
 
 #define SUFFIX_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)                                \
   template <typename Vector>                                                                                  \
-  void TestFunctionalPlaceholdersSuffix##name(void)                                                           \
+  void TestFunctionalPlaceholdersSuffix##name()                                                               \
   {                                                                                                           \
     const size_t num_samples = 10000;                                                                         \
     typedef typename Vector::value_type T;                                                                    \

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <iterator>
 
-int main(void)
+int main()
 {
   thrust::device_vector<int> data(4);
   data[0] = 3;

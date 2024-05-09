@@ -28,7 +28,7 @@ struct is_true : thrust::unary_function<T, bool>
 };
 
 template <typename Vector>
-void TestRemoveSimple(void)
+void TestRemoveSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -85,7 +85,7 @@ void TestRemoveDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopySimple(void)
+void TestRemoveCopySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -145,7 +145,7 @@ void TestRemoveCopyDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveCopyDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveIfSimple(void)
+void TestRemoveIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -202,7 +202,7 @@ void TestRemoveIfDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveIfDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveIfStencilSimple(void)
+void TestRemoveIfStencilSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -267,7 +267,7 @@ void TestRemoveIfStencilDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveIfStencilDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopyIfSimple(void)
+void TestRemoveCopyIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -327,7 +327,7 @@ void TestRemoveCopyIfDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveCopyIfDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopyIfStencilSimple(void)
+void TestRemoveCopyIfStencilSimple()
 {
   typedef typename Vector::value_type T;
 

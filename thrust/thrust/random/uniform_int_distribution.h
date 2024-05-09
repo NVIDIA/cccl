@@ -58,7 +58,7 @@ namespace random
  *  #include <thrust/random/linear_congruential_engine.h>
  *  #include <thrust/random/uniform_int_distribution.h>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    // create a minstd_rand object to act as our source of randomness
  *    thrust::minstd_rand rng;
@@ -128,7 +128,7 @@ public:
 
   /*! This does nothing.  It is included to conform to the requirements of the RandomDistribution concept.
    */
-  _CCCL_HOST_DEVICE void reset(void);
+  _CCCL_HOST_DEVICE void reset();
 
   // generating functions
 
@@ -158,21 +158,21 @@ public:
    *
    *  \return The lower bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type a(void) const;
+  _CCCL_HOST_DEVICE result_type a() const;
 
   /*! This method returns the value of the parameter with which this \p uniform_int_distribution
    *  was constructed.
    *
    *  \return The upper bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type b(void) const;
+  _CCCL_HOST_DEVICE result_type b() const;
 
   /*! This method returns a \p param_type object encapsulating the parameters with which this
    *  \p uniform_int_distribution was constructed.
    *
    *  \return A \p param_type object enapsulating the range of this \p uniform_int_distribution.
    */
-  _CCCL_HOST_DEVICE param_type param(void) const;
+  _CCCL_HOST_DEVICE param_type param() const;
 
   /*! This method changes the parameters of this \p uniform_int_distribution using the values encapsulated
    *  in a given \p param_type object.
@@ -185,13 +185,13 @@ public:
    *
    *  \return The lower bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION(void) const;
+  _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! This method returns the largest integer this \p uniform_int_distribution can potentially produce.
    *
    *  \return The upper bound of this \p uniform_int_distribution's range.
    */
-  _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION(void) const;
+  _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! \cond
    */

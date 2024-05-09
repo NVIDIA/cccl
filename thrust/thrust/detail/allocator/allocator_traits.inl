@@ -247,7 +247,7 @@ class has_member_max_size
   typedef typename allocator_traits<Alloc>::size_type size_type;
 
 public:
-  typedef typename has_member_max_size_impl<Alloc, size_type(void)>::type type;
+  typedef typename has_member_max_size_impl<Alloc, size_type()>::type type;
   static const bool value = type::value;
 };
 
