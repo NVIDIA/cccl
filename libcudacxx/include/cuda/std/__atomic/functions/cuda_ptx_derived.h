@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_CUDA_COMPILER)
 
 template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-bool _CCCL_DEVICE __atomic_compare_exchange_cuda(
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   _Tp volatile* __ptr, _Tp* __expected, const _Tp __desired, bool, int __success_memorder, int __failure_memorder, _Sco)
 {
   auto const __aligned = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
@@ -57,7 +57,7 @@ bool _CCCL_DEVICE __atomic_compare_exchange_cuda(
 }
 
 template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-void _CCCL_DEVICE __atomic_exchange_cuda(_Tp volatile* __ptr, _Tp* __val, _Tp* __ret, int __memorder, _Sco)
+_CCCL_DEVICE void __atomic_exchange_cuda(_Tp volatile* __ptr, _Tp* __val, _Tp* __ret, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   while (!__atomic_compare_exchange_cuda(__ptr, &__expected, __val, true, __memorder, __memorder, _Sco{}))
@@ -66,7 +66,7 @@ void _CCCL_DEVICE __atomic_exchange_cuda(_Tp volatile* __ptr, _Tp* __val, _Tp* _
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-_Tp _CCCL_DEVICE __atomic_fetch_add_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_add_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected + __val;
@@ -81,7 +81,7 @@ template <typename _Tp,
           typename _Up,
           typename _Sco,
           __enable_if_t<sizeof(_Tp) <= 2 || _CUDA_VSTD::is_floating_point<_Tp>::value, int> = 0>
-_Tp _CCCL_HOST_DEVICE __atomic_fetch_max_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_max_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected > __val ? __expected : __val;
@@ -99,7 +99,7 @@ template <typename _Tp,
           typename _Up,
           typename _Sco,
           __enable_if_t<sizeof(_Tp) <= 2 || _CUDA_VSTD::is_floating_point<_Tp>::value, int> = 0>
-_Tp _CCCL_HOST_DEVICE __atomic_fetch_min_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_min_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected < __val ? __expected : __val;
@@ -114,7 +114,7 @@ _Tp _CCCL_HOST_DEVICE __atomic_fetch_min_cuda(_Tp volatile* __ptr, _Up __val, in
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-_Tp _CCCL_DEVICE __atomic_fetch_sub_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_sub_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected - __val;
@@ -126,7 +126,7 @@ _Tp _CCCL_DEVICE __atomic_fetch_sub_cuda(_Tp volatile* __ptr, _Up __val, int __m
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-_Tp _CCCL_DEVICE __atomic_fetch_and_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_and_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected & __val;
@@ -138,7 +138,7 @@ _Tp _CCCL_DEVICE __atomic_fetch_and_cuda(_Tp volatile* __ptr, _Up __val, int __m
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-_Tp _CCCL_DEVICE __atomic_fetch_xor_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_xor_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected ^ __val;
@@ -150,7 +150,7 @@ _Tp _CCCL_DEVICE __atomic_fetch_xor_cuda(_Tp volatile* __ptr, _Up __val, int __m
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-_Tp _CCCL_DEVICE __atomic_fetch_or_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_fetch_or_cuda(_Tp volatile* __ptr, _Up __val, int __memorder, _Sco)
 {
   _Tp __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, _Sco{});
   _Tp __desired  = __expected | __val;
@@ -162,7 +162,7 @@ _Tp _CCCL_DEVICE __atomic_fetch_or_cuda(_Tp volatile* __ptr, _Up __val, int __me
 }
 
 template <typename _Tp, typename _Sco>
-_Tp _CCCL_DEVICE __atomic_load_n_cuda(const _Tp volatile* __ptr, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_load_n_cuda(const _Tp volatile* __ptr, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_load_cuda(__ptr, &__ret, __memorder, _Sco{});
@@ -170,13 +170,13 @@ _Tp _CCCL_DEVICE __atomic_load_n_cuda(const _Tp volatile* __ptr, int __memorder,
 }
 
 template <typename _Tp, typename _Sco>
-void _CCCL_DEVICE __atomic_store_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
+_CCCL_DEVICE void __atomic_store_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
 {
   __atomic_store_cuda(__ptr, &__val, __memorder, _Sco{});
 }
 
 template <typename _Tp, typename _Sco>
-bool _CCCL_DEVICE __atomic_compare_exchange_n_cuda(
+_CCCL_DEVICE bool __atomic_compare_exchange_n_cuda(
   _Tp volatile* __ptr, _Tp* __expected, _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder, _Sco)
 {
   return __atomic_compare_exchange_cuda(
@@ -184,14 +184,14 @@ bool _CCCL_DEVICE __atomic_compare_exchange_n_cuda(
 }
 
 template <typename _Tp, typename _Sco>
-_Tp _CCCL_DEVICE __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
+_CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_exchange_cuda(__ptr, &__val, &__ret, __memorder, _Sco{});
   return __ret;
 }
 
-static inline _CCCL_DEVICE void __atomic_signal_fence_cuda(int)
+_CCCL_DEVICE static inline void __atomic_signal_fence_cuda(int)
 {
   asm volatile("" ::: "memory");
 }
