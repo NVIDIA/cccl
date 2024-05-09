@@ -123,9 +123,8 @@ jobs:
             if test "${lib}" != "cugraph"; then
               args=(-v -j "${args[@]}");
             else
-              # cuGraph device objects use lots of memory, so tell the scaler to
-              # take that into account when calculating -j/-t
-              args=(-v -j --max-device-obj-memory-usage 5 "${args[@]}");
+              # cuGraph device objects use lots of memory, so only build with -t=1
+              args=(-v -j$(nproc --ignore=1) --archs 1 "${args[@]}");
             fi
 
             sccache -z;
