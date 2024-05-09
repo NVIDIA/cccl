@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__atomic/api/owned.h>
-
 #if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
@@ -26,6 +24,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__atomic/api/owned.h>
 
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
