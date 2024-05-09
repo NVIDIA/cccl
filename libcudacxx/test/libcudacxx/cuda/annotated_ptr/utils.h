@@ -14,6 +14,7 @@
 #endif
 
 #include <cuda/annotated_ptr>
+#include <cuda/std/cassert>
 
 #if defined(DEBUG)
 #  define DPRINTF(...)     \
