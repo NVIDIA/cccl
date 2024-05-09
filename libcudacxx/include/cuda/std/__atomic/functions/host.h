@@ -26,6 +26,35 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
+
+template <typename _Tp>
+struct __atomic_alignment_wrapper {
+  _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __atom;
+};
+
+template <typename _Tp>
+__atomic_alignment_wrapper<__remove_cv_t<_Tp>>& __atomic_auto_align(_Tp* __a) {
+  using __aligned_t = __atomic_alignment_wrapper<__remove_cv_t<_Tp>>;
+  return *reinterpret_cast<__aligned_t*>(__a);
+};
+template <typename _Tp>
+const __atomic_alignment_wrapper<__remove_cv_t<_Tp>>& __atomic_auto_align(const _Tp* __a) {
+  using __aligned_t = const __atomic_alignment_wrapper<__remove_cv_t<_Tp>>;
+  return *reinterpret_cast<__aligned_t*>(__a);
+};
+template <typename _Tp>
+volatile __atomic_alignment_wrapper<__remove_cv_t<_Tp>>& __atomic_auto_align(volatile _Tp* __a) {
+  using __aligned_t = volatile __atomic_alignment_wrapper<__remove_cv_t<_Tp>>;
+  return *reinterpret_cast<__aligned_t*>(__a);
+};
+template <typename _Tp>
+const volatile __atomic_alignment_wrapper<__remove_cv_t<_Tp>>& __atomic_auto_align(const volatile _Tp* __a) {
+  using __aligned_t = const volatile __atomic_alignment_wrapper<__remove_cv_t<_Tp>>;
+  return *reinterpret_cast<__aligned_t*>(__a);
+};
+
 // Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
 inline void __atomic_thread_fence_host(memory_order __order)
 {
@@ -40,22 +69,22 @@ inline void __atomic_signal_fence_host(memory_order __order)
 template <typename _Tp, typename _Up>
 inline void __atomic_store_host(_Tp* __a, _Up __val, memory_order __order)
 {
-  __atomic_store(__a, &__val, __atomic_order_to_int(__order));
+  __atomic_store(&__atomic_auto_align<_Tp>(__a), &__atomic_auto_align<__remove_cv_t<_Tp>>(&__val), __atomic_order_to_int(__order));
 }
 
 template <typename _Tp>
-inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> __remove_cvref_t<_Tp>
+inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> __remove_cv_t<_Tp>
 {
-  __remove_cvref_t<_Tp> __ret{};
-  __atomic_load(__a, &__ret, __atomic_order_to_int(__order));
+  __remove_cv_t<_Tp> __ret;
+  __atomic_load(&__atomic_auto_align<_Tp>(__a), &__atomic_auto_align<__remove_cv_t<_Tp>>(&__ret), __atomic_order_to_int(__order));
   return __ret;
 }
 
 template <typename _Tp, typename _Up>
-inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> __remove_cvref_t<_Tp>
+inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> __remove_cv_t<_Tp>
 {
-  __remove_cvref_t<_Tp> __ret{};
-  __atomic_exchange(__a, &__val, &__ret, __atomic_order_to_int(__order));
+  __remove_cv_t<_Tp> __ret;
+  __atomic_exchange(&__atomic_auto_align<_Tp>(__a), &__atomic_auto_align<__remove_cv_t<_Tp>>(&__val), &__atomic_auto_align<__remove_cv_t<_Tp>>(&__ret), __atomic_order_to_int(__order));
   return __ret;
 }
 
@@ -188,6 +217,8 @@ inline _Tp __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_order __order)
 
   return __expected;
 }
+
+_CCCL_DIAG_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
