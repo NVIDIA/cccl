@@ -28,14 +28,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 // atomic<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic : public std::__atomic_impl<_Tp, _Sco>
+struct atomic : public _CUDA_VSTD::__atomic_impl<_Tp, _Sco>
 {
   using value_type = _Tp;
 
   constexpr atomic() noexcept = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr atomic(_Tp __d) noexcept
-      : std::__atomic_impl<_Tp, _Sco>(__d)
+      : _CUDA_VSTD::__atomic_impl<_Tp, _Sco>(__d)
   {}
 
   atomic(const atomic&)                     = delete;
@@ -55,27 +55,27 @@ struct atomic : public std::__atomic_impl<_Tp, _Sco>
 
   _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
-    return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
+    return _CUDA_VSTD::__atomic_fetch_max_dispatch(&this->__a, __op, __m, _CUDA_VSTD::__scope_to_tag<_Sco>{});
   }
   _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
+    return _CUDA_VSTD::__atomic_fetch_max_dispatch(&this->__a, __op, __m, _CUDA_VSTD::__scope_to_tag<_Sco>{});
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) noexcept
   {
-    return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
+    return _CUDA_VSTD::__atomic_fetch_min_dispatch(&this->__a, __op, __m, _CUDA_VSTD::__scope_to_tag<_Sco>{});
   }
   _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) volatile noexcept
   {
-    return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
+    return _CUDA_VSTD::__atomic_fetch_min_dispatch(&this->__a, __op, __m, _CUDA_VSTD::__scope_to_tag<_Sco>{});
   }
 };
 
 // atomic_ref<T>
 
 template <class _Tp, thread_scope _Sco = thread_scope::thread_scope_system>
-struct atomic_ref : public std::__atomic_ref_impl<_Tp, _Sco>
+struct atomic_ref : public _CUDA_VSTD::__atomic_ref_impl<_Tp, _Sco>
 {
   using value_type = _Tp;
 
@@ -84,7 +84,7 @@ struct atomic_ref : public std::__atomic_ref_impl<_Tp, _Sco>
   static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
   _LIBCUDACXX_INLINE_VISIBILITY explicit atomic_ref(_Tp& __ref)
-      : std::__atomic_ref_impl<_Tp, _Sco>(__ref)
+      : _CUDA_VSTD::__atomic_ref_impl<_Tp, _Sco>(__ref)
   {}
 
   _LIBCUDACXX_INLINE_VISIBILITY _Tp operator=(_Tp __v) const noexcept
@@ -99,12 +99,12 @@ struct atomic_ref : public std::__atomic_ref_impl<_Tp, _Sco>
 
   _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return std::__atomic_fetch_max_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
+    return _CUDA_VSTD::__atomic_fetch_max_dispatch(&this->__a, __op, __m, _CUDA_VSTD::__scope_to_tag<_Sco>{});
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
-    return std::__atomic_fetch_min_dispatch(&this->__a, __op, __m, std::__scope_to_tag<_Sco>{});
+    return _CUDA_VSTD::__atomic_fetch_min_dispatch(&this->__a, __op, __m, _CUDA_VSTD::__scope_to_tag<_Sco>{});
   }
 };
 
@@ -115,25 +115,25 @@ atomic_thread_fence(memory_order __m, thread_scope _Scope = thread_scope::thread
     NV_IS_DEVICE,
     (switch (_Scope) {
       case thread_scope::thread_scope_system:
-        std::__atomic_thread_fence_cuda((int) __m, __thread_scope_system_tag{});
+        _CUDA_VSTD::__atomic_thread_fence_cuda((int) __m, __thread_scope_system_tag{});
         break;
       case thread_scope::thread_scope_device:
-        std::__atomic_thread_fence_cuda((int) __m, __thread_scope_device_tag{});
+        _CUDA_VSTD::__atomic_thread_fence_cuda((int) __m, __thread_scope_device_tag{});
         break;
       case thread_scope::thread_scope_block:
-        std::__atomic_thread_fence_cuda((int) __m, __thread_scope_block_tag{});
+        _CUDA_VSTD::__atomic_thread_fence_cuda((int) __m, __thread_scope_block_tag{});
         break;
       // Atomics scoped to themselves do not require fencing
       case thread_scope::thread_scope_thread:
         break;
     }),
     NV_IS_HOST,
-    ((void) _Scope; std::atomic_thread_fence(__m);))
+    ((void) _Scope; _CUDA_VSTD::atomic_thread_fence(__m);))
 }
 
 inline _CCCL_HOST_DEVICE void atomic_signal_fence(memory_order __m)
 {
-  std::atomic_signal_fence(__m);
+  _CUDA_VSTD::atomic_signal_fence(__m);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
