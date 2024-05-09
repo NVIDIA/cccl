@@ -14,16 +14,6 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
-_CCCL_PUSH_MACROS
-
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <atomic> is not supported on this single threaded system
 #endif
@@ -37,18 +27,30 @@ _CCCL_PUSH_MACROS
 # error C++ standard library is incompatible with <stdatomic.h>
 #endif
 
-#include <cuda/std/__atomic/platform.h>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
+#include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
-
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__atomic/wait/notify_wait.h>
-
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__atomic/api/reference.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+
 // clang-format on
+
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
