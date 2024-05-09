@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <typename _Tp, typename _Sco>
 struct __atomic_common
 {
-  _CCCL_HOST_DEVICE constexpr inline __atomic_common(_Tp __v)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_common(_Tp __v)
       : __a(__v)
   {}
 
@@ -53,7 +53,7 @@ struct __atomic_common
 template <typename _Tp, typename _Sco>
 struct __atomic_arithmetic
 {
-  _CCCL_HOST_DEVICE constexpr inline __atomic_arithmetic(_Tp __v)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_arithmetic(_Tp __v)
       : __a(__v)
   {}
 
@@ -75,7 +75,7 @@ struct __atomic_arithmetic
 template <typename _Tp, typename _Sco>
 struct __atomic_bitwise
 {
-  _CCCL_HOST_DEVICE constexpr inline __atomic_bitwise(_Tp __v)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_bitwise(_Tp __v)
       : __a(__v)
   {}
 
@@ -100,7 +100,7 @@ struct __atomic_bitwise
 template <typename _Tp, typename _Sco>
 struct __atomic_pointer
 {
-  _CCCL_HOST_DEVICE constexpr inline __atomic_pointer(_Tp __v)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_pointer(_Tp __v)
       : __a(__v)
   {}
 
