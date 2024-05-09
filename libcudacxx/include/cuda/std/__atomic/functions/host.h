@@ -23,6 +23,9 @@
 
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/platform.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
