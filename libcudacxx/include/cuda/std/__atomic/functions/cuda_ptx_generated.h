@@ -35,6 +35,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if defined(_CCCL_CUDA_COMPILER)
+
 static inline _CCCL_DEVICE void __cuda_membar_block() { asm volatile("membar.cta;":::"memory"); }
 static inline _CCCL_DEVICE void __cuda_fence_acq_rel_block() { asm volatile("fence.acq_rel.cta;":::"memory"); }
 static inline _CCCL_DEVICE void __cuda_fence_sc_block() { asm volatile("fence.sc.cta;":::"memory"); }
@@ -6566,6 +6568,8 @@ _CCCL_DEVICE _Type* __atomic_fetch_sub_cuda(_Type **__ptr, ptrdiff_t __val, int 
     memcpy(&__ret, &__tmp, 8);
     return __ret;
 }
+
+#endif // defined(_CCCL_CUDA_COMPILER)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

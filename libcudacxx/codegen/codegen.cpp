@@ -105,6 +105,8 @@ int main()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if defined(_CCCL_CUDA_COMPILER)
+
 )XXX";
 
   auto scopenametag = [&](auto scope) {
@@ -528,6 +530,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
     }
   }
 
+  out << "\n#endif // defined(_CCCL_CUDA_COMPILER)\n";
   out << "\n_LIBCUDACXX_END_NAMESPACE_STD\n";
   out << "\n#endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H\n";
   out << "\n// clang-format on\n";
