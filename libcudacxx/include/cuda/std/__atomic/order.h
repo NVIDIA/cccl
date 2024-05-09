@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -60,9 +61,9 @@ enum __legacy_memory_order
   __mo_seq_cst
 };
 
-typedef underlying_type<__legacy_memory_order>::type __memory_order_underlying_t;
+using __memory_order_underlying_t = underlying_type<__legacy_memory_order>::type;
 
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
 
 enum class memory_order : __memory_order_underlying_t
 {
@@ -81,7 +82,7 @@ inline constexpr auto memory_order_release = memory_order::release;
 inline constexpr auto memory_order_acq_rel = memory_order::acq_rel;
 inline constexpr auto memory_order_seq_cst = memory_order::seq_cst;
 
-#else
+#else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
 typedef enum memory_order
 {
@@ -93,7 +94,7 @@ typedef enum memory_order
   memory_order_seq_cst = __mo_seq_cst,
 } memory_order;
 
-#endif // _CCCL_STD_VER > 2017
+#endif // _CCCL_STD_VER >= 2020
 
 _CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
 {
@@ -102,7 +103,7 @@ _CCCL_HOST_DEVICE inline int __stronger_order_cuda(int __a, int __b)
   {
     return __max;
   }
-  static int const __xform[] = {__ATOMIC_RELEASE, __ATOMIC_ACQ_REL, __ATOMIC_ACQ_REL, __ATOMIC_RELEASE};
+  constexpr int __xform[] = {__ATOMIC_RELEASE, __ATOMIC_ACQ_REL, __ATOMIC_ACQ_REL, __ATOMIC_RELEASE};
   return __xform[__a < __b ? __a : __b];
 }
 
@@ -143,12 +144,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 using memory_order = _CUDA_VSTD::memory_order;
 
-constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
-constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
-constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
-constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
-constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
-constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
+_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
+_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
+_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
+_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
+_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
+_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
