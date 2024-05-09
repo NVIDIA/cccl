@@ -51,8 +51,8 @@
 //
 // typedef atomic<bool> atomic_bool;
 
-#include <cuda/std/atomic>
 #include <cuda/atomic>
+#include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

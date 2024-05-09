@@ -15,8 +15,8 @@
 
 // <cuda/std/atomic>
 
-#include <cuda/std/atomic>
 #include <cuda/atomic>
+#include <cuda/std/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 // #include <cuda/std/thread> // for thread_id

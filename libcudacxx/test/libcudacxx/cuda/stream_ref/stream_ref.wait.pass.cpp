@@ -45,9 +45,7 @@ int main(int argc, char** argv)
   NV_IF_TARGET(
     NV_IS_HOST,
     ( // passing case
-      cudaStream_t stream;
-      cudaStreamCreate(&stream);
-      std::atomic_flag flag = ATOMIC_FLAG_INIT;
+      cudaStream_t stream; cudaStreamCreate(&stream); std::atomic_flag flag = ATOMIC_FLAG_INIT;
       cudaStreamAddCallback(stream, callback, &flag, 0);
       cuda::stream_ref ref{stream};
       test_wait(ref);

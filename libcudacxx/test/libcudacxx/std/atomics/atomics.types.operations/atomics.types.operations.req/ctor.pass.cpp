@@ -20,8 +20,8 @@
 
 #define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
-#include <cuda/std/atomic>
 #include <cuda/atomic>
+#include <cuda/std/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

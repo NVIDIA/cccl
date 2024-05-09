@@ -50,8 +50,8 @@ struct __atomic_poll_tester
 };
 
 template <typename _Tp, typename _Sco>
-_CCCL_HOST_DEVICE void
-__atomic_try_wait_slow_fallback(_Tp const volatile* __a, __atomic_underlying_remove_cv_t<_Tp> __val, memory_order __order, _Sco)
+_CCCL_HOST_DEVICE void __atomic_try_wait_slow_fallback(
+  _Tp const volatile* __a, __atomic_underlying_remove_cv_t<_Tp> __val, memory_order __order, _Sco)
 {
   __libcpp_thread_poll_with_backoff(__atomic_poll_tester<_Tp, _Sco>(__a, __val, __order));
 }

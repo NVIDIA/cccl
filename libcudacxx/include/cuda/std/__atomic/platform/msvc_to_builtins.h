@@ -23,25 +23,25 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 
-#include <cuda/std/__atomic/order.h>
-#include <cuda/std/cassert>
+#  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/cassert>
 
-#include <intrin.h>
+#  include <intrin.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
+#  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
-#if defined(_M_ARM) || defined(_M_ARM64)
-#  define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
-#  define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
-#elif defined(_M_IX86) || defined(_M_X64)
-#  define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
+#  if defined(_M_ARM) || defined(_M_ARM64)
+#    define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
+#    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
+#  elif defined(_M_IX86) || defined(_M_X64)
+#    define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
 // x86/x64 hardware only emits memory barriers inside _Interlocked intrinsics
-#  define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()
-#else // ^^^ x86/x64 / unsupported hardware vvv
-#  error Unsupported hardware
-#endif // hardware
+#    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()
+#  else // ^^^ x86/x64 / unsupported hardware vvv
+#    error Unsupported hardware
+#  endif // hardware
 
 // MSVC Does not have compiler intrinsics for lock-free checking
 inline int __stronger_order_msvc(int __a, int __b)
@@ -77,41 +77,41 @@ using _enable_if_sized_as = typename enable_if<sizeof(_Type) == _Size, int>::typ
 template <class _Type, _enable_if_sized_as<_Type, 1> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   __int8 __tmp = *(const volatile __int8*) __ptr;
-#else
+#  else
   __int8 __tmp = __iso_volatile_load8((const volatile __int8*) __ptr);
-#endif
+#  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
 template <class _Type, _enable_if_sized_as<_Type, 2> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   __int16 __tmp = *(const volatile __int16*) __ptr;
-#else
+#  else
   __int16 __tmp = __iso_volatile_load16((const volatile __int16*) __ptr);
-#endif
+#  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
 template <class _Type, _enable_if_sized_as<_Type, 4> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   __int32 __tmp = *(const volatile __int32*) __ptr;
-#else
+#  else
   __int32 __tmp = __iso_volatile_load32((const volatile __int32*) __ptr);
-#endif
+#  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
 template <class _Type, _enable_if_sized_as<_Type, 8> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   __int64 __tmp = *(const volatile __int64*) __ptr;
-#else
+#  else
   __int64 __tmp = __iso_volatile_load64((const volatile __int64*) __ptr);
-#endif
+#  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
 
@@ -141,45 +141,45 @@ void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int8*>(__val);
   auto __d = reinterpret_cast<volatile __int8*>(__ptr);
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   (void) _InterlockedExchange8(__d, *__t);
-#else
+#  else
   __iso_volatile_store8(__d, *__t);
-#endif
+#  endif
 }
 template <class _Type, _enable_if_sized_as<_Type, 2> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int16*>(__val);
   auto __d = reinterpret_cast<volatile __int16*>(__ptr);
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   (void) _InterlockedExchange16(__d, *__t);
-#else
+#  else
   __iso_volatile_store16(__d, *__t);
-#endif
+#  endif
 }
 template <class _Type, _enable_if_sized_as<_Type, 4> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int32*>(__val);
   auto __d = reinterpret_cast<volatile __int32*>(__ptr);
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   // int cannot be converted to long?...
   (void) _InterlockedExchange(reinterpret_cast<volatile long*>(__d), *__t);
-#else
+#  else
   __iso_volatile_store32(__d, *__t);
-#endif
+#  endif
 }
 template <class _Type, _enable_if_sized_as<_Type, 8> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int64*>(__val);
   auto __d = reinterpret_cast<volatile __int64*>(__ptr);
-#ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
   (void) _InterlockedExchange64(__d, *__t);
-#else
+#  else
   __iso_volatile_store64(__d, *__t);
-#endif
+#  endif
 }
 
 template <class _Type>
