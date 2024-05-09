@@ -492,8 +492,7 @@ __managed__ manual_object<T> managed_variable{};
 #endif
 
 template <typename Creator, typename Destroyer, typename Validator, std::size_t N>
-void validate_in_managed_memory_helper(
-  const Creator& creator, const Destroyer& destroyer, Validator (&performers)[N])
+void validate_in_managed_memory_helper(const Creator& creator, const Destroyer& destroyer, Validator (&performers)[N])
 {
   auto object = creator();
 
@@ -570,22 +569,14 @@ void validate_managed(tester_list<Testers...>, Args... args)
     managed_variable<T>.device_destroy();
   };
 
-  validate_in_managed_memory_helper(
-    host_variable_constructor, host_variable_destructor, host_init_device_check);
-  validate_in_managed_memory_helper(
-    host_variable_constructor, host_variable_destructor, device_init_host_check);
-  validate_in_managed_memory_helper(
-    host_variable_constructor, device_variable_destructor, host_init_device_check);
-  validate_in_managed_memory_helper(
-    host_variable_constructor, device_variable_destructor, device_init_host_check);
-  validate_in_managed_memory_helper(
-    device_variable_constructor, host_variable_destructor, host_init_device_check);
-  validate_in_managed_memory_helper(
-    device_variable_constructor, host_variable_destructor, device_init_host_check);
-  validate_in_managed_memory_helper(
-    device_variable_constructor, device_variable_destructor, host_init_device_check);
-  validate_in_managed_memory_helper(
-    device_variable_constructor, device_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(host_variable_constructor, host_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_variable_constructor, host_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(host_variable_constructor, device_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_variable_constructor, device_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_variable_constructor, host_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_variable_constructor, host_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_variable_constructor, device_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_variable_constructor, device_variable_destructor, device_init_host_check);
 #endif
 }
 
