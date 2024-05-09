@@ -52,7 +52,7 @@ struct __atomic_common
   _LIBCUDACXX_ATOMIC_COMMON_IMPL(, volatile)
 };
 
-template <typename _Tp, typename _Sco = __thread_scope_system_tag>
+template <typename _Tp, typename _Sco>
 struct __atomic_arithmetic
 {
   _CCCL_HOST_DEVICE constexpr inline __atomic_arithmetic(_Tp __v)
@@ -76,7 +76,7 @@ struct __atomic_arithmetic
   _LIBCUDACXX_ATOMIC_ARITHMETIC_IMPL(, volatile)
 };
 
-template <typename _Tp, typename _Sco = __thread_scope_system_tag>
+template <typename _Tp, typename _Sco>
 struct __atomic_bitwise
 {
   _CCCL_HOST_DEVICE constexpr inline __atomic_bitwise(_Tp __v)
@@ -103,7 +103,7 @@ struct __atomic_bitwise
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(, volatile)
 };
 
-template <typename _Tp, typename _Sco = __thread_scope_system_tag>
+template <typename _Tp, typename _Sco>
 struct __atomic_pointer
 {
   _CCCL_HOST_DEVICE constexpr inline __atomic_pointer(_Tp __v)

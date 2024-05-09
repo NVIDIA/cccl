@@ -82,7 +82,7 @@ struct __atomic_ref_bitwise
   _LIBCUDACXX_ATOMIC_BITWISE_IMPL(const, )
 };
 
-template <typename _Tp, typename _Sco = __thread_scope_system_tag>
+template <typename _Tp, typename _Sco>
 struct __atomic_ref_pointer
 {
   _CCCL_HOST_DEVICE constexpr inline __atomic_ref_pointer(_Tp& __v)
