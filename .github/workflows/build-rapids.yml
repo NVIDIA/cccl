@@ -73,6 +73,8 @@ jobs:
         sudo yq -i '(.repos[] | select(.name == "cuml") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
         # Use the trxcllnt/cugraph fork with fixes for latest CCCL (https://github.com/rapidsai/cugraph/pull/4404)
         sudo yq -i '(.repos[] | select(.name == "cugraph") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
+        # Use the trxcllnt/cuspatial fork with fixes for latest CCCL (https://github.com/rapidsai/cuspatial/pull/4404)
+        sudo yq -i '(.repos[] | select(.name == "cuspatial") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
 
         # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
         rapids-generate-scripts;
@@ -100,7 +102,7 @@ jobs:
 
         # Build up to 6 device archs in parallel
         export INFER_NUM_DEVICE_ARCHITECTURES=1;
-        export MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=6;
+        export MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=3;
 
         declare -A failures;
 
