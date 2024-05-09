@@ -86,13 +86,13 @@ _CCCL_HOST_DEVICE inline void __atomic_init_dispatch(_Sto* __a, _Up __val)
   __atomic_init_dispatch(&__a->__a_value, __atomic_small_to_32(__val));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
 {
   __atomic_store_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{});
 }
 
-template <typename _Sto, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -100,7 +100,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_ord
   return __atomic_small_from_32<_Tp>(__atomic_load_dispatch(&__a->__a_value, __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -109,7 +109,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value,
     __atomic_exchange_dispatch(&__a->__a_value, __atomic_small_to_32(__value), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_weak_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure, _Sco = {})
 {
@@ -133,7 +133,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_weak_dispatch(
   return __ret;
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure, _Sco = {})
 {
@@ -152,7 +152,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
   }
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -161,7 +161,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta
     __atomic_fetch_add_dispatch(&__a->__a_value, __atomic_small_to_32(__delta), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -170,7 +170,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta
     __atomic_fetch_sub_dispatch(&__a->__a_value, __atomic_small_to_32(__delta), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -179,7 +179,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __patte
     __atomic_fetch_and_dispatch(&__a->__a_value, __atomic_small_to_32(__pattern), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -188,7 +188,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __patter
     __atomic_fetch_or_dispatch(&__a->__a_value, __atomic_small_to_32(__pattern), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -197,7 +197,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __patte
     __atomic_fetch_xor_dispatch(&__a->__a_value, __atomic_small_to_32(__pattern), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
@@ -206,7 +206,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, 
     __atomic_fetch_max_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
 }
 
-template <typename _Sto, typename _Up, typename _Sco = __thread_scope_system_tag, __atomic_storage_is_small<_Sto> = 0>
+template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_small<_Sto> = 0>
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {

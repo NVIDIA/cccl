@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/detail/libcxx/include/cstring>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/remove_cv.h>
