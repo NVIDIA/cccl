@@ -26,6 +26,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if defined(_CCCL_CUDA_COMPILER)
+
 template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
 bool _CCCL_DEVICE __atomic_compare_exchange_cuda(
   _Tp volatile* __ptr, _Tp* __expected, const _Tp __desired, bool, int __success_memorder, int __failure_memorder, _Sco)
@@ -193,6 +195,8 @@ static inline _CCCL_DEVICE void __atomic_signal_fence_cuda(int)
 {
   asm volatile("" ::: "memory");
 }
+
+#endif // defined(_CCCL_CUDA_COMPILER)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
