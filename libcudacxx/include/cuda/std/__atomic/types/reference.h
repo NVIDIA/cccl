@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/types/base.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -34,7 +34,7 @@ struct __atomic_ref_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if !defined(_CCCL_COMPILER_GCC) || (__GNUC__ >= 5)
-  static_assert(is_trivially_copyable<_Tp>::value,
+  static_assert(_LIBCUDACXX_TRAIT(is_trivially_copyable, _Tp),
                 "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
