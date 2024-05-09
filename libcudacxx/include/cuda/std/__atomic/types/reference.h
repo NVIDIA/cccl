@@ -46,19 +46,19 @@ struct __atomic_ref_storage
       : __a_value(value)
   {}
 
-  _CCCL_HOST_DEVICE inline auto get() -> __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const -> __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept const -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() volatile -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept volatile -> volatile __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const volatile -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept const volatile -> volatile __underlying_t*
   {
     return __a_value;
   }

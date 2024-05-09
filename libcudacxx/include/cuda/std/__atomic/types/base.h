@@ -39,27 +39,25 @@ struct __atomic_storage
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 
-  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_storage() noexcept
-      : __a_value{}
-  {}
+  constexpr explicit __atomic_storage() noexcept = default;
 
   _CCCL_HOST_DEVICE constexpr explicit inline __atomic_storage(_Tp value) noexcept
       : __a_value(value)
   {}
 
-  _CCCL_HOST_DEVICE inline auto get() -> __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept -> __underlying_t*
   {
     return &__a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const -> const __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept const -> const __underlying_t*
   {
     return &__a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() volatile -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept volatile -> volatile __underlying_t*
   {
     return &__a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const volatile -> const volatile __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() noexcept const volatile -> const volatile __underlying_t*
   {
     return &__a_value;
   }
