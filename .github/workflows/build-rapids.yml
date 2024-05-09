@@ -84,6 +84,10 @@ jobs:
         ###
         clone-all -j$(nproc) -v -q --clone-upstream --single-branch --shallow-submodules;
 
+        ###
+        # Build the RAPIDS repos using CCCL from this PR
+        ###
+
         # Tell rapids-cmake to use custom CCCL and cuCollections forks
         rapids_branch="$(yq '.x-git-defaults.tag' /opt/rapids-build-utils/manifest.yaml)";
         rapids_version="${rapids_branch#branch-}";
@@ -96,43 +100,36 @@ jobs:
           | jq -r ".packages.cuco *= {\"git_url\": \"https://github.com/trxcllnt/cuCollections.git\", \"git_tag\": \"rapids-${rapids_version}-cccl-2.5.0\", \"always_download\": true}" \
           | tee ~/rapids-cmake-override-versions.json;
 
-        ###
-        # Build the RAPIDS repos using the local CCCL mount without and then with tests and benchmarks
-        ###
-
         # Build up to 6 device archs in parallel
         export INFER_NUM_DEVICE_ARCHITECTURES=1;
         export MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=3;
 
         declare -A failures;
 
-        for opt in OFF ON; do
+        # Build arguments list
+        args_=(${{ matrix.args }});
+        # Enable/disable tests
+        args_=("${args_[@]/#/"-D"}");
+        args_=("${args_[@]/%/"=ON"}");
+        args_+=(-DBUILD_SHARED_LIBS=ON);
+        # Tell rapids-cmake to use custom CCCL and cuCollections forks
+        args_+=(-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE="${HOME}/rapids-cmake-override-versions.json");
 
-          # Build arguments list
-          args_=(${{ matrix.args }});
-          # Enable/disable tests
-          args_=("${args_[@]/#/"-D"}");
-          args_=("${args_[@]/%/"=${opt}"}");
-          args_+=(-DBUILD_SHARED_LIBS=ON);
-          # Tell rapids-cmake to use custom CCCL and cuCollections forks
-          args_+=(-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE="${HOME}/rapids-cmake-override-versions.json");
+        for lib in ${{ matrix.libs }}; do
 
-          for lib in ${{ matrix.libs }}; do
+          args=("${args_[@]}")
+          if test "${lib}" != "cugraph"; then
+            args=(-v -j "${args[@]}");
+          else
+            # cuGraph device objects use lots of memory, so only build with -t=1
+            args=(-v -j$(nproc --ignore=1) --archs 1 "${args[@]}");
+          fi
 
-            args=("${args_[@]}")
-            if test "${lib}" != "cugraph"; then
-              args=(-v -j "${args[@]}");
-            else
-              # cuGraph device objects use lots of memory, so only build with -t=1
-              args=(-v -j$(nproc --ignore=1) --archs 1 "${args[@]}");
-            fi
-
-            sccache -z;
-            if ! configure-${lib}-cpp "${args[@]}" || ! build-${lib}-cpp "${args[@]}"; then
-              failures["${lib}"]=1;
-            fi
-            sccache --show-adv-stats;
-          done
+          sccache -z;
+          if ! configure-${lib}-cpp "${args[@]}" || ! build-${lib}-cpp "${args[@]}"; then
+            failures["${lib}"]=1;
+          fi
+          sccache --show-adv-stats;
         done
 
         # Print failures and exit
