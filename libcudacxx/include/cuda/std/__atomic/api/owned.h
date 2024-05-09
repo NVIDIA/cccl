@@ -38,9 +38,7 @@ struct __atomic_common
       : __a(__v)
   {}
 
-  _CCCL_HOST_DEVICE constexpr inline __atomic_common()
-      : __a()
-  {}
+  constexpr inline __atomic_common() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -59,9 +57,7 @@ struct __atomic_arithmetic
       : __a(__v)
   {}
 
-  _CCCL_HOST_DEVICE constexpr inline __atomic_arithmetic()
-      : __a()
-  {}
+  constexpr inline __atomic_arithmetic() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -83,9 +79,7 @@ struct __atomic_bitwise
       : __a(__v)
   {}
 
-  _CCCL_HOST_DEVICE constexpr inline __atomic_bitwise()
-      : __a()
-  {}
+  constexpr inline __atomic_bitwise() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -110,9 +104,7 @@ struct __atomic_pointer
       : __a(__v)
   {}
 
-  _CCCL_HOST_DEVICE constexpr inline __atomic_pointer()
-      : __a()
-  {}
+  constexpr inline __atomic_pointer() = default;
 
   __atomic_storage_t<_Tp> __a;
 
