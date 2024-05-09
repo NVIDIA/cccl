@@ -21,9 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _MSC_VER
-#  error "This file is only for CL.EXE's benefit"
-#endif
+#if defined(_CCCL_COMPILER_MSVC)
 
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/cassert>
@@ -638,5 +636,7 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // defined(_CCCL_COMPILER_MSVC)
 
 #endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
