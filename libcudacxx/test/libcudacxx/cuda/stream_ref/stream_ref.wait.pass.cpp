@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     ( // passing case
       cudaStream_t stream;
       cudaStreamCreate(&stream);
-      std::atomic_flag flag = LIBCUDACXX_ATOMIC_FLAG_INIT;
+      std::atomic_flag flag = ATOMIC_FLAG_INIT;
       cudaStreamAddCallback(stream, callback, &flag, 0);
       cuda::stream_ref ref{stream};
       test_wait(ref);
