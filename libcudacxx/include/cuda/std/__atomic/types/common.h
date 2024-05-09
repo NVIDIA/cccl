@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/detail/libcxx/include/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -53,14 +54,14 @@ using __atomic_underlying_remove_cv_t = __remove_cv_t<typename _Tp::__underlying
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
 template <typename _Tp, typename _Tv>
-__enable_if_t<is_assignable<_Tp&, _Tv>::value> _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE __enable_if_t<_LIBCUDACXX_TRAITS(is_assignable, _Tp&, _Tv)>
 __atomic_assign_volatile(_Tp* __a_value, _Tv const& __val)
 {
   *__a_value = __val;
 }
 
 template <typename _Tp, typename _Tv>
-__enable_if_t<is_assignable<_Tp&, _Tv>::value> _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE __enable_if_t<_LIBCUDACXX_TRAITS(is_assignable, _Tp&, _Tv)>
 __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
 {
   volatile char* __to         = reinterpret_cast<volatile char*>(__a_value);
