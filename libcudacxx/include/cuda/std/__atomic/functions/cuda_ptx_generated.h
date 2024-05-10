@@ -24,6 +24,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__type_traits/enable_if.h>
