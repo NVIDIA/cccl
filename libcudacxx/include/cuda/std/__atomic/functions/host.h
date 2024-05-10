@@ -107,24 +107,26 @@ template <typename _Tp, typename _Up>
 inline bool __atomic_compare_exchange_strong_host(
   _Tp* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure)
 {
-  return __atomic_compare_exchange(&__atomic_auto_align<_Tp>(__a),
-                                   &__atomic_auto_align<__remove_cv_t<_Tp>>(__expected),
-                                   &__atomic_auto_align<__remove_cv_t<_Tp>>(&__value),
-                                   false,
-                                   __atomic_order_to_int(__success),
-                                   __atomic_failure_order_to_int(__failure));
+  return __atomic_compare_exchange(
+    &__atomic_auto_align<_Tp>(__a),
+    &__atomic_auto_align<__remove_cv_t<_Tp>>(__expected),
+    &__atomic_auto_align<__remove_cv_t<_Tp>>(&__value),
+    false,
+    __atomic_order_to_int(__success),
+    __atomic_failure_order_to_int(__failure));
 }
 
 template <typename _Tp, typename _Up>
 inline bool __atomic_compare_exchange_weak_host(
   _Tp* __a, _Up* __expected, _Up __value, memory_order __success, memory_order __failure)
 {
-  return __atomic_compare_exchange(&__atomic_auto_align<_Tp>(__a),
-                                   &__atomic_auto_align<__remove_cv_t<_Tp>>(__expected),
-                                   &__atomic_auto_align<__remove_cv_t<_Tp>>(&__value),
-                                   true,
-                                   __atomic_order_to_int(__success),
-                                   __atomic_failure_order_to_int(__failure));
+  return __atomic_compare_exchange(
+    &__atomic_auto_align<_Tp>(__a),
+    &__atomic_auto_align<__remove_cv_t<_Tp>>(__expected),
+    &__atomic_auto_align<__remove_cv_t<_Tp>>(&__value),
+    true,
+    __atomic_order_to_int(__success),
+    __atomic_failure_order_to_int(__failure));
 }
 
 template <typename _Tp>
