@@ -26,7 +26,6 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/api/owned.h>
-
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
