@@ -32,6 +32,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 
+#if !defined(_CCCL_COMPILER_NVRTC)
+
 template <typename _Tp>
 struct __atomic_alignment_wrapper
 {
@@ -230,6 +232,8 @@ inline __remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_or
 
   return __expected;
 }
+
+#endif // !defined(_CCCL_COMPILER_NVRTC)
 
 _CCCL_DIAG_POP
 
