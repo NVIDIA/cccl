@@ -37,8 +37,11 @@ struct TestFn
       A& t = *sel.construct();
       cuda::std::atomic_init(&t, key{1, 2});
       auto r = t.load();
+      auto d = key{5, 5};
       t.store(r);
       (void) t.exchange(r);
+      (void) t.compare_exchange_weak(r, d, cuda::memory_order_seq_cst, cuda::memory_order_seq_cst);
+      (void) t.compare_exchange_strong(d, r, cuda::memory_order_seq_cst, cuda::memory_order_seq_cst);
     }
     {
       struct alignas(8) key
@@ -51,8 +54,11 @@ struct TestFn
       A& t = *sel.construct();
       cuda::std::atomic_init(&t, key{1, 2});
       auto r = t.load();
+      auto d = key{5, 5};
       t.store(r);
       (void) t.exchange(r);
+      (void) t.compare_exchange_weak(r, d, cuda::memory_order_seq_cst, cuda::memory_order_seq_cst);
+      (void) t.compare_exchange_strong(d, r, cuda::memory_order_seq_cst, cuda::memory_order_seq_cst);
     }
   }
 };
