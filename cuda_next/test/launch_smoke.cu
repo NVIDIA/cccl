@@ -26,7 +26,7 @@ struct my_dynamic_smem_t
 template <typename Config>
 __global__ void non_functor(Config conf, int i)
 {
-  auto& dynamic_smem = get_smem_content_ref(conf);
+  auto& dynamic_smem = cudax::dynamic_smem_ref(conf);
 
   static_assert(std::is_same_v<decltype(dynamic_smem), my_dynamic_smem_t&>);
 
@@ -38,10 +38,6 @@ void non_functor_example()
   auto dims = cudax::block_dims<512>() & cudax::grid_dims<256>();
   auto conf = cudax::kernel_config(dims, cudax::dynamic_shared_memory<my_dynamic_smem_t>());
 
-  cudax::launch(conf, non_functor, 42);
-
-  // Needs to list arg types explicitly or instatiate the template if implicit conversions are involved
-  cudax::launch<int>(conf, non_functor, 43U);
   auto fn = non_functor<decltype(conf)>;
 
   cudax::launch(conf, fn, 42U);
@@ -72,6 +68,8 @@ void inline_lambda_example()
       printf("Hello from the GPU\n");
     }
   });
+
+  cudax::launch(cudax::block_dims<256>() & cudax::grid_dims(12), [] __device__() {});
 }
 
 // Not templated on dims for now, because it needs CG integration
@@ -107,7 +105,7 @@ struct dynamic_smem_single
     auto block = cg::this_thread_block();
     max_out_static_smem(block);
 
-    auto& dynamic_smem = get_smem_content_ref(conf);
+    auto& dynamic_smem = cudax::dynamic_smem_ref(conf);
     check_dyn_smem(block, dynamic_smem);
   }
 };
@@ -120,7 +118,7 @@ struct dynamic_smem_span
     auto block = cg::this_thread_block();
     max_out_static_smem(block);
 
-    auto dynamic_smem = cudax::get_smem_content(conf);
+    auto dynamic_smem = cudax::dynamic_smem_span(conf);
     check_dyn_smem(block, dynamic_smem[1]);
   }
 };
@@ -150,7 +148,7 @@ struct static_self_contained
   __device__ void operator()(decltype(conf) config)
   {
     auto grid      = cg::this_grid();
-    auto& dyn_smem = cudax::get_smem_content_ref(config.list);
+    auto& dyn_smem = cudax::dynamic_smem_ref(config);
   }
 };
 
@@ -191,12 +189,11 @@ struct cooperative_counter
   template <typename Configuration, typename T>
   __device__ void operator()(Configuration config, T* data, size_t size, T searched)
   {
-    auto grid        = cg::this_grid();
     auto& atomic_int = get_workspace_content(config);
 
-    for (size_t i = 0; i < size; i += grid.num_threads())
+    for (size_t i = 0; i < size; i += cudax::grid.count(cudax::thread))
     {
-      if (data[i + grid.thread_rank()] == searched)
+      if (data[i + cudax::grid.rank(cudax::thread)] == searched)
       {
         atomic_int += 1;
       }
@@ -273,6 +270,19 @@ auto k = kernel<int>(p1, p2, p3);
 cudax::launch(k.get_config(), k, p4);
 cudax::launch(k, p4);
 */
+
+void stream_example()
+{
+  cudaStream_t stream;
+
+  cudaStreamCreate(&stream);
+
+  auto dims = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(12));
+  auto conf = cudax::make_config(dims, cudax::launch_on(stream));
+
+  cudax::launch(conf, [] __device__() {});
+}
+
 TEST_CASE("Smoke", "[launch]")
 {
   // Examples of use
@@ -284,13 +294,13 @@ TEST_CASE("Smoke", "[launch]")
     inline_lambda_example();
     dynamic_smem_example();
     per_arch_example(1);
+    stream_example();
     //        self_contained_example();
   }
   catch (cudax::launchErrorException e)
   {
     printf("Launch error %d\n", e.error);
   }
-
   cudaDeviceSynchronize();
   // Pure mock-up, would require more work to implement
   // workspace_example();
