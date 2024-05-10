@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
@@ -124,7 +125,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <>
 class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __block_scope_barrier_base
 {
-  using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int) thread_scope_block>;
+  using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
   _CCCL_DEVICE friend inline _CUDA_VSTD::uint64_t*

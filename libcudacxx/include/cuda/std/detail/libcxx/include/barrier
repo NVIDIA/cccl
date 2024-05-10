@@ -79,17 +79,17 @@ template <class _CompletionF = __empty_completion, int _Sco = 0>
 class alignas(64) __barrier_base
 {
   ptrdiff_t __expected;
-  __atomic_base<ptrdiff_t, _Sco> __expected_adjustment;
+  __atomic_impl<ptrdiff_t, _Sco> __expected_adjustment;
   _CompletionF __completion;
 
   using __phase_t = uint8_t;
-  __atomic_base<__phase_t, _Sco> __phase;
+  __atomic_impl<__phase_t, _Sco> __phase;
 
   struct alignas(64) __state_t
   {
     struct
     {
-      __atomic_base<__phase_t, _Sco> __phase = ATOMIC_VAR_INIT(0);
+      __atomic_impl<__phase_t, _Sco> __phase = LIBCUDACXX_ATOMIC_VAR_INIT(0);
     } __tickets[64];
   };
   ::std::vector<__state_t> __state;
@@ -263,12 +263,12 @@ _LIBCUDACXX_INLINE_VISIBILITY bool __call_try_wait_parity(const _Barrier& __b, b
   return __b.__try_wait_parity(__parity);
 }
 
-template <class _CompletionF, int _Sco = 0>
+template <class _CompletionF, thread_scope _Sco = thread_scope_system>
 class __barrier_base
 {
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_base<ptrdiff_t, _Sco> __expected, __arrived;
+  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<ptrdiff_t, _Sco> __expected, __arrived;
   _LIBCUDACXX_BARRIER_ALIGNMENTS _CompletionF __completion;
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_base<bool, _Sco> __phase;
+  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<bool, _Sco> __phase;
 
 public:
   using arrival_token = bool;
@@ -321,7 +321,7 @@ public:
       __completion();
       __arrived.store(__new_expected, memory_order_relaxed);
       __phase.store(!__old_phase, memory_order_release);
-      __cxx_atomic_notify_all(&__phase.__a_);
+      __atomic_notify_all(&__phase.__a, __scope_to_tag<_Sco>{});
     }
     return __old_phase;
   }
@@ -345,7 +345,7 @@ public:
   }
 };
 
-template <int _Sco>
+template <thread_scope _Sco>
 class __barrier_base<__empty_completion, _Sco>
 {
   static constexpr uint64_t __expected_unit = 1ull;
@@ -354,7 +354,7 @@ class __barrier_base<__empty_completion, _Sco>
   static constexpr uint64_t __phase_bit     = 1ull << 63;
   static constexpr uint64_t __arrived_mask  = (__phase_bit - 1) & ~__expected_mask;
 
-  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_base<uint64_t, _Sco> __phase_arrived_expected;
+  _LIBCUDACXX_BARRIER_ALIGNMENTS __atomic_impl<uint64_t, _Sco> __phase_arrived_expected;
 
 public:
   using arrival_token = uint64_t;
@@ -457,6 +457,7 @@ public:
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cuda/barrier.h>
+
 _CCCL_POP_MACROS
 
 #endif //_LIBCUDACXX_BARRIER

@@ -12,7 +12,7 @@
 
 // <cuda/std/atomic>
 
-// #define ATOMIC_VAR_INIT(value)
+// #define LIBCUDACXX_ATOMIC_VAR_INIT(value)
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
@@ -22,7 +22,7 @@
 
 int main(int, char**)
 {
-  cuda::std::atomic<int> v = ATOMIC_VAR_INIT(5);
+  cuda::std::atomic<int> v = LIBCUDACXX_ATOMIC_VAR_INIT(5);
   assert(v == 5);
 
   return 0;

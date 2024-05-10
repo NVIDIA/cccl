@@ -36,11 +36,11 @@ struct trie
 {
   struct ref
   {
-    cuda::atomic<trie*, cuda::thread_scope_device> ptr = ATOMIC_VAR_INIT(nullptr);
+    cuda::atomic<trie*, cuda::thread_scope_device> ptr = LIBCUDACXX_ATOMIC_VAR_INIT(nullptr);
     // the flag will protect against multiple pointer updates
-    cuda::std::atomic_flag flag = ATOMIC_FLAG_INIT;
+    cuda::std::atomic_flag flag = LIBCUDACXX_ATOMIC_FLAG_INIT;
   } next[26];
-  cuda::std::atomic<short> count = ATOMIC_VAR_INIT(0);
+  cuda::std::atomic<short> count = LIBCUDACXX_ATOMIC_VAR_INIT(0);
 };
 __host__ __device__ int index_of(char c)
 {

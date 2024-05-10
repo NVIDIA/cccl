@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_ATOMIC
-#define _CUDA_ATOMIC
+#ifndef __LIBCUDACXX___ATOMIC_FUNCTIONS_H
+#define __LIBCUDACXX___ATOMIC_FUNCTIONS_H
 
-#include <cuda/std/__cuda/atomic.h>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,4 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#endif // _CUDA_ATOMIC
+#include <cuda/std/__atomic/platform.h>
+
+// Device atomics
+#include <cuda/std/__atomic/functions/cuda_ptx_derived.h>
+#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
+
+// Host atomics
+#include <cuda/std/__atomic/functions/host.h>
+
+#endif // __LIBCUDACXX___ATOMIC_FUNCTIONS_H
