@@ -34,7 +34,7 @@ struct __atomic_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if !defined(_CCCL_COMPILER_GCC) || (__GNUC__ >= 5)
-  static_assert(_LIBCUDACXX_TRAIT(is_trivially_copyable, _Tp), "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
+  static_assert(_CCCL_TRAIT(is_trivially_copyable, _Tp), "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
@@ -49,15 +49,15 @@ struct __atomic_storage
   {
     return &__a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() noexcept const -> const __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() const noexcept -> const __underlying_t*
   {
     return &__a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() noexcept volatile -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() volatile noexcept -> volatile __underlying_t*
   {
     return &__a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() noexcept const volatile -> const volatile __underlying_t*
+  _CCCL_HOST_DEVICE inline auto get() const volatile noexcept -> const volatile __underlying_t*
   {
     return &__a_value;
   }
