@@ -19,12 +19,13 @@ git fetch origin --unshallow -q
 git fetch origin $base_sha -q
 base_sha=$(git merge-base $head_sha $base_sha)
 
-# Define a list of subproject directories:
+# Define a list of subproject directories by their subdirectory name:
 subprojects=(
   cccl
   libcudacxx
   cub
   thrust
+  cudax
 )
 
 # ...and their dependencies:
@@ -33,6 +34,7 @@ declare -A dependencies=(
   [libcudacxx]="cccl"
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
+  [cudax]="cccl libcudacxx"
 )
 
 declare -A project_names=(
@@ -40,7 +42,25 @@ declare -A project_names=(
   [libcudacxx]="libcu++"
   [cub]="CUB"
   [thrust]="Thrust"
+  [cudax]="CUDA Experimental"
 )
+
+# Usage checks:
+for subproject in "${subprojects[@]}"; do
+  # Check that the subproject directory exists
+  if [ "$subproject" != "cccl" ] && [ ! -d "$subproject" ]; then
+    echo "Error: Subproject directory '$subproject' does not exist."
+    exit 1
+  fi
+
+  # If the subproject has dependencies, check that they exist (except for "cccl")
+  for dependency in ${dependencies[$subproject]}; do
+    if [ "$dependency" != "cccl" ] && [ ! -d "$dependency" ]; then
+      echo "Error: Dependency directory '$dependency' for subproject '$subproject' does not exist."
+      exit 1
+    fi
+  done
+done
 
 write_output() {
   local key="$1"

@@ -41,10 +41,12 @@ if (ROOT_TYPE STREQUAL "SOURCE")
   cmake_path(APPEND CCCL_ROOT thrust OUTPUT_VARIABLE Thrust_ROOT)
   cmake_path(APPEND CCCL_ROOT cub OUTPUT_VARIABLE CUB_ROOT)
   cmake_path(APPEND CCCL_ROOT libcudacxx OUTPUT_VARIABLE libcudacxx_ROOT)
+  cmake_path(APPEND CCCL_ROOT cudax OUTPUT_VARIABLE cudax_ROOT)
 elseif (ROOT_TYPE STREQUAL "INSTALL")
   set(Thrust_ROOT "${CCCL_ROOT}")
   set(CUB_ROOT "${CCCL_ROOT}")
   set(libcudacxx_ROOT "${CCCL_ROOT}")
+  set(cudax_ROOT "${CCCL_ROOT}")
 else()
   message(FATAL_ERROR "Invalid ROOT_TYPE: ${ROOT_TYPE}")
 endif()
@@ -52,6 +54,7 @@ endif()
 message(STATUS "Thrust_ROOT=${Thrust_ROOT}")
 message(STATUS "CUB_ROOT=${CUB_ROOT}")
 message(STATUS "libcudacxx_ROOT=${libcudacxx_ROOT}")
+message(STATUS "cudax_ROOT=${cudax_ROOT}")
 
 function(do_find_package pkg_name pkg_prefix)
   list(APPEND arg_list
@@ -97,6 +100,9 @@ endif()
 
 if (COMPONENTS STREQUAL "DEFAULT")
   set(COMPONENTS libcudacxx CUB Thrust)
+  if (CCCL_ENABLE_UNSTABLE)
+    list(APPEND COMPONENTS cudax)
+  endif()
 endif()
 
 foreach (component IN LISTS COMPONENTS)
@@ -107,7 +113,6 @@ foreach (component IN LISTS COMPONENTS)
   add_test(NAME ${test_target} COMMAND ${test_target})
 
   if (component STREQUAL "libcudacxx")
-    # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${LIBCUDACXX_VERSION_MAJOR} * 1000000) +
         ${LIBCUDACXX_VERSION_MINOR} * 1000 +
@@ -117,7 +122,6 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_MACRO=_LIBCUDACXX_CUDA_API_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
   elseif (component STREQUAL "CUB")
-    # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${CUB_VERSION_MAJOR} * 100000) +
         ${CUB_VERSION_MINOR} * 100 +
@@ -127,7 +131,6 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_MACRO=CUB_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
   elseif (component STREQUAL "Thrust")
-    # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${THRUST_VERSION_MAJOR} * 100000) +
         ${THRUST_VERSION_MINOR} * 100 +
@@ -136,7 +139,16 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_HEADER=thrust/version.h"
       "VERSION_MACRO=THRUST_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
+    elseif (component STREQUAL "cudax")
+      math(EXPR component_cmake_version
+      "(${CUDAX_VERSION_MAJOR} * 1000000) +
+        ${CUDAX_VERSION_MINOR} * 1000 +
+        ${CUDAX_VERSION_PATCH}")
+      target_compile_definitions(${test_target} PRIVATE
+        "VERSION_HEADER=cuda/experimental/version.cuh"
+        "VERSION_MACRO=CUDAX_VERSION"
+        "EXPECTED_VERSION=${component_cmake_version}")
   else()
-    message(FATAL_ERROR "Valid COMPONENTS are (case-sensitive): Thrust;CUB;libcudacxx")
+    message(FATAL_ERROR "Valid COMPONENTS are (case-sensitive): Thrust;CUB;libcudacxx;cudax")
   endif()
 endforeach()

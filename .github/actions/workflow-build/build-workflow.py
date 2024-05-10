@@ -133,7 +133,7 @@ def lookup_os(ctk, host_compiler):
     return matrix_yaml['default_os_lookup'][key]
 
 
-def lookup_supported_stds(device_compiler=None, host_compiler=None):
+def lookup_supported_stds(device_compiler=None, host_compiler=None, project=None):
     stds = set(matrix_yaml['all_stds'])
     if device_compiler:
         key = f"{device_compiler['name']}{device_compiler['version']}"
@@ -145,6 +145,11 @@ def lookup_supported_stds(device_compiler=None, host_compiler=None):
         if not key in matrix_yaml['lookup_cxx_supported_stds']:
             raise Exception(f"Missing matrix.yaml 'lookup_cxx_supported_stds' entry for key '{key}'")
         stds = stds & set(matrix_yaml['lookup_cxx_supported_stds'][key])
+    if project:
+        key = project
+        if not key in matrix_yaml['lookup_project_supported_stds']:
+            raise Exception(f"Missing matrix.yaml 'lookup_project_supported_stds' entry for key '{key}'")
+        stds = stds & set(matrix_yaml['lookup_project_supported_stds'][key])
     return sorted(list(stds))
 
 
@@ -584,7 +589,9 @@ def set_derived_tags(matrix_job):
     if 'std' in matrix_job and matrix_job['std'] == 'all':
         host_compiler = matrix_job['cxx'] if 'cxx' in matrix_job else None
         device_compiler = matrix_job['cudacxx'] if 'cudacxx' in matrix_job else None
-        matrix_job['std'] = lookup_supported_stds(device_compiler, host_compiler)
+        project = matrix_job['project'] if 'project' in matrix_job else None
+
+        matrix_job['std'] = lookup_supported_stds(device_compiler, host_compiler, project)
 
 
 def next_explode_tag(matrix_job):
