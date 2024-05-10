@@ -31,13 +31,52 @@ runs:
         name: dispatch-job-success
         path: dispatch-job-success/
 
+    - name: Fetch workflow job info
+      if: ${{ inputs.github_token != ''}}
+      continue-on-error: true
+      uses: actions/github-script@v4
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const fs = require('fs');
+
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const runId = context.runId;
+
+          github.paginate(
+            'GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs',
+            {
+              owner: owner,
+              repo: repo,
+              run_id: runId
+            }
+          )
+          .then(jobs => {
+            console.log('::group::Jobs JSON');
+            console.log(JSON.stringify(jobs, null, 2));
+            console.log('::endgroup::');
+            fs.mkdirSync("results", { recursive: true });
+            fs.writeFileSync('results/jobs.json', JSON.stringify(jobs, null, 2));
+            console.log(`Fetched ${jobs.length} jobs and saved to results/jobs.json`);
+          })
+          .catch(error => {
+            console.error(error);
+          });
+
+    - name: Parse job times
+      continue-on-error: true
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "Parsing job times..."
+        python3 "${GITHUB_ACTION_PATH}/parse-job-times.py" workflow/workflow.json results/jobs.json
+
     - name: Prepare execution summary
-      id: job-summary
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "Generating job summary..."
-        python3 "${GITHUB_ACTION_PATH}/prepare-execution-summary.py" workflow/workflow.json
+        python3 "${GITHUB_ACTION_PATH}/prepare-execution-summary.py" workflow/workflow.json results/job_times.json
 
     - name: Prepare final summary
       id: final-summary
@@ -70,8 +109,8 @@ runs:
         github-token: ${{ inputs.github_token }}
         script: |
           const pr_number = process.env.PR_NUMBER;
-          const owner = 'NVIDIA';
-          const repo = 'cccl';
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
           // Decode URL-encoded string for proper display in comments
           const commentBody = decodeURIComponent(process.env.COMMENT_BODY);
           console.log('::group::Commenting on PR #' + pr_number + ' with the following message:')

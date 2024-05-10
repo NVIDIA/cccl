@@ -83,7 +83,7 @@ jobs:
           echo "SCCACHE_IDLE_TIMEOUT=32768" >> $GITHUB_ENV
           echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
           echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
-      - name: Run command
+      - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         shell: su coder {0}
         env:
           # Dereferencing the command from and env var instead of a GHA input avoids issues with escaping
@@ -149,7 +149,7 @@ jobs:
           role-duration-seconds: 43200 # 12 hours
       - name: Fetch ${{ inputs.image }}
         run: docker pull ${{ inputs.image }}
-      - name: Run Command
+      - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         run: >-
           docker run ${{ inputs.image }} powershell -c "[System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}')
                                                         [System.Environment]::SetEnvironmentVariable('AWS_SECRET_ACCESS_KEY','${{env.AWS_SECRET_ACCESS_KEY}}')
