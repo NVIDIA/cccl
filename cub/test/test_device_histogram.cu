@@ -1754,10 +1754,7 @@ int main(int argc, char** argv)
   // Make sure bin computation works fine when requiring int64 arithmetic
   TestChannels<unsigned int, int, unsigned int, int>(
     std::numeric_limits<unsigned int>::max(), 8192 + 1, true_t{}, false_t{});
-#if !defined(__ICC)
-  // Fails with ICC for unknown reasons, see #332.
   TestChannels<float, int, float, int>(1.0, 256 + 1, true_t{}, false_t{});
-#endif
 
   // float samples, int levels, regression test for NVIDIA/cub#479.
   TestChannels<float, int, int, int>(12, 7, true_t{}, true_t{});
