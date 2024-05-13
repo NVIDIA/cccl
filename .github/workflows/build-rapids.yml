@@ -116,6 +116,8 @@ jobs:
           echo "-DBUILD_SHARED_LIBS=ON";
           # Build raft shared library
           echo "-DRAFT_COMPILE_LIBRARY=ON";
+          # Build cuGraph multi-gpu tests
+          echo "-DBUILD_CUGRAPH_MG_TESTS=ON";
           # Tell rapids-cmake to use custom CCCL and cuCollections forks
           echo "-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE='${HOME}/rapids-cmake-override-versions.json'";
         }
