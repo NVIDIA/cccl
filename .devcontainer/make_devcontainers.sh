@@ -11,7 +11,6 @@ set -euo pipefail
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
-
 function usage {
     echo "Usage: $0 [--clean] [-h/--help] [-v/--verbose]"
     echo "  --clean   Remove stale devcontainer subdirectories"

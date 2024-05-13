@@ -68,6 +68,7 @@
 //     T* operator-=(ptrdiff_t op);
 // };
 
+#include <cuda/atomic>
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>

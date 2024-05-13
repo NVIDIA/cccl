@@ -13,6 +13,7 @@
 // TODO: Remove pointless comparison suppression when compiler fixes short-circuiting
 
 #include <cuda/pipeline>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 

@@ -68,7 +68,7 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <int _Sco, ptrdiff_t __least_max_value>
+template <thread_scope _Sco, ptrdiff_t __least_max_value>
 class __atomic_semaphore_base
 {
   _LIBCUDACXX_INLINE_VISIBILITY bool __fetch_sub_if_slow(ptrdiff_t __old)
@@ -119,7 +119,7 @@ class __atomic_semaphore_base
       },
       __rel_time);
   }
-  __atomic_base<ptrdiff_t, _Sco> __count;
+  __atomic_impl<ptrdiff_t, _Sco> __count;
 
 public:
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr ptrdiff_t max() noexcept
@@ -191,7 +191,7 @@ public:
 
 #ifndef _LIBCUDACXX_USE_NATIVE_SEMAPHORES
 
-template <int _Sco>
+template <thread_scope _Sco>
 class __atomic_semaphore_base<_Sco, 1>
 {
   _LIBCUDACXX_INLINE_VISIBILITY bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
@@ -202,7 +202,7 @@ class __atomic_semaphore_base<_Sco, 1>
       },
       __rel_time);
   }
-  __atomic_base<int, _Sco> __available;
+  __atomic_impl<int, _Sco> __available;
 
 public:
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr ptrdiff_t max() noexcept
@@ -269,7 +269,7 @@ public:
 
 #else
 
-template <int _Sco>
+template <thread_scope _Sco>
 class __sem_semaphore_base
 {
   _LIBCUDACXX_INLINE_VISIBILITY bool __backfill(bool __success)
@@ -278,81 +278,83 @@ class __sem_semaphore_base
     if (__success)
     {
       auto const __back_amount = __backbuffer.fetch_sub(2, memory_order_acquire);
-      bool const __post_one    = __back_amount > 0;
-      bool const __post_two    = __back_amount > 1;
-      auto const __success     = (!__post_one || __libcpp_semaphore_post(&__semaphore))
-                          && (!__post_two || __libcpp_semaphore_post(&__semaphore));
-      _LIBCUDACXX_ASSERT(__success, "");
-      if (!__post_one || !__post_two)
-      {
-        __backbuffer.fetch_add(!__post_one ? 2 : 1, memory_order_relaxed);
-      }
     }
-#  endif
-    return __success;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY bool __try_acquire_fast()
-  {
-#  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-
-    ptrdiff_t __old;
-    __libcpp_thread_poll_with_backoff(
-      [&]() {
-        __old = __frontbuffer.load(memory_order_relaxed);
-        return 0 != (__old >> 32);
-      },
-      chrono::microseconds(5));
-
-    // always steal if you can
-    while (__old >> 32)
-    {
-      if (__frontbuffer.compare_exchange_weak(__old, __old - (1ll << 32), memory_order_acquire))
-      {
-        return true;
-      }
-    }
-    // record we're waiting
-    __old = __frontbuffer.fetch_add(1ll, memory_order_release);
-    // ALWAYS steal if you can!
-    while (__old >> 32)
-    {
-      if (__frontbuffer.compare_exchange_weak(__old, __old - (1ll << 32), memory_order_acquire))
-      {
-        break;
-      }
-    }
-    // not going to wait after all
-    if (__old >> 32)
-    {
-      return __try_done(true);
-    }
-#  endif
-    // the wait has begun...
-    return false;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY bool __try_done(bool __success)
-  {
-#  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-    // record we're NOT waiting
-    __frontbuffer.fetch_sub(1ll, memory_order_release);
-#  endif
-    return __backfill(__success);
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY void __release_slow(ptrdiff_t __post_amount)
-  {
-#  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_BACK_BUFFER
-    bool const __post_one = __post_amount > 0;
-    bool const __post_two = __post_amount > 1;
-    if (__post_amount > 2)
-    {
-      __backbuffer.fetch_add(__post_amount - 2, memory_order_acq_rel);
-    }
+    bool const __post_one = __back_amount > 0;
+    bool const __post_two = __back_amount > 1;
     auto const __success =
       (!__post_one || __libcpp_semaphore_post(&__semaphore)) && (!__post_two || __libcpp_semaphore_post(&__semaphore));
     _LIBCUDACXX_ASSERT(__success, "");
+    if (!__post_one || !__post_two)
+    {
+      __backbuffer.fetch_add(!__post_one ? 2 : 1, memory_order_relaxed);
+    }
+  }
+#  endif
+  return __success;
+}
+
+_LIBCUDACXX_INLINE_VISIBILITY bool
+__try_acquire_fast()
+{
+#  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
+
+  ptrdiff_t __old;
+  __libcpp_thread_poll_with_backoff(
+    [&]() {
+      __old = __frontbuffer.load(memory_order_relaxed);
+      return 0 != (__old >> 32);
+    },
+    chrono::microseconds(5));
+
+  // always steal if you can
+  while (__old >> 32)
+  {
+    if (__frontbuffer.compare_exchange_weak(__old, __old - (1ll << 32), memory_order_acquire))
+    {
+      return true;
+    }
+  }
+  // record we're waiting
+  __old = __frontbuffer.fetch_add(1ll, memory_order_release);
+  // ALWAYS steal if you can!
+  while (__old >> 32)
+  {
+    if (__frontbuffer.compare_exchange_weak(__old, __old - (1ll << 32), memory_order_acquire))
+    {
+      break;
+    }
+  }
+  // not going to wait after all
+  if (__old >> 32)
+  {
+    return __try_done(true);
+  }
+#  endif
+  // the wait has begun...
+  return false;
+}
+
+_LIBCUDACXX_INLINE_VISIBILITY bool __try_done(bool __success)
+{
+#  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
+  // record we're NOT waiting
+  __frontbuffer.fetch_sub(1ll, memory_order_release);
+#  endif
+  return __backfill(__success);
+}
+
+_LIBCUDACXX_INLINE_VISIBILITY void __release_slow(ptrdiff_t __post_amount)
+{
+#  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_BACK_BUFFER
+  bool const __post_one = __post_amount > 0;
+  bool const __post_two = __post_amount > 1;
+  if (__post_amount > 2)
+  {
+    __backbuffer.fetch_add(__post_amount - 2, memory_order_acq_rel);
+  }
+  auto const __success =
+    (!__post_one || __libcpp_semaphore_post(&__semaphore)) && (!__post_two || __libcpp_semaphore_post(&__semaphore));
+  _LIBCUDACXX_ASSERT(__success, "");
 #  else
     for (; __post_amount; --__post_amount)
     {
@@ -360,101 +362,102 @@ class __sem_semaphore_base
       _LIBCUDACXX_ASSERT(__success, "");
     }
 #  endif
-  }
+}
 
-  __libcpp_semaphore_t __semaphore;
+__libcpp_semaphore_t __semaphore;
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-  __atomic_base<ptrdiff_t, _Sco> __frontbuffer;
+__atomic_impl<ptrdiff_t, _Sco> __frontbuffer;
 #  endif
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_BACK_BUFFER
-  __atomic_base<ptrdiff_t, _Sco> __backbuffer;
+__atomic_impl<ptrdiff_t, _Sco> __backbuffer;
 #  endif
 
 public:
-  static constexpr ptrdiff_t max() noexcept
-  {
-    return _LIBCUDACXX_SEMAPHORE_MAX;
-  }
+static constexpr ptrdiff_t max() noexcept
+{
+  return _LIBCUDACXX_SEMAPHORE_MAX;
+}
 
-  _LIBCUDACXX_INLINE_VISIBILITY __sem_semaphore_base(ptrdiff_t __count = 0)
-      : __semaphore()
+_LIBCUDACXX_INLINE_VISIBILITY __sem_semaphore_base(ptrdiff_t __count = 0)
+    : __semaphore()
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-      , __frontbuffer(__count << 32)
+    , __frontbuffer(__count << 32)
 #  endif
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_BACK_BUFFER
-      , __backbuffer(0)
+    , __backbuffer(0)
 #  endif
-  {
-    _LIBCUDACXX_ASSERT(__count <= max(), "");
-    auto const __success =
+{
+  _LIBCUDACXX_ASSERT(__count <= max(), "");
+  auto const __success =
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-      __libcpp_semaphore_init(&__semaphore, 0);
+    __libcpp_semaphore_init(&__semaphore, 0);
 #  else
       __libcpp_semaphore_init(&__semaphore, __count);
 #  endif
-    _LIBCUDACXX_ASSERT(__success, "");
-  }
+  _LIBCUDACXX_ASSERT(__success, "");
+}
 
-  _LIBCUDACXX_INLINE_VISIBILITY ~__sem_semaphore_base()
-  {
+_LIBCUDACXX_INLINE_VISIBILITY ~__sem_semaphore_base()
+{
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-    _LIBCUDACXX_ASSERT(0 == (__frontbuffer.load(memory_order_relaxed) & ~0u), "");
+  _LIBCUDACXX_ASSERT(0 == (__frontbuffer.load(memory_order_relaxed) & ~0u), "");
 #  endif
-    auto const __success = __libcpp_semaphore_destroy(&__semaphore);
-    _LIBCUDACXX_ASSERT(__success, "");
-  }
+  auto const __success = __libcpp_semaphore_destroy(&__semaphore);
+  _LIBCUDACXX_ASSERT(__success, "");
+}
 
-  __sem_semaphore_base(const __sem_semaphore_base&)            = delete;
-  __sem_semaphore_base& operator=(const __sem_semaphore_base&) = delete;
+__sem_semaphore_base(const __sem_semaphore_base&)            = delete;
+__sem_semaphore_base& operator=(const __sem_semaphore_base&) = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY void release(ptrdiff_t __update = 1)
-  {
+_LIBCUDACXX_INLINE_VISIBILITY void release(ptrdiff_t __update = 1)
+{
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-    // boldly assume the semaphore is taken but uncontended
-    ptrdiff_t __old = 0;
-    // try to fast-release as long as it's uncontended
-    while (0 == (__old & ~0ul))
-    {
-      if (__frontbuffer.compare_exchange_weak(__old, __old + (__update << 32), memory_order_acq_rel))
-      {
-        return;
-      }
-    }
-#  endif
-    // slow-release it is
-    __release_slow(__update);
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY void acquire()
+  // boldly assume the semaphore is taken but uncontended
+  ptrdiff_t __old = 0;
+  // try to fast-release as long as it's uncontended
+  while (0 == (__old & ~0ul))
   {
-    if (!__try_acquire_fast())
+    if (__frontbuffer.compare_exchange_weak(__old, __old + (__update << 32), memory_order_acq_rel))
     {
-      __try_done(__libcpp_semaphore_wait(&__semaphore));
+      return;
     }
   }
+#  endif
+  // slow-release it is
+  __release_slow(__update);
+}
 
-  _LIBCUDACXX_INLINE_VISIBILITY bool try_acquire() noexcept
+_LIBCUDACXX_INLINE_VISIBILITY void acquire()
+{
+  if (!__try_acquire_fast())
   {
-    return try_acquire_for(chrono::nanoseconds(0));
+    __try_done(__libcpp_semaphore_wait(&__semaphore));
   }
+}
 
-  template <class Clock, class Duration>
-  _LIBCUDACXX_INLINE_VISIBILITY bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
-  {
-    auto const current = max(Clock::now(), __abs_time);
-    return try_acquire_for(chrono::duration_cast<chrono::nanoseconds>(__abs_time - current));
-  }
+_LIBCUDACXX_INLINE_VISIBILITY bool try_acquire() noexcept
+{
+  return try_acquire_for(chrono::nanoseconds(0));
+}
 
-  template <class Rep, class Period>
-  _LIBCUDACXX_INLINE_VISIBILITY bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
-  {
-    return __try_acquire_fast() || __try_done(__libcpp_semaphore_wait_timed(&__semaphore, __rel_time));
-  }
-};
+template <class Clock, class Duration>
+_LIBCUDACXX_INLINE_VISIBILITY bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+{
+  auto const current = max(Clock::now(), __abs_time);
+  return try_acquire_for(chrono::duration_cast<chrono::nanoseconds>(__abs_time - current));
+}
+
+template <class Rep, class Period>
+_LIBCUDACXX_INLINE_VISIBILITY bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+{
+  return __try_acquire_fast() || __try_done(__libcpp_semaphore_wait_timed(&__semaphore, __rel_time));
+}
+}
+;
 
 #endif //_LIBCUDACXX_HAS_NO_SEMAPHORES
 
-template <ptrdiff_t __least_max_value, int _Sco>
+template <ptrdiff_t __least_max_value, thread_scope _Sco>
 using __semaphore_base =
 #ifdef _LIBCUDACXX_USE_NATIVE_SEMAPHORES
   __conditional_t<__least_max_value <= __sem_semaphore_base<_Sco>::max(),
@@ -466,13 +469,13 @@ using __semaphore_base =
   ;
 
 template <ptrdiff_t __least_max_value = INT_MAX>
-class counting_semaphore : public __semaphore_base<__least_max_value, 0>
+class counting_semaphore : public __semaphore_base<__least_max_value, thread_scope_system>
 {
-  static_assert(__least_max_value <= __semaphore_base<__least_max_value, 0>::max(), "");
+  static_assert(__least_max_value <= __semaphore_base<__least_max_value, thread_scope_system>::max(), "");
 
 public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr counting_semaphore(ptrdiff_t __count = 0)
-      : __semaphore_base<__least_max_value, 0>(__count)
+      : __semaphore_base<__least_max_value, thread_scope_system>(__count)
   {}
   ~counting_semaphore() = default;
 

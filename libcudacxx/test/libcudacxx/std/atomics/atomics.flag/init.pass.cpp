@@ -14,7 +14,7 @@
 
 // struct atomic_flag
 
-// atomic_flag() = ATOMIC_FLAG_INIT;
+// atomic_flag() = LIBCUDACXX_ATOMIC_FLAG_INIT;
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
@@ -24,9 +24,9 @@
 int main(int, char**)
 {
   NV_DISPATCH_TARGET(NV_IS_HOST,
-                     (cuda::std::atomic_flag f = ATOMIC_FLAG_INIT; assert(f.test_and_set() == 0);),
+                     (cuda::std::atomic_flag f = LIBCUDACXX_ATOMIC_FLAG_INIT; assert(f.test_and_set() == 0);),
                      NV_PROVIDES_SM_70,
-                     (cuda::std::atomic_flag f = ATOMIC_FLAG_INIT; assert(f.test_and_set() == 0);))
+                     (cuda::std::atomic_flag f = LIBCUDACXX_ATOMIC_FLAG_INIT; assert(f.test_and_set() == 0);))
 
   return 0;
 }

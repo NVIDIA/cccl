@@ -1,5 +1,6 @@
 ctk_11_1: &ctk_11_1 '11.1'
 ctk_11_8: &ctk_11_8 '11.8'
+ctk_12_0: &ctk_12_0 '12.0'
 ctk_curr: &ctk_curr '12.4'
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
@@ -31,6 +32,7 @@ llvm-newest: &llvm-newest { name: 'llvm', version: '16', exe: 'clang++' }
 # MSVC configs
 msvc2017: &msvc2017 { name: 'cl', version: '14.16', exe: 'cl++' }
 msvc2019: &msvc2019 { name: 'cl', version: '14.29', exe: 'cl++' }
+msvc2022_1436: &msvc2022_1436 { name: 'cl', version: '14.36', exe: 'cl++' }
 msvc2022: &msvc2022 { name: 'cl', version: '14.39', exe: 'cl++' }
 
 # oneAPI configs
@@ -55,6 +57,19 @@ workflows:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all'}
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
+    # cudax has different CTK reqs:
+    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0, *ctk_curr], std: 'all', cxx: [*gcc9, *gcc10, *gcc11]}
+    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0, *ctk_curr], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14]}
+    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: [*llvm15]}
+    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0,          ], std: 'all', cxx: [*msvc2022_1436]}
+    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: [*msvc2022]}
+    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0           ], std: 17,    cxx: [*gcc12], sm: "90"}
+    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 17,    cxx: [*gcc12], sm: "90a"}
+    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: [*gcc12, *llvm16], cpu: 'arm64'}
+    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 17,    cxx: [*oneapi]}
+    # - {jobs: ['test'],  project: 'cudax', ctk: [*ctk_12_0, *ctk_curr], std: 'all', cxx: [*gcc12]}
+    # - {jobs: ['test'],  project: 'cudax', ctk: [*ctk_12_0           ], std: 'all', cxx: [*llvm14]}
+    # - {jobs: ['test'],  project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: [*llvm16]}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: *ctk_11_1, cxx: [*gcc-oldest, *llvm-oldest]}
     - {jobs: ['infra'], project: 'cccl', ctk: *ctk_curr, cxx: [*gcc-newest, *llvm-newest]}
@@ -95,7 +110,8 @@ workflows:
     - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 't4',       sm: 'gpu', cxx: *gcc12,  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: *gcc12,  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: *gcc12,  std: 'all',    project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
+  # Fails on h100:
+  # - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
 
 #
 # Resources for compute_matrix.py. These can be modified to add new jobs, etc.
@@ -152,6 +168,24 @@ default_os_lookup:
   'ctk11.1-llvm9': 'ubuntu18.04'
   'ctk11.1-cl14.16': 'windows2022'
   'ctk11.8-gcc11': 'ubuntu22.04'
+  'ctk12.0-gcc7': 'ubuntu20.04'
+  'ctk12.0-gcc8': 'ubuntu20.04'
+  'ctk12.0-gcc9': 'ubuntu20.04'
+  'ctk12.0-gcc10': 'ubuntu20.04'
+  'ctk12.0-gcc11': 'ubuntu22.04'
+  'ctk12.0-gcc12': 'ubuntu22.04'
+  'ctk12.0-llvm9': 'ubuntu20.04'
+  'ctk12.0-llvm10': 'ubuntu20.04'
+  'ctk12.0-llvm11': 'ubuntu20.04'
+  'ctk12.0-llvm12': 'ubuntu20.04'
+  'ctk12.0-llvm13': 'ubuntu20.04'
+  'ctk12.0-llvm14': 'ubuntu20.04'
+  'ctk12.0-llvm15': 'ubuntu22.04'
+  'ctk12.0-llvm16': 'ubuntu22.04'
+  'ctk12.0-cl14.29': 'windows2022'
+  'ctk12.0-cl14.36': 'windows2022'
+  'ctk12.0-cl14.39': 'windows2022'
+  'ctk12.0-oneapi2023.2.0': 'ubuntu22.04'
   'ctk12.4-gcc7': 'ubuntu20.04'
   'ctk12.4-gcc8': 'ubuntu20.04'
   'ctk12.4-gcc9': 'ubuntu20.04'
@@ -167,6 +201,7 @@ default_os_lookup:
   'ctk12.4-llvm15': 'ubuntu22.04'
   'ctk12.4-llvm16': 'ubuntu22.04'
   'ctk12.4-cl14.29': 'windows2022'
+  'ctk12.4-cl14.36': 'windows2022'
   'ctk12.4-cl14.39': 'windows2022'
   'ctk12.4-oneapi2023.2.0': 'ubuntu22.04'
 
@@ -190,13 +225,21 @@ lookup_cxx_supported_stds:
   'llvm16':         [11, 14, 17, 20]
   'cl14.16':        [    14        ]
   'cl14.29':        [    14, 17    ]
+  'cl14.36':        [    14, 17, 20]
   'cl14.39':        [    14, 17, 20]
   'oneapi2023.2.0': [11, 14, 17    ]
 lookup_cudacxx_supported_stds:
   'nvcc11.1':       [11, 14, 17    ]
   'nvcc11.8':       [11, 14, 17    ]
+  'nvcc12.0':       [11, 14, 17, 20]
   'nvcc12.4':       [11, 14, 17, 20]
   'llvm16':         [11, 14, 17, 20]
+lookup_project_supported_stds:
+  'cccl':           [11, 14, 17, 20]
+  'libcudacxx':     [11, 14, 17, 20]
+  'cub':            [11, 14, 17, 20]
+  'thrust':         [11, 14, 17, 20]
+  'cudax':          [        17, 20]
 
 # Tags that aren't exploded:
 non_exploded_tags:
@@ -273,4 +316,3 @@ testing_pool_gpus:
   - 'rtxa6000'
   - 'l4'
   - 'rtx4090'
-  - 'h100'

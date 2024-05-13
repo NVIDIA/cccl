@@ -81,10 +81,6 @@ __host__ inline std::vector<std::thread>& host_threads()
 
 __host__ inline void sync_host_threads()
 {
-#ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
-  fflush(stdout);
-#endif
   for (auto&& thread : host_threads())
   {
     thread.join();
@@ -100,10 +96,6 @@ __host__ inline std::vector<std::thread>& device_threads()
 
 __host__ inline void sync_device_threads()
 {
-#ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
-  fflush(stdout);
-#endif
   for (auto&& thread : device_threads())
   {
     thread.join();
@@ -217,14 +209,14 @@ template <typename Tester, typename T>
 void device_initialize(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
   auto kernel_launcher = [&object](cudaStream_t stream) {
     constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-    printf("%i device init threads launched\r\n", (int) tc);
+    printf("      %i device init threads launched\r\n", (int) tc);
     fflush(stdout);
 #endif
     initialization_kernel<Tester><<<1, tc, 0, stream>>>(object);
@@ -234,10 +226,6 @@ void device_initialize(T& object)
 
   if (!async_initialize_trait<Tester>::value)
   {
-#ifdef DEBUG_TESTERS
-    printf("init not async, synchronizing\r\n");
-    fflush(stdout);
-#endif
     HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
     sync_all();
   }
@@ -247,14 +235,14 @@ template <typename Tester, typename T>
 void device_validate(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
   auto kernel_launcher = [&object](cudaStream_t stream) {
     constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-    printf("%i device validate threads launched\r\n", (int) tc);
+    printf("     %i device validate threads launched\r\n", (int) tc);
     fflush(stdout);
 #endif
     validation_kernel<Tester><<<1, tc, 0, stream>>>(object);
@@ -264,10 +252,6 @@ void device_validate(T& object)
 
   if (!async_validate_trait<Tester>::value)
   {
-#ifdef DEBUG_TESTERS
-    printf("validate not async, synchronizing\r\n");
-    fflush(stdout);
-#endif
     HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
     sync_all();
   }
@@ -277,13 +261,13 @@ template <typename Tester, typename T>
 void host_initialize(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
   constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-  printf("%i host init threads launched\r\n", (int) tc);
+  printf("      %i host init threads launched\r\n", (int) tc);
   fflush(stdout);
 #endif
 
@@ -296,10 +280,6 @@ void host_initialize(T& object)
 
   if (!async_initialize_trait<Tester>::value)
   {
-#ifdef DEBUG_TESTERS
-    printf("init not async, synchronizing\r\n");
-    fflush(stdout);
-#endif
     HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
     sync_all();
   }
@@ -309,13 +289,13 @@ template <typename Tester, typename T>
 void host_validate(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
   constexpr auto tc = threadcount_trait<Tester>::value;
 #ifdef DEBUG_TESTERS
-  printf("%i host validate threads launched\r\n", (int) tc);
+  printf("      %i host validate threads launched\r\n", (int) tc);
   fflush(stdout);
 #endif
 
@@ -328,17 +308,10 @@ void host_validate(T& object)
 
   if (!async_initialize_trait<Tester>::value)
   {
-#ifdef DEBUG_TESTERS
-    printf("validate not async, synchronizing\r\n");
-    fflush(stdout);
-#endif
     HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
     sync_all();
   }
 }
-
-template <typename T, typename... Args>
-using creator = T& (*) (Args...);
 
 template <typename T>
 using performer = void (*)(T&);
@@ -396,7 +369,7 @@ template <size_t Idx, typename Fn, typename Launchers, enable_if_permutations_re
 void permute_tests(const Fn& fn, Launchers launchers)
 {
 #ifdef DEBUG_TESTERS
-  printf("Testing permutation %zu of %zu\r\n", Idx, sizeof...(Launchers));
+  printf("  Testing permutation %zd (%s)\r\n", Idx, __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
   fn(launchers);
@@ -447,10 +420,14 @@ void validate_device_dynamic(tester_list<Testers...> testers, Args... args)
 
   // ex: type_list<device_launcher, host_launcher, host_launcher>
   using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher<T>>, host_launcher<T>>;
+#ifdef DEBUG_TESTERS
+  printf("Launching %zd permutations\r\n", sizeof...(Testers));
+  fflush(stdout);
+#endif
   permute_tests(test_harness, initial_launcher_list{});
 }
 
-#if __cplusplus >= 201402L
+#if _CCCL_STD_VER >= 2014
 template <typename T>
 struct manual_object
 {
@@ -494,16 +471,15 @@ template <typename T>
 __managed__ manual_object<T> managed_variable{};
 #endif
 
-template <typename T, std::size_t N, typename... Args>
-void validate_in_managed_memory_helper(
-  creator<T, Args...> creator_, performer<T> destroyer, initializer_validator<T> (&performers)[N], Args... args)
+template <typename Creator, typename Destroyer, typename Validator, std::size_t N>
+void validate_in_managed_memory_helper(const Creator& creator, const Destroyer& destroyer, Validator (&performers)[N])
 {
-  T& object = creator_(args...);
+  auto object = creator();
 
   for (auto&& performer : performers)
   {
-    performer.initializer(object);
-    performer.validator(object);
+    performer.initializer(*object);
+    performer.validator(*object);
   }
 
   HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
@@ -521,74 +497,66 @@ void validate_managed(tester_list<Testers...>, Args... args)
 
   initializer_validator<T> device_init_host_check[] = {{device_initialize<Testers>, host_validate<Testers>}...};
 
-  creator<T, Args...> host_constructor = [](Args... args) -> T& {
+  auto host_constructor = [args...]() -> T* {
     void* pointer;
     HETEROGENEOUS_SAFE_CALL(cudaMallocManaged(&pointer, sizeof(T)));
-    return *new (pointer) T(args...);
+    return new (pointer) T(args...);
   };
 
-  creator<T, Args...> device_constructor = [](Args... args) -> T& {
+  auto device_constructor = [args...]() -> T* {
     void* pointer;
     HETEROGENEOUS_SAFE_CALL(cudaMallocManaged(&pointer, sizeof(T)));
-    return *device_construct<T>(pointer, args...);
+    return device_construct<T>(pointer, args...);
   };
 
-  performer<T> host_destructor = [](T& object) {
-    object.~T();
-    HETEROGENEOUS_SAFE_CALL(cudaFree(&object));
+  auto host_destructor = [](T* object) {
+    object->~T();
+    HETEROGENEOUS_SAFE_CALL(cudaFree(object));
   };
 
-  performer<T> device_destructor = [](T& object) {
-    device_destroy(&object);
-    HETEROGENEOUS_SAFE_CALL(cudaFree(&object));
+  auto device_destructor = [](T* object) {
+    device_destroy(object);
+    HETEROGENEOUS_SAFE_CALL(cudaFree(object));
   };
 
-  validate_in_managed_memory_helper<T>(host_constructor, host_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(host_constructor, host_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(host_constructor, device_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(host_constructor, device_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, host_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, host_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, device_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, device_destructor, device_init_host_check, args...);
+  validate_in_managed_memory_helper(host_constructor, host_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_constructor, host_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(host_constructor, device_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_constructor, device_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_constructor, host_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_constructor, host_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_constructor, device_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_constructor, device_destructor, device_init_host_check);
 
-#if __cplusplus >= 201402L && !defined(__clang__)
+#if _CCCL_STD_VER >= 2014 && !defined(__clang__)
   // The managed variable template part of this test is disabled under clang, pending nvbug 2790305 being fixed.
 
-  creator<T, Args...> host_variable_constructor = [](Args... args) -> T& {
+  auto host_variable_constructor = [args...]() -> T* {
     managed_variable<T>.construct(args...);
-    return managed_variable<T>.get();
+    return &managed_variable<T>.get();
   };
 
-  creator<T, Args...> device_variable_constructor = [](Args... args) -> T& {
+  auto device_variable_constructor = [args...]() -> T* {
     managed_variable<T>.device_construct(args...);
-    return managed_variable<T>.get();
+    return &managed_variable<T>.get();
   };
 
-  performer<T> host_variable_destructor = [](T&) {
+  auto host_variable_destructor = [](T*) {
     managed_variable<T>.destroy();
   };
 
-  performer<T> device_variable_destructor = [](T&) {
+  auto device_variable_destructor = [](T*) {
     managed_variable<T>.device_destroy();
   };
 
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, host_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, host_variable_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, device_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, device_variable_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, host_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, host_variable_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, device_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, device_variable_destructor, device_init_host_check, args...);
+  validate_in_managed_memory_helper(host_variable_constructor, host_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_variable_constructor, host_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(host_variable_constructor, device_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_variable_constructor, device_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_variable_constructor, host_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_variable_constructor, host_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_variable_constructor, device_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_variable_constructor, device_variable_destructor, device_init_host_check);
 #endif
 }
 
@@ -652,10 +620,18 @@ void validate_pinned(Args... args)
 {
   using list_t = typename validate_list<false, TesterList>::type;
   list_t list0;
+#ifdef DEBUG_TESTERS
+  printf("%s\n", "Launching permuted H/D tests");
+  fflush(stdout);
+#endif
   validate_device_dynamic<T>(list0, args...);
 
   if (check_managed_memory_support(is_tester_list_async<list_t>::value))
   {
+#ifdef DEBUG_TESTERS
+    printf("%s\n", "Launching mixed H/D tests");
+    fflush(stdout);
+#endif
     typename validate_list<true, TesterList>::type list1;
     validate_managed<T>(list1, args...);
   }

@@ -11,6 +11,10 @@
 {:toc}
 </details>
 
+## Changelog
+
+- In earlier versions, `cp_async_bulk_tensor_multicast` was enabled for SM_90. This has been changed to SM_90a.
+
 ## Unicast
 
 | C++ | PTX |
@@ -194,7 +198,7 @@ __device__ static inline void cp_async_bulk_tensor(
 ### [(0)](#0-cp_async_bulk_tensor_multicast) `cp_async_bulk_tensor_multicast`
 {: .no_toc }
 ```cuda
-// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -211,7 +215,7 @@ __device__ static inline void cp_async_bulk_tensor(
 ### [(1)](#1-cp_async_bulk_tensor_multicast) `cp_async_bulk_tensor_multicast`
 {: .no_toc }
 ```cuda
-// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90
+// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -228,7 +232,7 @@ __device__ static inline void cp_async_bulk_tensor(
 ### [(2)](#2-cp_async_bulk_tensor_multicast) `cp_async_bulk_tensor_multicast`
 {: .no_toc }
 ```cuda
-// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90
+// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -245,7 +249,7 @@ __device__ static inline void cp_async_bulk_tensor(
 ### [(3)](#3-cp_async_bulk_tensor_multicast) `cp_async_bulk_tensor_multicast`
 {: .no_toc }
 ```cuda
-// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90
+// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -262,7 +266,7 @@ __device__ static inline void cp_async_bulk_tensor(
 ### [(4)](#4-cp_async_bulk_tensor_multicast) `cp_async_bulk_tensor_multicast`
 {: .no_toc }
 ```cuda
-// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90
+// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>

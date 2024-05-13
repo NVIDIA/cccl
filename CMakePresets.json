@@ -14,14 +14,17 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CUDA_ARCHITECTURES": "60;70;80",
+        "CCCL_ENABLE_UNSTABLE": true,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUB": false,
         "CCCL_ENABLE_THRUST": false,
+        "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
-        "THRUST_ENABLE_INSTALL_RULES": true
+        "THRUST_ENABLE_INSTALL_RULES": true,
+        "cudax_ENABLE_INSTALL_RULES": true
       }
     },
     {
@@ -31,6 +34,7 @@
         "CCCL_ENABLE_LIBCUDACXX": true,
         "CCCL_ENABLE_CUB": true,
         "CCCL_ENABLE_THRUST": true,
+        "CCCL_ENABLE_CUDAX": true,
         "CCCL_ENABLE_TESTING": true,
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
@@ -53,7 +57,11 @@
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
+        "cudax_ENABLE_HEADER_TESTING": true,
+        "cudax_ENABLE_TESTING": true,
+        "cudax_ENABLE_DIALECT_CPP17": true,
+        "cudax_ENABLE_DIALECT_CPP20": true
       }
     },
     {
@@ -273,6 +281,34 @@
       }
     },
     {
+      "name": "cudax-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_CUDAX": true,
+        "cudax_ENABLE_HEADER_TESTING": true,
+        "cudax_ENABLE_TESTING": true,
+        "cudax_ENABLE_DIALECT_CPP17": false,
+        "cudax_ENABLE_DIALECT_CPP20": false
+      }
+    },
+    {
+      "name": "cudax-cpp17",
+      "displayName": "cudax: C++17",
+      "inherits": "cudax-base",
+      "cacheVariables": {
+        "cudax_ENABLE_DIALECT_CPP17": true
+      }
+    },
+    {
+      "name": "cudax-cpp20",
+      "displayName": "cudax: C++20",
+      "inherits": "cudax-base",
+      "cacheVariables": {
+        "cudax_ENABLE_DIALECT_CPP20": true
+      }
+    },
+    {
       "name": "cccl-infra",
       "displayName": "CCCL Infrastructure",
       "inherits": "base",
@@ -392,6 +428,14 @@
     {
       "name": "thrust-cpp20",
       "configurePreset": "thrust-cpp20"
+    },
+    {
+      "name": "cudax-cpp17",
+      "configurePreset": "cudax-cpp17"
+    },
+    {
+      "name": "cudax-cpp20",
+      "configurePreset": "cudax-cpp20"
     },
     {
       "name": "cccl-infra",
@@ -602,6 +646,21 @@
       "name": "thrust-cpp20",
       "configurePreset": "thrust-cpp20",
       "inherits": "thrust-base"
+    },
+    {
+      "name": "cudax-base",
+      "hidden": true,
+      "inherits": "base"
+    },
+    {
+      "name": "cudax-cpp17",
+      "configurePreset": "cudax-cpp17",
+      "inherits": "cudax-base"
+    },
+    {
+      "name": "cudax-cpp20",
+      "configurePreset": "cudax-cpp20",
+      "inherits": "cudax-base"
     },
     {
       "name": "cccl-infra",

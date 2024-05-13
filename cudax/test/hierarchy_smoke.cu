@@ -1,17 +1,9 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-#ifndef _LIBCUDACXX_ATOMIC_GCC_H
-#define _LIBCUDACXX_ATOMIC_GCC_H
-
-#include <cuda/std/detail/libcxx/include/support/atomic/atomic_base.h>
-
-#endif // _LIBCUDACXX_ATOMIC_GCC_H

@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/atomic_prelude.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/chrono>
 #include <cuda/std/climits>

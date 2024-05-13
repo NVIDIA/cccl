@@ -1,4 +1,4 @@
-## memory_resource
+## Memory resources
 
 The `<cuda/memory_resource>` header provides a standard C++ interface for *heterogeneous*, *stream-ordered* memory allocation tailored to the needs of CUDA C++ developers. This design builds off of the success of the [RAPIDS Memory Manager (RMM)](https://github.com/rapidsai/rmm) project and evolves the design based on lessons learned. `<cuda/memory_resource>` is not intended to replace RMM, but instead moves the definition of the memory allocation interface to a more centralized home in CCCL. RMM will remain as a collection of implementations of the `cuda::mr` interfaces.
 

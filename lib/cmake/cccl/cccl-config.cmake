@@ -17,6 +17,9 @@ if (DEFINED ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS AND
   set(components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 else()
   set(components Thrust CUB libcudacxx)
+  if (CCCL_ENABLE_UNSTABLE)
+    list(APPEND components cudax)
+  endif()
 endif()
 
 if (NOT TARGET CCCL::CCCL)
@@ -91,6 +94,19 @@ foreach(component IN LISTS components)
         )
         target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
       endif()
+    endif()
+  elseif(component_lower STREQUAL "cudax")
+    find_package(cudax ${CCCL_VERSION} EXACT CONFIG
+      ${cccl_quiet_flag}
+      ${cccl_comp_required_flag}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS
+        "${cccl_cmake_dir}/../../../cudax/lib/cmake/" # Source layout (GitHub)
+        "${cccl_cmake_dir}/.."                            # Install layout
+    )
+    if (TARGET cudax::cudax AND NOT TARGET CCCL::cudax)
+      add_library(CCCL::cudax ALIAS cudax::cudax)
+      target_link_libraries(CCCL::CCCL INTERFACE CCCL::cudax)
     endif()
   else()
     message(FATAL_ERROR "Invalid CCCL component requested: '${component}'")
