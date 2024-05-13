@@ -64,11 +64,17 @@ struct __atomic_storage
   }
 };
 
+#if defined(_CCCL_CUDA_COMPILER)
+extern "C" _CCCL_DEVICE void __atomic_is_not_supported_pre_sm_60();
+#endif
+
 _CCCL_HOST_DEVICE inline void __atomic_thread_fence_dispatch(memory_order __order)
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (__atomic_thread_fence_cuda(static_cast<__memory_order_underlying_t>(__order), __thread_scope_system_tag());),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (__atomic_thread_fence_host(__order);))
 }
@@ -91,8 +97,10 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_
 _CCCL_HOST_DEVICE inline void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (__atomic_store_n_cuda(__a->get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (__atomic_store_host(__a->get(), __val, __order);))
 }
@@ -102,8 +110,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_ord
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_load_n_cuda(__a->get(), static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_load_host(__a->get(), __order);))
 }
@@ -113,8 +123,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value,
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_exchange_n_cuda(__a->get(), __value, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_exchange_host(__a->get(), __value, __order);))
 }
@@ -125,7 +137,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
 {
   bool __result = false;
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (__result = __atomic_compare_exchange_cuda(
        __a->get(),
        __expected,
@@ -134,6 +146,8 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
        static_cast<__memory_order_underlying_t>(__success),
        static_cast<__memory_order_underlying_t>(__failure),
        _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (__result = __atomic_compare_exchange_strong_host(__a->get(), __expected, __val, __success, __failure);))
   return __result;
@@ -145,7 +159,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_weak_dispatch(
 {
   bool __result = false;
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (__result = __atomic_compare_exchange_cuda(
        __a->get(),
        __expected,
@@ -154,6 +168,8 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_weak_dispatch(
        static_cast<__memory_order_underlying_t>(__success),
        static_cast<__memory_order_underlying_t>(__failure),
        _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (__result = __atomic_compare_exchange_weak_host(__a->get(), __expected, __val, __success, __failure);))
   return __result;
@@ -164,8 +180,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_add_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_fetch_add_host(__a->get(), __delta, __order);))
 }
@@ -175,8 +193,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_sub_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_fetch_sub_host(__a->get(), __delta, __order);))
 }
@@ -186,8 +206,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __patte
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_and_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_fetch_and_host(__a->get(), __pattern, __order);))
 }
@@ -197,8 +219,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __patter
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_or_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_fetch_or_host(__a->get(), __pattern, __order);))
 }
@@ -208,8 +232,10 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __patte
   -> __atomic_underlying_t<_Sto>
 {
   NV_DISPATCH_TARGET(
-    NV_IS_DEVICE,
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_xor_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
     NV_IS_HOST,
     (return __atomic_fetch_xor_host(__a->get(), __pattern, __order);))
 }
@@ -218,9 +244,12 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_max_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  NV_IF_TARGET(
-    NV_IS_DEVICE,
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_max_cuda(__a->get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
+    NV_IS_HOST,
     (return __atomic_fetch_max_host(__a->get(), __val, __order);))
 }
 
@@ -228,9 +257,12 @@ template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_
 _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, memory_order __order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
-  NV_IF_TARGET(
-    NV_IS_DEVICE,
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_60,
     (return __atomic_fetch_min_cuda(__a->get(), __val, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
+    NV_IS_DEVICE,
+    (__atomic_is_not_supported_pre_sm_60();),
+    NV_IS_HOST,
     (return __atomic_fetch_min_host(__a->get(), __val, __order);))
 }
 
