@@ -18,10 +18,11 @@ libcu++ makes a best-effort to provide access to C++ Standard Library features i
 For example, the calendar functionality added to `<chrono>` in C++20 is made available in C++14.
 
 Feature availability:
+
 - C++17 and C++20 features of`<chrono>` available in C++14:
-  -  calendar functionality, e.g., `year`,`month`,`day`,`year_month_day`
-  -  duration functions, e.g., `floor`, `ceil`, `round`
-  -  Note: Timezone and clocks added in C++20 are not available
+  - calendar functionality, e.g., `year`,`month`,`day`,`year_month_day`
+  - duration functions, e.g., `floor`, `ceil`, `round`
+  - Note: Timezone and clocks added in C++20 are not available
 - C++17 features from `<type_traits>` available in C++14:
   - Convenience `_v` aliases such as `is_same_v`
   - `void_t`
@@ -60,9 +61,13 @@ Any Standard C++ header not listed below is omitted.
 | [`<cuda/std/barrier>`]   | Multi-phase asynchronous thread-coordination mechanism (see also: [Extended API](./extended_api/synchronization_primitives/barrier.md)). <br/><br/> 1.1.0 / CUDA 11.0 |
 | [`<cuda/std/semaphore>`] | Primitives for constraining concurrent access (see also: [Extended API](./extended_api/synchronization_primitives/counting_semaphore.md)). <br/><br/> 1.1.0 / CUDA 11.0 |
 
-{% include_relative standard_api/time_library.md %}
+{% include_relative standard_api/concepts_library.md %}
 
 {% include_relative standard_api/numerics_library.md %}
+
+{% include_relative standard_api/ranges_library.md %}
+
+{% include_relative standard_api/time_library.md %}
 
 {% include_relative standard_api/utility_library.md %}
 
@@ -71,8 +76,11 @@ Any Standard C++ header not listed below is omitted.
 Any Standard C++ header not listed below is omitted.
 
 | [`<cuda/std/cassert>`] | Lightweight assumption testing. <br/><br/> 1.0.0 / CUDA 10.2         |
+| [`<cuda/std/cfloat>`]  | Type support library. <br/><br/> 2.2.0 / CUDA 12.2         |
+| [`<cuda/std/cmath>`]   | Common math functions. <br/><br/> 2.2.0 / CUDA 12.2         |
 | [`<cuda/std/cstddef>`] | Fundamental types. <br/><br/> 1.0.0 / CUDA 10.2 <br/> 1.4.0 (`byte`) |
-
+| [`<cuda/std/cstdint>`] | Fundamental integer types. <br/><br/> 2.2.0 / CUDA 12.2 |
+| [`<cuda/std/cstdlib>`] | Common utilities. <br/><br/> 2.2.0 / CUDA 12.2 |
 
 [`<cuda/std/atomic>`]: https://en.cppreference.com/w/cpp/header/atomic
 [`<cuda/std/latch>`]: https://en.cppreference.com/w/cpp/header/latch
