@@ -65,20 +65,6 @@ template <typename T>
 struct is_proxy_reference : public false_type
 {};
 
-template <typename... Conditions>
-struct and_;
-
-template <>
-struct and_<>
-    : public integral_constant<bool,
-                               true_type::value // identity for and_
-                               >
-{}; // end and_
-
-template <typename Condition, typename... Conditions>
-struct and_<Condition, Conditions...> : public integral_constant<bool, Condition::value && and_<Conditions...>::value>
-{}; // end and_
-
 template <typename Boolean>
 struct not_ : public integral_constant<bool, !Boolean::value>
 {}; // end not_
@@ -131,7 +117,7 @@ struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::
 {};
 
 template <typename T>
-struct is_numeric : and_<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
+struct is_numeric : ::cuda::std::_And<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
 {}; // end is_numeric
 
 struct largest_available_float
@@ -152,8 +138,8 @@ template <typename T1, typename T2>
 struct promoted_numerical_type<
   T1,
   T2,
-  ::cuda::std::__enable_if_t<
-    and_<typename ::cuda::std::is_floating_point<T1>::type, typename ::cuda::std::is_floating_point<T2>::type>::value>>
+  ::cuda::std::__enable_if_t<::cuda::std::_And<typename ::cuda::std::is_floating_point<T1>::type,
+                                               typename ::cuda::std::is_floating_point<T2>::type>::value>>
 {
   typedef typename larger_type<T1, T2>::type type;
 };
@@ -162,17 +148,18 @@ template <typename T1, typename T2>
 struct promoted_numerical_type<
   T1,
   T2,
-  ::cuda::std::__enable_if_t<
-    and_<typename ::cuda::std::is_integral<T1>::type, typename ::cuda::std::is_floating_point<T2>::type>::value>>
+  ::cuda::std::__enable_if_t<::cuda::std::_And<typename ::cuda::std::is_integral<T1>::type,
+                                               typename ::cuda::std::is_floating_point<T2>::type>::value>>
 {
   typedef T2 type;
 };
 
 template <typename T1, typename T2>
-struct promoted_numerical_type<T1,
-                               T2,
-                               ::cuda::std::__enable_if_t<and_<typename ::cuda::std::is_floating_point<T1>::type,
-                                                               typename ::cuda::std::is_integral<T2>::type>::value>>
+struct promoted_numerical_type<
+  T1,
+  T2,
+  ::cuda::std::__enable_if_t<::cuda::std::_And<typename ::cuda::std::is_floating_point<T1>::type,
+                                               typename ::cuda::std::is_integral<T2>::type>::value>>
 {
   typedef T1 type;
 };

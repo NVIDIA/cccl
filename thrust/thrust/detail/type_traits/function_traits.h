@@ -71,13 +71,12 @@ struct result_type
 };
 
 template <typename T>
-struct is_adaptable_unary_function : thrust::detail::and_<has_result_type<T>, has_argument_type<T>>
+struct is_adaptable_unary_function : ::cuda::std::_And<has_result_type<T>, has_argument_type<T>>
 {};
 
 template <typename T>
 struct is_adaptable_binary_function
-    : thrust::detail::and_<has_result_type<T>,
-                           thrust::detail::and_<has_first_argument_type<T>, has_second_argument_type<T>>>
+    : ::cuda::std::_And<has_result_type<T>, ::cuda::std::_And<has_first_argument_type<T>, has_second_argument_type<T>>>
 {};
 
 template <typename BinaryFunction>

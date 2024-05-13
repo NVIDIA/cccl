@@ -269,8 +269,8 @@ struct zipped_binary_op
 
 template <typename T>
 struct is_non_const_reference
-    : thrust::detail::and_<thrust::detail::not_<::cuda::std::is_const<T>>,
-                           ::cuda::std::disjunction<::cuda::std::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
+    : ::cuda::std::_And<thrust::detail::not_<::cuda::std::is_const<T>>,
+                        ::cuda::std::disjunction<::cuda::std::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
 {};
 
 template <typename T>

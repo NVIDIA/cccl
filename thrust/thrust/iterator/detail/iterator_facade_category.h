@@ -194,7 +194,7 @@ struct iterator_facade_category_impl
   // we must be able to deduce both Traversal & System from category
   // otherwise, munge them all together
   typedef typename thrust::detail::eval_if<
-    thrust::detail::and_<
+    ::cuda::std::_And<
       ::cuda::std::is_same<Traversal, typename thrust::detail::iterator_category_to_traversal<category>::type>,
       ::cuda::std::is_same<System, typename thrust::detail::iterator_category_to_system<category>::type>>::value,
     thrust::detail::identity_<category>,

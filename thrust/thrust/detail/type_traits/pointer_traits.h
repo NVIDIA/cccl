@@ -355,15 +355,15 @@ struct is_pointer_system_convertible
 
 template <typename FromPtr, typename ToPtr>
 struct is_pointer_convertible
-    : thrust::detail::and_<
+    : ::cuda::std::_And<
         ::cuda::std::is_convertible<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>,
         is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 
 template <typename FromPtr, typename ToPtr>
 struct is_void_pointer_system_convertible
-    : thrust::detail::and_<::cuda::std::is_same<typename pointer_element<FromPtr>::type, void>,
-                           is_pointer_system_convertible<FromPtr, ToPtr>>
+    : ::cuda::std::_And<::cuda::std::is_same<typename pointer_element<FromPtr>::type, void>,
+                        is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 
 // this could be a lot better, but for our purposes, it's probably
