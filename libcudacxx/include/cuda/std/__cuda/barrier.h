@@ -13,10 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
-#  error "CUDA synchronization primitives are only supported for sm_70 and up."
-#endif
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -218,7 +214,7 @@ public:
         // Need 2 instructions, can't finish barrier with arrive > 1
         if (__update > 1) { _CUDA_VPTX::mbarrier_arrive_no_complete(__bh, __update - 1); } __token =
           _CUDA_VPTX::mbarrier_arrive(__bh);),
-      NV_IS_DEVICE,
+      NV_PROVIDES_SM_70,
       (
         if (!__isShared(&__barrier)) { return __barrier.arrive(__update); }
 
@@ -237,7 +233,7 @@ public:
         if (__leader == static_cast<int>(__laneid)) {
           __token = __barrier.arrive(__inc);
         } __token = __shfl_sync(__active, __token, __leader);),
-      NV_IS_HOST,
+      NV_ANY_TARGET,
       (__token = __barrier.arrive(__update);))
     return __token;
   }
