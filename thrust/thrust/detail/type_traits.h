@@ -48,10 +48,6 @@ using true_type         = ::cuda::std::true_type;
 using false_type        = ::cuda::std::false_type;
 
 template <typename T>
-struct is_device_ptr : public false_type
-{};
-
-template <typename T>
 struct is_non_bool_integral : public ::cuda::std::is_integral<T>
 {};
 template <>
