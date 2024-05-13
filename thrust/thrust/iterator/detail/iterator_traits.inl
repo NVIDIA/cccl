@@ -117,9 +117,9 @@ struct is_iterator_traversal : ::cuda::std::is_convertible<T, incrementable_trav
 
 template <typename T>
 struct is_iterator_system
-    : detail::or_<
-        ::cuda::std::is_convertible<T, any_system_tag>,
-        detail::or_<::cuda::std::is_convertible<T, host_system_tag>, ::cuda::std::is_convertible<T, device_system_tag>>>
+    : ::cuda::std::disjunction<::cuda::std::is_convertible<T, any_system_tag>,
+                               ::cuda::std::disjunction<::cuda::std::is_convertible<T, host_system_tag>,
+                                                        ::cuda::std::is_convertible<T, device_system_tag>>>
 {}; // end is_iterator_system
 
 } // end namespace detail

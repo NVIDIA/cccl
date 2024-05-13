@@ -56,10 +56,10 @@ struct construct1_via_allocator
 // we need to construct T via the allocator if...
 template <typename Allocator, typename T>
 struct needs_default_construct_via_allocator
-    : thrust::detail::or_<has_member_construct1<Allocator, T>, // if the Allocator does something interesting
-                                                               // or if T's default constructor does something
-                                                               // interesting
-                          thrust::detail::not_<::cuda::std::is_trivially_default_constructible<T>>>
+    : ::cuda::std::disjunction<has_member_construct1<Allocator, T>, // if the Allocator does something interesting
+                                                                    // or if T's default constructor does something
+                                                                    // interesting
+                               thrust::detail::not_<::cuda::std::is_trivially_default_constructible<T>>>
 {};
 
 // we know that std::allocator::construct's only effect is to call T's

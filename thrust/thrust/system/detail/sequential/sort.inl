@@ -135,8 +135,8 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
 template <typename KeyType, typename Compare>
 struct use_primitive_sort
     : thrust::detail::and_<::cuda::std::is_arithmetic<KeyType>,
-                           thrust::detail::or_<::cuda::std::is_same<Compare, thrust::less<KeyType>>,
-                                               ::cuda::std::is_same<Compare, thrust::greater<KeyType>>>>
+                           ::cuda::std::disjunction<::cuda::std::is_same<Compare, thrust::less<KeyType>>,
+                                                    ::cuda::std::is_same<Compare, thrust::greater<KeyType>>>>
 {};
 
 } // end namespace sort_detail

@@ -54,13 +54,14 @@ struct is_unwrappable : is_wrapped_reference<T>
 // specialize is_unwrappable
 // a tuple is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-struct is_unwrappable<thrust::tuple<Ts...>> : or_<is_unwrappable<Ts>...>
+struct is_unwrappable<thrust::tuple<Ts...>> : ::cuda::std::disjunction<is_unwrappable<Ts>...>
 {};
 
 // specialize is_unwrappable
 // a tuple_of_iterator_references is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-struct is_unwrappable<thrust::detail::tuple_of_iterator_references<Ts...>> : or_<is_unwrappable<Ts>...>
+struct is_unwrappable<thrust::detail::tuple_of_iterator_references<Ts...>>
+    : ::cuda::std::disjunction<is_unwrappable<Ts>...>
 {};
 
 template <typename T, typename Result = void>

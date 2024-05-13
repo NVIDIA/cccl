@@ -65,21 +65,6 @@ template <typename T>
 struct is_proxy_reference : public false_type
 {};
 
-// mpl stuff
-template <typename... Conditions>
-struct or_;
-
-template <>
-struct or_<>
-    : public integral_constant<bool,
-                               false_type::value // identity for or_
-                               >
-{}; // end or_
-
-template <typename Condition, typename... Conditions>
-struct or_<Condition, Conditions...> : public integral_constant<bool, Condition::value || or_<Conditions...>::value>
-{}; // end or_
-
 template <typename... Conditions>
 struct and_;
 
