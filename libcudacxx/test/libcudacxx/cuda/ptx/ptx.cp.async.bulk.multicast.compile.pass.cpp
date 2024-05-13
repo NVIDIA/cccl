@@ -38,7 +38,7 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_HAS_FEATURE_SM_90a,
     (
         // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
         // size, [smem_bar], ctaMask; // 1.
