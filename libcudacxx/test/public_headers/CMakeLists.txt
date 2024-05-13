@@ -45,7 +45,7 @@ function(libcudacxx_add_public_header_test header)
   target_compile_options(headertest_${header_name} PRIVATE ${headertest_warning_levels_device})
 
   # Ensure that if this is an atomic header, we only include the right architectures
-  string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")
+  string(REGEX MATCH "annotated_ptr|pipeline" match "${header}")
   if(match)
     # Ensure that we only compile the header when we have some architectures enabled
     if (NOT architectures_at_least_sm70)
