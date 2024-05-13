@@ -80,6 +80,17 @@ jobs:
         id: check-workflow
         uses: ./.github/actions/workflow-results
 
+  build-rapids:
+    name: Build RAPIDS
+    secrets: inherit
+    permissions:
+      actions: read
+      packages: read
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/build-rapids.yml
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
