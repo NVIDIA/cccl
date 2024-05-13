@@ -30,10 +30,9 @@ Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION` or `LIBCUDAC
 ### Support for half and bfloat16 (since libcu++ 2.4.0)
 
 Our implementation includes support for the `__half` type from `<cuda_fp16.h>`, when the CUDA toolkit version is at
-least 12.2. This is detected automatically when compiling through NVCC. If you are compiling a host-only translation
-unit directly with the host compiler, you must define the macro `LIBCUDACXX_ENABLE_HOST_NVFP16` prior to including any
-libcu++ headers, and you must ensure that the `<cuda_fp16.h>` header that's found by the compiler comes from a CUDA
-toolkit version 12.2 or higher.
+least 12.2, and when `CCCL_DISABLE_FP16_SUPPORT` is **not** defined.
+
+This is detected automatically when compiling through NVCC. If you are compiling a host-only translation unit directly with the host compiler, you must define the macro `LIBCUDACXX_ENABLE_HOST_NVFP16` prior to including any libcu++ headers, and you must ensure that the `<cuda_fp16.h>` header that's found by the compiler comes from a CUDA toolkit version 12.2 or higher.
 
 Our implementation includes support for the `__nv_bfloat16` type from `<cuda_bf16.h>`, when the conditions for the
-support of `__half` are fulfilled, and when `CUB_DISABLE_BF16_SUPPORT` is **not** defined.
+support of `__half` are fulfilled, and when `CCCL_DISABLE_BF16_SUPPORT` and `CCCL_DISABLE_FP16_SUPPORT` are **not** defined.

@@ -966,10 +966,11 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #  ifndef _LIBCUDACXX_HAS_NVFP16
-#    if __has_include(<cuda_fp16.h>)                                                           \
+#    if __has_include(<cuda_fp16.h>)                                                     \
       && (defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || !defined(_CCCL_CUDACC_BELOW_12_2)) \
-      && (!defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || CUDA_VERSION >= 12020)                  \
-      && (defined(_CCCL_CUDACC) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+      && (!defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || CUDA_VERSION >= 12020)            \
+      && (defined(_CCCL_CUDACC) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))               \
+      && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #      define _LIBCUDACXX_HAS_NVFP16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVFP16
@@ -977,7 +978,7 @@ typedef __char32_t char32_t;
 #  ifndef _LIBCUDACXX_HAS_NVBF16
 #    if __has_include(<cuda_bf16.h>)        \
       && defined(_LIBCUDACXX_HAS_NVFP16)    \
-      && !defined(CUB_DISABLE_BF16_SUPPORT)
+      && !defined(CCCL_DISABLE_BF16_SUPPORT)
 #      define _LIBCUDACXX_HAS_NVBF16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVBF16

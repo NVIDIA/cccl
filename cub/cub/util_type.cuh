@@ -43,27 +43,31 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cccl_config> // _CCCL_CUDACC_VER
 #include <cuda/std/limits>
 
-#if !_NVHPC_CUDA
+#if !defined(_CCCL_CUDA_COMPILER_NVHPC) && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  include <cuda_fp16.h>
-#endif
+#endif // !_CCCL_CUDA_COMPILER_NVHPC && !CCCL_DISABLE_FP16_SUPPORT
 
-#if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
+/**
+ * @def CCCL_DISABLE_FP16_SUPPORT
+ *
+ * Has to disable BF16 support as well, etc.
+ */
+#if !defined(CCCL_DISABLE_BF16_SUPPORT) && (defined(CCCL_DISABLE_FP16_SUPPORT) || defined(CUB_DISABLE_BF16_SUPPORT))
+#  define CCCL_DISABLE_BF16_SUPPORT
+#endif // !CCCL_DISABLE_BF16_SUPPORT && CCCL_DISABLE_FP16_SUPPORT
+
+#if !defined(_CCCL_CUDA_COMPILER_NVHPC) && !defined(CCCL_DISABLE_BF16_SUPPORT)
 #  include <cuda_bf16.h>
-// cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
-#  if _CCCL_CUDACC_VER >= 1108000
+// cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CCCL_DISABLE_BF16_SUPPORT
+#  if !defined(_CCCL_CUDACC_BELOW_11_8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
-#    if defined(_CCCL_COMPILER_MSVC)
-#      pragma warning(push)
-#    endif
+_CCCL_DIAG_PUSH
 #    include <cuda_fp8.h>
-#    if defined(_CCCL_COMPILER_MSVC)
-#      pragma warning(pop)
-#    endif
-#  endif
-#endif
+_CCCL_DIAG_POP
+#  endif // !_CCCL_CUDACC_BELOW_11_8
+#endif // !_CCCL_CUDA_COMPILER_NVHPC && !CCCL_DISABLE_BF16_SUPPORT
 
 #include <cub/detail/uninitialized_copy.cuh>
 
@@ -1190,7 +1194,7 @@ struct FpLimits<double>
   }
 };
 
-#  if !_NVHPC_CUDA
+#  if !defined(_CCCL_CUDA_COMPILER_NVHPC) && !defined(CCCL_DISABLE_FP16_SUPPORT)
 template <>
 struct FpLimits<__half>
 {
@@ -1206,9 +1210,9 @@ struct FpLimits<__half>
     return reinterpret_cast<__half&>(lowest_word);
   }
 };
-#  endif
+#  endif // !_CCCL_CUDA_COMPILER_NVHPC && !CCCL_DISABLE_FP16_SUPPORT
 
-#  if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
+#  if !defined(_CCCL_CUDA_COMPILER_NVHPC) && !defined(CCCL_DISABLE_BF16_SUPPORT)
 template <>
 struct FpLimits<__nv_bfloat16>
 {
@@ -1224,7 +1228,7 @@ struct FpLimits<__nv_bfloat16>
     return reinterpret_cast<__nv_bfloat16&>(lowest_word);
   }
 };
-#  endif
+#  endif // !_CCCL_CUDA_COMPILER_NVHPC && !CCCL_DISABLE_BF16_SUPPORT
 
 #  if defined(__CUDA_FP8_TYPES_EXIST__)
 template <>
@@ -1267,7 +1271,7 @@ struct FpLimits<__nv_fp8_e5m2>
   }
 };
 
-#  endif
+#  endif // __CUDA_FP8_TYPES_EXIST__
 
 /**
  * Basic type traits (fp primitive specialization)
@@ -1408,13 +1412,12 @@ struct NumericTraits<__int128_t>
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#if !_NVHPC_CUDA
+#  if !defined(_CCCL_CUDA_COMPILER_NVHPC) && !defined(CCCL_DISABLE_FP16_SUPPORT)
     template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#endif
-#if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
+#  endif // !_CCCL_CUDA_COMPILER_NVHPC && !CCCL_DISABLE_FP16_SUPPORT
+#  if !defined(_CCCL_CUDA_COMPILER_NVHPC) && !defined(CCCL_DISABLE_BF16_SUPPORT)
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#endif
-
+#  endif // !_CCCL_CUDA_COMPILER_NVHPC && !CCCL_DISABLE_BF16_SUPPORT
 
 #if defined(__CUDA_FP8_TYPES_EXIST__)
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};

@@ -56,8 +56,17 @@
 
 #include <cub/${header}>
 
-#if defined(CUB_DISABLE_BF16_SUPPORT)
+#if defined(CCCL_DISABLE_BF16_SUPPORT)
 #if defined(__CUDA_BF16_TYPES_EXIST__)
 #error CUB should not include cuda_bf16.h when BF16 support is disabled
-#endif
-#endif
+#endif // __CUDA_BF16_TYPES_EXIST__
+#endif // CCCL_DISABLE_BF16_SUPPORT
+
+#if defined(CCCL_DISABLE_FP16_SUPPORT)
+#if defined(__CUDA_FP16_TYPES_EXIST__)
+#error CUB should not include cuda_fp16.h when half support is disabled
+#endif // __CUDA_FP16_TYPES_EXIST__
+#if defined(__CUDA_BF16_TYPES_EXIST__)
+#error CUB should not include cuda_bf16.h when half support is disabled
+#endif // __CUDA_BF16_TYPES_EXIST__
+#endif // CCCL_DISABLE_FP16_SUPPORT
