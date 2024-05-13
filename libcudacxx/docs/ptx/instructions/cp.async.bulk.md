@@ -15,6 +15,10 @@
 
 **NOTE.** Both `srcMem` and `dstMem` must be 16-byte aligned, and `size` must be a multiple of 16.
 
+## Changelog
+
+- In earlier versions, `cp_async_bulk_multicast` was enabled for SM_90. This has been changed to SM_90a.
+
 ## Unicast
 
 | C++ | PTX |
@@ -79,7 +83,7 @@ __device__ static inline void cp_async_bulk(
 ### [(0)](#0-cp_async_bulk_multicast) `cp_async_bulk_multicast`
 {: .no_toc }
 ```cuda
-// cp.async.bulk{.dst}{.src}.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // 1.  PTX ISA 80, SM_90
+// cp.async.bulk{.dst}{.src}.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // 1.  PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
