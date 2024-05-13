@@ -187,8 +187,8 @@ void TestAllocatorTraitsRebind()
 {
   ASSERT_EQUAL(
     (::cuda::std::is_same<typename thrust::detail::allocator_traits<
-                               thrust::device_malloc_allocator<int>>::template rebind_traits<float>::other,
-                             typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
+                            thrust::device_malloc_allocator<int>>::template rebind_traits<float>::other,
+                          typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
     true);
 
   ASSERT_EQUAL(

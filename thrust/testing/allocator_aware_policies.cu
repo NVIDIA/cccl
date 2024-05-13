@@ -59,9 +59,9 @@ struct TestAllocatorAttachment
   {
     ASSERT_EQUAL(
       (::cuda::std::is_same<T,
-                               typename PolicyInfo::template apply_base_second<
-                                 thrust::detail::execute_with_allocator,
-                                 thrust::mr::allocator<thrust::detail::max_align_t, ExpectedResource>>::type>::value),
+                            typename PolicyInfo::template apply_base_second<
+                              thrust::detail::execute_with_allocator,
+                              thrust::mr::allocator<thrust::detail::max_align_t, ExpectedResource>>::type>::value),
       true);
   }
 

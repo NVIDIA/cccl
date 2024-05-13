@@ -161,7 +161,8 @@ struct TestZipIteratorTraversal
     typedef typename iterator_traversal<ZipIterator1>::type zip_iterator_traversal_type1;
 #endif
 
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type1, random_access_traversal_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type1,
+    // random_access_traversal_tag>::value) );
 
 #if 0
     // test device types
@@ -210,7 +211,8 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator2>::type zip_iterator_system_type2;
 #endif
 
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type2, experimental::space::device>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type2, experimental::space::device>::value)
+    // );
 
 #if 0
     // test any
@@ -222,7 +224,8 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator3>::type zip_iterator_system_type3;
 #endif
 
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type3, thrust::experimental::space::any>::value)
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type3,
+    // thrust::experimental::space::any>::value)
     // );
 
 #if 0

@@ -139,15 +139,16 @@ struct iterator_facade_default_category_device
           thrust::detail::eval_if<::cuda::std::is_convertible<Traversal, thrust::bidirectional_traversal_tag>::value,
                                   thrust::detail::identity_<thrust::bidirectional_device_iterator_tag>,
                                   thrust::detail::identity_<thrust::forward_device_iterator_tag>>>,
-        thrust::detail::eval_if<::cuda::std::is_convertible<Traversal, thrust::single_pass_traversal_tag>::value, // XXX
-                                                                                                                  // note
-                                                                                                                  // we
-                                                                                                                  // differ
-                                                                                                                  // from
-                                                                                                                  // Boost
-                                                                                                                  // here
-                                thrust::detail::identity_<thrust::input_device_iterator_tag>,
-                                thrust::detail::identity_<Traversal>>>
+        thrust::detail::eval_if<
+          ::cuda::std::is_convertible<Traversal, thrust::single_pass_traversal_tag>::value, // XXX
+                                                                                            // note
+                                                                                            // we
+                                                                                            // differ
+                                                                                            // from
+                                                                                            // Boost
+                                                                                            // here
+          thrust::detail::identity_<thrust::input_device_iterator_tag>,
+          thrust::detail::identity_<Traversal>>>
 {}; // end iterator_facade_default_category_device
 
 // this is the function for any system iterators
