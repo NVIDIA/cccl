@@ -100,40 +100,43 @@ jobs:
           | jq -r ".packages.cuco *= {\"git_url\": \"https://github.com/trxcllnt/cuCollections.git\", \"git_tag\": \"rapids-${rapids_version}-cccl-2.5.0\", \"always_download\": true}" \
           | tee ~/rapids-cmake-override-versions.json;
 
-        # Build up to 6 device archs in parallel
-        export INFER_NUM_DEVICE_ARCHITECTURES=1;
-        export MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=3;
+        declare -a failures;
+        declare -A failures_map;
 
-        declare -A failures;
+        _cmake_args() {
+          local -;
+          set -euo pipefail
+          # Build arguments list
+          local -a args=(${{ matrix.args }});
+          # Enable/disable tests
+          args=("${args[@]/#/"-D"}");
+          args=("${args[@]/%/"=$1"}");
+          echo "${args[@]@Q}";
+          # Build shared libraries
+          echo "-DBUILD_SHARED_LIBS=ON";
+          # Build raft shared library
+          echo "-DRAFT_COMPILE_LIBRARY=ON";
+          # Tell rapids-cmake to use custom CCCL and cuCollections forks
+          echo "-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE='${HOME}/rapids-cmake-override-versions.json'";
+        }
 
-        # Build arguments list
-        args_=(${{ matrix.args }});
-        # Enable/disable tests
-        args_=("${args_[@]/#/"-D"}");
-        args_=("${args_[@]/%/"=ON"}");
-        args_+=(-DBUILD_SHARED_LIBS=ON);
-        # Tell rapids-cmake to use custom CCCL and cuCollections forks
-        args_+=(-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE="${HOME}/rapids-cmake-override-versions.json");
-
-        for lib in ${{ matrix.libs }}; do
-
-          args=("${args_[@]}")
-          if test "${lib}" != "cugraph"; then
-            args=(-v -j "${args[@]}");
-          else
-            # cuGraph device objects use lots of memory, so only build with -t=1
-            args=(-v -j$(nproc --ignore=1) --archs 1 "${args[@]}");
-          fi
-
-          sccache -z;
-          if ! configure-${lib}-cpp "${args[@]}" || ! build-${lib}-cpp "${args[@]}"; then
-            failures["${lib}"]=1;
-          fi
-          sccache --show-adv-stats;
+        # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
+        for opt in OFF ON; do
+          declare -a args="(-v -j $(_cmake_args "${opt}"))";
+          for lib in ${{ matrix.libs }}; do
+            sccache -z;
+            if ! configure-${lib}-cpp "${args[@]}" || ! build-${lib}-cpp "${args[@]}"; then
+              if ! test -v failures_map["${lib}"]; then
+                failures+=("${lib}");
+                failures_map["${lib}"]=1;
+              fi
+            fi
+            sccache --show-adv-stats;
+          done
         done
 
         # Print failures and exit
-        if test "${#failures[*]}" -gt 0; then
-          echo "Failures: ${!failures[*]}";
+        if test ${#failures[@]} -gt 0; then
+          echo "Failures: ${failures[*]}";
           exit 1;
         fi
