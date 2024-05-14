@@ -10,7 +10,7 @@
 struct greater_than_5
 {
   template <typename T>
-  __host__ __device__ bool operator()(T val)
+  _CCCL_HOST_DEVICE bool operator()(T val)
   {
     return abs(val) > 5;
   }

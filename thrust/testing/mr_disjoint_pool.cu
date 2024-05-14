@@ -13,7 +13,7 @@ struct alloc_id
   std::size_t alignment;
   std::size_t offset;
 
-  __host__ __device__ bool operator==(const alloc_id& other) const
+  _CCCL_HOST_DEVICE bool operator==(const alloc_id& other) const
   {
     return id == other.id && size == other.size && alignment == other.alignment;
   }

@@ -9,7 +9,7 @@ using namespace unittest;
 struct MakeTupleFunctor
 {
   template <typename T1, typename T2>
-  __host__ __device__ thrust::tuple<T1, T2> operator()(T1& lhs, T2& rhs)
+  _CCCL_HOST_DEVICE thrust::tuple<T1, T2> operator()(T1& lhs, T2& rhs)
   {
     return thrust::make_tuple(lhs, rhs);
   }
@@ -19,7 +19,7 @@ template <int N>
 struct GetFunctor
 {
   template <typename Tuple>
-  __host__ __device__ typename thrust::tuple_element<N, Tuple>::type operator()(const Tuple& t)
+  _CCCL_HOST_DEVICE typename thrust::tuple_element<N, Tuple>::type operator()(const Tuple& t)
   {
     return thrust::get<N>(t);
   }

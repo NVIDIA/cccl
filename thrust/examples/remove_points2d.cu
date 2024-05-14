@@ -2,6 +2,8 @@
 #include <thrust/random.h>
 #include <thrust/remove.h>
 
+#include "include/host_device.h"
+
 // This example generates random points in the
 // unit square [0,1)x[0,1) and then removes all
 // points where x^2 + y^2 > 1

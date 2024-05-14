@@ -8,11 +8,11 @@
 
 struct Foo
 {
-  __host__ __device__ Foo()
+  _CCCL_HOST_DEVICE Foo()
       : set_me_upon_destruction{nullptr}
   {}
 
-  __host__ __device__ ~Foo()
+  _CCCL_HOST_DEVICE ~Foo()
   {
     NV_IF_TARGET(NV_IS_DEVICE, (if (set_me_upon_destruction != nullptr) { *set_me_upon_destruction = true; }));
   }

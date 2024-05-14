@@ -73,7 +73,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, thrust::modulus, SmallIntegralTy
 template <typename T>
 struct unary_plus_reference
 {
-  __host__ __device__ T operator()(const T& x) const
+  _CCCL_HOST_DEVICE T operator()(const T& x) const
   { // Static cast to undo integral promotion
     return static_cast<T>(+x);
   }

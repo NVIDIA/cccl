@@ -14,7 +14,7 @@
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
+  _CCCL_HOST_DEVICE bool operator()(T x) const
   {
     return ((int) x % 2) == 0;
   }
@@ -928,7 +928,7 @@ VariableUnitTest<TestStablePartitionCopyStencilToDiscardIterator, PartitionTypes
 struct is_ordered
 {
   template <typename Tuple>
-  __host__ __device__ bool operator()(const Tuple& t) const
+  _CCCL_HOST_DEVICE bool operator()(const Tuple& t) const
   {
     return thrust::get<0>(t) <= thrust::get<1>(t);
   }

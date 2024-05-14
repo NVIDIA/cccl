@@ -25,6 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/temporary_array.h>
+#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/omp/detail/default_decomposition.h>
 #include <thrust/system/omp/detail/reduce.h>

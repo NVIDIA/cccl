@@ -25,7 +25,7 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 pow(const complex<T0>& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -33,16 +33,14 @@ pow(const complex<T0>& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-pow(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type> pow(const complex<T0>& x, const T1& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   return exp(log(complex<T>(x)) * T(y));
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
-pow(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type> pow(const T0& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
   // Find `log` by ADL.

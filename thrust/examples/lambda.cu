@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example demonstrates the use of placeholders to implement
 // the SAXPY operation (i.e. Y[i] = a * X[i] + Y[i]).
 //

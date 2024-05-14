@@ -9,7 +9,7 @@
 struct custom_square
 {
   template <typename T>
-  __host__ __device__ T operator()(T v) const
+  _CCCL_HOST_DEVICE T operator()(T v) const
   {
     return v * v;
   }
@@ -18,7 +18,7 @@ struct custom_square
 struct custom_square_inplace
 {
   template <typename T>
-  __host__ __device__ void operator()(T& v) const
+  _CCCL_HOST_DEVICE void operator()(T& v) const
   {
     v *= v;
   }

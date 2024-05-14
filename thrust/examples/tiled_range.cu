@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // this example illustrates how to tile a range multiple times
 // examples:
 //   tiled_range([0, 1, 2, 3], 1) -> [0, 1, 2, 3]

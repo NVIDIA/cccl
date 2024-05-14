@@ -8,6 +8,8 @@
 #include <iostream>
 #include <limits>
 
+#include "include/host_device.h"
+
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:
 // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm

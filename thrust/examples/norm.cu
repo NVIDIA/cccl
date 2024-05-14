@@ -6,6 +6,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "include/host_device.h"
+
 //   This example computes the norm [1] of a vector.  The norm is
 // computed by squaring all numbers in the vector, summing the
 // squares, and taking the square root of the sum of squares.  In

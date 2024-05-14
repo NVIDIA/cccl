@@ -190,7 +190,7 @@ struct Record
 
 struct negate
 {
-  __host__ __device__ int operator()(Record const& record) const
+  _CCCL_HOST_DEVICE int operator()(Record const& record) const
   {
     return -record.number;
   }

@@ -9,7 +9,7 @@ struct FixedVector
 {
   T data[N];
 
-  __host__ __device__ FixedVector()
+  _CCCL_HOST_DEVICE FixedVector()
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -17,7 +17,7 @@ struct FixedVector
     }
   }
 
-  __host__ __device__ FixedVector(T init)
+  _CCCL_HOST_DEVICE FixedVector(T init)
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -25,7 +25,7 @@ struct FixedVector
     }
   }
 
-  __host__ __device__ FixedVector operator+(const FixedVector& bs) const
+  _CCCL_HOST_DEVICE FixedVector operator+(const FixedVector& bs) const
   {
     FixedVector output;
     for (unsigned int i = 0; i < N; i++)
@@ -35,7 +35,7 @@ struct FixedVector
     return output;
   }
 
-  __host__ __device__ bool operator<(const FixedVector& bs) const
+  _CCCL_HOST_DEVICE bool operator<(const FixedVector& bs) const
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -51,7 +51,7 @@ struct FixedVector
     return false;
   }
 
-  __host__ __device__ bool operator==(const FixedVector& bs) const
+  _CCCL_HOST_DEVICE bool operator==(const FixedVector& bs) const
   {
     for (unsigned int i = 0; i < N; i++)
     {
@@ -70,32 +70,32 @@ struct key_value
   typedef Key key_type;
   typedef Value value_type;
 
-  __host__ __device__ key_value()
+  _CCCL_HOST_DEVICE key_value()
       : key()
       , value()
   {}
 
-  __host__ __device__ key_value(key_type k, value_type v)
+  _CCCL_HOST_DEVICE key_value(key_type k, value_type v)
       : key(k)
       , value(v)
   {}
 
-  __host__ __device__ bool operator<(const key_value& rhs) const
+  _CCCL_HOST_DEVICE bool operator<(const key_value& rhs) const
   {
     return key < rhs.key;
   }
 
-  __host__ __device__ bool operator>(const key_value& rhs) const
+  _CCCL_HOST_DEVICE bool operator>(const key_value& rhs) const
   {
     return key > rhs.key;
   }
 
-  __host__ __device__ bool operator==(const key_value& rhs) const
+  _CCCL_HOST_DEVICE bool operator==(const key_value& rhs) const
   {
     return key == rhs.key && value == rhs.value;
   }
 
-  __host__ __device__ bool operator!=(const key_value& rhs) const
+  _CCCL_HOST_DEVICE bool operator!=(const key_value& rhs) const
   {
     return !operator==(rhs);
   }
@@ -111,19 +111,19 @@ struct key_value
 
 struct user_swappable
 {
-  inline __host__ __device__ user_swappable(bool swapped = false)
+  inline _CCCL_HOST_DEVICE user_swappable(bool swapped = false)
       : was_swapped(swapped)
   {}
 
   bool was_swapped;
 };
 
-inline __host__ __device__ bool operator==(const user_swappable& x, const user_swappable& y)
+inline _CCCL_HOST_DEVICE bool operator==(const user_swappable& x, const user_swappable& y)
 {
   return x.was_swapped == y.was_swapped;
 }
 
-inline __host__ __device__ void swap(user_swappable& x, user_swappable& y)
+inline _CCCL_HOST_DEVICE void swap(user_swappable& x, user_swappable& y)
 {
   x.was_swapped = true;
   y.was_swapped = false;

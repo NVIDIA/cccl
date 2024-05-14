@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example computes the number of words in a text sample
 // with a single call to thrust::inner_product.  The algorithm
 // counts the number of characters which start a new word, i.e.

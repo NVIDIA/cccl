@@ -701,8 +701,8 @@ struct TestComplexExplicitConstruction
 {
   struct user_complex
   {
-    __host__ __device__ user_complex(T, T) {}
-    __host__ __device__ user_complex(const thrust::complex<T>&) {}
+    _CCCL_HOST_DEVICE user_complex(T, T) {}
+    _CCCL_HOST_DEVICE user_complex(const thrust::complex<T>&) {}
   };
 
   void operator()()

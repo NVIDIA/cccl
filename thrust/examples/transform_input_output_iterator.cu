@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // Base 2 fixed point
 class ScaledInteger
 {

@@ -16,7 +16,7 @@ class mark_present_for_each
 {
 public:
   T* ptr;
-  __host__ __device__ void operator()(T x)
+  _CCCL_HOST_DEVICE void operator()(T x)
   {
     ptr[(int) x] = 1;
   }
@@ -266,7 +266,7 @@ struct SetFixedVectorToConstant
       : exemplar(scalar)
   {}
 
-  __host__ __device__ void operator()(FixedVector<T, N>& t)
+  _CCCL_HOST_DEVICE void operator()(FixedVector<T, N>& t)
   {
     t = exemplar;
   }
@@ -361,7 +361,7 @@ struct only_set_when_expected
   unsigned long long expected;
   bool* flag;
 
-  __device__ void operator()(unsigned long long x)
+  _CCCL_DEVICE void operator()(unsigned long long x)
   {
     if (x == expected)
     {
