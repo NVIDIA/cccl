@@ -147,6 +147,13 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
 
 #if _CCCL_STD_VER > 2011
 
+enum class __smf_availability
+{
+  __trivial,
+  __available,
+  __deleted,
+};
+
 template <bool _CanCopy>
 struct __sfinae_copy_base
 {};
