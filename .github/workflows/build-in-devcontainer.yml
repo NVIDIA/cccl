@@ -77,6 +77,10 @@ jobs:
             echo "HAS_DEVCONTAINER=false" >> "${GITHUB_ENV}";
           fi
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
+        name: Add NVCC problem matcher
+        run: |
+          echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
+      - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
