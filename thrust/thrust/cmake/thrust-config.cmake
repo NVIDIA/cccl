@@ -573,34 +573,42 @@ endmacro()
 macro(_thrust_find_TBB required)
   if(NOT TARGET Thrust::TBB)
     thrust_debug("Searching for TBB ${required}" internal)
-    # Swap in a temporary module path to make sure we use our FindTBB.cmake
-    set(_THRUST_STASH_MODULE_PATH "${CMAKE_MODULE_PATH}")
-    set(CMAKE_MODULE_PATH "${_THRUST_CMAKE_DIR}")
 
-    # Push policy CMP0074 to silence warnings about TBB_ROOT being set. This
-    # var is used unconventionally in this FindTBB.cmake module.
-    # Someday we'll have a suitable TBB cmake configuration and can avoid this.
-    cmake_policy(PUSH)
-    cmake_policy(SET CMP0074 OLD)
-    set(THRUST_TBB_ROOT "" CACHE PATH "Path to the root of the TBB installation.")
-    if (TBB_ROOT AND NOT THRUST_TBB_ROOT)
+    # Try to find the CMake package that newer versions of TBB install themselves:
+    if (NOT TARGET TBB::tbb)
+      find_package(TBB CONFIG ${_THRUST_QUIET_FLAG})
+    endif()
+
+    # If that fails, fall back to the Path of Sadness: FindTBB.cmake
+    if (NOT TARGET TBB::tbb)
+      # Swap in a temporary module path to make sure we use our FindTBB.cmake
+      set(_THRUST_STASH_MODULE_PATH "${CMAKE_MODULE_PATH}")
+      set(CMAKE_MODULE_PATH "${_THRUST_CMAKE_DIR}")
+
+      # Push policy CMP0074 to silence warnings about TBB_ROOT being set. This
+      # var is used unconventionally in this FindTBB.cmake module.
+      cmake_policy(PUSH)
+      cmake_policy(SET CMP0074 OLD)
+      set(_THRUST_STASH_TBB_ROOT "${TBB_ROOT}")
+      set(THRUST_TBB_ROOT "" CACHE PATH "Path to the root of the TBB installation.")
+      if (TBB_ROOT AND NOT THRUST_TBB_ROOT)
       message(
         "Warning: TBB_ROOT is set. "
         "Thrust uses THRUST_TBB_ROOT to avoid issues with CMake Policy CMP0074. "
         "Please set this variable instead when using Thrust with TBB."
       )
+      endif()
+      set(TBB_ROOT "${THRUST_TBB_ROOT}")
+
+      find_package(TBB
+        ${_THRUST_QUIET_FLAG}
+        ${required}
+      )
+
+      cmake_policy(POP)
+      set(TBB_ROOT "${_THRUST_STASH_TBB_ROOT}")
+      set(CMAKE_MODULE_PATH "${_THRUST_STASH_MODULE_PATH}")
     endif()
-    set(TBB_ROOT "${THRUST_TBB_ROOT}")
-    set(_THRUST_STASH_TBB_ROOT "${TBB_ROOT}")
-
-    find_package(TBB
-      ${_THRUST_QUIET_FLAG}
-      ${required}
-    )
-
-    cmake_policy(POP)
-    set(TBB_ROOT "${_THRUST_STASH_TBB_ROOT}")
-    set(CMAKE_MODULE_PATH "${_THRUST_STASH_MODULE_PATH}")
 
     if (TARGET TBB::tbb)
       thrust_set_TBB_target(TBB::tbb)

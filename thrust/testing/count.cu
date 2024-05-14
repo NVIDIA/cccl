@@ -35,7 +35,7 @@ DECLARE_VARIABLE_UNITTEST(TestCount);
 template <typename T>
 struct greater_than_five
 {
-  __host__ __device__ bool operator()(const T& x) const
+  _CCCL_HOST_DEVICE bool operator()(const T& x) const
   {
     return x > 5;
   }

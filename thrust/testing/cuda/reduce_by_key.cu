@@ -74,7 +74,7 @@ __global__ void reduce_by_key_kernel(
 template <typename T>
 struct is_equal_div_10_reduce
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }
@@ -353,11 +353,11 @@ class div_op : public thrust::unary_function<std::int64_t, std::int64_t>
   std::int64_t m_divisor;
 
 public:
-  __host__ div_op(std::int64_t divisor)
+  _CCCL_HOST div_op(std::int64_t divisor)
       : m_divisor(divisor)
   {}
 
-  __host__ __device__ std::int64_t operator()(std::int64_t x) const
+  _CCCL_HOST_DEVICE std::int64_t operator()(std::int64_t x) const
   {
     return x / m_divisor;
   }
@@ -369,11 +369,11 @@ class mod_op : public thrust::unary_function<std::int64_t, std::int64_t>
   std::int64_t m_divisor;
 
 public:
-  __host__ mod_op(std::int64_t divisor)
+  _CCCL_HOST mod_op(std::int64_t divisor)
       : m_divisor(divisor)
   {}
 
-  __host__ __device__ std::int64_t operator()(std::int64_t x) const
+  _CCCL_HOST_DEVICE std::int64_t operator()(std::int64_t x) const
   {
     // div: 2
     // idx: 0 1   2 3   4 5

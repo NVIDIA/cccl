@@ -42,7 +42,7 @@ template <bool... _Preds>
 struct __all_dummy;
 
 template <bool... _Pred>
-using __all = _IsSame<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
+using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
 
 struct __tuple_sfinae_base
 {

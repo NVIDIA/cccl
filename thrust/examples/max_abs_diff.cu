@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // this example computes the maximum absolute difference
 // between the elements of two vectors
 

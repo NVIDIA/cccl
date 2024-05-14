@@ -9,7 +9,7 @@
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
+  _CCCL_HOST_DEVICE bool operator()(T x) const
   {
     return ((int) x % 2) == 0;
   }
@@ -20,7 +20,7 @@ struct mod_n
 {
   T mod;
   bool negate;
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return (x % mod == 0) ? (!negate) : negate;
   }
@@ -30,7 +30,7 @@ template <typename T>
 struct multiply_n
 {
   T multiplier;
-  __host__ __device__ T operator()(T x)
+  _CCCL_HOST_DEVICE T operator()(T x)
   {
     return x * multiplier;
   }

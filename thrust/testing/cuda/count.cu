@@ -50,7 +50,7 @@ __global__ void count_if_kernel(ExecutionPolicy exec, Iterator first, Iterator l
 template <typename T>
 struct greater_than_five
 {
-  __host__ __device__ bool operator()(const T& x) const
+  _CCCL_HOST_DEVICE bool operator()(const T& x) const
   {
     return x > 5;
   }

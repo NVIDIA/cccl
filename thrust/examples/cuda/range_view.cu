@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "../include/host_device.h"
+
 // This example demonstrates the use of a view: a non-owning wrapper for an
 // iterator range which presents a container-like interface to the user.
 //

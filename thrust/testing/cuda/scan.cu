@@ -252,7 +252,7 @@ struct const_ref_plus_mod3
       : table(table)
   {}
 
-  __host__ __device__ const T& operator()(T a, T b)
+  _CCCL_HOST_DEVICE const T& operator()(T a, T b)
   {
     return table[(int) (a + b)];
   }

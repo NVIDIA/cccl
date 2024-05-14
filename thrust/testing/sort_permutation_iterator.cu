@@ -20,7 +20,7 @@ public:
         : stride(stride)
     {}
 
-    __host__ __device__ difference_type operator()(const difference_type& i) const
+    _CCCL_HOST_DEVICE difference_type operator()(const difference_type& i) const
     {
       return stride * i;
     }

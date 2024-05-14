@@ -4,6 +4,8 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include "include/host_device.h"
+
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
 

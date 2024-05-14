@@ -76,7 +76,7 @@ __global__ void scatter_if_kernel(
 template <typename T>
 struct is_even_scatter_if
 {
-  __host__ __device__ bool operator()(const T i) const
+  _CCCL_HOST_DEVICE bool operator()(const T i) const
   {
     return (i % 2) == 0;
   }

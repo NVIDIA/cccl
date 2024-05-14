@@ -568,8 +568,6 @@ namespace std
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS reference_wrapper;
-template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS hash;
 
 template <bool>

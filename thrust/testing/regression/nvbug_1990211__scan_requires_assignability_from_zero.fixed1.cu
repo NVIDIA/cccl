@@ -1,7 +1,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/scan.h>
 
-inline __host__ __device__ uint2 operator+(uint2 a, uint2 b)
+inline _CCCL_HOST_DEVICE uint2 operator+(uint2 a, uint2 b)
 {
   return make_uint2(a.x + b.x, a.y + b.y);
 }

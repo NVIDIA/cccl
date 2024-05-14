@@ -62,7 +62,7 @@ namespace complex
 
 using thrust::complex;
 
-__host__ __device__ inline complex<float> csinhf(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> csinhf(const complex<float>& z)
 {
   float x, y, h;
   uint32_t hx, hy, ix, iy;
@@ -141,7 +141,7 @@ __host__ __device__ inline complex<float> csinhf(const complex<float>& z)
   return (complex<float>((x * x) * (y - y), (x + x) * (y - y)));
 }
 
-__host__ __device__ inline complex<float> csinf(complex<float> z)
+_CCCL_HOST_DEVICE inline complex<float> csinf(complex<float> z)
 {
   z = csinhf(complex<float>(-z.imag(), z.real()));
   return (complex<float>(z.imag(), -z.real()));
@@ -152,13 +152,13 @@ __host__ __device__ inline complex<float> csinf(complex<float> z)
 } // namespace detail
 
 template <>
-__host__ __device__ inline complex<float> sin(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> sin(const complex<float>& z)
 {
   return detail::complex::csinf(z);
 }
 
 template <>
-__host__ __device__ inline complex<float> sinh(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> sinh(const complex<float>& z)
 {
   return detail::complex::csinhf(z);
 }

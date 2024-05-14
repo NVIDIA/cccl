@@ -10,6 +10,7 @@
 #include <cmath>
 #include <iomanip>
 
+#include "include/host_device.h"
 #include <float.h>
 
 // This example computes the minimum and maximum values

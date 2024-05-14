@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // Helper routines
 
 void initialize(thrust::device_vector<int>& v)

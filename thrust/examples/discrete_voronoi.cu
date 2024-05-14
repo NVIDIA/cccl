@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
 #include "include/timer.h"
 
 // Compute an approximate Voronoi Diagram with a Jump Flooding Algorithm (JFA)
