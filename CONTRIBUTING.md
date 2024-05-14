@@ -55,7 +55,7 @@ Coming soon!
 
 ## Building and Testing
 
-CCCL components are header-only libraries. This means there isn't a traditional build process for the library itself. However, before submitting contributions, it's a good idea to build and run tests.
+CCCL components are header-only libraries. This means there isn't a traditional build process for the library itself. However, before submitting contributions, it's a good idea to [build and run tests](#developer-guides).
 
 There are multiple options for building and running our tests. Which option you choose depends on your preferences and whether you are using [CCCL's DevContainers](.devcontainer/README.md) (highly recommended!).
 
@@ -106,21 +106,39 @@ There are three kinds of Presets
 
 In CCCL we provide many presets to be used out of the box. You can find the complete list in our corresponding [CMakePresets.json](./CMakePresets.json) file.
 
+These commands can be used to get lists of the configure, build, and test presets.
+
+```bash
+cmake --list-presets # Configure presets
+cmake --build --list-presets # Build presets
+ctest --list-presets # Test presets
+```
+
+While there is a lot of overlap, there may be differences between the configure, build, and test presets to support various testing workflows.
+
+The `dev` presets are intended as a base for general development while the others are useful for replicating CI failures.
+
 #### Using CMake Presets via Command Line
 
-Once you have created your `build` directory and navigated into it, you can configure your project for a specific preset (e.g. `thrust-cpp11`) by executing the following command:
+CMake automatically generates the preset build directories. You can configure, build and test for a specific preset (e.g. `thrust-cpp11`) via cmake from the root directory by appending `--preset=thrust-cpp11` to the corresponding commands. For example:
 
 ```bash
-cmake --preset=thrust-cpp11 <path/to/cccl/root>
+cmake --preset=thrust-cpp11
+cmake --build --preset=thrust-cpp11
+ctest --preset=thrust-cpp11
 ```
 
-This command configures the project using the thrust-cpp11 preset. Please replace `<path/to/cccl/root>` with the actual path to the root directory of your CCCL working copy.
+That will create `build/<optional devcontainer name>/thrust-cpp11/` and build everything in there. The devcontainer name is inserted automatically on devcontainer builds to keep build artifacts separate for the different toolchains.
 
-Upon successful configuration, initiate the build process with:
+It's also worth mentioning that additional cmake options can still be passed in and will override the preset settings.
+
+As a common example, the presets are currently always `60;70;80` for `CMAKE_CUDA_ARCHITECTURES`, but this can be overridden at configure time with something like:
 
 ```bash
-cmake --build .
+cmake --preset=thrust-cpp20 "-DCMAKE_CUDA_ARCHITECTURES=89"
 ```
+
+> __Note__: Either using the `cmake` command from within the root directory or from within the build directory works, but will behave in slightly different ways. Building and running tests from the build directory will compile every target and run all of the tests configured in the configure step. Doing so from the root directory using the `--preset=<test_preset>` option will build and run a subset of configured targets and tests.
 
 #### Using CMake Presets via VS Code GUI extension (Recommended when using DevContainers)
 
