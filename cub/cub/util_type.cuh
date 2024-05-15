@@ -1419,7 +1419,7 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
 #if defined(__CUDA_FP8_TYPES_EXIST__)
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
     template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif
+#endif // __CUDA_FP8_TYPES_EXIST__
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
