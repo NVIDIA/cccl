@@ -18,7 +18,7 @@ if [ ! -d cubimg ]; then
 fi
 
 if [ ! -n "$(find img -name 'example_range.png')" ]; then
-    wget -q https://raw.githubusercontent.com/NVIDIA/NVTX/release-v3/docs/images/example_range.png -O img/example_range.png
+    wget -q https://raw.githubusercontent.com/NVIDIA/NVTX/release-v3/docs/images/example_range.png -O cubimg/example_range.png
 fi
 
 if [ ! -n "$(find img -name '*.png')" ]; then
