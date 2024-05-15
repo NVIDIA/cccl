@@ -634,6 +634,9 @@ def parse_workflow_matrix_jobs(args, workflow_name):
         raise Exception(f"Workflow '{workflow_name}' not found in matrix file '{matrix_yaml['filename']}'")
 
     matrix_jobs = matrix_yaml['workflows'][workflow_name]
+    if not matrix_jobs or len(matrix_jobs) == 0:
+        return []
+
     workflow_line_number = find_workflow_line_number(workflow_name)
 
     # Tag with the original matrix info, location, etc. for error messages and post-processing.
@@ -722,9 +725,22 @@ def write_outputs(final_workflow):
     write_json_file("workflow/runner_summary.json", runner_json)
 
 
+def write_override_matrix(override_matrix):
+    os.makedirs("workflow", exist_ok=True)
+    write_json_file("workflow/override.json", override_matrix)
+
+
 def print_gha_workflow(args):
+    workflow_names = args.workflows
+    if args.allow_override and 'override' in matrix_yaml['workflows']:
+        override_matrix = matrix_yaml['workflows']['override']
+        if override_matrix and len(override_matrix) > 0:
+            print(f"::notice::Using 'override' workflow instead of '{workflow_names}'")
+            workflow_names = ['override']
+            write_override_matrix(override_matrix)
+
     final_workflow = {}
-    for workflow_name in args.workflows:
+    for workflow_name in workflow_names:
         workflow_dispatch_groups = parse_workflow_dispatch_groups(args, workflow_name)
         merge_dispatch_groups(final_workflow, workflow_dispatch_groups)
 
@@ -775,6 +791,8 @@ def main():
     parser.add_argument('--dirty-projects', nargs='*', help='Filter jobs to only these projects')
     parser.add_argument('--skip-tests', action='store_true',
                         help='Remove jobs defined in `matrix_file.skip_test_jobs`.')
+    parser.add_argument('--allow-override', action='store_true',
+                        help='If a non-empty "override" workflow exists, it will be used instead of those in --workflows.')
     args = parser.parse_args()
 
     # Check if the matrix file exists
