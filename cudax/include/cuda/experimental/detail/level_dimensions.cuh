@@ -123,7 +123,7 @@ struct level_dimensions
   constexpr _CCCL_HOST_DEVICE level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  constexpr _CCCL_HOST_DEVICE level_dimensions() {};
+  constexpr _CCCL_HOST_DEVICE level_dimensions(){};
 };
 
 /**
