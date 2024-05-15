@@ -441,7 +441,7 @@ TEST_CASE("Examples", "[hierarchy]")
     REQUIRE(hierarchy.count(cluster) == 256);
   }
   {
-    auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(), block_dims<8, 8, 8>());
+    [[maybe_unused]] auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(), block_dims<8, 8, 8>());
     static_assert(hierarchy.static_count(thread, cluster) == 4 * 8 * 8 * 8);
     REQUIRE(hierarchy.static_count() == cuda::std::dynamic_extent);
   }
@@ -454,7 +454,7 @@ TEST_CASE("Examples", "[hierarchy]")
     REQUIRE(hierarchy.extents(cluster).extent(0) == 256);
   }
   {
-    auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(), block_dims<8, 8, 8>());
+    [[maybe_unused]] auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(), block_dims<8, 8, 8>());
     static_assert(decltype(hierarchy.level(cluster).dims)::static_extent(0) == 4);
   }
   {
