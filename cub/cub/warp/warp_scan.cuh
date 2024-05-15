@@ -483,6 +483,17 @@ public:
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op);
   }
 
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T exclusive_output;
+    internal.InclusiveScan(input, inclusive_output, scan_op);
+
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+  }
+
   //! @rst
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
@@ -542,6 +553,21 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op, warp_aggregate);
+  }
+
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    // Perform the inclusive scan operation
+    internal.InclusiveScan(input, inclusive_output, scan_op);
+
+    // Update the inclusive_output and warp_aggregate using the Update function
+    T exclusive_output;
+    internal.Update(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
   }
 
   //! @}  end member group
