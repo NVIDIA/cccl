@@ -423,6 +423,7 @@ __global__ void examples_kernel(Dimensions dims)
   }
 }
 
+// Test examples from the inline rst documentation
 TEST_CASE("Examples", "[hierarchy]")
 {
   using namespace cuda::experimental;
