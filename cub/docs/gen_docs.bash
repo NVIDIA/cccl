@@ -17,7 +17,7 @@ if [ ! -d cubimg ]; then
     git clone -b gh-pages https://github.com/NVlabs/cub.git cubimg
 fi
 
-if [ ! -n "$(find img -name 'example_range.png')" ]; then
+if [ ! -n "$(find cubimg -name 'example_range.png')" ]; then
     wget -q https://raw.githubusercontent.com/NVIDIA/NVTX/release-v3/docs/images/example_range.png -O cubimg/example_range.png
 fi
 
