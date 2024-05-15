@@ -479,9 +479,9 @@ TEST_CASE("Examples", "[hierarchy]")
     REQUIRE(block_dimensions.z == 8);
   }
   {
-    auto hierarchy     = make_hierarchy(grid_dims(16), block_dims<8, 8, 8>());
-    auto [grid, block] = get_launch_dimensions(hierarchy);
-    examples_kernel<<<grid, block>>>(hierarchy);
+    auto hierarchy                           = make_hierarchy(grid_dims(16), block_dims<8, 8, 8>());
+    auto [grid_dimensions, block_dimensions] = get_launch_dimensions(hierarchy);
+    examples_kernel<<<grid_dimensions, block_dimensions>>>(hierarchy);
     CUDART(cudaGetLastError());
     CUDART(cudaDeviceSynchronize());
   }
