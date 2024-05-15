@@ -1506,9 +1506,9 @@ struct __variant_constraints
 
 template <class... _Types>
 class _LIBCUDACXX_TEMPLATE_VIS variant
-    : private __sfinae_ctor_base<__all<_CCCL_TRAIT(is_copy_constructible, _Types)...>::value,
-                                 __all<_CCCL_TRAIT(is_move_constructible, _Types)...>::value>
-    , private __sfinae_assign_base<
+    : private __sfinae_base<
+        __all<_CCCL_TRAIT(is_copy_constructible, _Types)...>::value,
+        __all<_CCCL_TRAIT(is_move_constructible, _Types)...>::value,
         __all<(_CCCL_TRAIT(is_copy_constructible, _Types) && _CCCL_TRAIT(is_copy_assignable, _Types))...>::value,
         __all<(_CCCL_TRAIT(is_move_constructible, _Types) && _CCCL_TRAIT(is_move_assignable, _Types))...>::value>
 {

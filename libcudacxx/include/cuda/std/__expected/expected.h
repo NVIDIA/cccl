@@ -103,10 +103,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __can_swap<void, _Err> =
 } // namespace __expected
 
 template <class _Tp, class _Err>
-class expected
-    : private __expected_move_assign<_Tp, _Err>
-    , private __expected_sfinae_ctor_base_t<_Tp, _Err>
-    , private __expected_sfinae_assign_base_t<_Tp, _Err>
+class expected : private __expected_move_assign<_Tp, _Err>
 {
   using __base = __expected_move_assign<_Tp, _Err>;
 
@@ -1212,10 +1209,7 @@ public:
 };
 
 template <class _Err>
-class expected<void, _Err>
-    : private __expected_move_assign<void, _Err>
-    , private __expected_void_sfinae_ctor_base_t<_Err>
-    , private __expected_void_sfinae_assign_base_t<_Err>
+class expected<void, _Err> : private __expected_move_assign<void, _Err>
 {
   using __base = __expected_move_assign<void, _Err>;
   static_assert(__unexpected::__valid_unexpected<_Err>,
