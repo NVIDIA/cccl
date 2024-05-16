@@ -106,7 +106,7 @@ jobs:
             AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
             AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
             AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
-            {{ inputs.env }}
+            ${{ inputs.env }}
           runCmd: |
             set -e;
             mkdir -p ~/.config/pip/;
