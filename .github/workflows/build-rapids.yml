@@ -35,7 +35,7 @@ jobs:
           - { libs: 'rmm KvikIO cudf cudf_kafka cuspatial',         args: 'BUILD_TESTS BUILD_BENCHMARKS' }
           - { libs: 'rmm ucxx raft cuvs',                           args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
           - { libs: 'rmm ucxx raft cumlprims_mg cuml',              args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
-          - { libs: 'rmm ucxx raft cugraph-ops wholegraph cugraph', args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
+          - { libs: 'rmm ucxx raft cugraph-ops wholegraph cugraph', args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH BUILD_CUGRAPH_MG_TESTS' }
     permissions:
       actions: read
       packages: read
@@ -50,82 +50,27 @@ jobs:
       node_type: cpu32
       extra-repo-deploy-key: RAPIDSAI_CUMLPRIMS_DEPLOY_KEY
       extra-repo-deploy-key-2: RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY
+      env: |
+        RAPIDS_LIBS='${{ matrix.libs }}'
+        RAPIDS_TEST_OPTIONS='${{ matrix.args }}'
+        RAPIDS_cmake_GIT_REPO='{"upstream": "trxcllnt", "tag": "fea/cccl-2.5"}'
+        RAPIDS_cudf_GIT_REPO='{"upstream": "miscco", "tag": "fix_cccl_compat"}'
+        RAPIDS_cuml_GIT_REPO='{"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}'
+        RAPIDS_cugraph_GIT_REPO='{"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}'
+        RAPIDS_cuspatial_GIT_REPO='{"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}'
+        CCCL_GIT_REPO='{"git_url": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}'
       build_command: |
         set -x;
-
-        ###
-        # Remove libs from /opt/rapids-build-utils/manifest.yaml
-        ###
-        filters=(${{ matrix.libs }});
-        # prefix each element
-        filters=("${filters[@]/#/'"'}");
-        # suffix each element
-        filters=("${filters[@]/%/'",'}");
-        # Remove trailing comma
-        filters="$(cut -d',' -f1-${#filters[@]} <<< "${filters[*]}")";
-        sudo yq -i ".repos |= filter(.cpp[].name | contains(${filters}))" /opt/rapids-build-utils/manifest.yaml;
-
-        # Use the miscco/cudf fork with fixes for latest CCCL (https://github.com/rapidsai/cudf/pull/15552)
-        sudo yq -i '(.repos[] | select(.name == "cudf") | .git) *= {"upstream": "miscco", "tag": "fix_cccl_compat"}' /opt/rapids-build-utils/manifest.yaml;
-        # Use the trxcllnt/cuml fork with fixes for latest CCCL (https://github.com/rapidsai/cuml/pull/5886)
-        sudo yq -i '(.repos[] | select(.name == "cuml") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
-        # Use the trxcllnt/cugraph fork with fixes for latest CCCL (https://github.com/rapidsai/cugraph/pull/4404)
-        sudo yq -i '(.repos[] | select(.name == "cugraph") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
-        # Use the trxcllnt/cuspatial fork with fixes for latest CCCL (https://github.com/rapidsai/cuspatial/pull/4404)
-        sudo yq -i '(.repos[] | select(.name == "cuspatial") | .git) *= {"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}' /opt/rapids-build-utils/manifest.yaml;
-
-        # Regenerate builds scripts after modifying /opt/rapids-build-utils/manifest.yaml
-        rapids-generate-scripts;
-
-        ###
-        # Clone all the RAPIDS repos
-        ###
-        clone-all -j$(nproc) -v -q --clone-upstream --single-branch --shallow-submodules;
-
-        ###
-        # Build the RAPIDS repos using CCCL from this PR
-        ###
-
-        # rapids_cmake_upstream="$(yq '.x-git-defaults.upstream' /opt/rapids-build-utils/manifest.yaml)";
-        # rapids_cmake_branch="$(yq '.x-git-defaults.tag' /opt/rapids-build-utils/manifest.yaml)";
-        rapids_cmake_upstream=trxcllnt
-        rapids_cmake_branch=fea/cccl-2.5
-        # Override rapids-cmake to use the CCCL branch from this PR
-        cccl_url="${{ github.repositoryUrl }}";
-        curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_branch}/rapids-cmake/cpm/versions.json" \
-          | jq -r ".packages.CCCL *= {\"version\": \"2.5.0\", \"git_url\": \"${cccl_url/git:/https:}\", \"git_tag\": \"${{ github.ref_name }}\"}" \
-          | tee ~/rapids-cmake-override-versions.json;
 
         declare -a failures;
         declare -A failures_map;
 
-        _cmake_args() {
-          local -;
-          set -euo pipefail
-          # Build arguments list
-          local -a args=(${{ matrix.args }});
-          # Enable/disable tests
-          args=("${args[@]/#/"-D"}");
-          args=("${args[@]/%/"=$1"}");
-          echo "${args[@]@Q}";
-          # Build shared libraries
-          echo "-DBUILD_SHARED_LIBS=ON";
-          # Build raft shared library
-          echo "-DRAFT_COMPILE_LIBRARY=ON";
-          # Build cuGraph multi-gpu tests
-          echo "-DBUILD_CUGRAPH_MG_TESTS=ON";
-          # Tell rapids-cmake to use custom CCCL and cuCollections forks
-          echo "-Drapids-cmake-branch=${rapids_cmake_branch}";
-          echo "-Drapids-cmake-repo=${rapids_cmake_upstream}/rapids-cmake";
-          echo "-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE='${HOME}/rapids-cmake-override-versions.json'";
-        }
-
         # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
-        for opt in OFF ON; do
-          declare -a args="(-v -j $(_cmake_args "${opt}"))";
+        for RAPIDS_ENABLE_TESTS in OFF ON; do
+          /home/coder/cccl/ci/rapids/post-create-command.sh;
           for lib in ${{ matrix.libs }}; do
             sccache -z;
-            if ! configure-${lib}-cpp "${args[@]}" || ! build-${lib}-cpp "${args[@]}"; then
+            if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
               if ! test -v failures_map["${lib}"]; then
                 failures+=("${lib}");
                 failures_map["${lib}"]=1;
@@ -138,5 +83,7 @@ jobs:
         # Print failures and exit
         if test ${#failures[@]} -gt 0; then
           echo "Failures: ${failures[*]}";
+          echo "To replicate these failures, run the following command in this branch:";
+          echo "RAPIDS_ENABLE_TESTS='ON' RAPIDS_LIBS='${RAPIDS_LIBS}' RAPIDS_TEST_OPTIONS='${RAPIDS_TEST_OPTIONS}' RAPIDS_cmake_GIT_REPO='${RAPIDS_cmake_GIT_REPO}' RAPIDS_cudf_GIT_REPO='${RAPIDS_cudf_GIT_REPO}' RAPIDS_cuml_GIT_REPO='${RAPIDS_cuml_GIT_REPO}' RAPIDS_cugraph_GIT_REPO='${RAPIDS_cugraph_GIT_REPO}' RAPIDS_cuspatial_GIT_REPO='${RAPIDS_cuspatial_GIT_REPO}' .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- /home/coder/cccl/ci/rapids/rapids-entrypoint.sh /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && configure-all -j -v && build-all -j -v || exec /bin/bash -li'";
           exit 1;
         fi
