@@ -10,19 +10,13 @@
 
 #include <thrust/iterator/counting_iterator.h>
 
-struct Op
-{
-  _CCCL_HOST_DEVICE void operator()(int i) const
-  {
-    printf("%d\n", i);
-  }
-};
+#include <cuda/std/functional>
 
 int main()
 {
   CUB_DETAIL_NVTX_RANGE_SCOPE("main");
 
   thrust::counting_iterator<int> it{0};
-  cub::DeviceFor::ForEach(it, it + 16, Op{});
+  cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});
   cudaDeviceSynchronize();
 }

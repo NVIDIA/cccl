@@ -2,21 +2,15 @@
 
 #include <thrust/iterator/counting_iterator.h>
 
-#include <nvtx3/nvtx3.hpp> // user-side include of NVTX, retrieved elsewhere
+#include <cuda/std/functional>
 
-struct Op
-{
-  _CCCL_HOST_DEVICE void operator()(int i) const
-  {
-    printf("%d\n", i);
-  }
-};
+#include <nvtx3/nvtx3.hpp> // user-side include of NVTX, retrieved elsewhere
 
 int main()
 {
-  nvtx3::scoped_range range("user-range"); // user-side use of NVTX
+  nvtx3::scoped_range range("user-range"); // user-side use of unversioned NVTX API
 
   thrust::counting_iterator<int> it{0};
-  cub::DeviceFor::ForEach(it, it + 16, Op{}); // internal use of NVTX
+  cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{}); // internal use of NVTX
   cudaDeviceSynchronize();
 }
