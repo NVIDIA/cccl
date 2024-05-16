@@ -424,10 +424,6 @@ public:
     ExclusiveScan(input, exclusive_output, initial_value, cub::Sum(), warp_aggregate);
   }
 
-  //! @}  end member group
-  //! @name Inclusive prefix scans
-  //! @{
-
   //! @rst
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
@@ -475,7 +471,7 @@ public:
   //! @param[out] inclusive_output
   //!   Calling thread's output item. May be aliased with `input`
   //!
-  //! @param[in] can_op
+  //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
@@ -483,6 +479,61 @@ public:
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op);
   }
 
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        typedef cub::WarpScan<int> WarpScan;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!
+  //!        // Compute inclusive warp-wide prefix max scans
+  //!        int warp_id = threadIdx.x / 32;
+  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data,
+  //!                                                      thread_data,
+  //!                                                      INT_MIN,
+  //!                                                      cub::Max());
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
+  //! ``32, 32, 34, 34, ..., 62, 62``, etc.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op)
   {
@@ -555,6 +606,64 @@ public:
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op, warp_aggregate);
   }
 
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
+  //! all inputs.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        typedef cub::WarpScan<int> WarpScan;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!
+  //!        // Compute inclusive warp-wide prefix max scans
+  //!        int warp_aggregate;
+  //!        int warp_id = threadIdx.x / 32;
+  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
+  //!            thread_data, thread_data, INT_MIN, cub::Max(), warp_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
+  //! ``32, 32, 34, 34, ..., 62, 62``, etc.  Furthermore, ``warp_aggregate`` would be assigned
+  //! ``30`` for threads in the first warp, ``62`` for threads in the second warp, etc.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with ``input``
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[out] warp_aggregate
+  //!   Warp-wide aggregate reduction of input items.
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
