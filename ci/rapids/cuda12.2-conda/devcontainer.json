@@ -3,7 +3,7 @@
   "runArgs": [
     "--rm",
     "--name",
-    "${localEnv:USER}-rapids-${localWorkspaceFolderBasename}-24.06-cuda12.2-conda"
+    "${localWorkspaceFolderBasename}-${localEnv:USER}-rapids-24.06-cuda12.2-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {
