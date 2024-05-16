@@ -98,9 +98,7 @@ _create_rapids_cmake_override_json;
 cat "${PROJECT_MANIFEST_YML}";
 
 # Generate the initial set of clone-<repo> scripts
-if ! type clone-all >/dev/null 2>&1; then
-    rapids-generate-scripts;
-fi
+rapids-generate-scripts;
 
 # Clone all the repos
 gh config set git_protocol ssh;
