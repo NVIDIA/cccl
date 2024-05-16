@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e;
+set -ex;
 
 PROJECT_MANIFEST_YML="${PROJECT_MANIFEST_YML:-"/opt/rapids-build-utils/manifest.yaml"}"
 
