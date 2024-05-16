@@ -106,4 +106,6 @@ fi
 gh config set git_protocol ssh;
 gh config set git_protocol ssh --host github.com;
 
+rapids_build_utils_debug=clone-all \
+devcontainer_utils_debug=clone \
 clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules;
