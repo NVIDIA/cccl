@@ -122,6 +122,8 @@ public:
     return *(begin() + i);
   }
 
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags_with_init, iterator);
+
 private:
   iterator m_begin, m_end;
 };
@@ -201,6 +203,8 @@ public:
   {
     return *(begin() + i);
   }
+
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags, iterator);
 
 private:
   iterator m_begin, m_end;
