@@ -6,9 +6,8 @@ PROJECT_MANIFEST_YML="${PROJECT_MANIFEST_YML:-"/opt/rapids-build-utils/manifest.
 
 # Install `rapids-build-utils` feature if it's not installed (i.e. if running locally via `.devcontainer/launch.sh -d`)
 if ! test -f "${PROJECT_MANIFEST_YML}"; then
-    # git clone --depth 1 --filter=blob:none --sparse --branch branch-24.06 https://github.com/rapidsai/devcontainers.git /tmp/rapidsai-devcontainers
-    git clone --depth 1 --filter=blob:none --sparse --branch fea/clone-switches-branches https://github.com/trxcllnt/devcontainers.git /tmp/rapidsai-devcontainers
-    git -C /tmp/rapidsai-devcontainers sparse-checkout set features/src/rapids-build-utils
+    git clone --depth 1 --filter=blob:none --sparse --branch branch-24.06 https://github.com/rapidsai/devcontainers.git /tmp/rapidsai-devcontainers;
+    git -C /tmp/rapidsai-devcontainers sparse-checkout set features/src/rapids-build-utils;
     (
         cd /tmp/rapidsai-devcontainers/features/src/rapids-build-utils;
         sudo bash ./install.sh;
