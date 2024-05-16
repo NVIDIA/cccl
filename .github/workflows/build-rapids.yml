@@ -52,14 +52,14 @@ jobs:
       extra-repo-deploy-key-2: RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY
       env: |
         CI=true
-        RAPIDS_LIBS='${{ matrix.libs }}'
-        RAPIDS_TEST_OPTIONS='${{ matrix.args }}'
-        RAPIDS_cmake_GIT_REPO='{"upstream": "trxcllnt", "tag": "fea/cccl-2.5"}'
-        RAPIDS_cudf_GIT_REPO='{"upstream": "miscco", "tag": "fix_cccl_compat"}'
-        RAPIDS_cuml_GIT_REPO='{"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}'
-        RAPIDS_cugraph_GIT_REPO='{"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}'
-        RAPIDS_cuspatial_GIT_REPO='{"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}'
-        CCCL_GIT_REPO='{"git_url": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}'
+        RAPIDS_LIBS=${{ matrix.libs }}
+        RAPIDS_TEST_OPTIONS=${{ matrix.args }}
+        RAPIDS_cmake_GIT_REPO={"upstream": "trxcllnt", "tag": "fea/cccl-2.5"}
+        RAPIDS_cudf_GIT_REPO={"upstream": "miscco", "tag": "fix_cccl_compat"}
+        RAPIDS_cuml_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
+        RAPIDS_cugraph_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
+        RAPIDS_cuspatial_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
+        CCCL_GIT_REPO={"git_url": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}
       build_command: |
         set -x;
 
