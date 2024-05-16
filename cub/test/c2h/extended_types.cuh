@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
 #ifndef TEST_HALF_T
 #  define TEST_HALF_T _CCCL_HAS_NVFP16
 #endif
