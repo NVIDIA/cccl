@@ -25,57 +25,107 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp* begin(_Tp (&__array)[_Np])
+namespace __begin
 {
-  return __array;
-}
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp* end(_Tp (&__array)[_Np])
+struct __fn
 {
-  return __array + _Np;
-}
+  template <class _Tp, size_t _Np>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  {
+    return __array;
+  }
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto begin(_Cp& __c) -> decltype(__c.begin())
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin()))
+    -> decltype(__c.begin())
+  {
+    return __c.begin();
+  }
+
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
+  {
+    return __c.begin();
+  }
+};
+} // namespace __begin
+
+inline namespace __cpo
 {
-  return __c.begin();
-}
+_LIBCUDACXX_CPO_ACCESSIBILITY auto begin = __begin::__fn{};
+} // namespace __cpo
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto begin(const _Cp& __c) -> decltype(__c.begin())
+namespace __end
 {
-  return __c.begin();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto end(_Cp& __c) -> decltype(__c.end())
+struct __fn
 {
-  return __c.end();
-}
+  template <class _Tp, size_t _Np>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  {
+    return __array + _Np;
+  }
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto end(const _Cp& __c) -> decltype(__c.end())
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.end()))
+    -> decltype(__c.end())
+  {
+    return __c.end();
+  }
+
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(__c.end())) -> decltype(__c.end())
+  {
+    return __c.end();
+  }
+};
+} // namespace __end
+
+inline namespace __cpo
 {
-  return __c.end();
-}
+_LIBCUDACXX_CPO_ACCESSIBILITY auto end = __end::__fn{};
+} // namespace __cpo
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2014
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::begin(__c))
+namespace __cbegin
 {
-  return _CUDA_VSTD::begin(__c);
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cend(const _Cp& __c) -> decltype(_CUDA_VSTD::end(__c))
+struct __fn
 {
-  return _CUDA_VSTD::end(__c);
-}
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(_CUDA_VSTD::begin(__c))) -> decltype(_CUDA_VSTD::begin(__c))
+  {
+    return _CUDA_VSTD::begin(__c);
+  }
+};
+} // namespace __cbegin
 
-#endif
+inline namespace __cpo
+{
+_LIBCUDACXX_CPO_ACCESSIBILITY auto cbegin = __cbegin::__fn{};
+} // namespace __cpo
+
+namespace __cend
+{
+struct __fn
+{
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(_CUDA_VSTD::end(__c))) -> decltype(_CUDA_VSTD::end(__c))
+  {
+    return _CUDA_VSTD::end(__c);
+  }
+};
+} // namespace __cend
+
+inline namespace __cpo
+{
+_LIBCUDACXX_CPO_ACCESSIBILITY auto cend = __cend::__fn{};
+} // namespace __cpo
+
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

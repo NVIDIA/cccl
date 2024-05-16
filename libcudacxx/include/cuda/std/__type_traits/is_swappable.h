@@ -22,6 +22,7 @@
 
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
@@ -36,21 +37,77 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// We need to detect whether there is already a free function swap that would end up being ambiguous.
+// This can happen when a type pulls in both namespace std and namespace cuda::std via ADL.
+// In that case we are always safe to just not do anything because that type must be host only.
+// However, we must be carefull to ensure that we still create the overload if there is just a hidden friend swap
+namespace __detect_hidden_friend_swap
+{
+// This will intentionally create an ambiguity with std::swap if that is find-able by ADL. But it will not interfere
+// with hidden friend swap
+template <class _Tp>
+_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&);
+
+struct __hidden_friend_swap_found
+{};
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_LIBCUDACXX_INLINE_VISIBILITY auto __swap(...) -> __hidden_friend_swap_found;
+template <class _Tp>
+struct __has_hidden_friend_swap
+    : is_same<decltype(__detect_hidden_friend_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
+              void>
+{};
+} // namespace __detect_hidden_friend_swap
+
+namespace __detect_adl_swap
+{
+
+template <class _Tp>
+void swap(_Tp&, _Tp&) = delete;
+
+struct __no_adl_swap_found
+{};
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_LIBCUDACXX_INLINE_VISIBILITY auto __swap(...) -> __no_adl_swap_found;
+template <class _Tp>
+struct __has_no_adl_swap
+    : is_same<decltype(__detect_adl_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
+              __no_adl_swap_found>
+{};
+template <class _Tp, size_t _Np>
+struct __has_no_adl_swap_array
+    : is_same<
+        decltype(__detect_adl_swap::__swap(_CUDA_VSTD::declval<_Tp (&)[_Np]>(), _CUDA_VSTD::declval<_Tp (&)[_Np]>())),
+        __no_adl_swap_found>
+{};
+
+// We should only define swap if there is no ADL found function or it is a hidden friend
+template <class _Tp>
+struct __can_define_swap : _Or<__has_no_adl_swap<_Tp>, __detect_hidden_friend_swap::__has_hidden_friend_swap<_Tp>>
+{};
+} // namespace __detect_adl_swap
+
 template <class _Tp>
 struct __is_swappable;
 template <class _Tp>
 struct __is_nothrow_swappable;
 
 template <class _Tp>
-using __swap_result_t = __enable_if_t<_CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_assignable, _Tp)>;
+using __swap_result_t =
+  __enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value && _CCCL_TRAIT(is_move_constructible, _Tp)
+                && _CCCL_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template <class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_swappable<_Tp>::value>
-  swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  __enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
+    swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
 namespace __detail
 {
