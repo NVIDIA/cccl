@@ -13,6 +13,7 @@
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
   "containerEnv": {
+    "CI": "${localEnv:CI}",
     "CUDAARCHS": "70-real",
     "CUDA_VERSION": "12.2",
     "DEFAULT_CONDA_ENV": "rapids",
@@ -43,7 +44,7 @@
     "RAPIDS_cuspatial_GIT_REPO": "${localEnv:RAPIDS_cuspatial_GIT_REPO}"
   },
   "initializeCommand": ["/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,wholegraph,cugraph,cuspatial}"],
-  "postCreateCommand": ["/bin/bash", "-l", "+o", "history", "/home/coder/cccl/ci/rapids/post-create-command.sh"],
+  "postCreateCommand": ["/bin/bash", "-c", "if [ ${CI:-false} = 'false' ]; then . /home/coder/cccl/ci/rapids/post-create-command.sh; fi"],
   "postAttachCommand": ["/bin/bash", "-c", "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"],
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",

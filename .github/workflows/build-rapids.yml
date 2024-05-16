@@ -51,6 +51,7 @@ jobs:
       extra-repo-deploy-key: RAPIDSAI_CUMLPRIMS_DEPLOY_KEY
       extra-repo-deploy-key-2: RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY
       env: |
+        CI=true
         RAPIDS_LIBS='${{ matrix.libs }}'
         RAPIDS_TEST_OPTIONS='${{ matrix.args }}'
         RAPIDS_cmake_GIT_REPO='{"upstream": "trxcllnt", "tag": "fea/cccl-2.5"}'
