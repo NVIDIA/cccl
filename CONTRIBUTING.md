@@ -47,7 +47,7 @@ To enable commit signing using your existing ssh key, set the following git opti
 
 ```bash
 git config --global gpg.format ssh
-git config --global user.signingKey "$(cat ~/.ssh/id_rsa.pub)"
+git config --global user.signingKey "$(cat Location_Of_Your_Public_Key)"
 
 # These settings are optional. They tell git to automatically sign all new commits and tags.
 # If these are set to false, use `git commit -S` to manually sign each commit.
