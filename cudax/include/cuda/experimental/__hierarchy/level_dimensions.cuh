@@ -11,7 +11,7 @@
 #ifndef _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
 #define _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
 
-#include <cuda/experimental/detail/hierarchy_levels.cuh>
+#include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
 #include <cuda/std/type_traits>
 
 #if _CCCL_STD_VER >= 2017

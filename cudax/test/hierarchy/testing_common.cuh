@@ -11,7 +11,7 @@
 #ifndef __TESTING_COMMON_H__
 #define __TESTING_COMMON_H__
 
-#include <cuda/experimental/hierarchy_dimensions.cuh>
+#include <cuda/experimental/hierarchy.cuh>
 
 #include <exception>
 #include <iostream>

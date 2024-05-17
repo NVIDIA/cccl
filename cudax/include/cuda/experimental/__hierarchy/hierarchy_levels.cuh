@@ -11,7 +11,7 @@
 #ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 #define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 
-#include <cuda/experimental/detail/dimensions.cuh>
+#include <cuda/experimental/__hierarchy/dimensions.cuh>
 
 #include <nv/target>
 
