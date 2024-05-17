@@ -381,6 +381,16 @@ private:
     return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
   }
 
+  template <typename Unit>
+  struct fragment_helper
+  {
+    template <typename... Selected>
+    _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto operator()(const Selected&... levels) const noexcept
+    {
+      return hierarchy_dimensions_fragment<Unit, Selected...>(levels...);
+    }
+  };
+
 public:
   template <typename Unit, typename Level>
   using extents_type = decltype(::cuda::std::apply(
@@ -417,11 +427,7 @@ public:
     auto selected = levels_range<Unit, Level>();
     // TODO fragment can't do constexpr queries because we use references here, can we create copies of the levels in
     // some cases and move to the constructor?
-    return ::cuda::std::apply(
-      [](const auto&... levels) {
-        return hierarchy_dimensions_fragment<Unit, ::cuda::std::remove_reference_t<decltype(levels)>...>(levels...);
-      },
-      selected);
+    return ::cuda::std::apply(fragment_helper<Unit>(), selected);
   }
 
   /**
