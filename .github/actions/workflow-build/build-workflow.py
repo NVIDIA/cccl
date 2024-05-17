@@ -361,8 +361,48 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
                 accum_dispatch_groups[group_name][key] += value
 
 
+def compare_dispatch_jobs(job1, job2):
+    "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
+    # Ignores the 'origin' key, which may vary between identical job specifications.
+    return (job1['name']    == job2['name'] and
+            job1['runner']  == job2['runner'] and
+            job1['image']   == job2['image'] and
+            job1['command'] == job2['command'])
+
+
+def dispatch_job_in_container(job, container):
+    "Check if a dispatch job is in a container, using compare_dispatch_jobs."
+    for job2 in container:
+        if compare_dispatch_jobs(job, job2):
+            return True
+    return False
+
+def remove_dispatch_job_from_container(job, container):
+    "Remove a dispatch job from a container, using compare_dispatch_jobs."
+    for i, job2 in enumerate(container):
+        if compare_dispatch_jobs(job, job2):
+            del container[i]
+            return True
+    return False
+
+
 def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     workflow_dispatch_groups = copy.deepcopy(workflow_dispatch_groups_orig)
+
+    # Check to see if any .two_stage.producers arrays have more than 1 job, which is not supported.
+    # See ci-dispatch-two-stage.yml for details.
+    for group_name, group_json in workflow_dispatch_groups.items():
+        if 'two_stage' in group_json:
+            for two_stage_json in group_json['two_stage']:
+                num_producers = len(two_stage_json['producers'])
+                if num_producers > 1:
+                    producer_names = ""
+                    for job in two_stage_json['producers']:
+                        producer_names += f" - {job['name']}\n"
+                    error_message = f"ci-dispatch-two-stage.yml currently only supports a single producer. "
+                    error_message += f"Found {num_producers} producers in '{group_name}':\n{producer_names}"
+                    print(f"::error file=ci/matrix.yaml::{error_message}", file=sys.stderr)
+                    raise Exception(error_message)
 
     # Merge consumers for any two_stage arrays that have the same producer(s). Print a warning.
     for group_name, group_json in workflow_dispatch_groups.items():
@@ -374,12 +414,17 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         for two_stage in two_stage_json:
             producers = two_stage['producers']
             consumers = two_stage['consumers']
-            if producers in merged_producers:
+
+            # Make sure this gets updated if we add support for multiple producers:
+            assert(len(producers) == 1)
+            producer = producers[0]
+
+            if dispatch_job_in_container(producer, merged_producers):
                 producer_index = merged_producers.index(producers)
                 matching_consumers = merged_consumers[producer_index]
 
-                producer_names = ", ".join([producer['name'] for producer in producers])
-                print(f"::notice file=ci/matrix.yaml::Merging consumers for duplicate producer '{producer_names}' in '{group_name}'",
+                producer_name = producer['name']
+                print(f"::notice file=ci/matrix.yaml::Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
                       file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
                 print(f"::notice file=ci/matrix.yaml::Original consumers: {consumer_names}", file=sys.stderr)
@@ -387,17 +432,17 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                 print(f"::notice file=ci/matrix.yaml::Duplicate consumers: {consumer_names}", file=sys.stderr)
                 # Merge if unique:
                 for consumer in consumers:
-                    if consumer not in matching_consumers:
+                    if not dispatch_job_in_container(consumer, matching_consumers):
                         matching_consumers.append(consumer)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
                 print(f"::notice file=ci/matrix.yaml::Merged consumers: {consumer_names}", file=sys.stderr)
             else:
-                merged_producers.append(producers)
+                merged_producers.append(producer)
                 merged_consumers.append(consumers)
         # Update with the merged lists:
         two_stage_json = []
-        for producers, consumers in zip(merged_producers, merged_consumers):
-            two_stage_json.append({'producers': producers, 'consumers': consumers})
+        for producer, consumers in zip(merged_producers, merged_consumers):
+            two_stage_json.append({'producers': [producer], 'consumers': consumers})
         group_json['two_stage'] = two_stage_json
 
     # Check for any duplicate jobs in standalone arrays. Warn and remove duplicates.
@@ -405,7 +450,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         standalone_jobs = group_json['standalone'] if 'standalone' in group_json else []
         unique_standalone_jobs = []
         for job_json in standalone_jobs:
-            if job_json in unique_standalone_jobs:
+            if dispatch_job_in_container(job_json, unique_standalone_jobs):
                 print(f"::notice file=ci/matrix.yaml::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
                       file=sys.stderr)
             else:
@@ -415,25 +460,24 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         two_stage_jobs = group_json['two_stage'] if 'two_stage' in group_json else []
         for two_stage_job in two_stage_jobs:
             for producer in two_stage_job['producers']:
-                if producer in unique_standalone_jobs:
+                if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
                     print(f"::notice file=ci/matrix.yaml::Removing standalone job '{producer['name']}' " +
                           f"as it appears as a producer in '{group_name}'",
                           file=sys.stderr)
-                    unique_standalone_jobs.remove(producer)
             for consumer in two_stage_job['consumers']:
-                if consumer in unique_standalone_jobs:
+                if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
                     print(f"::notice file=ci/matrix.yaml::Removing standalone job '{consumer['name']}' " +
                           f"as it appears as a consumer in '{group_name}'",
                           file=sys.stderr)
-                    unique_standalone_jobs.remove(consumer)
         standalone_jobs = list(unique_standalone_jobs)
+        group_json['standalone'] = standalone_jobs
 
         # If any producer or consumer job appears more than once, warn and leave as-is.
         all_two_stage_jobs = []
         duplicate_jobs = {}
         for two_stage_job in two_stage_jobs:
             for job in two_stage_job['producers'] + two_stage_job['consumers']:
-                if job in all_two_stage_jobs:
+                if dispatch_job_in_container(job, all_two_stage_jobs):
                     duplicate_jobs[job['name']] = duplicate_jobs.get(job['name'], 1) + 1
                 else:
                     all_two_stage_jobs.append(job)
@@ -466,21 +510,6 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         if 'two_stage' in group_json:
             group_json['two_stage'] = sorted(
                 group_json['two_stage'], key=lambda x: natural_sort_key(x['producers'][0]['name']))
-
-    # Check to see if any .two_stage.producers arrays have more than 1 job, which is not supported.
-    # See ci-dispatch-two-stage.yml for details.
-    for group_name, group_json in workflow_dispatch_groups.items():
-        if 'two_stage' in group_json:
-            for two_stage_json in group_json['two_stage']:
-                num_producers = len(two_stage_json['producers'])
-                if num_producers > 1:
-                    producer_names = ""
-                    for job in two_stage_json['producers']:
-                        producer_names += f" - {job['name']}\n"
-                    error_message = f"ci-dispatch-two-stage.yml currently only supports a single producer. "
-                    error_message += f"Found {num_producers} producers in '{group_name}':\n{producer_names}"
-                    print(f"::error file=ci/matrix.yaml::{error_message}", file=sys.stderr)
-                    raise Exception(error_message)
 
     # Assign unique IDs in appropriate locations.
     # These are used to give "hidden" dispatch jobs a short, unique name,
