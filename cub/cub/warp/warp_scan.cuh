@@ -424,6 +424,10 @@ public:
     ExclusiveScan(input, exclusive_output, initial_value, cub::Sum(), warp_aggregate);
   }
 
+  //! @}  end member group
+  //! @name Inclusive prefix scans
+  //! @{
+
   //! @rst
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
