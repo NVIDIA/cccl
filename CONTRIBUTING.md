@@ -33,9 +33,32 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
    For more details on building and testing, refer to the [Building and Testing](#building-and-testing) section below.
 
 4. **Commit Changes**:
+
+   Setup ssh signing keys (if needed, see next section) and commit:
+
    ```bash
    git commit -m "Brief description of the change"
    ```
+
+### SSH Signing Keys
+
+CCCL projects require commits to be signed with a cryptographic key.
+To enable commit signing using your existing ssh key, set the following git options:
+
+```bash
+git config --global gpg.format ssh
+git config --global user.signingKey "$(cat ~/.ssh/id_rsa.pub)"
+
+# These settings are optional. They tell git to automatically sign all new commits and tags.
+# If these are set to false, use `git commit -S` to manually sign each commit.
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true
+```
+
+Git is now configured to sign commits with your ssh key.
+To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys).
+Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
+The same key may be used for both.
 
 ### Developer Guides
 
