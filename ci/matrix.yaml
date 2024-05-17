@@ -49,6 +49,8 @@ workflows:
   #   - {jobs: ['build'], project['thrust'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
   #
   override:
+    - {jobs: ['build'], std: 'all', cxx: [*llvm16]}
+    - {jobs: ['test'],  std: 'all', cxx: [*llvm-newest]}
 
   pull_request:
     # default_projects: nvcc
