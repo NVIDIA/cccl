@@ -38,7 +38,7 @@ Special commands are provided that can be included in commit messages to direct 
 
 Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
 
-### Temporarily Overriding the Pull Requeest Matrix
+### Temporarily Overriding the Pull Request Matrix
 
 If a workflow named `override` exists in the matrix.yaml file, this matrix will be used for pull requests instead of the `pull_request` matrix.
 This is useful for reducing resource usage when launching many CI workflows from a PR (for example, while testing CI features).
