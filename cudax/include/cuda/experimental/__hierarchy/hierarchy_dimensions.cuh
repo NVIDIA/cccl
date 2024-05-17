@@ -94,8 +94,8 @@ struct get_level_helper
     {
       return (*this)(levels...);
     }
+    _LIBCUDACXX_UNREACHABLE();
   }
-  _LIBCUDACXX_UNREACHABLE();
 };
 } // namespace detail
 
