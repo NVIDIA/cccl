@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex;
+set -e;
 
 PROJECT_MANIFEST_YML="${PROJECT_MANIFEST_YML:-"/opt/rapids-build-utils/manifest.yaml"}"
 
@@ -104,6 +104,4 @@ rapids-generate-scripts;
 gh config set git_protocol ssh;
 gh config set git_protocol ssh --host github.com;
 
-rapids_build_utils_debug=clone-all \
-devcontainer_utils_debug=clone \
 clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules;

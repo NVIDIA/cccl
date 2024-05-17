@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xeuo pipefail
+set -euo pipefail
 
 # Ensure the script is being executed in the cccl/ root
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..";
