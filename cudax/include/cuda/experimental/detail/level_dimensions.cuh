@@ -8,13 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX_DETAIL_LEVEL_DIMENSIONS
-#define _CUDAX_DETAIL_LEVEL_DIMENSIONS
+#ifndef _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
+#define _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
 
+#include <cuda/experimental/detail/hierarchy_levels.cuh>
 #include <cuda/std/type_traits>
 
-#include "hierarchy_levels.cuh"
-
+#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
 
@@ -43,7 +43,7 @@ struct dimensions_handler
 {
   static constexpr bool is_type_supported = ::cuda::std::is_integral_v<Dims>;
 
-  static _CCCL_HOST_DEVICE constexpr auto translate(const Dims& d) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
   {
     return dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(d));
   }
@@ -54,7 +54,7 @@ struct dimensions_handler<dim3>
 {
   static constexpr bool is_type_supported = true;
 
-  static _CCCL_HOST_DEVICE constexpr auto translate(const dim3& d) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const dim3& d) noexcept
   {
     return dimensions<dimensions_index_type,
                       ::cuda::std::dynamic_extent,
@@ -68,7 +68,7 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
 {
   static constexpr bool is_type_supported = true;
 
-  static _CCCL_HOST_DEVICE constexpr auto translate(const Dims& d) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
   {
     return dimensions<dimensions_index_type, size_t(d), 1, 1>();
   }
@@ -117,13 +117,13 @@ struct level_dimensions
   // Needs alignas to work around an issue with tuple
   alignas(16) const Dimensions dims; // Unit for dimensions is implicit
 
-  constexpr _CCCL_HOST_DEVICE level_dimensions(const Dimensions& d)
+  _CCCL_HOST_DEVICE constexpr level_dimensions(const Dimensions& d)
       : dims(d)
   {}
-  constexpr _CCCL_HOST_DEVICE level_dimensions(Dimensions&& d)
+  _CCCL_HOST_DEVICE constexpr level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  constexpr _CCCL_HOST_DEVICE level_dimensions(){};
+  _CCCL_HOST_DEVICE constexpr level_dimensions(){};
 };
 
 /**
@@ -199,4 +199,5 @@ _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
 }
 
 } // namespace cuda::experimental
-#endif
+#endif // _CCCL_STD_VER >= 2017
+#endif // _CUDAX__HIERARCHY_LEVEL_DIMENSIONS

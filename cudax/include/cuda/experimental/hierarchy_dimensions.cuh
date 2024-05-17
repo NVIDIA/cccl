@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_HIERARCHY_DIMENSIONS___
-#define __CUDAX_HIERARCHY_DIMENSIONS___
+#ifndef __CUDAX_HIERARCHY___
+#define __CUDAX_HIERARCHY___
 
-#include "detail/hierarchy_dimensions.cuh"
+#include <cuda/experimental/detail/hierarchy_dimensions.cuh>
 
 #endif
