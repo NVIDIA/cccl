@@ -95,6 +95,28 @@ CCCL uses [NVIDIA's self-hosted action runners](https://docs.gha-runners.nvidia.
 
 The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test` comment.
 
+### SSH Signing Keys
+
+NVIDIA employees on the CCCL team must enable commit signing in order to run CI themselves.
+This is not required for external contributions, which will always require an explicit `/ok to test` comment from an approved account for each CI run.
+To enable commit signing using your existing ssh key, set the following git options:
+
+```bash
+git config --global gpg.format ssh
+git config --global user.signingKey "$(cat ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub)"
+
+# These settings are optional. They tell git to automatically sign all new commits and tags.
+# If these are set to false, use `git commit -S` to manually sign each commit.
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true
+```
+
+Git is now configured to sign commits with your ssh key.
+
+To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys).
+Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
+The same key may be used for both.
+
 ## Troubleshooting CI Failures
 
 1. **Review CI logs**: Examine CI logs for specific error messages (see [Viewing CI Workflow Results](#viewing-ci-workflow-results))
