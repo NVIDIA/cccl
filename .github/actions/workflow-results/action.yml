@@ -24,12 +24,25 @@ runs:
         name: workflow
         path: workflow/
 
-    - name: Download job success artifacts
+    - name: Download job artifacts
       continue-on-error: true # This may fail if no jobs succeed. The checks below will catch this.
       uses: actions/download-artifact@v3
       with:
-        name: dispatch-job-success
-        path: dispatch-job-success/
+        name: jobs
+        path: jobs
+
+    - name: Clean up job artifacts
+      continue-on-error: true
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        # Fix artifacts written on windows:
+        sudo apt-get update
+        sudo apt-get install -y dos2unix
+        find jobs -type f -exec dos2unix -q {} \;
+
+        echo "::group::Job artifacts"
+        tree jobs
+        echo "::endgroup::"
 
     - name: Fetch workflow job info
       if: ${{ inputs.github_token != ''}}
@@ -75,7 +88,7 @@ runs:
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "Generating job summary..."
+        echo "Generating execution summary..."
         python3 "${GITHUB_ACTION_PATH}/prepare-execution-summary.py" workflow/workflow.json results/job_times.json
 
     - name: Prepare final summary

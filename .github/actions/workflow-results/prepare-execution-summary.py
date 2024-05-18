@@ -2,6 +2,7 @@
 
 
 import argparse
+import functools
 import json
 import os
 import re
@@ -9,8 +10,8 @@ import sys
 
 
 def job_succeeded(job):
-    # The job was successful if the artifact file 'dispatch-job-success/dispatch-job-success-<job_id>' exists:
-    return os.path.exists(f'dispatch-job-success/{job["id"]}')
+    # The job was successful if the success file exists:
+    return os.path.exists(f'jobs/{job["id"]}/success')
 
 
 def natural_sort_key(key):
@@ -42,17 +43,21 @@ def extract_jobs(workflow):
     return jobs
 
 
-def create_summary_entry(include_times):
-    summary = {'passed': 0, 'failed': 0}
-
-    if include_times:
-        summary['job_time'] = 0
-        summary['step_time'] = 0
-
-    return summary
+@functools.lru_cache(maxsize=None)
+def get_sccache_stats(job_id):
+    sccache_file = f'jobs/{job_id}/sccache_stats.json'
+    if os.path.exists(sccache_file):
+        with open(sccache_file) as f:
+            return json.load(f)
+    return None
 
 
 def update_summary_entry(entry, job, job_times=None):
+    if 'passed' not in entry:
+        entry['passed'] = 0
+    if 'failed' not in entry:
+        entry['failed'] = 0
+
     if job_succeeded(job):
         entry['passed'] += 1
     else:
@@ -63,15 +68,36 @@ def update_summary_entry(entry, job, job_times=None):
         job_time = time_info["job_seconds"]
         command_time = time_info["command_seconds"]
 
+        if not 'job_time' in entry:
+            entry['job_time'] = 0
+        if not 'step_time' in entry:
+            entry['step_time'] = 0
+
         entry['job_time'] += job_time
         entry['step_time'] += command_time
+
+    sccache_stats = get_sccache_stats(job["id"])
+    if sccache_stats:
+        sccache_stats = sccache_stats['stats']
+        requests = sccache_stats.get('compile_requests', 0)
+        hits = 0
+        if 'cache_hits' in sccache_stats:
+            cache_hits = sccache_stats['cache_hits']
+            if 'counts' in cache_hits:
+                counts = cache_hits['counts']
+                for lang, lang_hits in counts.items():
+                    hits += lang_hits
+        if 'sccache' not in entry:
+            entry['sccache'] = {'requests': requests, 'hits': hits}
+        else:
+            entry['sccache']['requests'] += requests
+            entry['sccache']['hits'] += hits
 
     return entry
 
 
 def build_summary(jobs, job_times=None):
-    summary = create_summary_entry(job_times)
-    summary['projects'] = {}
+    summary = {'projects': {}}
     projects = summary['projects']
 
     for job in jobs:
@@ -81,8 +107,7 @@ def build_summary(jobs, job_times=None):
 
         project = matrix_job["project"]
         if not project in projects:
-            projects[project] = create_summary_entry(job_times)
-            projects[project]['tags'] = {}
+            projects[project] = {'tags': {}}
         tags = projects[project]['tags']
 
         update_summary_entry(projects[project], job, job_times)
@@ -92,8 +117,7 @@ def build_summary(jobs, job_times=None):
                 continue
 
             if not tag in tags:
-                tags[tag] = create_summary_entry(job_times)
-                tags[tag]['values'] = {}
+                tags[tag] = {'values': {}}
             values = tags[tag]['values']
 
             update_summary_entry(tags[tag], job, job_times)
@@ -101,7 +125,7 @@ def build_summary(jobs, job_times=None):
             value = str(matrix_job[tag])
 
             if not value in values:
-                values[value] = create_summary_entry(job_times)
+                values[value] = {}
             update_summary_entry(values[value], job, job_times)
 
     # Natural sort the value strings within each tag:
@@ -156,17 +180,24 @@ def get_summary_stats(summary):
     failed = summary['failed']
     total = passed + failed
 
-    percent = int(100 * failed / total) if total > 0 else 0
-    fraction = f"{failed}/{total}"
-    fail_string = f'{percent:>3}% Failed ({fraction})'
+    percent = int(100 * passed / total) if total > 0 else 0
+    pass_string = f'Pass: {percent:>3}%/{total}'
 
-    stats = f'{fail_string:<21}'
+    stats = f'{pass_string:<14}'
 
-    if (summary['job_time']):
+    if 'job_time' in summary and total > 0 and summary['job_time'] > 0:
         job_time = summary['job_time']
         total_job_duration = format_seconds(job_time)
         avg_job_duration = format_seconds(job_time / total)
-        stats += f' | Total Time: {total_job_duration:>7} | Avg Time: {avg_job_duration:>6}'
+        stats += f' | Total Time: {total_job_duration:>7} | Avg Time: {avg_job_duration:>7}'
+
+    if 'sccache' in summary:
+        sccache = summary['sccache']
+        requests = sccache["requests"]
+        hits = sccache["hits"]
+        hit_percent = int(100 * hits / requests) if requests > 0 else 0
+        hit_string = f'Hits: {hit_percent:>3}%/{requests}'
+        stats += f' | {hit_string:<17}'
 
     return stats
 
@@ -193,7 +224,7 @@ def get_project_heading(project, project_summary):
     else:
         flag = '🟩'
 
-    return f'{flag} Project {project}: {get_summary_stats(project_summary)}'
+    return f'{flag} {project}: {get_summary_stats(project_summary)}'
 
 
 def get_tag_line(tag, tag_summary):
