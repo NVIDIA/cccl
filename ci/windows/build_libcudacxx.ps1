@@ -1,6 +1,6 @@
 
 Param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
