@@ -269,9 +269,9 @@ struct dispatch_histogram
   size_t& temp_storage_bytes;
   SampleIteratorT d_samples;
   CounterT** d_output_histograms;
-  int* num_privatized_levels;
+  const int* num_privatized_levels;
   PrivatizedDecodeOpT* privatized_decode_op;
-  int* num_output_levels;
+  const int* num_output_levels;
   OutputDecodeOpT* output_decode_op;
   int max_num_output_bins;
   OffsetT num_row_pixels;
@@ -284,9 +284,9 @@ struct dispatch_histogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_privatized_levels[NUM_ACTIVE_CHANNELS],
+    const int num_privatized_levels[NUM_ACTIVE_CHANNELS],
     PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
     OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS],
     int max_num_output_bins,
     OffsetT num_row_pixels,
@@ -922,8 +922,8 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -944,7 +944,7 @@ public:
       }
 
       // Use the search transform op for converting samples to privatized bins
-      typedef SearchTransform<LevelT*> PrivatizedDecodeOpT;
+      typedef SearchTransform<const LevelT*> PrivatizedDecodeOpT;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
       typedef PassThruTransform OutputDecodeOpT;
@@ -1048,7 +1048,7 @@ public:
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
     int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1124,8 +1124,8 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1149,7 +1149,7 @@ public:
       typedef PassThruTransform PrivatizedDecodeOpT;
 
       // Use the search transform op for converting privatized bins to output bins
-      typedef SearchTransform<LevelT*> OutputDecodeOpT;
+      typedef SearchTransform<const LevelT*> OutputDecodeOpT;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1211,8 +1211,8 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1289,9 +1289,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1427,9 +1427,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1508,9 +1508,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1596,9 +1596,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
