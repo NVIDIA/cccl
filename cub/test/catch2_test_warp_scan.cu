@@ -310,7 +310,7 @@ c2h::host_vector<T> compute_host_reference(
       {
         T tmp       = output[i];
         current     = static_cast<T>(scan_op(current, tmp));
-        accumulator = static_cast<T>(scan_op(accumulator, output[i]));
+        accumulator = static_cast<T>(scan_op(accumulator, tmp));
         output[i]   = current;
       }
       warp_accumulator[w] = accumulator;

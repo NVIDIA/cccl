@@ -534,7 +534,7 @@ public:
   //!   Calling thread's output item. May be aliased with `input`
   //!
   //! @param[in] initial_value
-  //!   Initial value to seed the exclusive scan
+  //!   Initial value to seed the inclusive scan
   //!
   //! @param[in] scan_op
   //!   Binary scan operator
@@ -661,7 +661,7 @@ public:
   //!   Calling thread's output item. May be aliased with ``input``
   //!
   //! @param[in] initial_value
-  //!   Initial value to seed the exclusive scan
+  //!   Initial value to seed the inclusive scan
   //!
   //! @param[in] scan_op
   //!   Binary scan operator
