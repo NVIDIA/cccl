@@ -819,6 +819,12 @@ public:
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op);
   }
 
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, T initial_value, ScanOp scan_op)
+  {
+    InternalBlockScan(temp_storage).InclusiveScan(input, output, initial_value, scan_op);
+  }
+
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
@@ -884,6 +890,13 @@ public:
   ExclusiveScan(T input, T& output, T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, initial_value, scan_op, block_aggregate);
+  }
+
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T& output, T initial_value, ScanOp scan_op, T& block_aggregate)
+  {
+    InternalBlockScan(temp_storage).InclusiveScan(input, output, initial_value, scan_op, block_aggregate);
   }
 
   //! @rst
@@ -1072,6 +1085,20 @@ public:
     internal::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
+  template <int ITEMS_PER_THREAD, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  {
+    // Reduce consecutive thread items in registers
+    T thread_prefix = internal::ThreadReduce(input, scan_op);
+
+    // Exclusive thread block-scan
+    ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
+
+    // Exclusive scan in registers with prefix as seed
+    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+  }
+
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
@@ -1151,6 +1178,20 @@ public:
 
     // Exclusive scan in registers with prefix as seed
     internal::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+  }
+
+  template <int ITEMS_PER_THREAD, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  {
+    // Reduce consecutive thread items in registers
+    T thread_prefix = internal::ThreadReduce(input, scan_op);
+
+    // Exclusive thread block-scan
+    ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
+
+    // Exclusive scan in registers with prefix as seed
+    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
