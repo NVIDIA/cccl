@@ -14,6 +14,8 @@
 #include <cuda/experimental/__hierarchy/level_dimensions.cuh>
 #include <cuda/std/tuple>
 
+#include "cuda/std/__functional/invoke.h"
+#include "cuda/std/__utility/declval.h"
 #include <nv/target>
 
 #if _CCCL_STD_VER >= 2017
@@ -371,14 +373,21 @@ struct hierarchy_dimensions_fragment
   {}
 
 private:
-  // TODO is this useful enough to expose?
+  // This being static is a bit of a hack to make extents_type working without incomplete class member access
   template <typename Unit, typename Level>
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto levels_range() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto levels_range_static(const decltype(levels)& levels) noexcept
   {
     static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
     static_assert(has_level_or_unit<Unit, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
     static_assert(detail::legal_unit_for_level<Unit, Level>);
     return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+  }
+
+  // TODO is this useful enough to expose?
+  template <typename Unit, typename Level>
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto levels_range() const noexcept
+  {
+    return levels_range_static<Unit, Level>(levels);
   }
 
   template <typename Unit>
@@ -393,9 +402,10 @@ private:
 
 public:
   template <typename Unit, typename Level>
-  using extents_type = decltype(::cuda::std::apply(
-    ::cuda::std::declval<detail::hierarchy_extents_helper<Unit>>(),
-    ::cuda::std::declval<hierarchy_dimensions_fragment<BottomUnit, Levels...>>().template levels_range<Unit, Level>()));
+  using extents_type =
+    decltype(::cuda::std::apply(::cuda::std::declval<detail::hierarchy_extents_helper<Unit>>(),
+                                levels_range_static<Unit, Level>(::cuda::std::declval<decltype(levels)>())));
+
   /**
    * @brief Get a fragment of this hierarchy
    *
@@ -469,6 +479,13 @@ public:
     auto selected = levels_range<Unit, Level>();
     return detail::convert_to_query_result(::cuda::std::apply(detail::hierarchy_extents_helper<Unit>{}, selected));
   }
+
+  // template <typename Unit, typename Level>
+  // using extents_type = ::cuda::std::invoke_result_t<
+  //   decltype(&hierarchy_dimensions_fragment<BottomUnit, Levels...>::template extents<Unit, Level>),
+  //   hierarchy_dimensions_fragment<BottomUnit, Levels...>,
+  //   Unit(),
+  //   Level()>;
 
   /**
    * @brief Returns a count of specified entities at a level in this hierarchy.
