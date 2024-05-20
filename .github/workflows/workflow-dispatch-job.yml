@@ -133,8 +133,9 @@ jobs:
 
           find_and_copy "sccache_stats.json" || true # Ignore failures
 
-          echo "job artifacts:"
-          find "$result_dir"
+          echo "::group::Job artifacts"
+          tree "$result_dir"
+          echo "::endgroup::"
 
       - name: Upload job artifacts
         uses: actions/upload-artifact@v3
@@ -198,7 +199,7 @@ jobs:
               [System.Environment]::SetEnvironmentVariable('SCCACHE_IDLE_TIMEOUT','${{env.SCCACHE_IDLE_TIMEOUT}}');
               [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}');
               [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
-              git config --global --add safe.directory C:/cccl;
+              git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
               ${{inputs.command}}"
       - name: Prepare job artifacts
         id: done
@@ -222,6 +223,10 @@ jobs:
           }
 
           find_and_copy "sccache_stats.json" || true # Ignore failures
+
+          echo "::group::Job artifacts"
+          tree "$result_dir"
+          echo "::endgroup::"
 
       - name: Upload job artifacts
         uses: actions/upload-artifact@v3

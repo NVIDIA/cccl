@@ -64,13 +64,12 @@ def main():
     # Map of id -> { <job stats> }
     result = {}
 
+    unknown_jobs = [job for job in jobs if job['name'] not in job_id_map]
+    jobs = [job for job in jobs if job['name'] in job_id_map]
+
+    # Process jobs:
     for job in jobs:
         name = job['name']
-
-        # Build workflow, verify devcontainers, etc:
-        if name not in job_id_map:
-            print(f"Skipping {name}")
-            continue
 
         id = job_id_map[name]
 
@@ -94,7 +93,7 @@ def main():
         # Find the "Run command" step and record its duration:
         command_seconds = 0
         for step in job['steps']:
-            if step['name'] == "Run command":
+            if step['name'].lower() == "run command":
                 step_started_at = step['started_at']
                 step_started_time = datetime.datetime.strptime(step_started_at, "%Y-%m-%dT%H:%M:%SZ")
                 step_completed_at = step['completed_at']
@@ -110,9 +109,18 @@ def main():
     os.makedirs("results", exist_ok=True)
     write_json("results/job_times.json", result)
 
+    print("::group::Unmapped jobs")
+    print("\n".join([job['name'] for job in unknown_jobs]))
+    print("::endgroup::")
+
     print("::group::Job times")
+    print(f"{'Job':^10} {'Command':^10} {'Overhead':^10} Name")
+    print(f"{'-'*10} {'-'*10} {'-'*10} {'-'*10}")
     for id, stats in result.items():
-        print(f"{stats['job_duration']:10} {stats['command_duration']:10} {stats['command_seconds'] * 100 / stats['job_seconds']:3f} {stats['name']}")
+        job_seconds = stats['job_seconds']
+        command_seconds = stats['command_seconds']
+        overhead = (job_seconds - command_seconds) * 100 / command_seconds
+        print(f"{stats['job_duration']:10} {stats['command_duration']:10} {overhead:10.0f} {stats['name']}")
     print("::endgroup::")
 
 

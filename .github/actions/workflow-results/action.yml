@@ -36,9 +36,11 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         # Fix artifacts written on windows:
+        echo "::group::Fixing line endings in job artifacts"
         sudo apt-get update
         sudo apt-get install -y dos2unix
-        find jobs -type f -exec dos2unix -q {} \;
+        find jobs -type f -exec dos2unix -v {} \;
+        echo "::endgroup::"
 
         echo "::group::Job artifacts"
         tree jobs
@@ -140,7 +142,12 @@ runs:
       id: check-dispatch
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        if ! "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json; then
+        echo "::group::Checking for success artifacts"
+        "${GITHUB_ACTION_PATH}/verify-job-success.py" workflow/job_ids.json
+        result=$?
+        echo "::endgroup::"
+
+        if [[ $result -ne 0 ]]; then
           echo "success=false" >> "${GITHUB_OUTPUT}"
           exit 1
         fi
