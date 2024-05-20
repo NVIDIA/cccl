@@ -225,7 +225,7 @@ jobs:
           find_and_copy "sccache_stats.json" || true # Ignore failures
 
           echo "::group::Job artifacts"
-          tree "$result_dir"
+          find "$result_dir" # Tree not available in this image.
           echo "::endgroup::"
 
       - name: Upload job artifacts
