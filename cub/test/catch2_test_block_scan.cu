@@ -533,8 +533,6 @@ CUB_TEST("Block custom op scan works with initial value", "[scan][block]", algor
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
 
-  const int target_thread_id = GENERATE_COPY(take(2, random(0, threads_in_block - 1)));
-
   block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
     d_in, d_out, min_init_value_op_t<type, mode>{initial_value});
 
