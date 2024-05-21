@@ -79,6 +79,113 @@
 
 CUB_NAMESPACE_BEGIN
 
+// Users may disable CUDA-provided __half operators, but CUB needs them.
+// See https://github.com/NVIDIA/cccl/discussions/1727 for the details.
+#if __CUDA_NO_HALF_OPERATORS__
+__host__ __device__ __forceinline__ __half operator+(const __half& lh, const __half& rh)
+{
+  return __hadd(lh, rh);
+}
+__host__ __device__ __forceinline__ __half operator-(const __half& lh, const __half& rh)
+{
+  return __hsub(lh, rh);
+}
+__host__ __device__ __forceinline__ __half operator*(const __half& lh, const __half& rh)
+{
+  return __hmul(lh, rh);
+}
+__host__ __device__ __forceinline__ __half operator/(const __half& lh, const __half& rh)
+{
+  return __hdiv(lh, rh);
+}
+__host__ __device__ __forceinline__ __half& operator+=(__half& lh, const __half& rh)
+{
+  lh = __hadd(lh, rh);
+  return lh;
+}
+__host__ __device__ __forceinline__ __half& operator-=(__half& lh, const __half& rh)
+{
+  lh = __hsub(lh, rh);
+  return lh;
+}
+__host__ __device__ __forceinline__ __half& operator*=(__half& lh, const __half& rh)
+{
+  lh = __hmul(lh, rh);
+  return lh;
+}
+__host__ __device__ __forceinline__ __half& operator/=(__half& lh, const __half& rh)
+{
+  lh = __hdiv(lh, rh);
+  return lh;
+}
+__host__ __device__ __forceinline__ __half& operator++(__half& h)
+{
+  __half_raw one;
+  one.x = 0x3C00U;
+  h += one;
+  return h;
+}
+__host__ __device__ __forceinline__ __half& operator--(__half& h)
+{
+  __half_raw one;
+  one.x = 0x3C00U;
+  h -= one;
+  return h;
+}
+__host__ __device__ __forceinline__ __half operator++(__half& h, const int ignored)
+{
+  static_cast<void>(ignored);
+
+  const __half ret = h;
+  __half_raw one;
+  one.x = 0x3C00U;
+  h += one;
+  return ret;
+}
+__host__ __device__ __forceinline__ __half operator--(__half& h, const int ignored)
+{
+  static_cast<void>(ignored);
+
+  const __half ret = h;
+  __half_raw one;
+  one.x = 0x3C00U;
+  h -= one;
+  return ret;
+}
+__host__ __device__ __forceinline__ __half operator+(const __half& h)
+{
+  return h;
+}
+__host__ __device__ __forceinline__ __half operator-(const __half& h)
+{
+  return __hneg(h);
+}
+__host__ __device__ __forceinline__ bool operator==(const __half& lh, const __half& rh)
+{
+  return __heq(lh, rh);
+}
+__host__ __device__ __forceinline__ bool operator!=(const __half& lh, const __half& rh)
+{
+  return __hneu(lh, rh);
+}
+__host__ __device__ __forceinline__ bool operator>(const __half& lh, const __half& rh)
+{
+  return __hgt(lh, rh);
+}
+__host__ __device__ __forceinline__ bool operator<(const __half& lh, const __half& rh)
+{
+  return __hlt(lh, rh);
+}
+__host__ __device__ __forceinline__ bool operator>=(const __half& lh, const __half& rh)
+{
+  return __hge(lh, rh);
+}
+__host__ __device__ __forceinline__ bool operator<=(const __half& lh, const __half& rh)
+{
+  return __hle(lh, rh);
+}
+#endif
+
 #ifndef CUB_IS_INT128_ENABLED
 #  if defined(__CUDACC_RTC__)
 #    if defined(__CUDACC_RTC_INT128__)
