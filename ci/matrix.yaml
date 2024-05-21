@@ -128,7 +128,7 @@ workflows:
 #
 # Jobs are executed by running scripts:
 # - Linux:   'ci/<job>_<project>.sh`
-# - Windows: `ci/windows/<job>_<project>.bat`
+# - Windows: `ci/windows/<job>_<project>.ps1`
 
 # A matrix entry must have the following tag.
 required_tags:
