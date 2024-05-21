@@ -151,7 +151,7 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
 }
 
 /**
- * @brief Creates an instance of level_dimensions describing grid_level
+ * @brief Creates an instance of level_dimensions describing cluster_level
  *
  * This function creates a statically sized level from up to three template arguments.
  */
@@ -162,7 +162,7 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 }
 
 /**
- * @brief Creates an instance of level_dimensions describing grid_level
+ * @brief Creates an instance of level_dimensions describing cluster_level
  *
  * This function creates the level from an integral or dim3 argument.
  */
@@ -175,7 +175,7 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
 }
 
 /**
- * @brief Creates an instance of level_dimensions describing grid_level
+ * @brief Creates an instance of level_dimensions describing block_level
  *
  * This function creates a statically sized level from up to three template arguments.
  */
@@ -186,7 +186,7 @@ _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 }
 
 /**
- * @brief Creates an instance of level_dimensions describing grid_level
+ * @brief Creates an instance of level_dimensions describing block_level
  *
  * This function creates the level from an integral or dim3 argument.
  */
