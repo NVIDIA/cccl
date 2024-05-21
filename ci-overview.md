@@ -97,13 +97,15 @@ The CI pipeline will not start automatically for external contributors. A reposi
 
 ### SSH Signing Keys
 
-NVIDIA employees on the CCCL team must enable commit signing in order to run CI themselves.
+[Signed commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) are required for any internal NVIDIA contributors who want the convenience of CI running automatically whenever a commit is pushed to a branch (i.e., doesn't require using `/ok to test`).
+
 This is not required for external contributions, which will always require an explicit `/ok to test` comment from an approved account for each CI run.
+
 To enable commit signing using your existing ssh key, set the following git options:
 
 ```bash
 git config --global gpg.format ssh
-git config --global user.signingKey "$(cat ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub)"
+git config --global user.signingKey ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub
 
 # These settings are optional. They tell git to automatically sign all new commits and tags.
 # If these are set to false, use `git commit -S` to manually sign each commit.
@@ -113,7 +115,12 @@ git config --global tag.gpgsign true
 
 Git is now configured to sign commits with your ssh key.
 
-To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys).
+To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys) in your browser or using the `gh` CLI tool:
+
+```
+gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
+```
+
 Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
 The same key may be used for both.
 
