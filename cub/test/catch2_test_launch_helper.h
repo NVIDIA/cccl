@@ -76,6 +76,25 @@
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
 #endif
 
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
+  struct WRAPPED_API_NAME##_invocable_t                                                   \
+  {                                                                                       \
+    template <class... Ts>                                                                \
+    CUB_RUNTIME_FUNCTION cudaError_t                                                      \
+    operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
+    {                                                                                     \
+      return API(d_temp_storage, temp_storage_bytes, args...);                            \
+    }                                                                                     \
+  };
+
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)  \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME);            \
+  template <class... As>                               \
+  static void WRAPPED_API_NAME(As... args)             \
+  {                                                    \
+    launch(WRAPPED_API_NAME##_invocable_t{}, args...); \
+  }
+
 #if TEST_LAUNCH == 2
 
 template <class ActionT, class... Args>
@@ -111,25 +130,6 @@ void cuda_graph_api_launch(ActionT action, Args... args)
 }
 
 #  define launch cuda_graph_api_launch
-
-#  define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
-    struct WRAPPED_API_NAME##_cuda_graph_invocable_t                                        \
-    {                                                                                       \
-      template <class... Ts>                                                                \
-      CUB_RUNTIME_FUNCTION cudaError_t                                                      \
-      operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
-      {                                                                                     \
-        return API(d_temp_storage, temp_storage_bytes, args...);                            \
-      }                                                                                     \
-    };
-
-#  define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                            \
-    DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                      \
-    template <class... As>                                                         \
-    static void WRAPPED_API_NAME(As... args)                                       \
-    {                                                                              \
-      cuda_graph_api_launch(WRAPPED_API_NAME##_cuda_graph_invocable_t{}, args...); \
-    }
 
 #elif TEST_LAUNCH == 1
 
@@ -174,25 +174,6 @@ void device_side_api_launch(ActionT action, Args... args)
 
 #  define launch device_side_api_launch
 
-#  define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
-    struct WRAPPED_API_NAME##_device_invocable_t                                            \
-    {                                                                                       \
-      template <class... Ts>                                                                \
-      CUB_RUNTIME_FUNCTION cudaError_t                                                      \
-      operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
-      {                                                                                     \
-        return API(d_temp_storage, temp_storage_bytes, args...);                            \
-      }                                                                                     \
-    };
-
-#  define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)         \
-    DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                   \
-    template <class... As>                                      \
-    static void WRAPPED_API_NAME(As... args)                    \
-    {                                                           \
-      launch(WRAPPED_API_NAME##_device_invocable_t{}, args...); \
-    }
-
 #else // TEST_LAUNCH == 0
 
 template <class ActionT, class... Args>
@@ -215,24 +196,5 @@ void host_side_api_launch(ActionT action, Args... args)
 }
 
 #  define launch host_side_api_launch
-
-#  define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
-    struct WRAPPED_API_NAME##_host_invocable_t                                              \
-    {                                                                                       \
-      template <class... Ts>                                                                \
-      CUB_RUNTIME_FUNCTION cudaError_t                                                      \
-      operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
-      {                                                                                     \
-        return API(d_temp_storage, temp_storage_bytes, args...);                            \
-      }                                                                                     \
-    };
-
-#  define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)       \
-    DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                 \
-    template <class... As>                                    \
-    static void WRAPPED_API_NAME(As... args)                  \
-    {                                                         \
-      launch(WRAPPED_API_NAME##_host_invocable_t{}, args...); \
-    }
 
 #endif // TEST_LAUNCH == 0
