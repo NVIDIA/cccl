@@ -651,6 +651,59 @@ struct BlockScanRaking
 
   /**
    * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor. Each thread contributes one input element.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the inclusive scan
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, const T& initial_value, ScanOp scan_op)
+  {
+    if (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).InclusiveScan(input, output, initial_value, scan_op);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      detail::uninitialized_copy(placement_ptr, input);
+
+      CTA_SYNC();
+
+      // Reduce parallelism down to just raking threads
+      if (linear_tid < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        T upsweep_partial = Upsweep(scan_op);
+
+        // Exclusive Warp-synchronous scan
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan).ExclusiveScan(upsweep_partial, exclusive_partial, initial_value, scan_op);
+
+        // Inclusive raking downsweep scan
+        InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
+      }
+
+      CTA_SYNC();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+    }
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
    *        scan_op functor. Each thread contributes one input element.  Also provides every
    *        thread with the block-wide \p block_aggregate of all inputs.
    *
@@ -692,6 +745,75 @@ struct BlockScanRaking
         T inclusive_partial;
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan).Scan(upsweep_partial, inclusive_partial, exclusive_partial, scan_op);
+
+        // Inclusive raking downsweep scan
+        InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
+
+        // Broadcast aggregate to all threads
+        if (linear_tid == RAKING_THREADS - 1)
+        {
+          temp_storage.block_aggregate = inclusive_partial;
+        }
+      }
+
+      CTA_SYNC();
+
+      // Grab thread prefix from shared memory
+      output = *placement_ptr;
+
+      // Retrieve block aggregate
+      block_aggregate = temp_storage.block_aggregate;
+    }
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor. Each thread contributes one input element.  Also provides every
+   *        thread with the block-wide \p block_aggregate of all inputs.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the inclusive scan
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[out] block_aggregate
+   *   Threadblock-wide aggregate reduction of input items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T& output, const T& initial_value, ScanOp scan_op, T& block_aggregate)
+  {
+    if (WARP_SYNCHRONOUS)
+    {
+      // Short-circuit directly to warp-synchronous scan
+      WarpScan(temp_storage.warp_scan).InclusiveScan(input, output, initial_value, scan_op, block_aggregate);
+    }
+    else
+    {
+      // Place thread partial into shared memory raking grid
+      T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
+      detail::uninitialized_copy(placement_ptr, input);
+
+      CTA_SYNC();
+
+      // Reduce parallelism down to just raking threads
+      if (linear_tid < RAKING_THREADS)
+      {
+        // Raking upsweep reduction across shared partials
+        T upsweep_partial = Upsweep(scan_op);
+
+        // Warp-synchronous scan
+        T inclusive_partial;
+        T exclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .Scan(upsweep_partial, inclusive_partial, exclusive_partial, initial_value, scan_op);
 
         // Inclusive raking downsweep scan
         InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));

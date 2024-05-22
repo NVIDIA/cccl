@@ -458,6 +458,29 @@ struct BlockScanWarpScans
 
   /**
    * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor.  Each thread contributes one input element.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the inclusive scan
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, const T& initial_value, ScanOp scan_op)
+  {
+    T block_aggregate;
+    InclusiveScan(input, inclusive_output, initial_value, scan_op, block_aggregate);
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
    *        scan_op functor. Each thread contributes one input element. Also provides every
    *        thread with the block-wide \p block_aggregate of all inputs.
    *
@@ -480,6 +503,42 @@ struct BlockScanWarpScans
 
     // Compute the warp-wide prefix and block-wide aggregate for each warp.  Warp prefix for warp0 is invalid.
     T warp_prefix = ComputeWarpPrefix(scan_op, inclusive_output, block_aggregate);
+
+    // Apply warp prefix to our lane's partial
+    if (warp_id != 0)
+    {
+      inclusive_output = scan_op(warp_prefix, inclusive_output);
+    }
+  }
+
+  /**
+   * @brief Computes an inclusive thread block-wide prefix scan using the specified binary \p
+   *        scan_op functor. Each thread contributes one input element. Also provides every
+   *        thread with the block-wide \p block_aggregate of all inputs.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item (may be aliased to \p input)
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the inclusive scan
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[out] block_aggregate
+   *   Threadblock-wide aggregate reduction of input items
+   */
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T& inclusive_output, const T& initial_value, ScanOp scan_op, T& block_aggregate)
+  {
+    WarpScanT(temp_storage.warp_scan[warp_id]).InclusiveScan(input, inclusive_output, scan_op);
+
+    // Compute the warp-wide prefix and block-wide aggregate for each warp
+    T warp_prefix = ComputeWarpPrefix(scan_op, inclusive_output, block_aggregate, initial_value);
 
     // Apply warp prefix to our lane's partial
     if (warp_id != 0)

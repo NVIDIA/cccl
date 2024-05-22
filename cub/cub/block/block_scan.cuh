@@ -2432,7 +2432,7 @@ public:
   //!   Binary scan functor
   template <int ITEMS_PER_THREAD, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  InclusiveScan(const T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
     T thread_prefix = internal::ThreadReduce(input, scan_op);
@@ -2594,7 +2594,11 @@ public:
   //!   Block-wide aggregate reduction of input items
   template <int ITEMS_PER_THREAD, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
-    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+    const T (&input)[ITEMS_PER_THREAD],
+    T (&output)[ITEMS_PER_THREAD],
+    T initial_value,
+    ScanOp scan_op,
+    T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
     T thread_prefix = internal::ThreadReduce(input, scan_op);
