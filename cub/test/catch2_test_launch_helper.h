@@ -103,18 +103,16 @@ void cuda_graph_api_launch(ActionT action, Args... args)
   cudaStream_t stream{};
   REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
 
-  std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
-  cudaError_t error = action(d_temp_storage, temp_storage_bytes, args..., stream);
+  cudaError_t error = action(nullptr, temp_storage_bytes, args..., stream);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
-  error = action(d_temp_storage, temp_storage_bytes, args..., stream);
+  error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args..., stream);
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
   REQUIRE(cudaSuccess == error);
 
@@ -145,11 +143,10 @@ __global__ void device_side_api_launch_kernel(
 template <class ActionT, class... Args>
 void device_side_api_launch(ActionT action, Args... args)
 {
-  std::uint8_t* d_temp_storage = nullptr;
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
   c2h::device_vector<std::size_t> d_temp_storage_bytes(1, 0);
   device_side_api_launch_kernel<<<1, 1>>>(
-    d_temp_storage,
+    nullptr,
     thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
     thrust::raw_pointer_cast(d_error.data()),
     action,
@@ -159,10 +156,9 @@ void device_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == d_error[0]);
 
   c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0]);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   device_side_api_launch_kernel<<<1, 1>>>(
-    d_temp_storage,
+    thrust::raw_pointer_cast(temp_storage.data()),
     thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
     thrust::raw_pointer_cast(d_error.data()),
     action,
@@ -179,17 +175,15 @@ void device_side_api_launch(ActionT action, Args... args)
 template <class ActionT, class... Args>
 void host_side_api_launch(ActionT action, Args... args)
 {
-  std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
-  cudaError_t error = action(d_temp_storage, temp_storage_bytes, args...);
+  cudaError_t error = action(nullptr, temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  error = action(d_temp_storage, temp_storage_bytes, args...);
+  error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
