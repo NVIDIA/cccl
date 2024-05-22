@@ -245,6 +245,7 @@ public:
 private:
   _LIBCUDACXX_INLINE_VISIBILITY inline bool __test_wait_sm_80(arrival_token __token) const
   {
+    (void) __token;
     int32_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,

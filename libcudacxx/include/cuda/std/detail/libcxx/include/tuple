@@ -484,7 +484,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_impl& operator=(_Tuple&& __t) noexcept(
     (__all<_CCCL_TRAIT(is_nothrow_assignable, _Tp&, __tuple_elem_at<_Tuple, _Indx>)...>::value))
   {
-    __swallow(__tuple_leaf<_Indx, _Tp>::operator=(
+    _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
       _CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...);
     return *this;
   }
@@ -495,14 +495,15 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_impl&
   operator=(const __tuple_impl& __t) noexcept((__all<_CCCL_TRAIT(is_nothrow_copy_assignable, _Tp)...>::value))
   {
-    __swallow(__tuple_leaf<_Indx, _Tp>::operator=(static_cast<const __tuple_leaf<_Indx, _Tp>&>(__t).get())...);
+    _CUDA_VSTD::__swallow(
+      __tuple_leaf<_Indx, _Tp>::operator=(static_cast<const __tuple_leaf<_Indx, _Tp>&>(__t).get())...);
     return *this;
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_impl&
   operator=(__tuple_impl&& __t) noexcept((__all<_CCCL_TRAIT(is_nothrow_move_assignable, _Tp)...>::value))
   {
-    __swallow(__tuple_leaf<_Indx, _Tp>::operator=(
+    _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
       _CUDA_VSTD::forward<_Tp>(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t).get()))...);
     return *this;
   }
@@ -510,7 +511,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
   _LIBCUDACXX_INLINE_VISIBILITY void
   swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
   {
-    __swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
+    _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
   }
 };
 
