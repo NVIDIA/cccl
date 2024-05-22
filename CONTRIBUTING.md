@@ -33,6 +33,7 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
    For more details on building and testing, refer to the [Building and Testing](#building-and-testing) section below.
 
 4. **Commit Changes**:
+
    ```bash
    git commit -m "Brief description of the change"
    ```
