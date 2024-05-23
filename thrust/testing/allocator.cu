@@ -8,6 +8,16 @@
 #include <nv/target>
 #include <unittest/unittest.h>
 
+// WAR NVIDIA/cccl#1731
+// Some tests miscompile for non-CUDA backends on MSVC 2017 and 2019 (though 2022 is fine).
+// This is due to a bug in the compiler that breaks __THRUST_DEFINE_HAS_MEMBER_FUNCTION.
+#if defined(_MSC_VER) && _MSC_VER <= 1929 && THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+#  define WAR_BUG_1731
+#endif
+
+// The needs_copy_construct_via_allocator trait depends on has_member_function:
+#ifndef WAR_BUG_1731
+
 template <typename T>
 struct my_allocator_with_custom_construct1 : thrust::device_malloc_allocator<T>
 {
@@ -51,6 +61,11 @@ void TestAllocatorCustomCopyConstruct(size_t n)
   ASSERT_EQUAL_QUIET(ref, vec);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomCopyConstruct);
+
+#endif // !WAR_BUG_1731
+
+// The has_member_destroy trait depends on has_member_function:
+#ifndef WAR_BUG_1731
 
 template <typename T>
 struct my_allocator_with_custom_destroy
@@ -121,6 +136,8 @@ void TestAllocatorCustomDestroy(size_t n)
   ASSERT_EQUAL(n > 0, my_allocator_with_custom_destroy<T>::g_state);
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDestroy);
+
+#endif // !WAR_BUG_1731
 
 template <typename T>
 struct my_minimal_allocator
