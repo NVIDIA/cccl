@@ -273,7 +273,7 @@ def generate_dispatch_job_origin(matrix_job, job_type):
     matrix_job = matrix_job.copy()
     del matrix_job['origin']
 
-    matrix_job['jobs'] = job_type
+    matrix_job['jobs'] = get_formatted_job_type(job_type)
 
     if 'cxx' in matrix_job:
         host_compiler = matrix_job['cxx']
