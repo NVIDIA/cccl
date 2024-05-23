@@ -364,9 +364,9 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 def compare_dispatch_jobs(job1, job2):
     "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
-    return (job1['name']    == job2['name'] and
-            job1['runner']  == job2['runner'] and
-            job1['image']   == job2['image'] and
+    return (job1['name'] == job2['name'] and
+            job1['runner'] == job2['runner'] and
+            job1['image'] == job2['image'] and
             job1['command'] == job2['command'])
 
 
@@ -376,6 +376,7 @@ def dispatch_job_in_container(job, container):
         if compare_dispatch_jobs(job, job2):
             return True
     return False
+
 
 def remove_dispatch_job_from_container(job, container):
     "Remove a dispatch job from a container, using compare_dispatch_jobs."
@@ -416,7 +417,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
             consumers = two_stage['consumers']
 
             # Make sure this gets updated if we add support for multiple producers:
-            assert(len(producers) == 1)
+            assert (len(producers) == 1)
             producer = producers[0]
 
             if dispatch_job_in_container(producer, merged_producers):
