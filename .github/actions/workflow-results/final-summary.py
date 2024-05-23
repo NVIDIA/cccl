@@ -11,7 +11,7 @@ def read_file(filepath):
         return f.read().rstrip("\n ")
 
 
-def print_file_if_present(filepath):
+def print_text_file(filepath):
     if os.path.exists(filepath):
         print(read_file(filepath) + "\n\n")
 
@@ -26,6 +26,16 @@ def print_summary_file(filepath, heading_level):
     if os.path.exists(filepath):
         with open(filepath, 'r') as f:
             print_json_summary(json.load(f), heading_level)
+
+
+def print_json_file(filepath, heading):
+    if os.path.exists(filepath):
+        json_data = json.load(open(filepath))
+        print(f"<details><summary><h3>{heading}</h3></summary>\n")
+        print('```json')
+        print(json.dumps(json_data, indent=2))
+        print('```')
+        print("</details>\n")
 
 
 def main():
@@ -46,8 +56,9 @@ def main():
         print_json_summary(project, 3)
     print("</ul>\n")
 
+    print_json_file('workflow/override.json', '🛠️ Override Matrix')
+    print_text_file('workflow/changes.md')
     print_summary_file("workflow/runner_summary.json", 2)
-    print_file_if_present('workflow/changes.md')
 
     print("</details>")
 
