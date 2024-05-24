@@ -381,11 +381,11 @@ def matrix_job_to_dispatch_group(matrix_job, group_prefix=""):
 
 
 def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
-    for group_name, two_stage_json in new_dispatch_groups.items():
+    for group_name, group_json in new_dispatch_groups.items():
         if group_name not in accum_dispatch_groups:
-            accum_dispatch_groups[group_name] = two_stage_json
+            accum_dispatch_groups[group_name] = group_json
         else:
-            accum_dispatch_groups[group_name].extend(two_stage_json)
+            accum_dispatch_groups[group_name].extend(group_json)
 
 
 def compare_dispatch_jobs(job1, job2):
@@ -419,8 +419,8 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
 
     # Check to see if any .producers arrays have more than 1 job, which is not supported.
     # See ci-dispatch-two-stage.yml for details.
-    for group_name, two_stage_json in workflow_dispatch_groups.items():
-        for two_stage in two_stage_json:
+    for group_name, group_json in workflow_dispatch_groups.items():
+        for two_stage in group_json:
             num_producers = len(two_stage['producers'])
             if num_producers > 1:
                 producer_names = ""
@@ -432,10 +432,10 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                 raise Exception(error_message)
 
     # Merge consumers for any two_stage arrays that have the same producer(s). Print a warning.
-    for group_name, two_stage_json in workflow_dispatch_groups.items():
+    for group_name, group_json in workflow_dispatch_groups.items():
         merged_producers = []
         merged_consumers = []
-        for two_stage in two_stage_json:
+        for two_stage in group_json:
             producers = two_stage['producers']
             consumers = two_stage['consumers'] if 'consumers' in two_stage else []
 
@@ -464,17 +464,17 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                 merged_producers.append(producer)
                 merged_consumers.append(consumers)
         # Update with the merged lists:
-        # Clear the two_stage_json and replace with the merged lists. This must be visible from the
+        # Clear the group_json and replace with the merged lists. This must be visible from the
         # caller's scope.
-        two_stage_json.clear()
+        group_json.clear()
         for producer, consumers in zip(merged_producers, merged_consumers):
-            two_stage_json.append({'producers': [producer], 'consumers': consumers})
+            group_json.append({'producers': [producer], 'consumers': consumers})
 
     # If any remaining producer or consumer job appears more than once, warn and leave as-is.
-    for group_name, two_stage_json in workflow_dispatch_groups.items():
+    for group_name, group_json in workflow_dispatch_groups.items():
         all_two_stage_jobs = []
         duplicate_jobs = {}
-        for two_stage in two_stage_json:
+        for two_stage in group_json:
             producers = two_stage['producers']
             consumers = two_stage['consumers'] if 'consumers' in two_stage else []
             for job in producers + consumers:
@@ -489,12 +489,39 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                   file=sys.stderr)
 
     # Remove all named values that contain an empty list of jobs:
-    for group_name, two_stage_json in workflow_dispatch_groups.items():
-        if not two_stage_json:
+    for group_name, group_json in workflow_dispatch_groups.items():
+        if not group_json:
             del workflow_dispatch_groups[group_name]
-        for two_stage in two_stage_json:
+        for two_stage in group_json:
             if 'consumers' in two_stage and not two_stage['consumers']:
                 del two_stage['consumers']
+
+    # Split each group into two new groups: high and low priority.
+    # The new groups will include the original groups name, but be prefixed so that all
+    # high priority groups are listed first in the final workflow once sorted.
+    # two_stage objects with consumers will be moved to the high priority group.
+    # two_stage objects without consumers will be moved to the low priority group.
+    # workflow_dispatch_groups will be replaced with these new groups.
+    tmp_workflow = {}
+    for group_name, group_json in workflow_dispatch_groups.items():
+        high_priority_group_name = "P0 " + group_name
+        low_priority_group_name = "P1 " + group_name
+
+        high_priority_group = []
+        low_priority_group = []
+
+        for two_stage in group_json:
+            if 'consumers' in two_stage:
+                high_priority_group.append(two_stage)
+            else:
+                low_priority_group.append(two_stage)
+
+        if high_priority_group:
+            tmp_workflow[high_priority_group_name] = high_priority_group
+        if low_priority_group:
+            tmp_workflow[low_priority_group_name] = low_priority_group
+
+    workflow_dispatch_groups = tmp_workflow
 
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     def natural_sort_key(key):
@@ -503,22 +530,15 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     # Sort the dispatch groups by name:
     workflow_dispatch_groups = dict(sorted(workflow_dispatch_groups.items(), key=lambda x: natural_sort_key(x[0])))
 
-    # Sort the two_stage entries within each dispatch group.
-    # Put the two_stage pipelines with the most consumers first.
-    # Break ties by natural sorting the producer names.
-    def two_stage_sort_key(two_stage):
-        assert (len(two_stage['producers']) == 1)
-        producer_name = two_stage['producers'][0]['name']
-        num_consumers = len(two_stage['consumers'] if 'consumers' in two_stage else [])
-        return (-num_consumers, natural_sort_key(producer_name))
-    for group_name, two_stage_json in workflow_dispatch_groups.items():
-        two_stage_json.sort(key=two_stage_sort_key)
+    # Natural sort all group_json arrays by the first producer name:
+    for group_name, group_json in workflow_dispatch_groups.items():
+        group_json.sort(key=lambda x: natural_sort_key(x['producers'][0]['name']))
 
     # Assign unique IDs in appropriate locations.
     # These are used to give "hidden" dispatch jobs a short, unique name,
     # otherwise GHA generates a long, cluttered name.
-    for group_name, two_stage_json in workflow_dispatch_groups.items():
-        for two_stage in two_stage_json:
+    for group_name, group_json in workflow_dispatch_groups.items():
+        for two_stage in group_json:
             two_stage['id'] = next(guid_generator)
 
             # Currently only one producer allowed:
@@ -814,9 +834,9 @@ def write_outputs(final_workflow):
             runner = job_json['runner']
             runner_counts[runner] = runner_counts.get(runner, 0) + 1
 
-    for group_name, two_stage_json in final_workflow.items():
+    for group_name, group_json in final_workflow.items():
         job_list.append(f"{'':4} {group_name}:")
-        for two_stage in two_stage_json:
+        for two_stage in group_json:
             process_job_array(group_name, 'producers', two_stage)
             process_job_array(group_name, 'consumers', two_stage)
 
