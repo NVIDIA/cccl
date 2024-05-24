@@ -69,15 +69,9 @@ jobs:
       - name: Setup alpine
         shell: sh
         run: |
-          echo "env context: ${{ toJSON(env) }}"
-          echo "runner context: '${{ toJSON(runner) }}'"
-          echo "old container environment:"
-          env
-          echo "new container environment:"
-          env | sed 's@=/__w@=/home/runner/_work@' | tee -a "$GITHUB_ENV";
           # Install bash, node, and devcontainers CLI
           apk update
-          apk add bash nodejs npm sed
+          apk add bash nodejs npm sed gettext-envsubst
           npm install -g @devcontainers/cli
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -88,15 +82,6 @@ jobs:
         env:
           runner: ${{inputs.runner}}
           repo: ${{github.event.repository.name}}
-        run: |
-          echo "new container environment:"
-          env
-          # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
-          if test "${runner#*"-gpu-"}" != "$runner"; then
-            sed -i 's/"gpu": "optional"/"gpu": true/' "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
-          fi
-          # Ensure mount paths align with the _outer_ container, not the docker:latest volume
-          sed -i "s@source=\${localWorkspaceFolder}@source=/home/runner/_work/$repo/$repo/$repo@" "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
@@ -107,39 +92,75 @@ jobs:
           aws-region: us-east-2
           role-duration-seconds: 43200 # 12 hours)
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
-        uses: devcontainers/ci@v0.3
-        with:
-          push: never
-          checkoutPath: ${{github.event.repository.name}}
-          configFile: .devcontainer/${{inputs.devcontainer}}/devcontainer.json
+        env:
+          RUNNER: ${{inputs.runner}}
           # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
-          env: |
-            COMMAND=${{inputs.command}}
-            AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
-            AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
-            AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
-            NVIDIA_VISIBLE_DEVICES=${{ env.NVIDIA_VISIBLE_DEVICES }}
-          runCmd: |
-            set -eo pipefail
-            cd ~/${{github.event.repository.name}}
-            echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
-            echo -e "\e[1;34m${COMMAND}\e[0m"
-            eval "${COMMAND}" || exit_code=$?
-            if [ ! -z "$exit_code" ]; then
-              echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
-              echo "::error:: To replicate this failure locally, follow the steps below:"
-              echo "1. Clone the repository, and navigate to the correct branch and commit:"
-              echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
-              echo ""
-              echo "2. Run the failed command inside the same Docker container used by the CI:"
-              echo "   docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{ inputs.image }} ${COMMAND}"
-              echo ""
-              echo "For additional information, see:"
-              echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
-              echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
-              exit $exit_code
-            fi
+          COMMAND: ${{inputs.command}}
+          REPO: ${{github.event.repository.name}}
+          JSON: .devcontainer/${{inputs.devcontainer}}/devcontainer.json
+          AWS_ACCESS_KEY_ID: ${{env.AWS_ACCESS_KEY_ID}}
+          AWS_SESSION_TOKEN: ${{env.AWS_SESSION_TOKEN}}
+          AWS_SECRET_ACCESS_KEY: ${{env.AWS_SECRET_ACCESS_KEY}}
+          NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
+        run: |
+          echo "env context: ${{ toJSON(env) }}"
+          echo "runner context: '${{ toJSON(runner) }}'"
+          echo "github context: '${{ toJSON(github) }}'"
+
+          # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
+          if test "${RUNNER#*"-gpu-"}" != "$RUNNER"; then
+            sed -i 's/"gpu": "optional"/"gpu": true/' "$REPO/$JSON"
+          fi
+
+          # Ensure mount paths align with the _outer_ container, not the docker:latest volume
+          sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO/$REPO@" "$REPO/$JSON"
+
+          cat <<"EOF" | envsubst '$COMMAND $GITHUB_REF_NAME $GITHUB_SHA $GITHUB_REPOSITORY' | tee ci-script.sh
+          set -eo pipefail
+          cd ~/${{github.event.repository.name}}
+          echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
+          echo -e "\e[1;34m${COMMAND}\e[0m"
+          eval "${COMMAND}" || exit_code=$?
+          if [ ! -z "$exit_code" ]; then
+            echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+            echo "::error:: To replicate this failure locally, follow the steps below:"
+            echo "1. Clone the repository, and navigate to the correct branch and commit:"
+            echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+            echo ""
+            echo "2. Run the failed command inside the same Docker container used by the CI:"
+            echo "   docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{inputs.image}} ${COMMAND}"
+            echo ""
+            echo "For additional information, see:"
+            echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+            echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+            exit $exit_code
+          fi
+          EOF
+
+          __w="$(dirname "${{github.workspace}}")"
+
+          up_json="$(
+            devcontainer up --workspace-folder "$REPO" --config "$REPO/$JSON" \
+              --remote-env GITHUB_ENV=/mnt/github/env \
+              --remote-env GITHUB_PATH=/mnt/github/path \
+              --remote-env GITHUB_OUTPUT=/mnt/github/output \
+              --remote-env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+              --remote-env GITHUB_STEP_SUMMARY=/mnt/github/step-summary \
+              --remote-env AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+              --remote-env AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
+              --remote-env AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+              --remote-env NVIDIA_VISIBLE_DEVICES="$NVIDIA_VISIBLE_DEVICES" \
+              --mount "type=bind,source=$(pwd)/ci-script.sh,target=/ci-script.sh" \
+              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env" \
+              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path" \
+              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output" \
+              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary" \
+          )"
+
+          devcontainer exec --workspace-folder "$REPO" --config "$REPO/$JSON" /bin/bash -li /ci-script.sh
+
+          docker rm -f "$(node -p "JSON.parse('$up_json').containerId")"
       - name: Prepare job artifacts
         id: done
         run: |
