@@ -56,11 +56,14 @@ jobs:
     container:
       image: docker:latest
       volumes:
-        - ${{runner.temp}}
-        - ${{runner.workspace}}
-        - ${{runner.tool_cache}}
+        - /home/runner/_work/_temp
+        - /home/runner/_work/_tool
+        - /home/runner/_work/_actions
+        - /home/runner/_work/_temp/_github_home
+        - /home/runner/_work/_temp/_github_workflow
+        - /home/runner/_work/${{github.event.repository.name}}
       env:
-        TMPDIR: ${{runner.temp}}
+        TMPDIR: /home/runner/_work/_temp
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
       - name: Setup alpine
