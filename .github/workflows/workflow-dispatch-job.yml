@@ -65,6 +65,7 @@ jobs:
           path: ${{github.event.repository.name}}
           persist-credentials: false
       - name: Add NVCC problem matcher
+        shell: sh
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
       - name: Get AWS credentials for sccache bucket
@@ -74,6 +75,7 @@ jobs:
           aws-region: us-east-2
           role-duration-seconds: 43200 # 12 hours)
       - name: Set environment variables
+        shell: sh
         run: |
           echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
           echo "SCCACHE_REGION=us-east-2" >> $GITHUB_ENV
@@ -121,6 +123,7 @@ jobs:
             fi
       - name: Prepare job artifacts
         id: done
+        shell: sh
         run: |
           echo "SUCCESS=true" | tee -a "${GITHUB_OUTPUT}"
 
@@ -133,7 +136,7 @@ jobs:
           find_and_copy() {
             filename="$1"
             filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
-            if [[ -z "$filepath" ]]; then
+            if test -z "$filepath"; then
               echo "${filename} does not exist in repo directory."
               return 1
             fi
