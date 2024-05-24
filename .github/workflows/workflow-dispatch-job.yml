@@ -72,7 +72,7 @@ jobs:
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
       - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
