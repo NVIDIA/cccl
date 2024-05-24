@@ -92,7 +92,7 @@ jobs:
           RUNNER: ${{inputs.runner}}
           # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
-          COMMAND: ${{inputs.command}}
+          COMMAND: "${{inputs.command}}"
           REPO: ${{github.event.repository.name}}
           JSON: .devcontainer/${{inputs.devcontainer}}/devcontainer.json
           AWS_ACCESS_KEY_ID: ${{env.AWS_ACCESS_KEY_ID}}
@@ -110,14 +110,14 @@ jobs:
           fi
 
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
-          sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO/$REPO@" "$REPO/$JSON"
+          sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO@" "$REPO/$JSON"
 
           cat <<"EOF" | envsubst '$COMMAND $GITHUB_REF_NAME $GITHUB_SHA $GITHUB_REPOSITORY' | tee ci-script.sh
           set -eo pipefail
           cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
-          eval "${COMMAND}" || exit_code=$?
+          eval '${COMMAND}' || exit_code=$?
           if [ ! -z "$exit_code" ]; then
             echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
             echo "::error:: To replicate this failure locally, follow the steps below:"
@@ -147,11 +147,11 @@ jobs:
               --remote-env AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
               --remote-env AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
               --remote-env NVIDIA_VISIBLE_DEVICES="$NVIDIA_VISIBLE_DEVICES" \
-              --mount "type=bind,source=$(pwd)/ci-script.sh,target=/ci-script.sh" \
-              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env" \
-              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path" \
-              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output" \
-              --mount "type=bind,source=$(sed "s@=/__w@=$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary" \
+              --mount "type=bind,source=${{github.workspace}}/ci-script.sh,target=/ci-script.sh" \
+              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env" \
+              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path" \
+              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output" \
+              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary" \
           )"
 
           devcontainer exec --workspace-folder "$REPO" --config "$REPO/$JSON" /bin/bash -li /ci-script.sh
