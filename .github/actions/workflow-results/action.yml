@@ -19,14 +19,22 @@ runs:
   steps:
 
     - name: Download workflow artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: workflow
         path: workflow/
 
+    - name: Merge job artifacts
+      uses: actions/upload-artifact/merge@v4
+      with:
+        name: jobs
+        pattern: jobs-*
+        delete-merged: true
+        compression-level: 0
+
     - name: Download job artifacts
       continue-on-error: true # This may fail if no jobs succeed. The checks below will catch this.
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: jobs
         path: jobs

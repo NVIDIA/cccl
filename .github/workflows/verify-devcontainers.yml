@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Setup jq and yq
       run: |
         sudo apt-get update
@@ -59,7 +59,7 @@ jobs:
       contents: read
     steps:
     - name: Check out the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       # devcontainer/ci doesn't supported nested devcontainer.json files, so we need to copy the devcontainer.json
       # file to the top level .devcontainer/ directory
     - name: Copy devcontainer.json to .devcontainer/
@@ -73,7 +73,7 @@ jobs:
       # We don't really need sccache configured, but we need the AWS credentials envvars to be set
       # in order to avoid the devcontainer hanging waiting for GitHub authentication
     - name: Get AWS credentials for sccache bucket
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2

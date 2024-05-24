@@ -59,7 +59,7 @@ jobs:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
@@ -72,7 +72,7 @@ jobs:
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
       - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -138,9 +138,9 @@ jobs:
           echo "::endgroup::"
 
       - name: Upload job artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: jobs
+          name: jobs-${{inputs.id}}
           path: jobs
 
 
@@ -165,13 +165,13 @@ jobs:
       SCCACHE_S3_NO_CREDENTIALS: false
     steps:
       - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
           role-duration-seconds: 43200 # 12 hours
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
@@ -229,7 +229,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Upload job artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: jobs
+          name: jobs-${{inputs.id}}
           path: jobs
