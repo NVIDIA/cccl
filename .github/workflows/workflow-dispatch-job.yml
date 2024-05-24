@@ -68,6 +68,13 @@ jobs:
         shell: sh
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Install devcontainers CLI
+        shell: sh
+        run: npm install -g @devcontainers/cli
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@v4
         with:
