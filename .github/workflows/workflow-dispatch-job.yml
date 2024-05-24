@@ -73,6 +73,15 @@ jobs:
           echo "runner context: '${{ toJSON(runner) }}'"
           echo "container environment:"
           env
+          sed 's@=/__w@=/home/runner/_work@' <<< "RUNNER_TEMP=$RUNNER_TEMP" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "RUNNER_TOOL_CACHE=$RUNNER_TOOL_CACHE" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "RUNNER_WORKSPACE=$RUNNER_WORKSPACE" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "GITHUB_STATE=$GITHUB_STATE" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "GITHUB_PATH=$GITHUB_PATH" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "GITHUB_OUTPUT=$GITHUB_OUTPUT" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" >> "$GITHUB_ENV";
+          sed 's@=/__w@=/home/runner/_work@' <<< "GITHUB_ENV=$GITHUB_ENV" >> "$GITHUB_ENV";
           # Install bash, node, and devcontainers CLI
           apk update
           apk add bash nodejs npm sed
