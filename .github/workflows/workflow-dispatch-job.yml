@@ -54,21 +54,22 @@ jobs:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
     runs-on: ${{inputs.runner}}
     container:
-      options: -u root
       image: docker:latest
+      volumes:
+        - ${{runner.temp}}
+        - ${{runner.workspace}}
+        - ${{runner.tool_cache}}
       env:
-        TMPDIR: /home/runner/_work/_temp
+        TMPDIR: ${{runner.temp}}
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
       - name: Setup alpine
         shell: sh
         run: |
-          echo "env: ${{ toJSON(env) }}"
-          echo "runner: '${{ toJSON(runner) }}'"
-          # Set up symlinks to mirror host paths just in case
-          mkdir -p /home/runner/_work;
-          ln -s /_w/_temp /home/runner/_work/_temp
-          ln -s /_w/_tool /home/runner/_work/_tool
+          echo "env context: ${{ toJSON(env) }}"
+          echo "runner context: '${{ toJSON(runner) }}'"
+          echo "container environment:"
+          env
           # Install bash, node, and devcontainers CLI
           apk update
           apk add bash nodejs npm sed
