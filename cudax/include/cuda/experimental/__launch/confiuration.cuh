@@ -1,20 +1,13 @@
-#ifndef __CUDA_LAUNCH_CONFIGURATION__
-#define __CUDA_LAUNCH_CONFIGURATION__
+#ifndef _CUDAX__LAUNCH_CONFIGURATION
+#define _CUDAX__LAUNCH_CONFIGURATION
+#include <cuda/experimental/exception.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
+#if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
-
-struct sm_60
-{};
-struct sm_70
-{};
-struct sm_80
-{};
-struct sm_90
-{};
 
 namespace detail
 {
@@ -23,8 +16,7 @@ struct launch_option
   static constexpr bool needs_attribute_space = false;
   static constexpr bool is_relevant_on_device = false;
 
-  template <typename KernelFn>
-  cudaError_t apply(cudaLaunchConfig_t& config, KernelFn kernel) const noexcept
+  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     return cudaSuccess;
   }
@@ -50,8 +42,7 @@ struct launch_on_option : public detail::launch_option
   launch_on_option(cudaStream_t stream)
       : stream(stream){};
 
-  template <typename KernelFn>
-  cudaError_t apply(cudaLaunchConfig_t& config, KernelFn kernel) const noexcept
+  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     config.stream = stream;
 
@@ -72,8 +63,7 @@ struct cooperative_launch_option : public detail::launch_option
   // Probably private
   constexpr cooperative_launch_option() = default;
 
-  template <typename KernelFn>
-  cudaError_t apply(cudaLaunchConfig_t& config, KernelFn kernel) const noexcept
+  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id              = cudaLaunchAttributeCooperative;
@@ -101,8 +91,7 @@ struct dyn_smem_config_element : public detail::launch_option
       : size(set_size)
   {}
 
-  template <typename KernelFn>
-  cudaError_t apply(cudaLaunchConfig_t& config, KernelFn kernel) const noexcept
+  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaFuncAttributes attrs;
     std::size_t size_needed = size * sizeof(Content);
@@ -149,8 +138,7 @@ struct launch_priority_config_element : public detail::launch_option
       : priority(p)
   {}
 
-  template <typename KernelFn>
-  cudaError_t apply(cudaLaunchConfig_t& config, KernelFn kernel) const noexcept
+  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id           = cudaLaunchAttributePriority;
@@ -183,9 +171,7 @@ struct kernel_config : public Options...
     return (0 + ... + Options::needs_attribute_space);
   }
 
-  // KernelFn can probably be void* to avoid multiple instantiations
-  template <typename KernelFn>
-  cudaError_t apply(cudaLaunchConfig_t& config, KernelFn kernel) const noexcept
+  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaError_t status = cudaSuccess;
 
@@ -213,62 +199,6 @@ auto constexpr make_config(const hierarchy_dimensions<Levels...>& dims, const Op
   return kernel_config<hierarchy_dimensions<Levels...>, Opts...>(dims, opts...);
 }
 
-template <typename TargetArch, typename Config>
-struct arch_specific_config
-{
-  using target_arch = TargetArch;
-  Config conf;
-
-  constexpr arch_specific_config(const Config& c) noexcept
-      : conf(c)
-  {}
-  constexpr arch_specific_config(const TargetArch& arch, const Config& c) noexcept
-      : conf(c)
-  {}
-};
-
-template <typename Arch, typename Dims, typename Config>
-constexpr auto operator>>=(Arch arch, const kernel_config<Dims, Config>& config) noexcept
-{
-  return arch_specific_config<Arch, kernel_config<Dims, Config>>(arch, config);
-}
-
-template <typename... Configs>
-struct per_arch_kernel_config
-{
-  const cuda::std::tuple<Configs...> configs;
-
-  constexpr per_arch_kernel_config(const Configs&... confs) noexcept
-      : configs(confs...)
-  {}
-};
-
-namespace detail
-{
-template <typename TargetArch>
-struct get_target_config_helper
-{
-  template <typename Config, typename... Rest>
-  constexpr auto& operator()(const Config& conf, const Rest&... rest) noexcept
-  {
-    if constexpr (std::is_same_v<TargetArch, typename Config::target_arch>)
-    {
-      return conf.conf;
-    }
-    else
-    {
-      return (*this)(rest...);
-    }
-  }
-};
-} // namespace detail
-
-template <typename TargetArch, typename... Configs>
-constexpr auto& get_target_config(const per_arch_kernel_config<Configs...>& config) noexcept
-{
-  return cuda::std::apply(detail::get_target_config_helper<TargetArch>{}, config.configs);
-}
-
 static char* __device__ get_smem_ptr() noexcept
 {
   extern __shared__ char dynamic_smem[];
@@ -289,4 +219,5 @@ cuda::std::span<Content, Extent> __device__ dynamic_smem_span(const dyn_smem_con
 }
 
 } // namespace cuda::experimental
-#endif
+#endif // _CCCL_STD_VER >= 2017
+#endif // _CUDAX__LAUNCH_CONFIGURATION

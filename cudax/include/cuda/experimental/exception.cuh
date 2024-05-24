@@ -8,9 +8,23 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_LAUNCH___
-#define __CUDAX_LAUNCH___
+#ifndef __CUDAX_EXCEPTION___
+#define __CUDAX_EXCEPTION___
 
-#include <cuda/experimental/__launch/launch.cuh>
+#include <stdexcept>
+
+namespace cuda::experimental
+{
+
+struct launch_error : public ::std::runtime_error
+{
+  cudaError_t error;
+
+  explicit launch_error(cudaError_t err)
+      : ::std::runtime_error("")
+      , error(err)
+  {}
+};
+} // namespace cuda::experimental
 
 #endif

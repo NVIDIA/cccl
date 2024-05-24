@@ -152,19 +152,6 @@ struct static_self_contained
   }
 };
 
-void per_arch_example(int i)
-{
-  static auto configs = cudax::per_arch_kernel_config(
-    cudax::sm_60() >>= cudax::block_dims<256>() & cudax::grid_dims(i) & cudax::cooperative_launch(),
-    cudax::sm_70() >>= (cudax::block_dims<512>() & cudax::grid_dims<128>() & cudax::cooperative_launch()),
-    cudax::arch_specific_config(
-      cudax::sm_80(), cudax::block_dims<64>() & cudax::grid_dims<128>() & cudax::cooperative_launch()),
-    cudax::arch_specific_config(
-      cudax::sm_90(), cudax::block_dims<1024>() & cudax::grid_dims<128>() & cudax::cooperative_launch()));
-  static constexpr auto& c = cudax::get_target_config<cudax::sm_70>(configs);
-  static_assert(c.dims.count() == 512 * 128);
-}
-
 void stream_example()
 {
   cudaStream_t stream;
@@ -187,13 +174,12 @@ TEST_CASE("Smoke", "[launch]")
     new_launch_old_kernel();
     inline_lambda_example();
     dynamic_smem_example();
-    per_arch_example(1);
     stream_example();
     //        self_contained_example();
   }
-  catch (cudax::launchErrorException e)
+  catch (cudax::launch_error& e)
   {
-    printf("Launch error %d\n", e.error);
+    printf("Launch error %d, %s\n", e.error, e.what());
   }
   cudaDeviceSynchronize();
 }
