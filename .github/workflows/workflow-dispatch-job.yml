@@ -108,7 +108,7 @@ jobs:
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
           sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO@" "$REPO/$JSON"
 
-          cat <<"EOF" | envsubst '$COMMAND $GITHUB_REF_NAME $GITHUB_SHA $GITHUB_REPOSITORY' | tee ci-script.sh
+          cat <<"EOF" | envsubst '$COMMAND $GITHUB_REF_NAME $GITHUB_SHA $GITHUB_REPOSITORY' > ci-script.sh
           set -eo pipefail
           cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
