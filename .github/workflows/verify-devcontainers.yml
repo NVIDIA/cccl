@@ -85,7 +85,7 @@ jobs:
       uses: devcontainers/ci@v0.3
       with:
         push: never
-        configFile: ${{ matrix.devcontainer.path }}/devcontainer.json
+        configFile: ${{ matrix.devcontainer.path }}
         env: |
           SCCACHE_REGION=${{ env.SCCACHE_REGION }}
           AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
