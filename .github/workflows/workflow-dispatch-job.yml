@@ -89,6 +89,8 @@ jobs:
           runner: ${{inputs.runner}}
           repo: ${{github.event.repository.name}}
         run: |
+          echo "new container environment:"
+          env
           # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
           if test "${runner#*"-gpu-"}" != "$runner"; then
             sed -i 's/"gpu": "optional"/"gpu": true/' "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
