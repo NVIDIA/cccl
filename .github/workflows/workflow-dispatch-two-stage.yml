@@ -24,7 +24,7 @@ jobs:
     # This is an internal dispatch job and the name is not important.
     # Give the job a short and unique name, otherwise github will bloat the job name with the matrix values.
     # This keeps the UI from getting cluttered.
-    name: "p.${{ matrix.id }}"
+    name: "${{ matrix.id }}"
     permissions:
       id-token: write
       contents: read
@@ -44,7 +44,7 @@ jobs:
     # This is an internal dispatch job and the name is not important.
     # Give the job a short and unique name, otherwise github will bloat the job name with the matrix values.
     # This keeps the UI from getting cluttered.
-    name: "c.${{ matrix.id }}"
+    name: "${{ matrix.id }}"
     needs: producers
     # dispatch-job's result is always false, check the outputs instead. See ci-dispatch-job.yml for more information.
     if: ${{ !cancelled() && fromJson(needs.producers.outputs.success) }}

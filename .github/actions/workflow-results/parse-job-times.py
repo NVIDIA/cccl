@@ -16,7 +16,6 @@ def get_jobs_json(jobs_file):
 
 
 def get_workflow_json(workflow_file):
-    # Return the contents of ~/cccl/.local/tmp/workflow.json
     with open(workflow_file) as f:
         return json.load(f)
 
@@ -29,20 +28,11 @@ def write_json(filepath, json_object):
 def generate_job_id_map(workflow):
     '''Map full job name to job id'''
     job_id_map = {}
-    for group_name, group_json in workflow.items():
-        standalone = group_json['standalone'] if 'standalone' in group_json else []
-        for job in standalone:
-            name = f"{group_name} / s.{job['id']} / {job['name']}"
-            job_id_map[name] = job['id']
-        two_stage = group_json['two_stage'] if 'two_stage' in group_json else []
-        for pc in two_stage:
-            producers = pc['producers']
-            for job in producers:
-                name = f"{group_name} / t.{pc['id']} / p.{job['id']} / {job['name']}"
-                job_id_map[name] = job['id']
-            consumers = pc['consumers']
-            for job in consumers:
-                name = f"{group_name} / t.{pc['id']} / c.{job['id']} / {job['name']}"
+    for group_name, two_stage_json in workflow.items():
+        for two_stage in two_stage_json:
+            jobs = two_stage['producers'] + two_stage.get('consumers', [])
+            for job in jobs:
+                name = f"{group_name} / {two_stage['id']} / {job['id']} / {job['name']}"
                 job_id_map[name] = job['id']
 
     return job_id_map

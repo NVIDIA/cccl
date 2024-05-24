@@ -33,13 +33,10 @@ def write_json(filepath, json_object):
 
 def extract_jobs(workflow):
     jobs = []
-    for group_name, group in workflow.items():
-        if "standalone" in group:
-            jobs += group["standalone"]
-        if "two_stage" in group:
-            for two_stage in group["two_stage"]:
-                jobs += two_stage["producers"]
-                jobs += two_stage["consumers"]
+    for group_name, two_stage_json in workflow.items():
+        for two_stage in two_stage_json:
+            jobs += two_stage.get("producers", [])
+            jobs += two_stage.get("consumers", [])
     return jobs
 
 

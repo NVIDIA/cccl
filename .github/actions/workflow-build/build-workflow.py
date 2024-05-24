@@ -33,13 +33,13 @@ the matrix job is turned into one or more dispatch groups consisting of potentia
 - dispatch_group_json: A json object used in conjunction with the ci-dispatch-groups.yml GHA workflow.
   Example:
   {
-    "<group name>": {
-      "standalone": [ {<job_json>}, ... ]
-      "two_stage": [ {<two_stage_json>}, ]
-    }
+    "<group name>": [
+        <two_stage_job>,
+        ...
+    ]
   }
 
-- two_stage_json: A json object that represents bulk-synchronous producer/consumer jobs, used with ci-dispatch-two-stage.yml.
+- two_stage_job: A json object that represents bulk-synchronous producer/consumer jobs, used with ci-dispatch-two-stage.yml.
   Example:
   {
     "id": "<unique id>", # Used as a compact unique name for the GHA dispatch workflows.
@@ -47,14 +47,19 @@ the matrix job is turned into one or more dispatch groups consisting of potentia
     "consumers": [ {<job_json>}, ... ]
   }
 
+  To specify a standalone job, just add a two_stage_job with a single producer and no consumers.
+  Multiple producers are not supported in the current implementation.
+  Multiple consumers are supported.
+
 - job_json: A json object that represents a single job in a workflow. Used with ci-dispatch-job.yml.
   Example:
   {
-    "id": "<unique id>", # Used as a compact unique name for the GHA dispatch workflows.
     "name": "...",
     "runner": "...",
     "image": "...",
     "command": "..." },
+    "id": "<unique id>", # Used as a compact unique name for the GHA dispatch workflows.
+    "producer_id: "..." # Used to link a consumer job back to its producer. Only defined in consumers.
   }
 """
 
@@ -340,11 +345,12 @@ def generate_dispatch_build_and_test_json(matrix_job, build_job_type, test_job_t
     }
 
 
+def generate_dispatch_standalone_job_json(matrix_job, job_type):
+    return {"producers": [generate_dispatch_job_json(matrix_job, job_type)]}
+
+
 def generate_dispatch_group_jobs(matrix_job):
-    dispatch_group_jobs = {
-        "standalone": [],
-        "two_stage": []
-    }
+    dispatch_group_jobs = []
 
     # The jobs tag is left unexploded to optimize scheduling here.
     job_types = set(matrix_job['jobs'])
@@ -357,14 +363,14 @@ def generate_dispatch_group_jobs(matrix_job):
             matrix_job, f"Internal error: Missing 'build' job type required by other jobs ({build_required})."))
 
     if build_required:
-        dispatch_group_jobs['two_stage'].append(
+        dispatch_group_jobs.append(
             generate_dispatch_build_and_test_json(matrix_job, "build", list(build_required)))
         job_types -= {'build'}
         job_types -= build_required
 
-    # Remaining jobs are assumed to be standalone (e.g. nvrtc):
+    # Remaining jobs are assumed to be standalone:
     for job_type in job_types:
-        dispatch_group_jobs['standalone'].append(generate_dispatch_job_json(matrix_job, job_type))
+        dispatch_group_jobs.append(generate_dispatch_standalone_job_json(matrix_job, job_type))
 
     return dispatch_group_jobs
 
@@ -375,13 +381,11 @@ def matrix_job_to_dispatch_group(matrix_job, group_prefix=""):
 
 
 def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
-    for group_name, group_json in new_dispatch_groups.items():
+    for group_name, two_stage_json in new_dispatch_groups.items():
         if group_name not in accum_dispatch_groups:
-            accum_dispatch_groups[group_name] = group_json
+            accum_dispatch_groups[group_name] = two_stage_json
         else:
-            # iterate standalone and two_stage:
-            for key, value in group_json.items():
-                accum_dispatch_groups[group_name][key] += value
+            accum_dispatch_groups[group_name].extend(two_stage_json)
 
 
 def compare_dispatch_jobs(job1, job2):
@@ -413,31 +417,27 @@ def remove_dispatch_job_from_container(job, container):
 def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     workflow_dispatch_groups = copy.deepcopy(workflow_dispatch_groups_orig)
 
-    # Check to see if any .two_stage.producers arrays have more than 1 job, which is not supported.
+    # Check to see if any .producers arrays have more than 1 job, which is not supported.
     # See ci-dispatch-two-stage.yml for details.
-    for group_name, group_json in workflow_dispatch_groups.items():
-        if 'two_stage' in group_json:
-            for two_stage_json in group_json['two_stage']:
-                num_producers = len(two_stage_json['producers'])
-                if num_producers > 1:
-                    producer_names = ""
-                    for job in two_stage_json['producers']:
-                        producer_names += f" - {job['name']}\n"
-                    error_message = f"ci-dispatch-two-stage.yml currently only supports a single producer. "
-                    error_message += f"Found {num_producers} producers in '{group_name}':\n{producer_names}"
-                    print(f"::error file=ci/matrix.yaml::{error_message}", file=sys.stderr)
-                    raise Exception(error_message)
+    for group_name, two_stage_json in workflow_dispatch_groups.items():
+        for two_stage in two_stage_json:
+            num_producers = len(two_stage['producers'])
+            if num_producers > 1:
+                producer_names = ""
+                for job in two_stage['producers']:
+                    producer_names += f" - {job['name']}\n"
+                error_message = f"ci-dispatch-two-stage.yml currently only supports a single producer. "
+                error_message += f"Found {num_producers} producers in '{group_name}':\n{producer_names}"
+                print(f"::error file=ci/matrix.yaml::{error_message}", file=sys.stderr)
+                raise Exception(error_message)
 
     # Merge consumers for any two_stage arrays that have the same producer(s). Print a warning.
-    for group_name, group_json in workflow_dispatch_groups.items():
-        if not 'two_stage' in group_json:
-            continue
-        two_stage_json = group_json['two_stage']
+    for group_name, two_stage_json in workflow_dispatch_groups.items():
         merged_producers = []
         merged_consumers = []
         for two_stage in two_stage_json:
             producers = two_stage['producers']
-            consumers = two_stage['consumers']
+            consumers = two_stage['consumers'] if 'consumers' in two_stage else []
 
             # Make sure this gets updated if we add support for multiple producers:
             assert (len(producers) == 1)
@@ -464,43 +464,20 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                 merged_producers.append(producer)
                 merged_consumers.append(consumers)
         # Update with the merged lists:
-        two_stage_json = []
+        # Clear the two_stage_json and replace with the merged lists. This must be visible from the
+        # caller's scope.
+        two_stage_json.clear()
         for producer, consumers in zip(merged_producers, merged_consumers):
             two_stage_json.append({'producers': [producer], 'consumers': consumers})
-        group_json['two_stage'] = two_stage_json
 
-    # Check for any duplicate jobs in standalone arrays. Warn and remove duplicates.
-    for group_name, group_json in workflow_dispatch_groups.items():
-        standalone_jobs = group_json['standalone'] if 'standalone' in group_json else []
-        unique_standalone_jobs = []
-        for job_json in standalone_jobs:
-            if dispatch_job_in_container(job_json, unique_standalone_jobs):
-                print(f"::notice file=ci/matrix.yaml::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
-                      file=sys.stderr)
-            else:
-                unique_standalone_jobs.append(job_json)
-
-        # If any producer/consumer jobs exist in standalone arrays, warn and remove the standalones.
-        two_stage_jobs = group_json['two_stage'] if 'two_stage' in group_json else []
-        for two_stage_job in two_stage_jobs:
-            for producer in two_stage_job['producers']:
-                if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice file=ci/matrix.yaml::Removing standalone job '{producer['name']}' " +
-                          f"as it appears as a producer in '{group_name}'",
-                          file=sys.stderr)
-            for consumer in two_stage_job['consumers']:
-                if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice file=ci/matrix.yaml::Removing standalone job '{consumer['name']}' " +
-                          f"as it appears as a consumer in '{group_name}'",
-                          file=sys.stderr)
-        standalone_jobs = list(unique_standalone_jobs)
-        group_json['standalone'] = standalone_jobs
-
-        # If any producer or consumer job appears more than once, warn and leave as-is.
+    # If any remaining producer or consumer job appears more than once, warn and leave as-is.
+    for group_name, two_stage_json in workflow_dispatch_groups.items():
         all_two_stage_jobs = []
         duplicate_jobs = {}
-        for two_stage_job in two_stage_jobs:
-            for job in two_stage_job['producers'] + two_stage_job['consumers']:
+        for two_stage in two_stage_json:
+            producers = two_stage['producers']
+            consumers = two_stage['consumers'] if 'consumers' in two_stage else []
+            for job in producers + consumers:
                 if dispatch_job_in_container(job, all_two_stage_jobs):
                     duplicate_jobs[job['name']] = duplicate_jobs.get(job['name'], 1) + 1
                 else:
@@ -512,13 +489,12 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                   file=sys.stderr)
 
     # Remove all named values that contain an empty list of jobs:
-    for group_name, group_json in workflow_dispatch_groups.items():
-        if not group_json['standalone'] and not group_json['two_stage']:
+    for group_name, two_stage_json in workflow_dispatch_groups.items():
+        if not two_stage_json:
             del workflow_dispatch_groups[group_name]
-        elif not group_json['standalone']:
-            del group_json['standalone']
-        elif not group_json['two_stage']:
-            del group_json['two_stage']
+        for two_stage in two_stage_json:
+            if 'consumers' in two_stage and not two_stage['consumers']:
+                del two_stage['consumers']
 
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     def natural_sort_key(key):
@@ -527,26 +503,35 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     # Sort the dispatch groups by name:
     workflow_dispatch_groups = dict(sorted(workflow_dispatch_groups.items(), key=lambda x: natural_sort_key(x[0])))
 
-    # Sort the jobs within each dispatch group:
-    for group_name, group_json in workflow_dispatch_groups.items():
-        if 'standalone' in group_json:
-            group_json['standalone'] = sorted(group_json['standalone'], key=lambda x: natural_sort_key(x['name']))
-        if 'two_stage' in group_json:
-            group_json['two_stage'] = sorted(
-                group_json['two_stage'], key=lambda x: natural_sort_key(x['producers'][0]['name']))
+    # Sort the two_stage entries within each dispatch group.
+    # Put the two_stage pipelines with the most consumers first.
+    # Break ties by natural sorting the producer names.
+    def two_stage_sort_key(two_stage):
+        assert (len(two_stage['producers']) == 1)
+        producer_name = two_stage['producers'][0]['name']
+        num_consumers = len(two_stage['consumers'] if 'consumers' in two_stage else [])
+        return (-num_consumers, natural_sort_key(producer_name))
+    for group_name, two_stage_json in workflow_dispatch_groups.items():
+        two_stage_json.sort(key=two_stage_sort_key)
 
     # Assign unique IDs in appropriate locations.
     # These are used to give "hidden" dispatch jobs a short, unique name,
     # otherwise GHA generates a long, cluttered name.
-    for group_name, group_json in workflow_dispatch_groups.items():
-        if 'standalone' in group_json:
-            for job_json in group_json['standalone']:
-                job_json['id'] = next(guid_generator)
-        if 'two_stage' in group_json:
-            for two_stage_json in group_json['two_stage']:
-                two_stage_json['id'] = next(guid_generator)
-                for job_json in two_stage_json['producers'] + two_stage_json['consumers']:
-                    job_json['id'] = next(guid_generator)
+    for group_name, two_stage_json in workflow_dispatch_groups.items():
+        for two_stage in two_stage_json:
+            two_stage['id'] = next(guid_generator)
+
+            # Currently only one producer allowed:
+            assert (len(two_stage['producers']) == 1)
+            producer = two_stage['producers'][0]
+            consumers = two_stage['consumers'] if 'consumers' in two_stage else []
+
+            producer_id = next(guid_generator)
+            producer['id'] = producer_id
+
+            for consumer_json in consumers:
+                consumer_json['id'] = next(guid_generator)
+                consumer_json['producer_id'] = producer_id
 
     return workflow_dispatch_groups
 
@@ -829,13 +814,11 @@ def write_outputs(final_workflow):
             runner = job_json['runner']
             runner_counts[runner] = runner_counts.get(runner, 0) + 1
 
-    for group_name, group_json in final_workflow.items():
+    for group_name, two_stage_json in final_workflow.items():
         job_list.append(f"{'':4} {group_name}:")
-        process_job_array(group_name, 'standalone', group_json)
-        if 'two_stage' in group_json:
-            for two_stage_json in group_json['two_stage']:
-                process_job_array(group_name, 'producers', two_stage_json)
-                process_job_array(group_name, 'consumers', two_stage_json)
+        for two_stage in two_stage_json:
+            process_job_array(group_name, 'producers', two_stage)
+            process_job_array(group_name, 'consumers', two_stage)
 
     # Sort by descending counts:
     runner_counts = {k: v for k, v in sorted(runner_counts.items(), key=lambda item: item[1], reverse=True)}
