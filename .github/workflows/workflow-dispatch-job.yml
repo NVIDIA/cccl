@@ -64,31 +64,31 @@ jobs:
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
-      - name: Add NVCC problem matcher
+      - name: Setup alpine
         shell: sh
+        env:
+          runner: ${{inputs.runner}}
+          repo: ${{github.event.repository.name}}
+        run: |
+          # Install bash, node, and devcontainers CLI
+          apk update
+          apk add bash nodejs npm sed
+          npm install -g @devcontainers/cli
+          # Tell devcontainers CLI to always mount the GPU if on a GPU runner
+          if test "${runner#*"-gpu-"}" != "$runner"; then
+            sed -i 's/"gpu": "optional"/"gpu": true/' .devcontainer/${{matrix.devcontainer}}/devcontainer.json
+          fi
+          # Ensure mount paths align with the _outer_ container, not the docker:latest volume
+          sed -i "s@source=${localWorkspaceFolder}@source=/home/runner/_work/$repo/$repo/$repo@" .devcontainer/${{matrix.devcontainer}}/devcontainer.json
+      - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-      - name: Install devcontainers CLI
-        shell: sh
-        run: npm install -g @devcontainers/cli
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
           role-duration-seconds: 43200 # 12 hours)
-      - name: Set environment variables
-        shell: sh
-        run: |
-          echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
-          echo "SCCACHE_REGION=us-east-2" >> $GITHUB_ENV
-          echo "SCCACHE_IDLE_TIMEOUT=32768" >> $GITHUB_ENV
-          echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
-          echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         uses: devcontainers/ci@v0.3
         with:
@@ -99,11 +99,6 @@ jobs:
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
           env: |
             COMMAND=${{inputs.command}}
-            SCCACHE_BUCKET=${{ env.SCCACHE_BUCKET }}
-            SCCACHE_REGION=${{ env.SCCACHE_REGION }}
-            SCCACHE_IDLE_TIMEOUT=${{ env.SCCACHE_IDLE_TIMEOUT }}
-            SCCACHE_S3_USE_SSL=${{ env.SCCACHE_S3_USE_SSL }}
-            SCCACHE_S3_NO_CREDENTIALS=${{ env.SCCACHE_S3_NO_CREDENTIALS }}
             AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
             AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
             AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
@@ -130,7 +125,6 @@ jobs:
             fi
       - name: Prepare job artifacts
         id: done
-        shell: sh
         run: |
           echo "SUCCESS=true" | tee -a "${GITHUB_OUTPUT}"
 
@@ -143,7 +137,7 @@ jobs:
           find_and_copy() {
             filename="$1"
             filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
-            if test -z "$filepath"; then
+            if [[ -z "$filepath" ]]; then
               echo "${filename} does not exist in repo directory."
               return 1
             fi
