@@ -70,6 +70,7 @@ jobs:
           runner: ${{inputs.runner}}
           repo: ${{github.event.repository.name}}
         run: |
+          set -x;
           # Install bash, node, and devcontainers CLI
           apk update
           apk add bash nodejs npm sed
@@ -80,6 +81,14 @@ jobs:
           fi
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
           sed -i "s@source=\${localWorkspaceFolder}@source=/home/runner/_work/$repo/$repo/$repo@" "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
+
+          echo "env: ${{ toJSON(env) }}"
+          echo "runner: '${{ toJSON(runner) }}'"
+          mkdir -p /home/runner/_work;
+          ln -s /_w/_temp /home/runner/_work/_temp
+          ln -s /_w/_tool /home/runner/_work/_tool
+          echo "TMPDIR=/home/runner/_work/_temp" >> $GITHUB_ENV;
+
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
