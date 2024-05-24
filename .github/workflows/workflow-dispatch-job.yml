@@ -57,38 +57,38 @@ jobs:
       options: -u root
       image: docker:latest
       env:
+        TMPDIR: /home/runner/_work/_temp
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
+      - name: Setup alpine
+        shell: sh
+        run: |
+          echo "env: ${{ toJSON(env) }}"
+          echo "runner: '${{ toJSON(runner) }}'"
+          # Set up symlinks to mirror host paths just in case
+          mkdir -p /home/runner/_work;
+          ln -s /_w/_temp /home/runner/_work/_temp
+          ln -s /_w/_tool /home/runner/_work/_tool
+          # Install bash, node, and devcontainers CLI
+          apk update
+          apk add bash nodejs npm sed
+          npm install -g @devcontainers/cli
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
-      - name: Setup alpine
-        shell: sh
+      - name: Adjust devcontainer.json
         env:
           runner: ${{inputs.runner}}
           repo: ${{github.event.repository.name}}
         run: |
-          set -x;
-          # Install bash, node, and devcontainers CLI
-          apk update
-          apk add bash nodejs npm sed
-          npm install -g @devcontainers/cli
-          # Tell devcontainers CLI to always mount the GPU if on a GPU runner
+          # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
           if test "${runner#*"-gpu-"}" != "$runner"; then
             sed -i 's/"gpu": "optional"/"gpu": true/' "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
           fi
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
           sed -i "s@source=\${localWorkspaceFolder}@source=/home/runner/_work/$repo/$repo/$repo@" "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
-
-          echo "env: ${{ toJSON(env) }}"
-          echo "runner: '${{ toJSON(runner) }}'"
-          mkdir -p /home/runner/_work;
-          ln -s /_w/_temp /home/runner/_work/_temp
-          ln -s /_w/_tool /home/runner/_work/_tool
-          echo "TMPDIR=/home/runner/_work/_temp" >> $GITHUB_ENV;
-
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
