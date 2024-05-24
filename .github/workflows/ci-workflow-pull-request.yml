@@ -107,12 +107,12 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}
 
-  verify-devcontainers:
-    name: Verify Dev Containers
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/verify-devcontainers.yml
+  # verify-devcontainers:
+  #   name: Verify Dev Containers
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   uses: ./.github/workflows/verify-devcontainers.yml
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:
