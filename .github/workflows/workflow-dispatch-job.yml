@@ -149,7 +149,7 @@ jobs:
             --remote-env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
             --remote-env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
             --remote-env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
-            --remote-env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES""
+            --remote-env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
           )
 
           vols=(
