@@ -100,10 +100,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{env.AWS_SECRET_ACCESS_KEY}}
           NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
         run: |
-          echo "env context: ${{ toJSON(env) }}"
-          echo "runner context: '${{ toJSON(runner) }}'"
-          echo "github context: '${{ toJSON(github) }}'"
-
           # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
           if test "${RUNNER#*"-gpu-"}" != "$RUNNER"; then
             sed -i 's/"gpu": "optional"/"gpu": true/' "$REPO/$JSON"
@@ -134,7 +130,7 @@ jobs:
           fi
           EOF
 
-          __w="$(dirname "${{github.workspace}}")"
+          __w="$(dirname "$(dirname "${{github.workspace}}")")"
 
           up_json="$(
             devcontainer up --workspace-folder "$REPO" --config "$REPO/$JSON" \
@@ -152,6 +148,7 @@ jobs:
               --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path" \
               --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output" \
               --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary" \
+            | tee >(cat -) 1>&2
           )"
 
           devcontainer exec --workspace-folder "$REPO" --config "$REPO/$JSON" /bin/bash -li /ci-script.sh
