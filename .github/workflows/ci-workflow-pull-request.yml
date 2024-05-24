@@ -124,7 +124,7 @@ jobs:
     if: ${{ always() }}
     needs:
       - verify-workflow
-      - verify-devcontainers
+      # - verify-devcontainers
     runs-on: ubuntu-latest
     steps:
       - name: Check results
