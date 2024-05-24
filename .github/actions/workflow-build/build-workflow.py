@@ -238,6 +238,12 @@ def generate_dispatch_job_image(matrix_job, job_type):
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}-{image_os}"
 
 
+def generate_dispatch_job_devcontainer(matrix_job, job_type):
+    ctk = matrix_job['ctk']
+    host_compiler = matrix_job['cxx']['name'] + matrix_job['cxx']['version']
+    return f"cuda{ctk}-{host_compiler}"
+
+
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
@@ -300,7 +306,8 @@ def generate_dispatch_job_json(matrix_job, job_type):
         'runner': generate_dispatch_job_runner(matrix_job, job_type),
         'image': generate_dispatch_job_image(matrix_job, job_type),
         'command': generate_dispatch_job_command(matrix_job, job_type),
-        'origin': generate_dispatch_job_origin(matrix_job, job_type)
+        'origin': generate_dispatch_job_origin(matrix_job, job_type),
+        'devcontainer': generate_dispatch_job_devcontainer(matrix_job, job_type)
     }
 
 

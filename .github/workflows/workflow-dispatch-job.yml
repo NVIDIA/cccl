@@ -30,6 +30,7 @@ on:
     inputs:
       name: {type: string, required: true}
       image: {type: string, required: true}
+      devcontainer: {type: string, required: true}
       runner: {type: string, required: true}
       command: {type: string, required: true}
       id: {type: string, required: true}
@@ -54,25 +55,20 @@ jobs:
     runs-on: ${{inputs.runner}}
     container:
       options: -u root
-      image: ${{inputs.image}}
+      image: docker:latest
       env:
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
-      - name: Link files to coder user home directory
-        run: |
-          ln -s "$(pwd)/${{github.event.repository.name}}" /home/coder/${{github.event.repository.name}}
-          chown -R coder:coder ${{github.event.repository.name}}
-          chown -R coder:coder /home/coder/${{github.event.repository.name}}
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
       - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -85,12 +81,25 @@ jobs:
           echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
           echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
-        shell: su coder {0}
-        env:
-          # Dereferencing the command from and env var instead of a GHA input avoids issues with escaping
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          checkoutPath: ${{github.event.repository.name}}
+          configFile: .devcontainer/${{matrix.devcontainer}}/devcontainer.json
+          # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
-          COMMAND: ${{inputs.command}}
-        run: |
+          env: |
+            COMMAND=${{inputs.command}}
+            SCCACHE_BUCKET=${{ env.SCCACHE_BUCKET }}
+            SCCACHE_REGION=${{ env.SCCACHE_REGION }}
+            SCCACHE_IDLE_TIMEOUT=${{ env.SCCACHE_IDLE_TIMEOUT }}
+            SCCACHE_S3_USE_SSL=${{ env.SCCACHE_S3_USE_SSL }}
+            SCCACHE_S3_NO_CREDENTIALS=${{ env.SCCACHE_S3_NO_CREDENTIALS }}
+            AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
+            AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
+            AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
+            NVIDIA_VISIBLE_DEVICES=${{ env.NVIDIA_VISIBLE_DEVICES }}
+          runCmd: |
             set -eo pipefail
             cd ~/${{github.event.repository.name}}
             echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
@@ -136,7 +145,6 @@ jobs:
           echo "::group::Job artifacts"
           tree "$result_dir"
           echo "::endgroup::"
-
       - name: Upload job artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -171,7 +179,7 @@ jobs:
           aws-region: us-east-2
           role-duration-seconds: 43200 # 12 hours
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
