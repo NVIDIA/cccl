@@ -130,10 +130,13 @@ jobs:
           fi
           EOF
 
+          chown -R 1001:1001 "$REPO"
+
           __w="$(dirname "$(dirname "${{github.workspace}}")")"
 
           up_json="$(
             devcontainer up --workspace-folder "$REPO" --config "$REPO/$JSON" \
+              --skip-post-create --skip-post-attach \
               --remote-env GITHUB_ENV=/mnt/github/env \
               --remote-env GITHUB_PATH=/mnt/github/path \
               --remote-env GITHUB_OUTPUT=/mnt/github/output \
