@@ -78,10 +78,6 @@ jobs:
         with:
           path: ${{github.event.repository.name}}
           persist-credentials: false
-      - name: Adjust devcontainer.json
-        env:
-          runner: ${{inputs.runner}}
-          repo: ${{github.event.repository.name}}
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
