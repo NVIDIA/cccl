@@ -130,42 +130,39 @@ jobs:
           fi
           EOF
 
-          chown -R 1001:1001 "$REPO"
+          chown -R 1001:1001 ci-script.sh "$REPO"
 
           __w="$(dirname "$(dirname "${{github.workspace}}")")"
 
-          up_json="$(
-            devcontainer up --workspace-folder "$REPO" --config "$REPO/$JSON" \
-              --skip-post-create --skip-post-attach \
-              --remote-env GITHUB_ENV=/mnt/github/env \
-              --remote-env GITHUB_PATH=/mnt/github/path \
-              --remote-env GITHUB_OUTPUT=/mnt/github/output \
-              --remote-env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
-              --remote-env GITHUB_STEP_SUMMARY=/mnt/github/step-summary \
-              --remote-env AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-              --remote-env AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
-              --remote-env AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-              --remote-env NVIDIA_VISIBLE_DEVICES="$NVIDIA_VISIBLE_DEVICES" \
-              --mount "type=bind,source=${{github.workspace}}/ci-script.sh,target=/ci-script.sh" \
-              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env" \
-              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path" \
-              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output" \
-              --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary" \
-            | tee >(cat -) 1>&2
-          )"
+          args=(
+            --workspace-folder "$REPO"
+            --config "$REPO/$JSON"
+            --skip-post-create
+            --skip-post-attach
+          )
 
-          devcontainer exec \
-            --workspace-folder "$REPO" --config "$REPO/$JSON" \
-            --remote-env GITHUB_ENV=/mnt/github/env \
-            --remote-env GITHUB_PATH=/mnt/github/path \
-            --remote-env GITHUB_OUTPUT=/mnt/github/output \
-            --remote-env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
-            --remote-env GITHUB_STEP_SUMMARY=/mnt/github/step-summary \
-            --remote-env AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-            --remote-env AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
-            --remote-env AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-            --remote-env NVIDIA_VISIBLE_DEVICES="$NVIDIA_VISIBLE_DEVICES" \
-            /bin/bash -li /ci-script.sh
+          vars=(
+            --remote-env "GITHUB_ENV=/mnt/github/env"
+            --remote-env "GITHUB_PATH=/mnt/github/path"
+            --remote-env "GITHUB_OUTPUT=/mnt/github/output"
+            --remote-env "GITHUB_STEP_SUMMARY=/mnt/github/step-summary"
+            --remote-env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            --remote-env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+            --remote-env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            --remote-env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES""
+          )
+
+          vols=(
+            --mount "type=bind,source=${{github.workspace}}/ci-script.sh,target=/ci-script.sh"
+            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env"
+            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path"
+            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output"
+            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary"
+          )
+
+          up_json="$(devcontainer up "${args[@]}" "${vars[@]}" "${vols[@]}" | tee >(cat 1>&2))"
+
+          devcontainer exec "${args[@]:0:2}" "${vars[@]}" /bin/bash -li /ci-script.sh
 
           docker rm -f "$(node -p "JSON.parse('$up_json').containerId")"
 
