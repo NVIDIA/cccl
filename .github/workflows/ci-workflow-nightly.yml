@@ -40,6 +40,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
@@ -75,6 +77,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Check workflow success
         id: check-workflow

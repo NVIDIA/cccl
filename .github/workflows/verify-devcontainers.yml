@@ -19,6 +19,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Setup jq and yq
       run: |
         sudo apt-get update
@@ -60,6 +62,8 @@ jobs:
     steps:
     - name: Check out the code
       uses: actions/checkout@v4
+      with:
+        persist-credentials: false
       # devcontainer/ci doesn't supported nested devcontainer.json files, so we need to copy the devcontainer.json
       # file to the top level .devcontainer/ directory
     - name: Copy devcontainer.json to .devcontainer/

@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
@@ -91,6 +93,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Get Base Branch from PR
         id: get-pr-info
