@@ -192,20 +192,14 @@ struct DeviceHistogram
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
-
-    CounterT* d_histogram1[1] = {d_histogram};
-    int num_levels1[1]        = {num_levels};
-    LevelT lower_level1[1]    = {lower_level};
-    LevelT upper_level1[1]    = {upper_level};
-
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
+      &d_histogram,
+      &num_levels,
+      &lower_level,
+      &upper_level,
       num_samples,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * num_samples,
@@ -376,19 +370,14 @@ struct DeviceHistogram
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
-    CounterT* d_histogram1[1] = {d_histogram};
-    int num_levels1[1]        = {num_levels};
-    LevelT lower_level1[1]    = {lower_level};
-    LevelT upper_level1[1]    = {upper_level};
-
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
+      &d_histogram,
+      &num_levels,
+      &lower_level,
+      &upper_level,
       num_row_samples,
       num_rows,
       row_stride_bytes,
@@ -987,18 +976,13 @@ struct DeviceHistogram
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
-
-    CounterT* d_histogram1[1]  = {d_histogram};
-    int num_levels1[1]         = {num_levels};
-    const LevelT* d_levels1[1] = {d_levels};
-
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      &d_histogram,
+      &num_levels,
+      &d_levels,
       num_samples,
       (OffsetT) 1,
       (size_t) (sizeof(SampleT) * num_samples),
@@ -1148,17 +1132,13 @@ struct DeviceHistogram
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
-    CounterT* d_histogram1[1]  = {d_histogram};
-    int num_levels1[1]         = {num_levels};
-    const LevelT* d_levels1[1] = {d_levels};
-
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      &d_histogram,
+      &num_levels,
+      &d_levels,
       num_row_samples,
       num_rows,
       row_stride_bytes,
