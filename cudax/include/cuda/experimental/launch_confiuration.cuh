@@ -1,6 +1,6 @@
 #ifndef __CUDA_LAUNCH_CONFIGURATION__
 #define __CUDA_LAUNCH_CONFIGURATION__
-#include <cuda/next/hierarchy_dimensions.cuh>
+#include <cuda/experimental/hierarchy.cuh>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 

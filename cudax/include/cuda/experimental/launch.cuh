@@ -2,7 +2,7 @@
 #define __CUDA_LAUNCH__
 #include <cuda_runtime.h>
 
-#include <cuda/next/launch_confiuration.cuh>
+#include <cuda/experimental/launch_confiuration.cuh>
 
 namespace cuda::experimental
 {
@@ -32,7 +32,7 @@ cudaError_t launch_impl(Config conf, const Kernel& kernel_fn, const Args&... arg
   cudaLaunchConfig_t config               = {0};
   cudaError_t status                      = cudaSuccess;
   constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
-  constexpr unsigned int num_attrs_needed = conf.num_attrs_needed() + has_cluster_level;
+  constexpr unsigned int num_attrs_needed = conf.num_attrs_needed() + has_cluster_level + 1;
   cudaLaunchAttribute attrs[num_attrs_needed];
   config.attrs    = &attrs[0];
   config.numAttrs = 0;
@@ -45,12 +45,12 @@ cudaError_t launch_impl(Config conf, const Kernel& kernel_fn, const Args&... arg
 
   // auto conf = transform_config(conf, kernel_fn);
 
-  config.blockDim = conf.dims.flatten(thread, block);
-  config.gridDim  = conf.dims.flatten(block, grid);
+  config.blockDim = conf.dims.extents(thread, block);
+  config.gridDim  = conf.dims.extents(block, grid);
 
   if constexpr (has_cluster_level)
   {
-    dim3 cluster_dims                            = conf.dims.flatten(block, cluster);
+    dim3 cluster_dims                            = conf.dims.extents(block, cluster);
     config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
     config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
     config.numAttrs++;

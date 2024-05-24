@@ -1,11 +1,11 @@
 #include <cuda/atomic>
-#include <cuda/next/launch.cuh>
+#include <cuda/experimental/launch.cuh>
 
 #include <functional>
 #include <iostream>
 #include <type_traits>
 
-#include "catch2_helpers/testing_common.cuh"
+#include "hierarchy/testing_common.cuh"
 #include <cooperative_groups.h>
 
 namespace cg = cooperative_groups;
@@ -152,75 +152,6 @@ struct static_self_contained
   }
 };
 
-/*
-struct self_contained {
-    unsigned int problem_size;
-
-    template <Arch>
-    auto get_config(unsigned int priority, cudaStream_t stream) {
-        auto constexpr block_size = 256;
-        auto dims = cudax::block<map(arch -> unsigned int)>() & cudax::grid(problem_size / block_size);
-        auto config = cudax::cooperative_launch() & cudax::launch_priority(priority) & cudax::arch<Arch> &
-cudax::launch_stream(stream);
-
-        return cudax::kernel_config(dims, config);
-    }
-
-    // Technically could be deduced from the above, but this is simpler
-    template <typename Config>
-    __device__ void operator()(Config conf, unsigned int i) {
-
-    }
-};
-
-void self_contained_example() {
-    cudax::launch(static_self_contained::conf, static_self_contained{});
-
-    self_contained kernel = {2048};
-    cudax::launch(kernel.get_config(3), kernel, 2U);
-}
-*/
-
-// Non-functional mock-up of possible future features accessible with cudax::launch
-// It shows a possible API to attach small amount of global memory to a kernel and to a one-way or two-way copy to it
-// Its both better performing than explicit cudaMemcpy and easier to use
-struct cooperative_counter
-{
-  template <typename Configuration, typename T>
-  __device__ void operator()(Configuration config, T* data, size_t size, T searched)
-  {
-    auto& atomic_int = get_workspace_content(config);
-
-    for (size_t i = 0; i < size; i += cudax::grid.count(cudax::thread))
-    {
-      if (data[i + cudax::grid.rank(cudax::thread)] == searched)
-      {
-        atomic_int += 1;
-      }
-    }
-  }
-};
-
-/*
-void workspace_example()
-{
-  cuda::atomic<int> atomic_int(0);
-  auto dimensions = cudax::block_dims<256>() & cudax::cluster_dims<2, 2, 2>() & cudax::grid_dims<128>();
-  auto extensions = cudax::workspace(atomic_int) & cudax::cooperative_launch();
-
-  thrust::device_vector<int> vec(1024);
-  thrust::sequence(vec.begin(), vec.end());
-
-  // Workspace is initialized with contents of atomic_int variable as part of launch,
-  // making it faster than a separate memcpy for a small object (important for short-running kernels)
-  cudax::launch(dimensions & extensions, cooperative_counter{}, thrust::raw_pointer_cast(vec.data()), vec.size(), 42);
-  cudaDeviceSynchronize();
-  // Value from the workspace is copied back after kernel exits (with a normal memcpy this time)
-  // Can be opted out, if not needed
-
-  std::cout << atomic_int << std::endl;
-}*/
-
 void per_arch_example(int i)
 {
   static auto configs = cudax::per_arch_kernel_config(
@@ -233,43 +164,6 @@ void per_arch_example(int i)
   static constexpr auto& c = cudax::get_target_config<cudax::sm_70>(configs);
   static_assert(c.dims.count() == 512 * 128);
 }
-
-/*
-struct kernel
-{
-  template <typename Config>
-  __device__ void operator()(Config config)
-  {
-    static_assert(cudax::is_cooperative(config));
-    auto& dynamic_smem = cudax::get_smem_content_ref(config);
-  }
-};
-
-template <typename NonDeduced>
-struct kernel
-{
-  int param1;
-  int param2;
-  int param3;
-
-  auto get_config()
-  {
-    return cudax::kernel_config();
-  }
-
-  using config_type = // can't make it work
-
-    __device__ void operator()(config_type config, int param4)
-  {
-    static_assert(cudax::is_cooperative(config));
-    auto& dynamic_smem = cudax::get_smem_content_ref(config);
-  }
-};
-
-auto k = kernel<int>(p1, p2, p3);
-cudax::launch(k.get_config(), k, p4);
-cudax::launch(k, p4);
-*/
 
 void stream_example()
 {
@@ -302,6 +196,4 @@ TEST_CASE("Smoke", "[launch]")
     printf("Launch error %d\n", e.error);
   }
   cudaDeviceSynchronize();
-  // Pure mock-up, would require more work to implement
-  // workspace_example();
 }
