@@ -154,9 +154,21 @@ jobs:
             | tee >(cat -) 1>&2
           )"
 
-          devcontainer exec --workspace-folder "$REPO" --config "$REPO/$JSON" /bin/bash -li /ci-script.sh
+          devcontainer exec \
+            --workspace-folder "$REPO" --config "$REPO/$JSON" \
+            --remote-env GITHUB_ENV=/mnt/github/env \
+            --remote-env GITHUB_PATH=/mnt/github/path \
+            --remote-env GITHUB_OUTPUT=/mnt/github/output \
+            --remote-env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+            --remote-env GITHUB_STEP_SUMMARY=/mnt/github/step-summary \
+            --remote-env AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+            --remote-env AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
+            --remote-env AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+            --remote-env NVIDIA_VISIBLE_DEVICES="$NVIDIA_VISIBLE_DEVICES" \
+            /bin/bash -li /ci-script.sh
 
           docker rm -f "$(node -p "JSON.parse('$up_json').containerId")"
+
       - name: Prepare job artifacts
         id: done
         run: |
