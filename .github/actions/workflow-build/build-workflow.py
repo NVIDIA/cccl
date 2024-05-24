@@ -545,8 +545,15 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         if 'two_stage' in group_json:
             for two_stage_json in group_json['two_stage']:
                 two_stage_json['id'] = next(guid_generator)
-                for job_json in two_stage_json['producers'] + two_stage_json['consumers']:
-                    job_json['id'] = next(guid_generator)
+
+                # Currently only one producer allowed:
+                assert (len(two_stage_json['producers']) == 1)
+                producer_id = next(guid_generator)
+                two_stage_json['producers'][0]['id'] = producer_id
+
+                for consumer_json in two_stage_json['consumers']:
+                    consumer_json['id'] = next(guid_generator)
+                    consumer_json['producer_id'] = producer_id
 
     return workflow_dispatch_groups
 

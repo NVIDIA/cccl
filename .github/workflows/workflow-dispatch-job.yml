@@ -33,6 +33,9 @@ on:
       runner: {type: string, required: true}
       command: {type: string, required: true}
       id: {type: string, required: true}
+      # Set to the id of the output artifact to use as input.
+      download_input_artifact: {type: string, required: false}
+      upload_output_artifact: {type: boolean, default: false, required: false}
       env: {type: string, required: false}
       dummy_matrix: {type: string, required: false, default: '[{"valid": true}]'}
 
@@ -84,6 +87,12 @@ jobs:
           echo "SCCACHE_IDLE_TIMEOUT=32768" >> $GITHUB_ENV
           echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
           echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
+      - name: Download input artifacts
+        if: ${{inputs.download_input_artifact}}
+        uses: actions/download-artifact@v3
+        with:
+          name: job-${{inputs.download_input_artifact}}-output
+          path: ${{github.event.repository.name}}
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         shell: su coder {0}
         env:
@@ -115,23 +124,26 @@ jobs:
         run: |
           echo "SUCCESS=true" | tee -a "${GITHUB_OUTPUT}"
 
-          result_dir="jobs/${{inputs.id}}"
-          mkdir -p "$result_dir"
-
-          touch "$result_dir/success"
-
           # Finds a matching file in the repo directory and copies it to the results directory.
-          find_and_copy() {
+          find_and_move() {
             filename="$1"
+            target_dir="$2"
             filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
             if [[ -z "$filepath" ]]; then
-              echo "${filename} does not exist in repo directory."
-              return 1
+            echo "${filename} does not exist in repo directory."
+            return 1
             fi
-            cp -v "$filepath" "$result_dir"
+            mv -v "$filepath" "$target_dir"
           }
 
-          find_and_copy "sccache_stats.json" || true # Ignore failures
+          # Job outputs for summary and determining success:
+          result_dir="jobs/${{inputs.id}}"
+          mkdir -p "$result_dir"
+          touch "$result_dir/success"
+          find_and_move "sccache_stats.json" "$result_dir" || true # Ignore failures
+
+          # Job outputs for consumers:
+          find_and_move "output_artifact.tar.bz2" "." || true
 
           echo "::group::Job artifacts"
           tree "$result_dir"
@@ -142,6 +154,15 @@ jobs:
         with:
           name: jobs
           path: jobs
+
+      - name: Upload output artifacts
+        if: ${{inputs.upload_output_artifact}}
+        continue-on-error: true # May not exist
+        uses: actions/upload-artifact@v3
+        with:
+          name: job-${{inputs.id}}-output
+          path: output_artifact.tar.bz2
+          retention-days: 1
 
 
   windows:
@@ -228,6 +249,7 @@ jobs:
           find "$result_dir" # Tree not available in this image.
           echo "::endgroup::"
 
+      # These are downloaded at the end of the workflow to prepare the summary and determine success.
       - name: Upload job artifacts
         uses: actions/upload-artifact@v3
         with:

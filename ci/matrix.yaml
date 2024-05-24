@@ -49,7 +49,7 @@ workflows:
   #   - {jobs: ['build'], project['thrust'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
   #
   override:
-    - {jobs: ['test'],  std: '17', cxx: [*gcc12, *llvm16, *msvc2022]}
+    - {jobs: ['test'],  project: 'cub', std: '17', cxx: [*gcc12]}
 
   pull_request:
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}

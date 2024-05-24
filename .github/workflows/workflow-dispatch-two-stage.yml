@@ -34,11 +34,12 @@ jobs:
         include: ${{fromJSON(inputs.producers)}}
     uses: ./.github/workflows/workflow-dispatch-job.yml
     with:
-      name:     ${{ matrix.name }}
-      runner:   ${{ matrix.runner }}
-      image:    ${{ matrix.image }}
-      command:  ${{ matrix.command }}
-      id:       ${{ matrix.id }}
+      name:                   ${{ matrix.name }}
+      runner:                 ${{ matrix.runner }}
+      image:                  ${{ matrix.image }}
+      command:                ${{ matrix.command }}
+      id:                     ${{ matrix.id }}
+      upload_output_artifact: true
 
   consumers:
     # This is an internal dispatch job and the name is not important.
@@ -57,8 +58,9 @@ jobs:
         include: ${{fromJSON(inputs.consumers)}}
     uses: ./.github/workflows/workflow-dispatch-job.yml
     with:
-      name:     ${{ matrix.name }}
-      runner:   ${{ matrix.runner }}
-      image:    ${{ matrix.image }}
-      command:  ${{ matrix.command }}
-      id:       ${{ matrix.id }}
+      name:                    ${{ matrix.name }}
+      runner:                  ${{ matrix.runner }}
+      image:                   ${{ matrix.image }}
+      command:                 ${{ matrix.command }}
+      id:                      ${{ matrix.id }}
+      download_input_artifact: ${{ matrix.producer_id }}
