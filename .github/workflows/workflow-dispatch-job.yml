@@ -79,7 +79,7 @@ jobs:
             sed -i 's/"gpu": "optional"/"gpu": true/' "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
           fi
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
-          sed -i "s@source=${localWorkspaceFolder}@source=/home/runner/_work/$repo/$repo/$repo@" "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
+          sed -i "s@source=\${localWorkspaceFolder}@source=/home/runner/_work/$repo/$repo/$repo@" "$repo/.devcontainer/${{inputs.devcontainer}}/devcontainer.json"
       - name: Add NVCC problem matcher
         run: |
           echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
