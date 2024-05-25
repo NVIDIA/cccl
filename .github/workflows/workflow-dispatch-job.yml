@@ -102,12 +102,14 @@ jobs:
         run: |
           # Tell devcontainers CLI to always run with --gpus if on a GPU runner
           if test "${RUNNER#*"-gpu-"}" != "$RUNNER"; then
-            sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
-            uuid="$(nvidia-smi -i 0 --query-gpu=uuid --format=csv,noheader)"
-            bus_id="$(nvidia-smi -i 0 --query-gpu=pci.bus_id --format=csv,noheader)"
+            set -x
+            find /dev/ -name 'nvidia*'
+            nvidia-smi
             name_str='"name": "${{inputs.devcontainer}}"'
-            run_args=(\"--gpus\" \"device=${uuid}\" \"--device=/proc/driver/nvidia/gpus/${bus_id}\")
+            run_args=(\"--gpus\" \"device=$(nvidia-smi -i 0 --query-gpu=uuid --format=csv,noheader)\")
             sed -i "s/$name_str/$name_str, \"runArgs\": [${run_args[*]}]" "$REPO/$JSON"
+            sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
+            set +x
           fi
 
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
@@ -115,6 +117,7 @@ jobs:
 
           cat <<"EOF" > ci.sh
           set -eo pipefail
+          nvidia-smi
           cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
