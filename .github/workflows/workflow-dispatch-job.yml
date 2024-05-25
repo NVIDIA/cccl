@@ -54,6 +54,7 @@ jobs:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
     runs-on: ${{inputs.runner}}
     container:
+      options: --privileged
       image: docker:latest
       volumes:
         - /home/runner/_work/_temp
@@ -103,7 +104,6 @@ jobs:
           # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
           if test "${RUNNER#*"-gpu-"}" != "$RUNNER"; then
             sed -i 's/"gpu": "optional"/"gpu": true/' "$REPO/$JSON"
-            sed -i 's/"name": "${{inputs.devcontainer}}"/"name": "${{inputs.devcontainer}}", "runArgs":["--privileged"]/' "$REPO/$JSON"
           fi
 
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
