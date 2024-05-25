@@ -71,7 +71,7 @@ jobs:
         run: |
           # Install bash, node, and devcontainers CLI
           apt update
-          apt install bash nodejs npm sed
+          apt install bash nodejs npm sed -y --no-install-recommends
           npm install -g @devcontainers/cli
       - name: Checkout repo
         uses: actions/checkout@v4
