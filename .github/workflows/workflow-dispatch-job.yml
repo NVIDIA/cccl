@@ -66,12 +66,12 @@ jobs:
         TMPDIR: /home/runner/_work/_temp
         NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
-      - name: Setup alpine
+      - name: Setup dind
         shell: sh
         run: |
           # Install bash, node, and devcontainers CLI
-          apk update
-          apk add bash nodejs npm sed
+          apt update
+          apt install bash nodejs npm sed
           npm install -g @devcontainers/cli
       - name: Checkout repo
         uses: actions/checkout@v4
