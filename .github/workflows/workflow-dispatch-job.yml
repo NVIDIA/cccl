@@ -54,7 +54,6 @@ jobs:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
     runs-on: ${{inputs.runner}}
     container:
-      options: --privileged
       image: docker:latest
       volumes:
         - /home/runner/_work/_temp
@@ -101,9 +100,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{env.AWS_SECRET_ACCESS_KEY}}
           NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
         run: |
-          # Tell devcontainers CLI to always run with --gpus all if on a GPU runner
+          # Tell devcontainers CLI to always run with --gpus if on a GPU runner
           if test "${RUNNER#*"-gpu-"}" != "$RUNNER"; then
-            sed -i 's/"gpu": "optional"/"gpu": true/' "$REPO/$JSON"
+            sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
+            uuid="$(nvidia-smi -i 0 --query-gpu=uuid --format=csv,noheader)"
+            bus_id="$(nvidia-smi -i 0 --query-gpu=pci.bus_id --format=csv,noheader)"
+            name_str='"name": "${{inputs.devcontainer}}"'
+            run_args=(\"--gpus\" \"device=${uuid}\" \"--device=/proc/driver/nvidia/gpus/${bus_id}\")
+            sed -i "s/$name_str/$name_str, \"runArgs\": [${run_args[*]}]" "$REPO/$JSON"
           fi
 
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
