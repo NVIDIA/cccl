@@ -108,7 +108,7 @@ jobs:
           # Ensure mount paths align with the _outer_ container, not the docker:latest volume
           sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO@" "$REPO/$JSON"
 
-          cat <<"EOF" > ci-script.sh
+          cat <<"EOF" > ci.sh
           set -eo pipefail
           cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
@@ -130,7 +130,7 @@ jobs:
           fi
           EOF
 
-          chown -R 1001:1001 ci-script.sh "$REPO"
+          chown -R 1001:1001 ci.sh "$REPO"
 
           __w="$(dirname "$(dirname "${{github.workspace}}")")"
 
@@ -157,18 +157,25 @@ jobs:
           )
 
           vols=(
-            --mount "type=bind,source=${{github.workspace}}/ci-script.sh,target=/ci-script.sh"
+            --mount "type=bind,source=${{github.workspace}}/ci.sh,target=/ci.sh"
             --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env"
             --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path"
             --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output"
             --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary"
           )
 
-          up_json="$(devcontainer up "${args[@]}" "${vars[@]}" "${vols[@]}")"
+          mkfifo /tmp/devcontainer-creation-log
+          cat /tmp/devcontainer-creation-log <(echo "") &
+          container_id="$(node -p "JSON.parse('$(
+            devcontainer up "${args[@]}" "${vars[@]}" "${vols[@]}" 2>"/tmp/devcontainer-creation-log"
+          )').containerId")"
+          wait
 
-          devcontainer exec "${args[@]:0:4}" "${vars[@]}" /bin/bash -li /ci-script.sh
+          devcontainer exec "${args[@]:0:4}" "${vars[@]}" /bin/bash -l /ci.sh || code=$?
 
-          docker rm -f "$(node -p "JSON.parse('$up_json').containerId")"
+          docker rm -f "$container_id" || true # Ignore failures
+
+          exit "${code:-0}"
 
       - name: Prepare job artifacts
         id: done
