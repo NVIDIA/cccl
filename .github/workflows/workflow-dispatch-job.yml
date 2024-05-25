@@ -54,7 +54,7 @@ jobs:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
     runs-on: ${{inputs.runner}}
     container:
-      image: docker:latest
+      image: ghcr.io/ehfd/nvidia-dind:latest
       volumes:
         - /home/runner/_work/_temp
         - /home/runner/_work/_tool
