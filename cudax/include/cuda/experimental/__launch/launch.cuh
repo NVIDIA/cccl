@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 
 #include <cuda/experimental/__launch/confiuration.cuh>
+#include <cuda/std/__exception/cuda_error.h>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -74,7 +75,7 @@ void launch(const kernel_config<Dimensions, Config>& conf, const Kernel& kernel,
   }
   if (status != cudaSuccess)
   {
-    throw launch_error{status};
+    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -94,7 +95,7 @@ void launch(const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, c
   }
   if (status != cudaSuccess)
   {
-    throw launch_error{status};
+    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -110,7 +111,7 @@ void launch(const kernel_config<Dimensions, Config>& conf,
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw launch_error{status};
+    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -124,7 +125,7 @@ void launch(const hierarchy_dimensions<Levels...>& dims,
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw launch_error{status};
+    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -136,7 +137,7 @@ void launch(const kernel_config<Dimensions, Config>& conf, void (*kernel)(ExpArg
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw launch_error{status};
+    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -148,7 +149,7 @@ void launch(const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs.
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw launch_error{status};
+    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
   }
 }
 

@@ -1,6 +1,5 @@
 #ifndef _CUDAX__LAUNCH_CONFIGURATION
 #define _CUDAX__LAUNCH_CONFIGURATION
-#include <cuda/experimental/exception.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 #include <cuda/std/span>
 #include <cuda/std/tuple>

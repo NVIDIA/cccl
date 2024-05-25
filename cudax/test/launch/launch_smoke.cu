@@ -5,7 +5,7 @@
 #include <iostream>
 #include <type_traits>
 
-#include "hierarchy/testing_common.cuh"
+#include "../hierarchy/testing_common.cuh"
 #include <cooperative_groups.h>
 
 namespace cg = cooperative_groups;
@@ -161,7 +161,12 @@ void stream_example()
   auto dims = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(12));
   auto conf = cudax::make_config(dims, cudax::launch_on(stream));
 
-  cudax::launch(conf, [] __device__() {});
+  cudax::launch(conf, [] __device__(auto conf) {
+    if (conf.dims.rank(cudax::thread) == 0)
+    {
+      printf("block size %d\n", blockDim.x);
+    }
+  });
 }
 
 TEST_CASE("Smoke", "[launch]")
@@ -169,17 +174,17 @@ TEST_CASE("Smoke", "[launch]")
   // Examples of use
   try
   {
-    // simple_reduce_example();
     non_functor_example();
     new_launch_old_kernel();
     inline_lambda_example();
     dynamic_smem_example();
     stream_example();
-    //        self_contained_example();
   }
-  catch (cudax::launch_error& e)
+  catch (cuda::cuda_error& e)
   {
-    printf("Launch error %d, %s\n", e.error, e.what());
+    printf("Launch error %s\n", e.what());
+    // static_assert(cuda::std::is_base_of_v<::cuda::std::exception, cuda::cuda_error>);
+    throw std::runtime_error(e.what());
   }
   cudaDeviceSynchronize();
 }
