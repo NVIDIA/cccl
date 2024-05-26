@@ -764,6 +764,11 @@ struct AgentSelectIf
     InitializeSelections<true, IS_LAST_TILE>(
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
+    // Ensure that all items have been loaded before signalling subsequent CTAs that may potentially override this CTA's
+    // items in case of in-place compaction
+    __threadfence();
+
+    // Ensure temporary storage used during block load can be reused 
     CTA_SYNC();
 
     // Exclusive scan of selection_flags
@@ -839,6 +844,11 @@ struct AgentSelectIf
     InitializeSelections<false, IS_LAST_TILE>(
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
+    // Ensure that all items have been loaded before signalling subsequent CTAs that may potentially override this CTA's
+    // items in case of in-place compaction
+    __threadfence();
+
+    // Ensure temporary storage used during block load can be reused 
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
