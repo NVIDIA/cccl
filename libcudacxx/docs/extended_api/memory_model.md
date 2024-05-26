@@ -53,10 +53,10 @@ the scope is `thread_scope_system` and:
 
 - it affects an object in [unified memory] and [`concurrentManagedAccess`] is `1`, **or**
 - it affects an object in CPU memory and [`hostNativeAtomicSupported`] is `1`, **or**
-- it is a load or store that affects a naturally-aligned object of sizes `1`, `2`, `4`, or `8` bytes on [mapped memory], **or**
+- it is a load or store that affects a naturally-aligned object of sizes `1`, `2`, `4`, `8`, or `16` bytes on [mapped memory], **or**
 - it affects an object in GPU memory and only GPU threads access it.
 
-[mapped memory]: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory
+> **Note**: If `hostNativeAtomicSupported` is `0`, atomic load or store operations at system scope that affect a naturally-aligned 16-byte wide object in [unified memory] or [mapped memory] require system support. NVIDIA is not aware of any system that lacks this support and there is no CUDA API query available to detect such systems.
 
 Refer to the [CUDA programming guide] for more information on [unified memory], [mapped memory], CPU memory, and GPU peer memory.
 
