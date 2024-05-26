@@ -12,6 +12,13 @@ It is low across threads within a block, but high across arbitrary threads in th
 
 To account for non-uniform thread synchronization costs that are not always low, CUDA C++ extends the standard C++ memory model and concurrency facilities in the `cuda::` namespace with **thread scopes**, retaining the syntax and semantics of standard C++ by default.
 
+## Asynchronous operations
+
+[Asynchronous operations] - like [`memcpy_async`] - are non-blocking operations performed _as-if_ by a new thread of execution.
+
+[Asynchronous operations]: extended_api/asynchronous_operations.md
+[`memcpy_async`]: extended_api/asynchronous_operations/memcpy_async.md
+
 ## Thread Scopes
 
 A _thread scope_ specifies the kind of threads that can synchronize with each other using synchronization primitive such as [`atomic`] or [`barrier`].
@@ -39,6 +46,7 @@ Each program thread is related to each other program thread by one or more threa
 - Each GPU thread is related to each other GPU thread in the same CUDA device and within the same [memory synchronization domain](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#memory-synchronization-domains) by the *device* thread scope: `thread_scope_device`.
 - Each GPU thread is related to each other GPU thread in the same CUDA thread block by the *block* thread scope: `thread_scope_block`.
 - Each thread is related to itself by the `thread` thread scope: `thread_scope_thread`.
+- Each thread is related to each asynchronous operation it issues by all scopes.
 
 ## Synchronization primitives
 
