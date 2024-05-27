@@ -732,12 +732,14 @@ public:
 #ifdef __CUDA_FP16_TYPES_EXIST__
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
+      ScaleT result;
       NV_IF_TARGET(NV_PROVIDES_SM_53,
-                   (return this->ComputeScale(num_levels, max_level, min_level, ::cuda::std::true_type{});),
-                   (return this->ComputeScale(
-                     num_levels, __half2float(max_level), __half2float(min_level), ::cuda::std::true_type{});));
+                   (result.reciprocal = __hdiv(static_cast<__half>(num_levels - 1), __hsub(max_level, min_level));),
+                   (result.reciprocal = static_cast<float>(num_levels - 1)
+                                      / (static_cast<float>(max_level) - static_cast<float>(min_level));))
+      return result;
     }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
     // All types but __half:
     template <typename T>
@@ -751,10 +753,10 @@ public:
     {
       NV_IF_TARGET(
         NV_PROVIDES_SM_53,
-        (return sample >= min_level && sample < max_level;),
-        (return this->SampleIsValid(__half2float(sample), __half2float(max_level), __half2float(min_level));));
+        (return __hge(sample, min_level) && __hlt(sample, max_level);),
+        (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
     }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
     /**
      * @brief Bin computation for floating point (and extended floating point) types
@@ -798,10 +800,10 @@ public:
     {
       NV_IF_TARGET(
         NV_PROVIDES_SM_53,
-        (return this->ComputeBin(sample, min_level, scale, ::cuda::std::true_type{});),
+        (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
         (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
     }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
     MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
