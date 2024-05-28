@@ -109,10 +109,11 @@ jobs:
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
 
             find /dev/ -name 'nvidia[0-9]*'
+            find /proc/driver/nvidia/gpus/
             stat /usr/bin/nvidia-smi
             stat /usr/bin/nvidia-persistenced
-            find /usr/lib/ -name 'libcuda.so*'
-            find /usr/lib/ -name 'libnvidia-ml.so*'
+            find / -name 'libcuda.so*'
+            find / -name 'libnvidia-ml.so*'
 
             declare -a devs="($(find /dev/ -name 'nvidia[0-9]*') /dev/nvidiactl)"
             declare -a devs="(${devs[*]/#/--device })"
@@ -123,8 +124,8 @@ jobs:
             declare -a vols="(
               /usr/bin/nvidia-smi:/usr/bin/nvidia-smi
               /usr/bin/nvidia-persistenced:/usr/bin/nvidia-persistenced
-              $(find /usr/lib/ -name 'libcuda.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
-              $(find /usr/lib/ -name 'libnvidia-ml.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
+              $(find / -name 'libcuda.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
+              $(find / -name 'libnvidia-ml.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
             )"
             declare -a vols="(${vols[*]/#/-v })";
             vols=("${vols[@]/#/\"}")
