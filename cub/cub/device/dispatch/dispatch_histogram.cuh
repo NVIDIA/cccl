@@ -716,10 +716,10 @@ public:
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
       ScaleT result;
-      NV_IF_TARGET(NV_PROVIDES_SM_53,
-                   (result.reciprocal = __hdiv(static_cast<__half>(num_levels - 1), __hsub(max_level, min_level));),
-                   (result.reciprocal = static_cast<float>(num_levels - 1)
-                                      / (static_cast<float>(max_level) - static_cast<float>(min_level));))
+      NV_IF_TARGET(
+        NV_PROVIDES_SM_53,
+        (result.reciprocal = __hdiv(__half2float(num_levels - 1), __hsub(max_level, min_level));),
+        (result.reciprocal = static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level));))
       return result;
     }
 #endif // __CUDA_FP16_TYPES_EXIST__
