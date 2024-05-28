@@ -38,33 +38,17 @@ jobs:
       - name: Build all docs
         run: ./docs/gen_docs.bash
 
-      # Build top level docs for CCCL
-      - name: Build landing page
+      # Copy all docs to the right folder
+      - name: Move docs to right oflder
         run: |
-          mkdir ./site
-          cp -rf ./docs/_build/docs/cccl/latest/* .site
-
-      #  cub
-      - name: Build cub docs
-        run: |
-          mkdir ./site/cub
-          cp -rf ./docs/_build/docs/cub/latest/* .site
-
-      # Libcudacxx
-      - name: Build libcudacxx docs
-        run: |
-          mkdir ./site/libcudacxx
-          cp -rf ./docs/_build/docs/libcudacxx/latest/* .site
-
-      # Thrust
-      - name: Build Thrust markdown in Docker
-        run: bash ./docs/build_docs.bash "cccl:docs" /cccl/thrust/docs/build_docs_locally.bash
-
-      - name: Build Thrust docs
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./thrust/build_docs/github_pages
-          destination: ./_site/thrust
+          mkdir _site
+          cp -rf ./docs/_build/docs/cccl/latest/* _site
+          mkdir _site/cub
+          cp -rf ./docs/_build/docs/cub/latest/* _site/cub
+          mkdir _site/libcudacxx
+          cp -rf ./docs/_build/docs/libcudacxx/latest/* _site/libcudacxx
+          mkdir _site/thrust
+          cp -rf ./docs/_build/docs/thrust/latest/* _site/thrust
 
       # Upload build artifacts
       - name: Upload artifact

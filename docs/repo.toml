@@ -18,12 +18,13 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cub", "cccl" ]
+project_build_order = [ "libcudacxx", "cub", "thrust", "cccl" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
+    [ "thrust", "_build/docs/thrust/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -153,5 +154,86 @@ doxygen_conf_extra = """
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "CUB_DETAIL*"
+  AUTOLINK_SUPPORT       = YES
+"""
+
+[repo_docs.projects.thrust]
+name = "Thrust: The C++ Parallel Algorithms Library"
+docs_root = "thrust"
+logo = "../img/logo.png"
+
+enhanced_search_enabled = true
+api_output_directory = "api"
+use_fast_doxygen_conversion = true
+sphinx_generate_doxygen_groups = true
+sphinx_generate_doxygen_pages = true
+sphinx_exclude_patterns = []
+
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "cub", "_build/docs/cub/latest" ],
+]
+
+# list of files from which to extract documentation.  if a directory is specified,
+# it will be recursively searched.
+#
+# paths are relative to ${docs_root}.
+#
+# defaults to an empty list.
+doxygen_input = [
+    "../../thrust/thrust/*.h",
+    "../../thrust/thrust/iterator/*.h",
+    "../../thrust/thrust/mr/*.h",
+    "../../thrust/thrust/random/*.h",
+]
+
+# doxygen allows the creation of custom commands to ease in the documentation process.
+# for example, this adds a @carb_framework_overview command which creates a link
+# to a reStructuredText document. defaults to an empty list.
+#
+# more information on the format can be found at:
+#     https://www.doxygen.nl/manual/config.html#cfg_aliases
+doxygen_aliases = []
+
+# doxygen sometimes gets confused by macros. the array below allows the user to
+# tell doxygen how to expand a macro. defaults to an empty list.
+#
+# more information on the format can be found at:
+#     https://www.doxygen.nl/manual/config.html#cfg_predefined
+doxygen_predefined = [
+  "_CCCL_DEVICE=",
+  "_CCCL_EXEC_CHECK_DISABLE=",
+  "_CCCL_FORCEINLINE=",
+  "_CCCL_HOST=",
+  "_CCCL_HOST_DEVICE=",
+  "_CCCL_NODISCARD=[[nodiscard]]",
+  "_CCCL_STD_VER",
+  "DOXYGEN_SHOULD_SKIP_THIS",
+  "DOXYGEN_ACTIVE",
+  "THRUST_DISABLE_NAMESPACE_MAGIC",
+  "THRUST_IGNORE_NAMESPACE_MAGIC_ERROR",
+  "THRUST_NAMESPACE_BEGIN=namespace thrust {",
+  "THRUST_NAMESPACE_END=}",
+  "THRUST_INLINE_CONSTANT",
+  "THRUST_PREVENT_MACRO_SUBSTITUTION",
+  "THRUST_TRAILING_RETURN(x)= -> x",
+  "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(x,y)=",
+  "THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
+  "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
+  "THRUST_FWD(x)=x",
+]
+
+# make sure to use ./fetch_imgs.sh
+doxygen_conf_extra = """
+  IMAGE_PATH             = ${config_root}/img
+  DISTRIBUTE_GROUP_DOC   = Yes
+  DOXYFILE_ENCODING      = UTF-8
+  INPUT_ENCODING         = UTF-8
+  EXTENSION_MAPPING      = cuh=c++ cu=c++
+  EXAMPLE_PATH           = ../../thrust/examples
+  EXAMPLE_RECURSIVE      = NO
+  EXAMPLE_PATTERNS       = *.cu
+  EXCLUDE_SYMBOLS        = "*detail*" "__*" "THRUST_NS_QUALIFIER" "optional"
   AUTOLINK_SUPPORT       = YES
 """
