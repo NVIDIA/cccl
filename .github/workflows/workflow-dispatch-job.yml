@@ -52,8 +52,7 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
-    # runs-on: ${{inputs.runner}}
-    runs-on: linux-amd64-gpu-p100-latest-1
+    runs-on: ${{inputs.runner}}
     container:
       image: docker:latest
       volumes:
@@ -90,8 +89,7 @@ jobs:
           role-duration-seconds: 43200 # 12 hours)
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         env:
-          # RUNNER: ${{inputs.runner}}
-          RUNNER: linux-amd64-gpu-p100-latest-1
+          RUNNER: ${{inputs.runner}}
           # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
           COMMAND: "${{inputs.command}}"
