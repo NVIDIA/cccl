@@ -111,7 +111,6 @@ jobs:
             find /dev/ -name 'nvidia[0-9]*'
             stat /usr/bin/nvidia-smi
             stat /usr/bin/nvidia-persistenced
-            stat /var/run/nvidia-persistenced/socket
             find /usr/lib/ -name 'libcuda.so*'
             find /usr/lib/ -name 'libnvidia-ml.so*'
 
@@ -124,7 +123,6 @@ jobs:
             declare -a vols="(
               /usr/bin/nvidia-smi:/usr/bin/nvidia-smi
               /usr/bin/nvidia-persistenced:/usr/bin/nvidia-persistenced
-              /var/run/nvidia-persistenced/socket:/var/run/nvidia-persistenced/socket
               $(find /usr/lib/ -name 'libcuda.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
               $(find /usr/lib/ -name 'libnvidia-ml.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
             )"
