@@ -129,7 +129,7 @@ jobs:
 
           chmod 0600 "$RUNNER_TEMP/.aws/credentials"
           chmod 0664 "$RUNNER_TEMP/.aws/config"
-          chown -R 1001:1001 ci.sh "$REPO"
+          chown -R 1001:1001 ci.sh "$REPO" "$RUNNER_TEMP/.aws"
 
           declare -a args=(--rm --user coder)
 
