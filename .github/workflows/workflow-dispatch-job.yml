@@ -149,6 +149,8 @@ jobs:
             -e "GITHUB_OUTPUT=/mnt/github/output"
             -e "GITHUB_STEP_SUMMARY=/mnt/github/step-summary"
             -e "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
+            -e "SCCACHE_BUCKET=rapids-sccache-devs"
+            -e "SCCACHE_REGION=us-east-2"
           )
 
           __w="$(dirname "$(dirname "${{github.workspace}}")")"
