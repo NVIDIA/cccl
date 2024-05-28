@@ -58,7 +58,7 @@ CUB_NAMESPACE_BEGIN
 //! BlockRadixSort class provides :ref:`collective <collective-primitives>` methods for sorting
 //! items partitioned across a CUDA thread block using a radix sorting method.
 //!
-//! .. image:: ../img/sorting_logo.png
+//! .. image:: ../../img/sorting_logo.png
 //!     :align: center
 //!
 //! Overview
@@ -631,7 +631,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -641,7 +641,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-bits
@@ -698,7 +698,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -708,7 +708,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys
@@ -828,7 +828,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -838,7 +838,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 pair.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-bits
@@ -905,7 +905,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -915,7 +915,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs
@@ -1021,7 +1021,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1031,7 +1031,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-bits
@@ -1088,7 +1088,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1098,7 +1098,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending
@@ -1225,7 +1225,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1235,7 +1235,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 pair.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-bits
@@ -1302,7 +1302,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1312,7 +1312,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending
@@ -1430,7 +1430,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1440,7 +1440,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped-bits
@@ -1498,7 +1498,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1508,7 +1508,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped
@@ -1631,7 +1631,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1641,7 +1641,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped-bits
@@ -1704,7 +1704,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1714,7 +1714,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped
@@ -1828,7 +1828,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1838,7 +1838,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped-descending-bits
@@ -1896,7 +1896,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1906,7 +1906,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped-descending
@@ -2029,7 +2029,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2039,7 +2039,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped-descending-bits
@@ -2103,7 +2103,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2113,7 +2113,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped-descending

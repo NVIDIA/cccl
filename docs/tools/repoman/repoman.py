@@ -5,7 +5,7 @@ import contextlib
 import packmanapi
 
 REPO_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..")
-REPO_DEPS_FILE = os.path.join(REPO_ROOT, "deps/repo-deps.packman.xml")
+REPO_DEPS_FILE = os.path.join(REPO_ROOT, "tools/deps/repo-deps.packman.xml")
 
 
 def bootstrap():
