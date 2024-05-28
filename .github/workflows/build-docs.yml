@@ -52,10 +52,9 @@ jobs:
 
       # Libcudacxx
       - name: Build libcudacxx docs
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./libcudacxx/docs
-          destination: ./_site/libcudacxx
+        run: |
+          mkdir ./site/libcudacxx
+          cp -rf ./docs/_build/docs/libcudacxx/latest/* .site
 
       # Thrust
       - name: Build Thrust markdown in Docker
