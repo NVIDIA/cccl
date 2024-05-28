@@ -72,7 +72,7 @@ jobs:
         run: |
           # Install bash, node, and devcontainers CLI
           apk update
-          apk add bash nodejs npm sed
+          apk add bash coreutils nodejs npm sed
           npm install -g @devcontainers/cli
       - name: Checkout repo
         uses: actions/checkout@v4
