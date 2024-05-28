@@ -673,8 +673,8 @@ void TestShuffleEvenDistribution()
       {
         auto count_pos = counts.at(i * shuffle_size + j);
         auto count_num = counts.at(j * shuffle_size + i);
-        chi_squared_pos += pow((double) count_pos - expected_occurances, 2) / expected_occurances;
-        chi_squared_num += pow((double) count_num - expected_occurances, 2) / expected_occurances;
+        chi_squared_pos += std::pow((double) count_pos - expected_occurances, 2) / expected_occurances;
+        chi_squared_num += std::pow((double) count_num - expected_occurances, 2) / expected_occurances;
       }
 
       double p_score_pos = CephesFunctions::cephes_igamc((double) (shuffle_size - 1) / 2.0, chi_squared_pos / 2.0);
