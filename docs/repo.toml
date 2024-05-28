@@ -18,12 +18,25 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "cub", "cccl" ]
+project_build_order = [ "libcudacxx", "cub", "cccl" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
+    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
 ]
+
+[repo_docs.projects.libcudacxx]
+name = "libcu++"
+docs_root = "libcudacxx"
+logo = "../img/logo.png"
+
+enhanced_search_enabled = true
+api_output_directory = "api"
+use_fast_doxygen_conversion = true
+sphinx_generate_doxygen_groups = true
+sphinx_generate_doxygen_pages = true
+sphinx_exclude_patterns = []
 
 [repo_docs.projects.cub]
 name = "CUB"
@@ -36,6 +49,11 @@ use_fast_doxygen_conversion = true
 sphinx_generate_doxygen_groups = true
 sphinx_generate_doxygen_pages = true
 sphinx_exclude_patterns = []
+
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+]
 
 # list of files from which to extract documentation.  if a directory is specified,
 # it will be recursively searched.
