@@ -101,7 +101,7 @@ jobs:
           NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
         run: |
           # Tell devcontainers CLI to always run with --gpus if on a GPU runner
-          if test "${RUNNER#*"-gpu-"}" != "$RUNNER"; then
+          if test "${RUNNER#*"-gpu-"*}" != "$RUNNER"; then
             set -x
             find /dev/ -name 'nvidia*'
             nvidia-smi
@@ -116,8 +116,10 @@ jobs:
           sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO@" "$REPO/$JSON"
 
           cat <<"EOF" > ci.sh
-          set -eo pipefail
-          nvidia-smi
+          set -eox pipefail
+          if type nvidia-smi >/dev/null 2>&1; then
+            nvidia-smi;
+          fi
           cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
