@@ -52,7 +52,8 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
-    runs-on: ${{inputs.runner}}
+    # runs-on: ${{inputs.runner}}
+    runs-on: linux-amd64-gpu-p100-latest-1
     container:
       image: docker:latest
       volumes:
