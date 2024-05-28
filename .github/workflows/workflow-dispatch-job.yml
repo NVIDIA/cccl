@@ -88,6 +88,8 @@ jobs:
           AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
           AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
         run: |
+          set -x;
+
           cat <<"EOF" > ci.sh
           set -eo pipefail
           cd ~/${{github.event.repository.name}}
@@ -110,9 +112,26 @@ jobs:
           fi
           EOF
 
+          mkdir "$RUNNER_TEMP/.aws";
+
+          cat <<EOF > "$RUNNER_TEMP/.aws/config"
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
+          [default]
+          aws_access_key_id=$AWS_ACCESS_KEY_ID
+          aws_session_token=$AWS_SESSION_TOKEN
+          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          EOF
+
+          chmod 0600 "$RUNNER_TEMP/.aws/credentials"
+          chmod 0664 "$RUNNER_TEMP/.aws/config"
           chown -R 1001:1001 ci.sh "$REPO"
 
-          declare -a args=(--rm -it)
+          declare -a args=(--rm)
 
           # Explicitly pass which GPU to use if on a GPU runner
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
@@ -129,9 +148,6 @@ jobs:
             -e "GITHUB_PATH=/mnt/github/path"
             -e "GITHUB_OUTPUT=/mnt/github/output"
             -e "GITHUB_STEP_SUMMARY=/mnt/github/step-summary"
-            -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
-            -e "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
-            -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
             -e "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
           )
 
@@ -141,6 +157,7 @@ jobs:
           args+=(
             -v "${{github.workspace}}/ci.sh:/ci.sh"
             -v "${{github.workspace}}/$REPO:/home/coder/$REPO"
+            -v "$(sed "s@/__w@$__w@" <<< "$RUNNER_TEMP")/.aws:/home/coder/.aws"
             -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"):/mnt/github/env"
             -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"):/mnt/github/path"
             -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"):/mnt/github/output"
