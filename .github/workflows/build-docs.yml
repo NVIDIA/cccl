@@ -57,14 +57,10 @@ jobs:
           cp -rf ./docs/_build/docs/libcudacxx/latest/* .site
 
       # Thrust
-      - name: Build Thrust markdown in Docker
-        run: bash ./docs/build_docs.bash "cccl:docs" /cccl/thrust/docs/build_docs_locally.bash
-
       - name: Build Thrust docs
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./thrust/build_docs/github_pages
-          destination: ./_site/thrust
+        run: |
+          mkdir ./site/thrust
+          cp -rf ./docs/_build/docs/thrust/latest/* .site
 
       # Upload build artifacts
       - name: Upload artifact
