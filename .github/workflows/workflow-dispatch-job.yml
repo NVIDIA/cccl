@@ -105,15 +105,36 @@ jobs:
           set -x
           env;
 
-          find /dev/ -name 'nvidia*'
-          find /proc/driver/ -type d
-
           # Tell devcontainers CLI to always run with --gpus if on a GPU runner
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
-            nvidia-smi
+
+            find /dev/ -name 'nvidia[0-9]*'
+            stat /usr/bin/nvidia-smi
+            stat /usr/bin/nvidia-persistenced
+            stat /var/run/nvidia-persistenced/socket
+            find /usr/lib/ -name 'libcuda.so*'
+            find /usr/lib/ -name 'libnvidia-ml.so*'
+
+            declare -a devs="($(find /dev/ -name 'nvidia[0-9]*') /dev/nvidiactl)"
+            declare -a devs="(${devs[*]/#/--device })"
+            devs=("${devs[@]/#/\"}")
+            devs=("${devs[@]/%/\",}")
+            devs="$(echo "${devs[*]}" | rev | cut -d',' -f1 --complement | rev)"
+
+            declare -a vols="(
+              /usr/bin/nvidia-smi:/usr/bin/nvidia-smi
+              /usr/bin/nvidia-persistenced:/usr/bin/nvidia-persistenced
+              /var/run/nvidia-persistenced/socket:/var/run/nvidia-persistenced/socket
+              $(find /usr/lib/ -name 'libcuda.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
+              $(find /usr/lib/ -name 'libnvidia-ml.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
+            )"
+            declare -a vols="(${vols[*]/#/-v })";
+            vols=("${vols[@]/#/\"}")
+            vols=("${vols[@]/%/\",}")
+            vols="$(echo "${vols[*]}" | rev | cut -d',' -f1 --complement | rev)"
+
             name_str='"name": "${{inputs.devcontainer}}"'
-            run_args=(\"--gpus\" \"device=$(nvidia-smi -i 0 --query-gpu=uuid --format=csv,noheader)\")
-            sed -i "s/$name_str/$name_str, \"runArgs\": [${run_args[*]}]" "$REPO/$JSON"
+            sed -i "s/$name_str/$name_str, \"runArgs\": [${devs}, ${vols}]" "$REPO/$JSON"
             sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
           fi
 
