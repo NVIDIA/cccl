@@ -56,6 +56,7 @@
 /**
  * Host-based fp16 data type compatible and convertible with __half
  */
+// TODO(bgruber): drop this when CTK 12.2 is the minimum, since it provides __host__ __device__ operators of __half
 struct half_t
 {
   uint16_t __x;
