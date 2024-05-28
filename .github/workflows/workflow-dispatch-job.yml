@@ -108,7 +108,7 @@ jobs:
           find /proc/driver/ -type d
 
           # Tell devcontainers CLI to always run with --gpus if on a GPU runner
-          if test "${RUNNER#*"-gpu-"*}" != "$RUNNER"; then
+          if [[ "${RUNNER}" = *"-gpu-"* ]]; then
             nvidia-smi
             name_str='"name": "${{inputs.devcontainer}}"'
             run_args=(\"--gpus\" \"device=$(nvidia-smi -i 0 --query-gpu=uuid --format=csv,noheader)\")
