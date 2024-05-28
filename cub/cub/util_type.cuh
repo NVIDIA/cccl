@@ -870,9 +870,10 @@ struct KeyValuePair<K, V, false, true>
 
 /**
  * \brief A wrapper for passing simple static arrays as kernel parameters
+ * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
  */
 template <typename T, int COUNT>
-struct ArrayWrapper
+struct CUB_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
 {
   /// Statically-sized array of type \p T
   T array[COUNT];
