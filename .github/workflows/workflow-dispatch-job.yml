@@ -65,7 +65,6 @@ jobs:
         - /home/runner/_work/${{github.event.repository.name}}
       env:
         TMPDIR: /home/runner/_work/_temp
-        NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
     steps:
       - name: Setup alpine
         shell: sh
@@ -108,32 +107,13 @@ jobs:
           # Tell devcontainers CLI to always run with --gpus if on a GPU runner
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
 
-            find /dev/ -name 'nvidia[0-9]*'
-            find /proc/driver/nvidia/gpus/
-            stat /usr/bin/nvidia-smi
-            stat /usr/bin/nvidia-persistenced
-            find / -name 'libcuda.so*'
-            find / -name 'libnvidia-ml.so*'
-
-            declare -a devs="($(find /dev/ -name 'nvidia[0-9]*') /dev/nvidiactl)"
-            declare -a devs="(${devs[*]/#/--device })"
-            devs=("${devs[@]/#/\"}")
-            devs=("${devs[@]/%/\",}")
-            devs="$(echo "${devs[*]}" | rev | cut -d',' -f1 --complement | rev)"
-
-            declare -a vols="(
-              /usr/bin/nvidia-smi:/usr/bin/nvidia-smi
-              /usr/bin/nvidia-persistenced:/usr/bin/nvidia-persistenced
-              $(find / -name 'libcuda.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
-              $(find / -name 'libnvidia-ml.so*' -print0 | xargs -0 -r -n1 -I% echo %:%)
-            )"
-            declare -a vols="(${vols[*]/#/-v })";
-            vols=("${vols[@]/#/\"}")
-            vols=("${vols[@]/%/\",}")
-            vols="$(echo "${vols[*]}" | rev | cut -d',' -f1 --complement | rev)"
+            declare -a gpus=(--gpus device=${NVIDIA_VISIBLE_DEVICES});
+            gpus=("${gpus[@]/#/\"}")
+            gpus=("${gpus[@]/%/\",}")
+            gpus="$(echo "${gpus[*]}" | rev | cut -d',' -f1 --complement | rev)"
 
             name_str='"name": "${{inputs.devcontainer}}"'
-            sed -i "s@$name_str@$name_str, \"runArgs\": [${devs}, ${vols}]@" "$REPO/$JSON"
+            sed -i "s@$name_str@$name_str, \"runArgs\": [${gpus}]@" "$REPO/$JSON"
             sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
           fi
 
