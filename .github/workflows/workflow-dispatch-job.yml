@@ -132,7 +132,7 @@ jobs:
             vols="$(echo "${vols[*]}" | rev | cut -d',' -f1 --complement | rev)"
 
             name_str='"name": "${{inputs.devcontainer}}"'
-            sed -i "s/$name_str/$name_str, \"runArgs\": [${devs}, ${vols}]" "$REPO/$JSON"
+            sed -i "s@$name_str@$name_str, \"runArgs\": [${devs}, ${vols}]@" "$REPO/$JSON"
             sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
           fi
 
