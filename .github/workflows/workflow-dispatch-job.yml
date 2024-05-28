@@ -30,7 +30,6 @@ on:
     inputs:
       name: {type: string, required: true}
       image: {type: string, required: true}
-      devcontainer: {type: string, required: true}
       runner: {type: string, required: true}
       command: {type: string, required: true}
       id: {type: string, required: true}
@@ -55,24 +54,15 @@ jobs:
     runs-on: ${{inputs.runner}}
     container:
       image: docker:latest
-      volumes:
-        - /home/runner/_work/_temp
-        - /home/runner/_work/_tool
-        - /home/runner/_work/_actions
-        - /home/runner/_work/_temp/_github_home
-        - /home/runner/_work/_temp/_github_workflow
-        - /home/runner/_work/${{github.event.repository.name}}
       env:
-        TMPDIR: /home/runner/_work/_temp
         NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
     steps:
       - name: Setup alpine
         shell: sh
         run: |
-          # Install bash, node, and devcontainers CLI
+          # Install bash and sed
           apk update
-          apk add bash coreutils nodejs npm sed
-          npm install -g @devcontainers/cli
+          apk add bash sed
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -89,43 +79,17 @@ jobs:
           role-duration-seconds: 43200 # 12 hours)
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         env:
-          RUNNER: ${{inputs.runner}}
+          RUNNER: "${{inputs.runner}}"
           # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
           COMMAND: "${{inputs.command}}"
-          REPO: ${{github.event.repository.name}}
-          JSON: .devcontainer/${{inputs.devcontainer}}/devcontainer.json
-          AWS_ACCESS_KEY_ID: ${{env.AWS_ACCESS_KEY_ID}}
-          AWS_SESSION_TOKEN: ${{env.AWS_SESSION_TOKEN}}
-          AWS_SECRET_ACCESS_KEY: ${{env.AWS_SECRET_ACCESS_KEY}}
+          REPO: "${{github.event.repository.name}}"
+          AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
+          AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
+          AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
         run: |
-          set -x
-          env;
-
-          # Tell devcontainers CLI to always run with --gpus if on a GPU runner
-          if [[ "${RUNNER}" = *"-gpu-"* ]]; then
-
-            declare -a gpus=(--gpus device=${NVIDIA_VISIBLE_DEVICES});
-            gpus=("${gpus[@]/#/\"}")
-            gpus=("${gpus[@]/%/\",}")
-            gpus="$(echo "${gpus[*]}" | rev | cut -d',' -f1 --complement | rev)"
-
-            name_str='"name": "${{inputs.devcontainer}}"'
-            sed -i "s@$name_str@$name_str, \"runArgs\": [${gpus}]@" "$REPO/$JSON"
-            sed -i 's/"gpu": "optional"/"gpu": false/' "$REPO/$JSON"
-          fi
-
-          # Ensure mount paths align with the _outer_ container, not the docker:latest volume
-          sed -i "s@source=\${localWorkspaceFolder}@source=${{github.workspace}}/$REPO@" "$REPO/$JSON"
-
-          echo "devcontainer.json:"
-          cat "$REPO/$JSON"
-
           cat <<"EOF" > ci.sh
-          set -eox pipefail
-          if type nvidia-smi >/dev/null 2>&1; then
-            nvidia-smi;
-          fi
+          set -eo pipefail
           cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
@@ -148,50 +112,43 @@ jobs:
 
           chown -R 1001:1001 ci.sh "$REPO"
 
+          declare -a args=(--rm -it)
+
+          # Explicitly pass which GPU to use if on a GPU runner
+          if [[ "${RUNNER}" = *"-gpu-"* ]]; then
+            args+=(--gpus device=${NVIDIA_VISIBLE_DEVICES})
+          fi
+
+          # Define envvars
+          args+=(
+            -e "COMMAND=$COMMAND"
+            -e "GITHUB_SHA=$GITHUB_SHA"
+            -e "GITHUB_REF_NAME=$GITHUB_REF_NAME"
+            -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
+            -e "GITHUB_ENV=/mnt/github/env"
+            -e "GITHUB_PATH=/mnt/github/path"
+            -e "GITHUB_OUTPUT=/mnt/github/output"
+            -e "GITHUB_STEP_SUMMARY=/mnt/github/step-summary"
+            -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            -e "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+            -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            -e "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
+          )
+
           __w="$(dirname "$(dirname "${{github.workspace}}")")"
 
-          args=(
-            --workspace-folder "$REPO"
-            --config "$REPO/$JSON"
-            --skip-post-create
-            --skip-post-attach
+          # Mount in volumes and map to host paths
+          args+=(
+            -v "${{github.workspace}}/ci.sh:/ci.sh"
+            -v "${{github.workspace}}/$REPO:/home/coder/$REPO"
+            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"):/mnt/github/env"
+            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"):/mnt/github/path"
+            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"):/mnt/github/output"
+            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"):/mnt/github/step-summary"
           )
 
-          vars=(
-            --remote-env "COMMAND=$COMMAND"
-            --remote-env "GITHUB_SHA=$GITHUB_SHA"
-            --remote-env "GITHUB_REF_NAME=$GITHUB_REF_NAME"
-            --remote-env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-            --remote-env "GITHUB_ENV=/mnt/github/env"
-            --remote-env "GITHUB_PATH=/mnt/github/path"
-            --remote-env "GITHUB_OUTPUT=/mnt/github/output"
-            --remote-env "GITHUB_STEP_SUMMARY=/mnt/github/step-summary"
-            --remote-env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
-            --remote-env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
-            --remote-env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
-            --remote-env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
-          )
-
-          vols=(
-            --mount "type=bind,source=${{github.workspace}}/ci.sh,target=/ci.sh"
-            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"),target=/mnt/github/env"
-            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"),target=/mnt/github/path"
-            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"),target=/mnt/github/output"
-            --mount "type=bind,source=$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"),target=/mnt/github/step-summary"
-          )
-
-          mkfifo /tmp/devcontainer-creation-log
-          cat /tmp/devcontainer-creation-log <(echo "") &
-          container_id="$(node -p "JSON.parse('$(
-            devcontainer up "${args[@]}" "${vars[@]}" "${vols[@]}" 2>"/tmp/devcontainer-creation-log"
-          )').containerId")"
-          wait
-
-          devcontainer exec "${args[@]:0:4}" "${vars[@]}" /bin/bash -l /ci.sh || code=$?
-
-          docker rm -f "$container_id" || true # Ignore failures
-
-          exit "${code:-0}"
+          # Launch this container using the host's docker daemon
+          docker run "${args[@]}" ${{inputs.image}} /bin/bash -l /ci.sh
 
       - name: Prepare job artifacts
         id: done

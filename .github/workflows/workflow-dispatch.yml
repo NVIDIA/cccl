@@ -29,12 +29,11 @@ jobs:
         include: ${{fromJSON(inputs.jobs)['standalone']}}
     uses: ./.github/workflows/workflow-dispatch-job.yml
     with:
-      name:         ${{ matrix.name }}
-      runner:       ${{ matrix.runner }}
-      image:        ${{ matrix.image }}
-      command:      ${{ matrix.command }}
-      id:           ${{ matrix.id }}
-      devcontainer: ${{ matrix.devcontainer }}
+      name:     ${{ matrix.name }}
+      runner:   ${{ matrix.runner }}
+      image:    ${{ matrix.image }}
+      command:  ${{ matrix.command }}
+      id:       ${{ matrix.id }}
 
   two-stage-jobs:
     # This is an internal dispatch job and the name is not important.
