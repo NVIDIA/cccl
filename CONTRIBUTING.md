@@ -16,6 +16,7 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
 ## Making Changes
 
 1. **Create a New Branch**:
+
    ```bash
    git checkout -b your-feature-branch
    ```
@@ -30,6 +31,7 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
    ./ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
    ./ci/test_[thrust|cub|libcudacxx].sh  -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
    ```
+
    For more details on building and testing, refer to the [Building and Testing](#building-and-testing) section below.
 
 4. **Commit Changes**:
@@ -43,15 +45,18 @@ Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL
 For more information about design and development practices for each CCCL component, refer to the following developer guides:
 
 #### CUB
-- [CUB Developer Guide](cub/docs/developer_overview.rst) - General overview of the design of CUB internals
-- [CUB Test Overview](cub/docs/test_overview.rst) - Overview of how to write CUB unit tests
-- [CUB Tuning Infrastructure](cub/docs/tuning.rst) - Overview of CUB's performance tuning infrastructure
-- [CUB Benchmarks](cub/docs/benchmarking.rst) - Overview of CUB's performance benchmarks
+
+- [CUB Developer Guide](docs/cub/developer_overview.rst) - General overview of the design of CUB internals
+- [CUB Test Overview](docs/cub/test_overview.rst) - Overview of how to write CUB unit tests
+- [CUB Tuning Infrastructure](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
+- [CUB Benchmarks](docs/cub/benchmarking.rst) - Overview of CUB's performance benchmarks
 
 #### Thrust
+
 Coming soon!
 
 #### libcudacxx
+
 Coming soon!
 
 ## Building and Testing
@@ -61,6 +66,7 @@ CCCL components are header-only libraries. This means there isn't a traditional 
 There are multiple options for building and running our tests. Which option you choose depends on your preferences and whether you are using [CCCL's DevContainers](.devcontainer/README.md) (highly recommended!).
 
 ### Using Manual Build Scripts
+
 #### Building
 
 Use the build scripts provided in the `ci/` directory to build tests for each component. Building tests does not require a GPU.
@@ -89,6 +95,7 @@ Use the test scripts provided in the `ci/` directory to run tests for each compo
 ```
 
 **Example:**
+
 ```bash
 ./ci/test_cub.sh -cxx g++ -std 14 -arch "70;75;80-virtual"
 ```
@@ -139,7 +146,7 @@ As a common example, the presets are currently always `60;70;80` for `CMAKE_CUDA
 cmake --preset=thrust-cpp20 "-DCMAKE_CUDA_ARCHITECTURES=89"
 ```
 
-> __Note__: Either using the `cmake` command from within the root directory or from within the build directory works, but will behave in slightly different ways. Building and running tests from the build directory will compile every target and run all of the tests configured in the configure step. Doing so from the root directory using the `--preset=<test_preset>` option will build and run a subset of configured targets and tests.
+> **Note**: Either using the `cmake` command from within the root directory or from within the build directory works, but will behave in slightly different ways. Building and running tests from the build directory will compile every target and run all of the tests configured in the configure step. Doing so from the root directory using the `--preset=<test_preset>` option will build and run a subset of configured targets and tests.
 
 #### Using CMake Presets via VS Code GUI extension (Recommended when using DevContainers)
 
@@ -233,9 +240,10 @@ Once submitted, maintainers will be automatically assigned to review the pull re
 For constructive feedback and effective communication during reviews, we recommend following [Conventional Comments](https://conventionalcomments.org/).
 
 Further recommended reading for successful PR reviews:
+
 - [How to Do Code Reviews Like a Human (Part One)](https://mtlynch.io/human-code-reviews-1/)
 - [How to Do Code Reviews Like a Human (Part Two)](https://mtlynch.io/human-code-reviews-2/)
 
-## Thank You!
+## Thank You
 
 Your contributions enhance CCCL for the entire community. We appreciate your effort and collaboration!

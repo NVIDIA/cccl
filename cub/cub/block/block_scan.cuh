@@ -100,13 +100,13 @@ enum BlockScanAlgorithm
   //! ++++++++++++++++++++++++++
   //!
   //! A quick "tiled warpscans" prefix scan algorithm. Execution is comprised of four phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
-  //!    Each thread then places the partial reduction of its item(s) into shared memory.
-  //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style scan within each warp.
-  //! #. A propagation phase where the warp scan outputs in each warp are updated with the aggregate
-  //!    from each preceding warp.
-  //! #. Downsweep sequential scan in registers (if threads contribute more than one input),
-  //!    seeded with the raking scan output.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Each thread then places the partial reduction of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style scan within each warp.
+  //!   #. A propagation phase where the warp scan outputs in each warp are updated with the aggregate
+  //!      from each preceding warp.
+  //!   #. Downsweep sequential scan in registers (if threads contribute more than one input),
+  //!      seeded with the raking scan output.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++

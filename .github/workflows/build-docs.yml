@@ -32,22 +32,23 @@ jobs:
 
       # Build helper image for Thrust/CUB
       - name: Build helper image
-        run: |
-          bash ./docs/make_env.bash "cccl:docs"
+        run: bash ./docs/make_env.bash "cccl:docs"
+
+      # Build all docs
+      - name: Build all docs
+        run: ./docs/gen_docs.bash
 
       # Build top level docs for CCCL
       - name: Build landing page
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./docs/jekyll
-          destination: ./_site
-
-      # CUB
-      - name: Build CUB docs
         run: |
-          bash ./docs/build_docs.bash "cccl:docs" /cccl/cub/docs/gen_docs.bash
-          sudo mkdir -p ./_site/cub
-          sudo cp -rf ./cub/docs/_build/docs/CUB/latest/* ./_site/cub
+          mkdir ./site
+          cp -rf ./docs/_build/docs/cccl/latest/* .site
+
+      #  cub
+      - name: Build cub docs
+        run: |
+          mkdir ./site/cub
+          cp -rf ./docs/_build/docs/cub/latest/* .site
 
       # Libcudacxx
       - name: Build libcudacxx docs

@@ -4,8 +4,8 @@
 
 [repo_docs]
 enabled = true
-name = "CUB"
-project = "CUB"
+name = "CUDA C++ Core Libraries"
+project = "cccl"
 logo = "img/logo.png"
 
 enhanced_search_enabled = true
@@ -14,12 +14,28 @@ use_fast_doxygen_conversion = true
 sphinx_generate_doxygen_groups = true
 sphinx_generate_doxygen_pages = true
 sphinx_exclude_patterns = [
-    "build",
     "tools",
     "VERSION.md",
-    "source/extensions/*/docs/Overview.md",
-    "source/extensions/*/docs/CHANGELOG.md",
 ]
+
+project_build_order = [ "cub", "cccl" ]
+
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "cub", "_build/docs/cub/latest" ],
+]
+
+[repo_docs.projects.cub]
+name = "CUB"
+docs_root = "cub"
+logo = "../img/logo.png"
+
+enhanced_search_enabled = true
+api_output_directory = "api"
+use_fast_doxygen_conversion = true
+sphinx_generate_doxygen_groups = true
+sphinx_generate_doxygen_pages = true
+sphinx_exclude_patterns = []
 
 # list of files from which to extract documentation.  if a directory is specified,
 # it will be recursively searched.
@@ -28,13 +44,13 @@ sphinx_exclude_patterns = [
 #
 # defaults to an empty list.
 doxygen_input = [
-    "../cub/*.cuh",
-    "../cub/thread/*.cuh",
-    "../cub/warp/*.cuh",
-    "../cub/block/*.cuh",
-    "../cub/device/*.cuh",
-    "../cub/grid/*.cuh",
-    "../cub/iterator/*.cuh"
+    "../../cub/cub/*.cuh",
+    "../../cub/cub/thread/*.cuh",
+    "../../cub/cub/warp/*.cuh",
+    "../../cub/cub/block/*.cuh",
+    "../../cub/cub/device/*.cuh",
+    "../../cub/cub/grid/*.cuh",
+    "../../cub/cub/iterator/*.cuh"
 ]
 
 # Using wildcards is also supported in `doxygen_input`. Assuming there are no other `.h` files
@@ -89,10 +105,7 @@ doxygen_predefined = [
     "_CCCL_HOST_DEVICE",
     "_CCCL_FORCEINLINE",
     "_CCCL_STD_VER",
-    "CUB_DISABLE_NAMESPACE_MAGIC",
-    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
-    "CUB_NAMESPACE_BEGIN=namespace cub {",
-    "CUB_NAMESPACE_END=}",
+    "_CCCL_VISIBILITY_HIDDEN",
     "DOXYGEN_SHOULD_SKIP_THIS",
     "DOXYGEN_ACTIVE",
     "__device__",
@@ -100,7 +113,12 @@ doxygen_predefined = [
     "__forceinline__",
     "__declspec(x)=",
     "__align__(x)=",
-    "CUB_DEPRECATED",
+    "CUB_DISABLE_NAMESPACE_MAGIC",
+    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR",
+    "CUB_NAMESPACE_BEGIN=namespace cub {",
+    "CUB_NAMESPACE_END=}",
+    "CUB_DEPRECATED_BECAUSE(x)=",
+    "CUB_DEPRECATED=",
     "CUB_STATIC_ASSERT(cond,msg)=",
     "CUB_RUNTIME_FUNCTION",
     "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
@@ -113,7 +131,7 @@ doxygen_conf_extra = """
   DOXYFILE_ENCODING      = UTF-8
   INPUT_ENCODING         = UTF-8
   EXTENSION_MAPPING      = cuh=c++ cu=c++
-  EXAMPLE_PATH           = ../examples/device
+  EXAMPLE_PATH           = ../../cub/examples/device
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "CUB_DETAIL*"

@@ -1,3 +1,5 @@
+.. _cub-module:
+
 CUB
 ==================================================
 
@@ -10,7 +12,7 @@ CUB
    test_overview
    tuning
    benchmarking
-   ${repo_docs_api_path}/CUB_api
+   ${repo_docs_api_path}/cub_api
 
 .. the line below can be used to use the README.md file as the index page
 .. .. mdinclude:: ../README.md
@@ -55,7 +57,7 @@ maintainable CUDA kernel code.  Collectives allow complex parallel code to be
 re-used rather than re-implemented, and to be re-compiled rather than
 hand-ported.
 
-.. figure:: img/cub_overview.png
+.. figure:: ../img/cub_overview.png
     :align: center
     :alt: Orientation of collective primitives within the CUDA software stack
     :name: fig_cub_overview
@@ -181,7 +183,7 @@ library and software abstraction layer, CUB provides:
    ``cub::BlockRadixRank``. The latter is composed of cub::BlockScan
    which incorporates cub::WarpScan.
 
-   .. figure:: img/nested_composition.png
+   .. figure:: ../img/nested_composition.png
     :align: center
 
 #. **High performance**. CUB simplifies high-performance program and kernel
@@ -319,7 +321,7 @@ Flexible data arrangement across threads
 CUDA kernels are often designed such that each thread block is assigned a
 segment of data items for processing.
 
-.. figure:: img/tile.png
+.. figure:: ../img/tile.png
     :align: center
     :alt: Segment of eight ordered data items
     :name: fig_tile
@@ -345,7 +347,7 @@ accommodate:
        Blocked arrangements are often desirable for algorithmic benefits (where
        long sequences of items can be processed sequentially within each thread).
 
-     - .. figure:: img/blocked.png
+     - .. figure:: ../img/blocked.png
           :align: center
           :alt: *Blocked* arrangement across four threads
           :name: fig_blocked
@@ -360,7 +362,7 @@ accommodate:
        global memory (where
        `read/write coalescing <https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#coalesced-access-to-global-memory>`_
        is an important performance consideration).
-     - .. figure:: img/striped.png
+     - .. figure:: ../img/striped.png
           :align: center
           :alt: *Striped* arrangement across four threads
           :name: fig_striped

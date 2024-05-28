@@ -52,7 +52,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *
- * @deprecated [Since 1.13.0] The CUDA texture management APIs used by
+ * deprecated [Since 1.13.0] The CUDA texture management APIs used by
  * TexRefInputIterator are deprecated. Use cub::TexObjInputIterator instead.
  *
  * @par Overview
