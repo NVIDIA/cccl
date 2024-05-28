@@ -131,7 +131,7 @@ jobs:
           chmod 0664 "$RUNNER_TEMP/.aws/config"
           chown -R 1001:1001 ci.sh "$REPO"
 
-          declare -a args=(--rm)
+          declare -a args=(--rm --user coder)
 
           # Explicitly pass which GPU to use if on a GPU runner
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
