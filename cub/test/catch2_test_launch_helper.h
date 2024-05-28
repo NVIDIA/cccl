@@ -98,7 +98,7 @@
 #if TEST_LAUNCH == 2
 
 template <class ActionT, class... Args>
-void cuda_graph_api_launch(ActionT action, Args... args)
+void launch(ActionT action, Args... args)
 {
   cudaStream_t stream{};
   REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
@@ -127,8 +127,6 @@ void cuda_graph_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
 }
 
-#  define launch cuda_graph_api_launch
-
 #elif TEST_LAUNCH == 1
 
 template <class ActionT, class... Args>
@@ -141,7 +139,7 @@ __global__ void device_side_api_launch_kernel(
 // We should assign 0 to stream argument when launching on device side, because host stream is not valid there.
 
 template <class ActionT, class... Args>
-void device_side_api_launch(ActionT action, Args... args)
+void launch(ActionT action, Args... args)
 {
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
   c2h::device_vector<std::size_t> d_temp_storage_bytes(1, 0);
@@ -168,12 +166,10 @@ void device_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == d_error[0]);
 }
 
-#  define launch device_side_api_launch
-
 #else // TEST_LAUNCH == 0
 
 template <class ActionT, class... Args>
-void host_side_api_launch(ActionT action, Args... args)
+void launch(ActionT action, Args... args)
 {
   std::size_t temp_storage_bytes{};
   cudaError_t error = action(nullptr, temp_storage_bytes, args...);
@@ -188,7 +184,5 @@ void host_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 }
-
-#  define launch host_side_api_launch
 
 #endif // TEST_LAUNCH == 0
