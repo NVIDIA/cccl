@@ -3,7 +3,7 @@
   "runArgs": [
     "--rm",
     "--name",
-    "${localWorkspaceFolderBasename}-${localEnv:USER}-rapids-24.06-cuda12.2-conda"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-24.06-cuda12.2-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {
@@ -26,7 +26,6 @@
     "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
     "HISTFILE": "/home/coder/.cache/._bash_history",
     "LIBCUDF_KERNEL_CACHE_PATH": "/home/coder/cudf/cpp/build/latest/jitify_cache",
-    "CCCL_GIT_REPO": "${localEnv:CCCL_GIT_REPO}",
     "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
     "RAPIDS_TEST_OPTIONS": "${localEnv:RAPIDS_TEST_OPTIONS}",
     "RAPIDS_cmake_GIT_REPO": "${localEnv:RAPIDS_cmake_GIT_REPO}",

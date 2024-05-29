@@ -107,7 +107,7 @@ launch_docker() {
       | sed -r 's/", "/" "/g' \
       | sed "s@\${localWorkspaceFolder}@$(pwd)@g" \
       | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g" \
-      | sed -r 's/\$\{localEnv:(.*)\}/${\1-}/' \
+      | sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/' \
       | xargs -0 -r -n1 bash -c "eval echo \$0"
     ))"
 
@@ -133,7 +133,7 @@ launch_docker() {
         grep -Pzo '(?s)"containerEnv": {(.*?)\s+}' "${path}/devcontainer.json" \
       | head -n-1 | tail -n+2 \
       | rev | cut -d',' -f1 --complement | rev \
-      | sed -r 's/\$\{localEnv:(.*)\}/${\1-}/' \
+      | sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/' \
       | sed -r 's/": /=/' \
       | cut -d'"' -f1 --complement \
       | tr -d '[:blank:]' \
