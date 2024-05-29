@@ -55,10 +55,19 @@ jobs:
         RAPIDS_LIBS=${{ matrix.libs }}
         RAPIDS_TEST_OPTIONS=${{ matrix.args }}
         RAPIDS_cmake_GIT_REPO={"upstream": "trxcllnt", "tag": "fea/cccl-2.5"}
-        RAPIDS_cudf_GIT_REPO={"upstream": "miscco", "tag": "fix_cccl_compat"}
-        RAPIDS_cuml_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
+        RAPIDS_cudf_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_cudf_kafka_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_cugraph_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
-        RAPIDS_cuspatial_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
+        RAPIDS_cugraph_ops_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_cuml_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_cumlprims_mg_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_cuspatial_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_cuvs_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_KvikIO_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_raft_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_rmm_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         CCCL_GIT_REPO={"git_url": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}
       build_command: |
         set -x;
