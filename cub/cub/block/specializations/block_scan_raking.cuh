@@ -666,7 +666,7 @@ struct BlockScanRaking
    *   Binary scan operator
    */
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, const T& initial_value, ScanOp scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, const T initial_value, ScanOp scan_op)
   {
     if (WARP_SYNCHRONOUS)
     {
@@ -689,10 +689,12 @@ struct BlockScanRaking
 
         // Exclusive Warp-synchronous scan
         T exclusive_partial;
-        WarpScan(temp_storage.warp_scan).ExclusiveScan(upsweep_partial, exclusive_partial, initial_value, scan_op);
+        T inclusive_partial;
+        WarpScan(temp_storage.warp_scan)
+          .Scan(upsweep_partial, inclusive_partial, exclusive_partial, initial_value, scan_op);
 
         // Inclusive raking downsweep scan
-        InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
+        InclusiveDownsweep(scan_op, exclusive_partial);
       }
 
       CTA_SYNC();

@@ -541,10 +541,7 @@ struct BlockScanWarpScans
     T warp_prefix = ComputeWarpPrefix(scan_op, inclusive_output, block_aggregate, initial_value);
 
     // Apply warp prefix to our lane's partial
-    if (warp_id != 0)
-    {
-      inclusive_output = scan_op(warp_prefix, inclusive_output);
-    }
+    inclusive_output = scan_op(warp_prefix, inclusive_output);
   }
 
   /**
