@@ -297,13 +297,13 @@ def get_project_summary_body(project, project_summary):
     return "\n".join(body)
 
 
-def write_project_summary(project, project_summary):
+def write_project_summary(idx, project, project_summary):
     heading = get_project_heading(project, project_summary)
     body = get_project_summary_body(project, project_summary)
 
     summary = {'heading': heading, 'body': body}
 
-    write_json(f'execution/projects/{project}_summary.json', summary)
+    write_json(f'execution/projects/{idx:03}_{project}_summary.json', summary)
 
 
 def write_workflow_summary(workflow, job_times=None):
@@ -313,8 +313,15 @@ def write_workflow_summary(workflow, job_times=None):
 
     write_text('execution/heading.txt', get_summary_heading(summary))
 
-    for project, project_summary in summary['projects'].items():
-        write_project_summary(project, project_summary)
+    # Sort summary projects so that projects with failures come first, and ties
+    # are broken by the total number of jobs:
+    def sort_project_key(project_summary):
+        failed = project_summary[1]['failed']
+        total = project_summary[1]['passed'] + failed
+        return (-failed, -total)
+
+    for i, (project, project_summary) in enumerate(sorted(summary['projects'].items(), key=sort_project_key)):
+        write_project_summary(i, project, project_summary)
 
 
 def main():

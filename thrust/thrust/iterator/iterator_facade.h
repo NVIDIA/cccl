@@ -611,7 +611,7 @@ inline _CCCL_HOST_DEVICE
   operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return iterator_core_access ::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
 }
 
 // Iterator addition
