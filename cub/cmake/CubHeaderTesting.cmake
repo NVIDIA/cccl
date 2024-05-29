@@ -46,5 +46,14 @@ set(header_definitions
   "CUB_WRAPPED_NAMESPACE=wrapped_cub")
 cub_add_header_test(base "${header_definitions}")
 
-list(APPEND header_definitions "CUB_DISABLE_BF16_SUPPORT")
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
+  "CCCL_DISABLE_BF16_SUPPORT")
 cub_add_header_test(bf16 "${header_definitions}")
+
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
+  "CCCL_DISABLE_FP16_SUPPORT")
+cub_add_header_test(half "${header_definitions}")
