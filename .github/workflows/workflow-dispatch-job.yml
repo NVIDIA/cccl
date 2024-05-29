@@ -83,7 +83,6 @@ jobs:
           # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
           COMMAND: "${{inputs.command}}"
-          REPO: "${{github.event.repository.name}}"
           AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
           AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
           AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
@@ -112,6 +111,8 @@ jobs:
           fi
           EOF
 
+          ls -l "${{github.event.repository.name}}"
+
           mkdir "$RUNNER_TEMP/.aws";
 
           cat <<EOF > "$RUNNER_TEMP/.aws/config"
@@ -129,12 +130,12 @@ jobs:
 
           chmod 0600 "$RUNNER_TEMP/.aws/credentials"
           chmod 0664 "$RUNNER_TEMP/.aws/config"
-          chown -R 1001:1001 ci.sh "$REPO" "$RUNNER_TEMP/.aws"
+          chown -R 1001:1001 ci.sh "${{github.event.repository.name}}" "$RUNNER_TEMP/.aws"
 
           declare -a args=(
             --rm
             --user coder
-            --workdir "/home/coder/$REPO"
+            --workdir "/home/coder/${{github.event.repository.name}}"
           )
 
           # Explicitly pass which GPU to use if on a GPU runner
@@ -162,7 +163,7 @@ jobs:
           # Mount in volumes and map to host paths
           args+=(
             -v "${{github.workspace}}/ci.sh:/ci.sh"
-            -v "${{github.workspace}}/$REPO:/home/coder/$REPO"
+            -v "${{github.workspace}}/${{github.event.repository.name}}:/home/coder/${{github.event.repository.name}}"
             -v "$(sed "s@/__w@$__w@" <<< "$RUNNER_TEMP")/.aws:/home/coder/.aws"
             -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"):/mnt/github/env"
             -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"):/mnt/github/path"
