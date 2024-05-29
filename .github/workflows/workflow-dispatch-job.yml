@@ -62,7 +62,7 @@ jobs:
         run: |
           # Install script dependencies
           apt update
-          apt install -y --no-install-recommends tree
+          apt install -y --no-install-recommends tree git
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -110,8 +110,6 @@ jobs:
             exit $exit_code
           fi
           EOF
-
-          ls -l "${{github.event.repository.name}}"
 
           mkdir "$RUNNER_TEMP/.aws";
 
