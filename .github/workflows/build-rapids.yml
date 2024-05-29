@@ -68,32 +68,49 @@ jobs:
         RAPIDS_rmm_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-0.38"}
         RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
-        CCCL_GIT_REPO={"git_url": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}
       build_command: |
-        set -x;
+        set -x
 
-        declare -a failures;
-        declare -A failures_map;
+        # Add NVCC problem matcher
+        echo "::add-matcher::~/cccl/.github/problem-matchers/problem-matcher.json"
+
+        declare -a failures
+        declare -A failures_map
 
         # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
         for RAPIDS_ENABLE_TESTS in OFF ON; do
-          /home/coder/cccl/ci/rapids/post-create-command.sh;
+          ~/cccl/ci/rapids/post-create-command.sh
           for lib in ${{ matrix.libs }}; do
-            sccache -z;
+            sccache -z
             if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
               if ! test -v failures_map["${lib}"]; then
-                failures+=("${lib}");
-                failures_map["${lib}"]=1;
+                failures+=("${lib}")
+                failures_map["${lib}"]=1
               fi
             fi
-            sccache --show-adv-stats;
+            sccache --show-adv-stats
           done
         done
 
         # Print failures and exit
         if test ${#failures[@]} -gt 0; then
-          echo "Failures: ${failures[*]}";
-          echo "To replicate these failures, run the following command in this branch:";
-          echo "RAPIDS_ENABLE_TESTS='ON' RAPIDS_LIBS='${RAPIDS_LIBS}' RAPIDS_TEST_OPTIONS='${RAPIDS_TEST_OPTIONS}' RAPIDS_cmake_GIT_REPO='${RAPIDS_cmake_GIT_REPO}' RAPIDS_cudf_GIT_REPO='${RAPIDS_cudf_GIT_REPO}' RAPIDS_cuml_GIT_REPO='${RAPIDS_cuml_GIT_REPO}' RAPIDS_cugraph_GIT_REPO='${RAPIDS_cugraph_GIT_REPO}' RAPIDS_cuspatial_GIT_REPO='${RAPIDS_cuspatial_GIT_REPO}' .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- /home/coder/cccl/ci/rapids/rapids-entrypoint.sh /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && configure-all -j -v && build-all -j -v || exec /bin/bash -li'";
-          exit 1;
+          echo "::error:: Failures: ${failures[*]}"
+          echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+          echo "::error:: To replicate this failure locally, follow the steps below:"
+          echo "1. Clone the repository, and navigate to the correct branch and commit:"
+          echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+          echo ""
+          echo "2. Run the failed command inside the same Docker container used by this CI job:"
+          cat <<EOF
+             RAPIDS_LIBS='${RAPIDS_LIBS}' \\
+             RAPIDS_TEST_OPTIONS='${RAPIDS_TEST_OPTIONS}' \\
+          $(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; echo "   $var='${!var}' \\"; done)
+             .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- cccl/ci/rapids/rapids-entrypoint.sh \\
+             /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
+          EOF
+          echo ""
+          echo "For additional information, see:"
+          echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+          echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+          exit 1
         fi
