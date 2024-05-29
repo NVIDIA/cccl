@@ -62,7 +62,7 @@ __host__ __device__ void checkCV()
 }
 
 template <typename T, typename U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool testConstructorArray()
+__host__ __device__ constexpr bool testConstructorArray()
 {
   cuda::std::array<U, 2> val = {U(), U()};
   ASSERT_NOEXCEPT(cuda::std::span<T>{val});
@@ -73,7 +73,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool testConstructorArray()
 }
 
 template <typename T, typename U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool testConstructorConstArray()
+__host__ __device__ constexpr bool testConstructorConstArray()
 {
   const cuda::std::array<U, 2> val = {U(), U()};
   ASSERT_NOEXCEPT(cuda::std::span<const T>{val});
@@ -84,7 +84,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool testConstructorConstArray()
 }
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool testConstructors()
+__host__ __device__ constexpr bool testConstructors()
 {
   STATIC_ASSERT_CXX14((testConstructorArray<T, T>()));
   STATIC_ASSERT_CXX14((testConstructorArray<const T, const T>()));
