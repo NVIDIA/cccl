@@ -6,6 +6,7 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <algorithm>
 #include <limits>
 #include <map>
 
@@ -453,7 +454,7 @@ void TestFunctionIsBijection(size_t m)
   {
     return;
   }
-  ASSERT_LEQUAL(total_length, std::max(m * 2, size_t(16))); // Check the rounded up size is at most double the input
+  ASSERT_LEQUAL(total_length, (std::max)(m * 2, size_t(16))); // Check the rounded up size is at most double the input
 
   auto device_result_it = thrust::make_transform_iterator(thrust::make_counting_iterator(T(0)), device_f);
 
