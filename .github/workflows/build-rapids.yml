@@ -96,13 +96,13 @@ jobs:
           echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
           echo ""
           echo "2. Run the failed command inside the same Docker container used by this CI job:"
-          cat <<EOF
+          cat <<__EOF
              RAPIDS_LIBS='${RAPIDS_LIBS}' \\
              RAPIDS_TEST_OPTIONS='${RAPIDS_TEST_OPTIONS}' \\
           $(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; echo "   $var='${!var}' \\"; done)
              .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- cccl/ci/rapids/rapids-entrypoint.sh \\
              /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
-          EOF
+        __EOF
           echo ""
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
