@@ -293,6 +293,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_link_libraries(${test_target} nvtx3-cpp)
     endif()
 
+    target_compile_definitions(${test_target} PRIVATE
+      "-D__CUDA_NO_HALF_CONVERSIONS__"
+      "-D__CUDA_NO_HALF_OPERATORS__")
+
     if (CUB_IN_THRUST)
       thrust_fix_clang_nvcc_build_for(${test_target})
     endif()

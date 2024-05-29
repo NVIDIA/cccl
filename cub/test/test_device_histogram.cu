@@ -33,6 +33,10 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
+// device_histogram explicitly requires
+// The common type must be convertible to ``int``
+#undef __CUDA_NO_HALF_CONVERSIONS__
+
 #include <cub/device/device_histogram.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
