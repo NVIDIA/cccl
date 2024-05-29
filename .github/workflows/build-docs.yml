@@ -38,27 +38,15 @@ jobs:
       - name: Build all docs
         run: ./docs/gen_docs.bash
 
-      # Build top level docs for CCCL
-      - name: Build landing page
+      # Copy all docs to the right folder
+      - name: Move docs to right oflder
         run: |
           mkdir ./site
           cp -rf ./docs/_build/docs/cccl/latest/* .site
-
-      #  cub
-      - name: Build cub docs
-        run: |
           mkdir ./site/cub
           cp -rf ./docs/_build/docs/cub/latest/* .site
-
-      # Libcudacxx
-      - name: Build libcudacxx docs
-        run: |
           mkdir ./site/libcudacxx
           cp -rf ./docs/_build/docs/libcudacxx/latest/* .site
-
-      # Thrust
-      - name: Build Thrust docs
-        run: |
           mkdir ./site/thrust
           cp -rf ./docs/_build/docs/thrust/latest/* .site
 
