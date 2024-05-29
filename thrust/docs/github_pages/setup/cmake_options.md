@@ -106,9 +106,3 @@ The CMake options are divided into these categories:
   - Enable separable compilation on all targets that are agnostic of RDC.
   - Targets that explicitly require RDC to be enabled or disabled will ignore this setting.
   - Default is `OFF`.
-
-## TBB Specific CMake Options
-
-- `THRUST_TBB_ROOT=<path to tbb root>`
-  - When the TBB system is requested, set this to the root of the TBB installation
-    (e.g. the location of `lib/`, `bin/` and `include/` for the TBB libraries).
