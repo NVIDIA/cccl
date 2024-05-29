@@ -2,12 +2,14 @@
 
 set -euo pipefail
 
-NO_LID=
-LID0=
-LID1=
-LID2=
+NO_LID=false
+LID0=false
+LID1=false
+LID2=false
 
-new_args=$(ci/util/extract_switches.sh -no-lid -lid0 -lid1 -lid2 -- "$@")
+ci_dir=$(dirname "$0")
+
+new_args=$("${ci_dir}/util/extract_switches.sh" -no-lid -lid0 -lid1 -lid2 -- "$@")
 eval set -- ${new_args}
 while true; do
   case "$1" in
@@ -38,27 +40,22 @@ while true; do
   esac
 done
 
-source "$(dirname "$0")/build_common.sh"
+source "${ci_dir}/build_common.sh"
 
 print_environment_details
 
 ./build_cub.sh "$@"
 
-PRESETS=(
-  "cub-nolid-cpp$CXX_STANDARD"
-  "cub-lid0-cpp$CXX_STANDARD"
-  "cub-lid1-cpp$CXX_STANDARD"
-  "cub-lid2-cpp$CXX_STANDARD"
-)
-
-if [ -n "$NO_LID" ]; then
+if $NO_LID; then
   PRESETS=("cub-nolid-cpp$CXX_STANDARD")
-elif [ -n "$LID0" ]; then
+elif $LID0; then
   PRESETS=("cub-lid0-cpp$CXX_STANDARD")
-elif [ -n "$LID1" ]; then
+elif $LID1; then
   PRESETS=("cub-lid1-cpp$CXX_STANDARD")
-elif [ -n "$LID2" ]; then
+elif $LID2; then
   PRESETS=("cub-lid2-cpp$CXX_STANDARD")
+else
+  PRESETS=("cub-cpp$CXX_STANDARD")
 fi
 
 for PRESET in ${PRESETS[@]}; do
