@@ -50,7 +50,7 @@
 
 #include "test_util.h"
 
-#define TEST_HALF_T !_NVHPC_CUDA
+#define TEST_HALF_T _CCCL_HAS_NVFP16
 
 #if TEST_HALF_T
 #  include <cuda_fp16.h>

@@ -43,33 +43,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cccl_config> // _CCCL_CUDACC_VER
-#include <cuda/std/limits>
-
-#if !_NVHPC_CUDA
-#  include <cuda_fp16.h>
-#endif
-
-#if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
-#  include <cuda_bf16.h>
-// cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
-#  if _CCCL_CUDACC_VER >= 1108000
-// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
-#    if defined(_CCCL_COMPILER_MSVC)
-#      pragma warning(push)
-#    endif
-#    include <cuda_fp8.h>
-#    if defined(_CCCL_COMPILER_MSVC)
-#      pragma warning(pop)
-#    endif
-#  endif
-#endif
-
 #include <cub/detail/uninitialized_copy.cuh>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+
+#if defined(_CCCL_HAS_NVBF16)
+#  if !defined(_CCCL_CUDACC_BELOW_11_8)
+// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+_CCCL_DIAG_PUSH
+#    include <cuda_fp8.h>
+_CCCL_DIAG_POP
+#  endif // !_CCCL_CUDACC_BELOW_11_8
+#endif // _CCCL_HAS_NV_BF16
 
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  include <iterator>
@@ -883,9 +870,10 @@ struct KeyValuePair<K, V, false, true>
 
 /**
  * \brief A wrapper for passing simple static arrays as kernel parameters
+ * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
  */
 template <typename T, int COUNT>
-struct ArrayWrapper
+struct CUB_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
 {
   /// Statically-sized array of type \p T
   T array[COUNT];
@@ -1190,7 +1178,7 @@ struct FpLimits<double>
   }
 };
 
-#  if !_NVHPC_CUDA
+#  if defined(_CCCL_HAS_NVFP16)
 template <>
 struct FpLimits<__half>
 {
@@ -1206,9 +1194,9 @@ struct FpLimits<__half>
     return reinterpret_cast<__half&>(lowest_word);
   }
 };
-#  endif
+#  endif // _CCCL_HAS_NVFP16
 
-#  if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
+#  if defined(_CCCL_HAS_NVBF16)
 template <>
 struct FpLimits<__nv_bfloat16>
 {
@@ -1224,7 +1212,7 @@ struct FpLimits<__nv_bfloat16>
     return reinterpret_cast<__nv_bfloat16&>(lowest_word);
   }
 };
-#  endif
+#  endif // _CCCL_HAS_NVBF16
 
 #  if defined(__CUDA_FP8_TYPES_EXIST__)
 template <>
@@ -1267,7 +1255,7 @@ struct FpLimits<__nv_fp8_e5m2>
   }
 };
 
-#  endif
+#  endif // __CUDA_FP8_TYPES_EXIST__
 
 /**
  * Basic type traits (fp primitive specialization)
@@ -1408,18 +1396,17 @@ struct NumericTraits<__int128_t>
 
 template <> struct NumericTraits<float> :               BaseTraits<FLOATING_POINT, true, false, unsigned int, float> {};
 template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POINT, true, false, unsigned long long, double> {};
-#if !_NVHPC_CUDA
+#  if defined(_CCCL_HAS_NVFP16)
     template <> struct NumericTraits<__half> :          BaseTraits<FLOATING_POINT, true, false, unsigned short, __half> {};
-#endif
-#if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
+#  endif // _CCCL_HAS_NVFP16
+#  if defined(_CCCL_HAS_NVBF16)
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
-#endif
-
+#  endif // _CCCL_HAS_NVBF16
 
 #if defined(__CUDA_FP8_TYPES_EXIST__)
     template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
     template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
-#endif
+#endif // __CUDA_FP8_TYPES_EXIST__
 
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
