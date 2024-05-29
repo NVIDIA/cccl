@@ -722,6 +722,26 @@
       "inherits": "cub-lid2-base"
     },
     {
+      "name": "cub-cpp11",
+      "configurePreset": "cub-cpp11",
+      "inherits": "cub-base"
+    },
+    {
+      "name": "cub-cpp14",
+      "configurePreset": "cub-cpp14",
+      "inherits": "cub-base"
+    },
+    {
+      "name": "cub-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-base"
+    },
+    {
+      "name": "cub-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-base"
+    },
+    {
       "name": "thrust-base",
       "hidden": true,
       "inherits": "base",
@@ -790,6 +810,26 @@
       "name": "thrust-cpu-cpp20",
       "configurePreset": "thrust-cpp20",
       "inherits": "thrust-cpu-base"
+    },
+    {
+      "name": "thrust-cpp11",
+      "configurePreset": "thrust-cpp11",
+      "inherits": "thrust-base"
+    },
+    {
+      "name": "thrust-cpp14",
+      "configurePreset": "thrust-cpp14",
+      "inherits": "thrust-base"
+    },
+    {
+      "name": "thrust-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "thrust-base"
+    },
+    {
+      "name": "thrust-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "thrust-base"
     },
     {
       "name": "cudax-base",

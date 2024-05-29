@@ -2,10 +2,12 @@
 
 set -euo pipefail
 
-CPU_ONLY=
-GPU_ONLY=
+CPU_ONLY=false
+GPU_ONLY=false
 
-new_args=$(ci/util/extract_switches.sh -cpu-only -gpu-only -- "$@")
+ci_dir=$(dirname "$0")
+
+new_args=$("${ci_dir}/util/extract_switches.sh" -cpu-only -gpu-only -- "$@")
 eval set -- ${new_args}
 while true; do
   case "$1" in
@@ -28,25 +30,21 @@ while true; do
   esac
 done
 
-source "$(dirname "$0")/build_common.sh"
+source "${ci_dir}/build_common.sh"
 
 print_environment_details
 
 ./build_thrust.sh "$@"
 
-# Default: run all
-PRESETS=(
-  "thrust-cpu-cpp$CXX_STANDARD"
-  "thrust-gpu-cpp$CXX_STANDARD"
-)
-GPU_REQUIRED="true"
-
-if [ -n "$CPU_ONLY" ]; then
+if $CPU_ONLY; then
   PRESETS=("thrust-cpu-cpp$CXX_STANDARD")
-  GPU_REQUIRED="false"
-elif [ -n "$GPU_ONLY" ]; then
+  GPU_REQUIRED=false
+elif $GPU_ONLY; then
   PRESETS=("thrust-gpu-cpp$CXX_STANDARD")
-  GPU_REQUIRED="true"
+  GPU_REQUIRED=true
+else
+  PRESETS=("thrust-cpp$CXX_STANDARD")
+  GPU_REQUIRED=true
 fi
 
 for PRESET in ${PRESETS[@]}; do

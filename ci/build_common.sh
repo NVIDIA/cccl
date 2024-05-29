@@ -235,9 +235,9 @@ function test_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local GPU_REQUIRED=${3:-"true"}
+    local GPU_REQUIRED=${3:-true}
 
-    if [ "${GPU_REQUIRED}" == "true" ]; then
+    if $GPU_REQUIRED; then
         fail_if_no_gpu
     fi
 
