@@ -1,0 +1,221 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: "Release: 2. Test and Tag New RC"
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_version:
+        type: string
+        description: "Semantic version string (eg. '2.3.0')"
+        required: true
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.prepare.outputs.TAG_NAME }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Prepare environment
+        id: prepare
+        run: |
+          log_vars() {
+            for var in "$@"; do
+              printf "%-15s %s\n" "${var}:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+            done
+          }
+          export_vars() {
+            for var in "$@"; do
+              var_name=${var^^}
+              echo "${var_name}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            done
+          }
+
+          full_version=${{ inputs.new_version }}
+          major_version=$(echo ${full_version} | cut -d. -f1)
+          minor_version=$(echo ${full_version} | cut -d. -f2)
+          patch_version=$(echo ${full_version} | cut -d. -f3)
+          branch_name="branch/${major_version}.${minor_version}.x"
+
+          log_vars full_version major_version minor_version patch_version branch_name GITHUB_REF GITHUB_SHA
+          export_vars full_version major_version minor_version patch_version branch_name
+
+          # Check that GITHUB_REF matches the expected branch name:
+          if [[ "${GITHUB_REF}" != "refs/heads/${branch_name}" ]]; then
+            echo "::error::GITHUB_REF (${GITHUB_REF}) does not match expected branch name (${branch_name})."
+            exit 1
+          fi
+
+          # Ensure that there is no final release tag (vX.Y.Z) for the requested version.
+          full_version_escaped=$(echo "${full_version}" | sed 's/\./\\./g')
+          if git ls-remote --tags origin | grep -q "^v${full_version_escaped}$"; then
+            echo "::error::Tag v${full_version} already exists."
+            exit 1
+            fi
+          fi
+
+          # Look for previous release candidates:
+          declare -i last_rc=
+          for tag in $(git ls-remote --tags origin; do
+              if [[ $tag =~ v${full_version_escaped}-rc([0-9]+)$ ]]; then
+                rc=${BASH_REMATCH[1]}
+                if (( rc > last_rc )); then
+                  last_rc=rc
+                fi
+              fi
+          done
+
+          log_vars last_rc
+
+          # Determine tag name
+          if [[ -z $last_rc ]]; then
+            next_rc=0
+          else
+            next_rc=$((last_rc + 1))
+          fi
+          tag_name="v${full_version}-rc${next_rc}"
+
+          log_vars next_rc tag_name
+          export_vars tag_name
+
+  build-workflow:
+    name: Build workflow from matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      workflow: ${{ steps.build-workflow.outputs.workflow }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build workflow
+        id: build-workflow
+        uses: ./.github/actions/workflow-build
+        with:
+          workflows: pull_request #TODO could add more or create a new release_candidate approval workflow.
+
+  dispatch-groups-linux-two-stage:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-two-stage:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-linux-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+
+  verify-workflow:
+    name: Verify and summarize workflow results
+    if: ${{ always() && !cancelled() }}
+    needs:
+      - build-workflow
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-windows-two-stage
+      - dispatch-groups-linux-standalone
+      - dispatch-groups-windows-standalone
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check workflow success
+        id: check-workflow
+        uses: ./.github/actions/workflow-results
+
+  tag:
+    needs:
+      - prepare
+      - verify-workflow
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Tag the release candidate
+        run: |
+          git tag ${{ needs.prepare.outputs.tag_name }} ${GITHUB_SHA}
+          git push origin ${{ needs.prepare.outputs.tag_name }}
+          echo "Tagged release candidate ${{ needs.prepare.outputs.tag_name }}."
+          # TODO Notify team of results.
