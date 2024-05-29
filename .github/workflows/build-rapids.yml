@@ -66,7 +66,7 @@ jobs:
         RAPIDS_KvikIO_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_raft_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_rmm_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
-        RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
+        RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-0.38"}
         RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         CCCL_GIT_REPO={"git_url": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}
       build_command: |
