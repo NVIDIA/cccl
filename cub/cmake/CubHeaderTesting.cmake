@@ -43,23 +43,17 @@ endfunction()
 # Wrap Thrust/CUB in a custom namespace to check proper use of ns macros:
 set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
-  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-  "__CUDA_NO_HALF_CONVERSIONS__"
-  "__CUDA_NO_HALF_OPERATORS__")
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub")
 cub_add_header_test(base "${header_definitions}")
 
 set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-  "CCCL_DISABLE_BF16_SUPPORT"
-  "__CUDA_NO_HALF_CONVERSIONS__"
-  "__CUDA_NO_HALF_OPERATORS__")
+  "CCCL_DISABLE_BF16_SUPPORT")
 cub_add_header_test(bf16 "${header_definitions}")
 
 set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-  "CCCL_DISABLE_FP16_SUPPORT"
-  "__CUDA_NO_HALF_CONVERSIONS__"
-  "__CUDA_NO_HALF_OPERATORS__")
+  "CCCL_DISABLE_FP16_SUPPORT")
 cub_add_header_test(half "${header_definitions}")
