@@ -27,6 +27,8 @@
 
 #include <cub/block/block_scan.cuh>
 
+#include <climits>
+
 #include "catch2_test_helper.h"
 
 template <cub::BlockScanAlgorithm Algorithm,
@@ -67,7 +69,7 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action)
 }
 
 template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
-__global__ void block_scan_value_based_kernel(T* in, T* out, ActionT action)
+__global__ void block_scan_value_based_kernel(const T* in, T* out, ActionT action)
 {
   using block_scan_t = cub::BlockScan<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>;
   using storage_t    = typename block_scan_t::TempStorage;
@@ -84,6 +86,18 @@ __global__ void block_scan_value_based_kernel(T* in, T* out, ActionT action)
 
   action(scan, thread_data);
   out[tid] = thread_data;
+}
+
+template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
+void block_scan_value(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
+{
+  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
+
+  block_scan_value_based_kernel<Algorithm, BlockDimX, BlockDimY, BlockDimZ, T, ActionT>
+    <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
+
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
 template <cub::BlockScanAlgorithm Algorithm,
@@ -162,11 +176,11 @@ struct min_op_t
   }
 };
 
-template <scan_mode Mode>
+template <class T, scan_mode Mode>
 struct min_op_value_t
 {
   template <class BlockScanT>
-  __device__ void operator()(BlockScanT& scan, int& thread_data) const
+  __device__ void operator()(BlockScanT& scan, T& thread_data) const
   {
     if (Mode == scan_mode::exclusive)
     {
@@ -185,7 +199,7 @@ struct min_op_value_init_t
   T initial_value;
 
   template <class BlockScanT>
-  __device__ void operator()(BlockScanT& scan, int& thread_data) const
+  __device__ void operator()(BlockScanT& scan, T& thread_data) const
   {
     if (Mode == scan_mode::exclusive)
     {
@@ -553,7 +567,6 @@ CUB_TEST("Block scan supports custom scan op", "[scan][block]", algorithm, modes
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(CUB_SEED(10), d_in);
-  d_in[0] = INT_MIN;
 
   block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, min_op_t<mode>{});
 
@@ -564,7 +577,14 @@ CUB_TEST("Block scan supports custom scan op", "[scan][block]", algorithm, modes
     [](type l, type r) {
       return std::min(l, r);
     },
-    INT_MIN);
+    INT_MAX);
+
+  _CCCL_IF_CONSTEXPR (mode == scan_mode::exclusive)
+  {
+    //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
+    d_out.erase(d_out.begin());
+    h_out.erase(h_out.begin());
+  }
 
   REQUIRE(h_out == d_out);
 }
@@ -585,13 +605,8 @@ CUB_TEST("Block scan value based overload works", "[scan][block]", algorithm, mo
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(CUB_SEED(10), d_in);
-  d_in[0] = INT_MIN;
 
-  dim3 block_dims(block_dim_x, block_dim_y, block_dim_z);
-
-  block_scan_value_based_kernel<algorithm, block_dim_x, block_dim_y, block_dim_z, type, decltype(min_op_value_t<mode>{})>
-    <<<1, block_dims>>>(
-      thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), min_op_value_t<mode>{});
+  block_scan_value<algorithm, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, min_op_value_t<type, mode>{});
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
@@ -600,7 +615,14 @@ CUB_TEST("Block scan value based overload works", "[scan][block]", algorithm, mo
     [](type l, type r) {
       return std::min(l, r);
     },
-    INT_MIN);
+    INT_MAX);
+
+  _CCCL_IF_CONSTEXPR (mode == scan_mode::exclusive)
+  {
+    //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
+    d_out.erase(d_out.begin());
+    h_out.erase(h_out.begin());
+  }
 
   REQUIRE(h_out == d_out);
 }
@@ -621,21 +643,11 @@ CUB_TEST("Block scan value based overload works with initial value", "[scan][blo
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(CUB_SEED(10), d_in);
-  d_in[0] = INT_MIN;
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
 
-  dim3 block_dims(block_dim_x, block_dim_y, block_dim_z);
-
-  block_scan_value_based_kernel<algorithm,
-                                block_dim_x,
-                                block_dim_y,
-                                block_dim_z,
-                                type,
-                                decltype(min_op_value_init_t<type, mode>{})><<<1, block_dims>>>(
-    thrust::raw_pointer_cast(d_in.data()),
-    thrust::raw_pointer_cast(d_out.data()),
-    min_op_value_init_t<type, mode>{initial_value});
+  block_scan_value<algorithm, block_dim_x, block_dim_y, block_dim_z>(
+    d_in, d_out, min_op_value_init_t<type, mode>{initial_value});
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
@@ -665,7 +677,6 @@ CUB_TEST("Block custom op scan works with initial value", "[scan][block]", algor
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(CUB_SEED(10), d_in);
-  d_in[0] = INT_MIN;
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
 
@@ -704,7 +715,6 @@ CUB_TEST("Block custom op scan with initial value returns valid block aggregate"
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(CUB_SEED(10), d_in);
-  d_in[0] = INT_MIN;
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
 
