@@ -718,7 +718,7 @@ public:
       ScaleT result;
       NV_IF_TARGET(
         NV_PROVIDES_SM_53,
-        (result.reciprocal = __hdiv(__half2float(num_levels - 1), __hsub(max_level, min_level));),
+        (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
         (result.reciprocal = static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level));))
       return result;
     }
