@@ -69,8 +69,6 @@ jobs:
         RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-0.38"}
         RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
       build_command: |
-        set -x
-
         # Add NVCC problem matcher
         echo "::add-matcher::~/cccl/.github/problem-matchers/problem-matcher.json"
 
