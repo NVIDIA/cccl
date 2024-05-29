@@ -57,7 +57,7 @@ jobs:
         RAPIDS_cmake_GIT_REPO={"upstream": "trxcllnt", "tag": "fea/cccl-2.5"}
         RAPIDS_cudf_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_cudf_kafka_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
-        RAPIDS_cugraph_GIT_REPO={"upstream": "trxcllnt", "tag": "fix/cccl-2.5"}
+        RAPIDS_cugraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_cugraph_ops_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_cuml_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
         RAPIDS_cumlprims_mg_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
