@@ -70,7 +70,7 @@ jobs:
         RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.06"}
       build_command: |
         # Add NVCC problem matcher
-        echo "::add-matcher::~/cccl/.github/problem-matchers/problem-matcher.json"
+        echo "::add-matcher::.github/problem-matchers/problem-matcher.json"
 
         declare -a failures
         declare -A failures_map
