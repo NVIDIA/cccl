@@ -88,11 +88,8 @@ jobs:
           AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
           AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
         run: |
-          set -x;
-
           cat <<"EOF" > ci.sh
           set -eo pipefail
-          cd ~/${{github.event.repository.name}}
           echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
           eval "${COMMAND}" || exit_code=$?
@@ -131,7 +128,11 @@ jobs:
           chmod 0664 "$RUNNER_TEMP/.aws/config"
           chown -R 1001:1001 ci.sh "$REPO" "$RUNNER_TEMP/.aws"
 
-          declare -a args=(--rm --user coder)
+          declare -a args=(
+            --rm
+            --user coder
+            --workdir "/home/coder/$REPO"
+          )
 
           # Explicitly pass which GPU to use if on a GPU runner
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
