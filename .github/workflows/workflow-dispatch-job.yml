@@ -60,9 +60,9 @@ jobs:
       - name: Setup alpine
         shell: sh
         run: |
-          # Install bash and sed
+          # Install bash, nodejs, and sed
           apk update
-          apk add bash sed
+          apk add bash nodejs npm sed
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
