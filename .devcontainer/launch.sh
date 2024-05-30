@@ -83,6 +83,10 @@ launch_docker() {
     local -;
     set -euo pipefail;
 
+    tabs_to_spaces() {
+        sed $'s/\t/ /g'
+    }
+
     trim_leading_whitespace() {
         sed 's/^[[:space:]]*//'
     }
@@ -99,8 +103,19 @@ launch_docker() {
         rev | cut -d"$1" -f1 --complement | rev
     }
 
-    inline_environment_variables() {
-        xargs -r -n1 bash -c "echo \"\$0\""
+    strip_enclosing_chars() {
+        tabs_to_spaces \
+      | trim_leading_whitespace \
+      | trim_trailing_whitespace \
+      | tr -s '\n' '\t' \
+      | remove_leading_char "$1" \
+      | remove_trailing_char "$2" \
+      | tr -s '\t' '\n'
+    }
+
+    json_map_key_to_shell_syntax() {
+        sed -r 's/"(.*)":[ ]*?(.*)/\1=\2/' \
+      | remove_trailing_char ','
     }
 
     translate_local_envvars_to_shell_syntax() {
@@ -121,46 +136,32 @@ launch_docker() {
 
     json_string() {
         grep "\"$1\":" \
-      | sed 's/.*: "\(.*\)",/\1/' \
+      | sed -r 's/.*:[ ]*?"(.*)",/\1/' \
       | inline_local_workspace_folder \
       | inline_container_workspace_folder \
       | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax \
-      | inline_environment_variables
+      | translate_local_envvars_to_shell_syntax
     }
 
     json_map() {
         grep -Pzo "(?s)\"$1\": {(.*?)\s+}" \
-      | trim_leading_whitespace \
-      | trim_trailing_whitespace \
-      | tr -s '\n' '\t' \
-      | remove_leading_char '{' \
-      | remove_trailing_char '}' \
-      | tr -s '\t' '\n' \
-      | sed -r 's/": /=/' \
-      | remove_leading_char '"' \
-      | remove_trailing_char ',' \
+      | strip_enclosing_chars '{' '}' \
+      | json_map_key_to_shell_syntax \
       | inline_local_workspace_folder \
       | inline_container_workspace_folder \
       | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax \
-      | inline_environment_variables
+      | translate_local_envvars_to_shell_syntax
     }
 
     json_array() {
         grep -Pzo "(?s)\"$1\": \[(.*?)\s*\]" \
-      | grep -Pzo '(?s)\[(.*?)\s*\]' \
-      | remove_leading_char '[' \
-      | remove_trailing_char ']' \
+      | strip_enclosing_chars '[' ']' \
+      | sed -r 's/", "/"\n"/g' \
       | sed -r 's/^(.*"),$/\1/' \
-      | sed -r 's/", "/" "/g' \
-      | trim_leading_whitespace \
-      | trim_trailing_whitespace \
       | inline_local_workspace_folder \
       | inline_container_workspace_folder \
       | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax \
-      | inline_environment_variables
+      | translate_local_envvars_to_shell_syntax
     }
 
     # Read workspaceFolder
@@ -178,51 +179,51 @@ launch_docker() {
         json_array "runArgs" < "${path}/devcontainer.json"
     ))"
 
-    if [[ " ${RUN_ARGS[*]} " != *" --rm "* ]]; then
-        RUN_ARGS+=(--rm)
-    fi
+    for flag in rm init; do
+        if [[ " ${RUN_ARGS[*]} " != *" --${flag} "* ]]; then
+            RUN_ARGS+=("--${flag}")
+        fi
+    done
 
     # Read initializeCommand
     local -a INITIALIZE_COMMAND="($(
-        json_array "initializeCommand" < "${path}/devcontainer.json" \
-      | xargs -r -I% echo "'%'"
+        json_array "initializeCommand" < "${path}/devcontainer.json"
     ))"
 
-    local -a ENVVARS="($(
+    local -a ENV_VARS="($(
         json_map "containerEnv" < "${path}/devcontainer.json" \
-      | sed -r 's/(.*)=(.*)/--env \1="\2"/'
+      | sed -r 's/(.*)=(.*)/--env \1=\2/'
     ))";
 
-    ENVVARS+=(--env REMOTE_USER=coder)
-    ENVVARS+=(--env NEW_UID="$(id -u)")
-    ENVVARS+=(--env NEW_GID="$(id -g)")
+    ENV_VARS+=(--env REMOTE_USER=coder)
+    ENV_VARS+=(--env NEW_UID="$(id -u)")
+    ENV_VARS+=(--env NEW_GID="$(id -g)")
 
     local -a MOUNTS="($(
-        tee < "${path}/devcontainer.json" \
+        tee < "${path}/devcontainer.json"   \
+            1>/dev/null                     \
+            >(json_array "mounts")          \
             >(json_string "workspaceMount") \
-            >(json_array "mounts") \
-            1>/dev/null \
       | xargs -r -I% echo --mount '%'
     ))"
 
     if test -n "${SSH_AUTH_SOCK:-}"; then
-        ENVVARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock");
-        MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind");
+        ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
+        MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
     fi
 
     if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
-        eval "${INITIALIZE_COMMAND[*]@Q}";
+        eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
 
-    echo "Found image: ${DOCKER_IMAGE}"
-    docker pull "${DOCKER_IMAGE}"
-    docker run \
-        -it --init \
+    exec docker run \
+        -it \
         -u root:root \
-        --workdir "${WORKSPACE_FOLDER}" \
+        --pull always \
+        --workdir "${WORKSPACE_FOLDER:-/home/coder/cccl}" \
         --entrypoint /home/coder/cccl/.devcontainer/docker-entrypoint.sh \
         "${RUN_ARGS[@]}" \
-        "${ENVVARS[@]}" \
+        "${ENV_VARS[@]}" \
         "${MOUNTS[@]}" \
         "${DOCKER_IMAGE}" \
         "$@"
