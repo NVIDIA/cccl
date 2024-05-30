@@ -51,7 +51,7 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
-    runs-on: ${{inputs.runner}}
+    runs-on: ${{ fromJSON(startsWith(inputs.runner, 'linux') && format('"{0}"', inputs.runner) || '"ubuntu-latest"') }}
     container:
       image: cruizba/ubuntu-dind:jammy-26.1.3
       env:
@@ -217,7 +217,7 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(startsWith(inputs.runner, 'windows') && inputs.dummy_matrix || '[]') }}
-    runs-on: ${{inputs.runner}}
+    runs-on: ${{ fromJSON(startsWith(inputs.runner, 'windows') && format('"{0}"', inputs.runner) || '"ubuntu-latest"') }}
     env:
       SCCACHE_BUCKET: rapids-sccache-devs
       SCCACHE_REGION: us-east-2
