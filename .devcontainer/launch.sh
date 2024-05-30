@@ -218,6 +218,7 @@ launch_docker() {
 
     exec docker run \
         -it \
+        --gpus all \
         -u root:root \
         --pull always \
         --workdir "${WORKSPACE_FOLDER:-/home/coder/cccl}" \
