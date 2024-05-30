@@ -717,9 +717,9 @@ public:
     {
       ScaleT result;
       NV_IF_TARGET(NV_PROVIDES_SM_53,
-                   (result.reciprocal = __hdiv(static_cast<__half>(num_levels - 1), __hsub(max_level, min_level));),
-                   (result.reciprocal = static_cast<float>(num_levels - 1)
-                                      / (static_cast<float>(max_level) - static_cast<float>(min_level));))
+                   (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
+                   (result.reciprocal = __float2half(
+                      static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
       return result;
     }
 #endif // __CUDA_FP16_TYPES_EXIST__

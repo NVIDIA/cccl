@@ -61,6 +61,7 @@ the matrix job is turned into one or more dispatch groups consisting of potentia
 import argparse
 import base64
 import copy
+import functools
 import json
 import os
 import re
@@ -68,7 +69,15 @@ import struct
 import sys
 import yaml
 
+
 matrix_yaml = None
+
+
+# Decorators to cache static results of functions:
+# static_result: function has no args, same result each invocation.
+# memoize_result: result depends on args.
+def static_result(func): return functools.lru_cache(maxsize=1)(func)
+def memoize_result(func): return functools.lru_cache(maxsize=None)(func)
 
 
 def generate_guids():
@@ -106,6 +115,7 @@ def error_message_with_matrix_job(matrix_job, message):
     return f"{matrix_job['origin']['workflow_location']}: {message}\n  Input: {matrix_job['origin']['original_matrix_job']}"
 
 
+@static_result
 def get_all_matrix_job_tags_sorted():
     required_tags = set(matrix_yaml['required_tags'])
     defaulted_tags = set(matrix_yaml['defaulted_tags'])
@@ -151,6 +161,13 @@ def lookup_supported_stds(device_compiler=None, host_compiler=None, project=None
             raise Exception(f"Missing matrix.yaml 'lookup_project_supported_stds' entry for key '{key}'")
         stds = stds & set(matrix_yaml['lookup_project_supported_stds'][key])
     return sorted(list(stds))
+
+
+@memoize_result
+def lookup_job_invoke_spec(job_type):
+    if job_type in matrix_yaml['job_invoke']:
+        return matrix_yaml['job_invoke'][job_type]
+    return {'prefix': job_type}
 
 
 def get_formatted_project_name(project_name):
@@ -241,13 +258,16 @@ def generate_dispatch_job_image(matrix_job, job_type):
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
-    script_job_type = job_type
-    script_project = matrix_job['project']
-    script_name = f"{script_path}/{script_job_type}_{script_project}{script_ext}"
+
+    job_invoke_spec = lookup_job_invoke_spec(job_type)
+    job_prefix = job_invoke_spec['prefix']
+    job_args = job_invoke_spec['args'] if 'args' in job_invoke_spec else ""
+
+    project = matrix_job['project']
+    script_name = f"{script_path}/{job_prefix}_{project}{script_ext}"
 
     std_str = str(matrix_job['std']) if 'std' in matrix_job else ''
 
-    host_compiler_exe = matrix_job['cxx']['exe']
     device_compiler_name = matrix_job['cudacxx']['name']
     device_compiler_exe = matrix_job['cudacxx']['exe']
 
@@ -255,6 +275,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cmake_options = matrix_job['cmake_options'] if 'cmake_options' in matrix_job else ''
 
     command = f"\"{script_name}\""
+    if job_args:
+        command += f" {job_args}"
     if std_str:
         command += f" -std \"{std_str}\""
     if cuda_compile_arch:
@@ -273,7 +295,7 @@ def generate_dispatch_job_origin(matrix_job, job_type):
     matrix_job = matrix_job.copy()
     del matrix_job['origin']
 
-    matrix_job['jobs'] = job_type
+    matrix_job['jobs'] = get_formatted_job_type(job_type)
 
     if 'cxx' in matrix_job:
         host_compiler = matrix_job['cxx']
@@ -324,20 +346,21 @@ def generate_dispatch_group_jobs(matrix_job):
         "two_stage": []
     }
 
+    # The jobs tag is left unexploded to optimize scheduling here.
     job_types = set(matrix_job['jobs'])
 
+    # Identify jobs that require a build job to run first:
     build_required = set(matrix_yaml['build_required_jobs']) & job_types
-    has_build_and_test = len(build_required) > 0
-    job_types -= build_required
 
-    has_standalone_build = 'build' in job_types and not has_build_and_test
-    job_types -= {'build'}
+    if build_required and not 'build' in job_types:
+        raise Exception(error_message_with_matrix_job(
+            matrix_job, f"Internal error: Missing 'build' job type required by other jobs ({build_required})."))
 
-    if has_standalone_build:
-        dispatch_group_jobs['standalone'].append(generate_dispatch_job_json(matrix_job, "build"))
-    elif has_build_and_test:
+    if build_required:
         dispatch_group_jobs['two_stage'].append(
-            generate_dispatch_build_and_test_json(matrix_job, "build", build_required))
+            generate_dispatch_build_and_test_json(matrix_job, "build", list(build_required)))
+        job_types -= {'build'}
+        job_types -= build_required
 
     # Remaining jobs are assumed to be standalone (e.g. nvrtc):
     for job_type in job_types:
@@ -364,9 +387,9 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 def compare_dispatch_jobs(job1, job2):
     "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
-    return (job1['name']    == job2['name'] and
-            job1['runner']  == job2['runner'] and
-            job1['image']   == job2['image'] and
+    return (job1['name'] == job2['name'] and
+            job1['runner'] == job2['runner'] and
+            job1['image'] == job2['image'] and
             job1['command'] == job2['command'])
 
 
@@ -376,6 +399,7 @@ def dispatch_job_in_container(job, container):
         if compare_dispatch_jobs(job, job2):
             return True
     return False
+
 
 def remove_dispatch_job_from_container(job, container):
     "Remove a dispatch job from a container, using compare_dispatch_jobs."
@@ -416,7 +440,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
             consumers = two_stage['consumers']
 
             # Make sure this gets updated if we add support for multiple producers:
-            assert(len(producers) == 1)
+            assert (len(producers) == 1)
             producer = producers[0]
 
             if dispatch_job_in_container(producer, merged_producers):
@@ -558,22 +582,78 @@ def remove_skip_test_jobs(matrix_jobs):
         jobs = matrix_job['jobs']
         new_jobs = set()
         for job in jobs:
-            if job in matrix_yaml['skip_test_jobs']:
-                # If a skipped test job is a build_required_job, replace it with the 'build' job.
-                if job in matrix_yaml['build_required_jobs']:
-                    # Replace with the prerequisite build job:
-                    new_jobs.add('build')
-                    # If a skipped test job is not a build_required_job, ignore it.
-                else:
-                    pass  # Ignore the job
-            else:
+            if not job in matrix_yaml['skip_test_jobs']:
                 new_jobs.add(job)
-        # If no jobs remain, skip this matrix job.
         if new_jobs:
             new_matrix_job = copy.deepcopy(matrix_job)
             new_matrix_job['jobs'] = list(new_jobs)
             new_matrix_jobs.append(new_matrix_job)
     return new_matrix_jobs
+
+
+@static_result
+def get_excluded_matrix_jobs():
+    return parse_workflow_matrix_jobs(None, 'exclude')
+
+
+def apply_matrix_job_exclusion(matrix_job, exclusion):
+    # Excluded tags to remove from unexploded tag categories: { tag: [exluded_value1, excluded_value2] }
+    update_dict = {}
+
+    for tag, excluded_values in exclusion.items():
+        # Not excluded if a specified tag isn't even present:
+        if not tag in matrix_job:
+            return matrix_job
+
+        # print(f"tag: {tag}, excluded_values: {excluded_values}")
+
+        # Some tags are left unexploded (e.g. 'jobs') to optimize scheduling,
+        # so the values can be either a list or a single value.
+        # Standardize to a list for comparison:
+        if type(excluded_values) != list:
+            excluded_values = [excluded_values]
+        matrix_values = matrix_job[tag]
+        if type(matrix_values) != list:
+            matrix_values = [matrix_values]
+
+        # Identify excluded values that are present in the matrix job for this tag:
+        matched_tag_values = [value for value in matrix_values if value in excluded_values]
+        # Not excluded if no values match for a tag:
+        if not matched_tag_values:
+            return matrix_job
+
+        # If there is only a partial match to the matrix values, record the matches in the update_dict.
+        # If the match is complete, do nothing.
+        if len(matched_tag_values) < len(matrix_values):
+            update_dict[tag] = matched_tag_values
+
+    # If we get here, the matrix job matches and should be updated or excluded entirely.
+    # If all tag matches are complete, then update_dict will be empty and the job should be excluded entirely
+    if not update_dict:
+        return None
+
+    # If update_dict is populated, remove the matched values from the matrix job and return it.
+    new_matrix_job = copy.deepcopy(matrix_job)
+    for tag, values in update_dict.items():
+        for value in values:
+            new_matrix_job[tag].remove(value)
+
+    return new_matrix_job
+
+
+def remove_excluded_jobs(matrix_jobs):
+    '''Remove jobs that match all tags in any of the exclusion matrix jobs.'''
+    excluded = get_excluded_matrix_jobs()
+    filtered_matrix_jobs = []
+    for matrix_job_orig in matrix_jobs:
+        matrix_job = copy.deepcopy(matrix_job_orig)
+        for exclusion in excluded:
+            matrix_job = apply_matrix_job_exclusion(matrix_job, exclusion)
+            if not matrix_job:
+                break
+        if matrix_job:
+            filtered_matrix_jobs.append(matrix_job)
+    return filtered_matrix_jobs
 
 
 def validate_required_tags(matrix_job):
@@ -622,6 +702,14 @@ def set_derived_tags(matrix_job):
 
         matrix_job['std'] = lookup_supported_stds(device_compiler, host_compiler, project)
 
+    if matrix_job['project'] in matrix_yaml['project_expanded_tests'] and 'test' in matrix_job['jobs']:
+        matrix_job['jobs'].remove('test')
+        matrix_job['jobs'] += matrix_yaml['project_expanded_tests'][matrix_job['project']]
+
+    if (not 'build' in matrix_job['jobs'] and
+            any([job in matrix_job['jobs'] for job in matrix_yaml['build_required_jobs']])):
+        matrix_job['jobs'].append('build')
+
 
 def next_explode_tag(matrix_job):
     for tag in matrix_job:
@@ -646,20 +734,29 @@ def explode_tags(matrix_job, explode_tag=None):
     return result
 
 
-def preprocess_matrix_jobs(matrix_jobs):
+def preprocess_matrix_jobs(matrix_jobs, explode_only=False):
     result = []
-    for matrix_job in matrix_jobs:
-        validate_required_tags(matrix_job)
-        set_default_tags(matrix_job)
-        for job in explode_tags(matrix_job):
-            set_derived_tags(job)
-            # The derived tags may need to be exploded again:
-            result.extend(explode_tags(job))
+    if explode_only:
+        for matrix_job in matrix_jobs:
+            result.extend(explode_tags(matrix_job))
+    else:
+        for matrix_job in matrix_jobs:
+            validate_required_tags(matrix_job)
+            set_default_tags(matrix_job)
+            for job in explode_tags(matrix_job):
+                set_derived_tags(job)
+                # The derived tags may need to be exploded again:
+                result.extend(explode_tags(job))
     return result
 
 
 def parse_workflow_matrix_jobs(args, workflow_name):
+    # Special handling for exclusion matrix: don't validate, add default, etc. Only explode.
+    is_exclusion_matrix = (workflow_name == 'exclude')
+
     if not workflow_name in matrix_yaml['workflows']:
+        if (is_exclusion_matrix):  # Valid, no exclusions if not defined
+            return []
         raise Exception(f"Workflow '{workflow_name}' not found in matrix file '{matrix_yaml['filename']}'")
 
     matrix_jobs = matrix_yaml['workflows'][workflow_name]
@@ -670,17 +767,23 @@ def parse_workflow_matrix_jobs(args, workflow_name):
 
     # Tag with the original matrix info, location, etc. for error messages and post-processing.
     # Do this first so the original tags / order /idx match the inpt object exactly.
-    for idx, matrix_job in enumerate(matrix_jobs):
-        workflow_location = f"{matrix_yaml['filename']}:{workflow_line_number} (job {idx + 1})"
-        matrix_job['origin'] = get_matrix_job_origin(matrix_job, workflow_name, workflow_location)
+    if not is_exclusion_matrix:
+        for idx, matrix_job in enumerate(matrix_jobs):
+            workflow_location = f"{matrix_yaml['filename']}:{workflow_line_number} (job {idx + 1})"
+            matrix_job['origin'] = get_matrix_job_origin(matrix_job, workflow_name, workflow_location)
 
     # Fill in default values, explode lists.
-    matrix_jobs = preprocess_matrix_jobs(matrix_jobs)
+    matrix_jobs = preprocess_matrix_jobs(matrix_jobs, explode_only=is_exclusion_matrix)
 
-    if args.skip_tests:
-        matrix_jobs = remove_skip_test_jobs(matrix_jobs)
-    if args.dirty_projects:
-        matrix_jobs = [job for job in matrix_jobs if job['project'] in args.dirty_projects]
+    if args:
+        if args.skip_tests:
+            matrix_jobs = remove_skip_test_jobs(matrix_jobs)
+        if args.dirty_projects:
+            matrix_jobs = [job for job in matrix_jobs if job['project'] in args.dirty_projects]
+
+    # Don't remove excluded jobs if we're currently parsing them:
+    if not is_exclusion_matrix:
+        matrix_jobs = remove_excluded_jobs(matrix_jobs)
 
     # Sort the tags by, *ahem*, "importance":
     sorted_tags = get_all_matrix_job_tags_sorted()
@@ -703,7 +806,7 @@ def parse_workflow_dispatch_groups(args, workflow_name):
         matrix_job_dispatch_group = matrix_job_to_dispatch_group(matrix_job, group_prefix)
         merge_dispatch_groups(workflow_dispatch_groups, matrix_job_dispatch_group)
 
-    return finalize_workflow_dispatch_groups(workflow_dispatch_groups)
+    return workflow_dispatch_groups
 
 
 def write_outputs(final_workflow):
@@ -773,6 +876,8 @@ def print_gha_workflow(args):
         workflow_dispatch_groups = parse_workflow_dispatch_groups(args, workflow_name)
         merge_dispatch_groups(final_workflow, workflow_dispatch_groups)
 
+    final_workflow = finalize_workflow_dispatch_groups(final_workflow)
+
     write_outputs(final_workflow)
 
 
@@ -780,8 +885,12 @@ def print_devcontainer_info(args):
     devcontainer_version = matrix_yaml['devcontainer_version']
 
     matrix_jobs = []
-    for workflow in matrix_yaml['workflows']:
-        matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow))
+
+    # Remove the `exclude` and `override` entries:
+    ignored_matrix_keys = ['exclude', 'override']
+    workflow_names = [key for key in matrix_yaml['workflows'].keys() if key not in ignored_matrix_keys]
+    for workflow_name in workflow_names:
+        matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
     # Remove all but the following keys from the matrix jobs:
     keep_keys = ['ctk', 'cxx', 'os']

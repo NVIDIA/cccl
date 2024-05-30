@@ -32,6 +32,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -50,6 +51,16 @@ __host__ __device__ void test_iterator_sentinel()
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
+
+#if !defined(TEST_COMPILER_MSVC)
+  // P3029R1: deduction from `integral_constant`
+  {
+    cuda::std::span s{cuda::std::begin(arr), cuda::std::integral_constant<size_t, 3>{}};
+    ASSERT_SAME_TYPE(decltype(s), cuda::std::span<int, 3>);
+    assert(s.size() == cuda::std::size(arr));
+    assert(s.data() == cuda::std::data(arr));
+  }
+#endif // !TEST_COMPILER_MSVC
 }
 
 __host__ __device__ void test_c_array()
