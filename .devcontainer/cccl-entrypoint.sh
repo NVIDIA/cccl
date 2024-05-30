@@ -4,8 +4,11 @@
 
 set -e;
 
-ci/rapids/post-create-command.sh;
-rapids-post-start-command;
+devcontainer-utils-post-create-command;
+devcontainer-utils-init-git;
+devcontainer-utils-post-attach-command;
+
+cd ~/cccl/
 
 if test $# -gt 0; then
     exec "$@";

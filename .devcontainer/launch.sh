@@ -83,32 +83,99 @@ launch_docker() {
     local -;
     set -euo pipefail;
 
-    # Read image
-    local DOCKER_IMAGE="$(
-        grep '"image":' "${path}/devcontainer.json" \
-      | sed 's/.*: "\(.*\)",/\1/'
-    )"
+    trim_leading_whitespace() {
+        sed 's/^[[:space:]]*//'
+    }
+
+    trim_trailing_whitespace() {
+        sed 's/[[:space:]]*$//'
+    }
+
+    remove_leading_char() {
+        cut -d"$1" -f1 --complement
+    }
+
+    remove_trailing_char() {
+        rev | cut -d"$1" -f1 --complement | rev
+    }
+
+    inline_environment_variables() {
+        xargs -r -n1 bash -c "echo \"\$0\""
+    }
+
+    translate_local_envvars_to_shell_syntax() {
+        sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/'
+    }
+
+    inline_local_workspace_folder() {
+        sed "s@\${localWorkspaceFolder}@$(pwd)@g"
+    }
+
+    inline_container_workspace_folder() {
+        sed "s@\${containerWorkspaceFolder}@${WORKSPACE_FOLDER:-}@g"
+    }
+
+    inline_local_workspace_folder_basename() {
+        sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g"
+    }
+
+    json_string() {
+        grep "\"$1\":" \
+      | sed 's/.*: "\(.*\)",/\1/' \
+      | inline_local_workspace_folder \
+      | inline_container_workspace_folder \
+      | inline_local_workspace_folder_basename \
+      | translate_local_envvars_to_shell_syntax \
+      | inline_environment_variables
+    }
+
+    json_map() {
+        grep -Pzo "(?s)\"$1\": {(.*?)\s+}" \
+      | trim_leading_whitespace \
+      | trim_trailing_whitespace \
+      | tr -s '\n' '\t' \
+      | remove_leading_char '{' \
+      | remove_trailing_char '}' \
+      | tr -s '\t' '\n' \
+      | sed -r 's/": /=/' \
+      | remove_leading_char '"' \
+      | remove_trailing_char ',' \
+      | inline_local_workspace_folder \
+      | inline_container_workspace_folder \
+      | inline_local_workspace_folder_basename \
+      | translate_local_envvars_to_shell_syntax \
+      | inline_environment_variables
+    }
+
+    json_array() {
+        grep -Pzo "(?s)\"$1\": \[(.*?)\s*\]" \
+      | grep -Pzo '(?s)\[(.*?)\s*\]' \
+      | remove_leading_char '[' \
+      | remove_trailing_char ']' \
+      | sed -r 's/^(.*"),$/\1/' \
+      | sed -r 's/", "/" "/g' \
+      | trim_leading_whitespace \
+      | trim_trailing_whitespace \
+      | inline_local_workspace_folder \
+      | inline_container_workspace_folder \
+      | inline_local_workspace_folder_basename \
+      | translate_local_envvars_to_shell_syntax \
+      | inline_environment_variables
+    }
 
     # Read workspaceFolder
     local WORKSPACE_FOLDER="$(
-        grep '"workspaceFolder":' "${path}/devcontainer.json" \
-      | sed 's/.*: "\(.*\)",/\1/' \
-      | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g"
+        json_string "workspaceFolder" < "${path}/devcontainer.json"
+    )"
+
+    # Read image
+    local DOCKER_IMAGE="$(
+        json_string "image" < "${path}/devcontainer.json"
     )"
 
     # Read runArgs
     local -a RUN_ARGS="($(
-        grep -Pzo '(?s)"runArgs": \[(.*?)\s*\]' "${path}/devcontainer.json" \
-      | grep -Pzo '(?s)\[(.*?)\s*\]' \
-      | cut -d'[' -f1 --complement | rev | cut -d']' -f1 --complement | rev \
-      | tr -s '[:blank:]' \
-      | tr '\n' '\0' \
-      | xargs -0 -r -n1 echo -n \
-      | sed -r 's/", "/" "/g' \
-      | sed "s@\${localWorkspaceFolder}@$(pwd)@g" \
-      | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g" \
-      | sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/' \
-      | xargs -0 -r -n1 bash -c "eval echo \$0"
+        json_array "runArgs" < "${path}/devcontainer.json"
     ))"
 
     if [[ " ${RUN_ARGS[*]} " != *" --rm "* ]]; then
@@ -116,57 +183,35 @@ launch_docker() {
     fi
 
     # Read initializeCommand
-    local INITIALIZE_COMMAND="$(
-        grep -Pzo '(?s)"initializeCommand": \[(.*?)\s*\]' "${path}/devcontainer.json" \
-      | grep -Pzo '(?s)\[(.*?)\s*\]' \
-      | cut -d'[' -f1 --complement | rev | cut -d']' -f1 --complement | rev \
-      | tr -s '[:blank:]' \
-      | tr '\n' '\0' \
-      | xargs -0 -r -n1 echo -n \
-      | sed -r 's/", "/" "/g' \
-      | sed "s@\${localWorkspaceFolder}@$(pwd)@g" \
-      | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g"
-    )"
-
-    # shellcheck disable=SC2207
-    local -a ENVVARS="($(
-        grep -Pzo '(?s)"containerEnv": {(.*?)\s+}' "${path}/devcontainer.json" \
-      | head -n-1 | tail -n+2 \
-      | rev | cut -d',' -f1 --complement | rev \
-      | sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/' \
-      | sed -r 's/": /=/' \
-      | cut -d'"' -f1 --complement \
-      | tr -d '[:blank:]' \
-      | tr '\n' '\0' \
-      | xargs -0 -r -n1 bash -c "echo \$(eval echo \${0})" \
-      | xargs -0 -r -n1 bash -c "sed -r \"s/(.*)=(.*)/\1='\2'/\" <<< \$0" \
-      | head -n-1 \
-      | tr '\n' '\0' \
-      | xargs -0 -r -n1 bash -c "echo '--env' \$0"
+    local -a INITIALIZE_COMMAND="($(
+        json_array "initializeCommand" < "${path}/devcontainer.json" \
+      | xargs -r -I% echo "'%'"
     ))"
+
+    local -a ENVVARS="($(
+        json_map "containerEnv" < "${path}/devcontainer.json" \
+      | sed -r 's/(.*)=(.*)/--env \1="\2"/'
+    ))";
 
     ENVVARS+=(--env REMOTE_USER=coder)
     ENVVARS+=(--env NEW_UID="$(id -u)")
     ENVVARS+=(--env NEW_GID="$(id -g)")
 
-    # shellcheck disable=SC2207
-    local -a MOUNTS=($(
-        grep 'type=bind' "${path}/devcontainer.json" \
-      | sed -r 's/.*: "(.*)",/\1/' \
-      | tr -d \" | tr -d '[:blank:]' \
-      | rev | cut -d',' -f1 --complement | rev \
-      | sed "s@\${localWorkspaceFolder}@$(pwd)@g" \
-      | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g" \
-      | xargs -r -n1 echo --mount
-    ))
+    local -a MOUNTS="($(
+        tee < "${path}/devcontainer.json" \
+            >(json_string "workspaceMount") \
+            >(json_array "mounts") \
+            1>/dev/null \
+      | xargs -r -I% echo --mount '%'
+    ))"
 
     if test -n "${SSH_AUTH_SOCK:-}"; then
         ENVVARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock");
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind");
     fi
 
-    if test "${#INITIALIZE_COMMAND}" -gt 0; then
-        eval "${INITIALIZE_COMMAND}"
+    if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
+        eval "${INITIALIZE_COMMAND[*]@Q}";
     fi
 
     echo "Found image: ${DOCKER_IMAGE}"

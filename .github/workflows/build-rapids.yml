@@ -100,7 +100,7 @@ jobs:
              RAPIDS_LIBS='${RAPIDS_LIBS}' \\
              RAPIDS_TEST_OPTIONS='${RAPIDS_TEST_OPTIONS}' \\
           $(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; echo "   $var='${!var}' \\"; done)
-             .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- cccl/ci/rapids/rapids-entrypoint.sh \\
+             .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
              /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
         __EOF
           echo ""

@@ -31,13 +31,14 @@ else
     if [ "$OLD_GID" != "$NEW_GID" ]; then
         sed -i -e "s/\([^:]*:[^:]*:\)${OLD_GID}:/\1${NEW_GID}:/" /etc/group;
     fi
-    chown "$NEW_UID:$NEW_GID" "$HOME_FOLDER";
-    # shellcheck disable=SC2016
-    find "$HOME_FOLDER/" -maxdepth 1 -print0 | xargs -0 -r -n1 -P"$(nproc --all)" /bin/bash -c \
-        '[ $(stat -c "%u:%g" "$1") != "$0" ] && chown -R "$0" "$1"' "$NEW_UID:$NEW_GID";
+
+    # Fast parallel `chown -R`
+    find "$HOME_FOLDER/" -not -user "$REMOTE_USER" -print0 \
+  | xargs -0 -r -n1 -P"$(nproc --all)" chown "$NEW_UID:$NEW_GID"
+
     # shellcheck disable=SC2155
     # Create a list of the container startup environment variable names to pass to su
-    declare -a _vars="($(env | grep '=' | grep -v '/root' | grep -Pv '^\s' | cut -d= -f1 | grep -Pv '^(.*HOME.*|PWD|PS1|_)$'))";
+    declare -a _vars="($(env | grep '=' | grep -v '/root' | grep -Pv '^\s' | cut -d= -f1 | grep -Pv '^(.*HOME.*|PS1|_)$'))";
     # Run the container command as $REMOTE_USER, preserving the container startup environment
-    exec su -g "$REMOTE_USER" -s "$SHELL" -w "$(IFS=,; echo "${_vars[*]}")" - "$REMOTE_USER" -- "$@";
+    exec su -s "$SHELL" -w "$(IFS=,; echo "${_vars[*]}")" - "$REMOTE_USER" -- cccl/.devcontainer/cccl-entrypoint.sh "$@";
 fi
