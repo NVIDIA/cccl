@@ -57,7 +57,7 @@ runs:
     - name: Fetch workflow job info
       if: ${{ inputs.github_token != ''}}
       continue-on-error: true
-      uses: actions/github-script@v4
+      uses: actions/github-script@v7
       with:
         github-token: ${{ inputs.github_token }}
         script: |
@@ -127,7 +127,7 @@ runs:
       env:
         PR_NUMBER: ${{ fromJSON(inputs.pr_number) }}
         COMMENT_BODY: ${{ steps.final-summary.outputs.SUMMARY }}
-      uses: actions/github-script@v4
+      uses: actions/github-script@v7
       with:
         github-token: ${{ inputs.github_token }}
         script: |
