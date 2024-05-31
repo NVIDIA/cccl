@@ -68,6 +68,7 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action)
   }
 }
 
+<<<<<<< HEAD
 template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
 __global__ void block_scan_value_based_kernel(const T* in, T* out, ActionT action)
 {
@@ -100,6 +101,8 @@ void block_scan_value(c2h::device_vector<T>& in, c2h::device_vector<T>& out, Act
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
+=======
+>>>>>>> parent of 37e726e18 (Add tests for value based block scan APIs)
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -176,6 +179,7 @@ struct min_op_t
   }
 };
 
+<<<<<<< HEAD
 template <class T, scan_mode Mode>
 struct min_op_value_t
 {
@@ -212,6 +216,8 @@ struct min_op_value_init_t
   }
 };
 
+=======
+>>>>>>> parent of 37e726e18 (Add tests for value based block scan APIs)
 template <class T, scan_mode Mode>
 struct min_init_value_aggregate_op_t
 {
@@ -585,78 +591,6 @@ CUB_TEST("Block scan supports custom scan op", "[scan][block]", algorithm, modes
     d_out.erase(d_out.begin());
     h_out.erase(h_out.begin());
   }
-
-  REQUIRE(h_out == d_out);
-}
-
-CUB_TEST("Block scan value based overload works", "[scan][block]", algorithm, modes, block_dim_yz)
-{
-  constexpr int items_per_thread              = 1;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
-
-  using type = int;
-
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
-  c2h::gen(CUB_SEED(10), d_in);
-
-  block_scan_value<algorithm, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, min_op_value_t<type, mode>{});
-
-  c2h::host_vector<type> h_out = d_in;
-  host_scan(
-    mode,
-    h_out,
-    [](type l, type r) {
-      return std::min(l, r);
-    },
-    INT_MAX);
-
-  _CCCL_IF_CONSTEXPR (mode == scan_mode::exclusive)
-  {
-    //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
-    d_out.erase(d_out.begin());
-    h_out.erase(h_out.begin());
-  }
-
-  REQUIRE(h_out == d_out);
-}
-
-CUB_TEST("Block scan value based overload works with initial value", "[scan][block]", algorithm, modes, block_dim_yz)
-{
-  constexpr int items_per_thread              = 1;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
-
-  using type = int;
-
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
-  c2h::gen(CUB_SEED(10), d_in);
-
-  const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
-
-  block_scan_value<algorithm, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, min_op_value_init_t<type, mode>{initial_value});
-
-  c2h::host_vector<type> h_out = d_in;
-  host_scan(
-    mode,
-    h_out,
-    [](type l, type r) {
-      return std::min(l, r);
-    },
-    initial_value);
 
   REQUIRE(h_out == d_out);
 }
