@@ -16,6 +16,7 @@ permissions:
 jobs:
 
   standlone-jobs:
+    if: ${{ toJSON(fromJSON(inputs.jobs)['standalone']) != '[]' }}
     # This is an internal dispatch job and the name is not important.
     # Give the job a short and unique name, otherwise github will bloat the job name with the matrix values.
     # This keeps the UI from getting cluttered.
@@ -36,6 +37,7 @@ jobs:
       id:       ${{ matrix.id }}
 
   two-stage-jobs:
+    if: ${{ toJSON(fromJSON(inputs.jobs)['two_stage']) != '[]' }}
     # This is an internal dispatch job and the name is not important.
     # Give the job a short and unique name, otherwise github will bloat the job name with the matrix values.
     # This keeps the UI from getting cluttered.
