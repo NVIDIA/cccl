@@ -119,11 +119,8 @@ __global__ void InclusiveScanKernelAggregate(int* output, int* d_block_aggregate
   output[threadIdx.x * 2 + 1] = thread_data[1];
 }
 
-CUB_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[scan][block]")
 {
   thrust::device_vector<int> d_out(block_num_threads * num_items_per_thread);
-
-  c2h::device_vector<int> d_block_aggregate(1);
   InclusiveScanKernelAggregate<<<1, block_num_threads>>>(
     thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_block_aggregate.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
