@@ -87,6 +87,10 @@ launch_docker() {
         sed $'s/\t/ /g'
     }
 
+    no_empty_lines() {
+        grep -v -e '^$' || [ "$?" == "1" ]
+    }
+
     trim_leading_whitespace() {
         sed 's/^[[:space:]]*//'
     }
@@ -104,22 +108,22 @@ launch_docker() {
     }
 
     strip_enclosing_chars() {
-        tabs_to_spaces \
-      | trim_leading_whitespace \
-      | trim_trailing_whitespace \
-      | tr -s '\n' '\t' \
-      | remove_leading_char "$1" \
-      | remove_trailing_char "$2" \
-      | tr -s '\t' '\n'
+        remove_leading_char "$1" \
+      | remove_trailing_char "$2"
+    }
+
+    read_docker_image_metadata() {
+        docker inspect --type image --format '{{json .Config.Labels}}' "$DOCKER_IMAGE" \
+      | sed -r 's/.*"devcontainer.metadata":[ ]*"(.*[]\)])",?.*/\1/g' \
+      | sed -r 's/\\\"/"/g'
     }
 
     json_map_key_to_shell_syntax() {
-        sed -r 's/"(.*)":[ ]*?(.*)/\1=\2/' \
-      | remove_trailing_char ','
+        sed -r 's/^"(.*)":[ ]*?([^,]*),?$/\1=\2/g'
     }
 
     translate_local_envvars_to_shell_syntax() {
-        sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/'
+        sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/g'
     }
 
     inline_local_workspace_folder() {
@@ -134,56 +138,78 @@ launch_docker() {
         sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g"
     }
 
-    json_string() {
-        grep "\"$1\":" \
-      | sed -r 's/.*:[ ]*?"(.*)",/\1/' \
+    transform_to_one_line() {
+        tabs_to_spaces \
+      | trim_leading_whitespace \
+      | trim_trailing_whitespace \
       | inline_local_workspace_folder \
       | inline_container_workspace_folder \
       | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax
+      | translate_local_envvars_to_shell_syntax \
+      | tr -s '\n' '\t'
+    }
+
+    json_string() {
+        transform_to_one_line \
+      | grep -Po "\"$1\":\s*\"(.*)\"" \
+      | sed -r "s/.*\"$1\":[ ]*\"([^\"]*)\",?.*/\1/g" \
+      | no_empty_lines
     }
 
     json_map() {
-        grep -Pzo "(?s)\"$1\": {(.*?)\s+}" \
+        transform_to_one_line \
+      | grep -Po "\"$1\":\s*{(.*?)\s*?}[^\"]" \
       | strip_enclosing_chars '{' '}' \
+      | tr -s '\t' '\n' \
       | json_map_key_to_shell_syntax \
-      | inline_local_workspace_folder \
-      | inline_container_workspace_folder \
-      | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax
+      | no_empty_lines
     }
 
     json_array() {
-        grep -Pzo "(?s)\"$1\": \[(.*?)\s*\]" \
+        transform_to_one_line \
+      | grep -Po "\"$1\":\s*\[(.*?)\s*?\][^\"]" \
       | strip_enclosing_chars '[' ']' \
+      | tr -s '\t' '\n' \
       | sed -r 's/", "/"\n"/g' \
       | sed -r 's/^(.*"),$/\1/' \
-      | inline_local_workspace_folder \
-      | inline_container_workspace_folder \
-      | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax
+      | no_empty_lines
     }
-
-    # Read workspaceFolder
-    local WORKSPACE_FOLDER="$(
-        json_string "workspaceFolder" < "${path}/devcontainer.json"
-    )"
 
     # Read image
     local DOCKER_IMAGE="$(
         json_string "image" < "${path}/devcontainer.json"
     )"
 
+    # Read workspaceFolder
+    local WORKSPACE_FOLDER="$(
+        json_string "workspaceFolder" < "${path}/devcontainer.json"
+    )"
+
+    # Read remoteUser
+    local REMOTE_USER="$(
+        json_string "remoteUser" < "${path}/devcontainer.json"
+    )"
+
+    if test -z "${REMOTE_USER:-}"; then
+        REMOTE_USER="$(
+            # Read remoteUser from image metadata
+            read_docker_image_metadata \
+          | json_string "remoteUser"
+        )"
+    fi
+
+    # Read hostRequirements.gpu
+    local GPU_REQUEST="$(
+        json_map "hostRequirements" < "${path}/devcontainer.json" \
+      | grep 'gpu=' \
+      | sed -r 's/(.*)=(.*)/\2/' \
+      | xargs
+    )"
+
     # Read runArgs
     local -a RUN_ARGS="($(
         json_array "runArgs" < "${path}/devcontainer.json"
     ))"
-
-    for flag in rm init; do
-        if [[ " ${RUN_ARGS[*]} " != *" --${flag} "* ]]; then
-            RUN_ARGS+=("--${flag}")
-        fi
-    done
 
     # Read initializeCommand
     local -a INITIALIZE_COMMAND="($(
@@ -195,10 +221,6 @@ launch_docker() {
       | sed -r 's/(.*)=(.*)/--env \1=\2/'
     ))";
 
-    ENV_VARS+=(--env REMOTE_USER=coder)
-    ENV_VARS+=(--env NEW_UID="$(id -u)")
-    ENV_VARS+=(--env NEW_GID="$(id -g)")
-
     local -a MOUNTS="($(
         tee < "${path}/devcontainer.json"   \
             1>/dev/null                     \
@@ -206,6 +228,35 @@ launch_docker() {
             >(json_string "workspaceMount") \
       | xargs -r -I% echo --mount '%'
     ))"
+
+    # Update run args and env vars
+
+    for flag in rm init; do
+        if [[ " ${RUN_ARGS[*]} " != *" --${flag} "* ]]; then
+            RUN_ARGS+=("--${flag}")
+        fi
+    done
+
+    if [[ " ${RUN_ARGS[*]} " != *" --pull"* ]]; then
+        RUN_ARGS+=(--pull always)
+    fi
+
+    if test "${GPU_REQUEST:-false}" = true; then
+        RUN_ARGS+=(--gpus all)
+    elif test "${GPU_REQUEST:-false}" = optional && \
+         command -v nvidia-container-runtime >/dev/null 2>&1; then
+        RUN_ARGS+=(--gpus all)
+    fi
+
+    RUN_ARGS+=(--workdir "${WORKSPACE_FOLDER:-/home/coder/cccl}")
+
+    if test -n "${REMOTE_USER:-}"; then
+        ENV_VARS+=(--env NEW_UID="$(id -u)")
+        ENV_VARS+=(--env NEW_GID="$(id -g)")
+        ENV_VARS+=(--env REMOTE_USER="$REMOTE_USER")
+        RUN_ARGS+=(-u root:root)
+        RUN_ARGS+=(--entrypoint "${WORKSPACE_FOLDER:-/home/coder/cccl}/.devcontainer/docker-entrypoint.sh")
+    fi
 
     if test -n "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
@@ -216,13 +267,7 @@ launch_docker() {
         eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
 
-    exec docker run \
-        -it \
-        --gpus all \
-        -u root:root \
-        --pull always \
-        --workdir "${WORKSPACE_FOLDER:-/home/coder/cccl}" \
-        --entrypoint /home/coder/cccl/.devcontainer/docker-entrypoint.sh \
+    exec docker run -it \
         "${RUN_ARGS[@]}" \
         "${ENV_VARS[@]}" \
         "${MOUNTS[@]}" \
