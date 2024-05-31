@@ -556,7 +556,10 @@ template <typename T> struct UnitWord<const volatile T> : UnitWord<T> {};
  * Type refers to the CubVector structure itself, which will wrap the corresponding \p x, \p y, etc. vector fields.
  */
 template <typename T, int vec_elements>
-struct CubVector;
+struct CubVector
+{
+  static_assert(!sizeof(T), "CubVector can only have 1-4 elements");
+};
 
 enum
 {

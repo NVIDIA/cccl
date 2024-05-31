@@ -781,7 +781,7 @@ class Configuration(object):
 
             extraflags = []
             if self.cxx.type == 'clang':
-                extraflags = ['-Wno-unknown-cuda-version']
+                extraflags = ['-Wno-unknown-cuda-version', '--no-cuda-version-check']
 
             # Do a check with the user/config flag to ensure that the flag is supported.
             if not self.cxx.hasCompileFlag([stdflag] + extraflags):

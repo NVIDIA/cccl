@@ -562,6 +562,9 @@ template <int NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS>>
 struct DispatchHistogram : SelectedPolicy
 {
+  static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
+  static_assert(NUM_ACTIVE_CHANNELS <= 4, "Histograms only support up to 4 active channels");
+
 public:
   //---------------------------------------------------------------------
   // Types and constants
