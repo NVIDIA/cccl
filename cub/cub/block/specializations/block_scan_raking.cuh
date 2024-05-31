@@ -818,7 +818,7 @@ struct BlockScanRaking
           .Scan(upsweep_partial, inclusive_partial, exclusive_partial, initial_value, scan_op);
 
         // Inclusive raking downsweep scan
-        InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
+        InclusiveDownsweep(scan_op, exclusive_partial);
 
         // Broadcast aggregate to all threads
         if (linear_tid == RAKING_THREADS - 1)

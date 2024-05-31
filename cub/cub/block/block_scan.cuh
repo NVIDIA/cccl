@@ -2004,28 +2004,16 @@ public:
   //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-init-value
+  //!     :end-before: example-end inclusive-scan-init-value
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, INT_MIN, cub::Max());
-  //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
-  //! in those threads will be ``0, 0, 2, 2, ..., 126, 126``.
+  //! For some ``thread_data`` input across the block of threads in the form of
+  //! ``0, -1, 2, -3, ..., 126, -127`` and initial value ``1``. The corresponding output ``thread_data``
+  //! in those threads will be ``1, 1, 2, 2, ..., 126, 126``.
   //!
   //! @endrst
   //!
@@ -2064,29 +2052,16 @@ public:
   //! The code snippet below illustrates an inclusive prefix max scan of 128
   //! integer items that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-init-value-aggregate
+  //!     :end-before: example-end inclusive-scan-init-value-aggregate
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cub::Max(), block_aggregate);
-  //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
-  //! in those threads will be ``0, 0, 2, 2, ..., 126, 126``. Furthermore the value
+  //! For some ``thread_data`` input across the block of threads in the form of
+  //! ``0, -1, 2, -3, ..., 126, -127`` and initial value ``1``. The corresponding output ``thread_data``
+  //! in those threads will be ``1, 1, 2, 2, ..., 126, 126``. Furthermore the value
   //! ``126`` will be stored in ``block_aggregate`` for all threads.
   //!
   //! @endrst
