@@ -76,23 +76,34 @@
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
 #endif
 
-#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)            \
+  TMPL_HEAD_OPT                                                                           \
   struct WRAPPED_API_NAME##_invocable_t                                                   \
   {                                                                                       \
     template <class... Ts>                                                                \
     CUB_RUNTIME_FUNCTION cudaError_t                                                      \
     operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
     {                                                                                     \
-      return API(d_temp_storage, temp_storage_bytes, args...);                            \
+      return API TMPL_ARGS_OPT(d_temp_storage, temp_storage_bytes, args...);              \
     }                                                                                     \
   };
 
+#define ESCAPE_LIST(...) __VA_ARGS__
+
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)  \
-  DECLARE_INVOCABLE(API, WRAPPED_API_NAME);            \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );        \
   template <class... As>                               \
   static void WRAPPED_API_NAME(As... args)             \
   {                                                    \
     launch(WRAPPED_API_NAME##_invocable_t{}, args...); \
+  }
+
+#define DECLARE_TMPL_LAUNCH_WRAPPER(API, WRAPPED_API_NAME, TMPL_PARAMS, TMPL_ARGS)                         \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, ESCAPE_LIST(template <TMPL_PARAMS>), ESCAPE_LIST(<TMPL_ARGS>)); \
+  template <TMPL_PARAMS, class... As>                                                                      \
+  static void WRAPPED_API_NAME(As... args)                                                                 \
+  {                                                                                                        \
+    launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, args...);                                          \
   }
 
 #if TEST_LAUNCH == 2
