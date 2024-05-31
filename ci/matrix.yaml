@@ -53,24 +53,17 @@ workflows:
   override:
 
   pull_request:
+    # Old CTK
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_8, cxx: [*gcc11], sm: '60;70;80;90'}
-<<<<<<< jrhemstad-patch-4
+    # Current CTK
     - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11, *gcc12]}
     - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15, *llvm16]}
-    - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17]}
+    - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
+    - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17. *msvc2022]}
+    # Modded builds:
     - {jobs: ['build'], std: 'all', cxx: [*gcc-newest, *llvm-newest], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: [*gcc-newest], sm: '90a'}
-    - {jobs: ['build'], std: 'all', cxx: [*oneapi]}
-    - {jobs: ['build'], std: 'all', cxx: [*msvc2019, *msvc2022]}
-=======
-    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11]}
-    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15]}
-    - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
-    - {jobs: ['test'],  std: 'all', cxx: [*gcc12, *llvm16, *msvc2022]}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc12, *llvm16], cpu: 'arm64'}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc12], sm: '90a'}
->>>>>>> main
     # default_projects: clang-cuda
     - {jobs: ['build'], std: [17, 20], cudacxx: *llvm-newest, cxx: *llvm-newest}
     # nvrtc:
