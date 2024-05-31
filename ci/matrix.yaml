@@ -14,8 +14,9 @@ gcc9: &gcc9 { name: 'gcc', version: '9', exe: 'g++' }
 gcc10: &gcc10 { name: 'gcc', version: '10', exe: 'g++' }
 gcc11: &gcc11 { name: 'gcc', version: '11', exe: 'g++' }
 gcc12: &gcc12 { name: 'gcc', version: '12', exe: 'g++' }
+gcc13: &gcc13 { name: 'gcc', version: '13', exe: 'g++' }
 gcc-oldest: &gcc-oldest { name: 'gcc', version: '6', exe: 'g++' }
-gcc-newest: &gcc-newest { name: 'gcc', version: '12', exe: 'g++' }
+gcc-newest: &gcc-newest { name: 'gcc', version: '13', exe: 'g++' }
 
 # LLVM Compiler configurations
 llvm9: &llvm9 { name: 'llvm', version: '9', exe: 'clang++' }
@@ -26,8 +27,9 @@ llvm13: &llvm13 { name: 'llvm', version: '13', exe: 'clang++' }
 llvm14: &llvm14 { name: 'llvm', version: '14', exe: 'clang++' }
 llvm15: &llvm15 { name: 'llvm', version: '15', exe: 'clang++' }
 llvm16: &llvm16 { name: 'llvm', version: '16', exe: 'clang++' }
+llvm17: &llvm17 { name: 'llvm', version: '17', exe: 'clang++' }
 llvm-oldest: &llvm-oldest { name: 'llvm', version: '9', exe: 'clang++' }
-llvm-newest: &llvm-newest { name: 'llvm', version: '16', exe: 'clang++' }
+llvm-newest: &llvm-newest { name: 'llvm', version: '17', exe: 'clang++' }
 
 # MSVC configs
 msvc2017: &msvc2017 { name: 'cl', version: '14.16', exe: 'cl++' }
@@ -51,14 +53,17 @@ workflows:
   override:
 
   pull_request:
+    # Old CTK
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_8, cxx: [*gcc11], sm: '60;70;80;90'}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11]}
-    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15]}
+    # Current CTK
+    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11, *gcc12]}
+    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15, *llvm16]}
     - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
-    - {jobs: ['test'],  std: 'all', cxx: [*gcc12, *llvm16, *msvc2022]}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc12, *llvm16], cpu: 'arm64'}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc12], sm: '90a'}
+    - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17, *msvc2022]}
+    # Modded builds:
+    - {jobs: ['build'], std: 'all', cxx: [*gcc-newest, *llvm-newest], cpu: 'arm64'}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc-newest], sm: '90a'}
     # default_projects: clang-cuda
     - {jobs: ['build'], std: [17, 20], cudacxx: *llvm-newest, cxx: *llvm-newest}
     # nvrtc:
@@ -168,7 +173,7 @@ optional_tags:
 # `default_<tag>`: Used when the tag is omitted.
 default_ctk: *ctk_curr
 default_cudacxx: 'nvcc'
-default_cxx: *gcc12
+default_cxx: *gcc-newest
 default_cpu: 'amd64'
 default_gpu: 'v100'
 default_project:
@@ -209,6 +214,7 @@ default_os_lookup:
   'ctk12.4-gcc10': 'ubuntu20.04'
   'ctk12.4-gcc11': 'ubuntu22.04'
   'ctk12.4-gcc12': 'ubuntu22.04'
+  'ctk12.4-gcc13': 'ubuntu22.04'
   'ctk12.4-llvm9': 'ubuntu20.04'
   'ctk12.4-llvm10': 'ubuntu20.04'
   'ctk12.4-llvm11': 'ubuntu20.04'
@@ -217,6 +223,7 @@ default_os_lookup:
   'ctk12.4-llvm14': 'ubuntu20.04'
   'ctk12.4-llvm15': 'ubuntu22.04'
   'ctk12.4-llvm16': 'ubuntu22.04'
+  'ctk12.4-llvm17': 'ubuntu22.04'
   'ctk12.4-cl14.29': 'windows2022'
   'ctk12.4-cl14.36': 'windows2022'
   'ctk12.4-cl14.39': 'windows2022'
@@ -232,6 +239,7 @@ lookup_cxx_supported_stds:
   'gcc10':          [11, 14, 17, 20]
   'gcc11':          [11, 14, 17, 20]
   'gcc12':          [11, 14, 17, 20]
+  'gcc13':          [11, 14, 17, 20]
   'llvm9':          [11, 14, 17    ]
   'llvm10':         [11, 14, 17    ]
   'llvm11':         [11, 14, 17, 20]
@@ -240,6 +248,7 @@ lookup_cxx_supported_stds:
   'llvm14':         [11, 14, 17, 20]
   'llvm15':         [11, 14, 17, 20]
   'llvm16':         [11, 14, 17, 20]
+  'llvm17':         [11, 14, 17, 20]
   'cl14.16':        [    14        ]
   'cl14.29':        [    14, 17    ]
   'cl14.36':        [    14, 17, 20]
