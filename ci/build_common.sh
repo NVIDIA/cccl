@@ -6,6 +6,7 @@ set -eo pipefail
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # Script defaults
+VERBOSE=${VERBOSE:-}
 HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
 CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
@@ -122,7 +123,8 @@ print_environment_details() {
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
       CCCL_BUILD_INFIX \
-      GLOBAL_CMAKE_OPTIONS
+      GLOBAL_CMAKE_OPTIONS \
+      TBB_ROOT
 
   echo "Current commit is:"
   git log -1 || echo "Not a repository"
@@ -131,6 +133,18 @@ print_environment_details() {
     nvidia-smi
   else
     echo "nvidia-smi not found"
+  fi
+
+  if command -v cmake &> /dev/null; then
+    cmake --version
+  else
+    echo "cmake not found"
+  fi
+
+  if command -v ctest &> /dev/null; then
+    ctest --version
+  else
+    echo "ctest not found"
   fi
 
   end_group "⚙️ Environment Details"
@@ -180,12 +194,17 @@ function build_preset() {
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
 
+    local preset_dir="${BUILD_DIR}/${PRESET}"
+    local sccache_json="${preset_dir}/sccache_stats.json"
+
     source "./sccache_stats.sh" "start"
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
     status=$?
     popd > /dev/null
+
+    sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
 
@@ -216,17 +235,16 @@ function test_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local GPU_REQUIRED=${3:-"true"}
+    local GPU_REQUIRED=${3:-true}
 
-    if [ "${GPU_REQUIRED}" == "true" ]; then
+    if $GPU_REQUIRED; then
         fail_if_no_gpu
     fi
 
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
 
-    ctest_log_dir="${BUILD_DIR}/log/ctest"
-    ctest_log="${ctest_log_dir}/${PRESET}"
-    mkdir -p "${ctest_log_dir}"
+    local preset_dir="${BUILD_DIR}/${PRESET}"
+    local ctest_log="${preset_dir}/ctest.log"
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET

@@ -295,12 +295,6 @@
 #  define STATIC_ASSERT_CXX14(Pred) assert(Pred)
 #endif
 
-#if TEST_STD_VER > 2014
-#  define STATIC_ASSERT_CXX17(Pred) static_assert(Pred, "")
-#else
-#  define STATIC_ASSERT_CXX17(Pred) assert(Pred)
-#endif
-
 /* Macros for testing libc++ specific behavior and extensions */
 #if defined(_LIBCUDACXX_VERSION)
 #  define LIBCPP_ASSERT(...)              assert(__VA_ARGS__)

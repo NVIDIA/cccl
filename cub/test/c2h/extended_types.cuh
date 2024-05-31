@@ -27,12 +27,14 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
 #ifndef TEST_HALF_T
-#  define TEST_HALF_T !_NVHPC_CUDA
+#  define TEST_HALF_T _CCCL_HAS_NVFP16
 #endif
 
 #ifndef TEST_BF_T
-#  define TEST_BF_T !_NVHPC_CUDA
+#  define TEST_BF_T _CCCL_HAS_NVBF16
 #endif
 
 #ifdef TEST_HALF_T

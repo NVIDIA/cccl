@@ -1,11 +1,12 @@
-
 Param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17
 )
+
+$ErrorActionPreference = "Stop"
 
 $CURRENT_PATH = Split-Path $pwd -leaf
 If($CURRENT_PATH -ne "ci") {
@@ -13,7 +14,6 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Remove-Module -Name build_common
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $GPU_ARCHS
 
 $PRESET = "libcudacxx-cpp${CXX_STANDARD}"

@@ -53,9 +53,9 @@ workflows:
   override:
 
   pull_request:
-    # default_projects: nvcc
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_8, cxx: [*gcc11], sm: '60;70;80;90'}
+<<<<<<< jrhemstad-patch-4
     - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11, *gcc12]}
     - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15, *llvm16]}
     - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17]}
@@ -63,6 +63,14 @@ workflows:
     - {jobs: ['build'], std: 'all', cxx: [*gcc-newest], sm: '90a'}
     - {jobs: ['build'], std: 'all', cxx: [*oneapi]}
     - {jobs: ['build'], std: 'all', cxx: [*msvc2019, *msvc2022]}
+=======
+    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11]}
+    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15]}
+    - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
+    - {jobs: ['test'],  std: 'all', cxx: [*gcc12, *llvm16, *msvc2022]}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc12, *llvm16], cpu: 'arm64'}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc12], sm: '90a'}
+>>>>>>> main
     # default_projects: clang-cuda
     - {jobs: ['build'], std: [17, 20], cudacxx: *llvm-newest, cxx: *llvm-newest}
     # nvrtc:
@@ -125,12 +133,21 @@ workflows:
   # Fails on h100:
   # - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
 
+  # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
+  exclude:
+    # Ubuntu 18.04 is EOL and we only use it to get access to CTK 11.1 containers for CUDA testing.
+    # Disable non-CUDA tests on this platform.
+    - {jobs: ['test_cpu'], os: 'ubuntu18.04'}
+    # GPU runners are not available on Windows.
+    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], os: 'windows2022'}
+
+
 #
 # Resources for compute_matrix.py. These can be modified to add new jobs, etc.
 #
 # Jobs are executed by running scripts:
 # - Linux:   'ci/<job>_<project>.sh`
-# - Windows: `ci/windows/<job>_<project>.bat`
+# - Windows: `ci/windows/<job>_<project>.ps1`
 
 # A matrix entry must have the following tag.
 required_tags:
@@ -264,36 +281,76 @@ non_exploded_tags:
 # Jobs that have an implied prerequisite 'build' job:
 build_required_jobs:
   - 'test'
+  - 'test_gpu'
+  - 'test_cpu'
+  - 'test_nolid'
+  - 'test_lid0'
+  - 'test_lid1'
+  - 'test_lid2'
 
 # Jobs that require a GPU
 gpu_required_jobs:
   - 'test'
+  - 'test_gpu'
+  - 'test_nolid'
+  - 'test_lid0'
+  - 'test_lid1'
+  - 'test_lid2'
   - 'nvrtc'
   - 'infra' # cccl infra's example project test launches a kernel
 
 # When --skip-tests is given to compute-matrix.py, these jobs are ignored.
 skip_test_jobs:
   - 'test'
+  - 'test_cpu'
+  - 'test_gpu'
+  - 'test_nolid'
+  - 'test_lid0'
+  - 'test_lid1'
+  - 'test_lid2'
   - 'nvrtc'
   - 'infra'
+
+# Map the job type to the script invocation spec:
+# The script is invoked as `ci/<spec[prefix]>_<project>.sh <spec[args]>`.
+# 'prefix' is required. 'args' is optional.
+# If a job is not specified explicitly, the default is { 'prefix': '<job>' }.
+job_invoke:
+  'test_cpu'   : { 'prefix': 'test', 'args': '-cpu-only' }
+  'test_gpu'   : { 'prefix': 'test', 'args': '-gpu-only' }
+  'test_nolid' : { 'prefix': 'test', 'args': '-no-lid' }
+  'test_lid0'  : { 'prefix': 'test', 'args': '-lid0' }
+  'test_lid1'  : { 'prefix': 'test', 'args': '-lid1' }
+  'test_lid2'  : { 'prefix': 'test', 'args': '-lid2' }
+
+# When a listed project has a `test` job, it will be replaced with the specified list of finer-grain jobs.
+project_expanded_tests:
+  'thrust' : ['test_gpu', 'test_cpu']
+  'cub'    : ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2']
 
 # Human readable name for jobs. Default behavior is to capitalize the first letter.
 formatted_jobs:
   'nvrtc':          'NVRTC'
   'verify_codegen': 'VerifyCodegen'
+  'test_cpu':       'TestCPU'
+  'test_gpu':       'TestGPU'
+  'test_nolid':     'TestGPU'
+  'test_lid0':      'HostLaunch'
+  'test_lid1':      'DeviceLaunch'
+  'test_lid2':      'GraphCapture'
 
 # Human readable name for projects. Default behavior uses the project name as-is.
 formatted_project_names:
   'libcudacxx': 'libcu++'
-  'cub': 'CUB'
-  'thrust': 'Thrust'
-  'cccl': 'CCCL'
+  'cub':        'CUB'
+  'thrust':     'Thrust'
+  'cccl':       'CCCL'
 
 # Human readable name for compilers. Default behavior uses the "compiler.name" tag as-is.
 formatted_cxx_names:
-  'llvm': 'clang'
+  'llvm':   'clang'
   'oneapi': 'Intel'
-  'cl': 'MSVC'
+  'cl':     'MSVC'
 
 # All known GPUs
 gpus:
