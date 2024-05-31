@@ -143,7 +143,9 @@ jobs:
 
           # Define envvars
           args+=(
+            -e "CI=true"
             -e "COMMAND=$COMMAND"
+            -e "GITHUB_ACTIONS=true"
             -e "GITHUB_SHA=$GITHUB_SHA"
             -e "GITHUB_REF_NAME=$GITHUB_REF_NAME"
             -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
