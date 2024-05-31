@@ -1,23 +1,5 @@
 name: "Workflow/Dispatch/Job"
 
-# Important note about depending on this workflow: The `result` will be a failure, even if successful.
-#
-# This reusable workflow dispatches to a number of internal jobs. Only one job will run,
-# and some may be in error states due to empty matrices (which are used instead of `if` to keep
-# skipped dispatch jobs out of the GHA UI). The `continue-on-error` flag should prevent these
-# errors from failing the workflow, but this does not work.
-#
-# Thus, the `result` of this workflow will always be a failure, even if the job itself is successful.
-#
-# Instead, the results from each job is uploaded as an artifact. See the workflow_results action for more details.
-# To depend on this job, you should use the `success` output instead:
-#
-# ```
-# dependent_job:
-#   needs: dispatch-job
-#   if: ${{ !cancelled() && needs.dispatch-job.outputs.success }}
-# ```
-
 defaults:
   run:
     shell: bash --noprofile --norc -euo pipefail {0}
@@ -34,7 +16,6 @@ on:
       command: {type: string, required: true}
       id: {type: string, required: true}
       env: {type: string, required: false}
-      dummy_matrix: {type: string, required: false, default: '[{"valid": true}]'}
 
 permissions:
   contents: read
@@ -42,15 +23,12 @@ permissions:
 jobs:
   linux:
     name: ${{inputs.name}}
-    continue-on-error: ${{ ! startsWith(inputs.runner, 'linux') }}
+    if: ${{ startsWith(inputs.runner, 'linux') }}
     outputs:
       success: ${{ steps.done.outputs.SUCCESS }}
     permissions:
       id-token: write
       contents: read
-    strategy:
-      matrix:
-        include: ${{ fromJSON(startsWith(inputs.runner, 'linux') && inputs.dummy_matrix || '[]') }}
     runs-on: ${{inputs.runner}}
     container:
       options: -u root
@@ -146,16 +124,12 @@ jobs:
 
   windows:
     name: ${{inputs.name}}
-    continue-on-error: ${{ ! startsWith(inputs.runner, 'windows') }}
+    if: ${{ startsWith(inputs.runner, 'windows') }}
     outputs:
       success: ${{ steps.done.outputs.SUCCESS }}
     permissions:
       id-token: write
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(startsWith(inputs.runner, 'windows') && inputs.dummy_matrix || '[]') }}
     runs-on: ${{inputs.runner}}
     env:
       SCCACHE_BUCKET: rapids-sccache-devs
