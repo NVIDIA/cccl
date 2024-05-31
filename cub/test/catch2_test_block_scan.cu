@@ -68,41 +68,6 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action)
   }
 }
 
-<<<<<<< HEAD
-template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
-__global__ void block_scan_value_based_kernel(const T* in, T* out, ActionT action)
-{
-  using block_scan_t = cub::BlockScan<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>;
-  using storage_t    = typename block_scan_t::TempStorage;
-
-  __shared__ storage_t storage;
-
-  T thread_data;
-
-  const int tid = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
-
-  thread_data = in[tid];
-
-  block_scan_t scan(storage);
-
-  action(scan, thread_data);
-  out[tid] = thread_data;
-}
-
-template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
-void block_scan_value(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
-{
-  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
-
-  block_scan_value_based_kernel<Algorithm, BlockDimX, BlockDimY, BlockDimZ, T, ActionT>
-    <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
-
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-}
-
-=======
->>>>>>> parent of 37e726e18 (Add tests for value based block scan APIs)
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -179,45 +144,6 @@ struct min_op_t
   }
 };
 
-<<<<<<< HEAD
-template <class T, scan_mode Mode>
-struct min_op_value_t
-{
-  template <class BlockScanT>
-  __device__ void operator()(BlockScanT& scan, T& thread_data) const
-  {
-    if (Mode == scan_mode::exclusive)
-    {
-      scan.ExclusiveScan(thread_data, thread_data, cub::Min{});
-    }
-    else
-    {
-      scan.InclusiveScan(thread_data, thread_data, cub::Min{});
-    }
-  }
-};
-
-template <class T, scan_mode Mode>
-struct min_op_value_init_t
-{
-  T initial_value;
-
-  template <class BlockScanT>
-  __device__ void operator()(BlockScanT& scan, T& thread_data) const
-  {
-    if (Mode == scan_mode::exclusive)
-    {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
-    }
-    else
-    {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
-    }
-  }
-};
-
-=======
->>>>>>> parent of 37e726e18 (Add tests for value based block scan APIs)
 template <class T, scan_mode Mode>
 struct min_init_value_aggregate_op_t
 {
