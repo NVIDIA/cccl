@@ -60,7 +60,7 @@ workflows:
     - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11, *gcc12]}
     - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15, *llvm16]}
     - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
-    - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17. *msvc2022]}
+    - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17, *msvc2022]}
     # Modded builds:
     - {jobs: ['build'], std: 'all', cxx: [*gcc-newest, *llvm-newest], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: [*gcc-newest], sm: '90a'}
