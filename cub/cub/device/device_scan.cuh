@@ -427,43 +427,6 @@ struct DeviceScan
   }
 
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    int num_items,
-    cudaStream_t stream = 0)
-  {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
-
-    // Signed integer type for global offsets
-    using OffsetT = int;
-    using AccumT  = cub::detail::
-      accumulator_t<ScanOpT, typename detail::InputValue<InitValueT>::value_type, cub::detail::value_t<InputIteratorT>>;
-    constexpr bool IsInclusive = true;
-
-    return DispatchScan<
-      InputIteratorT,
-      OutputIteratorT,
-      ScanOpT,
-      detail::InputValue<InitValueT>,
-      OffsetT,
-      AccumT,
-      DeviceScanPolicy<AccumT, ScanOpT>,
-      IsInclusive>::Dispatch(d_temp_storage,
-                             temp_storage_bytes,
-                             d_in,
-                             d_out,
-                             scan_op,
-                             detail::InputValue<InitValueT>(init_value),
-                             num_items,
-                             stream);
-  }
-
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,

@@ -140,8 +140,7 @@ template <typename AgentScanPolicyT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT,
-          bool IsInclusive>
+          typename AccumT>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -166,8 +165,7 @@ struct AgentScan
   enum
   {
     // Inclusive scan if no init_value type is provided
-    NOT_HAS_INIT     = std::is_same<InitValueT, NullType>::value,
-    IS_INCLUSIVE     = IsInclusive || NOT_HAS_INIT,
+    IS_INCLUSIVE     = std::is_same<InitValueT, NullType>::value,
     BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
     ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD,
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
@@ -243,8 +241,7 @@ struct AgentScan
     AccumT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
-    Int2Type<false> /*is_inclusive*/,
-    Int2Type<false> /*not_has_init*/)
+    Int2Type<false> /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
     block_aggregate = scan_op(init_value, block_aggregate);
@@ -258,47 +255,17 @@ struct AgentScan
     InitValueT /*init_value*/,
     ScanOpT scan_op,
     AccumT& block_aggregate,
-    Int2Type<true> /*is_inclusive*/,
-    Int2Type<true> /*not_has_init*/)
+    Int2Type<true> /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    AccumT init_value,
-    ScanOpT scan_op,
-    AccumT& block_aggregate,
-    Int2Type<true> /*is_inclusive*/,
-    Int2Type<false> /*not_has_init*/)
-  {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, init_value, scan_op, block_aggregate);
-  }
-
   /**
    * Exclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    ScanOpT scan_op,
-    PrefixCallback& prefix_op,
-    Int2Type<false> /*is_inclusive*/,
-    Int2Type<false> /*not_has_init*/)
-  {
-    BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, scan_op, prefix_op);
-  }
-
-  /**
-   * Exclusive scan specialization (subsequent tiles)
-   */
-  template <typename PrefixCallback>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    ScanOpT scan_op,
-    PrefixCallback& prefix_op,
-    Int2Type<false> /*is_inclusive*/,
-    Int2Type<true> /*not_has_init*/)
+    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, Int2Type<false> /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, scan_op, prefix_op);
   }
@@ -308,23 +275,7 @@ struct AgentScan
    */
   template <typename PrefixCallback>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT,
-    ScanOpT scan_op,
-    PrefixCallback& prefix_op,
-    Int2Type<true> /*is_inclusive*/,
-    Int2Type<true> /*not_has_init*/)
-  {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, prefix_op);
-  }
-
-  template <typename PrefixCallback>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    AccumT (&items)[ITEMS_PER_THREAD],
-    ScanOpT scan_op,
-    PrefixCallback& prefix_op,
-    Int2Type<true> /*is_inclusive*/,
-    Int2Type<true> /*not_has_init*/)
+    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, Int2Type<true> /*is_inclusive*/)
   {
     BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, prefix_op);
   }
@@ -404,7 +355,7 @@ struct AgentScan
     {
       // Scan first tile
       AccumT block_aggregate;
-      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>(), Int2Type<NOT_HAS_INIT>());
+      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>());
 
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
       {
@@ -415,7 +366,7 @@ struct AgentScan
     {
       // Scan non-first tile
       TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
-      ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>(), Int2Type<NOT_HAS_INIT>());
+      ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
     CTA_SYNC();
@@ -509,12 +460,12 @@ struct AgentScan
     if (IS_FIRST_TILE)
     {
       AccumT block_aggregate;
-      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>(), Int2Type<NOT_HAS_INIT>());
+      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>());
       prefix_op.running_total = block_aggregate;
     }
     else
     {
-      ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>(), Int2Type<NOT_HAS_INIT>());
+      ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
     CTA_SYNC();
