@@ -14,13 +14,13 @@ eval "$(sed -n "s/\([^:]*\):[^:]*:${NEW_GID}:.*/EXISTING_GROUP=\1/p" /etc/group)
 
 if [ -z "$OLD_UID" ]; then
     echo "Remote user not found in /etc/passwd ($REMOTE_USER).";
-    exec "$@";
+    exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 elif [ "$OLD_UID" = "$NEW_UID" ] && [ "$OLD_GID" = "$NEW_GID" ]; then
     echo "UIDs and GIDs are the same ($NEW_UID:$NEW_GID).";
-    exec "$@";
+    exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 elif [ "$OLD_UID" != "$NEW_UID" ] && [ -n "$EXISTING_USER" ]; then
     echo "User with UID exists ($EXISTING_USER=$NEW_UID).";
-    exec "$@";
+    exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 else
     if [ "$OLD_GID" != "$NEW_GID" ] && [ -n "$EXISTING_GROUP" ]; then
         echo "Group with GID exists ($EXISTING_GROUP=$NEW_GID).";
@@ -40,5 +40,5 @@ else
     # Create a list of the container startup environment variable names to pass to su
     declare -a _vars="($(env | grep '=' | grep -v '/root' | grep -Pv '^\s' | cut -d= -f1 | grep -Pv '^(.*HOME.*|PS1|_)$'))";
     # Run the container command as $REMOTE_USER, preserving the container startup environment
-    exec su -s "$SHELL" -w "$(IFS=,; echo "${_vars[*]}")" - "$REMOTE_USER" -- cccl/.devcontainer/cccl-entrypoint.sh "$@";
+    exec su -s "$SHELL" -w "$(IFS=,; echo "${_vars[*]}")" - "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 fi

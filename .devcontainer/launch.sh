@@ -195,6 +195,8 @@ launch_docker() {
         json_string "image" < "${path}/devcontainer.json"
     )"
 
+    docker pull "$DOCKER_IMAGE"
+
     # Read workspaceFolder
     local WORKSPACE_FOLDER="$(
         json_string "workspaceFolder" < "${path}/devcontainer.json"
@@ -238,15 +240,16 @@ launch_docker() {
 
     # Update run args and env vars
 
+    # Don't pass -it if running in CI
+    if [ "${CI:-false}" != "true" ]; then
+        RUN_ARGS+=("-it")
+    fi
+
     for flag in rm init; do
         if [[ " ${RUN_ARGS[*]} " != *" --${flag} "* ]]; then
             RUN_ARGS+=("--${flag}")
         fi
     done
-
-    if [[ " ${RUN_ARGS[*]} " != *" --pull"* ]]; then
-        RUN_ARGS+=(--pull always)
-    fi
 
     if test -n "${gpu_request:-}"; then
         RUN_ARGS+=(--gpus "${gpu_request}")
@@ -293,7 +296,7 @@ launch_docker() {
         eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
 
-    exec docker run -it \
+    exec docker run \
         "${RUN_ARGS[@]}" \
         "${ENV_VARS[@]}" \
         "${MOUNTS[@]}" \
