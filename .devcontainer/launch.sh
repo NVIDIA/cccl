@@ -14,7 +14,8 @@ print_help() {
     echo "  -c, --cuda               Specify the CUDA version. E.g., 12.2"
     echo "  -H, --host               Specify the host compiler. E.g., gcc12"
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
-    echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)"
+    echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
+    echo "  -e, --env list           Set additional container environment variables."
     echo "  -h, --help               Display this help message and exit."
 }
 
@@ -35,8 +36,8 @@ parse_options() {
     local UNPARSED="${!#}";
     set -- "${@:1:$#-1}";
 
-    local OPTIONS=c:H:dh
-    local LONG_OPTIONS=cuda:,host:,gpus:,docker,help
+    local OPTIONS=c:e:H:dh
+    local LONG_OPTIONS=cuda:,env:,host:,gpus:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -51,6 +52,10 @@ parse_options() {
         case "$1" in
             -c|--cuda)
                 cuda_version="$2"
+                shift 2
+                ;;
+            -e|--env)
+                env_vars+=("$1" "$2")
                 shift 2
                 ;;
             -H|--host)
@@ -269,6 +274,10 @@ launch_docker() {
     if test -n "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
+    fi
+
+    if test -v env_vars && test ${#env_vars[@]} -gt 0; then
+        ENV_VARS+=("${env_vars[@]}")
     fi
 
     if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
