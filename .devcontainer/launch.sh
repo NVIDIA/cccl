@@ -289,6 +289,8 @@ launch_docker() {
         ENV_VARS+=("${env_vars[@]}")
     fi
 
+    set -x
+
     if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
         eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
