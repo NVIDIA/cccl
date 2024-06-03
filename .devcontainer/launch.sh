@@ -195,6 +195,8 @@ launch_docker() {
         json_string "image" < "${path}/devcontainer.json"
     )"
 
+    docker pull "$DOCKER_IMAGE"
+
     # Read workspaceFolder
     local WORKSPACE_FOLDER="$(
         json_string "workspaceFolder" < "${path}/devcontainer.json"
@@ -244,10 +246,6 @@ launch_docker() {
         fi
     done
 
-    if [[ " ${RUN_ARGS[*]} " != *" --pull"* ]]; then
-        RUN_ARGS+=(--pull always)
-    fi
-
     if test -n "${gpu_request:-}"; then
         RUN_ARGS+=(--gpus "${gpu_request}")
     else
@@ -288,8 +286,6 @@ launch_docker() {
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then
         ENV_VARS+=("${env_vars[@]}")
     fi
-
-    set -x
 
     if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
         eval "${INITIALIZE_COMMAND[*]@Q}"
