@@ -36,9 +36,14 @@ else
     find "$HOME_FOLDER/" -not -user "$REMOTE_USER" -print0 \
   | xargs -0 -r -n1 -P"$(nproc --all)" chown "$NEW_UID:$NEW_GID"
 
-    # shellcheck disable=SC2155
-    # Create a list of the container startup environment variable names to pass to su
-    declare -a _vars="($(env | grep '=' | grep -v '/root' | grep -Pv '^\s' | cut -d= -f1 | grep -Pv '^(.*HOME.*|PS1|_)$'))";
-    # Run the container command as $REMOTE_USER, preserving the container startup environment
-    exec su -s "$SHELL" -w "$(IFS=,; echo "${_vars[*]}")" - "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
+    # Run the container command as $REMOTE_USER, preserving the container startup environment.
+    #
+    # We cannot use `su -w` because that's not supported by the `su` in Ubuntu18.04, so we reset the following
+    # environment variables to the expected values, then pass through everything else from the startup environment.
+    export HOME="$HOME_FOLDER";
+    export XDG_CACHE_HOME="$HOME_FOLDER/.cache";
+    export XDG_CONFIG_HOME="$HOME_FOLDER/.config";
+    export XDG_STATE_HOME="$HOME_FOLDER/.local/state";
+    export PYTHONHISTFILE="$HOME_FOLDER/.local/state/.python_history";
+    exec su -p "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 fi
