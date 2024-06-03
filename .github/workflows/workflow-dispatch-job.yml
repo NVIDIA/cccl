@@ -140,6 +140,7 @@ jobs:
             --host ${{inputs.host}} \
             "${gpu_request[@]}" \
             --env "CI=$CI" \
+            --env "VAULT_HOST=" \
             --env "COMMAND=$COMMAND" \
             --env "GITHUB_ENV=$GITHUB_ENV" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
