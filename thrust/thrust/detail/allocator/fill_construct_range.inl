@@ -72,17 +72,17 @@ struct construct2_via_allocator
 };
 
 template <typename Allocator, typename Pointer, typename Size, typename T>
-_CCCL_HOST_DEVICE
-  typename enable_if<has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>::value>::type
-  fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
+_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+  has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>::value>
+fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 {
   thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, construct2_via_allocator<Allocator, T>(a, value));
 }
 
 template <typename Allocator, typename Pointer, typename Size, typename T>
-_CCCL_HOST_DEVICE
-  typename disable_if<has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>::value>::type
-  fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
+_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+  !has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>::value>
+fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 {
   thrust::uninitialized_fill_n(allocator_system<Allocator>::get(a), p, n, value);
 }

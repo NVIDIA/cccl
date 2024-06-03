@@ -40,102 +40,6 @@
 #  define THRUST_OPTIONAL_MSVC2015
 #endif
 
-#if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && !defined(__clang__))
-#  define THRUST_OPTIONAL_GCC49
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 5 && __GNUC_MINOR__ <= 4 && !defined(__clang__))
-#  define THRUST_OPTIONAL_GCC54
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 5 && __GNUC_MINOR__ <= 5 && !defined(__clang__))
-#  define THRUST_OPTIONAL_GCC55
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && !defined(__clang__))
-// GCC < 5 doesn't support overloading on const&& for member functions
-#  define THRUST_OPTIONAL_NO_CONSTRR
-
-// GCC < 5 doesn't support some standard C++11 type traits
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) std::has_trivial_copy_constructor<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T)    std::has_trivial_copy_assign<T>::value
-
-// GCC < 5 doesn't provide a way to emulate std::is_trivially_move_*,
-// so don't enable any optimizations that rely on them:
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) false
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T)    false
-
-// This one will be different for GCC 5.7 if it's ever supported
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
-
-// GCC 5 < v < 8 has a bug in is_trivially_copy_constructible which breaks std::vector
-// for non-copyable types
-#elif (defined(__GNUC__) && __GNUC__ < 8 && !defined(__clang__))
-#  ifndef THRUST_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
-#    define THRUST_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
-THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-template <class T>
-struct is_trivially_copy_constructible : std::is_trivially_copy_constructible<T>
-{};
-#    ifdef _GLIBCXX_VECTOR
-template <class T, class A>
-struct is_trivially_copy_constructible<std::vector<T, A>> : std::is_trivially_copy_constructible<T>
-{};
-#    endif
-} // namespace detail
-THRUST_NAMESPACE_END
-#  endif
-
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) thrust::detail::is_trivially_copy_constructible<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T)    std::is_trivially_copy_assignable<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) std::is_trivially_move_constructible<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T)    std::is_trivially_move_assignable<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T)       std::is_trivially_destructible<T>::value
-#else
-
-// To support clang + old libstdc++ without type traits, check for equivalent
-// clang built-ins and use them if present. See note above
-// is_trivially_copyable_impl in
-// thrust/type_traits/is_trivially_relocatable.h for more details.
-
-#  ifndef __has_feature
-#    define __has_feature(x) 0
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_constructible)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) __is_trivially_constructible(T, T const&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) std::is_trivially_copy_constructible<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_assignable)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) __is_trivially_assignable(T&, T const&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) std::is_trivially_copy_assignable<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_constructible)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) __is_trivially_constructible(T, T&&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) std::is_trivially_move_constructible<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_assignable)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T) __is_trivially_assignable(T&, T&&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T) std::is_trivially_move_assignable<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_destructible)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) __is_trivially_destructible(T)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
-#  endif
-
-#endif
-
 #if _CCCL_STD_VER > 2011
 #  define THRUST_OPTIONAL_CPP14
 #endif
@@ -560,7 +464,7 @@ struct optional_operations_base : optional_storage_base<T>
 
 // This class manages conditionally having a trivial copy constructor
 // This specialization is for when T is trivially copy constructible
-template <class T, bool = THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T)>
+template <class T, bool = ::cuda::std::is_trivially_copy_constructible<T>::value>
 struct optional_copy_base : optional_operations_base<T>
 {
   using optional_operations_base<T>::optional_operations_base;
@@ -595,7 +499,7 @@ struct optional_copy_base<T, false> : optional_operations_base<T>
   optional_copy_base& operator=(optional_copy_base&& rhs) = default;
 };
 
-template <class T, bool = THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T)>
+template <class T, bool = ::cuda::std::is_trivially_move_constructible<T>::value>
 struct optional_move_base : optional_copy_base<T>
 {
   using optional_copy_base<T>::optional_copy_base;
@@ -630,8 +534,9 @@ struct optional_move_base<T, false> : optional_copy_base<T>
 
 // This class manages conditionally having a trivial copy assignment operator
 template <class T,
-          bool = THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) && THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T)
-              && THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T)>
+          bool = ::cuda::std::is_trivially_copy_assignable<T>::value
+              && ::cuda::std::is_trivially_copy_constructible<T>::value
+              && ::cuda::std::is_trivially_destructible<T>::value>
 struct optional_copy_assign_base : optional_move_base<T>
 {
   using optional_move_base<T>::optional_move_base;
@@ -660,8 +565,9 @@ struct optional_copy_assign_base<T, false> : optional_move_base<T>
 };
 
 template <class T,
-          bool = THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) && THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T)
-              && THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T)>
+          bool = ::cuda::std::is_trivially_destructible<T>::value
+              && ::cuda::std::is_trivially_move_constructible<T>::value
+              && ::cuda::std::is_trivially_move_assignable<T>::value>
 struct optional_move_assign_base : optional_copy_assign_base<T>
 {
   using optional_copy_assign_base<T>::optional_copy_assign_base;
@@ -2919,7 +2825,7 @@ struct hash<THRUST_NS_QUALIFIER::optional<T>>
       return 0;
     }
 
-    return std::hash<THRUST_NS_QUALIFIER::detail::remove_const_t<T>>()(*o);
+    return std::hash<::cuda::std::__remove_const_t<T>>()(*o);
   }
 };
 } // namespace std

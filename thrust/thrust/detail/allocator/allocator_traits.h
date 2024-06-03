@@ -248,7 +248,7 @@ public:
 
   typedef typename eval_if<allocator_traits_detail::has_size_type<allocator_type>::value,
                            allocator_traits_detail::nested_size_type<allocator_type>,
-                           make_unsigned<difference_type>>::type size_type;
+                           ::cuda::std::make_unsigned<difference_type>>::type size_type;
 
   typedef typename eval_if<allocator_traits_detail::has_propagate_on_container_copy_assignment<allocator_type>::value,
                            allocator_traits_detail::nested_propagate_on_container_copy_assignment<allocator_type>,
@@ -264,7 +264,7 @@ public:
 
   typedef typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
                            allocator_traits_detail::nested_is_always_equal<allocator_type>,
-                           is_empty<allocator_type>>::type is_always_equal;
+                           ::cuda::std::is_empty<allocator_type>>::type is_always_equal;
 
   typedef typename eval_if<allocator_traits_detail::has_system_type<allocator_type>::value,
                            allocator_traits_detail::nested_system_type<allocator_type>,
@@ -328,7 +328,7 @@ struct allocator_system
 
   // the type that get returns
   typedef typename eval_if<allocator_traits_detail::has_member_system<Alloc>::value, // if Alloc.system() exists
-                           add_reference<type>, // then get() needs to return a reference
+                           ::cuda::std::add_lvalue_reference<type>, // then get() needs to return a reference
                            identity_<type> // else get() needs to return a value
                            >::type get_result_type;
 

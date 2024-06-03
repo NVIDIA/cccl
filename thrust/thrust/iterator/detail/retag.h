@@ -37,11 +37,13 @@ namespace detail
 // or vice versa
 template <typename FromTag, typename ToTag>
 struct is_retaggable
-    : integral_constant<bool, (is_convertible<FromTag, ToTag>::value || is_convertible<ToTag, FromTag>::value)>
+    : integral_constant<bool,
+                        (::cuda::std::is_convertible<FromTag, ToTag>::value
+                         || ::cuda::std::is_convertible<ToTag, FromTag>::value)>
 {};
 
 template <typename FromTag, typename ToTag, typename Result>
-struct enable_if_retaggable : enable_if<is_retaggable<FromTag, ToTag>::value, Result>
+struct enable_if_retaggable : ::cuda::std::enable_if<is_retaggable<FromTag, ToTag>::value, Result>
 {}; // end enable_if_retaggable
 
 } // namespace detail
