@@ -16,6 +16,7 @@ print_help() {
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
     echo "  -e, --env list           Set additional container environment variables."
+    echo "  -v, --volume list        Bind mount a volume."
     echo "  -h, --help               Display this help message and exit."
 }
 
@@ -36,8 +37,8 @@ parse_options() {
     local UNPARSED="${!#}";
     set -- "${@:1:$#-1}";
 
-    local OPTIONS=c:e:H:dh
-    local LONG_OPTIONS=cuda:,env:,host:,gpus:,docker,help
+    local OPTIONS=c:e:H:dhv:
+    local LONG_OPTIONS=cuda:,env:,host:,gpus:,volume:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -73,6 +74,10 @@ parse_options() {
             -h|--help)
                 print_help
                 exit 0
+                ;;
+            -v|--volume)
+                volumes+=("$1" "$2")
+                shift 2
                 ;;
             --)
                 shift
@@ -274,6 +279,10 @@ launch_docker() {
     if test -n "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
+    fi
+
+    if test -v volumes && test ${#volumes[@]} -gt 0; then
+        MOUNTS+=("${volumes[@]}")
     fi
 
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then
