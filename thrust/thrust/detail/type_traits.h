@@ -131,39 +131,6 @@ struct larger_type
     : thrust::detail::eval_if<(sizeof(T2) > sizeof(T1)), thrust::detail::identity_<T2>, thrust::detail::identity_<T1>>
 {};
 
-template <typename T1, typename T2, typename Enable = void>
-struct promoted_numerical_type;
-
-template <typename T1, typename T2>
-struct promoted_numerical_type<
-  T1,
-  T2,
-  ::cuda::std::__enable_if_t<::cuda::std::_And<typename ::cuda::std::is_floating_point<T1>::type,
-                                               typename ::cuda::std::is_floating_point<T2>::type>::value>>
-{
-  typedef typename larger_type<T1, T2>::type type;
-};
-
-template <typename T1, typename T2>
-struct promoted_numerical_type<
-  T1,
-  T2,
-  ::cuda::std::__enable_if_t<::cuda::std::_And<typename ::cuda::std::is_integral<T1>::type,
-                                               typename ::cuda::std::is_floating_point<T2>::type>::value>>
-{
-  typedef T2 type;
-};
-
-template <typename T1, typename T2>
-struct promoted_numerical_type<
-  T1,
-  T2,
-  ::cuda::std::__enable_if_t<::cuda::std::_And<typename ::cuda::std::is_floating_point<T1>::type,
-                                               typename ::cuda::std::is_integral<T2>::type>::value>>
-{
-  typedef T1 type;
-};
-
 template <class F, class... Us>
 using invoke_result = ::cuda::std::__invoke_of<F, Us...>;
 
