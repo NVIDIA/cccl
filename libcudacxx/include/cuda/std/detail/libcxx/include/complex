@@ -422,6 +422,14 @@ public:
   }
 };
 
+template <class>
+struct __is_complex : false_type
+{};
+
+template <class _Tp>
+struct __is_complex<complex<_Tp>> : true_type
+{};
+
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
 operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
@@ -1109,25 +1117,24 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> pow(const complex<_Tp>& __x, c
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<__promote_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const complex<_Up>& __y)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>>
+pow(const complex<_Tp>& __x, const complex<_Up>& __y)
 {
-  using __result_type = complex<__promote_t<_Tp, _Up>>;
+  using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
 }
 
-template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<__is_complex_arithmetic<_Up>::value, complex<__promote_t<_Tp, _Up>>>
-pow(const complex<_Tp>& __x, const _Up& __y)
+template <class _Tp, class _Up, __enable_if_t<!__is_complex<_Up>::value, int> = 0>
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
 {
-  using __result_type = complex<__promote_t<_Tp, _Up>>;
+  using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
 }
 
-template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<__is_complex_arithmetic<_Tp>::value, complex<__promote_t<_Tp, _Up>>>
-pow(const _Tp& __x, const complex<_Up>& __y)
+template <class _Tp, class _Up, __enable_if_t<!__is_complex<_Tp>::value, int> = 0>
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
 {
-  using __result_type = complex<__promote_t<_Tp, _Up>>;
+  using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x, 0), __result_type(__y));
 }
 
