@@ -51,8 +51,6 @@ workflows:
   #   - {jobs: ['build'], project: 'thrust', std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
   #
   override:
-    - {jobs: ['build'], ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: *gcc6,   std: [11],     project: ['cub']}
-    - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: *gcc6,   std: [11],     project: ['cub']}
 
   pull_request:
     # Old CTK
