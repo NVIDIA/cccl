@@ -269,9 +269,10 @@ struct MergeAgent
   typedef key1_type key_type;
   typedef item1_type item_type;
 
-  typedef typename thrust::detail::conditional<MERGE_ITEMS::value,
-                                               integer_constant<sizeof(key_type) + sizeof(item_type)>,
-                                               integer_constant<sizeof(key_type)>>::type tuning_type;
+  typedef ::cuda::std::__conditional_t<MERGE_ITEMS::value,
+                                       integer_constant<sizeof(key_type) + sizeof(item_type)>,
+                                       integer_constant<sizeof(key_type)>>
+    tuning_type;
 
   template <class Arch>
   struct PtxPlan : Tuning<Arch, tuning_type>::type

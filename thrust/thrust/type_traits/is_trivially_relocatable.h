@@ -110,7 +110,7 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  */
 template <typename From, typename To>
 using is_trivially_relocatable_to =
-  integral_constant<bool, detail::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
+  integral_constant<bool, ::cuda::std::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
@@ -212,40 +212,10 @@ struct proclaim_trivially_relocatable : false_type
 namespace detail
 {
 
-// There is no way to actually detect the libstdc++ version; __GLIBCXX__
-// is always set to the date of libstdc++ being packaged, not the release
-// day or version. This means that we can't detect the libstdc++ version,
-// except when compiling with GCC.
-//
-// Therefore, for the best approximation of is_trivially_copyable, we need to
-// handle three distinct cases:
-// 1) GCC above 5, or another C++11 compiler not using libstdc++: use the
-//      standard trait directly.
-// 2) A C++11 compiler using libstdc++ that provides the intrinsic: use the
-//      intrinsic.
-// 3) Any other case (essentially: compiling without C++11): has_trivial_assign.
-
-#ifndef __has_feature
-#  define __has_feature(x) 0
-#endif
-
-template <typename T>
-struct is_trivially_copyable_impl
-    : integral_constant<bool,
-#if defined(__GLIBCXX__) && __has_feature(is_trivially_copyable)
-                        __is_trivially_copyable(T)
-#elif defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 50000
-                        std::is_trivially_copyable<T>::value
-#else
-                        has_trivial_assign<T>::value
-#endif
-                        >
-{};
-
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
-    : integral_constant<bool, is_trivially_copyable_impl<T>::value || proclaim_trivially_relocatable<T>::value>
+    : integral_constant<bool, ::cuda::std::is_trivially_copyable<T>::value || proclaim_trivially_relocatable<T>::value>
 {};
 
 template <typename T, std::size_t N>

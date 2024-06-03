@@ -49,8 +49,7 @@ namespace sort_detail
 ////////////////////
 
 template <typename KeyType, typename Compare>
-struct needs_reverse
-    : thrust::detail::integral_constant<bool, thrust::detail::is_same<Compare, typename thrust::greater<KeyType>>::value>
+struct needs_reverse : ::cuda::std::is_same<Compare, typename thrust::greater<KeyType>>
 {};
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
@@ -135,9 +134,9 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
 
 template <typename KeyType, typename Compare>
 struct use_primitive_sort
-    : thrust::detail::and_<thrust::detail::is_arithmetic<KeyType>,
-                           thrust::detail::or_<thrust::detail::is_same<Compare, thrust::less<KeyType>>,
-                                               thrust::detail::is_same<Compare, thrust::greater<KeyType>>>>
+    : ::cuda::std::_And<::cuda::std::is_arithmetic<KeyType>,
+                        ::cuda::std::disjunction<::cuda::std::is_same<Compare, thrust::less<KeyType>>,
+                                                 ::cuda::std::is_same<Compare, thrust::greater<KeyType>>>>
 {};
 
 } // end namespace sort_detail

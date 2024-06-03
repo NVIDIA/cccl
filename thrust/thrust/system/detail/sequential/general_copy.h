@@ -43,7 +43,7 @@ namespace general_copy_detail
 {
 
 template <typename T1, typename T2>
-struct lazy_is_assignable : thrust::detail::is_assignable<typename T1::type, typename T2::type>
+struct lazy_is_assignable : ::cuda::std::is_assignable<typename T1::type, typename T2::type>
 {};
 
 // sometimes OutputIterator's reference type is reported as void
@@ -51,7 +51,7 @@ struct lazy_is_assignable : thrust::detail::is_assignable<typename T1::type, typ
 template <typename InputIterator, typename OutputIterator>
 struct reference_is_assignable
     : thrust::detail::eval_if<
-        thrust::detail::is_same<typename thrust::iterator_reference<OutputIterator>::type, void>::value,
+        ::cuda::std::is_same<typename thrust::iterator_reference<OutputIterator>::type, void>::value,
         thrust::detail::true_type,
         lazy_is_assignable<thrust::iterator_reference<OutputIterator>, thrust::iterator_reference<InputIterator>>>::type
 {};
@@ -61,9 +61,8 @@ struct reference_is_assignable
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE
-  typename thrust::detail::enable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
-  iter_assign(OutputIterator dst, InputIterator src)
+inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
+iter_assign(OutputIterator dst, InputIterator src)
 {
   *dst = *src;
 }

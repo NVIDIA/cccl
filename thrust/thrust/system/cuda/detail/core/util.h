@@ -224,9 +224,9 @@ template <template <class> class P,
           class _8,
           class _9>
 struct specialize_plan_impl_match<P, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
-    : thrust::detail::conditional<has_sm_tuning<P, SM>::value,
-                                  P<SM>,
-                                  specialize_plan_impl_match<P, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>>::type
+    : ::cuda::std::conditional<has_sm_tuning<P, SM>::value,
+                               P<SM>,
+                               specialize_plan_impl_match<P, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>>::type
 {};
 
 template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
@@ -235,9 +235,9 @@ struct specialize_plan_msvc10_war
   // if Plan has tuning type, this means it has SM-specific tuning
   // so loop through sm_list to find match,
   // otherwise just specialize on provided SM
-  typedef thrust::detail::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
-                                      specialize_plan_impl_loop<Plan, SM, sm_list>,
-                                      Plan<SM>>
+  typedef ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
+                                   specialize_plan_impl_loop<Plan, SM, sm_list>,
+                                   Plan<SM>>
     type;
 };
 
@@ -318,7 +318,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<>>
   {
     value = V
   };
-  typedef typename thrust::detail::conditional<value, thrust::detail::true_type, thrust::detail::false_type>::type type;
+  typedef ::cuda::std::__conditional_t<value, thrust::detail::true_type, thrust::detail::false_type> type;
 };
 
 template <class Agent, size_t MAX_SHMEM>
@@ -380,7 +380,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : thrust::detail::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
+    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
 {};
 
 // returns AgentPlan corresponding to a given ptx version
@@ -577,10 +577,10 @@ struct LoadIterator
   typedef typename iterator_traits<It>::value_type value_type;
   typedef typename iterator_traits<It>::difference_type size_type;
 
-  typedef
-    typename thrust::detail::conditional<is_contiguous_iterator<It>::value,
-                                         cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
-                                         It>::type type;
+  typedef ::cuda::std::__conditional_t<is_contiguous_iterator<It>::value,
+                                       cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                                       It>
+    type;
 }; // struct Iterator
 
 template <class PtxPlan, class It>

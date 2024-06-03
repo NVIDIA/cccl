@@ -241,8 +241,8 @@ public:
   template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
   _CCCL_HOST_DEVICE transform_iterator(
     const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
-    typename thrust::detail::enable_if_convertible<OtherIterator, Iterator>::type*                             = 0,
-    typename thrust::detail::enable_if_convertible<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>::type* = 0)
+    thrust::detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
+    thrust::detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
       : super_t(other.base())
       , m_f(other.functor())
   {}
@@ -259,14 +259,7 @@ public:
    */
   _CCCL_HOST_DEVICE transform_iterator& operator=(const transform_iterator& other)
   {
-    return do_assign(other,
-    // XXX gcc 4.2.1 crashes on is_copy_assignable; just assume the functor is assignable as a WAR
-#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION <= 40201)
-                     thrust::detail::true_type()
-#else
-                     typename thrust::detail::is_copy_assignable<AdaptableUnaryFunction>::type()
-#endif // THRUST_HOST_COMPILER
-    );
+    return do_assign(other, ::cuda::std::is_copy_assignable<AdaptableUnaryFunction>());
   }
 
   /*! This method returns a copy of this \p transform_iterator's \c AdaptableUnaryFunction.

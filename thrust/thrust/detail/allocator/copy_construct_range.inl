@@ -67,14 +67,16 @@ struct copy_construct_with_allocator
 // 2. T has a non-trivial copy constructor
 template <typename Allocator, typename T>
 struct needs_copy_construct_via_allocator
-    : integral_constant<bool, (has_member_construct2<Allocator, T, T>::value || !has_trivial_copy_constructor<T>::value)>
+    : integral_constant<bool,
+                        (has_member_construct2<Allocator, T, T>::value
+                         || !::cuda::std::is_trivially_copy_constructible<T>::value)>
 {};
 
 // we know that std::allocator::construct's only effect is to call T's
 // copy constructor, so we needn't consider or use its construct() member for copy construction
 template <typename U, typename T>
 struct needs_copy_construct_via_allocator<std::allocator<U>, T>
-    : integral_constant<bool, !has_trivial_copy_constructor<T>::value>
+    : integral_constant<bool, !::cuda::std::is_trivially_copy_constructible<T>::value>
 {};
 
 // XXX it's regrettable that this implementation is copied almost
@@ -82,7 +84,7 @@ struct needs_copy_construct_via_allocator<std::allocator<U>, T>
 //     perhaps generic::uninitialized_copy could call this routine
 //     with a default allocator
 template <typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE typename enable_if_convertible<FromSystem, ToSystem, Pointer>::type uninitialized_copy_with_allocator(
+_CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uninitialized_copy_with_allocator(
   Allocator& a,
   const thrust::execution_policy<FromSystem>&,
   const thrust::execution_policy<ToSystem>& to_system,
@@ -118,8 +120,7 @@ _CCCL_HOST_DEVICE typename enable_if_convertible<FromSystem, ToSystem, Pointer>:
 //     perhaps generic::uninitialized_copy_n could call this routine
 //     with a default allocator
 template <typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE typename enable_if_convertible<FromSystem, ToSystem, Pointer>::type
-uninitialized_copy_with_allocator_n(
+_CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uninitialized_copy_with_allocator_n(
   Allocator& a,
   const thrust::execution_policy<FromSystem>&,
   const thrust::execution_policy<ToSystem>& to_system,
@@ -201,9 +202,8 @@ _CCCL_HOST_DEVICE
 }
 
 template <typename FromSystem, typename Allocator, typename InputIterator, typename Pointer>
-_CCCL_HOST_DEVICE
-  typename enable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
-                     Pointer>::type
+_CCCL_HOST_DEVICE ::cuda::std::
+  __enable_if_t<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value, Pointer>
   copy_construct_range(thrust::execution_policy<FromSystem>& from_system,
                        Allocator& a,
                        InputIterator first,
@@ -214,9 +214,8 @@ _CCCL_HOST_DEVICE
 }
 
 template <typename FromSystem, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-_CCCL_HOST_DEVICE
-  typename enable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
-                     Pointer>::type
+_CCCL_HOST_DEVICE ::cuda::std::
+  __enable_if_t<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value, Pointer>
   copy_construct_range_n(
     thrust::execution_policy<FromSystem>& from_system, Allocator& a, InputIterator first, Size n, Pointer result)
 {

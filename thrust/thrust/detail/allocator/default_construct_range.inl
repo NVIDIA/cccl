@@ -56,22 +56,23 @@ struct construct1_via_allocator
 // we need to construct T via the allocator if...
 template <typename Allocator, typename T>
 struct needs_default_construct_via_allocator
-    : thrust::detail::or_<has_member_construct1<Allocator, T>, // if the Allocator does something interesting
-                          thrust::detail::not_<has_trivial_constructor<T>> // or if T's default constructor does
-                                                                           // something interesting
-                          >
+    : ::cuda::std::disjunction<has_member_construct1<Allocator, T>, // if the Allocator does something interesting
+                                                                    // or if T's default constructor does something
+                                                                    // interesting
+                               thrust::detail::not_<::cuda::std::is_trivially_default_constructible<T>>>
 {};
 
 // we know that std::allocator::construct's only effect is to call T's
 // default constructor, so we needn't use it for default construction
 // unless T's constructor does something interesting
 template <typename U, typename T>
-struct needs_default_construct_via_allocator<std::allocator<U>, T> : thrust::detail::not_<has_trivial_constructor<T>>
+struct needs_default_construct_via_allocator<std::allocator<U>, T>
+    : thrust::detail::not_<::cuda::std::is_trivially_default_constructible<T>>
 {};
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE typename enable_if<
-  needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>::type
+_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+  needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>
 default_construct_range(Allocator& a, Pointer p, Size n)
 {
   thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, construct1_via_allocator<Allocator>(a));
