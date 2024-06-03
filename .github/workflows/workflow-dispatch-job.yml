@@ -81,6 +81,7 @@ jobs:
           cd "${{github.workspace}}"
 
           cat <<"EOF" > ci.sh
+          #! /usr/bin/env bash
           set -eo pipefail
           echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
@@ -100,6 +101,8 @@ jobs:
             exit $exit_code
           fi
           EOF
+
+          chmod +x ci.sh
 
           mkdir "$RUNNER_TEMP/.aws";
 
