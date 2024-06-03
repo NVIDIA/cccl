@@ -11,10 +11,11 @@ print_help() {
     echo "the top-level devcontainer in .devcontainer/devcontainer.json will be used."
     echo ""
     echo "Options:"
-    echo "  -c, --cuda       Specify the CUDA version. E.g., 12.2"
-    echo "  -H, --host       Specify the host compiler. E.g., gcc12"
-    echo "  -d, --docker     Launch the development environment in Docker directly without using VSCode."
-    echo "  -h, --help       Display this help message and exit."
+    echo "  -c, --cuda               Specify the CUDA version. E.g., 12.2"
+    echo "  -H, --host               Specify the host compiler. E.g., gcc12"
+    echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
+    echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)"
+    echo "  -h, --help               Display this help message and exit."
 }
 
 _upvar() {
@@ -35,7 +36,7 @@ parse_options() {
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:H:dh
-    local LONG_OPTIONS=cuda:,host:,docker,help
+    local LONG_OPTIONS=cuda:,host:,gpus:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -54,6 +55,10 @@ parse_options() {
                 ;;
             -H|--host)
                 host_compiler="$2"
+                shift 2
+                ;;
+            --gpus)
+                gpu_request="$2"
                 shift 2
                 ;;
             -d|--docker)
@@ -198,14 +203,6 @@ launch_docker() {
         )"
     fi
 
-    # Read hostRequirements.gpu
-    local GPU_REQUEST="$(
-        json_map "hostRequirements" < "${path}/devcontainer.json" \
-      | grep 'gpu=' \
-      | sed -r 's/(.*)=(.*)/\2/' \
-      | xargs
-    )"
-
     # Read runArgs
     local -a RUN_ARGS="($(
         json_array "runArgs" < "${path}/devcontainer.json"
@@ -241,11 +238,22 @@ launch_docker() {
         RUN_ARGS+=(--pull always)
     fi
 
-    if test "${GPU_REQUEST:-false}" = true; then
-        RUN_ARGS+=(--gpus all)
-    elif test "${GPU_REQUEST:-false}" = optional && \
-         command -v nvidia-container-runtime >/dev/null 2>&1; then
-        RUN_ARGS+=(--gpus all)
+    if test -n "${gpu_request:-}"; then
+        RUN_ARGS+=(--gpus "${gpu_request}")
+    else
+        # Read hostRequirements.gpu
+        local GPU_REQUEST="$(
+            json_map "hostRequirements" < "${path}/devcontainer.json" \
+          | grep 'gpu=' \
+          | sed -r 's/(.*)=(.*)/\2/' \
+          | xargs
+        )"
+        if test "${GPU_REQUEST:-false}" = true; then
+            RUN_ARGS+=(--gpus all)
+        elif test "${GPU_REQUEST:-false}" = optional && \
+             command -v nvidia-container-runtime >/dev/null 2>&1; then
+            RUN_ARGS+=(--gpus all)
+        fi
     fi
 
     RUN_ARGS+=(--workdir "${WORKSPACE_FOLDER:-/home/coder/cccl}")
