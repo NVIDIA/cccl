@@ -75,8 +75,7 @@ The following NVIDIA device architectures are partially supported:
 
    -  Blocking synchronization facilities (e.g. most of the
       synchronization primitives) are not supported. Please see the
-      `synchronization primitives section <libcudacxx-extended-api-synchronization>` for
-      details.
+      :ref:`synchronization primitives section <libcudacxx-extended-api-synchronization>` for details.
 
 Host Architectures
 ~~~~~~~~~~~~~~~~~~

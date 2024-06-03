@@ -18,7 +18,7 @@ for all threads within ``scope`` without an associated atomic operation. It has 
 Example
 -------
 
-The following code is an example of the `MessagePassing <libcudacxx-extended-api-memory-model-message-passing>` pattern:
+The following code is an example of the :ref:`MessagePassing <libcudacxx-extended-api-memory-model-message-passing>` pattern:
 
 .. code:: cuda
 

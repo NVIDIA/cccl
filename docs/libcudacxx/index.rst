@@ -54,7 +54,7 @@ All you have to do is add ``cuda/std/`` to the start of your includes and ``cuda
 .. note::
 
    libcu++ does not provide its own documentation for Standard Library features. Instead, libcu++
-   `documents which Standard Library headers <libcudacxx-standard-api>` are made available, and defers documentation of
+   :ref:`documents which Standard Library headers <libcudacxx-standard-api>` are made available, and defers documentation of
    individual features within those headers to other sources like `cppreference <https://en.cppreference.com/w/>`_.
 
 C++ Standard Library Extensions
@@ -75,7 +75,7 @@ To use utilities that are extensions to Standard Library features, drop the ``st
    #include <cuda/atomic>
    cuda::atomic<int, cuda::thread_scope_device> x;
 
-See the `Extended API <libcudacxx-extended-api>` section for more information.
+See the :ref:`Extended API <libcudacxx-extended-api>` section for more information.
 
 Fundamental CUDA-specific Abstractions
 --------------------------------------
@@ -83,11 +83,11 @@ Fundamental CUDA-specific Abstractions
 Some abstractions that libcu++ provide have no equivalent in the C++ Standard Library, but are otherwise abstractions
 fundamental to the CUDA C++ programming model.
 
-For example, `cuda::memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>` is a vital abstraction
+For example, :ref:`cuda::memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>` is a vital abstraction
 for asynchronous data movement between global and shared memory. This abstracts hardware features such as ``LDGSTS`` on
 Ampere, and the Tensor Memory Accelerator (TMA) on Hopper.
 
-See the `Extended API <libcudacxx-extended-api>` section for more information.
+See the :ref:`Extended API <libcudacxx-extended-api>` section for more information.
 
 Summary: ``std::``, ``cuda::`` and ``cuda::std::``
 --------------------------------------------------
@@ -139,7 +139,7 @@ mistakes and providing best in class performance. So, we make no such promises.
 
 Every major CUDA Toolkit release, the ABI will be broken. The life cycle of an ABI version is approximately one year.
 Long-term support for an ABI version ends after approximately two years. Please see the
-`versioning section <libcudacxx-releases-versioning>` for more details.
+:ref:`versioning section <libcudacxx-releases-versioning>` for more details.
 
 We recommend that you always recompile your code and dependencies with the latest NVIDIA SDKs and use the latest
 NVIDIA C++ Standard Library ABI. `Live at head <https://www.youtube.com/watch?v=tISy7EJQPzI&t=1032s>`_.
