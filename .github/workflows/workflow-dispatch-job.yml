@@ -101,23 +101,23 @@ jobs:
           fi
           EOF
 
-          mkdir "${{github.event.repository.name}}/.aws";
+          mkdir "$RUNNER_TEMP/.aws";
 
-          cat <<EOF > "${{github.event.repository.name}}/.aws/config"
+          cat <<EOF > "$RUNNER_TEMP/.aws/config"
           [default]
           bucket=rapids-sccache-devs
           region=us-east-2
           EOF
 
-          cat <<EOF > "${{github.event.repository.name}}/.aws/credentials"
+          cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
           [default]
           aws_access_key_id=$AWS_ACCESS_KEY_ID
           aws_session_token=$AWS_SESSION_TOKEN
           aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
           EOF
 
-          chmod 0600 "${{github.event.repository.name}}/.aws/credentials"
-          chmod 0664 "${{github.event.repository.name}}/.aws/config"
+          chmod 0600 "$RUNNER_TEMP/.aws/credentials"
+          chmod 0664 "$RUNNER_TEMP/.aws/config"
 
           declare -a gpu_request=()
 
@@ -126,24 +126,29 @@ jobs:
             gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
           fi
 
+          host_path() {
+            sed "s@/__w@$(dirname "$(dirname "${{github.workspace}}")")@" <<< "$1"
+          }
+
           # Launch this container using the host's docker daemon
-          ${{github.event.repository.name}}/.devcontainer/launch.sh         \
-            --docker                                                        \
-            --cuda ${{inputs.cuda}}                                         \
-            --host ${{inputs.host}}                                         \
-            "${gpu_request[@]}"                                             \
-            --env "CI=$CI"                                                  \
-            --env "COMMAND=$COMMAND"                                        \
-            --env "GITHUB_ENV=$GITHUB_ENV"                                  \
-            --env "GITHUB_SHA=$GITHUB_SHA"                                  \
-            --env "GITHUB_PATH=$GITHUB_PATH"                                \
-            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT"                            \
-            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS"                          \
-            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME"                        \
-            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"                      \
-            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"                    \
-            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY"                \
-            --volume "${{github.workspace}}/ci.sh:/ci.sh"                   \
+          ${{github.event.repository.name}}/.devcontainer/launch.sh \
+            --docker \
+            --cuda ${{inputs.cuda}} \
+            --host ${{inputs.host}} \
+            "${gpu_request[@]}" \
+            --env "CI=$CI" \
+            --env "COMMAND=$COMMAND" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --volume "${{github.workspace}}/ci.sh:/ci.sh" \
+            --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
             --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
             -- /ci.sh
 
