@@ -35,8 +35,8 @@
 
 #include "catch2_test_helper.h"
 
-constexpr int items_per_thread = 2;
-constexpr int block_threads    = 64;
+constexpr int num_items_per_thread = 2;
+constexpr int block_num_threads    = 64;
 
 // example-begin inclusive-scan-array-init-value
 __global__ void InclusiveScanKernel(int* output)
@@ -50,8 +50,8 @@ __global__ void InclusiveScanKernel(int* output)
 
   int initial_value = 1;
   int thread_data[] = {
-    +1 * ((int) threadIdx.x * items_per_thread), // item 0
-    -1 * ((int) threadIdx.x * items_per_thread + 1) // item 1
+    +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
+    -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
@@ -67,17 +67,17 @@ __global__ void InclusiveScanKernel(int* output)
 
 CUB_TEST("Block array-based inclusive scan works with initial value", "[block]")
 {
-  thrust::device_vector<int> d_out(block_threads * items_per_thread);
+  thrust::device_vector<int> d_out(block_num_threads * num_items_per_thread);
 
-  InclusiveScanKernel<<<1, block_threads>>>(thrust::raw_pointer_cast(d_out.data()));
+  InclusiveScanKernel<<<1, block_num_threads>>>(thrust::raw_pointer_cast(d_out.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
   thrust::host_vector<int> expected(d_out.size());
   for (size_t i = 0; i < expected.size() - 1; i += 2)
   {
-    expected[i]     = i;
-    expected[i + 1] = i;
+    expected[i]     = static_cast<int>(i);
+    expected[i + 1] = static_cast<int>(i);
   }
 
   // When initial value = 1 for the given input the first two
@@ -100,8 +100,8 @@ __global__ void InclusiveScanKernelAggregate(int* output, int* block_aggregate)
 
   int initial_value = 1;
   int thread_data[] = {
-    +1 * ((int) threadIdx.x * items_per_thread), // item 0
-    -1 * ((int) threadIdx.x * items_per_thread + 1) // item 1
+    +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
+    -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
@@ -118,10 +118,10 @@ __global__ void InclusiveScanKernelAggregate(int* output, int* block_aggregate)
 
 CUB_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[block]")
 {
-  thrust::device_vector<int> d_out(block_threads * items_per_thread);
+  thrust::device_vector<int> d_out(block_num_threads * num_items_per_thread);
 
   c2h::device_vector<int> d_block_aggregate(1);
-  InclusiveScanKernelAggregate<<<1, block_threads>>>(
+  InclusiveScanKernelAggregate<<<1, block_num_threads>>>(
     thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_block_aggregate.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -129,8 +129,8 @@ CUB_TEST("Block array-based inclusive scan with block aggregate works with initi
   thrust::host_vector<int> expected(d_out.size());
   for (size_t i = 0; i < expected.size() - 1; i += 2)
   {
-    expected[i]     = i;
-    expected[i + 1] = i;
+    expected[i]     = static_cast<int>(i);
+    expected[i + 1] = static_cast<int>(i);
   }
 
   // When initial value = 1 for the given input the first two
