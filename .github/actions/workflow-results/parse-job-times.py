@@ -76,9 +76,11 @@ def main():
         # Job times are 2024-05-09T06:52:20Z
         started_at = job['started_at']
         started_time = datetime.datetime.strptime(started_at, "%Y-%m-%dT%H:%M:%SZ")
+        started_time_epoch_secs = started_time.timestamp()
 
         completed_at = job['completed_at']
         completed_time = datetime.datetime.strptime(completed_at, "%Y-%m-%dT%H:%M:%SZ")
+        completed_time_epoch_secs = completed_time.timestamp()
 
         job_seconds = (completed_time - started_time).total_seconds()
         job_duration = str(datetime.timedelta(seconds=job_seconds))
@@ -87,6 +89,8 @@ def main():
         result[id]['name'] = name
         result[id]['started_at'] = started_at
         result[id]['completed_at'] = completed_at
+        result[id]['started_epoch_secs'] = started_time_epoch_secs
+        result[id]['completed_epoch_secs'] = completed_time_epoch_secs
         result[id]['job_duration'] = job_duration
         result[id]['job_seconds'] = job_seconds
 
