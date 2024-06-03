@@ -119,7 +119,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto iter_swap = __iter_swap::__fn{};
+_CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -82,7 +82,7 @@ struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_bas
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
-_LIBCUDACXX_CPO_ACCESSIBILITY unreachable_sentinel_t unreachable_sentinel{};
+_CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER > 2014
