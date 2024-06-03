@@ -240,6 +240,11 @@ launch_docker() {
 
     # Update run args and env vars
 
+    # Don't pass -it if running in CI
+    if [ "${CI:-false}" != "true" ]; then
+        RUN_ARGS+=("-it")
+    fi
+
     for flag in rm init; do
         if [[ " ${RUN_ARGS[*]} " != *" --${flag} "* ]]; then
             RUN_ARGS+=("--${flag}")
@@ -291,7 +296,7 @@ launch_docker() {
         eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
 
-    exec docker run -it \
+    exec docker run \
         "${RUN_ARGS[@]}" \
         "${ENV_VARS[@]}" \
         "${MOUNTS[@]}" \

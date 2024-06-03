@@ -59,6 +59,7 @@ jobs:
           role-duration-seconds: 43200 # 12 hours)
       - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
         env:
+          CI: true
           RUNNER: "${{inputs.runner}}"
           # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
           # semicolons and other special characters (e.g. `-arch "60;70;80"`).
