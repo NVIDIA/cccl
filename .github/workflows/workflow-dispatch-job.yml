@@ -10,6 +10,8 @@ on:
       success:
         value: ${{ contains(toJSON(jobs.*.outputs.success), 'true') }}
     inputs:
+      cuda: {type: string, required: true}
+      host: {type: string, required: true}
       name: {type: string, required: true}
       image: {type: string, required: true}
       runner: {type: string, required: true}
@@ -65,9 +67,21 @@ jobs:
           AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
           AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
         run: |
+
+          echo "[host]      github.workspace: ${{github.workspace}}"
+          echo "[container] GITHUB_WORKSPACE: ${GITHUB_WORKSPACE:-}"
+          echo "[container]              PWD: $(pwd)"
+
+          # Necessary because we're doing docker-outside-of-docker:
+          # Make a symlink in the contaienr that matches the host's ${{github.workspace}}, so that way `$(pwd)`
+          # in `.devcontainer/launch.sh` constructs volume paths relative to the hosts's ${{github.workspace}}.
+          mkdir -p "$(dirname "${{github.workspace}}")"
+          ln -s "$(pwd)" "${{github.workspace}}"
+          cd "${{github.workspace}}"
+
           cat <<"EOF" > ci.sh
           set -eo pipefail
-          echo -e "\e[1;34mRunning as 'coder' user in $(pwd):\e[0m"
+          echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
           echo -e "\e[1;34m${COMMAND}\e[0m"
           eval "${COMMAND}" || exit_code=$?
           if [ ! -z "$exit_code" ]; then
@@ -77,10 +91,7 @@ jobs:
             echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
             echo ""
             echo "2. Run the failed command inside the same Docker container used by this CI job:"
-            echo "   docker run --rm -it --gpus all --pull=always --volume \$PWD:/repo --workdir /repo ${{inputs.image}} ${COMMAND}"
-            echo ""
-            echo "3. If you are a CCCL core developer, use this command to use the build cache populated by this CI job:"
-            echo "   docker run --rm -it --gpus all --pull=always --volume \$PWD:/home/coder/${{github.event.repository.name}} --volume \$PWD/.aws:/home/coder/.aws --workdir /home/coder/${{github.event.repository.name}} --entrypoint devcontainer-utils-post-attach-command-entrypoint ${{inputs.image}} ${COMMAND}"
+            echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} -- ${COMMAND}"
             echo ""
             echo "For additional information, see:"
             echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
@@ -89,68 +100,51 @@ jobs:
           fi
           EOF
 
-          mkdir "$RUNNER_TEMP/.aws";
+          mkdir "${{github.event.repository.name}}/.aws";
 
-          cat <<EOF > "$RUNNER_TEMP/.aws/config"
+          cat <<EOF > "${{github.event.repository.name}}/.aws/config"
           [default]
           bucket=rapids-sccache-devs
           region=us-east-2
           EOF
 
-          cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
+          cat <<EOF > "${{github.event.repository.name}}/.aws/credentials"
           [default]
           aws_access_key_id=$AWS_ACCESS_KEY_ID
           aws_session_token=$AWS_SESSION_TOKEN
           aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
           EOF
 
-          chmod 0600 "$RUNNER_TEMP/.aws/credentials"
-          chmod 0664 "$RUNNER_TEMP/.aws/config"
-          chown -R 1001:1001 ci.sh "${{github.event.repository.name}}" "$RUNNER_TEMP/.aws"
+          chmod 0600 "${{github.event.repository.name}}/.aws/credentials"
+          chmod 0664 "${{github.event.repository.name}}/.aws/config"
 
-          declare -a args=(
-            --rm
-            --user coder
-            --workdir "/home/coder/${{github.event.repository.name}}"
-          )
+          declare -a gpu_request=()
 
           # Explicitly pass which GPU to use if on a GPU runner
           if [[ "${RUNNER}" = *"-gpu-"* ]]; then
-            args+=(--gpus device=${NVIDIA_VISIBLE_DEVICES})
+            gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
           fi
 
-          # Define envvars
-          args+=(
-            -e "CI=true"
-            -e "COMMAND=$COMMAND"
-            -e "GITHUB_ACTIONS=true"
-            -e "GITHUB_SHA=$GITHUB_SHA"
-            -e "GITHUB_REF_NAME=$GITHUB_REF_NAME"
-            -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-            -e "GITHUB_ENV=/mnt/github/env"
-            -e "GITHUB_PATH=/mnt/github/path"
-            -e "GITHUB_OUTPUT=/mnt/github/output"
-            -e "GITHUB_STEP_SUMMARY=/mnt/github/step-summary"
-            -e "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
-            -e "SCCACHE_BUCKET=rapids-sccache-devs"
-            -e "SCCACHE_REGION=us-east-2"
-          )
-
-          __w="$(dirname "$(dirname "${{github.workspace}}")")"
-
-          # Mount in volumes and map to host paths
-          args+=(
-            -v "${{github.workspace}}/ci.sh:/ci.sh"
-            -v "${{github.workspace}}/${{github.event.repository.name}}:/home/coder/${{github.event.repository.name}}"
-            -v "$(sed "s@/__w@$__w@" <<< "$RUNNER_TEMP")/.aws:/home/coder/.aws"
-            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_ENV"):/mnt/github/env"
-            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_PATH"):/mnt/github/path"
-            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_OUTPUT"):/mnt/github/output"
-            -v "$(sed "s@/__w@$__w@" <<< "$GITHUB_STEP_SUMMARY"):/mnt/github/step-summary"
-          )
-
           # Launch this container using the host's docker daemon
-          docker run "${args[@]}" ${{inputs.image}} /bin/bash -l /ci.sh
+          ${{github.event.repository.name}}/.devcontainer/launch.sh         \
+            --docker                                                        \
+            --cuda ${{inputs.cuda}}                                         \
+            --host ${{inputs.host}}                                         \
+            "${gpu_request[@]}"                                             \
+            --env "CI=$CI"                                                  \
+            --env "COMMAND=$COMMAND"                                        \
+            --env "GITHUB_ENV=$GITHUB_ENV"                                  \
+            --env "GITHUB_SHA=$GITHUB_SHA"                                  \
+            --env "GITHUB_PATH=$GITHUB_PATH"                                \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT"                            \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS"                          \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME"                        \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"                      \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"                    \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY"                \
+            --volume "${{github.workspace}}/ci.sh:/ci.sh"                   \
+            --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
+            -- /ci.sh
 
       - name: Prepare job artifacts
         id: done
