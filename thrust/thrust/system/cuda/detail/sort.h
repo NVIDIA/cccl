@@ -314,14 +314,14 @@ namespace __smart_sort
 
 template <class Key, class CompareOp>
 struct can_use_primitive_sort
-    : thrust::detail::and_<thrust::detail::is_arithmetic<Key>,
-                           thrust::detail::or_<thrust::detail::is_same<CompareOp, thrust::less<Key>>,
-                                               thrust::detail::is_same<CompareOp, thrust::greater<Key>>>>
+    : ::cuda::std::_And<::cuda::std::is_arithmetic<Key>,
+                        ::cuda::std::disjunction<::cuda::std::is_same<CompareOp, thrust::less<Key>>,
+                                                 ::cuda::std::is_same<CompareOp, thrust::greater<Key>>>>
 {};
 
 template <class Iterator, class CompareOp>
 struct enable_if_primitive_sort
-    : thrust::detail::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
+    : ::cuda::std::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
 {};
 
 template <class Iterator, class CompareOp>

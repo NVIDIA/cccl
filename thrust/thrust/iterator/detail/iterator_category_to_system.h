@@ -49,20 +49,21 @@ struct device_iterator_category_to_backend_system;
 template <typename Category>
 struct iterator_category_to_system
     // convertible to host iterator?
-    : eval_if<or_<is_convertible<Category, thrust::input_host_iterator_tag>,
-                  is_convertible<Category, thrust::output_host_iterator_tag>>::value,
+    : eval_if<
+        ::cuda::std::disjunction<::cuda::std::is_convertible<Category, thrust::input_host_iterator_tag>,
+                                 ::cuda::std::is_convertible<Category, thrust::output_host_iterator_tag>>::value,
 
-              detail::identity_<thrust::host_system_tag>,
+        detail::identity_<thrust::host_system_tag>,
 
-              // convertible to device iterator?
-              eval_if<or_<is_convertible<Category, thrust::input_device_iterator_tag>,
-                          is_convertible<Category, thrust::output_device_iterator_tag>>::value,
+        // convertible to device iterator?
+        eval_if<::cuda::std::disjunction<::cuda::std::is_convertible<Category, thrust::input_device_iterator_tag>,
+                                         ::cuda::std::is_convertible<Category, thrust::output_device_iterator_tag>>::value,
 
-                      detail::identity_<thrust::device_system_tag>,
+                detail::identity_<thrust::device_system_tag>,
 
-                      // unknown system
-                      detail::identity_<void>> // if device
-              > // if host
+                // unknown system
+                detail::identity_<void>> // if device
+        > // if host
 {}; // end iterator_category_to_system
 
 template <typename CategoryOrTraversal>

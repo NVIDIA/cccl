@@ -149,7 +149,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
                     cub::GRID_MAPPING_DYNAMIC>
     ReducePolicy4B;
 
-  typedef typename thrust::detail::conditional<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>::type type;
+  typedef ::cuda::std::__conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B> type;
 }; // Tuning sm35
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
@@ -220,8 +220,8 @@ struct ReduceAgent
     VECTOR_LOAD_LENGTH = ptx_plan::VECTOR_LOAD_LENGTH,
 
     ATTEMPT_VECTORIZATION = (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-                         && thrust::detail::is_pointer<InputIt>::value
-                         && thrust::detail::is_arithmetic<typename thrust::detail::remove_cv<T>>::value
+                         && ::cuda::std::is_pointer<InputIt>::value
+                         && ::cuda::std::is_arithmetic<typename ::cuda::std::remove_cv<T>>::value
   };
 
   struct impl

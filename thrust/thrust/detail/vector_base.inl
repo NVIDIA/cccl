@@ -277,7 +277,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 {
   // check the type of InputIterator: if it's an integral type,
   // we need to interpret this call as (size_type, value_type)
-  typedef thrust::detail::is_integral<InputIterator> Integer;
+  typedef ::cuda::std::is_integral<InputIterator> Integer;
 
   init_dispatch(first, last, Integer());
 } // end vector_base::vector_base()
@@ -290,7 +290,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, cons
 {
   // check the type of InputIterator: if it's an integral type,
   // we need to interpret this call as (size_type, value_type)
-  typedef thrust::detail::is_integral<InputIterator> Integer;
+  typedef ::cuda::std::is_integral<InputIterator> Integer;
 
   init_dispatch(first, last, Integer());
 } // end vector_base::vector_base()
@@ -602,7 +602,7 @@ void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
   // we could have received assign(n, x), so disambiguate on the
   // type of InputIterator
-  typedef typename thrust::detail::is_integral<InputIterator> integral;
+  typedef typename ::cuda::std::is_integral<InputIterator> integral;
 
   assign_dispatch(first, last, integral());
 } // end vector_base::assign()
@@ -640,7 +640,7 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 {
   // we could have received insert(position, n, x), so disambiguate on the
   // type of InputIterator
-  typedef typename thrust::detail::is_integral<InputIterator> integral;
+  typedef typename ::cuda::std::is_integral<InputIterator> integral;
 
   insert_dispatch(position, first, last, integral());
 } // end vector_base::insert()
@@ -1150,7 +1150,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
   typedef typename thrust::iterator_system<InputIterator2>::type system2;
 
   // dispatch on the sameness of the two systems
-  return vector_equal(first1, last1, first2, thrust::detail::is_same<system1, system2>());
+  return vector_equal(first1, last1, first2, ::cuda::std::is_same<system1, system2>());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>

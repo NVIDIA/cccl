@@ -35,18 +35,18 @@ namespace detail
 
 template <typename T>
 struct is_host_iterator_category
-    : thrust::detail::or_<thrust::detail::is_convertible<T, thrust::input_host_iterator_tag>,
-                          thrust::detail::is_convertible<T, thrust::output_host_iterator_tag>>
+    : ::cuda::std::disjunction<::cuda::std::is_convertible<T, thrust::input_host_iterator_tag>,
+                               ::cuda::std::is_convertible<T, thrust::output_host_iterator_tag>>
 {}; // end is_host_iterator_category
 
 template <typename T>
 struct is_device_iterator_category
-    : thrust::detail::or_<thrust::detail::is_convertible<T, thrust::input_device_iterator_tag>,
-                          thrust::detail::is_convertible<T, thrust::output_device_iterator_tag>>
+    : ::cuda::std::disjunction<::cuda::std::is_convertible<T, thrust::input_device_iterator_tag>,
+                               ::cuda::std::is_convertible<T, thrust::output_device_iterator_tag>>
 {}; // end is_device_iterator_category
 
 template <typename T>
-struct is_iterator_category : thrust::detail::or_<is_host_iterator_category<T>, is_device_iterator_category<T>>
+struct is_iterator_category : ::cuda::std::disjunction<is_host_iterator_category<T>, is_device_iterator_category<T>>
 {}; // end is_iterator_category
 
 } // namespace detail

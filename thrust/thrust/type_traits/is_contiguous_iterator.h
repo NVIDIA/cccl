@@ -161,7 +161,7 @@ struct is_libstdcxx_normal_iterator<::__gnu_cxx::__normal_iterator<Iterator, Con
 
 #if _MSC_VER >= 1916 // MSVC 2017 version 15.9.
 template <typename Iterator>
-struct is_msvc_contiguous_iterator : is_pointer<::std::_Unwrapped_t<Iterator>>
+struct is_msvc_contiguous_iterator : ::cuda::std::is_pointer<::std::_Unwrapped_t<Iterator>>
 {};
 #elif _MSC_VER >= 1700 // MSVC 2012.
 template <typename Iterator>
@@ -207,9 +207,9 @@ template <typename Iterator>
 struct is_contiguous_iterator_impl
     : integral_constant<
         bool,
-        is_pointer<Iterator>::value || is_thrust_pointer<Iterator>::value || is_libcxx_wrap_iter<Iterator>::value
-          || is_libstdcxx_normal_iterator<Iterator>::value || is_msvc_contiguous_iterator<Iterator>::value
-          || proclaim_contiguous_iterator<Iterator>::value>
+        ::cuda::std::is_pointer<Iterator>::value || is_thrust_pointer<Iterator>::value
+          || is_libcxx_wrap_iter<Iterator>::value || is_libstdcxx_normal_iterator<Iterator>::value
+          || is_msvc_contiguous_iterator<Iterator>::value || proclaim_contiguous_iterator<Iterator>::value>
 {};
 
 // Type traits for contiguous iterators:

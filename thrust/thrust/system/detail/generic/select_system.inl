@@ -48,9 +48,9 @@ _CCCL_HOST_DEVICE System& min_system(thrust::execution_policy<System>& system1, 
 
 // min_system case 2: systems have differing type and the first type is considered the minimum
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if<
-  thrust::detail::is_same<System1, typename thrust::detail::minimum_system<System1, System2>::type>::value,
-  System1&>::type
+_CCCL_HOST_DEVICE typename ::cuda::std::__enable_if_t<
+  ::cuda::std::is_same<System1, typename thrust::detail::minimum_system<System1, System2>::type>::value,
+  System1&>
 min_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>&)
 {
   return thrust::detail::derived_cast(system1);
@@ -58,9 +58,9 @@ min_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<
 
 // min_system case 3: systems have differing type and the second type is considered the minimum
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if<
-  thrust::detail::is_same<System2, typename thrust::detail::minimum_system<System1, System2>::type>::value,
-  System2&>::type
+_CCCL_HOST_DEVICE typename ::cuda::std::__enable_if_t<
+  ::cuda::std::is_same<System2, typename thrust::detail::minimum_system<System1, System2>::type>::value,
+  System2&>
 min_system(thrust::execution_policy<System1>&, thrust::execution_policy<System2>& system2)
 {
   return thrust::detail::derived_cast(system2);

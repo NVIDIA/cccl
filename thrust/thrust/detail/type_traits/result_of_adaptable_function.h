@@ -56,9 +56,8 @@ public:
 
 // specialization for invocations which define result_type
 template <typename Functor, typename... ArgTypes>
-struct result_of_adaptable_function<
-  Functor(ArgTypes...),
-  typename thrust::detail::enable_if<thrust::detail::has_result_type<Functor>::value>::type>
+struct result_of_adaptable_function<Functor(ArgTypes...),
+                                    ::cuda::std::__enable_if_t<thrust::detail::has_result_type<Functor>::value>>
 {
   using type = typename Functor::result_type;
 };
