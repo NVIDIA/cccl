@@ -777,6 +777,8 @@ struct AgentSelectIf
     __threadfence();
 
     // Ensure temporary storage used during block load can be reused
+    // Also, in case of in-place stream compaction (i.e., needs_store_release), this is needed to order the loads of
+    // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
     CTA_SYNC();
 
     // Exclusive scan of selection_flags
@@ -857,6 +859,8 @@ struct AgentSelectIf
     __threadfence();
 
     // Ensure temporary storage used during block load can be reused
+    // Also, in case of in-place stream compaction (i.e., needs_store_release), this is needed to order the loads of
+    // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags

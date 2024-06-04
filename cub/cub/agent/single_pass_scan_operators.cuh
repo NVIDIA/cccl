@@ -124,6 +124,10 @@ enum ScanTileStatus
   SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
 };
 
+/**
+ * Indicates whether to use a st.release when writing the partial or inclusive tile state (EnforceStoreRelease::yes) or
+ * not.
+ */
 enum class EnforceStoreRelease
 {
   no,
