@@ -27,41 +27,53 @@
 #endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
 
 #include <cuda/std/__exception/terminate.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 
-#include <nv/target>
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  include <cstdio>
+#  include <stdexcept>
 #endif // !_CCCL_COMPILER_NVRTC
+
+#include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-class cuda_error : public _CUDA_VSTD_NOVERSION::runtime_error
+
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+class cuda_error : public ::std::runtime_error
 {
 public:
   cuda_error(::cudaError_t __status, const char* __msg) noexcept
-      : _CUDA_VSTD_NOVERSION::runtime_error("")
+      : ::std::runtime_error("")
   {
-    ::snprintf(
-      const_cast<char*>(this->what()), _CUDA_VSTD::__libcpp_refstring::__length, "cudaError %d: %s", __status, __msg);
+    char __formatted_msg[256];
+    ::snprintf(__formatted_msg, 256, "cudaError %d: %s", __status, __msg);
+
+    ::std::runtime_error __err{__formatted_msg};
+    *static_cast<::std::runtime_error*>(this) = __err;
   }
 };
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t __status, const char* __msg)
 {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw ::cuda::cuda_error(__status, __msg);),
                     ((void) __status; (void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
-#else
-  (void) __status;
-  (void) __msg;
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
+#else // ^^^ !_LIBCUDACXX_NO_EXCEPTIONS ^^^ / vvv _LIBCUDACXX_NO_EXCEPTIONS vvv
+class cuda_error
+{
+public:
+  cuda_error(::cudaError_t, const char*) noexcept {}
+};
+
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t, const char*)
+{
+  _CUDA_VSTD_NOVERSION::terminate();
+}
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

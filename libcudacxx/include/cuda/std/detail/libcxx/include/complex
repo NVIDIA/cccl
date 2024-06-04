@@ -253,7 +253,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
