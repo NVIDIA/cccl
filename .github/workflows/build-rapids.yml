@@ -25,7 +25,8 @@ jobs:
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
     secrets: inherit
-    # TODO: this is temporary
+    # TODO: This workflow contains vendored changes from rapidsai/shared-workflows.
+    # This can use rapidsai/shared-workflows if those changes are upstreamed.
     uses: ./.github/workflows/build-in-devcontainer.yml
     # uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
     strategy:
