@@ -31,12 +31,12 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     set(header_name "${header_name}_fallback")
   endif()
 
-  # cuda internal headers should not be tested against a host compiler
-  if(header_name MATCHES "__ptx.*")
-    add_library(headertest_${header_name} SHARED "${headertest_src}.cu")
-  else()
-    add_library(headertest_${header_name} SHARED "${headertest_src}.cu" "${headertest_src}.cpp")
+  if(header_name MATCHES "__memory_resource.*")
+    return()
   endif()
+
+  # cuda internal headers should not be tested against a host compiler
+  add_library(headertest_${header_name} SHARED "${headertest_src}.cu")
 
   target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_options(headertest_${header_name}
@@ -53,6 +53,8 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
   if(fallback)
     target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")
   endif()
+  target_compile_definitions(headertest_${header_name} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
+
   add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
 endfunction()
 
@@ -63,9 +65,6 @@ function(libcudacxx_add_internal_header_test header)
   # Create the source file for the header target from the template and add the file to the global project
   set(headertest_src "headers/${header_name}")
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cu")
-  if(NOT header_name MATCHES "__ptx.*")
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cpp")
-  endif()
 
   # Create the default target for that file
   libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, "")
