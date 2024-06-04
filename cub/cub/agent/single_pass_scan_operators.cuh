@@ -1026,9 +1026,22 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     }
   }
 
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_no /*enforce_st_release*/)
+  {
+    detail::store_relaxed(ptr, alias);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_yes /*enforce_st_release*/)
+  {
+    detail::store_release(ptr, alias);
+  }
+
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
+  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -1039,12 +1052,13 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
   }
 
   /**
    * Update the specified tile's partial value and corresponding status
    */
+  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -1055,7 +1069,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
   }
 
   /**
