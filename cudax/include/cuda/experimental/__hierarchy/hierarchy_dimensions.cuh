@@ -14,7 +14,6 @@
 #include <cuda/experimental/__hierarchy/level_dimensions.cuh>
 #include <cuda/std/tuple>
 
-#include "cuda/std/__functional/invoke.h"
 #include "cuda/std/__utility/declval.h"
 #include <nv/target>
 
@@ -68,7 +67,7 @@ struct has_level_helper<QueryLevel, hierarchy_dimensions_fragment<Unit, Levels..
 // Is this needed?
 template <typename QueryLevel, typename... Levels>
 struct has_level_helper<QueryLevel, hierarchy_dimensions<Levels...>>
-    : public ::cuda::std::disjunction<::cuda::std::is_same<QueryLevel, typename Levels::level_type>...>
+    : public ::cuda::std::_Or<::cuda::std::is_same<QueryLevel, typename Levels::level_type>...>
 {};
 
 template <typename QueryLevel, typename Hierarchy>
@@ -223,6 +222,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto replace_with_intrinsics_or_cons
   {
     // We replace hierarchy access with CUDA intrinsic to enable compiler optimizations, its ok for the prototype,
     // but might lead to unexpected results and should be eventually addressed at the API level
+    // TODO with device side launch we should have a way to disable it for the device-side created hierarchy
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (dim3 intr_dims = dims_helper<Unit, Level>::extents();
                        return fool_compiler(Dims(intr_dims.x, intr_dims.y, intr_dims.z));),
