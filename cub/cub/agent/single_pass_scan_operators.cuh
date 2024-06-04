@@ -51,6 +51,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 #include <nv/target>
@@ -122,8 +124,22 @@ enum ScanTileStatus
   SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
 };
 
+enum class EnforceStoreRelease
+{
+  no,
+  yes
+};
+
 namespace detail
 {
+
+template <EnforceStoreRelease StoreRelease>
+using store_release_tag_t =
+  ::cuda::std::conditional<(StoreRelease == EnforceStoreRelease::no),
+                           Int2Type<static_cast<int>(EnforceStoreRelease::no)>,
+                           Int2Type<static_cast<int>(EnforceStoreRelease::yes)>>;
+using store_release_tag_no  = store_release_tag_t<EnforceStoreRelease::no>;
+using store_release_tag_yes = store_release_tag_t<EnforceStoreRelease::yes>;
 
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
@@ -597,9 +613,22 @@ struct ScanTileState<T, true>
     }
   }
 
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_no /*enforce_st_release*/)
+  {
+    detail::store_relaxed(ptr, alias);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_yes /*enforce_st_release*/)
+  {
+    detail::store_release(ptr, alias);
+  }
+
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
+  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -609,12 +638,13 @@ struct ScanTileState<T, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
   }
 
   /**
    * Update the specified tile's partial value and corresponding status
    */
+  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -624,7 +654,7 @@ struct ScanTileState<T, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
   }
 
   /**
@@ -791,6 +821,7 @@ struct ScanTileState<T, false>
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
+  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
@@ -801,6 +832,7 @@ struct ScanTileState<T, false>
   /**
    * Update the specified tile's partial value and corresponding status
    */
+  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
@@ -1077,8 +1109,9 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          int LEGACY_PTX_ARCH        = 0,
-          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
+          int LEGACY_PTX_ARCH              = 0,
+          typename DelayConstructorT       = detail::default_delay_constructor_t<T>,
+          EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1160,7 +1193,7 @@ struct TilePrefixCallbackOp
     {
       detail::uninitialized_copy(&temp_storage.block_aggregate, block_aggregate);
 
-      tile_status.SetPartial(tile_idx, block_aggregate);
+      tile_status.SetPartial<StoreRelease>(tile_idx, block_aggregate);
     }
 
     int predecessor_idx = tile_idx - threadIdx.x - 1;
@@ -1188,7 +1221,7 @@ struct TilePrefixCallbackOp
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
-      tile_status.SetInclusive(tile_idx, inclusive_prefix);
+      tile_status.SetInclusive<StoreRelease>(tile_idx, inclusive_prefix);
 
       detail::uninitialized_copy(&temp_storage.exclusive_prefix, exclusive_prefix);
 

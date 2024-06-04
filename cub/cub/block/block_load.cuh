@@ -1405,6 +1405,13 @@ private:
   int linear_tid;
 
 public:
+
+  /**
+   * @brief Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data 
+   */
+  static constexpr bool loads_via_smem =
+    !(ALGORITHM == BLOCK_LOAD_DIRECT || ALGORITHM == BLOCK_LOAD_STRIPED || ALGORITHM == BLOCK_LOAD_VECTORIZE);
+
   /// @smemstorage{BlockLoad}
   struct TempStorage : Uninitialized<_TempStorage>
   {};

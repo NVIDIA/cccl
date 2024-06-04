@@ -176,7 +176,8 @@ template <typename AgentSelectIfPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          bool KEEP_REJECTS>
+          bool KEEP_REJECTS,
+          bool MayAlias>
 struct AgentSelectIf
 {
   //---------------------------------------------------------------------
@@ -234,6 +235,12 @@ struct AgentSelectIf
   // Parameterized BlockLoad type for input data
   using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
 
+  // If this may be an *in-place* stream compaction, we need to ensure that all the tile's items have been loaded before
+  // signalling this thread block's partial or inclusive state to avoid a race where a subsequent thread block may have
+  // already overwritten this tile's input.
+  static constexpr EnforceStoreRelease needs_store_release =
+    ((!KEEP_REJECTS) && MayAlias && (!BlockLoadT::loads_via_smem)) ? EnforceStoreRelease::yes : EnforceStoreRelease::no;
+
   // Parameterized BlockLoad type for flags
   using BlockLoadFlags = BlockLoad<FlagT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
 
@@ -244,8 +251,9 @@ struct AgentSelectIf
   using BlockScanT = BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT, needs_store_release>;
 
   // Item exchange type
   typedef InputT ItemExchangeT[TILE_ITEMS];
@@ -768,7 +776,7 @@ struct AgentSelectIf
     // items in case of in-place compaction
     __threadfence();
 
-    // Ensure temporary storage used during block load can be reused 
+    // Ensure temporary storage used during block load can be reused
     CTA_SYNC();
 
     // Exclusive scan of selection_flags
@@ -780,7 +788,7 @@ struct AgentSelectIf
       // Update tile status if this is not the last tile
       if (!IS_LAST_TILE)
       {
-        tile_state.SetInclusive(0, num_tile_selections);
+        tile_state.SetInclusive<needs_store_release>(0, num_tile_selections);
       }
     }
 
@@ -848,7 +856,7 @@ struct AgentSelectIf
     // items in case of in-place compaction
     __threadfence();
 
-    // Ensure temporary storage used during block load can be reused 
+    // Ensure temporary storage used during block load can be reused
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
