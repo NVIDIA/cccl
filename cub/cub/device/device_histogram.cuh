@@ -113,7 +113,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!      d_temp_storage, temp_storage_bytes,
@@ -283,7 +283,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage  = NULL;
+  //!    void*    d_temp_storage  = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!        d_temp_storage, temp_storage_bytes,
@@ -467,7 +467,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -679,7 +679,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -902,7 +902,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1049,7 +1049,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1220,7 +1220,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1412,7 +1412,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,

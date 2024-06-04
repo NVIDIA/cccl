@@ -262,7 +262,7 @@ struct CUB_DEPRECATED RemoveQualifiers
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
- * \brief A simple "NULL" marker type
+ * \brief A simple "null" marker type
  */
 struct NullType
 {
@@ -907,8 +907,8 @@ struct DoubleBuffer
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DoubleBuffer()
   {
     selector     = 0;
-    d_buffers[0] = NULL;
-    d_buffers[1] = NULL;
+    d_buffers[0] = nullptr;
+    d_buffers[1] = nullptr;
   }
 
   /// \brief Constructor
@@ -1023,7 +1023,7 @@ private:
 
 public:
   /// Whether the functor BinaryOp has a third <tt>unsigned int</tt> index param
-  static constexpr bool HAS_PARAM = sizeof(Test<BinaryOp>(NULL)) == sizeof(char);
+  static constexpr bool HAS_PARAM = sizeof(Test<BinaryOp>(nullptr)) == sizeof(char);
 };
 
 /******************************************************************************

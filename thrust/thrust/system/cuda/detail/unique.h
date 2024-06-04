@@ -517,12 +517,12 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  void* allocations[2] = {NULL, NULL};
+  void* allocations[2] = {nullptr, nullptr};
   //
   status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  if (d_temp_storage == NULL)
+  if (d_temp_storage == nullptr)
   {
     return status;
   }
@@ -541,7 +541,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return status;
   }
 
-  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : NULL;
+  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
 
   unique_agent ua(unique_plan, num_items, stream, vshmem_ptr, "unique_by_key::unique_agent");
   ua.launch(items_in, items_out, binary_pred, num_selected_out, num_items, tile_status, num_tiles);
@@ -566,21 +566,21 @@ THRUST_RUNTIME_FUNCTION ItemsOutputIt unique(
 
   cudaError_t status;
   status = doit_step(
-    NULL,
+    nullptr,
     temp_storage_bytes,
     items_first,
     items_result,
     binary_pred,
-    reinterpret_cast<size_type*>(NULL),
+    static_cast<size_type*>(nullptr),
     num_items,
     stream);
   cuda_cub::throw_on_error(status, "unique: failed on 1st step");
 
   size_t allocation_sizes[2] = {sizeof(size_type), temp_storage_bytes};
-  void* allocations[2]       = {NULL, NULL};
+  void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(NULL, storage_size, allocations, allocation_sizes);
+  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "unique: failed on 1st step");
 
   // Allocate temporary storage.

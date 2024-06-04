@@ -255,7 +255,7 @@ struct DeviceRleDispatch
    *
    * @param d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @param temp_storage_bytes
@@ -468,7 +468,7 @@ struct DeviceRleDispatch
    *
    * @param d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @param temp_storage_bytes

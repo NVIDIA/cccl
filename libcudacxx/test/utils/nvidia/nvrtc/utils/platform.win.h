@@ -24,7 +24,8 @@ static void platform_exec(char const* process, char** args, size_t nargs)
 
   printf("Running command: %s\r\n", cl.data());
 
-  bool exec_result = CreateProcess(NULL, (LPSTR) cl.data(), NULL, NULL, false, false, NULL, NULL, &si, &pi);
+  bool exec_result =
+    CreateProcess(nullptr, (LPSTR) cl.data(), nullptr, nullptr, false, false, nullptr, nullptr, &si, &pi);
 
   if (!exec_result)
   {

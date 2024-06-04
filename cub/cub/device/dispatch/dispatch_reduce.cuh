@@ -660,7 +660,7 @@ struct DispatchReduce : SelectedPolicy
     {
       // Return if the caller is simply requesting the size of the storage
       // allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         temp_storage_bytes = 1;
         break;
@@ -773,7 +773,7 @@ struct DispatchReduce : SelectedPolicy
         break;
       }
 
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         // Return if the caller is simply requesting the size of the storage
         // allocation
@@ -1207,7 +1207,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
     {
       // Return if the caller is simply requesting the size of the storage
       // allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         temp_storage_bytes = 1;
         return cudaSuccess;

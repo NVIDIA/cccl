@@ -191,7 +191,7 @@ public:
   /// Cast to void* operator
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator void*() const
   {
-    return NULL;
+    return nullptr;
   }
 
   /// Equal to

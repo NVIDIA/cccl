@@ -55,7 +55,7 @@ GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, co
 
   fprintf(stderr, "Compiling program...\r\n");
   nvrtcProgram prog;
-  NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog, testCu.c_str(), "test.cu", 0, NULL, NULL));
+  NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog, testCu.c_str(), "test.cu", 0, nullptr, nullptr));
 
   nvrtcResult compile_result = nvrtcCompileProgram(prog, optList.size(), optList.data());
 

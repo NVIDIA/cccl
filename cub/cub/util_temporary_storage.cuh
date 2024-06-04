@@ -56,7 +56,7 @@ CUB_NAMESPACE_BEGIN
  *
  * @param[in] d_temp_storage
  *   Device-accessible allocation of temporary storage.
- *   When NULL, the required allocation size is written to @p temp_storage_bytes and no work is
+ *   When nullptr, the required allocation size is written to @p temp_storage_bytes and no work is
  *   done.
  *
  * @param[in,out] temp_storage_bytes

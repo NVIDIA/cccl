@@ -174,9 +174,9 @@ void Test()
   Initialize(h_in, h_reference, TILE_SIZE * g_grid_size, TILE_SIZE);
 
   // Initialize device arrays
-  Key* d_in          = NULL;
-  Key* d_out         = NULL;
-  clock_t* d_elapsed = NULL;
+  Key* d_in          = nullptr;
+  Key* d_out         = nullptr;
+  clock_t* d_elapsed = nullptr;
   CubDebugExit(cudaMalloc((void**) &d_in, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_out, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_elapsed, sizeof(clock_t) * g_grid_size));
