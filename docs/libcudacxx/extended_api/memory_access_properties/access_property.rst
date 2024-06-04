@@ -181,9 +181,10 @@ Dynamic range global memory residence control property constructors
    note: pointer arithmetic below performed ``char* ptr`` instead of
    ``void* ptr``
 
-**Preconditions**: \* ``ptr`` is a generic pointer that is *valid* to
-cast to a pointer to the global memory address space. \*
-``0 < leading_bytes <= total_bytes <= 4GB``.
+**Preconditions**:
+
+   - ``ptr`` is a generic pointer that is *valid* to cast to a pointer to the global memory address space.
+   - ``0 < leading_bytes <= total_bytes <= 4GB``.
 
 **Postconditions**: memory accesses requesting the application of this
 property must be in range

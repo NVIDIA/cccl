@@ -34,7 +34,7 @@ should be cloned recursively to setup the CUB submodule (required for
 Setup a Fork of Thrust
 ----------------------
 
-You’ll need a fork of Thrust on Github to create a pull request. To
+You'll need a fork of Thrust on Github to create a pull request. To
 setup your fork:
 
 1. Create a Github account (if needed)
@@ -50,7 +50,7 @@ clone:
 
 If you need to modify CUB, too, go to `the CUB Github
 page <https://github.com/NVIDIA/cub>`__ and repeat this process. Create
-CUB’s ``github-fork`` remote in the ``thrust/dependencies/cub``
+CUB's ``github-fork`` remote in the ``thrust/dependencies/cub``
 submodule.
 
 Setup Your Environment
@@ -59,7 +59,7 @@ Setup Your Environment
 Git Environment
 ~~~~~~~~~~~~~~~
 
-If you haven’t already, this is a good time to tell git who you are.
+If you haven't already, this is a good time to tell git who you are.
 This information is used to fill out authorship information on your git
 commits.
 
@@ -140,7 +140,7 @@ Local Development Loop
 Edit, Build, Test, Repeat
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once the topic branch is created, you’re all set to start working on
+Once the topic branch is created, you're all set to start working on
 Thrust code. Make some changes, then build and test them:
 
 .. code:: bash
@@ -160,7 +160,7 @@ Thrust code. Make some changes, then build and test them:
 Creating a Commit
 ~~~~~~~~~~~~~~~~~
 
-Once you’re satisfied with your patch, commit your changes:
+Once you're satisfied with your patch, commit your changes:
 
 Thrust-only Changes
 ^^^^^^^^^^^^^^^^^^^
@@ -233,7 +233,7 @@ correctly:
 Push Development Branch to your Fork
 ------------------------------------
 
-Once you’ve committed your changes to a local development branch, it’s
+Once you've committed your changes to a local development branch, it's
 time to push them to your fork:
 
 .. code:: bash

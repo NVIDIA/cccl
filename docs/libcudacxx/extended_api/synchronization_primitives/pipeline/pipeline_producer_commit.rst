@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-pipeline-pipeline-pipeline-producer-commit:
 
-cuda::pipeline_producer_commit``
+cuda::pipeline_producer_commit
 ==================================
 
 Defined in header ``<cuda/pipeline>``:

@@ -8,7 +8,7 @@ See the documentation of the standard header `\<version\> <https://en.cppreferen
 Extensions
 ----------
 
-The following version macros, which are explained in the `versioning section <../../releases/versioning.md>`_,
+The following version macros, which are explained in the :ref:`versioning section <libcudacxx-releases-versioning>`,
 are defined in this header:
 
 -  ``_LIBCUDACXX_CUDA_API_VERSION``

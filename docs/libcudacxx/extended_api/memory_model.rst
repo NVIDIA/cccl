@@ -57,22 +57,23 @@ Atomicity
 ---------
 
 An atomic operation is atomic at the scope it specifies if:
-- it specifies a scope other than ``thread_scope_system``, **or**
-- the scope is ``thread_scope_system`` and:
 
-   -  it affects an object in `unified
-      memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__
-      and
-      `concurrentManagedAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_116f9619ccc85e93bc456b8c69c80e78b>`__
-      is ``1``, **or**
-   -  it affects an object in CPU memory and
-      `hostNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`__
-      is ``1``, **or**
-   -  it is a load or store that affects a naturally-aligned object of
-      sizes ``1``, ``2``, ``4``, ``8``, or ``16`` bytes on `mapped
-      memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__,
-      **or**
-   -  it affects an object in GPU memory and only GPU threads access it.
+   - it specifies a scope other than ``thread_scope_system``, **or**
+   - the scope is ``thread_scope_system`` and:
+
+      -  it affects an object in `unified
+         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__
+         and
+         `concurrentManagedAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_116f9619ccc85e93bc456b8c69c80e78b>`__
+         is ``1``, **or**
+      -  it affects an object in CPU memory and
+         `hostNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`__
+         is ``1``, **or**
+      -  it is a load or store that affects a naturally-aligned object of
+         sizes ``1``, ``2``, ``4``, ``8``, or ``16`` bytes on `mapped
+         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__,
+         **or**
+      -  it affects an object in GPU memory and only GPU threads access it.
 
 .. note::
    If `hostNativeAtomicSupported` is `0`, atomic load or store operations at system scope that affect a

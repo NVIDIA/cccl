@@ -5,7 +5,7 @@ cuda::binary_semaphore
 
 Defined in header ``<cuda/semaphore>``:
 
-.. code:: cuda
+.. code:: cpp
 
    namespace cuda {
 

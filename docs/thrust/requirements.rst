@@ -2,7 +2,7 @@ Requirements
 ============
 
 All requirements are applicable to the ``main`` branch on GitHub. For
-details on specific releases, please see the [CHANGELOG.md].
+details on specific releases, please see the :ref:`changelog <thrust-module-releases-changelog>`.
 
 Usage Requirements
 ------------------

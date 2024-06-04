@@ -52,18 +52,18 @@ of ISO/IEC IS 14882 (the C++ Standard) are modified as follows:
    the following steps:
 
    1. The *expected count* is decremented by each call to ``arrive``,\ ``arrive_and_drop``\ **,
-      or ``cuda::device::barrier_arrive_tx``**.
-   2. **The transaction count is incremented by each call to ``cuda::device::barrier_arrive_tx`` and decremented by the
-      completion of transaction-based asynchronous operations such as ``cuda::memcpy_async_tx``.**
+      or cuda::device::barrier_arrive_tx**.
+   2. **The transaction count is incremented by each call to cuda::device::barrier_arrive_tx and decremented by the
+      completion of transaction-based asynchronous operations such as cuda::memcpy_async_tx.**
    3. Exactly once after **both** the *expected count* **and the transaction count** reach zero, a thread executes the
-      *completion step* during its call to ``arrive``, ``arrive_and_drop``, **``cuda::device::barrier_arrive_tx``**,
+      *completion step* during its call to ``arrive``, ``arrive_and_drop``, ``cuda::device::barrier_arrive_tx``,
       or ``wait``, except that it is implementation-defined whether the step executes if no thread calls ``wait``.
    4. When the completion step finishes, the *expected count* is reset to what was specified by the ``expected``
       argument to the constructor, possibly adjusted by calls to ``arrive_and_drop``, and the next phase starts.
 
-   Concurrent invocations of the member functions of barrier **and the non-member barrier APIs in ``cuda::device``**,
+   Concurrent invocations of the member functions of barrier **and the non-member barrier APIs in cuda::device**,
    other than its destructor, do not introduce data races. The member functions ``arrive`` and ``arrive_and_drop``,
-   **and the non-member function ``cuda::device::barrier_arrive_tx``**, execute atomically.
+   **and the non-member function cuda::device::barrier_arrive_tx**, execute atomically.
 
 .. rubric:: NVCC ``__shared__`` Initialization Warnings
 

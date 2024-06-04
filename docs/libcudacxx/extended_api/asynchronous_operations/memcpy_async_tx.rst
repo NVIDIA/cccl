@@ -38,7 +38,7 @@ This function can only be used under CUDA Compute Capability 9.0 (Hopper) or hig
 
 There is no feature flag to check if ``cuda::device::memcpy_async_tx`` is available.
 
-**Comparison to ``cuda::memcpy_async``**: ``memcpy_async_tx`` supports a subset of the operations of ``memcpy_async``.
+**Comparison to cuda::memcpy_async**: ``memcpy_async_tx`` supports a subset of the operations of ``memcpy_async``.
 It gives more control over the synchronization with a barrier than ``memcpy_async``.
 Currently, ``memcpy_async_tx`` has no synchronous fallback mechanism., i.e., it currently does not work on older hardware
 (pre-CUDA Compute Capability 9.0, i.e., Hopper).

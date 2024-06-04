@@ -5,7 +5,7 @@ Requirements
 
 All requirements are applicable to the ``main`` branch on GitHub. For
 details on specific releases, please see the
-`changelog <libcudacxx-releases-changelog>`.
+:ref:`changelog <libcudacxx-releases-changelog>`.
 
 Usage Requirements
 ------------------
@@ -21,9 +21,9 @@ SDK <https://developer.nvidia.com/hpc-sdk>`_ or the `CUDA
 Toolkit <https://developer.nvidia.com/cuda-toolkit>`_.
 
 libcu++ was first released in NVHPC 20.3 and CUDA 10.2. Some features
-are only available in newer releases. Please see the `Standard API
-section <libcudacxx-standard-api>`, `Extended API
-section <libcudacxx-extended-api>`, and `release section <libcudacxx-releases>`
+are only available in newer releases. Please see the :ref:`Standard API
+section <libcudacxx-standard-api>`, :ref:`Extended API
+section <libcudacxx-extended-api>`, and :ref:`release section <libcudacxx-releases>`
 to find which features require newer releases.
 
 Releases of libcu++ are only tested against the latest releases of NVHPC

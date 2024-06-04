@@ -39,7 +39,8 @@ jobs:
         run: ./docs/gen_docs.bash
 
       # Copy all docs to the right folder
-      - name: Move docs to right oflder
+      - name: Move docs to right folder
+
         run: |
           mkdir _site
           cp -rf ./docs/_build/docs/cccl/latest/* _site

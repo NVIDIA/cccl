@@ -9,3 +9,5 @@ Contributing
 
    release_process
    submitting_a_pr
+
+We welcome contributions - just send us a pull request!

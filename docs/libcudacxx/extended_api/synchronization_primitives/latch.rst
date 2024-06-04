@@ -5,7 +5,7 @@ cuda::latch
 
 Defined in header ``<cuda/latch>``:
 
-.. code:: cuda
+.. code:: cpp
 
    template <cuda::thread_scope Scope>
    class cuda::latch;
