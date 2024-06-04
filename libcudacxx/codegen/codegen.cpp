@@ -97,7 +97,6 @@ int main()
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
@@ -337,24 +336,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
               out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8;
               if (type.first == "f")
               {
-                out << " && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>\n";
+                out << " && _CCCL_TRAIT(is_floating_point<_Type>), int> = 0>\n";
               }
               else if (rmw.first == "fetch_max" || rmw.first == "fetch_min")
               {
                 if (type.first == "u")
                 {
-                  out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> "
+                  out << " && _CCCL_TRAIT(is_integral<_Type>) && _CCCL_TRAIT(is_unsigned<_Type>), int> "
                          "= 0>\n";
                 }
                 else if (type.first == "s")
                 {
-                  out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = "
+                  out << " && _CCCL_TRAIT(is_integral<_Type>) && _CCCL_TRAIT(is_signed<_Type>), int> = "
                          "0>\n";
                 }
               }
               else if (type.first == "u")
               {
-                out << " && (_CUDA_VSTD::is_integral<_Type>::value || _CUDA_VSTD::is_pointer<_Type>::value), int> = 0>\n";
+                out << " && (_CCCL_TRAIT(is_integral<_Type>) || _CCCL_TRAIT(is_pointer<_Type>)), int> = 0>\n";
               }
               else
               {
