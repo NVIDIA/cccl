@@ -422,6 +422,7 @@ struct DeviceHistogram
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples
   //!   (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
   //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
@@ -621,6 +622,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
   //!   histograms from *RGBA* pixel samples).
@@ -1180,6 +1182,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
@@ -1360,6 +1363,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
