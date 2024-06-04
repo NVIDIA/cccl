@@ -29,7 +29,6 @@ runs:
       with:
         name: jobs
         pattern: jobs-*
-        delete-merged: true
         compression-level: 0
 
     - name: Download job artifacts
