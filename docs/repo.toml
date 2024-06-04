@@ -8,6 +8,12 @@ name = "CUDA C++ Core Libraries"
 project = "cccl"
 logo = "img/logo.png"
 
+repo_url         = "https://github.com/NVIDIA/cccl"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
 enhanced_search_enabled = true
 api_output_directory = "api"
 use_fast_doxygen_conversion = true
@@ -32,6 +38,12 @@ name = "libcu++"
 docs_root = "libcudacxx"
 logo = "../img/logo.png"
 
+repo_url         = "https://github.com/NVIDIA/cccl/libcudacxx"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
 enhanced_search_enabled = true
 api_output_directory = "api"
 use_fast_doxygen_conversion = true
@@ -43,6 +55,12 @@ sphinx_exclude_patterns = []
 name = "CUB"
 docs_root = "cub"
 logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/cub"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
 
 enhanced_search_enabled = true
 api_output_directory = "api"
@@ -161,6 +179,12 @@ doxygen_conf_extra = """
 name = "Thrust: The C++ Parallel Algorithms Library"
 docs_root = "thrust"
 logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/thrust"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
 
 enhanced_search_enabled = true
 api_output_directory = "api"
