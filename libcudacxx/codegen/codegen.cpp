@@ -50,16 +50,15 @@ int main()
     {"volatile", ""}};
   std::vector<std::string> rmw_classes{"bitwise", "arithmetic"};
   std::map<std::string, std::map<std::string, std::string>> rmw_operations{
-    {"bitwise",
+    {"bitwise", std::map<std::string, std::string>{{"fetch_and", ".and"}, {"fetch_or", ".or"}, {"fetch_xor", ".xor"}}},
+    {"arithmetic",
      std::map<std::string, std::string>{
        {"exchange", ".exch"},
        {"compare_exchange", ".cas"},
-       {"fetch_and", ".and"},
-       {"fetch_or", ".or"},
-       {"fetch_xor", ".xor"}}},
-    {"arithmetic",
-     std::map<std::string, std::string>{
-       {"fetch_add", ".add"}, {"fetch_sub", ".add"}, {"fetch_max", ".max"}, {"fetch_min", ".min"}}}};
+       {"fetch_add", ".add"},
+       {"fetch_sub", ".add"},
+       {"fetch_max", ".max"},
+       {"fetch_min", ".min"}}}};
   std::map<std::string, std::map<std::string, std::string>> rmw_types{
     {"bitwise", std::map<std::string, std::string>{{"", ".b"}}},
     {"arithmetic", std::map<std::string, std::string>{{"u", ".u"}, {"s", ".s"}, {"f", ".f"}}}};
@@ -98,6 +97,7 @@ int main()
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
@@ -273,7 +273,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
             {
               continue;
             }
-            if (type.first == "s" && (rmw.first == "fetch_add" || rmw.first == "fetch_sub"))
+            if (type.first == "s"
+                && (rmw.first == "fetch_add" || rmw.first == "fetch_sub" || rmw.first == "compare_exchange"
+                    || rmw.first == "exchange"))
             {
               continue;
             }
@@ -302,13 +304,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
               {
                 out << "__op = -__op;" << std::endl;
               }
-              out << "asm volatile(\"atom" << rmw.second << sem.second << s.second << type.second << sz << " ";
               if (rmw.first == "compare_exchange")
               {
+                out << "asm volatile(\"atom" << rmw.second << sem.second << s.second << ".b" << sz << " ";
                 out << "%0,[%1],%2,%3";
+              }
+              else if (rmw.first == "exchange")
+              {
+                out << "asm volatile(\"atom" << rmw.second << sem.second << s.second << ".b" << sz << " ";
+                out << "%0,[%1],%2";
               }
               else
               {
+                out << "asm volatile(\"atom" << rmw.second << sem.second << s.second << type.second << sz << " ";
                 out << "%0,[%1],%2";
               }
               out << ";\" : ";
@@ -326,30 +334,52 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
             }
             for (auto& cv : cv_qualifier)
             {
+              out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8;
+              if (type.first == "f")
+              {
+                out << " && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>\n";
+              }
+              else if (rmw.first == "fetch_max" || rmw.first == "fetch_min")
+              {
+                if (type.first == "u")
+                {
+                  out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> "
+                         "= 0>\n";
+                }
+                else if (type.first == "s")
+                {
+                  out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = "
+                         "0>\n";
+                }
+              }
+              else if (type.first == "u")
+              {
+                out << " && (_CUDA_VSTD::is_integral<_Type>::value || _CUDA_VSTD::is_pointer<_Type>::value), int> = 0>\n";
+              }
+              else
+              {
+                out << ", int> = 0>\n";
+              }
               if (rmw.first == "compare_exchange")
               {
-                out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
                 out << "_CCCL_DEVICE bool __atomic_compare_exchange_cuda(" << cv
                     << "_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int "
                        "__failure_memorder, "
                     << scopenametag(s.first) << ") {\n";
-                out << "    uint" << sz << "_t __tmp = 0, __old = 0, __old_tmp;\n";
-                out << "    memcpy(&__tmp, &__desired, " << sz / 8 << ");\n";
-                out << "    memcpy(&__old, __expected, " << sz / 8 << ");\n";
-                out << "    __old_tmp = __old;\n";
+                out << "    auto __old = *__expected;\n";
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
                 out << "        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {\n";
                 out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _CCCL_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_" << type.first << sz << "_"
-                    << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
+                    << s.first << "(__ptr, *__expected, __old, __desired); break;\n";
                 out << "          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_" << type.first << sz << "_"
-                    << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
+                    << s.first << "(__ptr, *__expected, __old, __desired); break;\n";
                 out << "          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_" << type.first << sz << "_"
-                    << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
+                    << s.first << "(__ptr, *__expected, __old, __desired); break;\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_" << type.first << sz << "_"
-                    << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
+                    << s.first << "(__ptr, *__expected, __old, __desired); break;\n";
                 out << "          default: assert(0);\n";
                 out << "        }\n";
                 out << "      ),\n";
@@ -359,77 +389,33 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
                 out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "(); _CCCL_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_" << type.first << sz << "_"
-                    << s.first << "(__ptr, __old, __old_tmp, __tmp); __cuda_membar_" << s.first << "(); break;\n";
+                    << s.first << "(__ptr, *__expected, __old, __desired); __cuda_membar_" << s.first << "(); break;\n";
                 out << "          case __ATOMIC_RELEASE: __cuda_membar_" << s.first
                     << "(); __cuda_compare_exchange_volatile_" << type.first << sz << "_" << s.first
-                    << "(__ptr, __old, __old_tmp, __tmp); break;\n";
+                    << "(__ptr, *__expected, __old, __desired); break;\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_" << type.first << sz << "_"
-                    << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
+                    << s.first << "(__ptr, *__expected, __old, __desired); break;\n";
                 out << "          default: assert(0);\n";
                 out << "        }\n";
                 out << "      )\n";
                 out << "    )\n";
-                out << "    bool const __ret = __old == __old_tmp;\n";
-                out << "    memcpy(__expected, &__old, " << sz / 8 << ");\n";
-                out << "    return __ret;\n";
+                out << "    return (__old == *__expected);\n";
                 out << "}\n";
               }
               else
               {
-                out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8;
                 if (rmw.first == "exchange")
                 {
-                  out << ", int> = 0>\n";
                   out
                     << "_CCCL_DEVICE void __atomic_exchange_cuda(" << cv
                     << "_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
-                  out << "    uint" << sz << "_t __tmp = 0;\n";
-                  out << "    memcpy(&__tmp, __val, " << sz / 8 << ");\n";
+                  out << "    _Type __tmp = *__val;\n";
                 }
                 else
                 {
-                  if (type.first == "f")
-                  {
-                    out << " && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>\n";
-                  }
-                  else if (rmw.first == "fetch_max" || rmw.first == "fetch_min")
-                  {
-                    if (type.first == "u")
-                    {
-                      out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> "
-                             "= 0>\n";
-                    }
-                    else if (type.first == "s")
-                    {
-                      out << " && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = "
-                             "0>\n";
-                    }
-                  }
-                  else if (type.first == "u")
-                  {
-                    out << " && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>\n";
-                  }
-                  else
-                  {
-                    out << ", int> = 0>\n";
-                  }
                   out << "_CCCL_DEVICE _Type __atomic_" << rmw.first << "_cuda(" << cv
                       << "_Type *__ptr, _Type __val, int __memorder, " << scopenametag(s.first) << ") {\n";
-                  out << "    _Type __ret;\n";
-                  if (type.first == "f" && sz == 32)
-                  {
-                    out << "    float";
-                  }
-                  else if (type.first == "f" && sz == 64)
-                  {
-                    out << "    double";
-                  }
-                  else
-                  {
-                    out << "    uint" << sz << "_t";
-                  }
-                  out << " __tmp = 0;\n";
-                  out << "    memcpy(&__tmp, &__val, " << sz / 8 << ");\n";
+                  out << "    _Type __tmp = __val;\n";
                 }
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
@@ -468,8 +454,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
                 }
                 else
                 {
-                  out << "    memcpy(&__ret, &__tmp, " << sz / 8 << ");\n";
-                  out << "    return __ret;\n";
+                  out << "    return __tmp;\n";
                 }
                 out << "}\n";
               }
