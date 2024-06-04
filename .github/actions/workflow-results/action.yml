@@ -139,7 +139,7 @@ runs:
           console.log('::group::Commenting on PR #' + pr_number + ' with the following message:')
           console.log(commentBody);
           console.log('::endgroup::');
-          github.issues.createComment({
+          github.rest.issues.createComment({
               owner: owner,
               repo: repo,
               issue_number: pr_number,
