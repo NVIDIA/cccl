@@ -677,13 +677,13 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-iseven
   //!     :end-before: example-end segmented-select-iseven
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-flaggedif
@@ -794,13 +794,13 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-iseven
   //!     :end-before: example-end segmented-select-iseven
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-flaggedif-inplace

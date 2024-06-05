@@ -59,7 +59,7 @@ CUB_NAMESPACE_BEGIN
 //! a reduction across a sequence of data items residing within
 //! device-accessible memory.
 //!
-//! .. image:: ../img/reduce_logo.png
+//! .. image:: ../../img/reduce_logo.png
 //!     :align: center
 //!
 //! Overview

@@ -42,16 +42,14 @@ THRUST_NAMESPACE_BEGIN
 
 template <typename T, typename... Args>
 _CCCL_HOST auto device_make_unique(Args&&... args)
-  THRUST_TRAILING_RETURN(decltype(uninitialized_allocate_unique<T>(device_allocator<T>{})))
+  THRUST_TRAILING_RETURN(decltype(uninitialized_allocate_unique<T>(::cuda::std::declval<device_allocator<T>>())))
 {
-#if !defined(THRUST_DOXYGEN) // This causes Doxygen to choke for some reason.
   // FIXME: This is crude - we construct an unnecessary T on the host for
   // `device_new`. We need a proper dispatched `construct` algorithm to
   // do this properly.
-  auto p = uninitialized_allocate_unique<T>(device_allocator<T>{});
+  auto p = uninitialized_allocate_unique<T>(device_allocator<T>());
   device_new<T>(p.get(), T(THRUST_FWD(args)...));
   return p;
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
