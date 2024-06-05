@@ -173,7 +173,8 @@ template <typename ChainedPolicyT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          bool IsInclusive>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     InputIteratorT d_in,
@@ -188,7 +189,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   using ScanPolicyT    = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanT = AgentScan<ScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, RealInitValueT, OffsetT, AccumT>;
+  using AgentScanT =
+    AgentScan<ScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, RealInitValueT, OffsetT, AccumT, IsInclusive>;
 
   // Shared memory for AgentScan
   __shared__ typename AgentScanT::TempStorage temp_storage;
@@ -230,11 +232,12 @@ template <typename InputIteratorT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT         = detail::accumulator_t<ScanOpT,
-                                                          ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
-                                                                           cub::detail::value_t<InputIteratorT>,
-                                                                           typename InitValueT::value_type>,
-                                                          cub::detail::value_t<InputIteratorT>>,
-          typename SelectedPolicy = DeviceScanPolicy<AccumT, ScanOpT>>
+                                                  ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
+                                                                   cub::detail::value_t<InputIteratorT>,
+                                                                   typename InitValueT::value_type>,
+                                                  cub::detail::value_t<InputIteratorT>>,
+          typename SelectedPolicy = DeviceScanPolicy<AccumT, ScanOpT>,
+          bool IsInclusive        = false>
 struct DispatchScan : SelectedPolicy
 {
   //---------------------------------------------------------------------
@@ -505,7 +508,15 @@ struct DispatchScan : SelectedPolicy
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
       DeviceScanInitKernel<ScanTileStateT>,
-      DeviceScanKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, ScanTileStateT, ScanOpT, InitValueT, OffsetT, AccumT>);
+      DeviceScanKernel<MaxPolicyT,
+                       InputIteratorT,
+                       OutputIteratorT,
+                       ScanTileStateT,
+                       ScanOpT,
+                       InitValueT,
+                       OffsetT,
+                       AccumT,
+                       IsInclusive>);
   }
 
   /**

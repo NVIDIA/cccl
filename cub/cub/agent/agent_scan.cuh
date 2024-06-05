@@ -144,7 +144,8 @@ template <typename AgentScanPolicyT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          bool IsInclusive>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -169,7 +170,9 @@ struct AgentScan
   enum
   {
     // Inclusive scan if no init_value type is provided
-    IS_INCLUSIVE     = std::is_same<InitValueT, NullType>::value,
+    HAS_INIT = !std::is_same<InitValueT, NullType>::value, // we used to rely on initial value not beeing null ptr to
+                                                           // distinguish between inclusive and exclusive scan
+    IS_INCLUSIVE     = IsInclusive || !HAS_INIT,
     BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
     ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD,
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
@@ -242,7 +245,7 @@ struct AgentScan
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
     AccumT (&items)[ITEMS_PER_THREAD],
-    AccumT init_value,
+    InitValueT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
     Int2Type<false> /*is_inclusive*/)
@@ -251,17 +254,39 @@ struct AgentScan
     block_aggregate = scan_op(init_value, block_aggregate);
   }
 
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    InitValueT init_value,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    Int2Type<true> /*has_init*/)
+  {
+    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+    block_aggregate = scan_op(init_value, block_aggregate);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    InitValueT /*init_value*/,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    Int2Type<false> /*has_init*/)
+
+  {
+    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
+  }
+
   /**
    * Inclusive scan specialization (first tile)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
     AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT /*init_value*/,
+    InitValueT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
     Int2Type<true> /*is_inclusive*/)
   {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
+    ScanTileInclusive(items, init_value, scan_op, block_aggregate, Int2Type<HAS_INIT>());
   }
 
   /**
