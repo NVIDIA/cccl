@@ -1992,65 +1992,6 @@ public:
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
-  //! Each thread contributes one input element.
-  //!
-  //! - Supports non-commutative scan operators.
-  //! - @rowmajor
-  //! - @smemreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
-  //! are partitioned across 128 threads.
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, INT_MIN, cub::Max());
-  //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
-  //! in those threads will be ``0, 0, 2, 2, ..., 126, 126``.
-  //!
-  //! @endrst
-  //!
-  //! @tparam ScanOp
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //!
-  //! @param[in] input
-  //!   Calling thread's input item
-  //!
-  //! @param[out] output
-  //!   Calling thread's output item (may be aliased to `input`)
-  //!
-  //! @param[in] initial_value
-  //!   Initial value to seed the invlusive scan
-  //!
-  //! @param[in] scan_op
-  //!   Binary scan functor
-  template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, T initial_value, ScanOp scan_op)
-  {
-    InternalBlockScan(temp_storage).InclusiveScan(input, output, initial_value, scan_op);
-  }
-
-  //! @rst
-  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element. Also provides every thread with the block-wide
   //! ``block_aggregate`` of all inputs.
   //!
@@ -2109,72 +2050,6 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, ScanOp scan_op, T& block_aggregate)
   {
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_aggregate);
-  }
-
-  //! @rst
-  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
-  //! Each thread contributes one input element. Also provides every thread with the block-wide
-  //! ``block_aggregate`` of all inputs.
-  //!
-  //! - Supports non-commutative scan operators.
-  //! - @rowmajor
-  //! - @smemreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates an inclusive prefix max scan of 128
-  //! integer items that are partitioned across 128 threads.
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
-  //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
-  //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
-  //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, INT_MIN, cub::Max(), block_aggregate);
-  //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
-  //! in those threads will be ``0, 0, 2, 2, ..., 126, 126``. Furthermore the value
-  //! ``126`` will be stored in ``block_aggregate`` for all threads.
-  //!
-  //! @endrst
-  //!
-  //! @tparam ScanOp
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //!
-  //! @param[in] input
-  //!   Calling thread's input item
-  //!
-  //! @param[out] output
-  //!   Calling thread's output item (may be aliased to `input`)
-  //!
-  //! @param[in] initial_value
-  //!   Initial value to seed the invlusive scan
-  //!
-  //! @param[in] scan_op
-  //!   Binary scan functor
-  //!
-  //! @param[out] block_aggregate
-  //!   Block-wide aggregate reduction of input items
-  template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScan(T input, T& output, T initial_value, ScanOp scan_op, T& block_aggregate)
-  {
-    InternalBlockScan(temp_storage).InclusiveScan(input, output, initial_value, scan_op, block_aggregate);
   }
 
   //! @rst
