@@ -55,7 +55,7 @@ CUB_NAMESPACE_BEGIN
 //! The ``WarpReduce`` class provides :ref:`collective <collective-primitives>` methods for
 //! computing a parallel reduction of items partitioned across a CUDA thread warp.
 //!
-//! .. image:: ../img/warp_reduce_logo.png
+//! .. image:: ../../img/warp_reduce_logo.png
 //!     :align: center
 //!
 //! Overview

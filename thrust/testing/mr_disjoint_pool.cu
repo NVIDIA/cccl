@@ -268,7 +268,7 @@ void TestDisjointGlobalPool()
 {
   typedef PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource> Pool;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != NULL, true);
+  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }
 
 void TestUnsynchronizedDisjointGlobalPool()

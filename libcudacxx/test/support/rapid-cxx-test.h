@@ -539,7 +539,7 @@ struct test_case
       : file("")
       , func("")
       , line(0)
-      , invoke(NULL)
+      , invoke(nullptr)
   {}
 
   test_case(const char* file1, const char* func1, std::size_t line1, invoker_t invoke1)

@@ -281,7 +281,7 @@ struct AgentHistogram
   /// Sample input iterator (with cache modifier applied, if possible)
   WrappedSampleIteratorT d_wrapped_samples;
 
-  /// Native pointer for input samples (possibly NULL if unavailable)
+  /// Native pointer for input samples (possibly nullptr if unavailable)
   SampleT* d_native_samples;
 
   /// The number of output bins for each channel
@@ -771,7 +771,7 @@ struct AgentHistogram
   template <typename IteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE SampleT* NativePointer(IteratorT itr)
   {
-    return NULL;
+    return nullptr;
   }
 
   //---------------------------------------------------------------------
@@ -875,7 +875,7 @@ struct AgentHistogram
       ((row_bytes & pixel_mask) == 0); // number of row-samples is a multiple of the alignment of the pixel
 
     // Whether rows are aligned and can be vectorized
-    if ((d_native_samples != NULL) && (vec_aligned_rows || pixel_aligned_rows))
+    if ((d_native_samples != nullptr) && (vec_aligned_rows || pixel_aligned_rows))
     {
       ConsumeTiles<true>(
         num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, Int2Type<IS_WORK_STEALING>());

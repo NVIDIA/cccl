@@ -66,12 +66,12 @@ enum BlockReduceAlgorithm
   //! reduction operators (true for most operations, e.g., addition).
   //!
   //! Execution is comprised of three phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more
-  //!    than one input each). Threads in warps other than the first warp place
-  //!    their partial reductions into shared memory.
-  //! #. Upsweep sequential reduction in shared memory. Threads within the first
-  //!    warp continue to accumulate by raking across segments of shared partial reductions
-  //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Threads in warps other than the first warp place
+  //!      their partial reductions into shared memory.
+  //!   #. Upsweep sequential reduction in shared memory. Threads within the first
+  //!      warp continue to accumulate by raking across segments of shared partial reductions
+  //!   #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -95,12 +95,12 @@ enum BlockReduceAlgorithm
   //! operators. @blocked.
   //!
   //! Execution is comprised of three phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more
-  //!    than one input each). Each thread then places the partial reduction
-  //!    of its item(s) into shared memory.
-  //! #. Upsweep sequential reduction in shared memory. Threads within a
-  //!    single warp rake across segments of shared partial reductions.
-  //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Each thread then places the partial reduction
+  //!      of its item(s) into shared memory.
+  //!   #. Upsweep sequential reduction in shared memory. Threads within a
+  //!      single warp rake across segments of shared partial reductions.
+  //!   #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -124,13 +124,13 @@ enum BlockReduceAlgorithm
   //! operators.
   //!
   //! Execution is comprised of four phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more
-  //!    than one input each). Each thread then places the partial reduction
-  //!    of its item(s) into shared memory.
-  //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
-  //!    reduction within each warp.
-  //! #. A propagation phase where the warp reduction outputs in each warp are
-  //!    updated with the aggregate from each preceding warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Each thread then places the partial reduction
+  //!      of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
+  //!      reduction within each warp.
+  //!   #. A propagation phase where the warp reduction outputs in each warp are
+  //!      updated with the aggregate from each preceding warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++

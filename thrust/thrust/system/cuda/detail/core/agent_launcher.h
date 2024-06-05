@@ -82,7 +82,7 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_TH
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
-  vshmem = vshmem == NULL ? shmem : vshmem + blockIdx.x * temp_storage_size<typename Agent::ptx_plan>::value;
+  vshmem = vshmem == nullptr ? shmem : vshmem + blockIdx.x * temp_storage_size<typename Agent::ptx_plan>::value;
   Agent::entry(args..., vshmem);
 }
 
@@ -122,7 +122,7 @@ struct AgentLauncher : Agent
       , stream(stream_)
       , name(name_)
       , grid(static_cast<unsigned int>((count + plan.items_per_tile - 1) / plan.items_per_tile))
-      , vshmem(NULL)
+      , vshmem(nullptr)
       , has_shmem((size_t) core::get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
@@ -150,7 +150,7 @@ struct AgentLauncher : Agent
       , stream(stream_)
       , name(name_)
       , grid(plan.grid_size)
-      , vshmem(NULL)
+      , vshmem(nullptr)
       , has_shmem((size_t) core::get_max_shared_memory_per_block() >= (size_t) plan.shared_memory_size)
       , shmem_size(has_shmem ? plan.shared_memory_size : 0)
   {
@@ -277,7 +277,7 @@ struct AgentLauncher : Agent
   template <class... Args>
   void THRUST_RUNTIME_FUNCTION launch_impl(thrust::detail::true_type, Args... args) const
   {
-    assert(has_shmem && vshmem == NULL);
+    assert(has_shmem && vshmem == nullptr);
     print_info(_kernel_agent<Agent, Args...>);
     launcher::triple_chevron(grid, plan.block_threads, shmem_size, stream).doit(_kernel_agent<Agent, Args...>, args...);
   }
@@ -293,7 +293,7 @@ struct AgentLauncher : Agent
   template <class... Args>
   void THRUST_RUNTIME_FUNCTION launch_impl(thrust::detail::false_type, Args... args) const
   {
-    assert((has_shmem && vshmem == NULL) || (!has_shmem && vshmem != NULL && shmem_size == 0));
+    assert((has_shmem && vshmem == nullptr) || (!has_shmem && vshmem != nullptr && shmem_size == 0));
     print_info(_kernel_agent_vshmem<Agent, Args...>);
     launcher::triple_chevron(grid, plan.block_threads, shmem_size, stream)
       .doit(_kernel_agent_vshmem<Agent, Args...>, vshmem, args...);

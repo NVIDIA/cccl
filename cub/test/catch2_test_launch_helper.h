@@ -188,6 +188,8 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 
+  REQUIRE(temp_storage_bytes > 0); // required by API contract
+
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
 
   error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args...);

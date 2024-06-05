@@ -1101,13 +1101,13 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   size_t vshmem_storage          = core::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
   size_t partition_agent_storage = (num_tiles + 1) * sizeof(Size) * 2;
 
-  void* allocations[3]       = {NULL, NULL, NULL};
+  void* allocations[3]       = {nullptr, nullptr, nullptr};
   size_t allocation_sizes[3] = {tile_agent_storage, partition_agent_storage, vshmem_storage};
 
   status = core::alias_storage(d_temp_storage, temp_storage_size, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  if (d_temp_storage == NULL)
+  if (d_temp_storage == nullptr)
   {
     return status;
   }
@@ -1117,7 +1117,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   CUDA_CUB_RET_IF_FAIL(status);
 
   pair<Size, Size>* partitions = (pair<Size, Size>*) allocations[1];
-  char* vshmem_ptr             = vshmem_storage > 0 ? (char*) allocations[2] : NULL;
+  char* vshmem_ptr             = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
   init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
@@ -1189,7 +1189,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
     doit_step<HAS_VALUES>,
     num_keys1,
     num_keys2,
-    (NULL,
+    (nullptr,
      temp_storage_bytes,
      keys1_first,
      keys2_first,
@@ -1199,18 +1199,18 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
      num_keys2_fixed,
      keys_output,
      values_output,
-     reinterpret_cast<std::size_t*>(NULL),
+     static_cast<std::size_t*>(nullptr),
      compare_op,
      set_op,
      stream));
   cuda_cub::throw_on_error(status, "set_operations failed on 1st step");
 
   size_t allocation_sizes[2] = {sizeof(std::size_t), temp_storage_bytes};
-  void* allocations[2]       = {NULL, NULL};
+  void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
 
-  status = core::alias_storage(NULL, storage_size, allocations, allocation_sizes);
+  status = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "set_operations failed on 1st alias_storage");
 
   // Allocate temporary storage.
@@ -1315,7 +1315,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = NULL;
+    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,

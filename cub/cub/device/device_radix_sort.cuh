@@ -263,7 +263,7 @@ public:
   //! ...
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
   //!     d_keys_in, d_keys_out, d_values_in, d_values_out, num_items);
@@ -423,7 +423,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -432,7 +432,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-bits
@@ -572,7 +572,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -581,7 +581,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs
@@ -739,7 +739,7 @@ public:
   //! cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairs(
   //!   d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
@@ -870,7 +870,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -879,7 +879,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-db
@@ -1006,7 +1006,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1015,7 +1015,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-bits-db
@@ -1160,7 +1160,7 @@ public:
   //! ...
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairsDescending(
   //!     d_temp_storage, temp_storage_bytes,
@@ -1312,7 +1312,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1321,7 +1321,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-bits
@@ -1463,7 +1463,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1472,7 +1472,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending
@@ -1627,7 +1627,7 @@ public:
   //! cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairsDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
@@ -1758,7 +1758,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1767,7 +1767,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-db
@@ -1895,7 +1895,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1904,7 +1904,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-bits-db
@@ -2057,7 +2057,7 @@ public:
   //! ...
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeys(
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
@@ -2173,7 +2173,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2182,7 +2182,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-bits
@@ -2312,7 +2312,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2321,7 +2321,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys
@@ -2480,7 +2480,7 @@ public:
   //! cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeys(
   //!   d_temp_storage, temp_storage_bytes, d_keys, num_items);
@@ -2598,7 +2598,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2607,7 +2607,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-db
@@ -2722,7 +2722,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2731,7 +2731,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-bits-db
@@ -2867,7 +2867,7 @@ public:
   //! cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeysDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
@@ -2992,7 +2992,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3001,7 +3001,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-bits
@@ -3129,7 +3129,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3138,7 +3138,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending
@@ -3273,7 +3273,7 @@ public:
   //! cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeysDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys, num_items);
@@ -3392,7 +3392,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3401,7 +3401,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-db
@@ -3517,7 +3517,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3526,7 +3526,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-bits-db
