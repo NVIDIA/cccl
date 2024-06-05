@@ -15,23 +15,12 @@ struct launch_option
   static constexpr bool needs_attribute_space = false;
   static constexpr bool is_relevant_on_device = false;
 
-  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     return cudaSuccess;
   }
 };
 } // namespace detail
-
-/*
-template <typename... Opts1, typename... Opts2>
-auto constexpr operator&(const config_list<Opts1...>& opts1, const config_list<Opts2...>& opts2) noexcept
-{
-  static_assert(std::disjunction_v<std::is_base_of<launch_option, Opts1>...>);
-  static_assert(std::disjunction_v<std::is_base_of<launch_option, Opts2>...>);
-  return config_list<Opts1..., Opts2...>(static_cast<Opts1>(opts1)..., static_cast<Opts2>(opts2)...);
-}
-
-*/
 
 struct launch_on_option : public detail::launch_option
 {
@@ -41,7 +30,7 @@ struct launch_on_option : public detail::launch_option
   launch_on_option(cudaStream_t stream)
       : stream(stream){};
 
-  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     config.stream = stream;
 
@@ -59,10 +48,9 @@ struct cooperative_launch_option : public detail::launch_option
   static constexpr bool needs_attribute_space = true;
   static constexpr bool is_relevant_on_device = true;
 
-  // Probably private
   constexpr cooperative_launch_option() = default;
 
-  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id              = cudaLaunchAttributeCooperative;
@@ -80,17 +68,16 @@ constexpr cooperative_launch_option cooperative_launch() noexcept
 }
 
 template <typename Content, std::size_t Extent = 1>
-struct dyn_smem_config_element : public detail::launch_option
+struct dyn_smem_option : public detail::launch_option
 {
   const std::size_t size                      = Extent;
   static constexpr bool is_relevant_on_device = true;
 
-  // Probably private
-  constexpr dyn_smem_config_element(std::size_t set_size) noexcept
+  constexpr dyn_smem_option(std::size_t set_size) noexcept
       : size(set_size)
   {}
 
-  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaFuncAttributes attrs;
     std::size_t size_needed = size * sizeof(Content);
@@ -112,19 +99,19 @@ struct dyn_smem_config_element : public detail::launch_option
   }
 };
 
-// Functions to create dyn_smem_config_element, should all config elements be created with a function?
+// Functions to create dyn_smem_option, should all config elements be created with a function?
 template <typename Content, std::size_t Extent = 1>
-constexpr dyn_smem_config_element<Content, Extent> dynamic_shared_memory() noexcept
+constexpr dyn_smem_option<Content, Extent> dynamic_shared_memory() noexcept
 {
   static_assert(Extent != cuda::std::dynamic_extent, "Size needs to be provided when dynamic_extent is specified");
 
-  return dyn_smem_config_element<Content, Extent>(Extent);
+  return dyn_smem_option<Content, Extent>(Extent);
 }
 
 template <typename Content>
-constexpr dyn_smem_config_element<Content, cuda::std::dynamic_extent> dynamic_shared_memory(std::size_t size) noexcept
+constexpr dyn_smem_option<Content, cuda::std::dynamic_extent> dynamic_shared_memory(std::size_t size) noexcept
 {
-  return dyn_smem_config_element<Content, cuda::std::dynamic_extent>(size);
+  return dyn_smem_option<Content, cuda::std::dynamic_extent>(size);
 }
 
 struct launch_priority_config_element : public detail::launch_option
@@ -137,7 +124,7 @@ struct launch_priority_config_element : public detail::launch_option
       : priority(p)
   {}
 
-  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id           = cudaLaunchAttributePriority;
@@ -159,7 +146,7 @@ struct kernel_config : public Options...
 {
   Dimensions dims;
 
-  static_assert(cuda::std::disjunction_v<std::true_type, cuda::std::is_base_of<detail::launch_option, Options>...>);
+  static_assert(cuda::std::_Or<std::true_type, cuda::std::is_base_of<detail::launch_option, Options>...>::value);
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts) noexcept
       : Options(opts)...
@@ -170,49 +157,67 @@ struct kernel_config : public Options...
     return (0 + ... + Options::needs_attribute_space);
   }
 
-  cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  template <typename Option>
+  _CCCL_NODISCARD auto add(const Option& new_option)
+  {
+    return kernel_config(dims, static_cast<Options>(*this)..., new_option);
+  }
+
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaError_t status = cudaSuccess;
 
     // Use short-cutting && to skip the rest on error, is this too convoluted?
     (void) (... && [&](cudaError_t call_status) {
       status = call_status;
-      return status == cudaSuccess;
+      return call_status == cudaSuccess;
     }(Options::apply(config, kernel)));
 
     return status;
   }
 };
 
+template <typename Dimensions,
+          typename... Options,
+          typename Option,
+          typename = cuda::std::enable_if_t<cuda::std::is_base_of_v<detail::launch_option, Option>>>
+_CCCL_NODISCARD constexpr auto
+operator&(const kernel_config<Dimensions, Options...>& config, const Option& option) noexcept
+{
+  return config.add(option);
+}
+
 template <typename... Levels,
           typename Option,
           typename = cuda::std::enable_if_t<cuda::std::is_base_of_v<detail::launch_option, Option>>>
-auto constexpr operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
+_CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
 {
   return kernel_config(dims, option);
 }
 
 template <typename... Levels, typename... Opts>
-auto constexpr make_config(const hierarchy_dimensions<Levels...>& dims, const Opts&... opts) noexcept
+_CCCL_NODISCARD constexpr auto make_config(const hierarchy_dimensions<Levels...>& dims, const Opts&... opts) noexcept
 {
   return kernel_config<hierarchy_dimensions<Levels...>, Opts...>(dims, opts...);
 }
 
-static char* __device__ get_smem_ptr() noexcept
+_CCCL_DEVICE _CCCL_NODISCARD static char* get_smem_ptr() noexcept
 {
   extern __shared__ char dynamic_smem[];
 
   return &dynamic_smem[0];
 }
 
+// Might consider cutting this one due to being a potential trap with missing & in auto& var = dynamic_smem_ref(...);
 template <typename Content>
-Content& __device__ dynamic_smem_ref(const dyn_smem_config_element<Content, 1>& m) noexcept
+_CCCL_DEVICE _CCCL_NODISCARD Content& dynamic_smem_ref(const dyn_smem_option<Content, 1>& m) noexcept
 {
   return *reinterpret_cast<Content*>(get_smem_ptr());
 }
 
 template <typename Content, std::size_t Extent>
-cuda::std::span<Content, Extent> __device__ dynamic_smem_span(const dyn_smem_config_element<Content, Extent>& m) noexcept
+_CCCL_DEVICE _CCCL_NODISCARD ::cuda::std::span<Content, Extent>
+dynamic_smem_span(const dyn_smem_option<Content, Extent>& m) noexcept
 {
   return cuda::std::span<Content, Extent>(reinterpret_cast<Content*>(get_smem_ptr()), m.size);
 }

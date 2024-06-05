@@ -24,13 +24,13 @@ __global__ void kernel_launcher_no_config(Kernel kernel_fn, Args... args)
 }
 
 template <typename Config, typename Kernel, typename... Args>
-cudaError_t launch_impl(Config conf, const Kernel& kernel_fn, const Args&... args) noexcept
+_CCCL_NODISCARD cudaError_t launch_impl(Config conf, const Kernel& kernel_fn, const Args&... args) noexcept
 {
   cudaLaunchConfig_t config               = {0};
   cudaError_t status                      = cudaSuccess;
   constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
-  constexpr unsigned int num_attrs_needed = conf.num_attrs_needed() + has_cluster_level + 1;
-  cudaLaunchAttribute attrs[num_attrs_needed];
+  constexpr unsigned int num_attrs_needed = conf.num_attrs_needed() + has_cluster_level;
+  cudaLaunchAttribute attrs[num_attrs_needed == 0 ? 1 : num_attrs_needed];
   config.attrs    = &attrs[0];
   config.numAttrs = 0;
 
@@ -40,16 +40,13 @@ cudaError_t launch_impl(Config conf, const Kernel& kernel_fn, const Args&... arg
     return status;
   }
 
-  // auto conf = transform_config(conf, kernel_fn);
-
   config.blockDim = conf.dims.extents(thread, block);
   config.gridDim  = conf.dims.extents(block, grid);
 
   if constexpr (has_cluster_level)
   {
-    dim3 cluster_dims                            = conf.dims.extents(block, cluster);
     config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
-    config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
+    config.attrs[config.numAttrs].val.clusterDim = conf.dims.extents(block, cluster);
     config.numAttrs++;
   }
 
@@ -100,7 +97,7 @@ void launch(const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, c
 }
 
 /* Functions accepting __global__ function pointer (needs to be instantiated or template arguments need to be passed
- * into launch template), but it will support implicit conversion of arguments */
+ * into launch template, but it will support implicit conversion of arguments) */
 template <typename... ExpArgs, typename... ActArgs, typename Config, typename Dimensions>
 void launch(const kernel_config<Dimensions, Config>& conf,
             void (*kernel)(kernel_config<Dimensions, Config>, ExpArgs...),

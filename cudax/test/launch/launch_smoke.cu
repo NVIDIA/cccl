@@ -10,11 +10,6 @@
 
 namespace cg = cooperative_groups;
 
-constexpr unsigned int ceil(unsigned int a, unsigned int b)
-{
-  return (a + b - 1) / b;
-}
-
 struct my_dynamic_smem_t
 {
   int arr[256];
