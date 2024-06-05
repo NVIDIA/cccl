@@ -4,7 +4,6 @@ Contributing
 ==================================================
 
 .. toctree::
-   :hidden:
    :maxdepth: 1
 
    release_process
