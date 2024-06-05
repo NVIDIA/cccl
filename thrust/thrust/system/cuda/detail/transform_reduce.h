@@ -82,7 +82,7 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
     status,
     cub::DeviceReduce::TransformReduce,
     num_items,
-    (NULL, tmp_size, first, reinterpret_cast<T*>(NULL), num_items_fixed, binary_op, unary_op, init, stream));
+    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, unary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduction step 1");
 
   // Allocate temporary storage.

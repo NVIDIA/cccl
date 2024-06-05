@@ -52,7 +52,7 @@ namespace mr
  */
 template <typename Upstream, typename Bookkeeper>
 _CCCL_HOST thrust::mr::disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper>&
-tls_disjoint_pool(Upstream* upstream = NULL, Bookkeeper* bookkeeper = NULL)
+tls_disjoint_pool(Upstream* upstream = nullptr, Bookkeeper* bookkeeper = nullptr)
 {
   static thread_local auto adaptor = [&] {
     assert(upstream && bookkeeper);

@@ -168,20 +168,20 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Allocate problem device arrays
-  int* d_in = NULL;
+  int* d_in = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_in, sizeof(int) * num_items));
 
   // Initialize device input
   CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice));
 
   // Allocate device output array and num selected
-  int* d_out              = NULL;
-  int* d_num_selected_out = NULL;
+  int* d_out              = nullptr;
+  int* d_num_selected_out = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_out, sizeof(int) * num_items));
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_selected_out, sizeof(int)));
 
   // Allocate temporary storage
-  void* d_temp_storage      = NULL;
+  void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   CubDebugExit(DeviceSelect::Unique(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));

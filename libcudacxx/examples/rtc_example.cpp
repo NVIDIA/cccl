@@ -126,8 +126,8 @@ int main(int argc, char* argv[])
     trie, // buffer
     "trie.cu", // name
     0, // numHeaders
-    NULL, // headers
-    NULL)); // includeNames
+    nullptr, // headers
+    nullptr)); // includeNames
 
   const char* opts[] = {
     "-std=c++11",

@@ -144,8 +144,8 @@ void Test()
   int h_aggregate = Initialize(h_in, BLOCK_THREADS);
 
   // Initialize device arrays
-  int* d_in  = NULL;
-  int* d_out = NULL;
+  int* d_in  = nullptr;
+  int* d_out = nullptr;
   cudaMalloc((void**) &d_in, sizeof(int) * BLOCK_THREADS);
   cudaMalloc((void**) &d_out, sizeof(int) * BLOCK_THREADS);
 
@@ -170,7 +170,7 @@ void Test()
   auto smem_size = (std::max)(1 * sizeof(int), block_reduce_temp_bytes);
 
   // use default stream
-  cudaStream_t stream = NULL;
+  cudaStream_t stream = nullptr;
 
   // Run reduction kernel
   BlockReduceKernel<BLOCK_THREADS><<<g_grid_size, BLOCK_THREADS, smem_size, stream>>>(d_in, d_out);

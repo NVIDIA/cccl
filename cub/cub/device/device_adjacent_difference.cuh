@@ -93,7 +93,7 @@ CUB_NAMESPACE_BEGIN
 //!    //...
 //!
 //!    // Determine temporary device storage requirements
-//!    void     *d_temp_storage = NULL;
+//!    void     *d_temp_storage = nullptr;
 //!    size_t   temp_storage_bytes = 0;
 //!
 //!    cub::DeviceAdjacentDifference::SubtractLeft(
@@ -178,7 +178,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!
   //!    cub::DeviceAdjacentDifference::SubtractLeftCopy(
@@ -320,7 +320,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractLeft(
   //!      d_temp_storage, temp_storage_bytes,
@@ -583,7 +583,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void *d_temp_storage = NULL;
+  //!    void *d_temp_storage = nullptr;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractRight(
   //!      d_temp_storage, temp_storage_bytes, d_data, num_items);

@@ -173,8 +173,8 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Allocate problem device arrays
-  int* d_in              = NULL;
-  unsigned char* d_flags = NULL;
+  int* d_in              = nullptr;
+  unsigned char* d_flags = nullptr;
 
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_in, sizeof(int) * num_items));
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_flags, sizeof(unsigned char) * num_items));
@@ -184,13 +184,13 @@ int main(int argc, char** argv)
   CubDebugExit(cudaMemcpy(d_flags, h_flags, sizeof(unsigned char) * num_items, cudaMemcpyHostToDevice));
 
   // Allocate device output array and num selected
-  int* d_out              = NULL;
-  int* d_num_selected_out = NULL;
+  int* d_out              = nullptr;
+  int* d_num_selected_out = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_out, sizeof(int) * num_items));
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_selected_out, sizeof(int)));
 
   // Allocate temporary storage
-  void* d_temp_storage      = NULL;
+  void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   CubDebugExit(
     DevicePartition::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items));

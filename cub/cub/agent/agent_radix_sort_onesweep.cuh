@@ -459,7 +459,7 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void UpdateBinsGlobal(int (&bins)[BINS_PER_THREAD], int (&offsets)[BINS_PER_THREAD])
   {
     bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
-    if (d_bins_out != NULL && last_block)
+    if (d_bins_out != nullptr && last_block)
     {
 #pragma unroll
       for (int u = 0; u < BINS_PER_THREAD; ++u)

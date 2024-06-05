@@ -38,7 +38,7 @@ struct tracked_pointer
   std::size_t offset;
   void* ptr;
 
-  _CCCL_HOST_DEVICE explicit tracked_pointer(T* ptr = NULL)
+  _CCCL_HOST_DEVICE explicit tracked_pointer(T* ptr = nullptr)
       : id()
       , size()
       , alignment()
@@ -358,7 +358,7 @@ void TestGlobalPool()
 {
   typedef PoolTemplate<thrust::mr::new_delete_resource> Pool;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != NULL, true);
+  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }
 
 void TestUnsynchronizedGlobalPool()

@@ -116,7 +116,7 @@ struct DeviceRunLengthEncode
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceRunLengthEncode::Encode(
   //!      d_temp_storage, temp_storage_bytes,
@@ -287,7 +287,7 @@ struct DeviceRunLengthEncode
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceRunLengthEncode::NonTrivialRuns(
   //!      d_temp_storage, temp_storage_bytes,

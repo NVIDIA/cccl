@@ -167,9 +167,9 @@ void Test()
   int h_aggregate = Initialize(h_in, h_reference, TILE_SIZE);
 
   // Initialize device arrays
-  int* d_in          = NULL;
-  int* d_out         = NULL;
-  clock_t* d_elapsed = NULL;
+  int* d_in          = nullptr;
+  int* d_out         = nullptr;
+  clock_t* d_elapsed = nullptr;
   cudaMalloc((void**) &d_in, sizeof(int) * TILE_SIZE);
   cudaMalloc((void**) &d_out, sizeof(int) * (TILE_SIZE + 1));
   cudaMalloc((void**) &d_elapsed, sizeof(clock_t));

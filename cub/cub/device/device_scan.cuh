@@ -128,7 +128,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
@@ -238,7 +238,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
@@ -342,7 +342,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -486,7 +486,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -616,7 +616,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -771,7 +771,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1510,7 +1510,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1700,7 +1700,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements for inclusive prefix sum
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::InclusiveSumByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1875,7 +1875,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements for inclusive prefix scan
-  //!    void *d_temp_storage = NULL;
+  //!    void *d_temp_storage = nullptr;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceScan::InclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,

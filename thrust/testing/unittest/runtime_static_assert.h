@@ -41,7 +41,7 @@ _CCCL_HOST_DEVICE void assert_static(bool condition, const char* filename, int l
         triggered = static_cast<ex_t>(*device_ptr).triggered;                                  \
       }                                                                                        \
       thrust::device_free(device_ptr);                                                         \
-      raw_ptr = NULL;                                                                          \
+      raw_ptr = nullptr;                                                                       \
       ::cudaMemcpyToSymbol(unittest::detail::device_exception, &raw_ptr, sizeof(ex_t*));       \
       if (!triggered)                                                                          \
       {                                                                                        \
@@ -100,7 +100,7 @@ namespace detail
 #if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
 __attribute__((used))
 #endif
-_CCCL_DEVICE static static_assert_exception* device_exception = NULL;
+_CCCL_DEVICE static static_assert_exception* device_exception = nullptr;
 } // namespace detail
 
 _CCCL_HOST_DEVICE void assert_static(bool condition, const char* filename, int lineno)
