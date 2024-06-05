@@ -98,7 +98,9 @@ dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimension
   static_assert(sizeof...(Extents1) == 3);
 
   return dimensions<DstType, merge_extents<OpType>(Extents1, Extents2)...>(
-    op(h1.extent(0), h2.extent(0)), op(h1.extent(1), h2.extent(1)), op(h1.extent(2), h2.extent(2)));
+    op(static_cast<DstType>(h1.extent(0)), h2.extent(0)),
+    op(static_cast<DstType>(h1.extent(1)), h2.extent(1)),
+    op(static_cast<DstType>(h1.extent(2)), h2.extent(2)));
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>

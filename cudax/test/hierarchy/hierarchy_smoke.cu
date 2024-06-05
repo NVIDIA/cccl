@@ -17,46 +17,46 @@ namespace cg = cooperative_groups;
 
 struct basic_test_single_dim
 {
-  static constexpr int block_cnt = 256;
-  static constexpr int grid_cnt  = 512;
+  static constexpr int block_size = 256;
+  static constexpr int grid_size  = 512;
 
   template <typename DynDims>
   __host__ __device__ void operator()(const DynDims& dims) const
   {
-    HOST_DEV_REQUIRE(dims.extents().x == grid_cnt * block_cnt);
-    HOST_DEV_REQUIRE(dims.extents(cudax::thread).x == grid_cnt * block_cnt);
-    HOST_DEV_REQUIRE(dims.extents(cudax::thread, cudax::grid).x == grid_cnt * block_cnt);
-    HOST_DEV_REQUIRE(dims.count() == grid_cnt * block_cnt);
-    HOST_DEV_REQUIRE(dims.count(cudax::thread) == grid_cnt * block_cnt);
-    HOST_DEV_REQUIRE(dims.count(cudax::thread, cudax::grid) == grid_cnt * block_cnt);
+    HOST_DEV_REQUIRE(dims.extents().x == grid_size * block_size);
+    HOST_DEV_REQUIRE(dims.extents(cudax::thread).x == grid_size * block_size);
+    HOST_DEV_REQUIRE(dims.extents(cudax::thread, cudax::grid).x == grid_size * block_size);
+    HOST_DEV_REQUIRE(dims.count() == grid_size * block_size);
+    HOST_DEV_REQUIRE(dims.count(cudax::thread) == grid_size * block_size);
+    HOST_DEV_REQUIRE(dims.count(cudax::thread, cudax::grid) == grid_size * block_size);
 
-    HOST_DEV_REQUIRE(dims.extents(cudax::thread, cudax::block).x == block_cnt);
-    HOST_DEV_REQUIRE(dims.extents(cudax::block, cudax::grid).x == grid_cnt);
-    HOST_DEV_REQUIRE(dims.count(cudax::thread, cudax::block) == block_cnt);
-    HOST_DEV_REQUIRE(dims.count(cudax::block, cudax::grid) == grid_cnt);
+    HOST_DEV_REQUIRE(dims.extents(cudax::thread, cudax::block).x == block_size);
+    HOST_DEV_REQUIRE(dims.extents(cudax::block, cudax::grid).x == grid_size);
+    HOST_DEV_REQUIRE(dims.count(cudax::thread, cudax::block) == block_size);
+    HOST_DEV_REQUIRE(dims.count(cudax::block, cudax::grid) == grid_size);
   }
 
   void run()
   {
-    auto dimensions = cudax::make_hierarchy(cudax::block_dims<block_cnt>(), cudax::grid_dims<grid_cnt>());
-    static_assert(dimensions.extents().x == grid_cnt * block_cnt);
-    static_assert(dimensions.extents(cudax::thread).x == grid_cnt * block_cnt);
-    static_assert(dimensions.extents(cudax::thread, cudax::grid).x == grid_cnt * block_cnt);
-    static_assert(dimensions.count() == grid_cnt * block_cnt);
-    static_assert(dimensions.count(cudax::thread) == grid_cnt * block_cnt);
-    static_assert(dimensions.count(cudax::thread, cudax::grid) == grid_cnt * block_cnt);
-    static_assert(dimensions.static_count() == grid_cnt * block_cnt);
-    static_assert(dimensions.static_count(cudax::thread) == grid_cnt * block_cnt);
-    static_assert(dimensions.static_count(cudax::thread, cudax::grid) == grid_cnt * block_cnt);
+    auto dimensions = cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims<grid_size>());
+    static_assert(dimensions.extents().x == grid_size * block_size);
+    static_assert(dimensions.extents(cudax::thread).x == grid_size * block_size);
+    static_assert(dimensions.extents(cudax::thread, cudax::grid).x == grid_size * block_size);
+    static_assert(dimensions.count() == grid_size * block_size);
+    static_assert(dimensions.count(cudax::thread) == grid_size * block_size);
+    static_assert(dimensions.count(cudax::thread, cudax::grid) == grid_size * block_size);
+    static_assert(dimensions.static_count() == grid_size * block_size);
+    static_assert(dimensions.static_count(cudax::thread) == grid_size * block_size);
+    static_assert(dimensions.static_count(cudax::thread, cudax::grid) == grid_size * block_size);
 
-    static_assert(dimensions.extents(cudax::thread, cudax::block).x == block_cnt);
-    static_assert(dimensions.extents(cudax::block, cudax::grid).x == grid_cnt);
-    static_assert(dimensions.count(cudax::thread, cudax::block) == block_cnt);
-    static_assert(dimensions.count(cudax::block, cudax::grid) == grid_cnt);
-    static_assert(dimensions.static_count(cudax::thread, cudax::block) == block_cnt);
-    static_assert(dimensions.static_count(cudax::block, cudax::grid) == grid_cnt);
+    static_assert(dimensions.extents(cudax::thread, cudax::block).x == block_size);
+    static_assert(dimensions.extents(cudax::block, cudax::grid).x == grid_size);
+    static_assert(dimensions.count(cudax::thread, cudax::block) == block_size);
+    static_assert(dimensions.count(cudax::block, cudax::grid) == grid_size);
+    static_assert(dimensions.static_count(cudax::thread, cudax::block) == block_size);
+    static_assert(dimensions.static_count(cudax::block, cudax::grid) == grid_size);
 
-    auto dimensions_dyn = cudax::make_hierarchy(cudax::block_dims(block_cnt), cudax::grid_dims(grid_cnt));
+    auto dimensions_dyn = cudax::make_hierarchy(cudax::block_dims(block_size), cudax::grid_dims(grid_size));
 
     test_host_dev(dimensions_dyn, *this);
 
@@ -67,7 +67,7 @@ struct basic_test_single_dim
 
 struct basic_test_multi_dim
 {
-  static constexpr int block_cnt = 256;
+  static constexpr int block_size = 256;
 
   template <typename DynDims>
   __host__ __device__ void operator()(const DynDims& dims) const
@@ -123,7 +123,7 @@ struct basic_test_multi_dim
 
 struct basic_test_mixed
 {
-  static constexpr int block_cnt = 256;
+  static constexpr int block_size = 256;
 
   template <typename DynDims>
   __host__ __device__ void operator()(const DynDims& dims) const
@@ -144,12 +144,12 @@ struct basic_test_mixed
 
   void run()
   {
-    auto dims_mixed = cudax::block_dims<block_cnt>() & cudax::grid_dims(dim3(8, 4, 2));
+    auto dims_mixed = cudax::block_dims<block_size>() & cudax::grid_dims(dim3(8, 4, 2));
 
     test_host_dev(dims_mixed, *this);
-    static_assert(dims_mixed.extents(cudax::thread, cudax::block) == block_cnt);
-    static_assert(dims_mixed.count(cudax::thread, cudax::block) == block_cnt);
-    static_assert(dims_mixed.static_count(cudax::thread, cudax::block) == block_cnt);
+    static_assert(dims_mixed.extents(cudax::thread, cudax::block) == block_size);
+    static_assert(dims_mixed.count(cudax::thread, cudax::block) == block_size);
+    static_assert(dims_mixed.static_count(cudax::thread, cudax::block) == block_size);
     static_assert(dims_mixed.static_count(cudax::block, cudax::grid) == cuda::std::dynamic_extent);
 
     // TODO include mixed static and dynamic info on a single level
@@ -217,24 +217,24 @@ TEST_CASE("Cluster dims", "[hierarchy]")
 
 TEST_CASE("Different constructions", "[hierarchy]")
 {
-  const auto block_cnt   = 512;
+  const auto block_size  = 512;
   const auto cluster_cnt = 8;
-  const auto grid_cnt    = 256;
+  const auto grid_size   = 256;
 
   [[maybe_unused]] const auto dimensions2 =
-    cudax::block_dims<block_cnt>() & cudax::cluster_dims<cluster_cnt>() & cudax::grid_dims(grid_cnt);
+    cudax::block_dims<block_size>() & cudax::cluster_dims<cluster_cnt>() & cudax::grid_dims(grid_size);
   [[maybe_unused]] const auto dimensions3 =
-    cudax::grid_dims(grid_cnt) & cudax::cluster_dims<cluster_cnt>() & cudax::block_dims<block_cnt>();
+    cudax::grid_dims(grid_size) & cudax::cluster_dims<cluster_cnt>() & cudax::block_dims<block_size>();
 
   [[maybe_unused]] const auto dimensions4 =
-    cudax::cluster_dims<cluster_cnt>() & cudax::grid_dims(grid_cnt) & cudax::block_dims<block_cnt>();
+    cudax::cluster_dims<cluster_cnt>() & cudax::grid_dims(grid_size) & cudax::block_dims<block_size>();
   [[maybe_unused]] const auto dimensions5 =
-    cudax::cluster_dims<cluster_cnt>() & cudax::block_dims<block_cnt>() & cudax::grid_dims(grid_cnt);
+    cudax::cluster_dims<cluster_cnt>() & cudax::block_dims<block_size>() & cudax::grid_dims(grid_size);
 
   [[maybe_unused]] const auto dimensions6 = cudax::make_hierarchy(
-    cudax::block_dims<block_cnt>(), cudax::cluster_dims<cluster_cnt>(), cudax::grid_dims(grid_cnt));
+    cudax::block_dims<block_size>(), cudax::cluster_dims<cluster_cnt>(), cudax::grid_dims(grid_size));
   [[maybe_unused]] const auto dimensions7 = cudax::make_hierarchy(
-    cudax::grid_dims(grid_cnt), cudax::cluster_dims<cluster_cnt>(), cudax::block_dims<block_cnt>());
+    cudax::grid_dims(grid_size), cudax::cluster_dims<cluster_cnt>(), cudax::block_dims<block_size>());
 
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dimensions3)>);
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dimensions4)>);
@@ -243,13 +243,13 @@ TEST_CASE("Different constructions", "[hierarchy]")
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dimensions7)>);
 
   [[maybe_unused]] const auto dims_weird_order =
-    cudax::grid_dims(grid_cnt) & (cudax::cluster_dims<cluster_cnt>() & cudax::block_dims<block_cnt>());
+    cudax::grid_dims(grid_size) & (cudax::cluster_dims<cluster_cnt>() & cudax::block_dims<block_size>());
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dims_weird_order)>);
 
-  static_assert(dimensions2.count(cudax::thread, cudax::block) == block_cnt);
-  static_assert(dimensions2.count(cudax::thread, cudax::cluster) == cluster_cnt * block_cnt);
+  static_assert(dimensions2.count(cudax::thread, cudax::block) == block_size);
+  static_assert(dimensions2.count(cudax::thread, cudax::cluster) == cluster_cnt * block_size);
   static_assert(dimensions2.count(cudax::block, cudax::cluster) == cluster_cnt);
-  HOST_DEV_REQUIRE(dimensions2.count() == grid_cnt * cluster_cnt * block_cnt);
+  HOST_DEV_REQUIRE(dimensions2.count() == grid_size * cluster_cnt * block_size);
 
   static_assert(cudax::has_level<cudax::block_level, decltype(dimensions2)>);
   static_assert(cudax::has_level<cudax::cluster_level, decltype(dimensions2)>);
@@ -309,9 +309,12 @@ __global__ void kernel(Dims d)
   auto block_index = d.index(cudax::thread, cudax::block);
   assert(block_index == block.thread_index());
   auto grid_index = d.index();
-  assert(grid_index.x == grid.block_index().x * block.dim_threads().x + block.thread_index().x);
-  assert(grid_index.y == grid.block_index().y * block.dim_threads().y + block.thread_index().y);
-  assert(grid_index.z == grid.block_index().z * block.dim_threads().z + block.thread_index().z);
+  assert(grid_index.x
+         == static_cast<unsigned long long>(grid.block_index().x) * block.dim_threads().x + block.thread_index().x);
+  assert(grid_index.y
+         == static_cast<unsigned long long>(grid.block_index().y) * block.dim_threads().y + block.thread_index().y);
+  assert(grid_index.z
+         == static_cast<unsigned long long>(grid.block_index().z) * block.dim_threads().z + block.thread_index().z);
 
   assert(d.rank(cudax::block) == grid.block_rank());
   assert(d.rank(cudax::thread, cudax::block) == block.thread_rank());
@@ -326,7 +329,8 @@ TEST_CASE("Dims queries indexing and ambient hierarchy", "[hierarchy]")
     cudax::block_dims<256>() & cudax::grid_dims<4>(),
     cudax::block_dims<16, 2, 4>() & cudax::grid_dims<2, 3, 4>(),
     cudax::block_dims(dim3(8, 4, 2)) & cudax::grid_dims<4, 5, 6>(),
-    cudax::block_dims<8, 2, 4>() & cudax::grid_dims(dim3(5, 4, 3)));
+    cudax::block_dims<8, 2, 4>() & cudax::grid_dims(dim3(5, 4, 3)),
+    cudax::block_dims<32>() & cudax::grid_dims<(1 << 30) - 2>());
 
   apply_each(
     [](const auto& launch_dims) {
