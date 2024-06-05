@@ -99,3 +99,4 @@ runs:
       with:
         name: workflow
         path: workflow/
+        compression-level: 0

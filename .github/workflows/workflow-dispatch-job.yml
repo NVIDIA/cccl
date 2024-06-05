@@ -187,6 +187,7 @@ jobs:
         with:
           name: jobs-${{inputs.id}}
           path: jobs
+          compression-level: 0
 
 
   windows:
@@ -274,3 +275,4 @@ jobs:
         with:
           name: jobs-${{inputs.id}}
           path: jobs
+          compression-level: 0
