@@ -20,6 +20,12 @@ print_help() {
     echo "  -h, --help               Display this help message and exit."
 }
 
+# Assign variable one scope above the caller
+# Usage: local "$1" && _upvar $1 "value(s)"
+# Param: $1  Variable name to assign value to
+# Param: $*  Value(s) to assign.  If multiple values, an array is
+#            assigned, otherwise a single value is assigned.
+# See: http://fvue.nl/wiki/Bash:_Passing_variables_by_reference
 _upvar() {
     if unset -v "$1"; then
         if (( $# == 2 )); then
@@ -34,7 +40,9 @@ parse_options() {
     local -;
     set -euo pipefail;
 
+    # Read the name of the variable in which to return unparsed arguments
     local UNPARSED="${!#}";
+    # Splice the unparsed arguments variable name from the arguments list
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:

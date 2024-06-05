@@ -33,6 +33,23 @@ jobs:
       contents: read
     runs-on: ${{inputs.runner}}
     container:
+      # This job now uses a docker-outside-of-docker (DOOD) strategy.
+      #
+      # The GitHub Actions runner application mounts the host's docker socket `/var/run/docker.sock` into the
+      # container. By using a container with the `docker` CLI, this container can launch docker containers
+      # using the host's docker daemon.
+      #
+      # This allows us to run actions that require node v20 in the `cruizba/ubuntu-dind:jammy-26.1.3` container, and
+      # then launch our Ubuntu18.04-based GCC 6/7 containers to build and test CCCL.
+      #
+      # The main inconvenience to this approach is that any container mounts have to match the paths of the runner host,
+      # not the paths as seen in the intermediate (`cruizba/ubuntu-dind`) container.
+      #
+      # Note: I am using `cruizba/ubuntu-dind:jammy-26.1.3` instead of `docker:latest`, because GitHub doesn't support
+      # JS actions in alpine aarch64 containers, instead failing actions with this error:
+      # ```
+      # Error: JavaScript Actions in Alpine containers are only supported on x64 Linux runners. Detected Linux Arm64
+      # ```
       image: cruizba/ubuntu-dind:jammy-26.1.3
       env:
         NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
@@ -74,7 +91,7 @@ jobs:
           echo "[container]              PWD: $(pwd)"
 
           # Necessary because we're doing docker-outside-of-docker:
-          # Make a symlink in the contaienr that matches the host's ${{github.workspace}}, so that way `$(pwd)`
+          # Make a symlink in the container that matches the host's ${{github.workspace}}, so that way `$(pwd)`
           # in `.devcontainer/launch.sh` constructs volume paths relative to the hosts's ${{github.workspace}}.
           mkdir -p "$(dirname "${{github.workspace}}")"
           ln -s "$(pwd)" "${{github.workspace}}"
