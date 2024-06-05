@@ -1052,7 +1052,7 @@ public:
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
    *
    * @param[out] output
@@ -1073,7 +1073,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeads
    *              APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft instead.
    *
    * @param[out] output
@@ -1098,7 +1098,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractRight instead.
    *
    * @param output
@@ -1133,7 +1133,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagTails
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractRight instead.
    *
    * @param[out] output
@@ -1171,7 +1171,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
    *             cub::BlockAdjacentDifference::SubtractRight instead.
    *
@@ -1230,7 +1230,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
    *             cub::BlockAdjacentDifference::SubtractRight instead.
    *
@@ -1293,7 +1293,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
    *             cub::BlockAdjacentDifference::SubtractRight instead.
    *
@@ -1352,7 +1352,7 @@ public:
   }
 
   /**
-   * @deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
+   *  deprecated [Since 1.14.0] The cub::BlockAdjacentDifference::FlagHeadsAndTails
    *             APIs are deprecated. Use cub::BlockAdjacentDifference::SubtractLeft or
    *             cub::BlockAdjacentDifference::SubtractRight instead.
    *

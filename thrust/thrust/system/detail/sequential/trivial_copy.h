@@ -53,7 +53,7 @@ _CCCL_HOST_DEVICE T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
     return result;
   }
 
-  T* return_value = NULL;
+  T* return_value = nullptr;
 
   NV_IF_TARGET(NV_IS_HOST,
                (std::memmove(result, first, n * sizeof(T)); return_value = result + n;),

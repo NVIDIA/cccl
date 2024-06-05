@@ -139,7 +139,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes,
@@ -357,7 +357,7 @@ public:
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
@@ -549,7 +549,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes,
@@ -773,7 +773,7 @@ public:
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
@@ -969,7 +969,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
@@ -1167,7 +1167,7 @@ public:
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
@@ -1355,7 +1355,7 @@ public:
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
@@ -1550,7 +1550,7 @@ public:
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys,

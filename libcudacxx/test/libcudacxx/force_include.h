@@ -53,7 +53,7 @@ int cuda_cluster_size = 1;
 
 __global__ void fake_main_kernel(int* ret)
 {
-  *ret = fake_main(0, NULL);
+  *ret = fake_main(0, nullptr);
 }
 
 #define CUDA_CALL(err, ...)                                                                              \

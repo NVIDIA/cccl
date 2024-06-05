@@ -109,7 +109,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::Flagged(
   //!      d_temp_storage, temp_storage_bytes,
@@ -249,7 +249,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::Flagged(
   //!      d_temp_storage, temp_storage_bytes,
@@ -399,7 +399,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::If(
   //!      d_temp_storage, temp_storage_bytes,
@@ -485,7 +485,7 @@ struct DeviceSelect
       false>::Dispatch(d_temp_storage,
                        temp_storage_bytes,
                        d_in,
-                       NULL,
+                       nullptr,
                        d_out,
                        d_num_selected_out,
                        select_op,
@@ -552,7 +552,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::If(
   //!      d_temp_storage, temp_storage_bytes,
@@ -633,7 +633,7 @@ struct DeviceSelect
       may_alias>::Dispatch(d_temp_storage,
                            temp_storage_bytes,
                            d_data, // in
-                           NULL,
+                           nullptr,
                            d_data, // out
                            d_num_selected_out,
                            select_op,
@@ -677,13 +677,13 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-iseven
   //!     :end-before: example-end segmented-select-iseven
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-flaggedif
@@ -794,13 +794,13 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-iseven
   //!     :end-before: example-end segmented-select-iseven
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-flaggedif-inplace
@@ -914,7 +914,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::Unique(
   //!      d_temp_storage, temp_storage_bytes,
@@ -994,7 +994,7 @@ struct DeviceSelect
       false>::Dispatch(d_temp_storage,
                        temp_storage_bytes,
                        d_in,
-                       NULL,
+                       nullptr,
                        d_out,
                        d_num_selected_out,
                        SelectOp(),
@@ -1060,7 +1060,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::UniqueByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1221,7 +1221,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::UniqueByKey(
   //!      d_temp_storage, temp_storage_bytes,

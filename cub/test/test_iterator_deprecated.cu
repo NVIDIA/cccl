@@ -96,8 +96,8 @@ template <typename InputIteratorT, typename T, int TEST_VALUES>
 void Test(InputIteratorT d_in, T (&h_reference)[TEST_VALUES])
 {
   // Allocate device arrays
-  T* d_out               = NULL;
-  InputIteratorT* d_itrs = NULL;
+  T* d_out               = nullptr;
+  InputIteratorT* d_itrs = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_out, sizeof(T) * TEST_VALUES));
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_itrs, sizeof(InputIteratorT) * 2));
 
@@ -160,8 +160,8 @@ void TestTexRef()
   }
 
   // Allocate device arrays
-  T* d_data  = NULL;
-  T* d_dummy = NULL;
+  T* d_data  = nullptr;
+  T* d_dummy = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_data, sizeof(T) * TEST_VALUES));
   CubDebugExit(cudaMemcpy(d_data, h_data, sizeof(T) * TEST_VALUES, cudaMemcpyHostToDevice));
 

@@ -113,7 +113,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!      d_temp_storage, temp_storage_bytes,
@@ -283,7 +283,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage  = NULL;
+  //!    void*    d_temp_storage  = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!        d_temp_storage, temp_storage_bytes,
@@ -467,7 +467,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -644,8 +644,8 @@ struct DeviceHistogram
   //!   ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
   //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel
-  //!    ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
+  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
   //!   ``[sample_begin, sample_end)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
@@ -679,7 +679,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -902,7 +902,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1049,7 +1049,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1220,7 +1220,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1412,7 +1412,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,

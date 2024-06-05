@@ -408,7 +408,7 @@ struct DispatchScanByKey : SelectedPolicy
         break;
       }
 
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         // Return if the caller is simply requesting the size of the storage
         // allocation
