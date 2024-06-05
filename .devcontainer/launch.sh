@@ -20,6 +20,12 @@ print_help() {
     echo "  -h, --help               Display this help message and exit."
 }
 
+# Assign variable one scope above the caller
+# Usage: local "$1" && _upvar $1 "value(s)"
+# Param: $1  Variable name to assign value to
+# Param: $*  Value(s) to assign.  If multiple values, an array is
+#            assigned, otherwise a single value is assigned.
+# See: http://fvue.nl/wiki/Bash:_Passing_variables_by_reference
 _upvar() {
     if unset -v "$1"; then
         if (( $# == 2 )); then
@@ -34,7 +40,9 @@ parse_options() {
     local -;
     set -euo pipefail;
 
+    # Read the name of the variable in which to return unparsed arguments
     local UNPARSED="${!#}";
+    # Splice the unparsed arguments variable name from the arguments list
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
@@ -96,152 +104,86 @@ parse_options() {
 # shellcheck disable=SC2155
 launch_docker() {
     local -;
-    set -euo pipefail;
+    set -euo pipefail
 
-    tabs_to_spaces() {
-        sed $'s/\t/ /g'
+    inline_vars() {
+        cat - \
+        `# inline local workspace folder` \
+      | sed "s@\${localWorkspaceFolder}@$(pwd)@g" \
+        `# inline local workspace folder basename` \
+      | sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g" \
+        `# inline container workspace folder` \
+      | sed "s@\${containerWorkspaceFolder}@${WORKSPACE_FOLDER:-}@g" \
+        `# inline container workspace folder basename` \
+      | sed "s@\${containerWorkspaceFolderBasename}@$(basename "${WORKSPACE_FOLDER:-}")@g" \
+        `# translate local envvars to shell syntax` \
+      | sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/g'
     }
 
-    no_empty_lines() {
-        grep -v -e '^$' || [ "$?" == "1" ]
-    }
-
-    trim_leading_whitespace() {
-        sed 's/^[[:space:]]*//'
-    }
-
-    trim_trailing_whitespace() {
-        sed 's/[[:space:]]*$//'
-    }
-
-    remove_leading_char() {
-        cut -d"$1" -f1 --complement
-    }
-
-    remove_trailing_char() {
-        rev | cut -d"$1" -f1 --complement | rev
-    }
-
-    strip_enclosing_chars() {
-        remove_leading_char "$1" \
-      | remove_trailing_char "$2"
-    }
-
-    read_docker_image_metadata() {
-        docker inspect --type image --format '{{json .Config.Labels}}' "$DOCKER_IMAGE" \
-      | sed -r 's/.*"devcontainer.metadata":[ ]*"(.*[]\)])",?.*/\1/g' \
-      | sed -r 's/\\\"/"/g'
-    }
-
-    json_map_key_to_shell_syntax() {
-        sed -r 's/^"(.*)":[ ]*?([^,]*),?$/\1=\2/g'
-    }
-
-    translate_local_envvars_to_shell_syntax() {
-        sed -r 's/\$\{localEnv:([^\:]*):?(.*)\}/${\1:-\2}/g'
-    }
-
-    inline_local_workspace_folder() {
-        sed "s@\${localWorkspaceFolder}@$(pwd)@g"
-    }
-
-    inline_container_workspace_folder() {
-        sed "s@\${containerWorkspaceFolder}@${WORKSPACE_FOLDER:-}@g"
-    }
-
-    inline_local_workspace_folder_basename() {
-        sed "s@\${localWorkspaceFolderBasename}@$(basename "$(pwd)")@g"
-    }
-
-    transform_to_one_line() {
-        tabs_to_spaces \
-      | trim_leading_whitespace \
-      | trim_trailing_whitespace \
-      | inline_local_workspace_folder \
-      | inline_container_workspace_folder \
-      | inline_local_workspace_folder_basename \
-      | translate_local_envvars_to_shell_syntax \
-      | tr -s '\n' '\t'
+    args_to_path() {
+        local -a keys=("${@}")
+        keys=("${keys[@]/#/[}")
+        keys=("${keys[@]/%/]}")
+        echo "$(IFS=; echo "${keys[*]}")"
     }
 
     json_string() {
-        transform_to_one_line \
-      | grep -Po "\"$1\":\s*\"(.*)\"" \
-      | sed -r "s/.*\"$1\":[ ]*\"([^\"]*)\",?.*/\1/g" \
-      | no_empty_lines
-    }
-
-    json_map() {
-        transform_to_one_line \
-      | grep -Po "\"$1\":\s*{(.*?)\s*?}[^\"]" \
-      | strip_enclosing_chars '{' '}' \
-      | tr -s '\t' '\n' \
-      | json_map_key_to_shell_syntax \
-      | no_empty_lines
+        python3 -c "import json,sys; print(json.load(sys.stdin)$(args_to_path "${@}"))" 2>/dev/null | inline_vars
     }
 
     json_array() {
-        transform_to_one_line \
-      | grep -Po "\"$1\":\s*\[(.*?)\s*?\][^\"]" \
-      | strip_enclosing_chars '[' ']' \
-      | tr -s '\t' '\n' \
-      | sed -r 's/", "/"\n"/g' \
-      | sed -r 's/^(.*"),$/\1/' \
-      | no_empty_lines
+        python3 -c "import json,sys; [print(f'\"{x}\"') for x in json.load(sys.stdin)$(args_to_path "${@}")]" 2>/dev/null | inline_vars
     }
 
-    # Read image
-    local DOCKER_IMAGE="$(
-        json_string "image" < "${path}/devcontainer.json"
-    )"
+    json_map() {
+        python3 -c "import json,sys; [print(f'{k}=\"{v}\"') for k,v in json.load(sys.stdin)$(args_to_path "${@}").items()]" 2>/dev/null | inline_vars
+    }
 
+    devcontainer_metadata_json() {
+        docker inspect --type image --format '{{json .Config.Labels}}' "$DOCKER_IMAGE" \
+      | json_string '"devcontainer.metadata"'
+    }
+
+    ###
+    # Read relevant values from devcontainer.json
+    ###
+
+    local devcontainer_json="${path}/devcontainer.json";
+
+    # Read image
+    local DOCKER_IMAGE="$(json_string '"image"' < "${devcontainer_json}")"
+    # Always pull the latest copy of the image
     docker pull "$DOCKER_IMAGE"
 
     # Read workspaceFolder
-    local WORKSPACE_FOLDER="$(
-        json_string "workspaceFolder" < "${path}/devcontainer.json"
-    )"
-
+    local WORKSPACE_FOLDER="$(json_string '"workspaceFolder"' < "${devcontainer_json}")"
     # Read remoteUser
-    local REMOTE_USER="$(
-        json_string "remoteUser" < "${path}/devcontainer.json"
-    )"
-
+    local REMOTE_USER="$(json_string '"remoteUser"' < "${devcontainer_json}")"
+    # If remoteUser isn't in our devcontainer.json, read it from the image's "devcontainer.metadata" label
     if test -z "${REMOTE_USER:-}"; then
-        REMOTE_USER="$(
-            # Read remoteUser from image metadata
-            read_docker_image_metadata \
-          | json_string "remoteUser"
-        )"
+        REMOTE_USER="$(devcontainer_metadata_json | json_string "-1" '"remoteUser"')"
     fi
-
     # Read runArgs
-    local -a RUN_ARGS="($(
-        json_array "runArgs" < "${path}/devcontainer.json"
-    ))"
-
+    local -a RUN_ARGS="($(json_array '"runArgs"' < "${devcontainer_json}"))"
     # Read initializeCommand
-    local -a INITIALIZE_COMMAND="($(
-        json_array "initializeCommand" < "${path}/devcontainer.json"
-    ))"
-
-    local -a ENV_VARS="($(
-        json_map "containerEnv" < "${path}/devcontainer.json" \
-      | sed -r 's/(.*)=(.*)/--env \1=\2/'
-    ))";
-
+    local -a INITIALIZE_COMMAND="($(json_array '"initializeCommand"' < "${devcontainer_json}"))"
+    # Read containerEnv
+    local -a ENV_VARS="($(json_map '"containerEnv"' < "${devcontainer_json}" | sed -r 's/(.*)=(.*)/--env \1=\2/'))"
+    # Read mounts
     local -a MOUNTS="($(
-        tee < "${path}/devcontainer.json"   \
-            1>/dev/null                     \
-            >(json_array "mounts")          \
-            >(json_string "workspaceMount") \
+        tee < "${devcontainer_json}"          \
+            1>/dev/null                       \
+            >(json_array '"mounts"')          \
+            >(json_string '"workspaceMount"') \
       | xargs -r -I% echo --mount '%'
     ))"
 
-    # Update run args and env vars
+    ###
+    # Update run arguments and container environment variables
+    ###
 
-    # Don't pass -it if running in CI
-    if [ "${CI:-false}" != "true" ]; then
+    # Only pass `-it` if the shell is a tty
+    if ! ${CI:-'false'} && tty >/dev/null 2>&1 && (exec </dev/tty); then
         RUN_ARGS+=("-it")
     fi
 
@@ -251,16 +193,12 @@ launch_docker() {
         fi
     done
 
+    # Prefer the user-provided --gpus argument
     if test -n "${gpu_request:-}"; then
         RUN_ARGS+=(--gpus "${gpu_request}")
     else
-        # Read hostRequirements.gpu
-        local GPU_REQUEST="$(
-            json_map "hostRequirements" < "${path}/devcontainer.json" \
-          | grep 'gpu=' \
-          | sed -r 's/(.*)=(.*)/\2/' \
-          | xargs
-        )"
+        # Otherwise read and infer from hostRequirements.gpu
+        local GPU_REQUEST="$(json_string '"hostRequirements"' '"gpu"' < "${devcontainer_json}")"
         if test "${GPU_REQUEST:-false}" = true; then
             RUN_ARGS+=(--gpus all)
         elif test "${GPU_REQUEST:-false}" = optional && \
@@ -284,14 +222,17 @@ launch_docker() {
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
     fi
 
+    # Append user-provided volumes
     if test -v volumes && test ${#volumes[@]} -gt 0; then
         MOUNTS+=("${volumes[@]}")
     fi
 
+    # Append user-provided envvars
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then
         ENV_VARS+=("${env_vars[@]}")
     fi
 
+    # Run the initialize command before starting the container
     if test "${#INITIALIZE_COMMAND[@]}" -gt 0; then
         eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
