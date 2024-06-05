@@ -2289,7 +2289,7 @@ public:
   //!   Calling thread's output items (may be aliased to `input`)
   //!
   //! @param[in] initial_value
-  //!   Initial value to seed the invlusive scan
+  //!   Initial value to seed the inclusive scan (uniform across block)
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
@@ -2435,7 +2435,8 @@ public:
   //!   Calling thread's output items (may be aliased to `input`)
   //!
   //! @param[in] initial_value
-  //!   Initial value to seed the invlusive scan
+  //!   Initial value to seed the inclusive scan (uniform across block). It is not taken
+  //!   into account for block_aggregate.
   //!
   //! @param[in] scan_op
   //!   Binary scan functor
