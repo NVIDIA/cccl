@@ -14,7 +14,6 @@ PTX Instructions
    instructions/cp.async.bulk.tensor
    instructions/cp.reduce.async.bulk
    instructions/cp.reduce.async.bulk.tensor
-   instructions/elect.sync
    instructions/fence
    instructions/getctarank
    instructions/mapa
