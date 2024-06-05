@@ -44,16 +44,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
 class cuda_error : public ::std::runtime_error
 {
+private:
+  static char* __format_string(::cudaError_t __status, const char* __msg, char __formatted_msg[256] = {}) noexcept
+  {
+    ::snprintf(__formatted_msg, 256, "cudaError %d: %s", __status, __msg);
+    return __formatted_msg;
+  }
+
 public:
   cuda_error(::cudaError_t __status, const char* __msg) noexcept
-      : ::std::runtime_error("")
-  {
-    char __formatted_msg[256];
-    ::snprintf(__formatted_msg, 256, "cudaError %d: %s", __status, __msg);
-
-    ::std::runtime_error __err{__formatted_msg};
-    *static_cast<::std::runtime_error*>(this) = __err;
-  }
+      : ::std::runtime_error(__format_string(__status, __msg))
+  {}
 };
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t __status, const char* __msg)
