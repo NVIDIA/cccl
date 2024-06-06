@@ -33,10 +33,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { libs: 'rmm KvikIO cudf cudf_kafka cuspatial',         args: 'BUILD_TESTS BUILD_BENCHMARKS' }
-          - { libs: 'rmm ucxx raft cuvs',                           args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
-          - { libs: 'rmm ucxx raft cumlprims_mg cuml',              args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH' }
-          - { libs: 'rmm ucxx raft cugraph-ops wholegraph cugraph', args: 'BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH BUILD_CUGRAPH_MG_TESTS' }
+          - { libs: 'rmm KvikIO cudf cudf_kafka cuspatial',        }
+          - { libs: 'rmm ucxx raft cuvs',                          }
+          - { libs: 'rmm ucxx raft cumlprims_mg cuml',             }
+          - { libs: 'rmm ucxx raft cugraph-ops wholegraph cugraph' }
     permissions:
       actions: read
       packages: read
@@ -54,7 +54,6 @@ jobs:
       env: |
         CI=true
         RAPIDS_LIBS=${{ matrix.libs }}
-        RAPIDS_TEST_OPTIONS=${{ matrix.args }}
         RAPIDS_cmake_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
         RAPIDS_cudf_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
         RAPIDS_cudf_kafka_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
@@ -99,7 +98,6 @@ jobs:
           echo "2. Run the failed command inside the same Docker container used by this CI job:"
           cat <<__EOF
              RAPIDS_LIBS='${RAPIDS_LIBS}' \\
-             RAPIDS_TEST_OPTIONS='${RAPIDS_TEST_OPTIONS}' \\
           $(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; echo "   $var='${!var}' \\"; done)
              .devcontainer/launch.sh -d -c 12.2 -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
              /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'

@@ -27,7 +27,6 @@
     "HISTFILE": "/home/coder/.cache/._bash_history",
     "LIBCUDF_KERNEL_CACHE_PATH": "/home/coder/cudf/cpp/build/latest/jitify_cache",
     "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
-    "RAPIDS_TEST_OPTIONS": "${localEnv:RAPIDS_TEST_OPTIONS}",
     "RAPIDS_cmake_GIT_REPO": "${localEnv:RAPIDS_cmake_GIT_REPO}",
     "RAPIDS_rmm_GIT_REPO": "${localEnv:RAPIDS_rmm_GIT_REPO}",
     "RAPIDS_ucxx_GIT_REPO": "${localEnv:RAPIDS_ucxx_GIT_REPO}",
