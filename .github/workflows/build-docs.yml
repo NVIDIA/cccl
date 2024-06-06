@@ -52,6 +52,8 @@ jobs:
           cp -rf ./docs/_build/docs/libcudacxx/latest/* _site/libcudacxx
           mkdir _site/thrust
           cp -rf ./docs/_build/docs/thrust/latest/* _site/thrust
+          ./docs/scrape_docs.bash ./_site
+          cp ./docs/404.html _site/404.html
 
       # Upload build artifacts
       - name: Upload artifact
