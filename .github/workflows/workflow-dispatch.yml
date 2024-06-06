@@ -30,6 +30,8 @@ jobs:
         include: ${{fromJSON(inputs.jobs)['standalone']}}
     uses: ./.github/workflows/workflow-dispatch-job.yml
     with:
+      cuda:     ${{ matrix.cuda }}
+      host:     ${{ matrix.host }}
       name:     ${{ matrix.name }}
       runner:   ${{ matrix.runner }}
       image:    ${{ matrix.image }}

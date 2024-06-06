@@ -757,3 +757,7 @@ like `NVIDIA Nsight Systems <https://developer.nvidia.com/nsight-systems>`_.
 Only the public APIs available in the ``<cub/device/device_xxx.cuh>`` headers are annotated,
 excluding direct calls to the dispatch layer.
 NVTX annotations can be disabled by defining ``NVTX_DISABLE`` during compilation.
+When CUB device algorithms are called on a stream subject to
+`graph capture <https://developer.nvidia.com/blog/cuda-graphs/>`_,
+the NVTX range is reported for the duration of capture (where no execution happens),
+and not when a captured graph is executed later (the actual execution).

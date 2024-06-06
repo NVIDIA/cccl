@@ -39,7 +39,9 @@ jobs:
       workflow_keys: ${{ steps.build-workflow.outputs.workflow_keys }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
@@ -74,7 +76,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Check workflow success
         id: check-workflow

@@ -48,7 +48,7 @@ workflows:
   #
   # Example:
   # override:
-  #   - {jobs: ['build'], project['thrust'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
+  #   - {jobs: ['build'], project: 'thrust', std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
   #
   override:
 
