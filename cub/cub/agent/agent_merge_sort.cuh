@@ -407,8 +407,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PE
 #pragma unroll
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    int idx     = BLOCK_THREADS * item + threadIdx.x;
-    output[idx] = input[item];
+    const int idx = BLOCK_THREADS * item + threadIdx.x;
+    output[idx]   = input[item];
   }
 }
 } // namespace detail
@@ -551,6 +551,7 @@ struct AgentMerge
     // preload items into registers already
     //
     ValueT items_local[ITEMS_PER_THREAD];
+    (void) items_local; // TODO(bgruber): replace by [[maybe_unused]] in C++17
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
     {
       if (ping)

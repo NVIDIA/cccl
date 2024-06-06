@@ -47,11 +47,12 @@
 
 CUB_NAMESPACE_BEGIN
 
-// Additional details of the Merge-Path Algorithm can be found in:
-// S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, " Merge Path - Parallel
-// Merging Made Simple", Multithreaded Architectures and Applications (MTAAP)
-// Workshop, IEEE 26th International Parallel & Distributed Processing
-// Symposium (IPDPS), 2012
+// This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
+// * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
+//   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
+//   Symposium (IPDPS), 2012
+// * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
+//   https://arxiv.org/abs/1406.2628
 template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
@@ -67,8 +68,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
     const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
     const key_t key1  = keys1[mid];
     const key_t key2  = keys2[diag - 1 - mid];
-    const bool pred   = binary_pred(key2, key1);
-    if (pred)
+    if (binary_pred(key2, key1))
     {
       keys1_end = mid;
     }
