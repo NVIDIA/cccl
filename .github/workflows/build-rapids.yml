@@ -54,20 +54,21 @@ jobs:
       env: |
         CI=true
         RAPIDS_LIBS=${{ matrix.libs }}
-        RAPIDS_cmake_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cudf_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cudf_kafka_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cugraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cugraph_ops_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cuml_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cumlprims_mg_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cuspatial_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_cuvs_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_KvikIO_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_raft_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_rmm_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
-        RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-0.39"}
-        RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      # Uncomment one of these to customize the git repo and branch for a RAPIDS lib:
+      #   RAPIDS_cmake_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cudf_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cudf_kafka_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cugraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cugraph_ops_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cuml_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cumlprims_mg_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cuspatial_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_cuvs_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_KvikIO_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_raft_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_rmm_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
+      #   RAPIDS_ucxx_GIT_REPO={"upstream": "rapidsai", "tag": "branch-0.39"}
+      #   RAPIDS_wholegraph_GIT_REPO={"upstream": "rapidsai", "tag": "branch-24.08"}
       build_command: |
         declare -a failures
         declare -A failures_map
