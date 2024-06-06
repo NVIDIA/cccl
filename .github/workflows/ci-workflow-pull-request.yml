@@ -42,7 +42,9 @@ jobs:
       workflow_keys: ${{ steps.build-workflow.outputs.workflow_keys }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
@@ -90,7 +92,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Get Base Branch from PR
         id: get-pr-info

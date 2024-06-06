@@ -243,6 +243,14 @@ def generate_dispatch_job_runner(matrix_job, job_type):
     return f"{runner_os}-{cpu}-gpu-{gpu}-latest-1{suffix}"
 
 
+def generate_dispatch_job_ctk_version(matrix_job, job_type):
+    return matrix_job['ctk']
+
+
+def generate_dispatch_job_host_compiler(matrix_job, job_type):
+    return matrix_job['cxx']['name'] + matrix_job['cxx']['version']
+
+
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml['devcontainer_version']
     ctk = matrix_job['ctk']
@@ -318,6 +326,8 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
 def generate_dispatch_job_json(matrix_job, job_type):
     return {
+        'cuda': generate_dispatch_job_ctk_version(matrix_job, job_type),
+        'host': generate_dispatch_job_host_compiler(matrix_job, job_type),
         'name': generate_dispatch_job_name(matrix_job, job_type),
         'runner': generate_dispatch_job_runner(matrix_job, job_type),
         'image': generate_dispatch_job_image(matrix_job, job_type),
