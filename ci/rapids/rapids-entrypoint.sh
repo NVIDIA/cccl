@@ -5,7 +5,7 @@
 set -e;
 
 ci/rapids/post-create-command.sh;
-rapids-post-start-command;
+rapids-post-start-command -f;
 
 if test $# -gt 0; then
     exec "$@";
