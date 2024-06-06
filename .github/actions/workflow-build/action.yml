@@ -95,7 +95,8 @@ runs:
         echo "::endgroup::"
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: workflow
         path: workflow/
+        compression-level: 0

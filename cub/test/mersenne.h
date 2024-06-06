@@ -43,8 +43,6 @@
 
 #pragma once
 
-#include <stdio.h>
-
 namespace mersenne
 {
 
@@ -59,7 +57,7 @@ static unsigned int mt[N]; /* the array for the state vector  */
 static int mti = N + 1; /* mti==N+1 means mt[N] is not initialized */
 
 /* initializes mt[N] with a seed */
-void init_genrand(unsigned int s)
+inline void init_genrand(unsigned int s)
 {
   mt[0] = s & 0xffffffff;
   for (mti = 1; mti < static_cast<int>(N); mti++)
@@ -80,7 +78,7 @@ void init_genrand(unsigned int s)
 /* init_key is the array for initializing keys */
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
-void init_by_array(unsigned int init_key[], int key_length)
+inline void init_by_array(unsigned int init_key[], int key_length)
 {
   int i, j, k;
   init_genrand(19650218);
@@ -119,7 +117,7 @@ void init_by_array(unsigned int init_key[], int key_length)
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-unsigned int genrand_int32()
+inline unsigned int genrand_int32()
 {
   unsigned int y;
   static unsigned int mag01[2] = {0x0, MATRIX_A};
