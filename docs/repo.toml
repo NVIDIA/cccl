@@ -210,6 +210,11 @@ doxygen_input = [
     "../../thrust/thrust/iterator/*.h",
     "../../thrust/thrust/mr/*.h",
     "../../thrust/thrust/random/*.h",
+    "../../thrust/thrust/system/*.h",
+    "../../thrust/thrust/system/cpp/pointer.h",
+    "../../thrust/thrust/system/omp/pointer.h",
+    "../../thrust/thrust/system/tbb/pointer.h",
+    "../../thrust/thrust/type_traits/*.h",
 ]
 
 # doxygen allows the creation of custom commands to ease in the documentation process.
