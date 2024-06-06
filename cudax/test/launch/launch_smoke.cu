@@ -64,7 +64,7 @@ void inline_lambda_example()
     }
   });
 
-  cudax::launch(cudax::block_dims<256>() & cudax::grid_dims(12), [] __device__() {});
+  // cudax::launch(cudax::block_dims<256>() & cudax::grid_dims(12), [] __device__() {});
 }
 
 // Not templated on dims for now, because it needs CG integration
@@ -135,18 +135,6 @@ void dynamic_smem_example()
   cudax::launch(conf_large, dynamic_smem_span{});
 }
 
-struct static_self_contained
-{
-  static constexpr auto conf =
-    cudax::kernel_config(cudax::block_dims<256>() & cudax::grid_dims<128>(), cudax::dynamic_shared_memory<int>());
-
-  __device__ void operator()(decltype(conf) config)
-  {
-    auto grid      = cg::this_grid();
-    auto& dyn_smem = cudax::dynamic_smem_ref(config);
-  }
-};
-
 void stream_example()
 {
   cudaStream_t stream;
@@ -156,7 +144,7 @@ void stream_example()
   auto dims = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(12));
   auto conf = cudax::make_config(dims, cudax::launch_on(stream));
 
-  cudax::launch(conf, [] __device__(auto conf) {
+  cudax::launch(conf, [] __device__(const auto& conf) {
     if (conf.dims.rank(cudax::thread) == 0)
     {
       printf("block size %d\n", blockDim.x);

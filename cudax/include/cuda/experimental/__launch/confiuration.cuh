@@ -136,7 +136,7 @@ struct launch_priority_config_element : public detail::launch_option
   }
 };
 
-launch_priority_config_element launch_priority(unsigned int p) noexcept
+static launch_priority_config_element launch_priority(unsigned int p) noexcept
 {
   return launch_priority_config_element(p);
 }

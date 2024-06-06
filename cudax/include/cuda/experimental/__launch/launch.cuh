@@ -66,9 +66,8 @@ void launch(const kernel_config<Dimensions, Config>& conf, const Kernel& kernel,
   }
   else
   {
-    auto launcher =
-      detail::kernel_launcher_no_config<std::remove_reference_t<Kernel>, std::remove_reference_t<Args>...>;
-    status = detail::launch_impl(conf, launcher, kernel, args...);
+    auto launcher = detail::kernel_launcher_no_config<Kernel, Args...>;
+    status        = detail::launch_impl(conf, launcher, kernel, args...);
   }
   if (status != cudaSuccess)
   {

@@ -55,5 +55,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   Cudax_add_catch2_test(test_target launch_tests ${cn_target}
     launch/launch_smoke.cu
+    launch/configuration.cu
   )
 endforeach()
