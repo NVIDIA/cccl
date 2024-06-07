@@ -109,6 +109,7 @@ jobs:
 
   verify-devcontainers:
     name: Verify Dev Containers
+    if: ${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}
     permissions:
       id-token: write
       contents: read
