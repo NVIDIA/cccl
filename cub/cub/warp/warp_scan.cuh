@@ -492,35 +492,19 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix sum scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
-  //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
-  //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!
-  //!        // Compute inclusive warp-wide prefix max scans
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data,
-  //!                                                      thread_data,
-  //!                                                      INT_MIN,
-  //!                                                      cub::Max());
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-warp-scan-init-value
+  //!     :end-before: example-end inclusive-warp-scan-init-value
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
-  //! warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
-  //! ``32, 32, 34, 34, ..., 62, 62``, etc.
+  //! ``{0,  1,  2,  3, 4, ..., 127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``{1,  2,   4, ...,   497}``, the output for the second warp would be
+  //! ``{33,  66, 100, ..., 1024}``, etc.
   //! @endrst
   //!
   //! @tparam ScanOp

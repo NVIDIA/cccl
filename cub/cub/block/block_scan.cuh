@@ -2242,10 +2242,6 @@ public:
     }
   }
 
-  //! @}  end member group
-  //! @name Inclusive prefix scan operations (multiple data per thread)
-  //! @{
-
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
@@ -2259,7 +2255,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
@@ -2404,7 +2400,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 64 threads
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
