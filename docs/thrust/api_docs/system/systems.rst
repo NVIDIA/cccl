@@ -7,6 +7,4 @@ Systems
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*system_cpp_pointer*
-   ${repo_docs_api_path}/*system_omp_pointer*
-   ${repo_docs_api_path}/*system_tbb_pointer*
+   ${repo_docs_api_path}/*typedef_group__system__backends*
