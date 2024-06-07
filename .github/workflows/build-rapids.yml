@@ -69,11 +69,6 @@ jobs:
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.39"}'
           # RAPIDS_wholegraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
         run: |
-          set -x;
-          echo "[host] user: $(whoami)"
-          echo "[host]  UID: $(id -u)"
-          echo "[host]  GID: $(id -g)"
-
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
           # Start the ssh-agent and add the repo deploy keys
