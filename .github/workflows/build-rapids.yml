@@ -73,9 +73,6 @@ jobs:
           echo "[host] user: $(whoami)"
           echo "[host]  UID: $(id -u)"
           echo "[host]  GID: $(id -g)"
-          stat ~/.aws || true
-          stat ~/.aws/config || true
-          stat ~/.aws/credentials || true
 
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
@@ -136,23 +133,23 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
 
-          mkdir -p "$RUNNER_TEMP/.aws"
+          mkdir -p .aws
 
-          cat <<EOF > "$RUNNER_TEMP/.aws/config"
+          cat <<EOF > .aws/config
           [default]
           bucket=rapids-sccache-devs
           region=us-east-2
           EOF
 
-          cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
+          cat <<EOF > .aws/credentials
           [default]
           aws_access_key_id=$AWS_ACCESS_KEY_ID
           aws_session_token=$AWS_SESSION_TOKEN
           aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
           EOF
 
-          chmod 0600 "$RUNNER_TEMP/.aws/credentials"
-          chmod 0664 "$RUNNER_TEMP/.aws/config"
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
 
           .devcontainer/launch.sh \
             --docker \
@@ -163,6 +160,5 @@ jobs:
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            --volume "$RUNNER_TEMP/.aws:/home/coder/.aws" \
             --volume "$RUNNER_TEMP/ci-entrypoint.sh:/ci-entrypoint.sh" \
             -- /ci-entrypoint.sh ./ci/rapids/rapids-entrypoint.sh /ci.sh
