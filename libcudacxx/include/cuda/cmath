@@ -1,0 +1,26 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_CMATH
+#define _CUDA_CMATH
+
+#include <cuda/std/cmath>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+template <typename __T>
+__host__ __device__ constexpr size_t ceil_div(__T __a, __T __b)
+{
+  return (__a + __b - __T(1)) / __b;
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CUDA_CMATH

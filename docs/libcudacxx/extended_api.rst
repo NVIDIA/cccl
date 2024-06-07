@@ -15,3 +15,4 @@ Extended API
    extended_api/functional
    extended_api/streams
    extended_api/memory_resource
+   extended_api/math
