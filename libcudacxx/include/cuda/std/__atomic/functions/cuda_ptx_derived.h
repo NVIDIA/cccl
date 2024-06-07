@@ -48,8 +48,8 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   __proxy_t __new = 0;
   memcpy(&__old, __expected, sizeof(__proxy_t));
   memcpy(&__new, &__desired, sizeof(__proxy_t));
-  bool __result = __atomic_compare_exchange_cuda(
-    __ptr, &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
+  bool __result =
+    __atomic_compare_exchange_cuda(__ptr, &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
   memcpy(__expected, &__old, sizeof(__proxy_t));
   return __result;
 }
@@ -64,8 +64,8 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   __proxy_t __new = 0;
   memcpy(&__old, __expected, sizeof(__proxy_t));
   memcpy(&__new, &__desired, sizeof(__proxy_t));
-  bool __result = __atomic_compare_exchange_cuda(
-    __ptr, &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
+  bool __result =
+    __atomic_compare_exchange_cuda(__ptr, &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
   memcpy(__expected, &__old, sizeof(__proxy_t));
   return __result;
 }
