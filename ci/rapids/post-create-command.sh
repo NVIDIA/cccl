@@ -62,7 +62,7 @@ _create_rapids_cmake_override_json() {
     fi
 
     curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_tag}/rapids-cmake/cpm/versions.json" \
-  | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"$(git -C "${HOME}/cccl" rev-parse --abbrev-ref HEAD)\", \"always_download\": true}" \
+  | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"$(git -C "${HOME}/cccl" rev-parse HEAD)\", \"always_download\": true}" \
   | tee ~/rapids-cmake-override-versions.json;
 
     # Define default CMake args for each repo
