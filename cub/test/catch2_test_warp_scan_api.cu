@@ -57,10 +57,11 @@ __global__ void InclusiveScanKernel(int* output)
   int warp_id = threadIdx.x / 32;
   warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, cub::Sum());
 
+  // initial value = 1 (for each warp)
   // warp #0 output: { 1,  2,   4, ...,   497}
-  // warp #1 output: {33,  66, 100, ..., 1024}
-  // warp #2 output: {64, 129, 195, ..., 2976}
-  // warp #3 output: {96, 193, 291, ..., 4032}
+  // warp #1 output: {33,  66, 100, ..., 1521}
+  // warp #2 output: {65, 130, 196, ..., 2545}
+  // warp #3 output: {97, 194, 292, ..., 3569}
 
   // example-end inclusive-warp-scan-init-value
   output[threadIdx.x] = thread_data;
@@ -91,4 +92,74 @@ CUB_TEST("Block array-based inclusive scan works with initial value", "[scan][bl
   }
 
   REQUIRE(expected == d_out);
+}
+
+__global__ void InclusiveScanKernelAggr(int* output, int* d_warp_aggregate)
+{
+  // Specialize WarpScan for type int
+  typedef cub::WarpScan<int> warp_scan_t;
+  // Allocate WarpScan shared memory for 4 warps
+  __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
+
+  int initial_value = 1;
+  int thread_data   = threadIdx.x;
+
+  // warp #0 input: { 0,  1,  2,  3,   4, ...,  31}
+  // warp #1 input: {32, 33, 34, 35,  36, ...,  63}
+  // warp #2 input: {64, 65, 66, 67,  68, ...,  95}
+  // warp #4 input: {96, 97, 98, 99, 100, ..., 127}
+
+  // Collectively compute the block-wide inclusive prefix max scan
+  int warp_aggregate;
+  int warp_id = threadIdx.x / 32;
+  warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, cub::Sum(), warp_aggregate);
+
+  // initial value = 1 (for each warp)
+  // warp #0 output: { 1,  2,   4, ...,   497} - aggregate: 496
+  // warp #1 output: {33,  66, 100, ..., 1521} - aggregate: 1520
+  // warp #2 output: {65, 130, 196, ..., 2545} - aggregate: 2544
+  // warp #3 output: {97, 194, 292, ..., 3569} - aggregate: 3568
+
+  // example-end inclusive-warp-scan-init-value
+  d_warp_aggregate[warp_id] = warp_aggregate;
+  output[threadIdx.x]       = thread_data;
+}
+
+CUB_TEST("Block array-based inclusive scan aggregate works with initial value", "[scan][block]")
+{
+  thrust::device_vector<int> d_out(num_warps * 32);
+  c2h::device_vector<int> d_warp_aggregate(num_warps);
+
+  InclusiveScanKernelAggr<<<1, num_warps * 32>>>(
+    thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_warp_aggregate.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<int> expected(d_out.size());
+  c2h::host_vector<int> expected_aggr{};
+  expected[0] = 1; // Initial value
+
+  // Calculate the prefix sum with an additional +1 every 32 elements
+  for (int i = 1; i < num_warps * 32; ++i)
+  {
+    if (i % 32 == 0)
+    {
+      expected[i] = i + 1; // Reset at the start of each warp
+    }
+    else
+    {
+      expected[i] = expected[i - 1] + i;
+    }
+
+    // fetch the aggregate at the end of each warp
+    if (i % 32 == 0)
+    {
+      expected_aggr.push_back(expected[i - 1] - 1); // warp aggregate doed not take
+                                                    // initial value into account
+    }
+  }
+  expected_aggr.push_back(expected.back() - 1);
+
+  REQUIRE(expected == d_out);
+  REQUIRE(expected_aggr == d_warp_aggregate);
 }
