@@ -38,6 +38,9 @@ j * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
+#  include <cub/agent/agent_merge_sort.cuh>
+#  include <cub/util_macro.cuh>
+
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -88,44 +91,6 @@ merge_path(KeysIt1 keys1, KeysIt2 keys2, Size keys1_count, Size keys2_count, Siz
   return keys1_begin;
 }
 
-template <class It, class T2, class CompareOp, int ITEMS_PER_THREAD>
-THRUST_DEVICE_FUNCTION void serial_merge(
-  It keys_shared,
-  int keys1_beg,
-  int keys2_beg,
-  int keys1_count,
-  int keys2_count,
-  T2 (&output)[ITEMS_PER_THREAD],
-  int (&indices)[ITEMS_PER_THREAD],
-  CompareOp compare_op)
-{
-  int keys1_end = keys1_beg + keys1_count;
-  int keys2_end = keys2_beg + keys2_count;
-
-  using key_type = typename iterator_value<It>::type;
-
-  key_type key1 = keys_shared[keys1_beg];
-  key_type key2 = keys_shared[keys2_beg];
-
-#  pragma unroll
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-  {
-    bool p = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-
-    output[ITEM]  = p ? key2 : key1;
-    indices[ITEM] = p ? keys2_beg++ : keys1_beg++;
-
-    if (p)
-    {
-      key2 = keys_shared[keys2_beg];
-    }
-    else
-    {
-      key1 = keys_shared[keys1_beg];
-    }
-  }
-}
-
 template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD                     = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
@@ -145,6 +110,7 @@ struct PtxPolicy
   static const cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 }; // PtxPolicy
 
+// TODO(bgruber): similar to cub::AgentPartition
 template <class KeysIt1, class KeysIt2, class Size, class CompareOp>
 struct PartitionAgent
 {
@@ -183,24 +149,18 @@ namespace mpl = thrust::detail::mpl::math;
 template <int NOMINAL_4B_ITEMS_PER_THREAD, size_t INPUT_SIZE>
 struct items_per_thread
 {
-  enum
-  {
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int, 1, static_cast<int>(NOMINAL_4B_ITEMS_PER_THREAD * 4 / INPUT_SIZE)>::value>::value,
-    value = mpl::is_odd<int, ITEMS_PER_THREAD>::value ? ITEMS_PER_THREAD : ITEMS_PER_THREAD + 1
-  };
+  static constexpr auto ITEMS_PER_THREAD = (cub::min)(
+    NOMINAL_4B_ITEMS_PER_THREAD, (cub::max)(1, static_cast<int>(NOMINAL_4B_ITEMS_PER_THREAD * 4 / INPUT_SIZE)));
+  static constexpr auto value = ITEMS_PER_THREAD % 2 == 1 ? ITEMS_PER_THREAD : ITEMS_PER_THREAD + 1;
 };
 
 template <class TSize>
 struct Tuning<sm30, TSize>
 {
-  const static int INPUT_SIZE = TSize::value;
   enum
   {
     NOMINAL_4B_ITEMS_PER_THREAD = 7,
-    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, INPUT_SIZE>::value
+    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, TSize::value>::value
   };
 
   using type =
@@ -213,7 +173,7 @@ struct Tuning<sm60, TSize> : Tuning<sm30, TSize>
   enum
   {
     NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, Tuning::INPUT_SIZE>::value
+    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, TSize::value>::value
   };
 
   using type =
@@ -226,7 +186,7 @@ struct Tuning<sm52, TSize> : Tuning<sm30, TSize>
   enum
   {
     NOMINAL_4B_ITEMS_PER_THREAD = 13,
-    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, Tuning::INPUT_SIZE>::value
+    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, TSize::value>::value
   };
 
   using type =
@@ -236,11 +196,10 @@ struct Tuning<sm52, TSize> : Tuning<sm30, TSize>
 template <class TSize>
 struct Tuning<sm35, TSize> : Tuning<sm30, TSize>
 {
-  const static int INPUT_SIZE = TSize::value;
   enum
   {
     NOMINAL_4B_ITEMS_PER_THREAD = 11,
-    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, Tuning::INPUT_SIZE>::value
+    ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, TSize::value>::value
   };
 
   using type =
@@ -349,62 +308,6 @@ struct MergeAgent
     Size* merge_partitions;
 
     //---------------------------------------------------------------------
-    // Utility functions
-    //---------------------------------------------------------------------
-
-    template <bool IS_FULL_TILE, class T, class It1, class It2>
-    THRUST_DEVICE_FUNCTION void
-    gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
-    {
-      if (IS_FULL_TILE)
-      {
-#  pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-          int idx = BLOCK_THREADS * ITEM + threadIdx.x;
-          if (idx < count1)
-          {
-            output[ITEM] = input1[idx];
-          }
-          else
-          {
-            output[ITEM] = input2[idx - count1];
-          }
-        }
-      }
-      else
-      {
-#  pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-          int idx = BLOCK_THREADS * ITEM + threadIdx.x;
-          if (idx < count1 + count2)
-          {
-            if (idx < count1)
-            {
-              output[ITEM] = input1[idx];
-            }
-            else
-            {
-              output[ITEM] = input2[idx - count1];
-            }
-          }
-        }
-      }
-    }
-
-    template <class T, class It>
-    THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
-    {
-#  pragma unroll
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-      {
-        int idx     = BLOCK_THREADS * ITEM + threadIdx.x;
-        output[idx] = input[ITEM];
-      }
-    }
-
-    //---------------------------------------------------------------------
     // Tile processing
     //---------------------------------------------------------------------
 
@@ -433,8 +336,9 @@ struct MergeAgent
       int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
       key_type keys_loc[ITEMS_PER_THREAD];
-      gmem_to_reg<IS_FULL_TILE>(keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
-      reg_to_shared(&storage.keys_shared[0], keys_loc);
+      cub::detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+        keys_loc, keys1_in + keys1_beg, keys2_in + keys2_beg, num_keys1, num_keys2);
+      cub::detail::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_loc);
 
       sync_threadblock();
 
@@ -458,7 +362,7 @@ struct MergeAgent
       //
       int indices[ITEMS_PER_THREAD];
 
-      serial_merge(
+      cub::SerialMerge(
         &storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc + num_keys1,
@@ -485,11 +389,12 @@ struct MergeAgent
       if (MERGE_ITEMS::value)
       {
         item_type items_loc[ITEMS_PER_THREAD];
-        gmem_to_reg<IS_FULL_TILE>(items_loc, items1_in + keys1_beg, items2_in + keys2_beg, num_keys1, num_keys2);
+        cub::detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
+          items_loc, items1_in + keys1_beg, items2_in + keys2_beg, num_keys1, num_keys2);
 
         sync_threadblock();
 
-        reg_to_shared(&storage.items_shared[0], items_loc);
+        cub::detail::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_loc);
 
         sync_threadblock();
 

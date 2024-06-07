@@ -510,19 +510,17 @@ struct DispatchMergeSort : SelectedPolicy
       constexpr auto tile_size = merge_sort_helper_t::policy_t::ITEMS_PER_TILE;
       const auto num_tiles     = cub::DivideAndRoundUp(num_items, tile_size);
 
-      const auto merge_partitions_size = static_cast<std::size_t>(1 + num_tiles) * sizeof(OffsetT);
-
-      const auto temporary_keys_storage_size = static_cast<std::size_t>(num_items * sizeof(KeyT));
-
+      const auto merge_partitions_size         = static_cast<std::size_t>(1 + num_tiles) * sizeof(OffsetT);
+      const auto temporary_keys_storage_size   = static_cast<std::size_t>(num_items * sizeof(KeyT));
       const auto temporary_values_storage_size = static_cast<std::size_t>(num_items * sizeof(ValueT)) * !KEYS_ONLY;
 
       /**
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
        * merge sort allocates virtual shared memory that resides in global memory.
        */
-      std::size_t block_sort_smem_size       = num_tiles * BlockSortVSmemHelperT::vsmem_per_block;
-      std::size_t merge_smem_size            = num_tiles * MergeAgentVSmemHelperT::vsmem_per_block;
-      std::size_t virtual_shared_memory_size = (cub::max)(block_sort_smem_size, merge_smem_size);
+      const std::size_t block_sort_smem_size       = num_tiles * BlockSortVSmemHelperT::vsmem_per_block;
+      const std::size_t merge_smem_size            = num_tiles * MergeAgentVSmemHelperT::vsmem_per_block;
+      const std::size_t virtual_shared_memory_size = (cub::max)(block_sort_smem_size, merge_smem_size);
 
       void* allocations[4]            = {nullptr, nullptr, nullptr, nullptr};
       std::size_t allocation_sizes[4] = {
@@ -555,9 +553,9 @@ struct DispatchMergeSort : SelectedPolicy
        */
       bool ping = num_passes % 2 == 0;
 
-      auto merge_partitions = reinterpret_cast<OffsetT*>(allocations[0]);
-      auto keys_buffer      = reinterpret_cast<KeyT*>(allocations[1]);
-      auto items_buffer     = reinterpret_cast<ValueT*>(allocations[2]);
+      auto merge_partitions = static_cast<OffsetT*>(allocations[0]);
+      auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
+      auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
       // Invoke DeviceMergeSortBlockSortKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -617,7 +615,7 @@ struct DispatchMergeSort : SelectedPolicy
 
       for (int pass = 0; pass < num_passes; ++pass, ping = !ping)
       {
-        OffsetT target_merged_tiles_number = OffsetT(2) << pass;
+        const OffsetT target_merged_tiles_number = OffsetT(2) << pass;
 
         // Partition
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
