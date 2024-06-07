@@ -21,7 +21,7 @@ jobs:
           || echo "ok=false" | tee -a $GITHUB_OUTPUT;
 
   build-rapids:
-    name: Build RAPIDS (${{ matrix.libs }})
+    name: "${{ matrix.libs }}"
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
     runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu32"') }}
