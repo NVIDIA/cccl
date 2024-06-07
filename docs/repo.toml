@@ -12,6 +12,7 @@ repo_url         = "https://github.com/NVIDIA/cccl"
 social_media_set = ""
 social_media     = [
     [ "github", "https://github.com/NVIDIA/cccl" ],
+    [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
 
 enhanced_search_enabled = true
