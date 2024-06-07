@@ -35,7 +35,7 @@ template <typename _Tp,
           typename _Sco,
           __enable_if_t<!is_scalar<_Tp>::value && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8), int> = 0>
 _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
-  _Tp volatile* __ptr,
+  void volatile* __ptr,
   _Tp* __expected,
   const _Tp __desired,
   bool __weak,
@@ -49,7 +49,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   memcpy(&__old, __expected, sizeof(__proxy_t));
   memcpy(&__new, &__desired, sizeof(__proxy_t));
   bool __result = __atomic_compare_exchange_cuda(
-    reinterpret_cast<volatile __proxy_t*>(__ptr), &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
+    __ptr, &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
   memcpy(__expected, &__old, sizeof(__proxy_t));
   return __result;
 }
@@ -57,7 +57,7 @@ template <typename _Tp,
           typename _Sco,
           __enable_if_t<!is_scalar<_Tp>::value && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8), int> = 0>
 _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
-  _Tp* __ptr, _Tp* __expected, const _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder, _Sco)
+  void* __ptr, _Tp* __expected, const _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder, _Sco)
 {
   using __proxy_t = _If<sizeof(_Tp) == 4, uint32_t, uint64_t>;
   __proxy_t __old = 0;
@@ -65,32 +65,32 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   memcpy(&__old, __expected, sizeof(__proxy_t));
   memcpy(&__new, &__desired, sizeof(__proxy_t));
   bool __result = __atomic_compare_exchange_cuda(
-    reinterpret_cast<__proxy_t*>(__ptr), &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
+    __ptr, &__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
   memcpy(__expected, &__old, sizeof(__proxy_t));
   return __result;
 }
 template <typename _Tp,
           typename _Sco,
           __enable_if_t<!is_scalar<_Tp>::value && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Tp volatile* __ptr, _Tp* __val, _Tp* __ret, int __memorder, _Sco)
+_CCCL_DEVICE void __atomic_exchange_cuda(void volatile* __ptr, _Tp* __val, _Tp* __ret, int __memorder, _Sco)
 {
   using __proxy_t = _If<sizeof(_Tp) == 4, uint32_t, uint64_t>;
   __proxy_t __old = 0;
   __proxy_t __new = 0;
   memcpy(&__new, __val, sizeof(__proxy_t));
-  __atomic_exchange_cuda(reinterpret_cast<volatile __proxy_t*>(__ptr), &__new, &__old, __memorder, _Sco{});
+  __atomic_exchange_cuda(__ptr, &__new, &__old, __memorder, _Sco{});
   memcpy(__ret, &__old, sizeof(__proxy_t));
 }
 template <typename _Tp,
           typename _Sco,
           __enable_if_t<!is_scalar<_Tp>::value && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Tp* __ptr, _Tp* __val, _Tp* __ret, int __memorder, _Sco)
+_CCCL_DEVICE void __atomic_exchange_cuda(void* __ptr, _Tp* __val, _Tp* __ret, int __memorder, _Sco)
 {
   using __proxy_t = _If<sizeof(_Tp) == 4, uint32_t, uint64_t>;
   __proxy_t __old = 0;
   __proxy_t __new = 0;
   memcpy(&__new, __val, sizeof(__proxy_t));
-  __atomic_exchange_cuda(reinterpret_cast<__proxy_t*>(__ptr), &__new, &__old, __memorder, _Sco{});
+  __atomic_exchange_cuda(__ptr, &__new, &__old, __memorder, _Sco{});
   memcpy(__ret, &__old, sizeof(__proxy_t));
 }
 

@@ -362,7 +362,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
               if (rmw.first == "compare_exchange")
               {
                 out << "_CCCL_DEVICE bool __atomic_compare_exchange_cuda(" << cv
-                    << "_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int "
+                    << "void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int "
                        "__failure_memorder, "
                     << scopenametag(s.first) << ") {\n";
                 out << "    auto __old = *__expected;\n";
@@ -407,7 +407,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
                 {
                   out
                     << "_CCCL_DEVICE void __atomic_exchange_cuda(" << cv
-                    << "_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
+                    << "void *__ptr, _Type *__val, _Type *__ret, int __memorder, " << scopenametag(s.first) << ") {\n";
                   out << "    _Type __tmp = *__val;\n";
                 }
                 else

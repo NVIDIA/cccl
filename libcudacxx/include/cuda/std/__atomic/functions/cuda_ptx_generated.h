@@ -466,7 +466,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.cta.b32 %0,[%1],%2,%3;" : "=f"(__dst) : "l"(__ptr),"f"(__cmp),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.cta.b32 %0,[%1],%2,%3;" : "=f"(__dst) : "l"(__ptr),"f"(__cmp),"f"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -495,7 +495,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -529,7 +529,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -558,7 +558,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -592,7 +592,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.cta.b32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_f32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.cta.b32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -621,7 +621,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 4);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -655,7 +655,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_u32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -684,7 +684,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 4);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1421,7 +1421,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.cta.b64 %0,[%1],%2,%3;" : "=d"(__dst) : "l"(__ptr),"d"(__cmp),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.cta.b64 %0,[%1],%2,%3;" : "=d"(__dst) : "l"(__ptr),"d"(__cmp),"d"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1450,7 +1450,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1484,7 +1484,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1513,7 +1513,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1547,7 +1547,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.cta.b64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_f64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.cta.b64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1576,7 +1576,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 8);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1610,7 +1610,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_u64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1639,7 +1639,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 8);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2739,7 +2739,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.gpu.b32 %0,[%1],%2,%3;" : "=f"(__dst) : "l"(__ptr),"f"(__cmp),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.gpu.b32 %0,[%1],%2,%3;" : "=f"(__dst) : "l"(__ptr),"f"(__cmp),"f"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2768,7 +2768,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2802,7 +2802,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2831,7 +2831,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2865,7 +2865,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.gpu.b32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_f32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.gpu.b32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2894,7 +2894,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 4);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2928,7 +2928,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_u32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2957,7 +2957,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 4);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3694,7 +3694,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.gpu.b64 %0,[%1],%2,%3;" : "=d"(__dst) : "l"(__ptr),"d"(__cmp),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.gpu.b64 %0,[%1],%2,%3;" : "=d"(__dst) : "l"(__ptr),"d"(__cmp),"d"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3723,7 +3723,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3757,7 +3757,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3786,7 +3786,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3820,7 +3820,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.gpu.b64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_f64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.gpu.b64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3849,7 +3849,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 8);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3883,7 +3883,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_u64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -3912,7 +3912,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 8);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5012,7 +5012,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.sys.b32 %0,[%1],%2,%3;" : "=f"(__dst) : "l"(__ptr),"f"(__cmp),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.sys.b32 %0,[%1],%2,%3;" : "=f"(__dst) : "l"(__ptr),"f"(__cmp),"f"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5041,7 +5041,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5075,7 +5075,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5104,7 +5104,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5138,7 +5138,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.sys.b32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_f32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.sys.b32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5167,7 +5167,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 4);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5201,7 +5201,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_u32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5230,7 +5230,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 4);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5967,7 +5967,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.sys.b64 %0,[%1],%2,%3;" : "=d"(__dst) : "l"(__ptr),"d"(__cmp),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.sys.b64 %0,[%1],%2,%3;" : "=d"(__dst) : "l"(__ptr),"d"(__cmp),"d"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -5996,7 +5996,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -6030,7 +6030,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.release.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _CCCL_DEVICE void __cuda_compare_exchange_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -6059,7 +6059,7 @@ _CCCL_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *_
     return (__old == *__expected);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(void *__ptr, _Type *__expected, const _Type __desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
     auto __old = *__expected;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -6093,7 +6093,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.sys.b64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_f64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.sys.b64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -6122,7 +6122,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 8);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CCCL_TRAIT(is_floating_point, _Type), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -6156,7 +6156,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_release_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.release.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _CCCL_DEVICE void __cuda_exchange_volatile_u64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(volatile void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -6185,7 +6185,7 @@ _CCCL_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _T
     memcpy(__ret, &__tmp, 8);
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && (_CCCL_TRAIT(is_integral, _Type) || _CCCL_TRAIT(is_pointer, _Type)), int> = 0>
-_CCCL_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+_CCCL_DEVICE void __atomic_exchange_cuda(void *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
     _Type __tmp = *__val;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
