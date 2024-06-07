@@ -172,9 +172,9 @@ struct AgentBlockSort
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
   {
     ValueT items_local[ITEMS_PER_THREAD];
-    if (!KEYS_ONLY)
+    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
     {
-      if (IS_LAST_TILE)
+      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
       {
         BlockLoadItems(storage.load_items)
           .Load(items_in + tile_base, items_local, num_remaining, *(items_in + tile_base));
@@ -188,7 +188,7 @@ struct AgentBlockSort
     }
 
     KeyT keys_local[ITEMS_PER_THREAD];
-    if (IS_LAST_TILE)
+    _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
     {
       BlockLoadKeys(storage.load_keys).Load(keys_in + tile_base, keys_local, num_remaining, *(keys_in + tile_base));
     }
@@ -199,7 +199,7 @@ struct AgentBlockSort
 
     CTA_SYNC();
 
-    if (IS_LAST_TILE)
+    _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
     {
       BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
     }
@@ -212,7 +212,7 @@ struct AgentBlockSort
 
     if (ping)
     {
-      if (IS_LAST_TILE)
+      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
       {
         BlockStoreKeysIt(storage.store_keys_it).Store(keys_out_it + tile_base, keys_local, num_remaining);
       }
@@ -221,11 +221,11 @@ struct AgentBlockSort
         BlockStoreKeysIt(storage.store_keys_it).Store(keys_out_it + tile_base, keys_local);
       }
 
-      if (!KEYS_ONLY)
+      _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
       {
         CTA_SYNC();
 
-        if (IS_LAST_TILE)
+        _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
         {
           BlockStoreItemsIt(storage.store_items_it).Store(items_out_it + tile_base, items_local, num_remaining);
         }
@@ -237,7 +237,7 @@ struct AgentBlockSort
     }
     else
     {
-      if (IS_LAST_TILE)
+      _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
       {
         BlockStoreKeysRaw(storage.store_keys_raw).Store(keys_out_raw + tile_base, keys_local, num_remaining);
       }
@@ -246,11 +246,11 @@ struct AgentBlockSort
         BlockStoreKeysRaw(storage.store_keys_raw).Store(keys_out_raw + tile_base, keys_local);
       }
 
-      if (!KEYS_ONLY)
+      _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
       {
         CTA_SYNC();
 
-        if (IS_LAST_TILE)
+        _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
         {
           BlockStoreItemsRaw(storage.store_items_raw).Store(items_out_raw + tile_base, items_local, num_remaining);
         }
@@ -316,25 +316,25 @@ struct AgentPartition
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
-    OffsetT merged_tiles_number = target_merged_tiles_number / 2;
+    const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
 
     // target_merged_tiles_number is a power of two.
-    OffsetT mask = target_merged_tiles_number - 1;
+    const OffsetT mask = target_merged_tiles_number - 1;
 
     // The first tile number in the tiles group being merged, equal to:
     // target_merged_tiles_number * (partition_idx / target_merged_tiles_number)
-    OffsetT list  = ~mask & partition_idx;
-    OffsetT start = items_per_tile * list;
-    OffsetT size  = items_per_tile * merged_tiles_number;
+    const OffsetT list  = ~mask & partition_idx;
+    const OffsetT start = items_per_tile * list;
+    const OffsetT size  = items_per_tile * merged_tiles_number;
 
     // Tile number within the tile group being merged, equal to:
     // partition_idx / target_merged_tiles_number
-    OffsetT local_tile_idx = mask & partition_idx;
+    const OffsetT local_tile_idx = mask & partition_idx;
 
-    OffsetT keys1_beg = (cub::min)(keys_count, start);
-    OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
-    OffsetT keys2_beg = keys1_end;
-    OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys1_beg = (cub::min)(keys_count, start);
+    const OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys2_beg = keys1_end;
+    const OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
     // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
     if (partition_idx + 1 == num_partitions)
@@ -343,28 +343,93 @@ struct AgentPartition
     }
     else
     {
-      OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
+      const OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
       OffsetT partition_diag =
-        ping ? MergePath<KeyT>(
+        ping ? MergePath(
           keys_ping + keys1_beg,
           keys_ping + keys2_beg,
           keys1_end - keys1_beg,
           keys2_end - keys2_beg,
           partition_at,
           compare_op)
-             : MergePath<KeyT>(
-               keys_pong + keys1_beg,
-               keys_pong + keys2_beg,
-               keys1_end - keys1_beg,
-               keys2_end - keys2_beg,
-               partition_at,
-               compare_op);
+             : MergePath(keys_pong + keys1_beg,
+                         keys_pong + keys2_beg,
+                         keys1_end - keys1_beg,
+                         keys2_end - keys2_beg,
+                         partition_at,
+                         compare_op);
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }
   }
 };
+
+namespace detail
+{
+/**
+ * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
+ *
+ * Reads data in a coalesced fashion [BLOCK_THREADS * item + tid] and
+ * stores the result in output[item].
+ */
+template <int BLOCK_THREADS, bool IS_FULL_TILE, int ITEMS_PER_THREAD, class T, class It1, class It2>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
+{
+  _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
+  {
+#pragma unroll
+    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+    {
+      int idx = BLOCK_THREADS * item + threadIdx.x;
+      // FIXME(bgruber): the CUB version (1 LOC below) generates different SASS than the if/else from Thrust
+      // output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
+      if (idx < count1)
+      {
+        output[item] = input1[idx];
+      }
+      else
+      {
+        output[item] = input2[idx - count1];
+      }
+    }
+  }
+  else
+  {
+#pragma unroll
+    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+    {
+      int idx = BLOCK_THREADS * item + threadIdx.x;
+      if (idx < count1 + count2)
+      {
+        // FIXME(bgruber): the CUB version (1 LOC below) generates different SASS than the if/else from Thrust
+        // output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
+        if (idx < count1)
+        {
+          output[item] = input1[idx];
+        }
+        else
+        {
+          output[item] = input2[idx - count1];
+        }
+      }
+    }
+  }
+}
+
+/// \brief Stores data in a coalesced fashion in[item] -> out[BLOCK_THREADS * item + tid]
+template <int BLOCK_THREADS, int ITEMS_PER_THREAD, class T, class It>
+_CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
+{
+#pragma unroll
+  for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+  {
+    int idx     = BLOCK_THREADS * item + threadIdx.x;
+    output[idx] = input[item];
+  }
+}
+} // namespace detail
 
 /// \brief The agent is responsible for merging N consecutive sorted arrays into N/2 sorted arrays.
 template <typename Policy,
@@ -443,81 +508,36 @@ struct AgentMerge
   // Utility functions
   //---------------------------------------------------------------------
 
-  /**
-   * \brief Concatenates up to ITEMS_PER_THREAD elements from input{1,2} into output array
-   *
-   * Reads data in a coalesced fashion [BLOCK_THREADS * item + tid] and
-   * stores the result in output[item].
-   */
-  template <bool IS_FULL_TILE, class T, class It1, class It2>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
-  {
-    if (IS_FULL_TILE)
-    {
-#pragma unroll
-      for (int item = 0; item < ITEMS_PER_THREAD; ++item)
-      {
-        int idx      = BLOCK_THREADS * item + threadIdx.x;
-        output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
-      }
-    }
-    else
-    {
-#pragma unroll
-      for (int item = 0; item < ITEMS_PER_THREAD; ++item)
-      {
-        int idx = BLOCK_THREADS * item + threadIdx.x;
-        if (idx < count1 + count2)
-        {
-          output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
-        }
-      }
-    }
-  }
-
-  /// \brief Stores data in a coalesced fashion in[item] -> out[BLOCK_THREADS * item + tid]
-  template <class T, class It>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
-  {
-#pragma unroll
-    for (int item = 0; item < ITEMS_PER_THREAD; ++item)
-    {
-      int idx     = BLOCK_THREADS * item + threadIdx.x;
-      output[idx] = input[item];
-    }
-  }
-
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
-    OffsetT partition_beg = merge_partitions[tile_idx + 0];
-    OffsetT partition_end = merge_partitions[tile_idx + 1];
+    const OffsetT partition_beg = merge_partitions[tile_idx + 0];
+    const OffsetT partition_end = merge_partitions[tile_idx + 1];
 
     // target_merged_tiles_number is a power of two.
-    OffsetT merged_tiles_number = target_merged_tiles_number / 2;
+    const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
 
-    OffsetT mask = target_merged_tiles_number - 1;
+    const OffsetT mask = target_merged_tiles_number - 1;
 
     // The first tile number in the tiles group being merged, equal to:
     // target_merged_tiles_number * (tile_idx / target_merged_tiles_number)
-    OffsetT list  = ~mask & tile_idx;
-    OffsetT start = ITEMS_PER_TILE * list;
-    OffsetT size  = ITEMS_PER_TILE * merged_tiles_number;
+    const OffsetT list  = ~mask & tile_idx;
+    const OffsetT start = ITEMS_PER_TILE * list;
+    const OffsetT size  = ITEMS_PER_TILE * merged_tiles_number;
 
-    OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
+    const OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
 
-    OffsetT keys1_beg = partition_beg - start;
-    OffsetT keys1_end = partition_end - start;
+    const OffsetT keys1_beg = partition_beg - start;
+    OffsetT keys1_end       = partition_end - start;
 
-    OffsetT keys_end_dist_from_start = keys_count - start;
-    OffsetT max_keys2                = (keys_end_dist_from_start > size) ? (keys_end_dist_from_start - size) : 0;
+    const OffsetT keys_end_dist_from_start = keys_count - start;
+    const OffsetT max_keys2                = (keys_end_dist_from_start > size) ? (keys_end_dist_from_start - size) : 0;
 
     // We have the following invariants:
     // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
     // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
     // and keys1_end is key1's component of that path
-    OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
+    const OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
     OffsetT keys2_end =
       (cub::min)(max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
@@ -529,32 +549,31 @@ struct AgentMerge
     }
 
     // number of keys per tile
-    //
-    int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
-    int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
+    const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
+    const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
     // load keys1 & keys2
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
     {
-      gmem_to_reg<IS_FULL_TILE>(
+      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_ping + start + keys1_beg, keys_in_ping + start + size + keys2_beg, num_keys1, num_keys2);
     }
     else
     {
-      gmem_to_reg<IS_FULL_TILE>(
+      detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
         keys_local, keys_in_pong + start + keys1_beg, keys_in_pong + start + size + keys2_beg, num_keys1, num_keys2);
     }
-    reg_to_shared(&storage.keys_shared[0], keys_local);
+    detail::reg_to_shared<BLOCK_THREADS>(&storage.keys_shared[0], keys_local);
 
     // preload items into registers already
     //
     ValueT items_local[ITEMS_PER_THREAD];
-    if (!KEYS_ONLY)
+    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
     {
       if (ping)
       {
-        gmem_to_reg<IS_FULL_TILE>(
+        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_ping + start + keys1_beg,
           items_in_ping + start + size + keys2_beg,
@@ -563,7 +582,7 @@ struct AgentMerge
       }
       else
       {
-        gmem_to_reg<IS_FULL_TILE>(
+        detail::gmem_to_reg<BLOCK_THREADS, IS_FULL_TILE>(
           items_local,
           items_in_pong + start + keys1_beg,
           items_in_pong + start + size + keys2_beg,
@@ -579,16 +598,16 @@ struct AgentMerge
     // we can use int type here, because the number of
     // items in shared memory is limited
     //
-    int diag0_local = (cub::min)(num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
+    const int diag0_local = (cub::min)(num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
 
-    int keys1_beg_local = MergePath<KeyT>(
+    const int keys1_beg_local = MergePath(
       &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_local, compare_op);
-    int keys1_end_local = num_keys1;
-    int keys2_beg_local = diag0_local - keys1_beg_local;
-    int keys2_end_local = num_keys2;
+    const int keys1_end_local = num_keys1;
+    const int keys2_beg_local = diag0_local - keys1_beg_local;
+    const int keys2_end_local = num_keys2;
 
-    int num_keys1_local = keys1_end_local - keys1_beg_local;
-    int num_keys2_local = keys2_end_local - keys2_beg_local;
+    const int num_keys1_local = keys1_end_local - keys1_beg_local;
+    const int num_keys2_local = keys2_end_local - keys2_beg_local;
 
     // perform serial merge
     //
@@ -607,10 +626,9 @@ struct AgentMerge
     CTA_SYNC();
 
     // write keys
-    //
     if (ping)
     {
-      if (IS_FULL_TILE)
+      _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
       {
         BlockStoreKeysPing(storage.store_keys_ping).Store(keys_out_ping + tile_base, keys_local);
       }
@@ -621,7 +639,7 @@ struct AgentMerge
     }
     else
     {
-      if (IS_FULL_TILE)
+      _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
       {
         BlockStoreKeysPong(storage.store_keys_pong).Store(keys_out_pong + tile_base, keys_local);
       }
@@ -632,11 +650,11 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
-    if (!KEYS_ONLY)
+    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
     {
       CTA_SYNC();
 
-      reg_to_shared(&storage.items_shared[0], items_local);
+      detail::reg_to_shared<BLOCK_THREADS>(&storage.items_shared[0], items_local);
 
       CTA_SYNC();
 
@@ -654,7 +672,7 @@ struct AgentMerge
       //
       if (ping)
       {
-        if (IS_FULL_TILE)
+        _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
         {
           BlockStoreItemsPing(storage.store_items_ping).Store(items_out_ping + tile_base, items_local);
         }
@@ -665,7 +683,7 @@ struct AgentMerge
       }
       else
       {
-        if (IS_FULL_TILE)
+        _CCCL_IF_CONSTEXPR (IS_FULL_TILE)
         {
           BlockStoreItemsPong(storage.store_items_pong).Store(items_out_pong + tile_base, items_local);
         }
@@ -710,11 +728,12 @@ struct AgentMerge
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
-    int tile_idx      = static_cast<int>(blockIdx.x);
-    int num_tiles     = static_cast<int>(gridDim.x);
-    OffsetT tile_base = OffsetT(tile_idx) * ITEMS_PER_TILE;
-    int tid           = static_cast<int>(threadIdx.x);
-    int items_in_tile = static_cast<int>((cub::min)(static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
+    const int tile_idx      = static_cast<int>(blockIdx.x);
+    const int num_tiles     = static_cast<int>(gridDim.x);
+    const OffsetT tile_base = OffsetT(tile_idx) * ITEMS_PER_TILE;
+    const int tid           = static_cast<int>(threadIdx.x);
+    const int items_in_tile =
+      static_cast<int>((cub::min)(static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
 
     if (tile_idx < num_tiles - 1)
     {

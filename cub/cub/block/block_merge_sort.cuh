@@ -52,20 +52,22 @@ CUB_NAMESPACE_BEGIN
 // Merging Made Simple", Multithreaded Architectures and Applications (MTAAP)
 // Workshop, IEEE 26th International Parallel & Distributed Processing
 // Symposium (IPDPS), 2012
-template <typename KeyT, typename KeyIteratorT, typename OffsetT, typename BinaryPred>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(
-  KeyIteratorT keys1, KeyIteratorT keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
+template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
+  using key_t = typename ::cuda::std::iterator_traits<KeyIt1>::value_type;
+  static_assert(::cuda::std::is_same<key_t, typename ::cuda::std::iterator_traits<KeyIt2>::value_type>::value, "");
+
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
   OffsetT keys1_end   = (cub::min)(diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
-    OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
-    KeyT key1   = keys1[mid];
-    KeyT key2   = keys2[diag - 1 - mid];
-    bool pred   = binary_pred(key2, key1);
-
+    const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
+    const key_t key1  = keys1[mid];
+    const key_t key2  = keys2[diag - 1 - mid];
+    const bool pred   = binary_pred(key2, key1);
     if (pred)
     {
       keys1_end = mid;
@@ -78,9 +80,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(
   return keys1_begin;
 }
 
-template <typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
-  KeyT* keys_shared,
+  KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
   int keys1_count,
@@ -89,8 +91,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ITEMS_PER_THREAD],
   CompareOp compare_op)
 {
-  int keys1_end = keys1_beg + keys1_count;
-  int keys2_end = keys2_beg + keys2_count;
+  const int keys1_end = keys1_beg + keys1_count;
+  const int keys2_end = keys2_beg + keys2_count;
 
   KeyT key1 = keys_shared[keys1_beg];
   KeyT key2 = keys_shared[keys2_beg];
@@ -98,11 +100,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
 #pragma unroll
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    bool p = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-
+    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
     output[item]  = p ? key2 : key1;
     indices[item] = p ? keys2_beg++ : keys1_beg++;
-
     if (p)
     {
       key2 = keys_shared[keys2_beg];
@@ -437,7 +437,7 @@ public:
       int keys1_count = keys1_end - keys1_beg;
       int keys2_count = keys2_end - keys2_beg;
 
-      int partition_diag = MergePath<KeyT>(
+      int partition_diag = MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
