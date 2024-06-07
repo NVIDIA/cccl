@@ -113,8 +113,7 @@ jobs:
             echo ""
             echo "2. Run the failed command inside the same Docker container used by this CI job:"
             cat <<__EOF
-             RAPIDS_LIBS='${RAPIDS_LIBS}' \\
-          $(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; echo "   $var='${!var}' \\"; done)
+             RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
                .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
                /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
           __EOF
