@@ -83,8 +83,10 @@ dirty_files() {
 # Return 1 if any files outside of the subproject directories have changed
 inspect_cccl() {
   subprojs_grep_expr=$(
+    exclusions=("${subprojects[@]}")
+    exclusions+=("docs")
     IFS="|"
-    echo "(${subprojects[*]})/"
+    echo "(${exclusions[*]})/"
   )
 
   if dirty_files | grep -v -E "${subprojs_grep_expr}" | grep -q "."; then
