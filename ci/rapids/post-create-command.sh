@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
 
-set -e;
-
 PROJECT_MANIFEST_YML="${PROJECT_MANIFEST_YML:-"/opt/rapids-build-utils/manifest.yaml"}"
 
-# Install `rapids-build-utils` feature if it's not installed (i.e. if running locally via `.devcontainer/launch.sh -d`)
-if ! test -f "${PROJECT_MANIFEST_YML}"; then
-    git clone --depth 1 --filter=blob:none --sparse https://github.com/rapidsai/devcontainers.git /tmp/rapidsai-devcontainers;
-    git -C /tmp/rapidsai-devcontainers sparse-checkout set features/src/rapids-build-utils;
-    (
-        cd /tmp/rapidsai-devcontainers/features/src/rapids-build-utils;
-        sudo bash ./install.sh;
-    )
-    rm -rf /tmp/rapidsai-devcontainers;
-fi
+_restore_original_manifest() {
+    if ! test -f "/tmp/manifest.yaml.orig"; then
+        cp "${PROJECT_MANIFEST_YML}" /tmp/manifest.yaml.orig;
+    fi
+    sudo cp /tmp/manifest.yaml.orig "${PROJECT_MANIFEST_YML}";
+}
 
-if ! test -f "/tmp/manifest.yaml.orig"; then
-    cp "${PROJECT_MANIFEST_YML}" /tmp/manifest.yaml.orig;
-fi
-
-sudo cp /tmp/manifest.yaml.orig "${PROJECT_MANIFEST_YML}";
+_apply_manifest_modifications() {
+    # Restore the original manifest.yaml
+    _restore_original_manifest;
+    # Remove unnecessary libs from manifest.yaml
+    _prune_libs_from_manifest;
+    # Update manifest.yaml repo git info
+    _update_repo_git_info;
+    # Create rapids-cmake override JSON file and update default CMake arguments in manifest.yaml
+    _create_rapids_cmake_override_json;
+    # Print the entire manifest.yaml after modifications
+    cat "${PROJECT_MANIFEST_YML}";
+    # Regenerate the RAPIDS build scripts from the new manifest.yaml
+    rapids-generate-scripts;
+}
 
 _prune_libs_from_manifest() {
     local -;
@@ -85,23 +88,31 @@ _create_rapids_cmake_override_json() {
     sudo yq -i "(.repos[] | .python[] | .args.cmake) += \" ${cmake_args[*]}\"" "${PROJECT_MANIFEST_YML}";
 }
 
-# Remove unnecessary libs from manifest.yaml
-_prune_libs_from_manifest;
+_run_post_create_command() {
+    local -;
+    set -e;
 
-# Update manifest.yaml repo git info
-_update_repo_git_info;
+    # Install `rapids-build-utils` feature if it's not installed (i.e. if running locally via `.devcontainer/launch.sh -d`)
+    if ! test -f "${PROJECT_MANIFEST_YML}"; then
+        git clone --depth 1 --filter=blob:none --sparse https://github.com/rapidsai/devcontainers.git /tmp/rapidsai-devcontainers;
+        git -C /tmp/rapidsai-devcontainers sparse-checkout set features/src/rapids-build-utils;
+        (
+            cd /tmp/rapidsai-devcontainers/features/src/rapids-build-utils;
+            sudo bash ./install.sh;
+        )
+        rm -rf /tmp/rapidsai-devcontainers;
+    fi
 
-# Create rapids-cmake override JSON file and update default CMake arguments in manifest.yaml
-_create_rapids_cmake_override_json;
+    # Modify manifest.yaml based on envvars
+    _apply_manifest_modifications;
 
-# Print the entire manifest.yaml after modifications
-cat "${PROJECT_MANIFEST_YML}";
+    # Clone all the repos
+    gh config set git_protocol ssh;
+    gh config set git_protocol ssh --host github.com;
 
-# Generate the initial set of clone-<repo> scripts
-rapids-generate-scripts;
+    clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules;
+}
 
-# Clone all the repos
-gh config set git_protocol ssh;
-gh config set git_protocol ssh --host github.com;
-
-clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules;
+if [ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]; then
+    _run_post_create_command;
+fi
