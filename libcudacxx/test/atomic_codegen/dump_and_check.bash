@@ -6,4 +6,4 @@ input_archive=$1
 input_testfile=$2
 input_prefix=$3
 
-cuobjdump --dump-sass $input_archive | FileCheck --check-prefix $input_prefix $input_testfile
+cuobjdump --dump-ptx $input_archive | FileCheck --check-prefix $input_prefix $input_testfile
