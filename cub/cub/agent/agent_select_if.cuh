@@ -772,10 +772,6 @@ struct AgentSelectIf
     InitializeSelections<true, IS_LAST_TILE>(
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
-    // Ensure that all items have been loaded before signalling subsequent CTAs that may potentially override this CTA's
-    // items in case of in-place compaction
-    __threadfence();
-
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction (i.e., needs_store_release), this is needed to order the loads of
     // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
@@ -853,10 +849,6 @@ struct AgentSelectIf
     // Initialize selection_flags
     InitializeSelections<false, IS_LAST_TILE>(
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
-
-    // Ensure that all items have been loaded before signalling subsequent CTAs that may potentially override this CTA's
-    // items in case of in-place compaction
-    __threadfence();
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction (i.e., needs_store_release), this is needed to order the loads of
