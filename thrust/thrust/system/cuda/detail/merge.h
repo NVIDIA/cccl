@@ -62,35 +62,6 @@ namespace cuda_cub
 
 namespace __merge
 {
-
-template <class KeysIt1, class KeysIt2, class Size, class BinaryPred>
-Size THRUST_DEVICE_FUNCTION
-merge_path(KeysIt1 keys1, KeysIt2 keys2, Size keys1_count, Size keys2_count, Size diag, BinaryPred binary_pred)
-{
-  using key1_type = typename iterator_traits<KeysIt1>::value_type;
-  using key2_type = typename iterator_traits<KeysIt2>::value_type;
-
-  Size keys1_begin = thrust::max<Size>(0, diag - keys2_count);
-  Size keys1_end   = thrust::min<Size>(diag, keys1_count);
-
-  while (keys1_begin < keys1_end)
-  {
-    Size mid       = (keys1_begin + keys1_end) >> 1;
-    key1_type key1 = keys1[mid];
-    key2_type key2 = keys2[diag - 1 - mid];
-    bool pred      = binary_pred(key2, key1);
-    if (pred)
-    {
-      keys1_end = mid;
-    }
-    else
-    {
-      keys1_begin = mid + 1;
-    }
-  }
-  return keys1_begin;
-}
-
 template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD                     = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
@@ -134,8 +105,8 @@ struct PartitionAgent
     Size partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
     if (partition_idx < num_partitions)
     {
-      Size partition_at               = (thrust::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
-      Size partition_diag             = merge_path(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
+      Size partition_at   = (thrust::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
+      Size partition_diag = cub::MergePath(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
       merge_partitions[partition_idx] = partition_diag;
     }
   }
@@ -349,7 +320,7 @@ struct MergeAgent
       //
       int diag0_loc = min<int>(num_keys1 + num_keys2, ITEMS_PER_THREAD * threadIdx.x);
 
-      int keys1_beg_loc = merge_path(
+      int keys1_beg_loc = cub::MergePath(
         &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_loc, compare_op);
       int keys1_end_loc = num_keys1;
       int keys2_beg_loc = diag0_loc - keys1_beg_loc;
