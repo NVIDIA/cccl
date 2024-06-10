@@ -14,21 +14,12 @@ Concepts:
       "thrust"
     ],
     "ctk": "11.1",
-    "gpu": "t4",
+    "cudacxx": 'nvcc',
+    "cxx": 'gcc10',
     "sm": "75-real",
-    "cxx": {
-      "id": "clang",
-      "name": "Clang",
-      "version": "9",
-      "exe": "clang++"
-    },,
-    "cudacxx": {
-      "id": "nvcc",
-      "name": "NVCC",
-      "version": "11.1",
-      "exe": "nvcc"
-    },
     "std": 17
+    "cpu": "amd64",
+    "gpu": "t4",
   }
 
 Matrix jobs are read from the matrix.yaml file and converted into a JSON object and passed to matrix_job_to_dispatch_group, where
@@ -119,6 +110,71 @@ def error_message_with_matrix_job(matrix_job, message):
     return f"{matrix_job['origin']['workflow_location']}: {message}\n  Input: {matrix_job['origin']['original_matrix_job']}"
 
 
+@memoize_result
+def canonicalize_host_compiler_name(cxx_string):
+    """
+    Canonicalize the host compiler cxx_string.
+
+    Valid input formats: 'gcc', 'gcc10', or 'gcc-12'.
+    Output format: 'gcc12'.
+
+    If no version is specified, the latest version is used.
+    """
+    id, version = re.match(r'^([a-z]+)-?([\d\.]+)?$', cxx_string).groups()
+
+    if not id in matrix_yaml['host_compilers']:
+        raise Exception(
+            f"Unknown host compiler '{id}'. Valid options are: {', '.join(matrix_yaml['host_compilers'].keys())}")
+
+    hc_def = matrix_yaml['host_compilers'][id]
+    hc_versions = hc_def['versions']
+
+    if not version:
+        version = max(hc_def['versions'].keys(), key=lambda x: tuple(map(int, x.split('.'))))
+
+    # Check for aka's:
+    if not version in hc_def['versions']:
+        for version_key, version_data in hc_def['versions'].items():
+            if 'aka' in version_data and version == version_data['aka']:
+                version = version_key
+
+    if not version in hc_def['versions']:
+        raise Exception(
+            f"Unknown version '{version}' for host compiler '{id}'.")
+
+    cxx_string = f"{id}{version}"
+
+    return cxx_string
+
+
+@memoize_result
+def get_host_compiler(cxx_string):
+    id, version = re.match(r'^([a-z]+)([\d\.]+)?$', cxx_string).groups()
+
+    if not id in matrix_yaml['host_compilers']:
+        raise Exception(
+            f"Unknown host compiler '{id}'. Valid options are: {', '.join(matrix_yaml['host_compilers'].keys())}")
+
+    hc_def = matrix_yaml['host_compilers'][id]
+
+    if not version in hc_def['versions']:
+        raise Exception(
+            f"Unknown version '{version}' for host compiler '{id}'. Valid options are: {', '.join(hc_def['versions'].keys())}")
+
+    version_def = hc_def['versions'][version]
+
+    result = {'id': id,
+              'name': hc_def['name'],
+              'version': version,
+              'container_tag': hc_def['container_tag'],
+              'exe': hc_def['exe']}
+
+    for key, value in version_def.items():
+        result[key] = value
+
+    return result
+
+
 @static_result
 def get_all_matrix_job_tags_sorted():
     required_tags = set(matrix_yaml['required_tags'])
@@ -140,18 +196,16 @@ def get_all_matrix_job_tags_sorted():
     return sorted_important_tags + sorted_meh_tags + sorted_noise_tags
 
 
-def lookup_supported_stds(device_compiler=None, host_compiler=None, project=None):
+def lookup_supported_stds(device_compiler=None, cxx_string=None, project=None):
     stds = set(matrix_yaml['all_stds'])
     if device_compiler:
         key = f"{device_compiler['name']}{device_compiler['version']}"
         if not key in matrix_yaml['lookup_cudacxx_supported_stds']:
             raise Exception(f"Missing matrix.yaml 'lookup_cudacxx_supported_stds' entry for key '{key}'")
         stds = stds & set(matrix_yaml['lookup_cudacxx_supported_stds'][key])
-    if host_compiler:
-        key = f"{host_compiler['name']}{host_compiler['version']}"
-        if not key in matrix_yaml['lookup_cxx_supported_stds']:
-            raise Exception(f"Missing matrix.yaml 'lookup_cxx_supported_stds' entry for key '{key}'")
-        stds = stds & set(matrix_yaml['lookup_cxx_supported_stds'][key])
+    if cxx_string:
+        host_compiler = get_host_compiler(cxx_string)
+        stds = stds & set(host_compiler['stds'])
     if project:
         key = project
         if not key in matrix_yaml['lookup_project_supported_stds']:
@@ -173,13 +227,6 @@ def get_formatted_project_name(project_name):
     return project_name
 
 
-def get_formatted_host_compiler_name(host_compiler):
-    config_name = host_compiler['name']
-    if config_name in matrix_yaml['formatted_cxx_names']:
-        return matrix_yaml['formatted_cxx_names'][config_name]
-    return config_name
-
-
 def get_formatted_job_type(job_type):
     if job_type in matrix_yaml['formatted_jobs']:
         return matrix_yaml['formatted_jobs'][job_type]
@@ -188,24 +235,25 @@ def get_formatted_job_type(job_type):
 
 
 def is_windows(matrix_job):
-    return matrix_job['host_compiler']['exe'] == 'cl'
+    host_compiler = get_host_compiler(matrix_job['cxx'])
+    return host_compiler['container_tag'] == 'cl'
 
 
 def generate_dispatch_group_name(matrix_job):
     project_name = get_formatted_project_name(matrix_job['project'])
     ctk = matrix_job['ctk']
     device_compiler = matrix_job['cudacxx']
-    host_compiler_name = get_formatted_host_compiler_name(matrix_job['cxx'])
+    host_compiler = get_host_compiler(matrix_job['cxx'])
 
     compiler_info = ""
     if device_compiler['name'] == 'nvcc':
-        compiler_info = f"nvcc {host_compiler_name}"
+        compiler_info = f"nvcc {host_compiler['name']}"
     elif device_compiler['name'] == 'llvm':
         compiler_info = f"clang-cuda"
     else:
-        compiler_info = f"{device_compiler['name']}-{device_compiler['version']} {host_compiler_name}"
+        compiler_info = f"{device_compiler['name']}-{device_compiler['version']} {host_compiler['name']}"
 
-    return f"{project_name} {compiler_info} CTK{ctk}"
+    return f"{project_name} CTK{ctk} {compiler_info}"
 
 
 def generate_dispatch_job_name(matrix_job, job_type):
@@ -215,10 +263,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
     cuda_compile_arch = (" sm{" + matrix_job['sm'] + "}") if 'sm' in matrix_job else ""
     cmake_options = (' ' + matrix_job['cmake_options']) if 'cmake_options' in matrix_job else ""
 
-    host_compiler_name = get_formatted_host_compiler_name(matrix_job['cxx'])
-    host_compiler_info = f"{host_compiler_name}{matrix_job['cxx']['version']}"
+    host_compiler = get_host_compiler(matrix_job['cxx'])
 
-    config_tag = f"{std_str}{host_compiler_info}"
+    config_tag = f"{std_str}{host_compiler['name']}{host_compiler['version']}"
 
     formatted_job_type = get_formatted_job_type(job_type)
 
@@ -241,17 +288,20 @@ def generate_dispatch_job_runner(matrix_job, job_type):
 
 
 def generate_dispatch_job_ctk_version(matrix_job, job_type):
+    ".devcontainers/launch.sh --cuda option:"
     return matrix_job['ctk']
 
 
 def generate_dispatch_job_host_compiler(matrix_job, job_type):
-    return matrix_job['cxx']['name'] + matrix_job['cxx']['version']
+    ".devcontainers/launch.sh --host option:"
+    host_compiler = get_host_compiler(matrix_job['cxx'])
+    return host_compiler['container_tag'] + host_compiler['version']
 
 
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml['devcontainer_version']
     ctk = matrix_job['ctk']
-    host_compiler = matrix_job['cxx']['name'] + matrix_job['cxx']['version']
+    host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
     if is_windows(matrix_job):
         return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}"
@@ -294,28 +344,31 @@ def generate_dispatch_job_command(matrix_job, job_type):
 
 
 def generate_dispatch_job_origin(matrix_job, job_type):
+    # Already has silename, line number, etc:
     origin = matrix_job['origin'].copy()
 
-    matrix_job = matrix_job.copy()
-    del matrix_job['origin']
+    origin_job = matrix_job.copy()
+    del origin_job['origin']
 
-    matrix_job['jobs'] = get_formatted_job_type(job_type)
+    origin_job['jobs'] = get_formatted_job_type(job_type)
 
-    if 'cxx' in matrix_job:
-        host_compiler = matrix_job['cxx']
-        formatted_name = get_formatted_host_compiler_name(host_compiler)
-        matrix_job['cxx_name'] = formatted_name
-        matrix_job['cxx_full'] = formatted_name + host_compiler['version']
-        del matrix_job['cxx']
+    # The origin tags are used to build the execution summary for the CI PR comment.
+    # Replace some of the clunkier tags with a summary-friendly version:
+    if 'cxx' in origin_job:
+        host_compiler = get_host_compiler(origin_job['cxx'])
+        del origin_job['cxx']
 
-    if 'cudacxx' in matrix_job:
-        device_compiler = matrix_job['cudacxx']
+        origin_job['cxx'] = host_compiler['name'] + host_compiler['version']
+        origin_job['cxx_family'] = host_compiler['name']
+
+    if 'cudacxx' in origin_job:
+        device_compiler = origin_job['cudacxx']
         formatted_name = 'clang-cuda' if device_compiler['name'] == 'llvm' else device_compiler['name']
-        matrix_job['cudacxx_name'] = formatted_name
-        matrix_job['cudacxx_full'] = formatted_name + device_compiler['version']
-        del matrix_job['cudacxx']
+        origin_job['cudacxx_name'] = formatted_name
+        origin_job['cudacxx_full'] = formatted_name + device_compiler['version']
+        del origin_job['cudacxx']
 
-    origin['matrix_job'] = matrix_job
+    origin['matrix_job'] = origin_job
 
     return origin
 
@@ -685,6 +738,8 @@ def set_default_tags(matrix_job):
 
 
 def set_derived_tags(matrix_job):
+    matrix_job['cxx'] = canonicalize_host_compiler_name(matrix_job['cxx'])
+
     # Expand nvcc device compiler shortcut:
     if matrix_job['cudacxx'] == 'nvcc':
         matrix_job['cudacxx'] = {'name': 'nvcc', 'version': matrix_job['ctk'], 'exe': 'nvcc'}
@@ -698,11 +753,11 @@ def set_derived_tags(matrix_job):
         matrix_job['sm'] = matrix_yaml['gpu_sm'][matrix_job['gpu']]
 
     if 'std' in matrix_job and matrix_job['std'] == 'all':
-        host_compiler = matrix_job['cxx'] if 'cxx' in matrix_job else None
+        cxx_string = matrix_job['cxx'] if 'cxx' in matrix_job else None
         device_compiler = matrix_job['cudacxx'] if 'cudacxx' in matrix_job else None
         project = matrix_job['project'] if 'project' in matrix_job else None
 
-        matrix_job['std'] = lookup_supported_stds(device_compiler, host_compiler, project)
+        matrix_job['std'] = lookup_supported_stds(device_compiler, cxx_string, project)
 
     if matrix_job['project'] in matrix_yaml['project_expanded_tests'] and 'test' in matrix_job['jobs']:
         matrix_job['jobs'].remove('test')
@@ -905,10 +960,11 @@ def print_devcontainer_info(args):
             unique_combinations.append(combo)
 
     for combo in unique_combinations:
-        combo['compiler_name'] = combo['cxx']['name']
-        combo['compiler_version'] = combo['cxx']['version']
-        combo['compiler_exe'] = combo['cxx']['exe']
+        host_compiler = get_host_compiler(combo['cxx'])
         del combo['cxx']
+        combo['compiler_name'] = host_compiler['container_tag']
+        combo['compiler_version'] = host_compiler['version']
+        combo['compiler_exe'] = host_compiler['exe']
 
         combo['cuda'] = combo['ctk']
         del combo['ctk']
@@ -917,6 +973,17 @@ def print_devcontainer_info(args):
 
     # Pretty print the devcontainer json to stdout:
     print(json.dumps(devcontainer_json, indent=2))
+
+
+def preprocess_matrix_yaml(matrix):
+    # Make all compiler version keys into strings:
+    for id, hc_def in matrix['host_compilers'].items():
+        new_versions = {}
+        for version, attrs in hc_def['versions'].items():
+            new_versions[str(version)] = attrs
+        hc_def['versions'] = new_versions
+
+    return matrix
 
 
 def main():
@@ -943,6 +1010,7 @@ def main():
     with open(args.matrix_file, 'r') as f:
         global matrix_yaml
         matrix_yaml = yaml.safe_load(f)
+        matrix_yaml = preprocess_matrix_yaml(matrix_yaml)
         matrix_yaml['filename'] = args.matrix_file
 
     if args.workflows:
