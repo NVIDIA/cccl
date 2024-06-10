@@ -50,15 +50,15 @@ private:
     char __buffer[256];
   };
 
-  static char* __format_string(::cudaError_t __status, const char* __msg, char* __formatted_msg) noexcept
+  static char* __format_cuda_error(::cudaError_t __status, const char* __msg, char* __msg_buffer) noexcept
   {
-    ::snprintf(__formatted_msg, 256, "cudaError %d: %s", __status, __msg);
-    return __formatted_msg;
+    ::snprintf(__msg_buffer, 256, "cudaError %d: %s", __status, __msg);
+    return __msg_buffer;
   }
 
 public:
-  cuda_error(::cudaError_t __status, const char* __msg, __msg_storage __formatted_msg = {0}) noexcept
-      : ::std::runtime_error(__format_string(__status, __msg, __formatted_msg.__buffer))
+  cuda_error(::cudaError_t __status, const char* __msg, __msg_storage __msg_buffer = {0}) noexcept
+      : ::std::runtime_error(__format_cuda_error(__status, __msg, __msg_buffer.__buffer))
   {}
 };
 
