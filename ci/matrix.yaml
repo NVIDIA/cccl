@@ -132,8 +132,7 @@ workflows:
     # Disable non-CUDA tests on this platform.
     - {jobs: ['test_cpu'], os: 'ubuntu18.04'}
     # GPU runners are not available on Windows.
-    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], os: 'windows2022'}
-
+    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2017', 'msvc2019', 'msvc14.36', 'msvc2022']}
 
 #
 # Resources for compute_matrix.py. These can be modified to add new jobs, etc.
@@ -156,7 +155,6 @@ defaulted_tags:
  - 'cudacxx'         # Device compiler as {name, version, exe} or 'nvcc' to use nvcc from the specified `ctk`.
                      # Will be exploded if a list.
  - 'project'         # Project name (e.g. libcudacxx, cub, thrust, cccl). Will be exploded if a list.
- - 'os'              # Operating system. Will be exploded if a list.
 
 # These tags will only exist if needed:
 optional_tags:
@@ -180,54 +178,6 @@ default_project:
   - 'libcudacxx'
   - 'cub'
   - 'thrust'
-# Special handling: lookup os from ctk/cxx info
-# See `matrix.yml` at https://github.com/rapidsai/devcontainers
-default_os_lookup:
-  'ctk11.1-gcc6': 'ubuntu18.04'
-  'ctk11.1-gcc7': 'ubuntu18.04'
-  'ctk11.1-gcc8': 'ubuntu18.04'
-  'ctk11.1-gcc9': 'ubuntu18.04'
-  'ctk11.1-llvm9': 'ubuntu18.04'
-  'ctk11.1-cl14.16': 'windows2022'
-  'ctk11.8-gcc11': 'ubuntu22.04'
-  'ctk12.0-gcc7': 'ubuntu20.04'
-  'ctk12.0-gcc8': 'ubuntu20.04'
-  'ctk12.0-gcc9': 'ubuntu20.04'
-  'ctk12.0-gcc10': 'ubuntu20.04'
-  'ctk12.0-gcc11': 'ubuntu22.04'
-  'ctk12.0-gcc12': 'ubuntu22.04'
-  'ctk12.0-llvm9': 'ubuntu20.04'
-  'ctk12.0-llvm10': 'ubuntu20.04'
-  'ctk12.0-llvm11': 'ubuntu20.04'
-  'ctk12.0-llvm12': 'ubuntu20.04'
-  'ctk12.0-llvm13': 'ubuntu20.04'
-  'ctk12.0-llvm14': 'ubuntu20.04'
-  'ctk12.0-llvm15': 'ubuntu22.04'
-  'ctk12.0-llvm16': 'ubuntu22.04'
-  'ctk12.0-cl14.29': 'windows2022'
-  'ctk12.0-cl14.36': 'windows2022'
-  'ctk12.0-cl14.39': 'windows2022'
-  'ctk12.0-oneapi2023.2.0': 'ubuntu22.04'
-  'ctk12.4-gcc7': 'ubuntu20.04'
-  'ctk12.4-gcc8': 'ubuntu20.04'
-  'ctk12.4-gcc9': 'ubuntu20.04'
-  'ctk12.4-gcc10': 'ubuntu20.04'
-  'ctk12.4-gcc11': 'ubuntu22.04'
-  'ctk12.4-gcc12': 'ubuntu22.04'
-  'ctk12.4-gcc13': 'ubuntu22.04'
-  'ctk12.4-llvm9': 'ubuntu20.04'
-  'ctk12.4-llvm10': 'ubuntu20.04'
-  'ctk12.4-llvm11': 'ubuntu20.04'
-  'ctk12.4-llvm12': 'ubuntu20.04'
-  'ctk12.4-llvm13': 'ubuntu20.04'
-  'ctk12.4-llvm14': 'ubuntu20.04'
-  'ctk12.4-llvm15': 'ubuntu22.04'
-  'ctk12.4-llvm16': 'ubuntu22.04'
-  'ctk12.4-llvm17': 'ubuntu22.04'
-  'ctk12.4-cl14.29': 'windows2022'
-  'ctk12.4-cl14.36': 'windows2022'
-  'ctk12.4-cl14.39': 'windows2022'
-  'ctk12.4-oneapi2023.2.0': 'ubuntu22.04'
 
 # Lookup supported C++ standards for a given compiler when `std: 'all'`.
 all_stds:           [11, 14, 17, 20]

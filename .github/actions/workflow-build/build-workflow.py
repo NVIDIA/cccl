@@ -8,23 +8,27 @@ Concepts:
     "jobs": [
       "test"
     ],
-    "ctk": "11.1",
-    "gpu": "t4",
-    "sm": "75-real",
-    "cxx": {
-      "name": "llvm",
-      "version": "9",
-      "exe": "clang++"
-    },
-    "std": [
-      17
-    ],
     "project": [
       "libcudacxx",
       "cub",
       "thrust"
     ],
-    "os": "ubuntu18.04"
+    "ctk": "11.1",
+    "gpu": "t4",
+    "sm": "75-real",
+    "cxx": {
+      "id": "clang",
+      "name": "Clang",
+      "version": "9",
+      "exe": "clang++"
+    },,
+    "cudacxx": {
+      "id": "nvcc",
+      "name": "NVCC",
+      "version": "11.1",
+      "exe": "nvcc"
+    },
+    "std": 17
   }
 
 Matrix jobs are read from the matrix.yaml file and converted into a JSON object and passed to matrix_job_to_dispatch_group, where
@@ -127,20 +131,13 @@ def get_all_matrix_job_tags_sorted():
     sorted_important_tags = ['project', 'jobs', 'cudacxx', 'cxx', 'ctk', 'gpu', 'std', 'sm', 'cpu']
 
     # Always last, derived:
-    sorted_noise_tags = ['os', 'origin']
+    sorted_noise_tags = ['origin']
 
     # In between?
     sorted_tags = set(sorted_important_tags + sorted_noise_tags)
     sorted_meh_tags = sorted(list(all_tags - sorted_tags))
 
     return sorted_important_tags + sorted_meh_tags + sorted_noise_tags
-
-
-def lookup_os(ctk, host_compiler):
-    key = f'ctk{ctk}-{host_compiler["name"]}{host_compiler["version"]}'
-    if not key in matrix_yaml['default_os_lookup']:
-        raise Exception(f"Missing matrix.yaml `default_os_lookup` entry for key `{key}`")
-    return matrix_yaml['default_os_lookup'][key]
 
 
 def lookup_supported_stds(device_compiler=None, host_compiler=None, project=None):
@@ -191,7 +188,7 @@ def get_formatted_job_type(job_type):
 
 
 def is_windows(matrix_job):
-    return matrix_job['os'].startswith('windows')
+    return matrix_job['host_compiler']['exe'] == 'cl'
 
 
 def generate_dispatch_group_name(matrix_job):
@@ -254,13 +251,12 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml['devcontainer_version']
     ctk = matrix_job['ctk']
-    image_os = matrix_job['os']
     host_compiler = matrix_job['cxx']['name'] + matrix_job['cxx']['version']
 
     if is_windows(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}-{image_os}"
+        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}"
 
-    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}-{image_os}"
+    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}"
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
@@ -682,7 +678,6 @@ def validate_required_tags(matrix_job):
 
 def set_default_tags(matrix_job):
     generic_defaults = set(matrix_yaml['defaulted_tags'])
-    generic_defaults -= set(['os'])  # handled specially.
 
     for tag in generic_defaults:
         if tag not in matrix_job:
@@ -690,9 +685,6 @@ def set_default_tags(matrix_job):
 
 
 def set_derived_tags(matrix_job):
-    if 'os' not in matrix_job:
-        matrix_job['os'] = lookup_os(matrix_job['ctk'], matrix_job['cxx'])
-
     # Expand nvcc device compiler shortcut:
     if matrix_job['cudacxx'] == 'nvcc':
         matrix_job['cudacxx'] = {'name': 'nvcc', 'version': matrix_job['ctk'], 'exe': 'nvcc'}
@@ -903,7 +895,7 @@ def print_devcontainer_info(args):
         matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
     # Remove all but the following keys from the matrix jobs:
-    keep_keys = ['ctk', 'cxx', 'os']
+    keep_keys = ['ctk', 'cxx']
     combinations = [{key: job[key] for key in keep_keys} for job in matrix_jobs]
 
     # Remove duplicates and filter out windows jobs:
