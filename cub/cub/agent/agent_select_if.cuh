@@ -872,7 +872,11 @@ struct AgentSelectIf
       num_tile_selections -= num_discount;
     }
 
-    // Scatter flagged items
+    // note (only applies to in-place stream compaction): We can avoid having to introduce explicit memory order between
+    // the look-back (i.e., loading previous tiles' states) and scattering items (which means, potentially overwriting
+    // previous tiles' input items, in case of in-place compaction), because this is implicitly ensured through
+    // execution dependency: The scatter stage requires the offset from the prefix-sum and it can only know the
+    // prefix-sum after having read that from the decoupled look-back. Scatter flagged items
     Scatter<IS_LAST_TILE, false>(
       items,
       selection_flags,
