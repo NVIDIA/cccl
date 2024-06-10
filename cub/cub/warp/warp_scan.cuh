@@ -606,7 +606,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
-  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //! within a block of 128 threads (one scan per warp).
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_api.cu
   //!     :language: c++

@@ -55,7 +55,7 @@ __global__ void InclusiveScanKernel(int* output)
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
-  // Collectively compute the block-wide inclusive prefix max scan
+  // Collectively compute the block-wide inclusive scan max
   block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cub::Max());
 
   // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
@@ -105,7 +105,7 @@ __global__ void InclusiveScanKernelAggregate(int* output, int* d_block_aggregate
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
-  // Collectively compute the block-wide inclusive prefix max scan
+  // Collectively compute the block-wide inclusive scan max
   int block_aggregate;
   block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cub::Max(), block_aggregate);
 

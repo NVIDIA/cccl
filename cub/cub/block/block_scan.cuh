@@ -2254,9 +2254,9 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
-  //! where each thread owns 4 consecutive items.
+  //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
   //!
   //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
   //!
@@ -2265,10 +2265,6 @@ public:
   //!     :start-after: example-begin inclusive-scan-array-init-value
   //!     :end-before: example-end inclusive-scan-array-init-value
   //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``{[0, -1], [2, -3],[4, -5], ... [126, -127]}``.
-  //! The corresponding output ``thread_data`` in those threads will be
-  //! ``{[1, 1], [2, 2],[3, 3], ... [126, 126]}``.
   //!
   //! @endrst
   //!
@@ -2401,7 +2397,7 @@ public:
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
-  //! where each thread owns 4 consecutive items.
+  //! where each thread owns 2 consecutive items.
   //!
   //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
   //!
@@ -2410,11 +2406,7 @@ public:
   //!     :start-after: example-begin inclusive-scan-array-aggregate-init-value
   //!     :end-before: example-end inclusive-scan-array-aggregate-init-value
   //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``{[0, -1], [2, -3],[4, -5], ... [126, -127]}``.
-  //! The corresponding output ``thread_data`` in those threads will be
-  //! ``{[1, 1], [2, 2],[3, 3], ... [126, 126]}``.
-  //! Furthermore the value ``126`` will be stored in ``block_aggregate`` for all threads.
+  //! The value ``126`` will be stored in ``block_aggregate`` for all threads.
   //!
   //! @endrst
   //!
