@@ -9,6 +9,7 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: libcpp-no-exceptions
+// UNSUPPORTED: nvrtc
 
 // E& error() & noexcept;
 // const E& error() const & noexcept;

@@ -9,6 +9,7 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: libcpp-no-exceptions
+// UNSUPPORTED: nvrtc
 
 // explicit bad_expected_access(E e);
 
