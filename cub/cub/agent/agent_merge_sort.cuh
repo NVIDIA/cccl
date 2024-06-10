@@ -382,17 +382,8 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
 #pragma unroll
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
-      int idx = BLOCK_THREADS * item + threadIdx.x;
-      // FIXME(bgruber): the CUB version (1 LOC below) generates different SASS than the if/else from Thrust
-      // output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
-      if (idx < count1)
-      {
-        output[item] = input1[idx];
-      }
-      else
-      {
-        output[item] = input2[idx - count1];
-      }
+      int idx      = BLOCK_THREADS * item + threadIdx.x;
+      output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
     }
   }
   else
@@ -403,16 +394,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
       int idx = BLOCK_THREADS * item + threadIdx.x;
       if (idx < count1 + count2)
       {
-        // FIXME(bgruber): the CUB version (1 LOC below) generates different SASS than the if/else from Thrust
-        // output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
-        if (idx < count1)
-        {
-          output[item] = input1[idx];
-        }
-        else
-        {
-          output[item] = input2[idx - count1];
-        }
+        output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
       }
     }
   }
