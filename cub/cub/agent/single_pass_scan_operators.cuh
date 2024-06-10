@@ -630,7 +630,11 @@ struct ScanTileState<T, true>
   }
 
   /**
-   * Update the specified tile's inclusive value and corresponding status
+   * Update the specified tile's inclusive value and corresponding status.
+   * @tparam EnforceStoreRelease
+   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
+   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
+   *   look-back to ensure transitivity.
    */
   template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
@@ -646,7 +650,11 @@ struct ScanTileState<T, true>
   }
 
   /**
-   * Update the specified tile's partial value and corresponding status
+   * Update the specified tile's partial value and corresponding status.
+   * @tparam EnforceStoreRelease
+   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
+   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
+   *   look-back to ensure transitivity.
    */
   template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
@@ -823,7 +831,11 @@ struct ScanTileState<T, false>
   }
 
   /**
-   * Update the specified tile's inclusive value and corresponding status
+   * Update the specified tile's inclusive value and corresponding status.
+   * @tparam EnforceStoreRelease
+   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
+   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
+   *   look-back to ensure transitivity.
    */
   template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
@@ -834,7 +846,11 @@ struct ScanTileState<T, false>
   }
 
   /**
-   * Update the specified tile's partial value and corresponding status
+   * Update the specified tile's partial value and corresponding status.
+   * @tparam EnforceStoreRelease
+   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
+   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
+   *   look-back to ensure transitivity.
    */
   template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
@@ -1039,7 +1055,11 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   }
 
   /**
-   * Update the specified tile's inclusive value and corresponding status
+   * Update the specified tile's inclusive value and corresponding status.
+   * @tparam EnforceStoreRelease
+   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
+   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
+   *   look-back to ensure transitivity.
    */
   template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
@@ -1056,7 +1076,11 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   }
 
   /**
-   * Update the specified tile's partial value and corresponding status
+   * Update the specified tile's partial value and corresponding status.
+   * @tparam EnforceStoreRelease
+   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
+   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
+   *   look-back to ensure transitivity.
    */
   template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
@@ -1123,6 +1147,10 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
  * @tparam DelayConstructorT
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
+ * @tparam EnforceStoreRelease
+ *   Whether to enfore a `st.release` operation when writing the tile status (i.e., when calling the tile's `SetPartial`
+ *   and `SetInclusive` member functions) to help introduce memory order. It is strongly advised to stay consistent with
+ *   regards to enforcing `st.release` across *all* tiles of a decoupled look-back to ensure transitivity.
  */
 template <typename T,
           typename ScanOpT,
