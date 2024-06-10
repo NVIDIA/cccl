@@ -30,13 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <class _Tp,
-          _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp)
-#if _CCCL_STD_VER >= 2014
-                                      || _CCCL_TRAIT(_CUDA_VSTD::is_same, _Tp, _CUDA_VSTD_NOVERSION::byte)
-#endif // _CCCL_STD_VER >= 2014
-                                      ,
-                                    int> = 0>
+template <class _Tp, _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp ceil_div(const _Tp __a, const _Tp __b) noexcept
 {
   _LIBCUDACXX_DEBUG_ASSERT(__a >= _Tp(0), "cuda::ceil_div: a must be non negative");

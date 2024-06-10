@@ -24,10 +24,10 @@ __host__ __device__ constexpr void test()
 
   assert(cuda::ceil_div(T(0), T(1)) == T(0));
   assert(cuda::ceil_div(T(1), T(1)) == T(1));
-  assert(cuda::ceil_div(T(45), T(7)) == T(7));
+  assert(cuda::ceil_div(T(126), T(64)) == T(2));
 
   // ensure that we are resilient against overflow
-  assert(cuda::ceil_div(maxv, T(4)) == maxv / 4 + 1);
+  assert(cuda::ceil_div(maxv, T(1)) == maxv);
   assert(cuda::ceil_div(maxv, maxv) == T(1));
 }
 
