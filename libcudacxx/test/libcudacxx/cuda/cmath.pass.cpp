@@ -8,28 +8,35 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/cmath>
+#include <cuda/std/cassert>
+#include <cuda/std/limits>
 #include <cuda/std/utility>
-#include "test_macros.h"
-
-template <class T>
-void test()
-{
-  constexpr T maxv = cuda::std::numeric_limits<T>::max();
-
-  assert(ceil_div(T(0), T(1)) == T(0));
-  assert(ceil_div(T(1), T(1)) == T(1));
-  assert(ceil_div(maxv, T(1)) == maxv);
-  assert(ceil_div(maxv, maxv) == T(1));
-}
 
 #include <cstdint>
 
-int main(int arg, char** argv)
+#include "test_macros.h"
+
+template <class T>
+__host__ __device__ constexpr void test()
+{
+  constexpr T maxv = cuda::std::numeric_limits<T>::max();
+
+  assert(cuda::ceil_div(T(0), T(1)) == T(0));
+  assert(cuda::ceil_div(T(1), T(1)) == T(1));
+  assert(cuda::ceil_div(T(45), T(7)) == T(7));
+  assert(cuda::ceil_div(maxv, T(1)) == maxv);
+  assert(cuda::ceil_div(maxv, maxv) == T(1));
+}
+
+__host__ __device__ constexpr bool test()
 {
   // Builtin integer types:
   test<char>();
   test<signed char>();
   test<unsigned char>();
+
+  test<short>();
+  test<unsigned short>();
 
   test<int>();
   test<unsigned int>();
@@ -56,8 +63,18 @@ int main(int arg, char** argv)
   test<std::uint32_t>();
   test<std::uint64_t>();
 
-  // Other
-  test<__int128>();
+// Compiler bug where the individual calculation succeeds but the result of the function call is wrong
+#if 0 // defined(TEST_HAS_NO_INT128_T)
+  test<__int128_t>();
+  test<__uint128_t>();
+#endif // !TEST_HAS_NO_INT128_T
 
+  return true;
+}
+
+int main(int arg, char** argv)
+{
+  test();
+  static_assert(test(), "");
   return 0;
 }
