@@ -47,7 +47,7 @@ struct cuda_memory_resource
    * @brief Allocate device memory of size at least \p __bytes.
    * @param __bytes The size in bytes of the allocation.
    * @param __alignment The requested alignment of the allocation.
-   * @throw cuda::std::bad_alloc in case of invalid alignment or cuda::cuda_error of the returned error code.
+   * @throw std::bad_alloc in case of invalid alignment or cuda::cuda_error of the returned error code.
    * @return Pointer to the newly allocated memory
    */
   _CCCL_NODISCARD void* allocate(const size_t __bytes, const size_t __alignment = default_cuda_malloc_alignment) const
