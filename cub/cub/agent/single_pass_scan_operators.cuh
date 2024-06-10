@@ -1211,7 +1211,7 @@ struct TilePrefixCallbackOp
     {
       detail::uninitialized_copy(&temp_storage.block_aggregate, block_aggregate);
 
-      tile_status.SetPartial<StoreRelease>(tile_idx, block_aggregate);
+      tile_status.template SetPartial<StoreRelease>(tile_idx, block_aggregate);
     }
 
     int predecessor_idx = tile_idx - threadIdx.x - 1;
@@ -1239,7 +1239,7 @@ struct TilePrefixCallbackOp
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
-      tile_status.SetInclusive<StoreRelease>(tile_idx, inclusive_prefix);
+      tile_status.template SetInclusive<StoreRelease>(tile_idx, inclusive_prefix);
 
       detail::uninitialized_copy(&temp_storage.exclusive_prefix, exclusive_prefix);
 

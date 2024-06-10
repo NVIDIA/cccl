@@ -790,7 +790,7 @@ struct AgentSelectIf
       // Update tile status if this is not the last tile
       if (!IS_LAST_TILE)
       {
-        tile_state.SetInclusive<needs_store_release>(0, num_tile_selections);
+        tile_state.template SetInclusive<needs_store_release>(0, num_tile_selections);
       }
     }
 
