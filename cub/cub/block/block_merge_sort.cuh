@@ -59,16 +59,12 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   using key_t = typename ::cuda::std::iterator_traits<KeyIt1>::value_type;
   static_assert(::cuda::std::is_same<key_t, typename ::cuda::std::iterator_traits<KeyIt2>::value_type>::value, "");
 
-  // FIXME(bgruber): CUB uses different implementation here
-  // OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
-  OffsetT keys1_begin = (cub::max)(0, diag - keys2_count);
+  OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
   OffsetT keys1_end   = (cub::min)(diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
-    // FIXME(bgruber): CUB uses different implementation here
-    // const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
-    const OffsetT mid = (keys1_begin + keys1_end) >> 1;
+    const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
     const key_t key1  = keys1[mid];
     const key_t key2  = keys2[diag - 1 - mid];
     const bool pred   = binary_pred(key2, key1);
