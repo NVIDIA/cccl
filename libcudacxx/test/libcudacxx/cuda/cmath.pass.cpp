@@ -63,8 +63,7 @@ __host__ __device__ constexpr bool test()
   test<std::uint32_t>();
   test<std::uint64_t>();
 
-// Compiler bug where the individual calculation succeeds but the result of the function call is wrong
-#if 0 // defined(TEST_HAS_NO_INT128_T)
+#if defined(TEST_HAS_NO_INT128_T)
   test<__int128_t>();
   test<__uint128_t>();
 #endif // !TEST_HAS_NO_INT128_T

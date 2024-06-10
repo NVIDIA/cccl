@@ -28,9 +28,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp, _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t ceil_div(const _Tp __a, const _Tp __b) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp ceil_div(const _Tp __a, const _Tp __b) noexcept
 {
-  return __a / __b + (__a % __b != 0);
+  return static_cast<_Tp>(__a / __b + (__a % __b != 0));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
