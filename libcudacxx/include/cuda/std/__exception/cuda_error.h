@@ -50,7 +50,7 @@ private:
     char __buffer[256];
   };
 
-  static char* __format_string(::cudaError_t __status, const char* __msg, char __formatted_msg[256]) noexcept
+  static char* __format_string(::cudaError_t __status, const char* __msg, char* __formatted_msg) noexcept
   {
     ::snprintf(__formatted_msg, 256, "cudaError %d: %s", __status, __msg);
     return __formatted_msg;
