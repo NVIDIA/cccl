@@ -45,15 +45,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 class cuda_error : public ::std::runtime_error
 {
 private:
-  static char* __format_string(::cudaError_t __status, const char* __msg, , char __formatted_msg[256]) noexcept
+  struct __msg_storage
+  {
+    char __buffer[256];
+  };
+
+  static char* __format_string(::cudaError_t __status, const char* __msg, char __formatted_msg[256]) noexcept
   {
     ::snprintf(__formatted_msg, 256, "cudaError %d: %s", __status, __msg);
     return __formatted_msg;
   }
 
 public:
-  cuda_error(::cudaError_t __status, const char* __msg, char __formatted_msg[256] = {0}) noexcept
-      : ::std::runtime_error(__format_string(__status, __msg, __formatted_msg))
+  cuda_error(::cudaError_t __status, const char* __msg, __msg_storage __formatted_msg = {0}) noexcept
+      : ::std::runtime_error(__format_string(__status, __msg, __formatted_msg.__buffer))
   {}
 };
 
