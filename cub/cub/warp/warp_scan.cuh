@@ -501,10 +501,11 @@ public:
   //!     :start-after: example-begin inclusive-warp-scan-init-value
   //!     :end-before: example-end inclusive-warp-scan-init-value
   //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``{0,  1,  2,  3, 4, ..., 127}``. The corresponding output ``thread_data`` in the first
-  //! warp would be ``{1,  2,   4, ...,   497}``, the output for the second warp would be
-  //! ``{33,  66, 100, ..., 1024}``, etc.
+  //! Suppose the set of input ``thread_data`` in the first warp is
+  //! ``{0, 1, 2, 3, ..., 31}``, in the second warp is ``{1, 2, 3, 4, ..., 32}`` etc.
+  //!  The corresponding output ``thread_data`` for a max operation in the first
+  //! warp would be ``{3, 3, 3, 3, ..., 31}``, the output for the second warp would be
+  //! ``{3, 3, 3, 4, ..., 32}``, etc.
   //! @endrst
   //!
   //! @tparam ScanOp
@@ -607,32 +608,18 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
-  //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
-  //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!
-  //!        // Compute inclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
-  //!            thread_data, thread_data, INT_MIN, cub::Max(), warp_aggregate);
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-warp-scan-init-value-aggregate
+  //!     :end-before: example-end inclusive-warp-scan-init-value-aggregate
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
-  //! warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
-  //! ``32, 32, 34, 34, ..., 62, 62``, etc.  Furthermore, ``warp_aggregate`` would be assigned
-  //! ``30`` for threads in the first warp, ``62`` for threads in the second warp, etc.
+  //! ``{1, 1, 1, 1, ..., 1}``. For initial value equal to 3, the corresponding output
+  //! ``thread_data`` for a sum operation in the first warp would be
+  //! ``{4, 5, 6, 7, ..., 35}``, the output for the second warp would be
+  //! ``{4, 5, 6, 7, ..., 35}``, etc.  Furthermore,  ``warp_aggregate`` would be assigned
+  //! ``32`` for threads in each warp.
   //! @endrst
   //!
   //! @tparam ScanOp
