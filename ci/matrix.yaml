@@ -1,4 +1,3 @@
-# Workflow definitions:
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -6,7 +5,7 @@ workflows:
   #
   # Example:
   # override:
-  #   - {jobs: ['build'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
+  #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
   #
   override:
 
@@ -92,56 +91,9 @@ workflows:
     # Disable non-CUDA tests on this platform.
     - {jobs: ['test_cpu'], ctk: '11.1'}
 
-#
-# Resources for compute_matrix.py. These can be modified to add new jobs, etc.
-#
-# Jobs are executed by running scripts:
-# - Linux:   'ci/<job>_<project>.sh`
-# - Windows: `ci/windows/<job>_<project>.ps1`
-
-# A matrix entry must have the following tag.
-required_tags:
-  - 'jobs' # A list of job types to run (e.g. 'build', 'test', 'nvrtc', 'infra', 'verify_codegen', ...) for
-           # the specified configuration(s).
-
-# If a matrix entry omits these tags, a default value (defined later in `default_<tag>`) is used.
-defaulted_tags:
- - 'ctk'             # CUDA ToolKit version. Will be exploded if a list.
- - 'cpu'             # CPU architecture. Will be exploded if a list.
- - 'gpu'             # GPU model. Will be exploded if a list.
- - 'cxx'             # Host compiler {name, version, exe}. Will be exploded if a list.
- - 'cudacxx'         # Device compiler as {name, version, exe} or 'nvcc' to use nvcc from the specified `ctk`.
-                     # Will be exploded if a list.
- - 'project'         # Project name (e.g. libcudacxx, cub, thrust, cccl). Will be exploded if a list.
-
-# These tags will only exist if needed:
-optional_tags:
-  - 'std'             # C++ standard. Passed to script with `-std <std>`. Will be exploded if a list.
-                      # If set to 'all', all stds supported by the host/device compiler are used.
-  - 'sm'              # `CMAKE_CUDA_ARCHITECTURES` Passed to script with `-arch <sm>`.
-                      # Defaults to use the settings in the CMakePresets.json file.
-                      # Set to 'gpu' to only target the GPU in the `gpu` tag.
-                      # Can pass multiple architectures via "60;70-real;80-virtual"
-                      # Will be exploded if a list (e.g. `sm: ['60;70;80;90', '90a']` creates two jobs)
-  - 'cmake_options'   # Additional CMake options to pass to the build. Passed to script with `-cmake_options "<cmake_options>"`.
-                      # Will be exploded if a list.
-
-# `default_<tag>`: Used when the tag is omitted.
-default_ctk: 'curr'
-default_cudacxx: 'nvcc'
-default_cxx: 'gcc'
-default_cpu: 'amd64'
-default_gpu: 'v100'
-default_project:
-  - 'libcudacxx'
-  - 'cub'
-  - 'thrust'
-
-# Tags that aren't exploded:
-non_exploded_tags:
-  - 'jobs' # Keeping jobs as a list allows for dependency handling of build->test steps.
 
 #############################################################################################
+
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
 devcontainer_version: '24.06'
@@ -206,7 +158,6 @@ host_compilers:
     exe: icpc
     versions:
       2023.2.0: { stds: [11, 14, 17,   ] }
-
 
 # Jobs support the following properties:
 #
@@ -278,6 +229,7 @@ projects:
   cudax:
     stds: [17, 20]
 
+# testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:
   v100:     { sm: 70 }                # 32 GB,  40 runners
   t4:       { sm: 75, testing: true } # 16 GB,   8 runners
@@ -287,3 +239,46 @@ gpus:
   rtx4090:  { sm: 89, testing: true } # 24 GB,  10 runners
   h100:     { sm: 90 }                # 80 GB,  16 runners
 
+# Tags are used to define a `matrix job` in the workflow section.
+#
+# Tags have the following options:
+#  - required: Whether the tag is required. Default is false.
+#  - default: The default value for the tag. Default is null.
+tags:
+   # An array of jobs (e.g. 'build', 'test', 'nvrtc', 'infra', 'verify_codegen', ...)
+   # See the `jobs` map.
+  jobs: { required: true }
+  # CUDA ToolKit version
+  # See the `ctks` map.
+  ctk: { default: 'curr' }
+  # CPU architecture
+  cpu: { default: 'amd64' }
+  # GPU model
+  gpu: { default: 'v100' }
+  # Host compiler {name, version, exe}
+  # See the `host_compilers` map.
+  cxx: { default: 'gcc' }
+  # Device compiler.
+  # See the `device_compilers` map.
+  cudacxx: { default: 'nvcc' }
+  # Project name (e.g. libcudacxx, cub, thrust, cccl)
+  # See the `projects` map.
+  project: { default: ['libcudacxx', 'cub', 'thrust'] }
+  # C++ standard
+  # If set to 'all', all stds supported by the ctk/compilers/project are used.
+  # If set, will be passed to script with `-std <std>`.
+  std: { required: false }
+  # GPU architecture
+  # - If set, passed to script with `-arch <sm>`.
+  # - Format is the same as `CMAKE_CUDA_ARCHITECTURES`:
+  #   - PTX only: 70-virtual
+  #   - SASS only: 70-real
+  #   - Both: 70
+  # - Can pass multiple architectures via "60;70-real;80-virtual"
+  # - Defaults to use the settings in the CMakePresets.json file.
+  # - Will be exploded if an array, e.g. `sm: ['60;70;80;90', '90a']` creates two jobs.
+  # - Set to 'gpu' to only target the GPU in the `gpu` tag.
+  sm: { required: false }
+  # Additional CMake options to pass to the build.
+  # If set, passed to script with `-cmake_options "<cmake_options>"`.
+  cmake_options: { required: false }

@@ -281,12 +281,30 @@ def get_job_type_info(job):
     return result
 
 
+@memoize_result
+def get_tag_info(tag):
+    if not tag in matrix_yaml['tags'].keys():
+        raise Exception(
+            f"Unknown tag '{tag}'. Valid options are: {', '.join(matrix_yaml['tags'].keys())}")
+
+    result = matrix_yaml['tags'][tag]
+    result['id'] = tag
+
+    # Default tags are implicitly required:
+    if 'default' in result:
+        result['required'] = True
+    else:
+        result['default'] = None
+
+    if 'required' not in result:
+        result['required'] = False
+
+    return result
+
+
 @static_result
 def get_all_matrix_job_tags_sorted():
-    required_tags = set(matrix_yaml['required_tags'])
-    defaulted_tags = set(matrix_yaml['defaulted_tags'])
-    optional_tags = set(matrix_yaml['optional_tags'])
-    all_tags = required_tags | defaulted_tags | optional_tags
+    all_tags = set(matrix_yaml['tags'].keys())
 
     # Sorted using a highly subjective opinion on importance:
     # Always first, information dense:
@@ -741,8 +759,6 @@ def apply_matrix_job_exclusion(matrix_job, exclusion):
         if not tag in matrix_job:
             return matrix_job
 
-        # print(f"tag: {tag}, excluded_values: {excluded_values}")
-
         # Some tags are left unexploded (e.g. 'jobs') to optimize scheduling,
         # so the values can be either a list or a single value.
         # Standardize to a list for comparison:
@@ -792,26 +808,23 @@ def remove_excluded_jobs(matrix_jobs):
     return filtered_matrix_jobs
 
 
-def validate_required_tags(matrix_job):
-    for tag in matrix_yaml['required_tags']:
-        if tag not in matrix_job:
+def set_default_tags(matrix_job):
+    all_tags = matrix_yaml['tags'].keys()
+    for tag in all_tags:
+        tag_info = get_tag_info(tag)
+        if tag_info['default'] and tag not in matrix_job:
+            matrix_job[tag] = tag_info['default']
+        if tag_info['required'] and tag not in matrix_job:
             raise Exception(error_message_with_matrix_job(matrix_job, f"Missing required tag '{tag}'"))
 
-    all_tags = get_all_matrix_job_tags_sorted()
     for tag in matrix_job:
-        if tag not in all_tags:
+        if tag == 'origin':
+            continue
+        if tag not in matrix_yaml['tags']:
             raise Exception(error_message_with_matrix_job(matrix_job, f"Unknown tag '{tag}'"))
 
     if 'gpu' in matrix_job and matrix_job['gpu'] not in matrix_yaml['gpus'].keys():
         raise Exception(error_message_with_matrix_job(matrix_job, f"Unknown gpu '{matrix_job['gpu']}'"))
-
-
-def set_default_tags(matrix_job):
-    generic_defaults = set(matrix_yaml['defaulted_tags'])
-
-    for tag in generic_defaults:
-        if tag not in matrix_job:
-            matrix_job[tag] = matrix_yaml['default_'+tag]
 
 
 def set_derived_tags(matrix_job):
@@ -846,8 +859,10 @@ def set_derived_tags(matrix_job):
 
 
 def next_explode_tag(matrix_job):
+    non_exploded_tags = ['jobs']
+
     for tag in matrix_job:
-        if not tag in matrix_yaml['non_exploded_tags'] and isinstance(matrix_job[tag], list):
+        if not tag in non_exploded_tags and isinstance(matrix_job[tag], list):
             return tag
     return None
 
@@ -875,7 +890,6 @@ def preprocess_matrix_jobs(matrix_jobs, explode_only=False):
             result.extend(explode_tags(matrix_job))
     else:
         for matrix_job in matrix_jobs:
-            validate_required_tags(matrix_job)
             set_default_tags(matrix_job)
             for job in explode_tags(matrix_job):
                 set_derived_tags(job)
