@@ -111,6 +111,26 @@ def error_message_with_matrix_job(matrix_job, message):
 
 
 @memoize_result
+def canonicalize_ctk_version(ctk_string):
+    if ctk_string in matrix_yaml['ctk_versions']:
+        return ctk_string
+
+    # Check for aka's:
+    for ctk_key, ctk_value in matrix_yaml['ctk_versions'].items():
+        if 'aka' in ctk_value and ctk_string == ctk_value['aka']:
+            return ctk_key
+
+    raise Exception(f"Unknown CTK version '{ctk_string}'")
+
+
+def get_ctk(ctk_string):
+    result = matrix_yaml['ctk_versions'][ctk_string]
+    result["version"] = ctk_string
+    return result
+
+
+
+@memoize_result
 def canonicalize_host_compiler_name(cxx_string):
     """
     Canonicalize the host compiler cxx_string.
@@ -196,13 +216,11 @@ def get_all_matrix_job_tags_sorted():
     return sorted_important_tags + sorted_meh_tags + sorted_noise_tags
 
 
-def lookup_supported_stds(device_compiler=None, cxx_string=None, project=None):
+def lookup_supported_stds(ctk_version=None, cxx_string=None, project=None):
     stds = set(matrix_yaml['all_stds'])
-    if device_compiler:
-        key = f"{device_compiler['name']}{device_compiler['version']}"
-        if not key in matrix_yaml['lookup_cudacxx_supported_stds']:
-            raise Exception(f"Missing matrix.yaml 'lookup_cudacxx_supported_stds' entry for key '{key}'")
-        stds = stds & set(matrix_yaml['lookup_cudacxx_supported_stds'][key])
+    if ctk_version:
+        ctk = get_ctk(ctk_version)
+        stds = stds & set(ctk['stds'])
     if cxx_string:
         host_compiler = get_host_compiler(cxx_string)
         stds = stds & set(host_compiler['stds'])
@@ -739,6 +757,7 @@ def set_default_tags(matrix_job):
 
 def set_derived_tags(matrix_job):
     matrix_job['cxx'] = canonicalize_host_compiler_name(matrix_job['cxx'])
+    matrix_job['ctk'] = canonicalize_ctk_version(matrix_job['ctk'])
 
     # Expand nvcc device compiler shortcut:
     if matrix_job['cudacxx'] == 'nvcc':
@@ -754,10 +773,10 @@ def set_derived_tags(matrix_job):
 
     if 'std' in matrix_job and matrix_job['std'] == 'all':
         cxx_string = matrix_job['cxx'] if 'cxx' in matrix_job else None
-        device_compiler = matrix_job['cudacxx'] if 'cudacxx' in matrix_job else None
+        ctk = matrix_job['ctk'] if 'ctk' in matrix_job else None
         project = matrix_job['project'] if 'project' in matrix_job else None
 
-        matrix_job['std'] = lookup_supported_stds(device_compiler, cxx_string, project)
+        matrix_job['std'] = lookup_supported_stds(ctk, cxx_string, project)
 
     if matrix_job['project'] in matrix_yaml['project_expanded_tests'] and 'test' in matrix_job['jobs']:
         matrix_job['jobs'].remove('test')
@@ -976,6 +995,12 @@ def print_devcontainer_info(args):
 
 
 def preprocess_matrix_yaml(matrix):
+    # Make all CTK version keys into strings:
+    new_ctk = {}
+    for version, attrs in matrix['ctk_versions'].items():
+        new_ctk[str(version)] = attrs
+    matrix['ctk_versions'] = new_ctk
+
     # Make all compiler version keys into strings:
     for id, hc_def in matrix['host_compilers'].items():
         new_versions = {}

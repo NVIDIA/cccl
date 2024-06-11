@@ -1,7 +1,4 @@
-ctk_11_1: &ctk_11_1 '11.1'
-ctk_11_8: &ctk_11_8 '11.8'
-ctk_12_0: &ctk_12_0 '12.0'
-ctk_curr: &ctk_curr '12.4'
+
 
 # Needed until cudacxx refactors into string:
 llvm-newest: &llvm-newest { name: 'llvm', version: '17', exe: 'clang++' }
@@ -14,14 +11,14 @@ workflows:
   #
   # Example:
   # override:
-  #   - {jobs: ['build'], project: 'thrust', std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
+  #   - {jobs: ['build'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
   #
   override:
 
   pull_request:
     # Old CTK
-    - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: ['gcc6', 'gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2017']}
-    - {jobs: ['build'], std: 'all', ctk: *ctk_11_8, cxx: ['gcc11'], sm: '60;70;80;90'}
+    - {jobs: ['build'], std: 'all', ctk: '11.1', cxx: ['gcc6', 'gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2017']}
+    - {jobs: ['build'], std: 'all', ctk: '11.8', cxx: ['gcc11'], sm: '60;70;80;90'}
     # Current CTK
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16']}
@@ -37,68 +34,68 @@ workflows:
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
-    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0, *ctk_curr], std: 'all', cxx: ['gcc9', 'gcc10, 'gcc11']}
-    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0, *ctk_curr], std: 'all', cxx: ['clang9, 'clang10', 'clang11', 'clang12', 'clang13', 'clang14']}
-    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: ['clang15']}
-    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0,          ], std: 'all', cxx: ['msvc2022_1436']}
-    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: ['msvc2022']}
-    # - {jobs: ['build'], project: 'cudax', ctk: [*ctk_12_0           ], std: 17,    cxx: ['gcc12'], sm: "90"}
-    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 17,    cxx: ['gcc12'], sm: "90a"}
-    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: ['gcc12', 'clang16'], cpu: 'arm64'}
-    # - {jobs: ['build'], project: 'cudax', ctk: [           *ctk_curr], std: 17,    cxx: ['intel']}
-    # - {jobs: ['test'],  project: 'cudax', ctk: [*ctk_12_0, *ctk_curr], std: 'all', cxx: ['gcc12']}
-    # - {jobs: ['test'],  project: 'cudax', ctk: [*ctk_12_0           ], std: 'all', cxx: ['clang14']}
-    # - {jobs: ['test'],  project: 'cudax', ctk: [           *ctk_curr], std: 'all', cxx: ['clang16']}
+    # - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10, 'gcc11']}
+    # - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['clang9, 'clang10', 'clang11', 'clang12', 'clang13', 'clang14']}
+    # - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang15']}
+    # - {jobs: ['build'], project: 'cudax', ctk: ['12.0',       ], std: 'all', cxx: ['msvc1436']}
+    # - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['msvc2022']}
+    # - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 17,    cxx: ['gcc12'], sm: "90"}
+    # - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['gcc12'], sm: "90a"}
+    # - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc12', 'clang16'], cpu: 'arm64'}
+    # - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['intel']}
+    # - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
+    # - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
+    # - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang16']}
     # cccl-infra:
-    - {jobs: ['infra'], project: 'cccl', ctk: *ctk_11_1, cxx: ['gcc6', 'clang9']}
-    - {jobs: ['infra'], project: 'cccl', ctk: *ctk_curr, cxx: ['gcc', 'clang']}
+    - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
+    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc', 'clang']}
   nightly:
   # libcudacxx build fails, CUB tests fail:
-    - {jobs: ['build'], ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['cub']}
-    - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['thrust']}
-  # - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11]      }
+    - {jobs: ['build'], ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['cub']}
+    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['thrust']}
+  # - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11]      }
 
   # libcudacxx build fails, CUB tests fail:
-    - {jobs: ['build'], ctk: *ctk_11_1, gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17],     project: ['cub']}
-    - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17],     project: ['thrust']}
-  # - {jobs: ['test'],  ctk: *ctk_11_1, gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]      }
+    - {jobs: ['build'], ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17],     project: ['cub']}
+    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17],     project: ['thrust']}
+  # - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]      }
 
   # CUB + libcudacxx tests fails:
-    - {jobs: ['build'], ctk: *ctk_11_8, gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17],     project: ['libcudacxx', 'cub']}
-    - {jobs: ['test'],  ctk: *ctk_11_8, gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17],     project: ['thrust']}
-  # - {jobs: ['test'],  ctk: *ctk_11_8, gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17]      }
+    - {jobs: ['build'], ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17],     project: ['libcudacxx', 'cub']}
+    - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17],     project: ['thrust']}
+  # - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17]      }
 
   # libcudacxx tests fail:
-    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17],     project: ['libcudacxx']}
-    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17],     project: ['cub', 'thrust']}
-   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14]     }
-   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all'    }
-   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]     }
-   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20] }
-   # - {jobs: ['test'],  ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17]     }
+    - {jobs: ['build'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
+    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17],     project: ['libcudacxx']}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['cub', 'thrust']}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17],     project: ['cub', 'thrust']}
+   # - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14]     }
+   # - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all'    }
+   # - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]     }
+   # - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20] }
+   # - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17]     }
 
     # nvrtc:
-    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 't4',       sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 't4',       sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
   # Fails on h100:
-  # - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
+  # - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
+    # GPU runners are not available on Windows.
+    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx:  ['msvc2017', 'msvc2019', 'msvc14.36', 'msvc2022']}
     # Ubuntu 18.04 is EOL and we only use it to get access to CTK 11.1 containers for CUDA testing.
     # Disable non-CUDA tests on this platform.
-    - {jobs: ['test_cpu'], os: 'ubuntu18.04'}
-    # GPU runners are not available on Windows.
-    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2017', 'msvc2019', 'msvc14.36', 'msvc2022']}
+    - {jobs: ['test_cpu'], ctk: '11.1'}
 
 #
 # Resources for compute_matrix.py. These can be modified to add new jobs, etc.
@@ -135,7 +132,7 @@ optional_tags:
                       # Will be exploded if a list.
 
 # `default_<tag>`: Used when the tag is omitted.
-default_ctk: *ctk_curr
+default_ctk: 'curr'
 default_cudacxx: 'nvcc'
 default_cxx: 'gcc'
 default_cpu: 'amd64'
@@ -274,6 +271,12 @@ devcontainer_version: '24.06'
 
 # All supported C++ standards:
 all_stds: [11, 14, 17, 20]
+
+ctk_versions:
+  11.1: { stds: [11, 14, 17,   ] }
+  11.8: { stds: [11, 14, 17,   ] }
+  12.0: { stds: [11, 14, 17, 20] }
+  12.4: { stds: [11, 14, 17, 20], aka: 'curr' }
 
 host_compilers:
   gcc:
