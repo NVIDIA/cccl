@@ -12,13 +12,6 @@ To account for non-uniform thread synchronization costs that are not always low,
 memory model and concurrency facilities in the ``cuda::`` namespace with **thread scopes**, retaining the syntax and
 semantics of standard C++ by default.
 
-Asynchronous operations
-------------------------
-
-`Asynchronous operations <libcudacxx-extended-api-asynchronous-operations>` like
-`memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>` are non-blocking operations performed
-_as-if_ by a new thread of execution.
-
 .. _libcudacxx-extended-api-memory-model-thread-scopes:
 
 Thread Scopes
