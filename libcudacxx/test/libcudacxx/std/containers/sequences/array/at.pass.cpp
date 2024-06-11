@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  include <cuda/std/detail/libcxx/include/stdexcept>
+#  include <stdexcept>
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
@@ -50,7 +50,7 @@ void test_exceptions()
       TEST_IGNORE_NODISCARD array.at(4);
       assert(false);
     }
-    catch (cuda::std::out_of_range const&)
+    catch (std::out_of_range const&)
     {
       // pass
     }
@@ -64,7 +64,7 @@ void test_exceptions()
       TEST_IGNORE_NODISCARD array.at(5);
       assert(false);
     }
-    catch (cuda::std::out_of_range const&)
+    catch (std::out_of_range const&)
     {
       // pass
     }
@@ -78,7 +78,7 @@ void test_exceptions()
       TEST_IGNORE_NODISCARD array.at(6);
       assert(false);
     }
-    catch (cuda::std::out_of_range const&)
+    catch (std::out_of_range const&)
     {
       // pass
     }
@@ -93,7 +93,7 @@ void test_exceptions()
       TEST_IGNORE_NODISCARD array.at(static_cast<size_type>(-1));
       assert(false);
     }
-    catch (cuda::std::out_of_range const&)
+    catch (std::out_of_range const&)
     {
       // pass
     }
@@ -111,7 +111,7 @@ void test_exceptions()
       TEST_IGNORE_NODISCARD array.at(0);
       assert(false);
     }
-    catch (cuda::std::out_of_range const&)
+    catch (std::out_of_range const&)
     {
       // pass
     }

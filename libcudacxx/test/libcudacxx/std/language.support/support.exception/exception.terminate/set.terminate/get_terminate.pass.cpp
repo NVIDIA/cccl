@@ -11,7 +11,7 @@
 
 // test get_terminate
 
-#include <cuda/std/__exception_>
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
