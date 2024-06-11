@@ -33,7 +33,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(cuda::ceil_div(maxv, maxv) == T(1));
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   // Builtin integer types:
   test<char>();
