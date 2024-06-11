@@ -3,9 +3,6 @@ ctk_11_8: &ctk_11_8 '11.8'
 ctk_12_0: &ctk_12_0 '12.0'
 ctk_curr: &ctk_curr '12.4'
 
-# The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '24.06'
-
 # Needed until cudacxx refactors into string:
 llvm-newest: &llvm-newest { name: 'llvm', version: '17', exe: 'clang++' }
 
@@ -149,7 +146,6 @@ default_project:
   - 'thrust'
 
 # Lookup supported C++ standards for a given compiler when `std: 'all'`.
-all_stds:           [11, 14, 17, 20]
 lookup_cudacxx_supported_stds:
   'nvcc11.1':       [11, 14, 17    ]
   'nvcc11.8':       [11, 14, 17    ]
@@ -272,6 +268,12 @@ testing_pool_gpus:
   - 'rtxa6000'
   - 'l4'
   - 'rtx4090'
+
+# The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
+devcontainer_version: '24.06'
+
+# All supported C++ standards:
+all_stds: [11, 14, 17, 20]
 
 host_compilers:
   gcc:
