@@ -1049,7 +1049,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_EXPORTED_FROM_ABI __declspec(dllimport)
 #    endif
 
-#    define _LIBCUDACXX_TYPE_VIS      _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_FUNC_VIS      _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_HIDDEN
