@@ -1056,7 +1056,6 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-#    define _LIBCUDACXX_ENUM_VIS
 
 #  endif // defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
 
@@ -1123,7 +1122,7 @@ typedef __char32_t char32_t;
 #    else
 #      define _LIBCUDACXX_ENUM_VIS
 #    endif
-#  endif
+#  endif // _LIBCUDACXX_ENUM_VIS
 
 #  ifndef _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
 #    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS) && __has_attribute(__type_visibility__)
