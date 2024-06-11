@@ -141,64 +141,6 @@ default_project:
 non_exploded_tags:
   - 'jobs' # Keeping jobs as a list allows for dependency handling of build->test steps.
 
-# Jobs that have an implied prerequisite 'build' job:
-build_required_jobs:
-  - 'test'
-  - 'test_gpu'
-  - 'test_cpu'
-  - 'test_nolid'
-  - 'test_lid0'
-  - 'test_lid1'
-  - 'test_lid2'
-
-# Jobs that require a GPU
-gpu_required_jobs:
-  - 'test'
-  - 'test_gpu'
-  - 'test_nolid'
-  - 'test_lid0'
-  - 'test_lid1'
-  - 'test_lid2'
-  - 'nvrtc'
-  - 'infra' # cccl infra's example project test launches a kernel
-
-# When --skip-tests is given to compute-matrix.py, these jobs are ignored.
-skip_test_jobs:
-  - 'test'
-  - 'test_cpu'
-  - 'test_gpu'
-  - 'test_nolid'
-  - 'test_lid0'
-  - 'test_lid1'
-  - 'test_lid2'
-  - 'nvrtc'
-  - 'infra'
-
-# Map the job type to the script invocation spec:
-# The script is invoked as `ci/<spec[prefix]>_<project>.sh <spec[args]>`.
-# 'prefix' is required. 'args' is optional.
-# If a job is not specified explicitly, the default is { 'prefix': '<job>' }.
-job_invoke:
-  'test_cpu'   : { 'prefix': 'test', 'args': '-cpu-only' }
-  'test_gpu'   : { 'prefix': 'test', 'args': '-gpu-only' }
-  'test_nolid' : { 'prefix': 'test', 'args': '-no-lid' }
-  'test_lid0'  : { 'prefix': 'test', 'args': '-lid0' }
-  'test_lid1'  : { 'prefix': 'test', 'args': '-lid1' }
-  'test_lid2'  : { 'prefix': 'test', 'args': '-lid2' }
-
-
-# Human readable name for jobs. Default behavior is to capitalize the first letter.
-formatted_jobs:
-  'nvrtc':          'NVRTC'
-  'verify_codegen': 'VerifyCodegen'
-  'test_cpu':       'TestCPU'
-  'test_gpu':       'TestGPU'
-  'test_nolid':     'TestGPU'
-  'test_lid0':      'HostLaunch'
-  'test_lid1':      'DeviceLaunch'
-  'test_lid2':      'GraphCapture'
-
-
 #############################################################################################
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
@@ -264,6 +206,49 @@ host_compilers:
     exe: icpc
     versions:
       2023.2.0: { stds: [11, 14, 17,   ] }
+
+
+# Jobs support the following properties:
+#
+# - gpu: Whether the job requires a GPU runner. Default is false.
+# - name: The human-readable name of the job. Default is the capitalized job key.
+# - needs:
+#   - A list of jobs that must be completed before this job can run. Default is an empty list.
+#   - These are automatically added if needed:
+#     - Eg. "jobs: ['test']" in the workflow def will also create the required 'build' jobs.
+# - invoke:
+#   - Map the job type to the script invocation spec:
+#     - prefix: The script invocation prefix. Default is the job name.
+#     - args: Additional arguments to pass to the script. Default is no args.
+#   - The script is invoked either:
+#     linux:   `ci/windows/<spec[prefix]>_<project>.ps1 <spec[args]>`
+#     windows: `ci/<spec[prefix]>_<project>.sh <spec[args]>`
+jobs:
+  # General:
+  build: { gpu: false }
+  test:  { gpu: true, needs: 'build' }
+
+  # CCCL:
+  infra: { gpu: true } # example project launches a kernel
+
+  # libcudacxx:
+  nvrtc: { gpu: true, name: 'NVRTC' }
+  verify_codegen: { gpu: false, name: 'VerifyCodegen' }
+
+  # CUB:
+  # NoLid -> The string `lid_X` doesn't appear in the test name. Mostly warp/block tests, old device tests, and examples.
+  test_nolid: { name: 'TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-no-lid'} }
+  # CUB uses `lid` to indicate launch strategies: whether CUB algorithms are:
+  # - launched from the host (lid0):
+  test_lid0:  { name: 'HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid0'} }
+  # - launched from the device (lid1):
+  test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid1'} }
+  # - captured in a CUDA graph for deferred launch (lid2):
+  test_lid2:  { name: 'GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid2'} }
+
+  # Thrust:
+  test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }
+  test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '=gpu-only'} }
 
 # Project have the following properties:
 #

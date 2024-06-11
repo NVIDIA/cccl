@@ -256,6 +256,31 @@ def get_project(project):
     return result
 
 
+@memoize_result
+def get_job_type_info(job):
+    if not job in matrix_yaml['jobs'].keys():
+        raise Exception(
+            f"Unknown job '{job}'. Valid options are: {', '.join(matrix_yaml['jobs'].keys())}")
+
+    result = matrix_yaml['jobs'][job]
+    result['id'] = job
+
+    if not 'name' in result:
+        result['name'] = job.capitalize()
+    if not 'gpu' in result:
+        result['gpu'] = False
+    if not 'needs' in result:
+        result['needs'] = None
+    if not 'invoke' in result:
+        result['invoke'] = {}
+    if not 'prefix' in result['invoke']:
+        result['invoke']['prefix'] = job
+    if not 'args' in result['invoke']:
+        result['invoke']['args'] = ""
+
+    return result
+
+
 @static_result
 def get_all_matrix_job_tags_sorted():
     required_tags = set(matrix_yaml['required_tags'])
@@ -294,20 +319,6 @@ def lookup_supported_stds(matrix_job):
     return sorted(list(stds))
 
 
-@memoize_result
-def lookup_job_invoke_spec(job_type):
-    if job_type in matrix_yaml['job_invoke']:
-        return matrix_yaml['job_invoke'][job_type]
-    return {'prefix': job_type}
-
-
-def get_formatted_job_type(job_type):
-    if job_type in matrix_yaml['formatted_jobs']:
-        return matrix_yaml['formatted_jobs'][job_type]
-    # Return with first letter capitalized:
-    return job_type.capitalize()
-
-
 def is_windows(matrix_job):
     host_compiler = get_host_compiler(matrix_job['cxx'])
     return host_compiler['container_tag'] == 'cl'
@@ -331,9 +342,10 @@ def generate_dispatch_group_name(matrix_job):
 
 
 def generate_dispatch_job_name(matrix_job, job_type):
+    job_info = get_job_type_info(job_type)
     std_str = ("C++" + str(matrix_job['std']) + " ") if 'std' in matrix_job else ''
     cpu_str = matrix_job['cpu']
-    gpu_str = (', ' + matrix_job['gpu'].upper()) if job_type in matrix_yaml['gpu_required_jobs'] else ""
+    gpu_str = (', ' + matrix_job['gpu'].upper()) if job_info['gpu'] else ""
     cuda_compile_arch = (" sm{" + str(matrix_job['sm']) + "}") if 'sm' in matrix_job else ""
     cmake_options = (' ' + matrix_job['cmake_options']) if 'cmake_options' in matrix_job else ""
 
@@ -341,18 +353,17 @@ def generate_dispatch_job_name(matrix_job, job_type):
 
     config_tag = f"{std_str}{host_compiler['name']}{host_compiler['version']}"
 
-    formatted_job_type = get_formatted_job_type(job_type)
-
     extra_info = f":{cuda_compile_arch}{cmake_options}" if cuda_compile_arch or cmake_options else ""
 
-    return f"[{config_tag}] {formatted_job_type}({cpu_str}{gpu_str}){extra_info}"
+    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
     runner_os = "windows" if is_windows(matrix_job) else "linux"
     cpu = matrix_job['cpu']
 
-    if not job_type in matrix_yaml['gpu_required_jobs']:
+    job_info = get_job_type_info(job_type)
+    if not job_info['gpu']:
         return f"{runner_os}-{cpu}-cpu16"
 
     gpu = get_gpu(matrix_job['gpu'])
@@ -387,9 +398,9 @@ def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
     script_ext = ".ps1" if is_windows(matrix_job) else ".sh"
 
-    job_invoke_spec = lookup_job_invoke_spec(job_type)
-    job_prefix = job_invoke_spec['prefix']
-    job_args = job_invoke_spec['args'] if 'args' in job_invoke_spec else ""
+    job_info = get_job_type_info(job_type)
+    job_prefix = job_info['invoke']['prefix']
+    job_args = job_info['invoke']['args']
 
     project = get_project(matrix_job['project'])
     script_name = f"{script_path}/{job_prefix}_{project['id']}{script_ext}"
@@ -423,9 +434,12 @@ def generate_dispatch_job_origin(matrix_job, job_type):
     origin_job = matrix_job.copy()
     del origin_job['origin']
 
-    origin_job['jobs'] = get_formatted_job_type(job_type)
+    job_info = get_job_type_info(job_type)
 
     # The origin tags are used to build the execution summary for the CI PR comment.
+    # Use the human readable job label for the execution summary:
+    origin_job['jobs'] = job_info['name']
+
     # Replace some of the clunkier tags with a summary-friendly version:
     if 'cxx' in origin_job:
         host_compiler = get_host_compiler(matrix_job['cxx'])
@@ -459,16 +473,16 @@ def generate_dispatch_job_json(matrix_job, job_type):
 
 
 # Create a single build producer, and a separate consumer for each test_job_type:
-def generate_dispatch_build_and_test_json(matrix_job, build_job_type, test_job_types):
-    build_json = generate_dispatch_job_json(matrix_job, build_job_type)
+def generate_dispatch_two_stage_json(matrix_job, producer_job_type, consumer_job_types):
+    producer_json = generate_dispatch_job_json(matrix_job, producer_job_type)
 
-    test_json = []
-    for test_job_type in test_job_types:
-        test_json.append(generate_dispatch_job_json(matrix_job, test_job_type))
+    consumers_json = []
+    for consumer_job_type in consumer_job_types:
+        consumers_json.append(generate_dispatch_job_json(matrix_job, consumer_job_type))
 
     return {
-        "producers": [build_json],
-        "consumers": test_json
+        "producers": [producer_json],
+        "consumers": consumers_json
     }
 
 
@@ -481,21 +495,27 @@ def generate_dispatch_group_jobs(matrix_job):
     # The jobs tag is left unexploded to optimize scheduling here.
     job_types = set(matrix_job['jobs'])
 
-    # Identify jobs that require a build job to run first:
-    build_required = set(matrix_yaml['build_required_jobs']) & job_types
-
-    if build_required and not 'build' in job_types:
-        raise Exception(error_message_with_matrix_job(
-            matrix_job, f"Internal error: Missing 'build' job type required by other jobs ({build_required})."))
-
-    if build_required:
-        dispatch_group_jobs['two_stage'].append(
-            generate_dispatch_build_and_test_json(matrix_job, "build", list(build_required)))
-        job_types -= {'build'}
-        job_types -= build_required
-
-    # Remaining jobs are assumed to be standalone (e.g. nvrtc):
+    # Add all dpendencies to the job_types set:
+    standalone = set([])
+    two_stage = {}  # {producer: set([consumer, ...])}
     for job_type in job_types:
+        job_info = get_job_type_info(job_type)
+        dep = job_info['needs']
+        if dep:
+            if dep in two_stage:
+                two_stage[dep].add(job_type)
+            else:
+                two_stage[dep] = set([job_type])
+        else:
+            standalone.add(job_type)
+
+    standalone.difference_update(two_stage.keys())
+
+    for producer, consumers in two_stage.items():
+        dispatch_group_jobs['two_stage'].append(
+            generate_dispatch_two_stage_json(matrix_job, producer, list(consumers)))
+
+    for job_type in standalone:
         dispatch_group_jobs['standalone'].append(generate_dispatch_job_json(matrix_job, job_type))
 
     return dispatch_group_jobs
@@ -707,22 +727,6 @@ def get_matrix_job_origin(matrix_job, workflow_name, workflow_location):
     }
 
 
-def remove_skip_test_jobs(matrix_jobs):
-    '''Remove jobs defined in `matrix_file.skip_test_jobs`.'''
-    new_matrix_jobs = []
-    for matrix_job in matrix_jobs:
-        jobs = matrix_job['jobs']
-        new_jobs = set()
-        for job in jobs:
-            if not job in matrix_yaml['skip_test_jobs']:
-                new_jobs.add(job)
-        if new_jobs:
-            new_matrix_job = copy.deepcopy(matrix_job)
-            new_matrix_job['jobs'] = list(new_jobs)
-            new_matrix_jobs.append(new_matrix_job)
-    return new_matrix_jobs
-
-
 @static_result
 def get_excluded_matrix_jobs():
     return parse_workflow_matrix_jobs(None, 'exclude')
@@ -826,16 +830,19 @@ def set_derived_tags(matrix_job):
     if 'std' in matrix_job and matrix_job['std'] == 'all':
         matrix_job['std'] = lookup_supported_stds(matrix_job)
 
+    # Add all deps before applying project job maps:
+    for job in matrix_job['jobs']:
+        job_info = get_job_type_info(job)
+        dep = job_info['needs']
+        if dep and dep not in matrix_job['jobs']:
+            matrix_job['jobs'].append(dep)
+
     # Apply project job map:
     project = get_project(matrix_job['project'])
     for original_job, expanded_jobs in project['job_map'].items():
         if original_job in matrix_job['jobs']:
             matrix_job['jobs'].remove(original_job)
             matrix_job['jobs'] += expanded_jobs
-
-    if (not 'build' in matrix_job['jobs'] and
-            any([job in matrix_job['jobs'] for job in matrix_yaml['build_required_jobs']])):
-        matrix_job['jobs'].append('build')
 
 
 def next_explode_tag(matrix_job):
@@ -903,8 +910,6 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, explode_only=is_exclusion_matrix)
 
     if args:
-        if args.skip_tests:
-            matrix_jobs = remove_skip_test_jobs(matrix_jobs)
         if args.dirty_projects:
             matrix_jobs = [job for job in matrix_jobs if job['project'] in args.dirty_projects]
 
@@ -978,7 +983,6 @@ def write_outputs(final_workflow):
 
     os.makedirs("workflow", exist_ok=True)
     write_json_file("workflow/workflow.json", final_workflow)
-    write_json_file("workflow/workflow_keys.json", list(final_workflow.keys()))
     write_json_file("workflow/job_ids.json", id_to_full_job_name)
     write_text_file("workflow/job_list.txt", "\n".join(job_list))
     write_json_file("workflow/runner_summary.json", runner_json)
@@ -1072,8 +1076,6 @@ def main():
     parser_mode.add_argument('--devcontainer-info', action='store_true',
                              help='Print devcontainer info instead of GHA workflows.')
     parser.add_argument('--dirty-projects', nargs='*', help='Filter jobs to only these projects')
-    parser.add_argument('--skip-tests', action='store_true',
-                        help='Remove jobs defined in `matrix_file.skip_test_jobs`.')
     parser.add_argument('--allow-override', action='store_true',
                         help='If a non-empty "override" workflow exists, it will be used instead of those in --workflows.')
     args = parser.parse_args()
