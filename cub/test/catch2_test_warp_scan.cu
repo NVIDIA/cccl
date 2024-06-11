@@ -198,18 +198,25 @@ struct min_aggregate_op_t
   }
 };
 
-template <class T>
+template <class T, scan_mode Mode>
 struct min_init_value_op_t
 {
   T initial_value;
   template <class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data) const
   {
-    scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    {
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+    }
+    else
+    {
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+    }
   }
 };
 
-template <class T>
+template <class T, scan_mode Mode>
 struct min_init_value_aggregate_op_t
 {
   int m_target_thread_id;
@@ -221,7 +228,14 @@ struct min_init_value_aggregate_op_t
   {
     T warp_aggregate{};
 
-    scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, warp_aggregate);
+    _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
+    {
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, warp_aggregate);
+    }
+    else
+    {
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, warp_aggregate);
+    }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
@@ -262,6 +276,8 @@ c2h::host_vector<T> compute_host_reference(
   }
   // TODO : assert result.size() % logical_warp_threads == 0
 
+  // The accumulator variable is used to calculate warp_aggregate without
+  // taking initial_value into consideration in both exclusive and inclusive scan.
   int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(result.size()), logical_warp_threads);
   c2h::host_vector<T> warp_accumulator(num_warps);
   if (mode == scan_mode::exclusive)
@@ -286,14 +302,18 @@ c2h::host_vector<T> compute_host_reference(
   {
     for (int w = 0; w < num_warps; ++w)
     {
-      T* output = result.data() + w * logical_warp_threads;
-      T current = initial_value;
-      for (int i = 0; i < logical_warp_threads; i++)
+      T* output     = result.data() + w * logical_warp_threads;
+      T accumulator = output[0];
+      T current     = static_cast<T>(scan_op(initial_value, output[0]));
+      output[0]     = current;
+      for (int i = 1; i < logical_warp_threads; i++)
       {
-        current   = static_cast<T>(scan_op(current, output[i]));
-        output[i] = current;
+        T tmp       = output[i];
+        current     = static_cast<T>(scan_op(current, tmp));
+        accumulator = static_cast<T>(scan_op(accumulator, tmp));
+        output[i]   = current;
       }
-      warp_accumulator[w] = current;
+      warp_accumulator[w] = accumulator;
     }
   }
 
@@ -506,11 +526,7 @@ CUB_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", typ
   REQUIRE(h_warp_aggregates == d_warp_aggregates);
 }
 
-CUB_TEST("Warp custom op scan works with initial value",
-         "[scan][warp]",
-         types,
-         logical_warp_threads,
-         c2h::enum_type_list<scan_mode, scan_mode::exclusive>)
+CUB_TEST("Warp custom op scan works with initial value", "[scan][warp]", types, logical_warp_threads, modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -521,7 +537,8 @@ CUB_TEST("Warp custom op scan works with initial value",
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, params::tile_size))));
 
-  warp_scan<params::logical_warp_threads, params::total_warps>(d_in, d_out, min_init_value_op_t<type>{initial_value});
+  warp_scan<params::logical_warp_threads, params::total_warps>(
+    d_in, d_out, min_init_value_op_t<type, params::mode>{initial_value});
 
   c2h::host_vector<type> h_out = d_in;
 
@@ -541,7 +558,7 @@ CUB_TEST("Warp custom op scan with initial value returns valid warp aggregate",
          "[scan][warp]",
          types,
          logical_warp_threads,
-         c2h::enum_type_list<scan_mode, scan_mode::exclusive>)
+         modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -557,7 +574,7 @@ CUB_TEST("Warp custom op scan with initial value returns valid warp aggregate",
   warp_scan<params::logical_warp_threads, params::total_warps>(
     d_in,
     d_out,
-    min_init_value_aggregate_op_t<type>{
+    min_init_value_aggregate_op_t<type, params::mode>{
       target_thread_id, initial_value, thrust::raw_pointer_cast(d_warp_aggregates.data())});
 
   c2h::host_vector<type> h_out = d_in;
