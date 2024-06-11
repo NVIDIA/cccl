@@ -216,43 +216,7 @@ formatted_project_names:
   'thrust':     'Thrust'
   'cccl':       'CCCL'
 
-# All known GPUs
-gpus:
-  - 'v100'     # 40 runners
-  - 't4'       #  8 runners
-  - 'rtx2080'  #  8 runners
-  - 'rtxa6000' # 12 runners
-  - 'l4'       # 48 runners
-  - 'rtx4090'  # 10 runners
-  - 'h100'     # 16 runners
-
-# SM versions of GPUs
-gpu_sm:
-  'v100':     '70'
-  't4':       '75'
-  'rtx2080':  '75'
-  'rtxa6000': '86'
-  'l4':       '89'
-  'rtx4090':  '89'
-  'h100':     '90'
-
-# Memory size of GPUs
-gpu_mem_gb:
-  'v100':     '32'
-  't4':       '16'
-  'rtx2080':  '8'
-  'rtxa6000': '48'
-  'l4':       '24'
-  'rtx4090':  '24'
-  'h100':     '80'
-
-# GPUs that require `-testing` at the end of the runner pool name.
-testing_pool_gpus:
-  - 't4'
-  - 'rtx2080'
-  - 'rtxa6000'
-  - 'l4'
-  - 'rtx4090'
+#############################################################################################
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
 devcontainer_version: '24.06'
@@ -317,4 +281,13 @@ host_compilers:
     exe: icpc
     versions:
       2023.2.0: { stds: [11, 14, 17,   ] }
+
+gpus:
+  v100:     { sm: 70 }                # 32 GB,  40 runners
+  t4:       { sm: 75, testing: true } # 16 GB,   8 runners
+  rtx2080:  { sm: 75, testing: true } #  8 GB,   8 runners
+  rtxa6000: { sm: 86, testing: true } # 48 GB,  12 runners
+  l4:       { sm: 89, testing: true } # 24 GB,  48 runners
+  rtx4090:  { sm: 89, testing: true } # 24 GB,  10 runners
+  h100:     { sm: 90 }                # 80 GB,  16 runners
 

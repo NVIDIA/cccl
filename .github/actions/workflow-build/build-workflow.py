@@ -223,6 +223,21 @@ def get_device_compiler(matrix_job):
     return result
 
 
+@memoize_result
+def get_gpu(gpu_string):
+    if not gpu_string in matrix_yaml['gpus']:
+        raise Exception(
+            f"Unknown gpu '{gpu_string}'. Valid options are: {', '.join(matrix_yaml['gpus'].keys())}")
+
+    result = matrix_yaml['gpus'][gpu_string]
+    result['id'] = gpu_string
+
+    if not 'testing' in result:
+        result['testing'] = False
+
+    return result
+
+
 @static_result
 def get_all_matrix_job_tags_sorted():
     required_tags = set(matrix_yaml['required_tags'])
@@ -309,7 +324,7 @@ def generate_dispatch_job_name(matrix_job, job_type):
     std_str = ("C++" + str(matrix_job['std']) + " ") if 'std' in matrix_job else ''
     cpu_str = matrix_job['cpu']
     gpu_str = (', ' + matrix_job['gpu'].upper()) if job_type in matrix_yaml['gpu_required_jobs'] else ""
-    cuda_compile_arch = (" sm{" + matrix_job['sm'] + "}") if 'sm' in matrix_job else ""
+    cuda_compile_arch = (" sm{" + str(matrix_job['sm']) + "}") if 'sm' in matrix_job else ""
     cmake_options = (' ' + matrix_job['cmake_options']) if 'cmake_options' in matrix_job else ""
 
     host_compiler = get_host_compiler(matrix_job['cxx'])
@@ -330,10 +345,10 @@ def generate_dispatch_job_runner(matrix_job, job_type):
     if not job_type in matrix_yaml['gpu_required_jobs']:
         return f"{runner_os}-{cpu}-cpu16"
 
-    gpu = matrix_job['gpu']
-    suffix = "-testing" if gpu in matrix_yaml['testing_pool_gpus'] else ""
+    gpu = get_gpu(matrix_job['gpu'])
+    suffix = "-testing" if gpu['testing'] else ""
 
-    return f"{runner_os}-{cpu}-gpu-{gpu}-latest-1{suffix}"
+    return f"{runner_os}-{cpu}-gpu-{gpu['id']}-latest-1{suffix}"
 
 
 def generate_dispatch_job_ctk_version(matrix_job, job_type):
@@ -773,7 +788,7 @@ def validate_required_tags(matrix_job):
         if tag not in all_tags:
             raise Exception(error_message_with_matrix_job(matrix_job, f"Unknown tag '{tag}'"))
 
-    if 'gpu' in matrix_job and matrix_job['gpu'] not in matrix_yaml['gpus']:
+    if 'gpu' in matrix_job and matrix_job['gpu'] not in matrix_yaml['gpus'].keys():
         raise Exception(error_message_with_matrix_job(matrix_job, f"Unknown gpu '{matrix_job['gpu']}'"))
 
 
@@ -795,10 +810,8 @@ def set_derived_tags(matrix_job):
     if 'sm' in matrix_job and matrix_job['sm'] == 'gpu':
         if not 'gpu' in matrix_job:
             raise Exception(error_message_with_matrix_job(matrix_job, f"\"sm: 'gpu'\" requires tag 'gpu'."))
-        if not matrix_job['gpu'] in matrix_yaml['gpu_sm']:
-            raise Exception(error_message_with_matrix_job(matrix_job,
-                                                          f"Missing matrix.yaml 'gpu_sm' entry for gpu '{matrix_job['gpu']}'"))
-        matrix_job['sm'] = matrix_yaml['gpu_sm'][matrix_job['gpu']]
+        gpu = get_gpu(matrix_job['gpu'])
+        matrix_job['sm'] = gpu['sm']
 
     if 'std' in matrix_job and matrix_job['std'] == 'all':
         matrix_job['std'] = lookup_supported_stds(matrix_job)
