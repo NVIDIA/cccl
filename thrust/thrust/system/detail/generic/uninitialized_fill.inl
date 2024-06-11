@@ -47,7 +47,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
   ForwardIterator first,
   ForwardIterator last,
   const T& x,
-  thrust::detail::true_type) // has_trivial_copy_constructor
+  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   thrust::fill(exec, first, last, x);
 } // end uninitialized_fill()
@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
   ForwardIterator first,
   ForwardIterator last,
   const T& x,
-  thrust::detail::false_type) // has_trivial_copy_constructor
+  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ValueType;
 
@@ -71,7 +71,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
   ForwardIterator first,
   Size n,
   const T& x,
-  thrust::detail::true_type) // has_trivial_copy_constructor
+  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   return thrust::fill_n(exec, first, n, x);
 } // end uninitialized_fill()
@@ -82,7 +82,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
   ForwardIterator first,
   Size n,
   const T& x,
-  thrust::detail::false_type) // has_trivial_copy_constructor
+  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ValueType;
 
@@ -97,7 +97,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ValueType;
 
-  typedef thrust::detail::has_trivial_copy_constructor<ValueType> ValueTypeHasTrivialCopyConstructor;
+  typedef ::cuda::std::is_trivially_copy_constructible<ValueType> ValueTypeHasTrivialCopyConstructor;
 
   thrust::system::detail::generic::detail::uninitialized_fill(
     exec, first, last, x, ValueTypeHasTrivialCopyConstructor());
@@ -109,7 +109,7 @@ uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardItera
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ValueType;
 
-  typedef thrust::detail::has_trivial_copy_constructor<ValueType> ValueTypeHasTrivialCopyConstructor;
+  typedef ::cuda::std::is_trivially_copy_constructible<ValueType> ValueTypeHasTrivialCopyConstructor;
 
   return thrust::system::detail::generic::detail::uninitialized_fill_n(
     exec, first, n, x, ValueTypeHasTrivialCopyConstructor());

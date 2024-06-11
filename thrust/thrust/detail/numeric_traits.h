@@ -27,6 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_traits.h>
 
+#include <cuda/std/type_traits>
+
 #include <limits>
 
 // #include <stdint.h> // for intmax_t (not provided on MSVS 2005)
@@ -98,7 +100,8 @@ public:
 }; // end integer_difference
 
 template <typename Number>
-struct numeric_difference : eval_if<is_integral<Number>::value, integer_difference<Number>, identity_<Number>>
+struct numeric_difference
+    : eval_if<::cuda::std::is_integral<Number>::value, integer_difference<Number>, identity_<Number>>
 {}; // end numeric_difference
 
 template <typename Number>

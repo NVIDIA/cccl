@@ -10,6 +10,13 @@
 
 #include <unittest/unittest.h>
 
+// WAR NVIDIA/cccl#1731
+// Some tests miscompile for non-CUDA backends on MSVC 2017 and 2019 (though 2022 is fine).
+// This is due to a bug in the compiler that breaks __THRUST_DEFINE_HAS_MEMBER_FUNCTION.
+#if defined(_MSC_VER) && _MSC_VER <= 1929 && THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+#  define WAR_BUG_1731
+#endif
+
 // Define a new system class, as the my_system one is already used with a thrust::sort template definition
 // that calls back into sort.cu
 class my_memory_system : public thrust::device_execution_policy<my_memory_system>
@@ -263,6 +270,8 @@ void TestGetTemporaryBufferDispatchExplicit()
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
 
+#ifndef WAR_BUG_1731
+
 void TestGetTemporaryBufferDispatchImplicit()
 {
   if (are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
@@ -279,6 +288,7 @@ void TestGetTemporaryBufferDispatchImplicit()
 
     // call something we know will invoke get_temporary_buffer
     my_memory_system sys(0);
+
     thrust::sort(sys, vec.begin(), vec.end());
 
     ASSERT_EQUAL(true, thrust::is_sorted(vec.begin(), vec.end()));
@@ -286,6 +296,8 @@ void TestGetTemporaryBufferDispatchImplicit()
   }
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
+
+#endif
 
 void TestTemporaryBufferOldCustomization()
 {

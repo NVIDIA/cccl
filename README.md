@@ -1,7 +1,7 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
 
-|[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[libcudacxx Docs](https://nvidia.github.io/cccl/libcudacxx/)|[Thrust Docs](https://nvidia.github.io/cccl/thrust/)|[CUB Docs](https://nvidia.github.io/cccl/cub/)|
-|-|-|-|-|-|-|-|-|
+|[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[Documentation](https://nvidia.github.io/cccl)|
+|-|-|-|-|-|-|
 
 # CUDA C++ Core Libraries (CCCL)
 

@@ -64,10 +64,8 @@ struct minimum_type_impl<T1, T2, true, true>
 
 template <typename T1, typename T2>
 struct primitive_minimum_type
-    : minimum_type_detail::minimum_type_impl<T1,
-                                             T2,
-                                             THRUST_NS_QUALIFIER::detail::is_convertible<T1, T2>::value,
-                                             THRUST_NS_QUALIFIER::detail::is_convertible<T2, T1>::value>
+    : minimum_type_detail::
+        minimum_type_impl<T1, T2, ::cuda::std::is_convertible<T1, T2>::value, ::cuda::std::is_convertible<T2, T1>::value>
 {}; // end primitive_minimum_type
 
 // because some types are not convertible (even to themselves)

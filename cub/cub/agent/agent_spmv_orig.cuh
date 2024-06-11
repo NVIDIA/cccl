@@ -683,7 +683,7 @@ struct AgentSpmv
     // Read our starting coordinates
     if (threadIdx.x < 2)
     {
-      if (d_tile_coordinates == NULL)
+      if (d_tile_coordinates == nullptr)
       {
         // Search our starting coordinates
         OffsetT diagonal = (tile_idx + threadIdx.x) * TILE_ITEMS;

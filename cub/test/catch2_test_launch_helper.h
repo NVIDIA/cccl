@@ -76,26 +76,54 @@
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
 #endif
 
+#define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)            \
+  TMPL_HEAD_OPT                                                                           \
+  struct WRAPPED_API_NAME##_invocable_t                                                   \
+  {                                                                                       \
+    template <class... Ts>                                                                \
+    CUB_RUNTIME_FUNCTION cudaError_t                                                      \
+    operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
+    {                                                                                     \
+      return API TMPL_ARGS_OPT(d_temp_storage, temp_storage_bytes, args...);              \
+    }                                                                                     \
+  };
+
+#define ESCAPE_LIST(...) __VA_ARGS__
+
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)  \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );        \
+  template <class... As>                               \
+  static void WRAPPED_API_NAME(As... args)             \
+  {                                                    \
+    launch(WRAPPED_API_NAME##_invocable_t{}, args...); \
+  }
+
+#define DECLARE_TMPL_LAUNCH_WRAPPER(API, WRAPPED_API_NAME, TMPL_PARAMS, TMPL_ARGS)                         \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, ESCAPE_LIST(template <TMPL_PARAMS>), ESCAPE_LIST(<TMPL_ARGS>)); \
+  template <TMPL_PARAMS, class... As>                                                                      \
+  static void WRAPPED_API_NAME(As... args)                                                                 \
+  {                                                                                                        \
+    launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, args...);                                          \
+  }
+
 #if TEST_LAUNCH == 2
 
 template <class ActionT, class... Args>
-void cuda_graph_api_launch(ActionT action, Args... args)
+void launch(ActionT action, Args... args)
 {
   cudaStream_t stream{};
   REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
 
-  std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
-  cudaError_t error = action(d_temp_storage, temp_storage_bytes, args..., stream);
+  cudaError_t error = action(nullptr, temp_storage_bytes, args..., stream);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
-  error = action(d_temp_storage, temp_storage_bytes, args..., stream);
+  error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args..., stream);
   REQUIRE(cudaSuccess == cudaStreamEndCapture(stream, &graph));
   REQUIRE(cudaSuccess == error);
 
@@ -110,27 +138,6 @@ void cuda_graph_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
 }
 
-#  define launch cuda_graph_api_launch
-
-#  define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
-    struct WRAPPED_API_NAME##_cuda_graph_invocable_t                                        \
-    {                                                                                       \
-      template <class... Ts>                                                                \
-      CUB_RUNTIME_FUNCTION cudaError_t                                                      \
-      operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
-      {                                                                                     \
-        return API(d_temp_storage, temp_storage_bytes, args...);                            \
-      }                                                                                     \
-    };
-
-#  define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                            \
-    DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                      \
-    template <class... As>                                                         \
-    static void WRAPPED_API_NAME(As... args)                                       \
-    {                                                                              \
-      cuda_graph_api_launch(WRAPPED_API_NAME##_cuda_graph_invocable_t{}, args...); \
-    }
-
 #elif TEST_LAUNCH == 1
 
 template <class ActionT, class... Args>
@@ -143,13 +150,12 @@ __global__ void device_side_api_launch_kernel(
 // We should assign 0 to stream argument when launching on device side, because host stream is not valid there.
 
 template <class ActionT, class... Args>
-void device_side_api_launch(ActionT action, Args... args)
+void launch(ActionT action, Args... args)
 {
-  std::uint8_t* d_temp_storage = nullptr;
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
   c2h::device_vector<std::size_t> d_temp_storage_bytes(1, 0);
   device_side_api_launch_kernel<<<1, 1>>>(
-    d_temp_storage,
+    nullptr,
     thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
     thrust::raw_pointer_cast(d_error.data()),
     action,
@@ -159,10 +165,9 @@ void device_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == d_error[0]);
 
   c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0]);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   device_side_api_launch_kernel<<<1, 1>>>(
-    d_temp_storage,
+    thrust::raw_pointer_cast(temp_storage.data()),
     thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
     thrust::raw_pointer_cast(d_error.data()),
     action,
@@ -172,67 +177,25 @@ void device_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == d_error[0]);
 }
 
-#  define launch device_side_api_launch
-
-#  define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
-    struct WRAPPED_API_NAME##_device_invocable_t                                            \
-    {                                                                                       \
-      template <class... Ts>                                                                \
-      CUB_RUNTIME_FUNCTION cudaError_t                                                      \
-      operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
-      {                                                                                     \
-        return API(d_temp_storage, temp_storage_bytes, args...);                            \
-      }                                                                                     \
-    };
-
-#  define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)         \
-    DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                   \
-    template <class... As>                                      \
-    static void WRAPPED_API_NAME(As... args)                    \
-    {                                                           \
-      launch(WRAPPED_API_NAME##_device_invocable_t{}, args...); \
-    }
-
 #else // TEST_LAUNCH == 0
 
 template <class ActionT, class... Args>
-void host_side_api_launch(ActionT action, Args... args)
+void launch(ActionT action, Args... args)
 {
-  std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
-  cudaError_t error = action(d_temp_storage, temp_storage_bytes, args...);
+  cudaError_t error = action(nullptr, temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  REQUIRE(temp_storage_bytes > 0); // required by API contract
 
-  error = action(d_temp_storage, temp_storage_bytes, args...);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+
+  error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 }
-
-#  define launch host_side_api_launch
-
-#  define DECLARE_INVOCABLE(API, WRAPPED_API_NAME)                                          \
-    struct WRAPPED_API_NAME##_host_invocable_t                                              \
-    {                                                                                       \
-      template <class... Ts>                                                                \
-      CUB_RUNTIME_FUNCTION cudaError_t                                                      \
-      operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, Ts... args) \
-      {                                                                                     \
-        return API(d_temp_storage, temp_storage_bytes, args...);                            \
-      }                                                                                     \
-    };
-
-#  define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)       \
-    DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                 \
-    template <class... As>                                    \
-    static void WRAPPED_API_NAME(As... args)                  \
-    {                                                         \
-      launch(WRAPPED_API_NAME##_host_invocable_t{}, args...); \
-    }
 
 #endif // TEST_LAUNCH == 0

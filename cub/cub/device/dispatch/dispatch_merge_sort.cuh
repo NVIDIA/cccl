@@ -388,7 +388,7 @@ struct DispatchMergeSort : SelectedPolicy
 
   // Problem state
 
-  /// Device-accessible allocation of temporary storage. When NULL, the required
+  /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.
   void* d_temp_storage;
 

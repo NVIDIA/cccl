@@ -34,6 +34,8 @@ jobs:
         include: ${{fromJSON(inputs.producers)}}
     uses: ./.github/workflows/workflow-dispatch-job.yml
     with:
+      cuda:     ${{ matrix.cuda }}
+      host:     ${{ matrix.host }}
       name:     ${{ matrix.name }}
       runner:   ${{ matrix.runner }}
       image:    ${{ matrix.image }}
@@ -46,8 +48,6 @@ jobs:
     # This keeps the UI from getting cluttered.
     name: "c.${{ matrix.id }}"
     needs: producers
-    # dispatch-job's result is always false, check the outputs instead. See ci-dispatch-job.yml for more information.
-    if: ${{ !cancelled() && fromJson(needs.producers.outputs.success) }}
     permissions:
       id-token: write
       contents: read
@@ -57,6 +57,8 @@ jobs:
         include: ${{fromJSON(inputs.consumers)}}
     uses: ./.github/workflows/workflow-dispatch-job.yml
     with:
+      cuda:     ${{ matrix.cuda }}
+      host:     ${{ matrix.host }}
       name:     ${{ matrix.name }}
       runner:   ${{ matrix.runner }}
       image:    ${{ matrix.image }}

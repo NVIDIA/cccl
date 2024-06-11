@@ -51,9 +51,9 @@
 #include <catch2_test_launch_helper.h>
 #include <nv/target>
 
-#define TEST_HALF_T !_NVHPC_CUDA
+#define TEST_HALF_T _CCCL_HAS_NVFP16
 
-#define TEST_BF_T !_NVHPC_CUDA
+#define TEST_BF_T _CCCL_HAS_NVBF16
 
 #if TEST_HALF_T
 #  include <cuda_fp16.h>

@@ -190,7 +190,7 @@ struct pointer_raw_pointer_impl<T*>
 };
 
 template <typename Ptr>
-struct pointer_raw_pointer_impl<Ptr, typename enable_if<has_raw_pointer<Ptr>::value>::type>
+struct pointer_raw_pointer_impl<Ptr, ::cuda::std::__enable_if_t<has_raw_pointer<Ptr>::value>>
 {
   typedef typename Ptr::raw_pointer type;
 };
@@ -223,9 +223,9 @@ struct capture_address
 // metafunction to compute the type of pointer_to's parameter below
 template <typename T>
 struct pointer_to_param
-    : thrust::detail::eval_if<thrust::detail::is_void<T>::value,
+    : thrust::detail::eval_if<::cuda::std::is_void<T>::value,
                               thrust::detail::identity_<capture_address<T>>,
-                              thrust::detail::add_reference<T>>
+                              ::cuda::std::add_lvalue_reference<T>>
 {};
 
 } // namespace pointer_traits_detail
@@ -350,20 +350,20 @@ struct pointer_traits<const void*>
 
 template <typename FromPtr, typename ToPtr>
 struct is_pointer_system_convertible
-    : thrust::detail::is_convertible<typename iterator_system<FromPtr>::type, typename iterator_system<ToPtr>::type>
+    : ::cuda::std::is_convertible<typename iterator_system<FromPtr>::type, typename iterator_system<ToPtr>::type>
 {};
 
 template <typename FromPtr, typename ToPtr>
 struct is_pointer_convertible
-    : thrust::detail::and_<
-        thrust::detail::is_convertible<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>,
+    : ::cuda::std::_And<
+        ::cuda::std::is_convertible<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>,
         is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 
 template <typename FromPtr, typename ToPtr>
 struct is_void_pointer_system_convertible
-    : thrust::detail::and_<thrust::detail::is_same<typename pointer_element<FromPtr>::type, void>,
-                           is_pointer_system_convertible<FromPtr, ToPtr>>
+    : ::cuda::std::_And<::cuda::std::is_same<typename pointer_element<FromPtr>::type, void>,
+                        is_pointer_system_convertible<FromPtr, ToPtr>>
 {};
 
 // this could be a lot better, but for our purposes, it's probably
@@ -389,12 +389,12 @@ struct lazy_is_void_pointer_system_convertible
 
 template <typename FromPtr, typename ToPtr, typename T = void>
 struct enable_if_pointer_is_convertible
-    : thrust::detail::enable_if<lazy_is_pointer_convertible<FromPtr, ToPtr>::type::value, T>
+    : ::cuda::std::enable_if<lazy_is_pointer_convertible<FromPtr, ToPtr>::type::value, T>
 {};
 
 template <typename FromPtr, typename ToPtr, typename T = void>
 struct enable_if_void_pointer_is_system_convertible
-    : thrust::detail::enable_if<lazy_is_void_pointer_system_convertible<FromPtr, ToPtr>::type::value, T>
+    : ::cuda::std::enable_if<lazy_is_void_pointer_system_convertible<FromPtr, ToPtr>::type::value, T>
 {};
 
 } // namespace detail

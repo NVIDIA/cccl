@@ -552,7 +552,7 @@ struct ScanTileState<T, true>
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
-      : d_tile_descriptors(NULL)
+      : d_tile_descriptors(nullptr)
   {}
 
   /**
@@ -563,7 +563,7 @@ struct ScanTileState<T, true>
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to \p temp_storage_bytes and no work is
+   *   When nullptr, the required allocation size is written to \p temp_storage_bytes and no work is
    * done.
    *
    * @param[in] temp_storage_bytes
@@ -729,9 +729,9 @@ struct ScanTileState<T, false>
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
-      : d_tile_status(NULL)
-      , d_tile_partial(NULL)
-      , d_tile_inclusive(NULL)
+      : d_tile_status(nullptr)
+      , d_tile_partial(nullptr)
+      , d_tile_inclusive(nullptr)
   {}
 
   /**
@@ -742,7 +742,7 @@ struct ScanTileState<T, false>
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to \p temp_storage_bytes and no work is
+   *   When nullptr, the required allocation size is written to \p temp_storage_bytes and no work is
    *   done.
    *
    * @param[in] temp_storage_bytes
@@ -808,7 +808,7 @@ struct ScanTileState<T, false>
 
     // Set the necessary size of the blob
     void* allocations[3] = {};
-    return CubDebug(AliasTemporaries(NULL, temp_storage_bytes, allocations, allocation_sizes));
+    return CubDebug(AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
   }
 
   /**
@@ -979,7 +979,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
-      : d_tile_descriptors(NULL)
+      : d_tile_descriptors(nullptr)
   {}
 
   /**
@@ -989,7 +989,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    *   Number of tiles
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+   *   Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
    *   is written to \p temp_storage_bytes and no work is done.
    *
    * @param[in] temp_storage_bytes
