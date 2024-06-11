@@ -129,6 +129,11 @@ def get_ctk(ctk_string):
     return result
 
 
+@memoize_result
+def parse_cxx_string(cxx_string):
+    "Returns (id, version) tuple. Version may be None if not present."
+    return re.match(r'^([a-z]+)-?([\d\.]+)?$', cxx_string).groups()
+
 
 @memoize_result
 def canonicalize_host_compiler_name(cxx_string):
@@ -140,7 +145,7 @@ def canonicalize_host_compiler_name(cxx_string):
 
     If no version is specified, the latest version is used.
     """
-    id, version = re.match(r'^([a-z]+)-?([\d\.]+)?$', cxx_string).groups()
+    id, version = parse_cxx_string(cxx_string)
 
     if not id in matrix_yaml['host_compilers']:
         raise Exception(
@@ -169,7 +174,8 @@ def canonicalize_host_compiler_name(cxx_string):
 
 @memoize_result
 def get_host_compiler(cxx_string):
-    id, version = re.match(r'^([a-z]+)([\d\.]+)?$', cxx_string).groups()
+    "Expects a canonicalized cxx_string."
+    id, version = parse_cxx_string(cxx_string)
 
     if not id in matrix_yaml['host_compilers']:
         raise Exception(
@@ -397,7 +403,7 @@ def generate_dispatch_job_origin(matrix_job, job_type):
     # The origin tags are used to build the execution summary for the CI PR comment.
     # Replace some of the clunkier tags with a summary-friendly version:
     if 'cxx' in origin_job:
-        host_compiler = get_host_compiler(origin_job['cxx'])
+        host_compiler = get_host_compiler(matrix_job['cxx'])
         del origin_job['cxx']
 
         origin_job['cxx'] = host_compiler['name'] + host_compiler['version']
