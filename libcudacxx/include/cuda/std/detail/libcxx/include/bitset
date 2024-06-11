@@ -742,7 +742,7 @@ bitset<_Size>::bitset(
 {
   if (__pos > __str.size())
   {
-    __throw_out_of_range("bitset string pos out of range");
+    _CUDA_VSTD::__throw_out_of_range("bitset string pos out of range");
   }
 
   size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
@@ -822,7 +822,7 @@ bitset<_Size>& bitset<_Size>::set(size_t __pos, bool __val)
 {
   if (__pos >= _Size)
   {
-    __throw_out_of_range("bitset set argument out of range");
+    _CUDA_VSTD::__throw_out_of_range("bitset set argument out of range");
   }
 
   (*this)[__pos] = __val;
@@ -841,7 +841,7 @@ bitset<_Size>& bitset<_Size>::reset(size_t __pos)
 {
   if (__pos >= _Size)
   {
-    __throw_out_of_range("bitset reset argument out of range");
+    _CUDA_VSTD::__throw_out_of_range("bitset reset argument out of range");
   }
 
   (*this)[__pos] = false;
@@ -868,7 +868,7 @@ bitset<_Size>& bitset<_Size>::flip(size_t __pos)
 {
   if (__pos >= _Size)
   {
-    __throw_out_of_range("bitset flip argument out of range");
+    _CUDA_VSTD::__throw_out_of_range("bitset flip argument out of range");
   }
 
   reference r = base::__make_ref(__pos);
@@ -947,7 +947,7 @@ bool bitset<_Size>::test(size_t __pos) const
 {
   if (__pos >= _Size)
   {
-    __throw_out_of_range("bitset test argument out of range");
+    _CUDA_VSTD::__throw_out_of_range("bitset test argument out of range");
   }
 
   return (*this)[__pos];

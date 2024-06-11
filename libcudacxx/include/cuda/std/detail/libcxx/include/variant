@@ -222,7 +222,6 @@ C++20
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include <cuda/std/__exception/exception.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/invoke.h>
@@ -268,18 +267,33 @@ C++20
 #  include <cuda/std/detail/libcxx/include/compare>
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifdef __cpp_lib_variant
+#    include <variant>
+#  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
+#    include <exception>
+#  endif // !__cpp_lib_variant
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
-class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_BAD_VARIANT_ACCESS bad_variant_access : public exception
+#  ifdef __cpp_lib_variant
+
+using ::std::bad_variant_access;
+
+#  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
+class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_BAD_VARIANT_ACCESS bad_variant_access : public ::std::exception
 {
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY const char* what() const noexcept override
+  const char* what() const noexcept override
   {
     return "bad access to cuda::std::variant";
   }
 };
+#  endif // !__cpp_lib_variant
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+
+#endif // _LIBCUDACXX_NO_EXCEPTIONS
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
