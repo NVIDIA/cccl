@@ -1085,7 +1085,7 @@ typedef __char32_t char32_t;
 #    else
 #      define _LIBCUDACXX_TYPE_VIS
 #    endif
-#  endif
+#  endif // !_LIBCUDACXX_TYPE_VIS
 
 #  ifndef _LIBCUDACXX_TEMPLATE_VIS
 #    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
