@@ -290,14 +290,14 @@ def get_tag_info(tag):
     result = matrix_yaml['tags'][tag]
     result['id'] = tag
 
-    # Default tags are implicitly required:
+    if 'required' not in result:
+        result['required'] = False
+
     if 'default' in result:
-        result['required'] = True
+        result['required'] = False
     else:
         result['default'] = None
 
-    if 'required' not in result:
-        result['required'] = False
 
     return result
 
@@ -808,32 +808,48 @@ def remove_excluded_jobs(matrix_jobs):
     return filtered_matrix_jobs
 
 
-def set_default_tags(matrix_job):
+def validate_tags(matrix_job, ignore_required=False):
     all_tags = matrix_yaml['tags'].keys()
-    for tag in all_tags:
-        tag_info = get_tag_info(tag)
-        if tag_info['default'] and tag not in matrix_job:
-            matrix_job[tag] = tag_info['default']
-        if tag_info['required'] and tag not in matrix_job:
-            raise Exception(error_message_with_matrix_job(matrix_job, f"Missing required tag '{tag}'"))
+
+    if not ignore_required:
+        for tag in all_tags:
+            tag_info = get_tag_info(tag)
+            if tag not in matrix_job:
+                if tag_info['required']:
+                    raise Exception(error_message_with_matrix_job(matrix_job, f"Missing required tag '{tag}'"))
+        if 'cudacxx' in matrix_job:
+            if matrix_job['cudacxx'] == 'clang' and ('cxx' not in matrix_job or 'clang' not in matrix_job['cxx']):
+                raise Exception(error_message_with_matrix_job(matrix_job, f"cudacxx=clang requires cxx=clang."))
 
     for tag in matrix_job:
         if tag == 'origin':
             continue
-        if tag not in matrix_yaml['tags']:
+        if tag not in all_tags:
             raise Exception(error_message_with_matrix_job(matrix_job, f"Unknown tag '{tag}'"))
 
     if 'gpu' in matrix_job and matrix_job['gpu'] not in matrix_yaml['gpus'].keys():
         raise Exception(error_message_with_matrix_job(matrix_job, f"Unknown gpu '{matrix_job['gpu']}'"))
 
 
+def set_default_tags(matrix_job):
+    all_tags = matrix_yaml['tags'].keys()
+    for tag in all_tags:
+        if tag in matrix_job:
+            continue
+
+        tag_info = get_tag_info(tag)
+        if tag_info['default']:
+            matrix_job[tag] = tag_info['default']
+
+
+def canonicalize_tags(matrix_job):
+    if 'ctk' in matrix_job:
+        matrix_job['ctk'] = canonicalize_ctk_version(matrix_job['ctk'])
+    if 'cxx' in matrix_job:
+        matrix_job['cxx'] = canonicalize_host_compiler_name(matrix_job['cxx'])
+
+
 def set_derived_tags(matrix_job):
-    matrix_job['cxx'] = canonicalize_host_compiler_name(matrix_job['cxx'])
-    matrix_job['ctk'] = canonicalize_ctk_version(matrix_job['ctk'])
-
-    if matrix_job['cudacxx'] == 'clang' and not matrix_job['cxx'].startswith('clang'):
-        raise Exception(error_message_with_matrix_job(matrix_job, f"cudacxx=clang requires cxx=clang."))
-
     if 'sm' in matrix_job and matrix_job['sm'] == 'gpu':
         if not 'gpu' in matrix_job:
             raise Exception(error_message_with_matrix_job(matrix_job, f"\"sm: 'gpu'\" requires tag 'gpu'."))
@@ -883,15 +899,20 @@ def explode_tags(matrix_job, explode_tag=None):
     return result
 
 
-def preprocess_matrix_jobs(matrix_jobs, explode_only=False):
+def preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix=False):
     result = []
-    if explode_only:
+    if is_exclusion_matrix:
         for matrix_job in matrix_jobs:
-            result.extend(explode_tags(matrix_job))
+            validate_tags(matrix_job, ignore_required=True)
+            for job in explode_tags(matrix_job):
+                canonicalize_tags(job)
+                result.append(job)
     else:
         for matrix_job in matrix_jobs:
+            validate_tags(matrix_job)
             set_default_tags(matrix_job)
             for job in explode_tags(matrix_job):
+                canonicalize_tags(job)
                 set_derived_tags(job)
                 # The derived tags may need to be exploded again:
                 result.extend(explode_tags(job))
@@ -921,7 +942,7 @@ def parse_workflow_matrix_jobs(args, workflow_name):
             matrix_job['origin'] = get_matrix_job_origin(matrix_job, workflow_name, workflow_location)
 
     # Fill in default values, explode lists.
-    matrix_jobs = preprocess_matrix_jobs(matrix_jobs, explode_only=is_exclusion_matrix)
+    matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
 
     if args:
         if args.dirty_projects:
