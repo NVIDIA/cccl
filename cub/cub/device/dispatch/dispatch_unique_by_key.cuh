@@ -232,7 +232,7 @@ struct DispatchUniqueByKey : SelectedPolicy
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;
 
-  /// Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+  /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.
   void* d_temp_storage;
 
@@ -267,7 +267,7 @@ struct DispatchUniqueByKey : SelectedPolicy
   /**
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @tparam temp_storage_bytes
@@ -397,7 +397,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       }
 
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
-      void* allocations[2] = {NULL, NULL};
+      void* allocations[2] = {nullptr, nullptr};
 
       error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
@@ -405,7 +405,7 @@ struct DispatchUniqueByKey : SelectedPolicy
         break;
       }
 
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         // Return if the caller is simply requesting the size of the storage allocation
         break;
@@ -548,7 +548,7 @@ struct DispatchUniqueByKey : SelectedPolicy
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @param[in,out] &temp_storage_bytes

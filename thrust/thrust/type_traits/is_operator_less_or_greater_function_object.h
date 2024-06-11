@@ -127,13 +127,10 @@ constexpr bool is_operator_greater_function_object_v = is_operator_greater_funct
  *  \see is_operator_plus_function_object
  */
 template <typename T>
-using is_operator_less_or_greater_function_object = integral_constant<
-  bool,
-  detail::is_operator_less_function_object_impl<T>::value || detail::is_operator_greater_function_object_impl<T>::value>
-#if _CCCL_STD_VER < 2011
-  {}
-#endif
-;
+using is_operator_less_or_greater_function_object =
+  integral_constant<bool,
+                    detail::is_operator_less_function_object_impl<T>::value
+                      || detail::is_operator_greater_function_object_impl<T>::value>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a

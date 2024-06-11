@@ -136,7 +136,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
   cudaStream_t stream = cuda_cub::stream(policy);
 
   cudaError_t status;
-  status = doit_step<SORT_ITEMS, STABLE>(NULL, storage_size, keys_first, items_first, count, compare_op, stream);
+  status = doit_step<SORT_ITEMS, STABLE>(nullptr, storage_size, keys_first, items_first, count, compare_op, stream);
   cuda_cub::throw_on_error(status, "merge_sort: failed on 1st step");
 
   // Allocate temporary storage.
@@ -261,8 +261,8 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
   size_t temp_storage_bytes = 0;
   cudaStream_t stream       = cuda_cub::stream(policy);
 
-  cub::DoubleBuffer<Key> keys_buffer(keys, NULL);
-  cub::DoubleBuffer<Item> items_buffer(items, NULL);
+  cub::DoubleBuffer<Key> keys_buffer(keys, nullptr);
+  cub::DoubleBuffer<Item> items_buffer(items, nullptr);
 
   Size keys_count  = count;
   Size items_count = SORT_ITEMS::value ? count : 0;
@@ -270,7 +270,7 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
   cudaError_t status;
 
   status =
-    dispatch<SORT_ITEMS, CompareOp>::doit(NULL, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
+    dispatch<SORT_ITEMS, CompareOp>::doit(nullptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
   cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
 
   size_t keys_temp_storage  = core::align_to(sizeof(Key) * keys_count, 128);
@@ -314,14 +314,14 @@ namespace __smart_sort
 
 template <class Key, class CompareOp>
 struct can_use_primitive_sort
-    : thrust::detail::and_<thrust::detail::is_arithmetic<Key>,
-                           thrust::detail::or_<thrust::detail::is_same<CompareOp, thrust::less<Key>>,
-                                               thrust::detail::is_same<CompareOp, thrust::greater<Key>>>>
+    : ::cuda::std::_And<::cuda::std::is_arithmetic<Key>,
+                        ::cuda::std::disjunction<::cuda::std::is_same<CompareOp, thrust::less<Key>>,
+                                                 ::cuda::std::is_same<CompareOp, thrust::greater<Key>>>>
 {};
 
 template <class Iterator, class CompareOp>
 struct enable_if_primitive_sort
-    : thrust::detail::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
+    : ::cuda::std::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
 {};
 
 template <class Iterator, class CompareOp>

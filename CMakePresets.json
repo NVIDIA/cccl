@@ -241,6 +241,10 @@
       "cacheVariables": {
         "CCCL_ENABLE_THRUST": true,
         "THRUST_ENABLE_MULTICONFIG": true,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": false,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": false,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": false,
@@ -598,6 +602,126 @@
       "inherits": "base"
     },
     {
+      "name": "cub-nolid-base",
+      "hidden": true,
+      "inherits": "cub-base",
+      "filter": {
+        "exclude": {
+          "name": "^cub.*\\.lid_[0-2].*$"
+        }
+      }
+    },
+    {
+      "name": "cub-lid0-base",
+      "hidden": true,
+      "inherits": "cub-base",
+      "filter": {
+        "include": {
+          "name": "^cub.*\\.lid_0.*$"
+        }
+      }
+    },
+    {
+      "name": "cub-lid1-base",
+      "hidden": true,
+      "inherits": "cub-base",
+      "filter": {
+        "include": {
+          "name": "^cub.*\\.lid_1.*$"
+        }
+      }
+    },
+    {
+      "name": "cub-lid2-base",
+      "hidden": true,
+      "inherits": "cub-base",
+      "filter": {
+        "include": {
+          "name": "^cub.*\\.lid_2.*$"
+        }
+      }
+    },
+    {
+      "name": "cub-nolid-cpp11",
+      "configurePreset": "cub-cpp11",
+      "inherits": "cub-nolid-base"
+    },
+    {
+      "name": "cub-nolid-cpp14",
+      "configurePreset": "cub-cpp14",
+      "inherits": "cub-nolid-base"
+    },
+    {
+      "name": "cub-nolid-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-nolid-base"
+    },
+    {
+      "name": "cub-nolid-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-nolid-base"
+    },
+    {
+      "name": "cub-lid0-cpp11",
+      "configurePreset": "cub-cpp11",
+      "inherits": "cub-lid0-base"
+    },
+    {
+      "name": "cub-lid0-cpp14",
+      "configurePreset": "cub-cpp14",
+      "inherits": "cub-lid0-base"
+    },
+    {
+      "name": "cub-lid0-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-lid0-base"
+    },
+    {
+      "name": "cub-lid0-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-lid0-base"
+    },
+    {
+      "name": "cub-lid1-cpp11",
+      "configurePreset": "cub-cpp11",
+      "inherits": "cub-lid1-base"
+    },
+    {
+      "name": "cub-lid1-cpp14",
+      "configurePreset": "cub-cpp14",
+      "inherits": "cub-lid1-base"
+    },
+    {
+      "name": "cub-lid1-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-lid1-base"
+    },
+    {
+      "name": "cub-lid1-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-lid1-base"
+    },
+    {
+      "name": "cub-lid2-cpp11",
+      "configurePreset": "cub-cpp11",
+      "inherits": "cub-lid2-base"
+    },
+    {
+      "name": "cub-lid2-cpp14",
+      "configurePreset": "cub-cpp14",
+      "inherits": "cub-lid2-base"
+    },
+    {
+      "name": "cub-lid2-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-lid2-base"
+    },
+    {
+      "name": "cub-lid2-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-lid2-base"
+    },
+    {
       "name": "cub-cpp11",
       "configurePreset": "cub-cpp11",
       "inherits": "cub-base"
@@ -626,6 +750,66 @@
           "name": "^thrust.*\\.test\\.async[._].*$"
         }
       }
+    },
+    {
+      "name": "thrust-gpu-base",
+      "hidden": true,
+      "inherits": "thrust-base",
+      "filter": {
+        "include": {
+          "name": "^thrust.*\\.cuda\\..*$"
+        }
+      }
+    },
+    {
+      "name": "thrust-cpu-base",
+      "hidden": true,
+      "inherits": "thrust-base",
+      "filter": {
+        "exclude": {
+          "name": "^thrust.*\\.cuda\\..*$"
+        }
+      }
+    },
+    {
+      "name": "thrust-gpu-cpp11",
+      "configurePreset": "thrust-cpp11",
+      "inherits": "thrust-gpu-base"
+    },
+    {
+      "name": "thrust-gpu-cpp14",
+      "configurePreset": "thrust-cpp14",
+      "inherits": "thrust-gpu-base"
+    },
+    {
+      "name": "thrust-gpu-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "thrust-gpu-base"
+    },
+    {
+      "name": "thrust-gpu-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "thrust-gpu-base"
+    },
+    {
+      "name": "thrust-cpu-cpp11",
+      "configurePreset": "thrust-cpp11",
+      "inherits": "thrust-cpu-base"
+    },
+    {
+      "name": "thrust-cpu-cpp14",
+      "configurePreset": "thrust-cpp14",
+      "inherits": "thrust-cpu-base"
+    },
+    {
+      "name": "thrust-cpu-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "thrust-cpu-base"
+    },
+    {
+      "name": "thrust-cpu-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "thrust-cpu-base"
     },
     {
       "name": "thrust-cpp11",

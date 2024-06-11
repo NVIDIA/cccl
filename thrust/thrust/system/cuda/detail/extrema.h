@@ -204,12 +204,12 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, 1);
 
     // small, single tile size
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = max<size_t>(1, vshmem_size);
       return status;
     }
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : NULL;
+    char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : nullptr;
 
     reduce_agent ra(reduce_plan, num_items, stream, vshmem_ptr, "reduce_agent: single_tile only");
     ra.launch(input_it, output_it, num_items, reduction_op);
@@ -245,7 +245,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
 
     // Temporary storage allocation requirements
-    void* allocations[3]       = {NULL, NULL, NULL};
+    void* allocations[3]       = {nullptr, nullptr, nullptr};
     size_t allocation_sizes[3] = {
       max_blocks * sizeof(T), // bytes needed for privatized block reductions
       cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
@@ -253,14 +253,14 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     };
     status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     CUDA_CUB_RET_IF_FAIL(status);
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       return status;
     }
 
     T* d_block_reductions = (T*) allocations[0];
     cub::GridQueue<UnsignedSize> queue(allocations[1]);
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : NULL;
+    char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : nullptr;
 
     // Get grid size for device_reduce_sweep_kernel
     int reduce_grid_size = 0;
@@ -321,14 +321,14 @@ extrema(execution_policy<Derived>& policy, InputIt first, Size num_items, Binary
     status,
     doit_step<T>,
     num_items,
-    (NULL, temp_storage_bytes, first, num_items_fixed, binary_op, reinterpret_cast<T*>(NULL), stream));
+    (nullptr, temp_storage_bytes, first, num_items_fixed, binary_op, static_cast<T*>(nullptr), stream));
   cuda_cub::throw_on_error(status, "extrema failed on 1st step");
 
   size_t allocation_sizes[2] = {sizeof(T*), temp_storage_bytes};
-  void* allocations[2]       = {NULL, NULL};
+  void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(NULL, storage_size, allocations, allocation_sizes);
+  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "extrema failed on 1st alias storage");
 
   // Allocate temporary storage.
@@ -379,7 +379,7 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
 
   zip_iterator begin = make_zip_iterator(iter_tuple);
 
-  T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (NULL));
+  T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
   return first + thrust::get<1>(result);
 }
 
@@ -454,7 +454,7 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
 
      zip_iterator begin    = make_zip_iterator(iter_tuple);
      two_pairs_type result = __extrema::extrema(
-       policy, transform_t(begin, duplicate_t()), num_items, arg_minmax_t(binary_pred), (two_pairs_type*) (NULL));
+       policy, transform_t(begin, duplicate_t()), num_items, arg_minmax_t(binary_pred), (two_pairs_type*) (nullptr));
      ret = thrust::make_pair(first + get<1>(get<0>(result)), first + get<1>(get<1>(result)));),
     // CDP Sequential impl:
     (ret = thrust::minmax_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));

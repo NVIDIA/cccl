@@ -113,7 +113,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!      d_temp_storage, temp_storage_bytes,
@@ -283,7 +283,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage  = NULL;
+  //!    void*    d_temp_storage  = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!        d_temp_storage, temp_storage_bytes,
@@ -422,6 +422,7 @@ struct DeviceHistogram
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples
   //!   (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
   //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
@@ -466,7 +467,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -621,6 +622,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
   //!   histograms from *RGBA* pixel samples).
@@ -642,8 +644,8 @@ struct DeviceHistogram
   //!   ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
   //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel
-  //!    ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
+  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
   //!   ``[sample_begin, sample_end)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
@@ -677,7 +679,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -900,7 +902,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1047,7 +1049,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1180,6 +1182,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
@@ -1217,7 +1220,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1360,6 +1363,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
@@ -1408,7 +1412,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,

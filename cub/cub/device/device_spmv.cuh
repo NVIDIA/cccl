@@ -116,7 +116,7 @@ struct DeviceSpmv
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, d_values,
   //!        d_row_offsets, d_column_indices, d_vector_x, d_vector_y,
@@ -139,7 +139,7 @@ struct DeviceSpmv
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage.
-  //!   When NULL, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   When nullptr, the required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

@@ -160,7 +160,7 @@ private:
 public:
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(NULL)
+      : ptr(nullptr)
       , tex_offset(0)
       , tex_obj(0)
   {}
@@ -193,7 +193,7 @@ public:
     res_desc.res.linear.desc        = channel_desc;
     res_desc.res.linear.sizeInBytes = bytes;
     tex_desc.readMode               = cudaReadModeElementType;
-    return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, NULL));
+    return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, nullptr));
   }
 
   /// Unbind this iterator from its texture reference

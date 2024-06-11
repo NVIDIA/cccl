@@ -284,13 +284,13 @@ public:
 
 } // namespace detail
 
-const error_category& generic_category()
+inline const error_category& generic_category()
 {
   static const detail::generic_error_category result;
   return result;
 }
 
-const error_category& system_category()
+inline const error_category& system_category()
 {
   static const detail::system_error_category result;
   return result;

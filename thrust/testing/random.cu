@@ -692,7 +692,7 @@ void ValidateDistributionCharacteristic()
 
   // test distribution & engine with comparable ranges
   // only do this if they have the same result_type
-  if (thrust::detail::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
+  if (::cuda::std::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
   {
     // test Distribution with same range as engine
 

@@ -1,4 +1,3 @@
-
 Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
@@ -6,6 +5,8 @@ Param(
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17
 )
+
+$ErrorActionPreference = "Stop"
 
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
@@ -50,6 +51,7 @@ Write-Host "CXX_STANDARD=$CXX_STANDARD"
 Write-Host "CXX=$env:CXX"
 Write-Host "CUDACXX=$env:CUDACXX"
 Write-Host "CUDAHOSTCXX=$env:CUDAHOSTCXX"
+Write-Host "TBB_ROOT=$env:TBB_ROOT"
 Write-Host "NVCC_VERSION=$NVCC_VERSION"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
@@ -57,6 +59,9 @@ Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
 Write-Host "Current commit is:"
 Write-Host "$(git log -1)"
 Write-Host "========================================"
+
+cmake --version
+ctest --version
 
 function configure_preset {
     Param(

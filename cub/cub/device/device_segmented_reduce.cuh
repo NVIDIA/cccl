@@ -165,7 +165,7 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce
@@ -327,7 +327,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum
@@ -458,13 +458,13 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-custommin
   //!     :end-before: example-end segmented-reduce-custommin
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min
@@ -604,7 +604,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmin
@@ -765,7 +765,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-max
@@ -906,7 +906,7 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmax

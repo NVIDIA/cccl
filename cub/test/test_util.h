@@ -354,7 +354,7 @@ struct CommandLineArgs
 };
 
 // Gets the amount of global memory of the current device.
-std::size_t TotalGlobalMem()
+inline std::size_t TotalGlobalMem()
 {
   int device = 0;
   CubDebugExit(cudaGetDevice(&device));
@@ -367,8 +367,6 @@ std::size_t TotalGlobalMem()
  * Random bits generator
  ******************************************************************************/
 
-int g_num_rand_samples = 0;
-
 template <typename T>
 bool IsNaN(T /* val */)
 {
@@ -376,68 +374,68 @@ bool IsNaN(T /* val */)
 }
 
 template <>
-__noinline__ bool IsNaN<float>(float val)
+inline bool IsNaN<float>(float val)
 {
   return std::isnan(val);
 }
 
 template <>
-__noinline__ bool IsNaN<float1>(float1 val)
+inline bool IsNaN<float1>(float1 val)
 {
   return (IsNaN(val.x));
 }
 
 template <>
-__noinline__ bool IsNaN<float2>(float2 val)
+inline bool IsNaN<float2>(float2 val)
 {
   return (IsNaN(val.y) || IsNaN(val.x));
 }
 
 template <>
-__noinline__ bool IsNaN<float3>(float3 val)
+inline bool IsNaN<float3>(float3 val)
 {
   return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
 }
 
 template <>
-__noinline__ bool IsNaN<float4>(float4 val)
+inline bool IsNaN<float4>(float4 val)
 {
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
 
 template <>
-__noinline__ bool IsNaN<double>(double val)
+inline bool IsNaN<double>(double val)
 {
   return std::isnan(val);
 }
 
 template <>
-__noinline__ bool IsNaN<double1>(double1 val)
+inline bool IsNaN<double1>(double1 val)
 {
   return (IsNaN(val.x));
 }
 
 template <>
-__noinline__ bool IsNaN<double2>(double2 val)
+inline bool IsNaN<double2>(double2 val)
 {
   return (IsNaN(val.y) || IsNaN(val.x));
 }
 
 template <>
-__noinline__ bool IsNaN<double3>(double3 val)
+inline bool IsNaN<double3>(double3 val)
 {
   return (IsNaN(val.z) || IsNaN(val.y) || IsNaN(val.x));
 }
 
 template <>
-__noinline__ bool IsNaN<double4>(double4 val)
+inline bool IsNaN<double4>(double4 val)
 {
   return (IsNaN(val.y) || IsNaN(val.x) || IsNaN(val.w) || IsNaN(val.z));
 }
 
 #ifdef TEST_HALF_T
 template <>
-__noinline__ bool IsNaN<half_t>(half_t val)
+inline bool IsNaN<half_t>(half_t val)
 {
   const auto bits = SafeBitCast<unsigned short>(val);
 
@@ -448,7 +446,7 @@ __noinline__ bool IsNaN<half_t>(half_t val)
 
 #ifdef TEST_BF_T
 template <>
-__noinline__ bool IsNaN<bfloat16_t>(bfloat16_t val)
+inline bool IsNaN<bfloat16_t>(bfloat16_t val)
 {
   const auto bits = SafeBitCast<unsigned short>(val);
 
@@ -514,7 +512,6 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
       {
         // Grab some of the higher bits from rand (better entropy, supposedly)
         word &= mersenne::genrand_int32();
-        g_num_rand_samples++;
       }
 
       word_buff[j] = word;
@@ -720,7 +717,7 @@ std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<
 }
 
 #if CUB_IS_INT128_ENABLED
-static std::ostream& operator<<(std::ostream& os, __uint128_t val)
+inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {
   constexpr int max_digits      = 40;
   char buffer[max_digits]       = {};
@@ -742,7 +739,7 @@ static std::ostream& operator<<(std::ostream& os, __uint128_t val)
   return os;
 }
 
-static std::ostream& operator<<(std::ostream& os, __int128_t val)
+inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 {
   if (val < 0)
   {
@@ -952,7 +949,7 @@ struct TestFoo
 /**
  * TestFoo ostream operator
  */
-std::ostream& operator<<(std::ostream& os, const TestFoo& val)
+inline std::ostream& operator<<(std::ostream& os, const TestFoo& val)
 {
   os << '(' << val.x << ',' << val.y << ',' << val.z << ',' << CoutCast(val.w) << ')';
   return os;
@@ -1088,7 +1085,7 @@ struct TestBar
 /**
  * TestBar ostream operator
  */
-std::ostream& operator<<(std::ostream& os, const TestBar& val)
+inline std::ostream& operator<<(std::ostream& os, const TestBar& val)
 {
   os << '(' << val.x << ',' << val.y << ')';
   return os;
@@ -1220,7 +1217,7 @@ int CompareResults(double* computed, double* reference, OffsetT len, bool verbos
  * Verify the contents of a device array match those
  * of a host array
  */
-int CompareDeviceResults(
+inline int CompareDeviceResults(
   CUB_NS_QUALIFIER::NullType* /* h_reference */,
   CUB_NS_QUALIFIER::NullType* /* d_data */,
   std::size_t /* num_items */,
@@ -1343,7 +1340,7 @@ int CompareDeviceDeviceResults(
 /**
  * Print the contents of a host array
  */
-void DisplayResults(CUB_NS_QUALIFIER::NullType* /* h_data */, std::size_t /* num_items */) {}
+inline void DisplayResults(CUB_NS_QUALIFIER::NullType* /* h_data */, std::size_t /* num_items */) {}
 
 /**
  * Print the contents of a host array

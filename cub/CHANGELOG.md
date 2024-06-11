@@ -1269,7 +1269,7 @@ CUB 1.5.0 introduces segmented sort and reduction primitives.
     warp-reduction on non-primitive data types (e.g. user-defined structs).
 - Fix small radix sorting problems where 0 temporary bytes were required and
     users code was invoking `malloc(0)` on some systems where that returns
-    `NULL`.
+    `nullptr`.
   CUB assumed the user was asking for the size again and not running the sort.
 
 # CUB 1.4.1

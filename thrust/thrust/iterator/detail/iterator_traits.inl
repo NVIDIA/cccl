@@ -112,13 +112,14 @@ namespace detail
 {
 
 template <typename T>
-struct is_iterator_traversal : thrust::detail::is_convertible<T, incrementable_traversal_tag>
+struct is_iterator_traversal : ::cuda::std::is_convertible<T, incrementable_traversal_tag>
 {}; // end is_iterator_traversal
 
 template <typename T>
 struct is_iterator_system
-    : detail::or_<detail::is_convertible<T, any_system_tag>,
-                  detail::or_<detail::is_convertible<T, host_system_tag>, detail::is_convertible<T, device_system_tag>>>
+    : ::cuda::std::disjunction<::cuda::std::is_convertible<T, any_system_tag>,
+                               ::cuda::std::disjunction<::cuda::std::is_convertible<T, host_system_tag>,
+                                                        ::cuda::std::is_convertible<T, device_system_tag>>>
 {}; // end is_iterator_system
 
 } // end namespace detail

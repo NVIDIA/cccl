@@ -244,7 +244,7 @@ struct device_generate_functor
 
 template <typename System, typename Generator>
 struct generate_functor
-    : thrust::detail::eval_if<thrust::detail::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
                               thrust::detail::identity_<host_generate_functor<Generator>>,
                               thrust::detail::identity_<device_generate_functor<Generator>>>
 {};
@@ -269,8 +269,8 @@ struct zipped_binary_op
 
 template <typename T>
 struct is_non_const_reference
-    : thrust::detail::and_<thrust::detail::not_<thrust::detail::is_const<T>>,
-                           thrust::detail::or_<thrust::detail::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
+    : ::cuda::std::_And<thrust::detail::not_<::cuda::std::is_const<T>>,
+                        ::cuda::std::disjunction<::cuda::std::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
 {};
 
 template <typename T>
@@ -285,7 +285,7 @@ struct is_tuple_of_iterator_references<thrust::detail::tuple_of_iterator_referen
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 struct enable_if_non_const_reference_or_tuple_of_iterator_references
-    : thrust::detail::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
+    : ::cuda::std::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
 {};
 
 template <typename UnaryFunction>
@@ -421,7 +421,7 @@ struct device_destroy_functor
 
 template <typename System, typename T>
 struct destroy_functor
-    : thrust::detail::eval_if<thrust::detail::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
                               thrust::detail::identity_<host_destroy_functor<T>>,
                               thrust::detail::identity_<device_destroy_functor<T>>>
 {};

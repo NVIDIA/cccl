@@ -47,6 +47,8 @@
 #include <thrust/system/system_error.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/std/__type_traits/void_t.h>
+
 #include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
@@ -80,11 +82,8 @@ namespace core
 #  endif
 #endif
 
-// Typelist - a container of types, supports up to 10 types
-// --------------------------------------------------------------------------
-
-class _;
-template <class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _>
+/// Typelist - a container of types
+template <typename...>
 struct typelist;
 
 // -------------------------------------
@@ -135,9 +134,9 @@ typedef typelist<sm60, sm52, sm35, sm30> sm_list;
 template <class, class>
 struct lowest_supported_sm_arch_impl;
 
-template <class SM, class _0, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-struct lowest_supported_sm_arch_impl<SM, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
-    : lowest_supported_sm_arch_impl<_0, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>
+template <class SM, class Head, class... Tail>
+struct lowest_supported_sm_arch_impl<SM, typelist<Head, Tail...>>
+    : lowest_supported_sm_arch_impl<Head, typelist<Tail...>>
 {};
 template <class SM>
 struct lowest_supported_sm_arch_impl<SM, typelist<>>
@@ -145,7 +144,7 @@ struct lowest_supported_sm_arch_impl<SM, typelist<>>
   typedef SM type;
 };
 
-typedef typename lowest_supported_sm_arch_impl<_, sm_list>::type lowest_supported_sm_arch;
+typedef typename lowest_supported_sm_arch_impl<void, sm_list>::type lowest_supported_sm_arch;
 
 // metafunction to match next viable PtxPlan specialization
 // --------------------------------------------------------------------------
@@ -159,36 +158,13 @@ template <template <class> class, class>
 struct specialize_plan_impl_match;
 
 // we loop through the sm_list
-template <template <class> class P,
-          class SM,
-          class _0,
-          class _1,
-          class _2,
-          class _3,
-          class _4,
-          class _5,
-          class _6,
-          class _7,
-          class _8,
-          class _9>
-struct specialize_plan_impl_loop<P, SM, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
-    : specialize_plan_impl_loop<P, SM, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>
+template <template <class> class P, class SM, class Head, class... Tail>
+struct specialize_plan_impl_loop<P, SM, typelist<Head, Tail...>> : specialize_plan_impl_loop<P, SM, typelist<Tail...>>
 {};
 
 // until we find first lowest match
-template <template <class> class P,
-          class SM,
-          class _1,
-          class _2,
-          class _3,
-          class _4,
-          class _5,
-          class _6,
-          class _7,
-          class _8,
-          class _9>
-struct specialize_plan_impl_loop<P, SM, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
-    : specialize_plan_impl_match<P, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+template <template <class> class P, class SM, class... Tail>
+struct specialize_plan_impl_loop<P, SM, typelist<SM, Tail...>> : specialize_plan_impl_match<P, typelist<SM, Tail...>>
 {};
 
 template <class, class>
@@ -212,21 +188,9 @@ struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arc
 // candidate for tuning, so pick the first available
 //   if the plan P has SM-level tuning then pick it,
 //   otherwise move on to the next sm in the sm_list
-template <template <class> class P,
-          class SM,
-          class _1,
-          class _2,
-          class _3,
-          class _4,
-          class _5,
-          class _6,
-          class _7,
-          class _8,
-          class _9>
-struct specialize_plan_impl_match<P, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
-    : thrust::detail::conditional<has_sm_tuning<P, SM>::value,
-                                  P<SM>,
-                                  specialize_plan_impl_match<P, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>>::type
+template <template <class> class P, class SM, class... SMs>
+struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
+    : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
 {};
 
 template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
@@ -235,9 +199,9 @@ struct specialize_plan_msvc10_war
   // if Plan has tuning type, this means it has SM-specific tuning
   // so loop through sm_list to find match,
   // otherwise just specialize on provided SM
-  typedef thrust::detail::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
-                                      specialize_plan_impl_loop<Plan, SM, sm_list>,
-                                      Plan<SM>>
+  typedef ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
+                                   specialize_plan_impl_loop<Plan, SM, sm_list>,
+                                   Plan<SM>>
     type;
 };
 
@@ -254,32 +218,17 @@ struct specialize_plan : specialize_plan_msvc10_war<Plan, SM>::type::type
 // metafunction introspects Agent, and if it finds TempStorage type
 // it will return its size
 
-__THRUST_DEFINE_HAS_NESTED_TYPE(has_temp_storage, TempStorage)
-
-template <class Agent, class U>
-struct temp_storage_size_impl;
-
-template <class Agent>
-struct temp_storage_size_impl<Agent, thrust::detail::false_type>
+template <class Agent, class = void>
+struct temp_storage_size
 {
-  enum
-  {
-    value = 0
-  };
+  static constexpr std::size_t value = 0;
 };
 
 template <class Agent>
-struct temp_storage_size_impl<Agent, thrust::detail::true_type>
+struct temp_storage_size<Agent, ::cuda::std::__void_t<typename Agent::TempStorage>>
 {
-  enum
-  {
-    value = sizeof(typename Agent::TempStorage)
-  };
+  static constexpr std::size_t value = sizeof(typename Agent::TempStorage);
 };
-
-template <class Agent>
-struct temp_storage_size : temp_storage_size_impl<Agent, typename has_temp_storage<Agent>::type>
-{};
 
 // check whether all Agents requires < MAX_SHMEM shared memory
 // ---------------------------------------------------------------------------
@@ -292,24 +241,12 @@ struct temp_storage_size : temp_storage_size_impl<Agent, typename has_temp_stora
 template <bool, class, size_t, class>
 struct has_enough_shmem_impl;
 
-template <bool V,
-          class A,
-          size_t S,
-          class _0,
-          class _1,
-          class _2,
-          class _3,
-          class _4,
-          class _5,
-          class _6,
-          class _7,
-          class _8,
-          class _9>
-struct has_enough_shmem_impl<V, A, S, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
-    : has_enough_shmem_impl<V && (temp_storage_size<specialize_plan<A::template PtxPlan, _0>>::value <= S),
+template <bool V, class A, size_t S, class Head, class... Tail>
+struct has_enough_shmem_impl<V, A, S, typelist<Head, Tail...>>
+    : has_enough_shmem_impl<V && (temp_storage_size<specialize_plan<A::template PtxPlan, Head>>::value <= S),
                             A,
                             S,
-                            typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>
+                            typelist<Tail...>>
 {};
 template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
@@ -318,7 +255,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<>>
   {
     value = V
   };
-  typedef typename thrust::detail::conditional<value, thrust::detail::true_type, thrust::detail::false_type>::type type;
+  typedef ::cuda::std::__conditional_t<value, thrust::detail::true_type, thrust::detail::false_type> type;
 };
 
 template <class Agent, size_t MAX_SHMEM>
@@ -340,7 +277,7 @@ struct AgentPlan
   int shared_memory_size;
   int grid_size;
 
-  THRUST_RUNTIME_FUNCTION AgentPlan() {}
+  AgentPlan() = default;
 
   THRUST_RUNTIME_FUNCTION
   AgentPlan(int block_threads_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
@@ -361,7 +298,7 @@ struct AgentPlan
 
   template <class PtxPlan>
   THRUST_RUNTIME_FUNCTION
-  AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = NULL)
+  AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = nullptr)
       : block_threads(PtxPlan::BLOCK_THREADS)
       , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
       , items_per_tile(PtxPlan::ITEMS_PER_TILE)
@@ -380,7 +317,7 @@ struct return_Plan
 
 template <class Agent>
 struct get_plan
-    : thrust::detail::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
+    : ::cuda::std::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
 {};
 
 // returns AgentPlan corresponding to a given ptx version
@@ -389,8 +326,8 @@ struct get_plan
 template <class, class>
 struct get_agent_plan_impl;
 
-template <class Agent, class SM, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-struct get_agent_plan_impl<Agent, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+template <class Agent, class SM, class... Tail>
+struct get_agent_plan_impl<Agent, typelist<SM, Tail...>>
 {
   typedef typename get_plan<Agent>::type Plan;
   Plan THRUST_RUNTIME_FUNCTION static get(int ptx_version)
@@ -401,7 +338,7 @@ struct get_agent_plan_impl<Agent, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _
     }
     else
     {
-      return get_agent_plan_impl<Agent, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>::get(ptx_version);
+      return get_agent_plan_impl<Agent, typelist<Tail...>>::get(ptx_version);
     }
   }
 };
@@ -428,7 +365,7 @@ THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_ve
 }
 
 // XXX keep this dead-code for now as a gentle reminder
-//     that kernel luunch which reats plan values is the most robust
+//     that kernel launch which reats plan values is the most robust
 //     mechanism to extract sm-specific tuning parameters
 // TODO: since we are unable to afford kernel launch + cudaMemcpy ON EVERY
 //       algorithm invocation, we need to design a good caching strategy
@@ -577,10 +514,10 @@ struct LoadIterator
   typedef typename iterator_traits<It>::value_type value_type;
   typedef typename iterator_traits<It>::difference_type size_type;
 
-  typedef
-    typename thrust::detail::conditional<is_contiguous_iterator<It>::value,
-                                         cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
-                                         It>::type type;
+  typedef ::cuda::std::__conditional_t<is_contiguous_iterator<It>::value,
+                                       cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                                       It>
+    type;
 }; // struct Iterator
 
 template <class PtxPlan, class It>
@@ -648,6 +585,7 @@ struct BlockStore
 // --------------
 // used for function that return cudaError_t along with the result
 //
+// TODO(bgruber): this looks rather like an expected than an optional. Use ::cuda::std::expected in C++14.
 template <class T>
 class cuda_optional
 {
@@ -778,49 +716,6 @@ struct uninitialized
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
   {
     return get();
-  }
-};
-
-// uninitialized_array
-// --------------
-// allocates uninitialized data on stack
-template <class T, size_t N>
-struct array
-{
-  typedef T value_type;
-  typedef T ref[N];
-  enum
-  {
-    SIZE = N
-  };
-
-private:
-  T data_[N];
-
-public:
-  _CCCL_HOST_DEVICE T* data()
-  {
-    return data_;
-  }
-  _CCCL_HOST_DEVICE const T* data() const
-  {
-    return data_;
-  }
-  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
-  {
-    return ((T*) data_)[idx];
-  }
-  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
-  {
-    return ((T*) data_)[idx];
-  }
-  _CCCL_HOST_DEVICE unsigned int size() const
-  {
-    return N;
-  }
-  _CCCL_HOST_DEVICE operator ref&()
-  {
-    return data_;
   }
 };
 

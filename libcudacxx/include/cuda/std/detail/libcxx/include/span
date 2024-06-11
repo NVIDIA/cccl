@@ -138,6 +138,8 @@ template<class R>
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__fwd/string.h>
@@ -157,6 +159,9 @@ template<class R>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
@@ -199,12 +204,19 @@ _LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 template <class _Range, class _ElementType>
-_LIBCUDACXX_CONCEPT __span_compatible_range =
-  _CUDA_VRANGES::contiguous_range<_Range> && _CUDA_VRANGES::sized_range<_Range>
-  && (_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))
-  && !__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>
-  && !_CCCL_TRAIT(is_array, remove_cvref_t<_Range>)
-  && _CCCL_TRAIT(is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]);
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __span_compatible_range_,
+  requires()(
+    requires(_CUDA_VRANGES::contiguous_range<_Range>),
+    requires(_CUDA_VRANGES::sized_range<_Range>),
+    requires((_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))),
+    requires((!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>))),
+    requires((!__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>) ),
+    requires(_CCCL_TRAIT(
+      is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]))));
+
+template <class _Range, class _ElementType>
+_LIBCUDACXX_CONCEPT __span_compatible_range = _LIBCUDACXX_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
 
 #    if _CCCL_STD_VER >= 2020
 template <class _It, class _Tp>
@@ -256,6 +268,40 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_span_compatible_container<
     enable_if_t<is_convertible<remove_pointer_t<decltype(data(declval<_Tp&>()))> (*)[], _ElementType (*)[]>::value,
                 nullptr_t>>> = true;
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+
+#  if _CCCL_STD_VER >= 2020
+
+template <class _Tp>
+concept __integral_constant_like =
+  is_integral_v<decltype(_Tp::value)> //
+  && !is_same_v<bool, remove_const_t<decltype(_Tp::value)>> //
+  && convertible_to<_Tp, decltype(_Tp::value)> //
+  && equality_comparable_with<_Tp, decltype(_Tp::value)> //
+  && bool_constant<_Tp() == _Tp::value>::value
+  && bool_constant<static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value;
+
+#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+
+template <class _Tp>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __integral_constant_like_,
+  requires()( //
+    requires(_CCCL_TRAIT(is_integral, decltype(_Tp::value))),
+    requires(!_CCCL_TRAIT(is_same, bool, remove_const_t<decltype(_Tp::value)>)),
+    requires(convertible_to<_Tp, decltype(_Tp::value)>),
+    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
+    (integral_constant<bool, _Tp() == _Tp::value>::value),
+    (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value) //
+    ));
+template <class _Tp>
+_LIBCUDACXX_CONCEPT __integral_constant_like = _LIBCUDACXX_FRAGMENT(__integral_constant_like_, _Tp);
+#  endif // _CCCL_STD_VER <= 2017
+
+template <class _Tp, bool = __integral_constant_like<_Tp>>
+_LIBCUDACXX_INLINE_VAR constexpr size_t __maybe_static_ext = dynamic_extent;
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VAR constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
 
 template <typename _Tp, size_t _Extent>
 class _LIBCUDACXX_TEMPLATE_VIS span
@@ -333,13 +379,13 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 span(array<_OtherElementType, _Extent>& __arr) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 span(const array<_OtherElementType, _Extent>& __arr) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
@@ -569,14 +615,14 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _Sz)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 span(array<_OtherElementType, _Sz>& __arr) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _Sz)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 span(const array<_OtherElementType, _Sz>& __arr) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
@@ -769,9 +815,11 @@ _CCCL_HOST_DEVICE span(_Container&) -> span<typename _Container::value_type>;
 template <class _Container>
 _CCCL_HOST_DEVICE span(const _Container&) -> span<const typename _Container::value_type>;
 #  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+
 _LIBCUDACXX_TEMPLATE(class _It, class _EndOrSize)
 _LIBCUDACXX_REQUIRES(contiguous_iterator<_It>)
-_CCCL_HOST_DEVICE span(_It, _EndOrSize) -> span<remove_reference_t<iter_reference_t<_It>>>;
+_CCCL_HOST_DEVICE span(_It, _EndOrSize)
+  -> span<remove_reference_t<iter_reference_t<_It>>, __maybe_static_ext<_EndOrSize>>;
 
 _LIBCUDACXX_TEMPLATE(class _Range)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)

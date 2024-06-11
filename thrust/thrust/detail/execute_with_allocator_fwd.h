@@ -53,7 +53,7 @@ public:
       : alloc(alloc_)
   {}
 
-  typename remove_reference<Allocator>::type& get_allocator()
+  ::cuda::std::__libcpp_remove_reference_t<Allocator>& get_allocator()
   {
     return alloc;
   }

@@ -70,11 +70,14 @@ def update_summary_entry(entry, job, job_times=None):
 
         if not 'job_time' in entry:
             entry['job_time'] = 0
-        if not 'step_time' in entry:
-            entry['step_time'] = 0
+        if not 'command_time' in entry:
+            entry['command_time'] = 0
+        if not 'max_job_time' in entry:
+            entry['max_job_time'] = 0
 
         entry['job_time'] += job_time
-        entry['step_time'] += command_time
+        entry['command_time'] += command_time
+        entry['max_job_time'] = max(entry['max_job_time'], job_time)
 
     sccache_stats = get_sccache_stats(job["id"])
     if sccache_stats:
@@ -159,6 +162,20 @@ def build_summary(jobs, job_times=None):
     return summary
 
 
+def get_walltime(job_times):
+    "Return the walltime for all jobs in seconds."
+    start = None
+    end = None
+    for job_id, job_time in job_times.items():
+        job_start_timestamp = job_time['started_epoch_secs']
+        job_end_timestamp = job_time['completed_epoch_secs']
+        if not start or job_start_timestamp < start:
+            start = job_start_timestamp
+        if not end or job_end_timestamp > end:
+            end = job_end_timestamp
+    return end - start
+
+
 def format_seconds(seconds):
     days, remainder = divmod(seconds, 86400)
     hours, remainder = divmod(remainder, 3600)
@@ -187,9 +204,11 @@ def get_summary_stats(summary):
 
     if 'job_time' in summary and total > 0 and summary['job_time'] > 0:
         job_time = summary['job_time']
+        max_job_time = summary['max_job_time']
         total_job_duration = format_seconds(job_time)
         avg_job_duration = format_seconds(job_time / total)
-        stats += f' | Total Time: {total_job_duration:>7} | Avg Time: {avg_job_duration:>7}'
+        max_job_duration = format_seconds(max_job_time)
+        stats += f' | Total: {total_job_duration:>7} | Avg: {avg_job_duration:>7} | Max: {max_job_duration:>7}'
 
     if 'sccache' in summary:
         sccache = summary['sccache']
@@ -202,7 +221,7 @@ def get_summary_stats(summary):
     return stats
 
 
-def get_summary_heading(summary):
+def get_summary_heading(summary, walltime):
     passed = summary['passed']
     failed = summary['failed']
 
@@ -213,7 +232,7 @@ def get_summary_heading(summary):
     else:
         flag = '🟩'
 
-    return f'{flag} CI Results: {get_summary_stats(summary)}'
+    return f'{flag} CI finished in {walltime}: {get_summary_stats(summary)}'
 
 
 def get_project_heading(project, project_summary):
@@ -297,24 +316,32 @@ def get_project_summary_body(project, project_summary):
     return "\n".join(body)
 
 
-def write_project_summary(project, project_summary):
+def write_project_summary(idx, project, project_summary):
     heading = get_project_heading(project, project_summary)
     body = get_project_summary_body(project, project_summary)
 
     summary = {'heading': heading, 'body': body}
 
-    write_json(f'execution/projects/{project}_summary.json', summary)
+    write_json(f'execution/projects/{idx:03}_{project}_summary.json', summary)
 
 
 def write_workflow_summary(workflow, job_times=None):
     summary = build_summary(extract_jobs(workflow), job_times)
+    walltime = format_seconds(get_walltime(job_times)) if job_times else '[unknown]'
 
     os.makedirs('execution/projects', exist_ok=True)
 
-    write_text('execution/heading.txt', get_summary_heading(summary))
+    write_text('execution/heading.txt', get_summary_heading(summary, walltime))
 
-    for project, project_summary in summary['projects'].items():
-        write_project_summary(project, project_summary)
+    # Sort summary projects so that projects with failures come first, and ties
+    # are broken by the total number of jobs:
+    def sort_project_key(project_summary):
+        failed = project_summary[1]['failed']
+        total = project_summary[1]['passed'] + failed
+        return (-failed, -total)
+
+    for i, (project, project_summary) in enumerate(sorted(summary['projects'].items(), key=sort_project_key)):
+        write_project_summary(i, project, project_summary)
 
 
 def main():

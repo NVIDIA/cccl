@@ -545,7 +545,7 @@ struct DispatchSpmv
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @param[in,out] temp_storage_bytes
@@ -606,7 +606,7 @@ struct DispatchSpmv
 
       if (spmv_params.num_rows == 0 || spmv_params.num_cols == 0)
       { // Empty problem, no-op.
-        if (d_temp_storage == NULL)
+        if (d_temp_storage == nullptr)
         {
           temp_storage_bytes = 1;
         }
@@ -616,7 +616,7 @@ struct DispatchSpmv
 
       if (spmv_params.num_nonzeros == 0)
       {
-        if (d_temp_storage == NULL)
+        if (d_temp_storage == nullptr)
         {
           // Return if the caller is simply requesting the size of the storage allocation
           temp_storage_bytes = 1;
@@ -652,7 +652,7 @@ struct DispatchSpmv
 
       if (spmv_params.num_cols == 1)
       {
-        if (d_temp_storage == NULL)
+        if (d_temp_storage == nullptr)
         {
           // Return if the caller is simply requesting the size of the storage allocation
           temp_storage_bytes = 1;
@@ -758,7 +758,7 @@ struct DispatchSpmv
       {
         break;
       }
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         // Return if the caller is simply requesting the size of the storage allocation
         break;
@@ -783,7 +783,7 @@ struct DispatchSpmv
       //            if (num_merge_tiles < spmv_sm_occupancy * sm_count)
       {
         // Not enough spmv tiles to saturate the device: have spmv blocks search their own staring coords
-        d_tile_coordinates = NULL;
+        d_tile_coordinates = nullptr;
       }
       else
       {
@@ -933,7 +933,7 @@ struct DispatchSpmv
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @param[in,out] temp_storage_bytes

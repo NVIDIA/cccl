@@ -42,6 +42,7 @@ _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 #endif // nvcc-11
 
 #include <cuda/std/cmath>
+#include <cuda/std/utility>
 
 #include "catch2_main.cuh"
 #include "test_warning_suppression.cuh"
@@ -215,6 +216,15 @@ template <typename... T>
   return os << "]";
 }
 _LIBCUDACXX_END_NAMESPACE_STD
+
+template <>
+struct Catch::StringMaker<cudaError>
+{
+  static auto convert(cudaError e) -> std::string
+  {
+    return std::to_string(cuda::std::__to_underlying(e)) + " (" + cudaGetErrorString(e) + ")";
+  }
+};
 
 #include <c2h/custom_type.cuh>
 #include <c2h/generators.cuh>

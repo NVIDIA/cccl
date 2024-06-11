@@ -56,6 +56,7 @@
 /**
  * Host-based fp16 data type compatible and convertible with __half
  */
+// TODO(bgruber): drop this when CTK 12.2 is the minimum, since it provides __host__ __device__ operators of __half
 struct half_t
 {
   uint16_t __x;
@@ -244,9 +245,14 @@ struct half_t
   }
 
   /// Divide
-  __host__ __device__ __forceinline__ half_t operator/(const half_t& other) const
+  __host__ __device__ __forceinline__ half_t& operator/=(const half_t& other)
   {
-    return half_t(float(*this) / float(other));
+    return *this = half_t(float(*this) / float(other));
+  }
+
+  friend __host__ __device__ __forceinline__ half_t operator/(half_t self, const half_t& other)
+  {
+    return self /= other;
   }
 
   /// Add
