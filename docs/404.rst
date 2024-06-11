@@ -1,15 +1,12 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
-<title>CCCL - 404</title>
+:orphan:
 
-<html>
-  <head>
-    <link rel="stylesheet" href="/cccl/_static/basic.css" type="text/css"/>
-    <link rel="stylesheet" href="/cccl/_static/css/theme.css" type="text/css"/>
-  </head>
-  <body>
-    <h1>404 - That link no longer works.</h1>
-    <p>Here is a list of possible options:</p>
+404
+===
+
+The page you're seeking could not be found. Here are a list of similar pages:
+
+.. raw:: html
+
     <ul>
       <div id="linkGen"></div>
     </ul>
@@ -44,5 +41,3 @@
           });
         })
     </script>
-  </body>
-</html>
