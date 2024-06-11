@@ -257,7 +257,7 @@ class iterator_core_access
   {
     // dispatch the implementation of this method upon whether or not
     // Facade2 is convertible to Facade1
-    return distance_from(f1, f2, typename thrust::detail::is_convertible<Facade2, Facade1>::type());
+    return distance_from(f1, f2, typename ::cuda::std::is_convertible<Facade2, Facade1>::type());
   }
 
   //
@@ -331,7 +331,7 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  typedef typename thrust::detail::remove_const<Value>::type value_type;
+  typedef ::cuda::std::__remove_const_t<Value> value_type;
 
   /*! The return type of \p iterator_facade::operator*().
    */
@@ -611,7 +611,7 @@ inline _CCCL_HOST_DEVICE
   operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return iterator_core_access ::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
 }
 
 // Iterator addition

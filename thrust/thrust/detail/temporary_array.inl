@@ -39,19 +39,17 @@ namespace temporary_array_detail
 {
 
 template <typename T>
-struct avoid_initialization : thrust::detail::has_trivial_copy_constructor<T>
+struct avoid_initialization : ::cuda::std::is_trivially_copy_constructible<T>
 {};
 
 template <typename T, typename TemporaryArray, typename Size>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if<avoid_initialization<T>::value>::type
-construct_values(TemporaryArray&, Size)
+_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<avoid_initialization<T>::value> construct_values(TemporaryArray&, Size)
 {
   // avoid the overhead of initialization
 } // end construct_values()
 
 template <typename T, typename TemporaryArray, typename Size>
-_CCCL_HOST_DEVICE typename thrust::detail::disable_if<avoid_initialization<T>::value>::type
-construct_values(TemporaryArray& a, Size n)
+_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!avoid_initialization<T>::value> construct_values(TemporaryArray& a, Size n)
 {
   a.default_construct_n(a.begin(), n);
 } // end construct_values()

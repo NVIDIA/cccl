@@ -14,8 +14,9 @@ gcc9: &gcc9 { name: 'gcc', version: '9', exe: 'g++' }
 gcc10: &gcc10 { name: 'gcc', version: '10', exe: 'g++' }
 gcc11: &gcc11 { name: 'gcc', version: '11', exe: 'g++' }
 gcc12: &gcc12 { name: 'gcc', version: '12', exe: 'g++' }
+gcc13: &gcc13 { name: 'gcc', version: '13', exe: 'g++' }
 gcc-oldest: &gcc-oldest { name: 'gcc', version: '6', exe: 'g++' }
-gcc-newest: &gcc-newest { name: 'gcc', version: '12', exe: 'g++' }
+gcc-newest: &gcc-newest { name: 'gcc', version: '13', exe: 'g++' }
 
 # LLVM Compiler configurations
 llvm9: &llvm9 { name: 'llvm', version: '9', exe: 'clang++' }
@@ -26,8 +27,9 @@ llvm13: &llvm13 { name: 'llvm', version: '13', exe: 'clang++' }
 llvm14: &llvm14 { name: 'llvm', version: '14', exe: 'clang++' }
 llvm15: &llvm15 { name: 'llvm', version: '15', exe: 'clang++' }
 llvm16: &llvm16 { name: 'llvm', version: '16', exe: 'clang++' }
+llvm17: &llvm17 { name: 'llvm', version: '17', exe: 'clang++' }
 llvm-oldest: &llvm-oldest { name: 'llvm', version: '9', exe: 'clang++' }
-llvm-newest: &llvm-newest { name: 'llvm', version: '16', exe: 'clang++' }
+llvm-newest: &llvm-newest { name: 'llvm', version: '17', exe: 'clang++' }
 
 # MSVC configs
 msvc2017: &msvc2017 { name: 'cl', version: '14.16', exe: 'cl++' }
@@ -40,17 +42,28 @@ oneapi: &oneapi { name: 'oneapi', version: '2023.2.0', exe: 'icpc' }
 
 # GHA Workflow job matrices:
 workflows:
+  # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
+  # This is useful for limiting resource usage when a full matrix is not needed.
+  # The branch protection checks will fail when using this override workflow.
+  #
+  # Example:
+  # override:
+  #   - {jobs: ['build'], project: 'thrust', std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16]}
+  #
+  override:
+
   pull_request:
-    # default_projects: nvcc
+    # Old CTK
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_1, cxx: [*gcc6, *gcc7, *gcc8, *gcc9, *llvm9, *msvc2017]}
     - {jobs: ['build'], std: 'all', ctk: *ctk_11_8, cxx: [*gcc11], sm: '60;70;80;90'}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11]}
-    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15]}
-    - {jobs: ['test'],  std: 'all', cxx: [*gcc12, *llvm16]}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc12, *llvm16], cpu: 'arm64'}
-    - {jobs: ['build'], std: 'all', cxx: [*gcc12], sm: '90a'}
-    - {jobs: ['build'], std: 'all', cxx: [*oneapi]}
-    - {jobs: ['build'], std: 'all', cxx: [*msvc2019, *msvc2022]}
+    # Current CTK
+    - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11, *gcc12]}
+    - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15, *llvm16]}
+    - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
+    - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17, *msvc2022]}
+    # Modded builds:
+    - {jobs: ['build'], std: 'all', cxx: [*gcc-newest, *llvm-newest], cpu: 'arm64'}
+    - {jobs: ['build'], std: 'all', cxx: [*gcc-newest], sm: '90a'}
     # default_projects: clang-cuda
     - {jobs: ['build'], std: [17, 20], cudacxx: *llvm-newest, cxx: *llvm-newest}
     # nvrtc:
@@ -113,12 +126,21 @@ workflows:
   # Fails on h100:
   # - {jobs: ['nvrtc'], ctk: *ctk_curr, gpu: 'h100',     sm: 'gpu', cxx: *gcc12,  std: [11, 20], project: ['libcudacxx']}
 
+  # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
+  exclude:
+    # Ubuntu 18.04 is EOL and we only use it to get access to CTK 11.1 containers for CUDA testing.
+    # Disable non-CUDA tests on this platform.
+    - {jobs: ['test_cpu'], os: 'ubuntu18.04'}
+    # GPU runners are not available on Windows.
+    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], os: 'windows2022'}
+
+
 #
 # Resources for compute_matrix.py. These can be modified to add new jobs, etc.
 #
 # Jobs are executed by running scripts:
 # - Linux:   'ci/<job>_<project>.sh`
-# - Windows: `ci/windows/<job>_<project>.bat`
+# - Windows: `ci/windows/<job>_<project>.ps1`
 
 # A matrix entry must have the following tag.
 required_tags:
@@ -151,7 +173,7 @@ optional_tags:
 # `default_<tag>`: Used when the tag is omitted.
 default_ctk: *ctk_curr
 default_cudacxx: 'nvcc'
-default_cxx: *gcc12
+default_cxx: *gcc-newest
 default_cpu: 'amd64'
 default_gpu: 'v100'
 default_project:
@@ -192,6 +214,7 @@ default_os_lookup:
   'ctk12.4-gcc10': 'ubuntu20.04'
   'ctk12.4-gcc11': 'ubuntu22.04'
   'ctk12.4-gcc12': 'ubuntu22.04'
+  'ctk12.4-gcc13': 'ubuntu22.04'
   'ctk12.4-llvm9': 'ubuntu20.04'
   'ctk12.4-llvm10': 'ubuntu20.04'
   'ctk12.4-llvm11': 'ubuntu20.04'
@@ -200,6 +223,7 @@ default_os_lookup:
   'ctk12.4-llvm14': 'ubuntu20.04'
   'ctk12.4-llvm15': 'ubuntu22.04'
   'ctk12.4-llvm16': 'ubuntu22.04'
+  'ctk12.4-llvm17': 'ubuntu22.04'
   'ctk12.4-cl14.29': 'windows2022'
   'ctk12.4-cl14.36': 'windows2022'
   'ctk12.4-cl14.39': 'windows2022'
@@ -215,6 +239,7 @@ lookup_cxx_supported_stds:
   'gcc10':          [11, 14, 17, 20]
   'gcc11':          [11, 14, 17, 20]
   'gcc12':          [11, 14, 17, 20]
+  'gcc13':          [11, 14, 17, 20]
   'llvm9':          [11, 14, 17    ]
   'llvm10':         [11, 14, 17    ]
   'llvm11':         [11, 14, 17, 20]
@@ -223,6 +248,7 @@ lookup_cxx_supported_stds:
   'llvm14':         [11, 14, 17, 20]
   'llvm15':         [11, 14, 17, 20]
   'llvm16':         [11, 14, 17, 20]
+  'llvm17':         [11, 14, 17, 20]
   'cl14.16':        [    14        ]
   'cl14.29':        [    14, 17    ]
   'cl14.36':        [    14, 17, 20]
@@ -248,36 +274,76 @@ non_exploded_tags:
 # Jobs that have an implied prerequisite 'build' job:
 build_required_jobs:
   - 'test'
+  - 'test_gpu'
+  - 'test_cpu'
+  - 'test_nolid'
+  - 'test_lid0'
+  - 'test_lid1'
+  - 'test_lid2'
 
 # Jobs that require a GPU
 gpu_required_jobs:
   - 'test'
+  - 'test_gpu'
+  - 'test_nolid'
+  - 'test_lid0'
+  - 'test_lid1'
+  - 'test_lid2'
   - 'nvrtc'
   - 'infra' # cccl infra's example project test launches a kernel
 
 # When --skip-tests is given to compute-matrix.py, these jobs are ignored.
 skip_test_jobs:
   - 'test'
+  - 'test_cpu'
+  - 'test_gpu'
+  - 'test_nolid'
+  - 'test_lid0'
+  - 'test_lid1'
+  - 'test_lid2'
   - 'nvrtc'
   - 'infra'
+
+# Map the job type to the script invocation spec:
+# The script is invoked as `ci/<spec[prefix]>_<project>.sh <spec[args]>`.
+# 'prefix' is required. 'args' is optional.
+# If a job is not specified explicitly, the default is { 'prefix': '<job>' }.
+job_invoke:
+  'test_cpu'   : { 'prefix': 'test', 'args': '-cpu-only' }
+  'test_gpu'   : { 'prefix': 'test', 'args': '-gpu-only' }
+  'test_nolid' : { 'prefix': 'test', 'args': '-no-lid' }
+  'test_lid0'  : { 'prefix': 'test', 'args': '-lid0' }
+  'test_lid1'  : { 'prefix': 'test', 'args': '-lid1' }
+  'test_lid2'  : { 'prefix': 'test', 'args': '-lid2' }
+
+# When a listed project has a `test` job, it will be replaced with the specified list of finer-grain jobs.
+project_expanded_tests:
+  'thrust' : ['test_gpu', 'test_cpu']
+  'cub'    : ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2']
 
 # Human readable name for jobs. Default behavior is to capitalize the first letter.
 formatted_jobs:
   'nvrtc':          'NVRTC'
   'verify_codegen': 'VerifyCodegen'
+  'test_cpu':       'TestCPU'
+  'test_gpu':       'TestGPU'
+  'test_nolid':     'TestGPU'
+  'test_lid0':      'HostLaunch'
+  'test_lid1':      'DeviceLaunch'
+  'test_lid2':      'GraphCapture'
 
 # Human readable name for projects. Default behavior uses the project name as-is.
 formatted_project_names:
   'libcudacxx': 'libcu++'
-  'cub': 'CUB'
-  'thrust': 'Thrust'
-  'cccl': 'CCCL'
+  'cub':        'CUB'
+  'thrust':     'Thrust'
+  'cccl':       'CCCL'
 
 # Human readable name for compilers. Default behavior uses the "compiler.name" tag as-is.
 formatted_cxx_names:
-  'llvm': 'clang'
+  'llvm':   'clang'
   'oneapi': 'Intel'
-  'cl': 'MSVC'
+  'cl':     'MSVC'
 
 # All known GPUs
 gpus:

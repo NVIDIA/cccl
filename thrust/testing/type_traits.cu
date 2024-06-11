@@ -9,61 +9,6 @@
 
 #include <unittest/unittest.h>
 
-struct non_pod
-{
-  // non-pods can have constructors
-  non_pod() {}
-
-  int x;
-  int y;
-};
-
-void TestIsPlainOldData()
-{
-  // primitive types
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<bool>::value, true);
-
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<char>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<signed char>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<unsigned char>::value, true);
-
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<short>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<signed short>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<unsigned short>::value, true);
-
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<int>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<signed int>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<unsigned int>::value, true);
-
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<long>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<signed long>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<unsigned long>::value, true);
-
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<long long>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<signed long long>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<unsigned long long>::value, true);
-
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<float>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<double>::value, true);
-
-  // void
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<void>::value, true);
-
-  // structs
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<non_pod>::value, false);
-
-  // pointers
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<char*>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<int*>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<int**>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<non_pod*>::value, true);
-
-  // const types
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<const int>::value, true);
-  ASSERT_EQUAL((bool) thrust::detail::is_pod<const int*>::value, true);
-}
-DECLARE_UNITTEST(TestIsPlainOldData);
-
 void TestIsContiguousIterator()
 {
   typedef thrust::host_vector<int> HostVector;

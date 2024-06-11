@@ -155,7 +155,7 @@ struct CachingDeviceAllocator
 
     // Constructor (suitable for searching maps for a range of suitable blocks, given a device)
     BlockDescriptor(int device)
-        : d_ptr(NULL)
+        : d_ptr(nullptr)
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
@@ -453,7 +453,7 @@ struct CachingDeviceAllocator
    */
   cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
   {
-    *d_ptr                = NULL;
+    *d_ptr                = nullptr;
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
     cudaError_t error     = cudaSuccess;
 

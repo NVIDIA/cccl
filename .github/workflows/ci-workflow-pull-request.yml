@@ -42,21 +42,26 @@ jobs:
       workflow_keys: ${{ steps.build-workflow.outputs.workflow_keys }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
+        env:
+          pr_worflow: ${{ !contains(github.event.head_commit.message, '[workflow:!pull_request]') && 'pull_request' || '' }}
+          nightly_workflow: ${{ contains(github.event.head_commit.message, '[workflow:nightly]') && 'nightly' || '' }}
         with:
+          allow_override: "true"
           skip_tests: ${{ toJSON(contains(github.event.head_commit.message, '[skip-tests]')) }}
           inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
           inspect_changes_base_sha: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
           workflows: >-
-            ${{ !contains(github.event.head_commit.message, '[workflow:!pull_request]') && 'pull_request' || '' }}
-            ${{ contains(github.event.head_commit.message, '[workflow:nightly]') && 'nightly' || '' }}
-            ${{ contains(github.event.head_commit.message, '[workflow:test]') && 'test' || '' }}
+            ${{ env.pr_worflow }}
+            ${{ env.nightly_workflow }}
 
   run-workflow:
     name: ${{ matrix.name }}
@@ -87,7 +92,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Get Base Branch from PR
         id: get-pr-info

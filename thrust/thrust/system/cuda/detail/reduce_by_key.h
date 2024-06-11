@@ -259,7 +259,7 @@ struct ReduceByKeyAgent
     // Whether or not the scan operation has a zero-valued identity value
     // (true if we're performing addition on a primitive type)
     HAS_IDENTITY_ZERO =
-      thrust::detail::is_same<ReductionOp, plus<value_type>>::value && thrust::detail::is_arithmetic<value_type>::value
+      ::cuda::std::is_same<ReductionOp, plus<value_type>>::value && ::cuda::std::is_arithmetic<value_type>::value
   };
 
   struct impl
@@ -815,11 +815,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  void* allocations[2] = {NULL, NULL};
+  void* allocations[2] = {nullptr, nullptr};
   status               = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  if (d_temp_storage == NULL)
+  if (d_temp_storage == nullptr)
   {
     return status;
   }
@@ -832,7 +832,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   ia.launch(tile_state, num_tiles, num_runs_output_it);
   CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : NULL;
+  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
 
   reduce_by_key_agent rbka(reduce_by_key_plan, num_items, stream, vshmem_ptr, "reduce_by_keys::reduce_by_key_agent");
   rbka.launch(
@@ -878,13 +878,13 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatc
 
   cudaError_t status;
   status = doit_step(
-    NULL,
+    nullptr,
     temp_storage_bytes,
     keys_first,
     values_first,
     keys_output,
     values_output,
-    reinterpret_cast<Size*>(NULL),
+    static_cast<Size*>(nullptr),
     equality_op,
     reduction_op,
     num_items,
@@ -892,10 +892,10 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatc
   cuda_cub::throw_on_error(status, "reduce_by_key failed on 1st step");
 
   size_t allocation_sizes[2] = {sizeof(Size), temp_storage_bytes};
-  void* allocations[2]       = {NULL, NULL};
+  void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(NULL, storage_size, allocations, allocation_sizes);
+  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "reduce failed on 1st alias_storage");
 
   // Allocate temporary storage.

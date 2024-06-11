@@ -147,67 +147,68 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
 
 #if _CCCL_STD_VER > 2011
 
-template <bool _CanCopy, bool _CanMove>
-struct __sfinae_ctor_base
+enum class __smf_availability
+{
+  __trivial,
+  __available,
+  __deleted,
+};
+
+template <bool _CanCopy>
+struct __sfinae_copy_base
 {};
 template <>
-struct __sfinae_ctor_base<false, false>
+struct __sfinae_copy_base<false>
 {
-  __sfinae_ctor_base()                                     = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&)            = delete;
-  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = delete;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
-};
-template <>
-struct __sfinae_ctor_base<true, false>
-{
-  __sfinae_ctor_base()                                     = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&)            = default;
-  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = delete;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
-};
-template <>
-struct __sfinae_ctor_base<false, true>
-{
-  __sfinae_ctor_base()                                     = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&)            = delete;
-  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
+  __sfinae_copy_base()                                     = default;
+  __sfinae_copy_base(__sfinae_copy_base const&)            = delete;
+  __sfinae_copy_base(__sfinae_copy_base&&)                 = default;
+  __sfinae_copy_base& operator=(__sfinae_copy_base const&) = default;
+  __sfinae_copy_base& operator=(__sfinae_copy_base&&)      = default;
 };
 
 template <bool _CanCopy, bool _CanMove>
-struct __sfinae_assign_base
+struct __sfinae_move_base : __sfinae_copy_base<_CanCopy>
 {};
-template <>
-struct __sfinae_assign_base<false, false>
+template <bool _CanCopy>
+struct __sfinae_move_base<_CanCopy, false> : __sfinae_copy_base<_CanCopy>
 {
-  __sfinae_assign_base()                                       = default;
-  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
-  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = delete;
+  __sfinae_move_base()                                     = default;
+  __sfinae_move_base(__sfinae_move_base const&)            = default;
+  __sfinae_move_base(__sfinae_move_base&&)                 = delete;
+  __sfinae_move_base& operator=(__sfinae_move_base const&) = default;
+  __sfinae_move_base& operator=(__sfinae_move_base&&)      = default;
 };
-template <>
-struct __sfinae_assign_base<true, false>
+
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
+struct __sfinae_copy_assign_base : __sfinae_move_base<_CanCopy, _CanMove>
+{};
+template <bool _CanCopy, bool _CanMove>
+struct __sfinae_copy_assign_base<_CanCopy, _CanMove, false> : __sfinae_move_base<_CanCopy, _CanMove>
 {
-  __sfinae_assign_base()                                       = default;
-  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
-  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base const&) = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = delete;
+  __sfinae_copy_assign_base()                                            = default;
+  __sfinae_copy_assign_base(__sfinae_copy_assign_base const&)            = default;
+  __sfinae_copy_assign_base(__sfinae_copy_assign_base&&)                 = default;
+  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base const&) = delete;
+  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base&&)      = default;
 };
-template <>
-struct __sfinae_assign_base<false, true>
+
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
+struct __sfinae_move_assign_base : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
+{};
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
+struct __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
+    : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
 {
-  __sfinae_assign_base()                                       = default;
-  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
-  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = default;
+  __sfinae_move_assign_base()                                            = default;
+  __sfinae_move_assign_base(__sfinae_move_assign_base const&)            = default;
+  __sfinae_move_assign_base(__sfinae_move_assign_base&&)                 = default;
+  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base const&) = default;
+  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base&&)      = delete;
 };
+
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
+using __sfinae_base = __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
 #endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD

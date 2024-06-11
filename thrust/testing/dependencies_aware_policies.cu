@@ -48,7 +48,7 @@ struct TestDependencyAttachment
   static void assert_correct(T)
   {
     ASSERT_EQUAL(
-      (thrust::detail::is_same<
+      (::cuda::std::is_same<
         T,
         typename PolicyInfo::template apply_base_first<thrust::detail::execute_with_dependencies, Expected...>>::value),
       true);
@@ -58,7 +58,7 @@ struct TestDependencyAttachment
   static void assert_correct_with_allocator(T)
   {
     ASSERT_EQUAL(
-      (thrust::detail::is_same<
+      (::cuda::std::is_same<
         T,
         typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator_and_dependencies,
                                                         Allocator,

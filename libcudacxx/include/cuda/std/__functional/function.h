@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
@@ -46,34 +47,22 @@
 #include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/detail/libcxx/include/__functional_base>
-#include <cuda/std/detail/libcxx/include/exception>
 #include <cuda/std/detail/libcxx/include/new>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-// bad_function_call
-
-class _LIBCUDACXX_EXCEPTION_ABI bad_function_call : public exception
-{
-#  ifdef _LIBCUDACXX_ABI_BAD_FUNCTION_CALL_KEY_FUNCTION
-
-public:
-  virtual ~bad_function_call() noexcept;
-
-  virtual const char* what() const noexcept;
-#  endif
-};
+#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#    include <function>
+#  endif // _LIBCUDACXX_NO_EXCEPTIONS
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_function_call()
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  throw bad_function_call();
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
 #  else
-  _CUDA_VSTD::abort();
-#  endif
+  _CUDA_VSTD_NOVERSION::terminate();
+#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
 template <class _Fp>

@@ -49,7 +49,7 @@ namespace mr
  *  \param upstream the argument to the constructor, if invoked
  */
 template <typename Upstream, typename Bookkeeper>
-_CCCL_HOST thrust::mr::unsynchronized_pool_resource<Upstream>& tls_pool(Upstream* upstream = NULL)
+_CCCL_HOST thrust::mr::unsynchronized_pool_resource<Upstream>& tls_pool(Upstream* upstream = nullptr)
 {
   static thread_local auto adaptor = [&] {
     assert(upstream);

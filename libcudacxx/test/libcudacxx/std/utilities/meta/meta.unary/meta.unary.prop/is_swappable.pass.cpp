@@ -62,6 +62,7 @@ struct DeletedSwap
 
 } // namespace MyNS
 
+#if 0 // We cannot test this because we need to avoid defining ambiguous overloads
 namespace MyNS2
 {
 
@@ -73,6 +74,7 @@ __host__ __device__ void swap(T&, T&)
 {}
 
 } // end namespace MyNS2
+#endif // Not implementable
 
 int main(int, char**)
 {
@@ -96,10 +98,12 @@ int main(int, char**)
     // test that a deleted swap is correctly handled.
     static_assert(!cuda::std::is_swappable<DeletedSwap>::value, "");
   }
+#if 0 // We cannot test this because we need to avoid defining ambiguous overloads
   {
     // test that a swap with ambiguous overloads is handled correctly.
     static_assert(!cuda::std::is_swappable<MyNS2::AmbiguousSwap>::value, "");
   }
+#endif // Not implementable
   {
     // test for presence of is_swappable_v
     static_assert(cuda::std::is_swappable_v<int>, "");

@@ -65,9 +65,19 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::true_type>
     return first;
   }
 
+  _CCCL_HOST_DEVICE friend iterator_type begin(_trivial_sequence& sequence)
+  {
+    return sequence.first;
+  }
+
   _CCCL_HOST_DEVICE iterator_type end()
   {
     return last;
+  }
+
+  _CCCL_HOST_DEVICE friend iterator_type end(_trivial_sequence& sequence)
+  {
+    return sequence.last;
   }
 };
 
@@ -89,9 +99,19 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::false_type>
     return buffer.begin();
   }
 
+  _CCCL_HOST_DEVICE friend iterator_type begin(_trivial_sequence& sequence)
+  {
+    return sequence.begin();
+  }
+
   _CCCL_HOST_DEVICE iterator_type end()
   {
     return buffer.end();
+  }
+
+  _CCCL_HOST_DEVICE friend iterator_type end(_trivial_sequence& sequence)
+  {
+    return sequence.end();
   }
 };
 

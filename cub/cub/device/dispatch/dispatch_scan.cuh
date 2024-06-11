@@ -244,7 +244,7 @@ struct DispatchScan : SelectedPolicy
   // The input value type
   using InputT = cub::detail::value_t<InputIteratorT>;
 
-  /// Device-accessible allocation of temporary storage.  When NULL, the
+  /// Device-accessible allocation of temporary storage.  When nullptr, the
   /// required allocation size is written to \p temp_storage_bytes and no work
   /// is done.
   void* d_temp_storage;
@@ -392,7 +392,7 @@ struct DispatchScan : SelectedPolicy
         break;
       }
 
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         // Return if the caller is simply requesting the size of the storage
         // allocation

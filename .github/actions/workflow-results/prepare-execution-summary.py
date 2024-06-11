@@ -2,6 +2,7 @@
 
 
 import argparse
+import functools
 import json
 import os
 import re
@@ -9,8 +10,8 @@ import sys
 
 
 def job_succeeded(job):
-    # The job was successful if the artifact file 'dispatch-job-success/dispatch-job-success-<job_id>' exists:
-    return os.path.exists(f'dispatch-job-success/{job["id"]}')
+    # The job was successful if the success file exists:
+    return os.path.exists(f'jobs/{job["id"]}/success')
 
 
 def natural_sort_key(key):
@@ -42,49 +43,93 @@ def extract_jobs(workflow):
     return jobs
 
 
-def build_summary(jobs):
-    summary = {'passed': 0, 'failed': 0, 'projects': {}}
+@functools.lru_cache(maxsize=None)
+def get_sccache_stats(job_id):
+    sccache_file = f'jobs/{job_id}/sccache_stats.json'
+    if os.path.exists(sccache_file):
+        with open(sccache_file) as f:
+            return json.load(f)
+    return None
+
+
+def update_summary_entry(entry, job, job_times=None):
+    if 'passed' not in entry:
+        entry['passed'] = 0
+    if 'failed' not in entry:
+        entry['failed'] = 0
+
+    if job_succeeded(job):
+        entry['passed'] += 1
+    else:
+        entry['failed'] += 1
+
+    if job_times:
+        time_info = job_times[job["id"]]
+        job_time = time_info["job_seconds"]
+        command_time = time_info["command_seconds"]
+
+        if not 'job_time' in entry:
+            entry['job_time'] = 0
+        if not 'command_time' in entry:
+            entry['command_time'] = 0
+        if not 'max_job_time' in entry:
+            entry['max_job_time'] = 0
+
+        entry['job_time'] += job_time
+        entry['command_time'] += command_time
+        entry['max_job_time'] = max(entry['max_job_time'], job_time)
+
+    sccache_stats = get_sccache_stats(job["id"])
+    if sccache_stats:
+        sccache_stats = sccache_stats['stats']
+        requests = sccache_stats.get('compile_requests', 0)
+        hits = 0
+        if 'cache_hits' in sccache_stats:
+            cache_hits = sccache_stats['cache_hits']
+            if 'counts' in cache_hits:
+                counts = cache_hits['counts']
+                for lang, lang_hits in counts.items():
+                    hits += lang_hits
+        if 'sccache' not in entry:
+            entry['sccache'] = {'requests': requests, 'hits': hits}
+        else:
+            entry['sccache']['requests'] += requests
+            entry['sccache']['hits'] += hits
+
+    return entry
+
+
+def build_summary(jobs, job_times=None):
+    summary = {'projects': {}}
     projects = summary['projects']
 
     for job in jobs:
-        success = job_succeeded(job)
-
-        if success:
-            summary['passed'] += 1
-        else:
-            summary['failed'] += 1
+        update_summary_entry(summary, job, job_times)
 
         matrix_job = job["origin"]["matrix_job"]
 
         project = matrix_job["project"]
         if not project in projects:
-            projects[project] = {'passed': 0, 'failed': 0, 'tags': {}}
-
-        if success:
-            projects[project]['passed'] += 1
-        else:
-            projects[project]['failed'] += 1
-
+            projects[project] = {'tags': {}}
         tags = projects[project]['tags']
+
+        update_summary_entry(projects[project], job, job_times)
+
         for tag in matrix_job.keys():
             if tag == 'project':
                 continue
 
             if not tag in tags:
-                tags[tag] = {'passed': 0, 'failed': 0, 'values': {}}
-
-            value = str(matrix_job[tag])
+                tags[tag] = {'values': {}}
             values = tags[tag]['values']
 
-            if not value in values:
-                values[value] = {'passed': 0, 'failed': 0}
+            update_summary_entry(tags[tag], job, job_times)
 
-            if success:
-                tags[tag]['passed'] += 1
-                values[value]['passed'] += 1
-            else:
-                tags[tag]['failed'] += 1
-                values[value]['failed'] += 1
+            value = str(matrix_job[tag])
+
+            if not value in values:
+                values[value] = {}
+            update_summary_entry(values[value], job, job_times)
 
     # Natural sort the value strings within each tag:
     for project, project_summary in projects.items():
@@ -94,16 +139,20 @@ def build_summary(jobs):
 
     # Sort the tags within each project so that:
     # - "Likely culprits" come first. These are tags that have multiple values, but only one has failures.
-    # - The remaining tags with failures come next.
-    # - Tags with no failures come last.
+    # - Tags with multiple values and mixed pass/fail results come next.
+    # - Tags with all failing values come next.
+    # - Tags with no failures are last.
     def rank_tag(tag_summary):
+        tag_failures = tag_summary['failed']
+        num_values = len(tag_summary['values'])
         num_failing_values = sum(1 for value_summary in tag_summary['values'].values() if value_summary['failed'] > 0)
 
-        if len(tag_summary['values']) > 1 and num_failing_values == 1:
-            return 0
-        elif len(tag_summary['values']) > 1 and tag_summary['failed'] > 0:
-            return 1
-        elif tag_summary['failed'] > 0:
+        if num_values > 1:
+            if num_failing_values == 1:
+                return 0
+            elif num_failing_values > 0 and num_failing_values < num_values:
+                return 1
+        elif tag_failures > 0:
             return 2
         return 3
     for project, project_summary in projects.items():
@@ -113,19 +162,77 @@ def build_summary(jobs):
     return summary
 
 
-def get_summary_heading(summary):
+def get_walltime(job_times):
+    "Return the walltime for all jobs in seconds."
+    start = None
+    end = None
+    for job_id, job_time in job_times.items():
+        job_start_timestamp = job_time['started_epoch_secs']
+        job_end_timestamp = job_time['completed_epoch_secs']
+        if not start or job_start_timestamp < start:
+            start = job_start_timestamp
+        if not end or job_end_timestamp > end:
+            end = job_end_timestamp
+    return end - start
+
+
+def format_seconds(seconds):
+    days, remainder = divmod(seconds, 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    days = int(days)
+    hours = int(hours)
+    minutes = int(minutes)
+    seconds = int(seconds)
+    if (days > 0):
+        return f'{days}d {hours:02}h'
+    elif (hours > 0):
+        return f'{hours}h {minutes:02}m'
+    else:
+        return f'{minutes}m {seconds:02}s'
+
+
+def get_summary_stats(summary):
     passed = summary['passed']
     failed = summary['failed']
     total = passed + failed
 
-    if passed == 0:
+    percent = int(100 * passed / total) if total > 0 else 0
+    pass_string = f'Pass: {percent:>3}%/{total}'
+
+    stats = f'{pass_string:<14}'
+
+    if 'job_time' in summary and total > 0 and summary['job_time'] > 0:
+        job_time = summary['job_time']
+        max_job_time = summary['max_job_time']
+        total_job_duration = format_seconds(job_time)
+        avg_job_duration = format_seconds(job_time / total)
+        max_job_duration = format_seconds(max_job_time)
+        stats += f' | Total: {total_job_duration:>7} | Avg: {avg_job_duration:>7} | Max: {max_job_duration:>7}'
+
+    if 'sccache' in summary:
+        sccache = summary['sccache']
+        requests = sccache["requests"]
+        hits = sccache["hits"]
+        hit_percent = int(100 * hits / requests) if requests > 0 else 0
+        hit_string = f'Hits: {hit_percent:>3}%/{requests}'
+        stats += f' | {hit_string:<17}'
+
+    return stats
+
+
+def get_summary_heading(summary, walltime):
+    passed = summary['passed']
+    failed = summary['failed']
+
+    if summary['passed'] == 0:
         flag = '🟥'
-    elif failed > 0:
+    elif summary['failed'] > 0:
         flag = '🟨'
     else:
         flag = '🟩'
 
-    return f'{flag} CI Results [ Failed: {failed} | Passed: {passed} | Total: {total} ]'
+    return f'{flag} CI finished in {walltime}: {get_summary_stats(summary)}'
 
 
 def get_project_heading(project, project_summary):
@@ -136,11 +243,7 @@ def get_project_heading(project, project_summary):
     else:
         flag = '🟩'
 
-    passed = project_summary['passed']
-    failed = project_summary['failed']
-    total = project_summary['failed'] + project_summary['passed']
-
-    return f'{flag} Project {project} [ Failed: {failed} | Passed: {passed} | Total: {total} ]'
+    return f'{flag} {project}: {get_summary_stats(project_summary)}'
 
 
 def get_tag_line(tag, tag_summary):
@@ -199,9 +302,8 @@ def get_value_line(value, value_summary, tag_summary):
     else:
         flag = '🟩'
 
-    percent = int(100 * failed / total)
-    left_aligned = f"{flag} {value} ({percent}% Fail)"
-    return f'  {left_aligned:<30} Failed: {failed:^3} -- Passed: {passed:^3} -- Total: {total:^3}'
+    left_aligned = f"{flag} {value}"
+    return f'  {left_aligned:<20} {get_summary_stats(value_summary)}'
 
 
 def get_project_summary_body(project, project_summary):
@@ -214,33 +316,49 @@ def get_project_summary_body(project, project_summary):
     return "\n".join(body)
 
 
-def write_project_summary(project, project_summary):
+def write_project_summary(idx, project, project_summary):
     heading = get_project_heading(project, project_summary)
     body = get_project_summary_body(project, project_summary)
 
     summary = {'heading': heading, 'body': body}
 
-    write_json(f'execution/projects/{project}_summary.json', summary)
+    write_json(f'execution/projects/{idx:03}_{project}_summary.json', summary)
 
 
-def write_workflow_summary(workflow):
-    summary = build_summary(extract_jobs(workflow))
+def write_workflow_summary(workflow, job_times=None):
+    summary = build_summary(extract_jobs(workflow), job_times)
+    walltime = format_seconds(get_walltime(job_times)) if job_times else '[unknown]'
 
     os.makedirs('execution/projects', exist_ok=True)
 
-    write_text('execution/heading.txt', get_summary_heading(summary))
+    write_text('execution/heading.txt', get_summary_heading(summary, walltime))
 
-    for project, project_summary in summary['projects'].items():
-        write_project_summary(project, project_summary)
+    # Sort summary projects so that projects with failures come first, and ties
+    # are broken by the total number of jobs:
+    def sort_project_key(project_summary):
+        failed = project_summary[1]['failed']
+        total = project_summary[1]['passed'] + failed
+        return (-failed, -total)
+
+    for i, (project, project_summary) in enumerate(sorted(summary['projects'].items(), key=sort_project_key)):
+        write_project_summary(i, project, project_summary)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('workflow', type=argparse.FileType('r'))
+    parser.add_argument('job_times', type=argparse.FileType('r'))
     args = parser.parse_args()
 
     workflow = json.load(args.workflow)
-    write_workflow_summary(workflow)
+
+    # The timing file is not required.
+    try:
+        job_times = json.load(args.job_times)
+    except:
+        job_times = None
+
+    write_workflow_summary(workflow, job_times)
 
 
 if __name__ == '__main__':

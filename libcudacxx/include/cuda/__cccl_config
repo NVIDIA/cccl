@@ -16,7 +16,9 @@
 #include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/dialect.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__cccl/extended_floating_point.h>
 #include <cuda/std/__cccl/ptx_isa.h>
+#include <cuda/std/__cccl/sequence_access.h>
 #include <cuda/std/__cccl/system_header.h>
 #include <cuda/std/__cccl/version.h>
 #include <cuda/std/__cccl/visibility.h>

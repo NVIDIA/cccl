@@ -111,7 +111,7 @@ pointer<Element, Tag, Reference, Derived>::dereference() const
 {
   // Need to handle cpp refs and fancy refs differently:
   typedef typename super_t::reference RefT;
-  typedef typename thrust::detail::is_reference<RefT>::type IsCppRef;
+  typedef typename ::cuda::std::is_reference<RefT>::type IsCppRef;
 
   const derived_type& derivedPtr = static_cast<const derived_type&>(*this);
 

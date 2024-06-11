@@ -88,21 +88,21 @@ struct pointer_base
 {
   // void pointers should have no element type
   // note that we remove_cv from the Element type to get the value_type
-  typedef typename thrust::detail::eval_if<thrust::detail::is_void<typename thrust::remove_cvref<Element>::type>::value,
+  typedef typename thrust::detail::eval_if<::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
                                            thrust::detail::identity_<void>,
-                                           thrust::detail::remove_cv<Element>>::type value_type;
+                                           ::cuda::std::remove_cv<Element>>::type value_type;
 
   // if no Derived type is given, just use pointer
-  typedef typename thrust::detail::eval_if<thrust::detail::is_same<Derived, use_default>::value,
+  typedef typename thrust::detail::eval_if<::cuda::std::is_same<Derived, use_default>::value,
                                            thrust::detail::identity_<pointer<Element, Tag, Reference, Derived>>,
                                            thrust::detail::identity_<Derived>>::type derived_type;
 
   // void pointers should have no reference type
   // if no Reference type is given, just use reference
   typedef typename thrust::detail::eval_if<
-    thrust::detail::is_void<typename thrust::remove_cvref<Element>::type>::value,
+    ::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
     thrust::detail::identity_<void>,
-    thrust::detail::eval_if<thrust::detail::is_same<Reference, use_default>::value,
+    thrust::detail::eval_if<::cuda::std::is_same<Reference, use_default>::value,
                             thrust::detail::identity_<reference<Element, derived_type>>,
                             thrust::detail::identity_<Reference>>>::type reference_type;
 

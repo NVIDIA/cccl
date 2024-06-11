@@ -107,6 +107,8 @@ public:
     return *(begin() + i);
   }
 
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(tail_flags, iterator);
+
 private:
   iterator m_begin, m_end;
 };

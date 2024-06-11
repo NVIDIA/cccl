@@ -140,6 +140,8 @@ public:
   // on move assignment
   _CCCL_HOST_DEVICE contiguous_storage& operator=(contiguous_storage&& other);
 
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(contiguous_storage, const_iterator);
+
 private:
   // XXX we could inherit from this to take advantage of empty base class optimization
   allocator_type m_allocator;

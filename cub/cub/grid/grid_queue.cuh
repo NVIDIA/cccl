@@ -101,7 +101,7 @@ public:
 
   /// Constructs an invalid GridQueue descriptor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue()
-      : d_counters(NULL)
+      : d_counters(nullptr)
   {}
 
   /**

@@ -27,69 +27,123 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2014
 
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator<_Tp*> rbegin(_Tp (&__array)[_Np])
+namespace __rbegin
 {
-  return reverse_iterator<_Tp*>(__array + _Np);
-}
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator<_Tp*> rend(_Tp (&__array)[_Np])
+struct __fn
 {
-  return reverse_iterator<_Tp*>(__array);
-}
+  template <class _Tp, size_t _Np>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<_Tp*>
+  operator()(_Tp (&__array)[_Np]) const noexcept
+  {
+    return reverse_iterator<_Tp*>(__array + _Np);
+  }
 
-template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator<const _Ep*> rbegin(initializer_list<_Ep> __il)
+  template <class _Ep>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<const _Ep*>
+  operator()(initializer_list<_Ep> __il) const noexcept
+  {
+    return reverse_iterator<const _Ep*>(__il.end());
+  }
+
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.rbegin()))
+    -> decltype(__c.rbegin())
+  {
+    return __c.rbegin();
+  }
+
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
+  {
+    return __c.rbegin();
+  }
+};
+} // namespace __rbegin
+
+inline namespace __cpo
 {
-  return reverse_iterator<const _Ep*>(__il.end());
-}
+_LIBCUDACXX_CPO_ACCESSIBILITY auto rbegin = __rbegin::__fn{};
+} // namespace __cpo
 
-template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator<const _Ep*> rend(initializer_list<_Ep> __il)
+namespace __rend
 {
-  return reverse_iterator<const _Ep*>(__il.begin());
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 auto rbegin(_Cp& __c) -> decltype(__c.rbegin())
+struct __fn
 {
-  return __c.rbegin();
-}
+  template <class _Tp, size_t _Np>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<_Tp*>
+  operator()(_Tp (&__array)[_Np]) const noexcept
+  {
+    return reverse_iterator<_Tp*>(__array);
+  }
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 auto rbegin(const _Cp& __c) -> decltype(__c.rbegin())
+  template <class _Ep>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<const _Ep*>
+  operator()(initializer_list<_Ep> __il) const noexcept
+  {
+    return reverse_iterator<const _Ep*>(__il.begin());
+  }
+
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.rend()))
+    -> decltype(__c.rend())
+  {
+    return __c.rend();
+  }
+
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
+  {
+    return __c.rend();
+  }
+};
+} // namespace __rend
+
+inline namespace __cpo
 {
-  return __c.rbegin();
-}
+_LIBCUDACXX_CPO_ACCESSIBILITY auto rend = __rend::__fn{};
+} // namespace __cpo
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 auto rend(_Cp& __c) -> decltype(__c.rend())
+namespace __crbegin
 {
-  return __c.rend();
-}
-
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 auto rend(const _Cp& __c) -> decltype(__c.rend())
+struct __fn
 {
-  return __c.rend();
-}
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(_CUDA_VSTD::rbegin(__c))) -> decltype(_CUDA_VSTD::rbegin(__c))
+  {
+    return _CUDA_VSTD::rbegin(__c);
+  }
+};
+} // namespace __crbegin
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 auto crbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::rbegin(__c))
+inline namespace __cpo
 {
-  return _CUDA_VSTD::rbegin(__c);
-}
+_LIBCUDACXX_CPO_ACCESSIBILITY auto crbegin = __crbegin::__fn{};
+} // namespace __cpo
 
-template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 auto crend(const _Cp& __c) -> decltype(_CUDA_VSTD::rend(__c))
+namespace __crend
 {
-  return _CUDA_VSTD::rend(__c);
-}
+struct __fn
+{
+  template <class _Cp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+    noexcept(noexcept(_CUDA_VSTD::rend(__c))) -> decltype(_CUDA_VSTD::rend(__c))
+  {
+    return _CUDA_VSTD::rend(__c);
+  }
+};
+} // namespace __crend
 
-#endif // _CCCL_STD_VER > 2011
+inline namespace __cpo
+{
+_LIBCUDACXX_CPO_ACCESSIBILITY auto crend = __crend::__fn{};
+} // namespace __cpo
+
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

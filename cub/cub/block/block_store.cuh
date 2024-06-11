@@ -464,6 +464,7 @@ enum BlockStoreAlgorithm
   //!   access stride between threads (i.e., the number items per thread) exceeds the
   //!   maximum vector store width (typically 4 items or 64B, whichever is lower).
   //! - The following conditions will prevent vectorization and writing will fall back to cub::BLOCK_STORE_DIRECT:
+  //!
   //!   - ``ITEMS_PER_THREAD`` is odd
   //!   - The ``OutputIteratorT`` is not a simple pointer type
   //!   - The block output offset is not quadword-aligned
@@ -494,6 +495,7 @@ enum BlockStoreAlgorithm
   //! @rst
   //! Overview
   //! ++++++++++++++++++++++++++
+  //!
   //! A :ref:`blocked arrangement <flexible-data-arrangement>` is locally
   //! transposed and then efficiently written to memory as a
   //! :ref:`warp-striped arrangement <flexible-data-arrangement>`.
@@ -561,10 +563,10 @@ enum BlockStoreAlgorithm
 //!   #. :cpp:enumerator:`cub::BLOCK_STORE_VECTORIZE`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` of data is written directly to memory
 //!      using CUDA's built-in vectorized stores as a coalescing optimization.
-//!   #. :cpp:enumerator:`cub::BLOCK_STORE_TRANSPOSE`
+//!   #. :cpp:enumerator:`cub::BLOCK_STORE_TRANSPOSE`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` is locally transposed into
 //!      a :ref:`striped arrangement <flexible-data-arrangement>` which is then written to memory.
-//!   #. :cpp:enumerator:`cub::BLOCK_STORE_WARP_TRANSPOSE:
+//!   #. :cpp:enumerator:`cub::BLOCK_STORE_WARP_TRANSPOSE`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` is locally transposed into
 //!      a :ref:`warp-striped arrangement <flexible-data-arrangement>` which is then written to memory.
 //!   #. :cpp:enumerator:`cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED`:

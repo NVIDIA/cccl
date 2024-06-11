@@ -42,6 +42,7 @@ _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 #endif // nvcc-11
 
 #include <cuda/std/cmath>
+#include <cuda/std/utility>
 
 #include "catch2_main.cuh"
 #include "test_warning_suppression.cuh"
@@ -189,6 +190,41 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
     auto vec_out = detail::to_vec(out);                     \
     REQUIRE_THAT(vec_ref, detail::NaNEqualsRange(vec_out)); \
   }
+
+#include <cuda/std/tuple>
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <size_t N, typename... T>
+__enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
+{}
+
+template <size_t N, typename... T>
+__enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>& tup)
+{
+  _CCCL_IF_CONSTEXPR (N != 0)
+  {
+    os << ", ";
+  }
+  os << _CUDA_VSTD::get<N>(tup);
+  _CUDA_VSTD::print_elem<N + 1>(os, tup);
+}
+
+template <typename... T>
+::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
+{
+  os << "[";
+  _CUDA_VSTD::print_elem<0>(os, tup);
+  return os << "]";
+}
+_LIBCUDACXX_END_NAMESPACE_STD
+
+template <>
+struct Catch::StringMaker<cudaError>
+{
+  static auto convert(cudaError e) -> std::string
+  {
+    return std::to_string(cuda::std::__to_underlying(e)) + " (" + cudaGetErrorString(e) + ")";
+  }
+};
 
 #include <c2h/custom_type.cuh>
 #include <c2h/generators.cuh>

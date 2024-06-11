@@ -137,18 +137,18 @@ int main(int argc, char** argv)
   Solve(h_in, h_reference, num_items);
 
   // Allocate problem device arrays
-  int* d_in = NULL;
+  int* d_in = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_in, sizeof(int) * num_items));
 
   // Initialize device input
   CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(int) * num_items, cudaMemcpyHostToDevice));
 
   // Allocate device output array
-  int* d_out = NULL;
+  int* d_out = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_out, sizeof(int) * 1));
 
   // Request and allocate temporary storage
-  void* d_temp_storage      = NULL;
+  void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   CubDebugExit(DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));

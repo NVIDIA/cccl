@@ -1,11 +1,12 @@
-
 Param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17
 )
+
+$ErrorActionPreference = "Stop"
 
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
@@ -33,6 +34,9 @@ If(!(test-path -PathType container "../build")) {
 # The most recent build will always be symlinked to cccl/build/latest
 New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
 
+# Convert to an absolute path:
+$BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
+
 # Prepare environment for CMake:
 $env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
 $env:CTEST_PARALLEL_LEVEL = 1
@@ -47,6 +51,7 @@ Write-Host "CXX_STANDARD=$CXX_STANDARD"
 Write-Host "CXX=$env:CXX"
 Write-Host "CUDACXX=$env:CUDACXX"
 Write-Host "CUDAHOSTCXX=$env:CUDAHOSTCXX"
+Write-Host "TBB_ROOT=$env:TBB_ROOT"
 Write-Host "NVCC_VERSION=$NVCC_VERSION"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
@@ -54,6 +59,9 @@ Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
 Write-Host "Current commit is:"
 Write-Host "$(git log -1)"
 Write-Host "========================================"
+
+cmake --version
+ctest --version
 
 function configure_preset {
     Param(
@@ -106,6 +114,10 @@ function build_preset {
 
     cmake --build --preset $PRESET -v
     $test_result = $LastExitCode
+
+    $preset_dir = "${BUILD_DIR}/${PRESET}"
+    $sccache_json = "${preset_dir}/sccache_stats.json"
+    sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
     sccache_stats('Stop')
 

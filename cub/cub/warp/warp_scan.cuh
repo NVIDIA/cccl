@@ -55,7 +55,7 @@ CUB_NAMESPACE_BEGIN
 //! The WarpScan class provides :ref:`collective <collective-primitives>` methods for computing a
 //! parallel prefix scan of items partitioned across a CUDA thread warp.
 //!
-//! .. image:: ../img/warp_scan_logo.png
+//! .. image:: ../../img/warp_scan_logo.png
 //!     :align: center
 //!
 //! Overview

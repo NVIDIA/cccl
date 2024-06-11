@@ -149,7 +149,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
                     cub::GRID_MAPPING_DYNAMIC>
     ReducePolicy4B;
 
-  typedef typename thrust::detail::conditional<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>::type type;
+  typedef ::cuda::std::__conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B> type;
 }; // Tuning sm35
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
@@ -220,8 +220,8 @@ struct ReduceAgent
     VECTOR_LOAD_LENGTH = ptx_plan::VECTOR_LOAD_LENGTH,
 
     ATTEMPT_VECTORIZATION = (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-                         && thrust::detail::is_pointer<InputIt>::value
-                         && thrust::detail::is_arithmetic<typename thrust::detail::remove_cv<T>>::value
+                         && ::cuda::std::is_pointer<InputIt>::value
+                         && ::cuda::std::is_arithmetic<typename ::cuda::std::remove_cv<T>>::value
   };
 
   struct impl
@@ -644,12 +644,12 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, 1);
 
     // small, single tile size
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = max<size_t>(1, vshmem_size);
       return status;
     }
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : NULL;
+    char* vshmem_ptr = vshmem_size > 0 ? (char*) d_temp_storage : nullptr;
 
     reduce_agent ra(reduce_plan, num_items, stream, vshmem_ptr, "reduce_agent: single_tile only");
     ra.launch(input_it, output_it, num_items, reduction_op, init);
@@ -685,7 +685,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     size_t vshmem_size = core::vshmem_size(reduce_plan.shared_memory_size, max_blocks);
 
     // Temporary storage allocation requirements
-    void* allocations[3]       = {NULL, NULL, NULL};
+    void* allocations[3]       = {nullptr, nullptr, nullptr};
     size_t allocation_sizes[3] = {
       max_blocks * sizeof(T), // bytes needed for privatized block reductions
       cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
@@ -693,14 +693,14 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     };
     status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     CUDA_CUB_RET_IF_FAIL(status);
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       return status;
     }
 
     T* d_block_reductions = (T*) allocations[0];
     cub::GridQueue<UnsignedSize> queue(allocations[1]);
-    char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : NULL;
+    char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[2] : nullptr;
 
     // Get grid size for device_reduce_sweep_kernel
     int reduce_grid_size = 0;
@@ -760,14 +760,14 @@ reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init,
   cudaStream_t stream       = cuda_cub::stream(policy);
 
   cudaError_t status;
-  status = doit_step(NULL, temp_storage_bytes, first, num_items, init, binary_op, reinterpret_cast<T*>(NULL), stream);
+  status = doit_step(nullptr, temp_storage_bytes, first, num_items, init, binary_op, static_cast<T*>(nullptr), stream);
   cuda_cub::throw_on_error(status, "reduce failed on 1st step");
 
   size_t allocation_sizes[2] = {sizeof(T*), temp_storage_bytes};
-  void* allocations[2]       = {NULL, NULL};
+  void* allocations[2]       = {nullptr, nullptr};
 
   size_t storage_size = 0;
-  status              = core::alias_storage(NULL, storage_size, allocations, allocation_sizes);
+  status              = core::alias_storage(nullptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "reduce failed on 1st alias_storage");
 
   // Allocate temporary storage.
@@ -809,7 +809,7 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
     status,
     cub::DeviceReduce::Reduce,
     num_items,
-    (NULL, tmp_size, first, reinterpret_cast<T*>(NULL), num_items_fixed, binary_op, init, stream));
+    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduction step 1");
 
   // Allocate temporary storage.

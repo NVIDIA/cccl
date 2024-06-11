@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   InputIterator first,
   InputIterator last,
   ForwardIterator result,
-  thrust::detail::false_type) // has_trivial_copy_constructor
+  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   // zip up the iterators
   typedef thrust::tuple<InputIterator, ForwardIterator> IteratorTuple;
@@ -95,7 +95,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   InputIterator first,
   InputIterator last,
   ForwardIterator result,
-  thrust::detail::true_type) // has_trivial_copy_constructor
+  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   return thrust::copy(exec, first, last, result);
 } // end uninitialized_copy()
@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   InputIterator first,
   Size n,
   ForwardIterator result,
-  thrust::detail::false_type) // has_trivial_copy_constructor
+  thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   // zip up the iterators
   typedef thrust::tuple<InputIterator, ForwardIterator> IteratorTuple;
@@ -135,7 +135,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   InputIterator first,
   Size n,
   ForwardIterator result,
-  thrust::detail::true_type) // has_trivial_copy_constructor
+  thrust::detail::true_type) // ::cuda::std::is_trivially_copy_constructible
 {
   return thrust::copy_n(exec, first, n, result);
 } // end uninitialized_copy_n()
@@ -148,7 +148,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ResultType;
 
-  typedef typename thrust::detail::has_trivial_copy_constructor<ResultType>::type ResultTypeHasTrivialCopyConstructor;
+  typedef typename ::cuda::std::is_trivially_copy_constructible<ResultType>::type ResultTypeHasTrivialCopyConstructor;
 
   return thrust::system::detail::generic::detail::uninitialized_copy(
     exec, first, last, result, ResultTypeHasTrivialCopyConstructor());
@@ -160,7 +160,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ResultType;
 
-  typedef typename thrust::detail::has_trivial_copy_constructor<ResultType>::type ResultTypeHasTrivialCopyConstructor;
+  typedef typename ::cuda::std::is_trivially_copy_constructible<ResultType>::type ResultTypeHasTrivialCopyConstructor;
 
   return thrust::system::detail::generic::detail::uninitialized_copy_n(
     exec, first, n, result, ResultTypeHasTrivialCopyConstructor());
