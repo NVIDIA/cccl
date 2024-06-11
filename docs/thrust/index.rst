@@ -11,6 +11,7 @@ Thrust: The C++ Parallel Algorithms Library
    setup
    releases
    contributing
+   api
    ${repo_docs_api_path}/thrust_api
 
 .. mdinclude:: ../../thrust/README.md

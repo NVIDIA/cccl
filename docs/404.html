@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Redirecting to nvidia.github.io/cccl/thrust</title>
+
+<html>
+  <head>
+    <script type="module">
+        import Fuse from 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.mjs'
+        var localUri = window.location.pathname;
+        var hostUrl = window.location.protocol + "//" + window.location.host
+        var pagelistUrl = hostUrl + "/pagelist.txt"
+
+        fetch(pagelistUrl)
+            .then((response) => response.text())
+            .then((text) => {
+                const pagelist = text.split(",")
+                console.log(pagelist)
+
+                const options = {
+                    includeScore: true,
+                    distance: 100,
+                    threshold: 0.8,
+                }
+
+                const fuse = new Fuse(pagelist, options)
+                const result = fuse.search(localUri)
+
+                if (result.length) {
+                    console.log(result[0])
+                    var possibleUri = hostUrl + "/" + result[0].item
+                    window.location.href = possibleUri
+                } else {
+                    window.location.href = hostUrl + "/index.html"
+                }
+            })
+    </script>
+  </head>
+</html>
