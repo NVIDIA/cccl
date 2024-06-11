@@ -1,9 +1,4 @@
-
-
-# Needed until cudacxx refactors into string:
-llvm-newest: &llvm-newest { name: 'llvm', version: '17', exe: 'clang++' }
-
-# GHA Workflow job matrices:
+# Workflow definitions:
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -28,7 +23,7 @@ workflows:
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
     # default_projects: clang-cuda
-    - {jobs: ['build'], std: [17, 20], cudacxx: *llvm-newest, cxx: 'clang'}
+    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang'}
     # nvrtc:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all'}
     # verify-codegen:
@@ -142,13 +137,6 @@ default_project:
   - 'cub'
   - 'thrust'
 
-# Lookup supported C++ standards for a given compiler when `std: 'all'`.
-lookup_cudacxx_supported_stds:
-  'nvcc11.1':       [11, 14, 17    ]
-  'nvcc11.8':       [11, 14, 17    ]
-  'nvcc12.0':       [11, 14, 17, 20]
-  'nvcc12.4':       [11, 14, 17, 20]
-  'llvm16':         [11, 14, 17, 20]
 lookup_project_supported_stds:
   'cccl':           [11, 14, 17, 20]
   'libcudacxx':     [11, 14, 17, 20]
@@ -277,6 +265,14 @@ ctk_versions:
   11.8: { stds: [11, 14, 17,   ] }
   12.0: { stds: [11, 14, 17, 20] }
   12.4: { stds: [11, 14, 17, 20], aka: 'curr' }
+
+device_compilers:
+  nvcc: # Version / stds are taken from CTK
+    name: 'nvcc'
+    exe: 'nvcc'
+  clang: # Requires cxx=clang. Version / stds are taken from cxx compiler.
+    name: "ClangCUDA"
+    exe: 'clang++'
 
 host_compilers:
   gcc:

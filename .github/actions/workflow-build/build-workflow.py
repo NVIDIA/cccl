@@ -195,6 +195,28 @@ def get_host_compiler(cxx_string):
     return result
 
 
+def get_device_compiler(matrix_job):
+    id = matrix_job['cudacxx']
+    if not id in matrix_yaml['device_compilers'].keys():
+        raise Exception(
+            f"Unknown device compiler '{id}'. Valid options are: {', '.join(matrix_yaml['device_compilers'].keys())}")
+    result = matrix_yaml['device_compilers'][id]
+    result['id'] = id
+
+    if id == 'nvcc':
+        ctk = get_ctk(matrix_job['ctk'])
+        result['version'] = ctk['version']
+        result['stds'] = ctk['stds']
+    elif id == 'clang':
+        host_compiler = get_host_compiler(matrix_job['cxx'])
+        result['version'] = host_compiler['version']
+        result['stds'] = host_compiler['stds']
+    else:
+        raise Exception(f"Cannot determine version/std info for device compiler '{id}'")
+
+    return result
+
+
 @static_result
 def get_all_matrix_job_tags_sorted():
     required_tags = set(matrix_yaml['required_tags'])
@@ -216,16 +238,19 @@ def get_all_matrix_job_tags_sorted():
     return sorted_important_tags + sorted_meh_tags + sorted_noise_tags
 
 
-def lookup_supported_stds(ctk_version=None, cxx_string=None, project=None):
+def lookup_supported_stds(matrix_job):
     stds = set(matrix_yaml['all_stds'])
-    if ctk_version:
-        ctk = get_ctk(ctk_version)
+    if 'ctk' in matrix_job:
+        ctk = get_ctk(matrix_job['ctk'])
         stds = stds & set(ctk['stds'])
-    if cxx_string:
-        host_compiler = get_host_compiler(cxx_string)
+    if 'cxx' in matrix_job:
+        host_compiler = get_host_compiler(matrix_job['cxx'])
         stds = stds & set(host_compiler['stds'])
-    if project:
-        key = project
+    if 'cudacxx' in matrix_job:
+        device_compiler = get_device_compiler(matrix_job)
+        stds = stds & set(device_compiler['stds'])
+    if 'project' in matrix_job:
+        key = matrix_job['project']
         if not key in matrix_yaml['lookup_project_supported_stds']:
             raise Exception(f"Missing matrix.yaml 'lookup_project_supported_stds' entry for key '{key}'")
         stds = stds & set(matrix_yaml['lookup_project_supported_stds'][key])
@@ -260,14 +285,14 @@ def is_windows(matrix_job):
 def generate_dispatch_group_name(matrix_job):
     project_name = get_formatted_project_name(matrix_job['project'])
     ctk = matrix_job['ctk']
-    device_compiler = matrix_job['cudacxx']
+    device_compiler = get_device_compiler(matrix_job)
     host_compiler = get_host_compiler(matrix_job['cxx'])
 
     compiler_info = ""
-    if device_compiler['name'] == 'nvcc':
-        compiler_info = f"nvcc {host_compiler['name']}"
-    elif device_compiler['name'] == 'llvm':
-        compiler_info = f"clang-cuda"
+    if device_compiler['id'] == 'nvcc':
+        compiler_info = f"{device_compiler['name']} {host_compiler['name']}"
+    elif device_compiler['id'] == 'clang':
+        compiler_info = f"{device_compiler['name']}"
     else:
         compiler_info = f"{device_compiler['name']}-{device_compiler['version']} {host_compiler['name']}"
 
@@ -340,8 +365,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
 
     std_str = str(matrix_job['std']) if 'std' in matrix_job else ''
 
-    device_compiler_name = matrix_job['cudacxx']['name']
-    device_compiler_exe = matrix_job['cudacxx']['exe']
+    device_compiler = get_device_compiler(matrix_job)
 
     cuda_compile_arch = matrix_job['sm'] if 'sm' in matrix_job else ''
     cmake_options = matrix_job['cmake_options'] if 'cmake_options' in matrix_job else ''
@@ -353,8 +377,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f" -std \"{std_str}\""
     if cuda_compile_arch:
         command += f" -arch \"{cuda_compile_arch}\""
-    if device_compiler_name != 'nvcc':
-        command += f" -cuda \"{device_compiler_exe}\""
+    if device_compiler['id'] != 'nvcc':
+        command += f" -cuda \"{device_compiler['exe']}\""
     if cmake_options:
         command += f" -cmake-options \"{cmake_options}\""
 
@@ -380,11 +404,11 @@ def generate_dispatch_job_origin(matrix_job, job_type):
         origin_job['cxx_family'] = host_compiler['name']
 
     if 'cudacxx' in origin_job:
-        device_compiler = origin_job['cudacxx']
-        formatted_name = 'clang-cuda' if device_compiler['name'] == 'llvm' else device_compiler['name']
-        origin_job['cudacxx_name'] = formatted_name
-        origin_job['cudacxx_full'] = formatted_name + device_compiler['version']
+        device_compiler = get_device_compiler(matrix_job)
         del origin_job['cudacxx']
+
+        origin_job['cudacxx'] = device_compiler['name'] + device_compiler['version']
+        origin_job['cudacxx_family'] = device_compiler['name']
 
     origin['matrix_job'] = origin_job
 
@@ -759,9 +783,8 @@ def set_derived_tags(matrix_job):
     matrix_job['cxx'] = canonicalize_host_compiler_name(matrix_job['cxx'])
     matrix_job['ctk'] = canonicalize_ctk_version(matrix_job['ctk'])
 
-    # Expand nvcc device compiler shortcut:
-    if matrix_job['cudacxx'] == 'nvcc':
-        matrix_job['cudacxx'] = {'name': 'nvcc', 'version': matrix_job['ctk'], 'exe': 'nvcc'}
+    if matrix_job['cudacxx'] == 'clang' and not matrix_job['cxx'].startswith('clang'):
+        raise Exception(error_message_with_matrix_job(matrix_job, f"cudacxx=clang requires cxx=clang."))
 
     if 'sm' in matrix_job and matrix_job['sm'] == 'gpu':
         if not 'gpu' in matrix_job:
@@ -772,11 +795,7 @@ def set_derived_tags(matrix_job):
         matrix_job['sm'] = matrix_yaml['gpu_sm'][matrix_job['gpu']]
 
     if 'std' in matrix_job and matrix_job['std'] == 'all':
-        cxx_string = matrix_job['cxx'] if 'cxx' in matrix_job else None
-        ctk = matrix_job['ctk'] if 'ctk' in matrix_job else None
-        project = matrix_job['project'] if 'project' in matrix_job else None
-
-        matrix_job['std'] = lookup_supported_stds(ctk, cxx_string, project)
+        matrix_job['std'] = lookup_supported_stds(matrix_job)
 
     if matrix_job['project'] in matrix_yaml['project_expanded_tests'] and 'test' in matrix_job['jobs']:
         matrix_job['jobs'].remove('test')
