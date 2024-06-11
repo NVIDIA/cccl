@@ -15,6 +15,10 @@ ceil_div
 - _Preconditions_: `a >= 0` is true and `b > 0` is true.
 - _Returns_: divides `a` by `b`. If `a` is not a multiple of `b` rounds the result up to the next integer value.
 
+.. note::
+
+   The function is only constexpr from C++14 onwards
+
 **Example**: This API is very useful for determining the _number of thread blocks_ required to process a fixed amount of work, given a fixed number of threads per block:
 
 .. code:: cuda

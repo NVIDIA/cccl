@@ -13,12 +13,14 @@
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 
-#include <cstdint>
-
 #include "test_macros.h"
 
+#if !defined(TEST_COMPILER_NVRTC)
+#  include <cstdint>
+#endif // !TEST_COMPILER_NVRTC
+
 template <class T>
-__host__ __device__ constexpr void test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   constexpr T maxv = cuda::std::numeric_limits<T>::max();
 
@@ -50,6 +52,7 @@ __host__ __device__ constexpr bool test()
   test<long long>();
   test<unsigned long long>();
 
+#if !defined(TEST_COMPILER_NVRTC)
   // cstdint types:
   test<std::size_t>();
   test<std::ptrdiff_t>();
@@ -65,6 +68,7 @@ __host__ __device__ constexpr bool test()
   test<std::uint16_t>();
   test<std::uint32_t>();
   test<std::uint64_t>();
+#endif // !TEST_COMPILER_NVRTC
 
 #if defined(TEST_HAS_NO_INT128_T)
   test<__int128_t>();
@@ -77,6 +81,8 @@ __host__ __device__ constexpr bool test()
 int main(int arg, char** argv)
 {
   test();
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
   return 0;
 }
