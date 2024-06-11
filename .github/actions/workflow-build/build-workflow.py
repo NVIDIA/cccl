@@ -238,6 +238,24 @@ def get_gpu(gpu_string):
     return result
 
 
+@memoize_result
+def get_project(project):
+    if not project in matrix_yaml['projects'].keys():
+        raise Exception(
+            f"Unknown project '{project}'. Valid options are: {', '.join(matrix_yaml['projects'].keys())}")
+
+    result = matrix_yaml['projects'][project]
+    result['id'] = project
+
+    if not 'name' in result:
+        result['name'] = project
+
+    if not 'job_map' in result:
+        result['job_map'] = {}
+
+    return result
+
+
 @static_result
 def get_all_matrix_job_tags_sorted():
     required_tags = set(matrix_yaml['required_tags'])
@@ -271,10 +289,8 @@ def lookup_supported_stds(matrix_job):
         device_compiler = get_device_compiler(matrix_job)
         stds = stds & set(device_compiler['stds'])
     if 'project' in matrix_job:
-        key = matrix_job['project']
-        if not key in matrix_yaml['lookup_project_supported_stds']:
-            raise Exception(f"Missing matrix.yaml 'lookup_project_supported_stds' entry for key '{key}'")
-        stds = stds & set(matrix_yaml['lookup_project_supported_stds'][key])
+        project = get_project(matrix_job['project'])
+        stds = stds & set(project['stds'])
     return sorted(list(stds))
 
 
@@ -283,12 +299,6 @@ def lookup_job_invoke_spec(job_type):
     if job_type in matrix_yaml['job_invoke']:
         return matrix_yaml['job_invoke'][job_type]
     return {'prefix': job_type}
-
-
-def get_formatted_project_name(project_name):
-    if project_name in matrix_yaml['formatted_project_names']:
-        return matrix_yaml['formatted_project_names'][project_name]
-    return project_name
 
 
 def get_formatted_job_type(job_type):
@@ -304,7 +314,7 @@ def is_windows(matrix_job):
 
 
 def generate_dispatch_group_name(matrix_job):
-    project_name = get_formatted_project_name(matrix_job['project'])
+    project = get_project(matrix_job['project'])
     ctk = matrix_job['ctk']
     device_compiler = get_device_compiler(matrix_job)
     host_compiler = get_host_compiler(matrix_job['cxx'])
@@ -317,7 +327,7 @@ def generate_dispatch_group_name(matrix_job):
     else:
         compiler_info = f"{device_compiler['name']}-{device_compiler['version']} {host_compiler['name']}"
 
-    return f"{project_name} CTK{ctk} {compiler_info}"
+    return f"{project['name']} CTK{ctk} {compiler_info}"
 
 
 def generate_dispatch_job_name(matrix_job, job_type):
@@ -381,8 +391,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
     job_prefix = job_invoke_spec['prefix']
     job_args = job_invoke_spec['args'] if 'args' in job_invoke_spec else ""
 
-    project = matrix_job['project']
-    script_name = f"{script_path}/{job_prefix}_{project}{script_ext}"
+    project = get_project(matrix_job['project'])
+    script_name = f"{script_path}/{job_prefix}_{project['id']}{script_ext}"
 
     std_str = str(matrix_job['std']) if 'std' in matrix_job else ''
 
@@ -816,9 +826,12 @@ def set_derived_tags(matrix_job):
     if 'std' in matrix_job and matrix_job['std'] == 'all':
         matrix_job['std'] = lookup_supported_stds(matrix_job)
 
-    if matrix_job['project'] in matrix_yaml['project_expanded_tests'] and 'test' in matrix_job['jobs']:
-        matrix_job['jobs'].remove('test')
-        matrix_job['jobs'] += matrix_yaml['project_expanded_tests'][matrix_job['project']]
+    # Apply project job map:
+    project = get_project(matrix_job['project'])
+    for original_job, expanded_jobs in project['job_map'].items():
+        if original_job in matrix_job['jobs']:
+            matrix_job['jobs'].remove(original_job)
+            matrix_job['jobs'] += expanded_jobs
 
     if (not 'build' in matrix_job['jobs'] and
             any([job in matrix_job['jobs'] for job in matrix_yaml['build_required_jobs']])):

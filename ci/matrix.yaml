@@ -137,13 +137,6 @@ default_project:
   - 'cub'
   - 'thrust'
 
-lookup_project_supported_stds:
-  'cccl':           [11, 14, 17, 20]
-  'libcudacxx':     [11, 14, 17, 20]
-  'cub':            [11, 14, 17, 20]
-  'thrust':         [11, 14, 17, 20]
-  'cudax':          [        17, 20]
-
 # Tags that aren't exploded:
 non_exploded_tags:
   - 'jobs' # Keeping jobs as a list allows for dependency handling of build->test steps.
@@ -193,10 +186,6 @@ job_invoke:
   'test_lid1'  : { 'prefix': 'test', 'args': '-lid1' }
   'test_lid2'  : { 'prefix': 'test', 'args': '-lid2' }
 
-# When a listed project has a `test` job, it will be replaced with the specified list of finer-grain jobs.
-project_expanded_tests:
-  'thrust' : ['test_gpu', 'test_cpu']
-  'cub'    : ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2']
 
 # Human readable name for jobs. Default behavior is to capitalize the first letter.
 formatted_jobs:
@@ -209,12 +198,6 @@ formatted_jobs:
   'test_lid1':      'DeviceLaunch'
   'test_lid2':      'GraphCapture'
 
-# Human readable name for projects. Default behavior uses the project name as-is.
-formatted_project_names:
-  'libcudacxx': 'libcu++'
-  'cub':        'CUB'
-  'thrust':     'Thrust'
-  'cccl':       'CCCL'
 
 #############################################################################################
 
@@ -281,6 +264,34 @@ host_compilers:
     exe: icpc
     versions:
       2023.2.0: { stds: [11, 14, 17,   ] }
+
+# Project have the following properties:
+#
+# Keys are project subdirectories names. These will also be used in script names.
+#
+# - stds: A list of C++ standards to test. Required.
+# - name: The human-readable name of the project. Default is the project key.
+# - job_map: Map general jobs to arrays of project-specific jobs.
+#            Useful for things like splitting cpu/gpu testing for a project.
+#            E.g. "job_map: { test: ['test_cpu', 'test_gpu'] }" replaces
+#            the "test" job with distinct "test_cpu" and "test_gpu" jobs.
+projects:
+  cccl:
+    name: 'CCCL'
+    stds: [11, 14, 17, 20]
+  libcudacxx:
+    name: 'libcu++'
+    stds: [11, 14, 17, 20]
+  cub:
+    name: 'CUB'
+    stds: [11, 14, 17, 20]
+    job_map: { test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'] }
+  thrust:
+    name: 'Thrust'
+    stds: [11, 14, 17, 20]
+    job_map: { test: ['test_cpu', 'test_gpu'] }
+  cudax:
+    stds: [17, 20]
 
 gpus:
   v100:     { sm: 70 }                # 32 GB,  40 runners
