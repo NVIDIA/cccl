@@ -38,6 +38,8 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
+      pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
     steps:
       - name: Checkout repo
@@ -47,6 +49,11 @@ jobs:
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
+      - name: Export PR info
+        id: export-pr-info
+        run: |
+          echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
+          echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
@@ -57,7 +64,7 @@ jobs:
           allow_override: "true"
           skip_tests: ${{ toJSON(contains(github.event.head_commit.message, '[skip-tests]')) }}
           inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
-          inspect_changes_base_sha: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
+          inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
           workflows: >-
             ${{ env.pr_worflow }}
             ${{ env.nightly_workflow }}
@@ -141,24 +148,23 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Get Base Branch from PR
-        id: get-pr-info
-        uses: nv-gha-runners/get-pr-info@main
-
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}
+          pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   verify-devcontainers:
     name: Verify Dev Containers
     if: ${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}
+    needs: build-workflow
     permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/verify-devcontainers.yml
+    with:
+      base_sha: ${{ needs.build-workflow.outputs.base_sha }}
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:
