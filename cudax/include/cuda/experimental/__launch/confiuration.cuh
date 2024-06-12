@@ -92,15 +92,15 @@ struct dyn_smem_option : public detail::launch_option
 template <typename Content, std::size_t Extent = 1>
 constexpr dyn_smem_option<Content, Extent> dynamic_shared_memory() noexcept
 {
-  static_assert(Extent != cuda::std::dynamic_extent, "Size needs to be provided when dynamic_extent is specified");
+  static_assert(Extent != ::cuda::std::dynamic_extent, "Size needs to be provided when dynamic_extent is specified");
 
   return dyn_smem_option<Content, Extent>(Extent);
 }
 
 template <typename Content>
-constexpr dyn_smem_option<Content, cuda::std::dynamic_extent> dynamic_shared_memory(std::size_t size) noexcept
+constexpr dyn_smem_option<Content, ::cuda::std::dynamic_extent> dynamic_shared_memory(std::size_t size) noexcept
 {
-  return dyn_smem_option<Content, cuda::std::dynamic_extent>(size);
+  return dyn_smem_option<Content, ::cuda::std::dynamic_extent>(size);
 }
 
 struct launch_priority_config_element : public detail::launch_option
@@ -135,7 +135,7 @@ struct kernel_config : public Options...
 {
   Dimensions dims;
 
-  static_assert(cuda::std::_Or<std::true_type, cuda::std::is_base_of<detail::launch_option, Options>...>::value);
+  static_assert(::cuda::std::_Or<std::true_type, ::cuda::std::is_base_of<detail::launch_option, Options>...>::value);
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts) noexcept
       : Options(opts)...
@@ -169,7 +169,7 @@ struct kernel_config : public Options...
 template <typename Dimensions,
           typename... Options,
           typename Option,
-          typename = cuda::std::enable_if_t<cuda::std::is_base_of_v<detail::launch_option, Option>>>
+          typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<detail::launch_option, Option>>>
 _CCCL_NODISCARD constexpr auto
 operator&(const kernel_config<Dimensions, Options...>& config, const Option& option) noexcept
 {
@@ -178,7 +178,7 @@ operator&(const kernel_config<Dimensions, Options...>& config, const Option& opt
 
 template <typename... Levels,
           typename Option,
-          typename = cuda::std::enable_if_t<cuda::std::is_base_of_v<detail::launch_option, Option>>>
+          typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<detail::launch_option, Option>>>
 _CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
 {
   return kernel_config(dims, option);
