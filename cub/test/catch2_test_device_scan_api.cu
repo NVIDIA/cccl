@@ -27,12 +27,10 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 #include "catch2_test_helper.h"
-#include <catch2/catch.hpp>
 
 CUB_TEST("Device inclusive scan works", "[scan][device]")
 {
@@ -40,30 +38,18 @@ CUB_TEST("Device inclusive scan works", "[scan][device]")
   thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
   thrust::device_vector<int> out(input.size());
 
-  void* d_temp_storage      = NULL;
-  size_t temp_storage_bytes = 0;
+  void* d_temp_storage{};
+  size_t temp_storage_bytes{};
 
   int init = 1;
 
   cub::DeviceScan::InclusiveScan(
-    d_temp_storage,
-    temp_storage_bytes,
-    thrust::raw_pointer_cast(input.data()),
-    thrust::raw_pointer_cast(out.data()),
-    cub::Max{},
-    init,
-    input.size());
+    d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
   cudaMalloc(&d_temp_storage, temp_storage_bytes);
 
   cub::DeviceScan::InclusiveScan(
-    d_temp_storage,
-    temp_storage_bytes,
-    thrust::raw_pointer_cast(input.data()),
-    thrust::raw_pointer_cast(out.data()),
-    cub::Max{},
-    init,
-    input.size());
+    d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
   thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
   // example-end device-inclusive-scan
