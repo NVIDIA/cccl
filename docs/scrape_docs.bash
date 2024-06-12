@@ -15,7 +15,7 @@ cd $SCRIPT_PATH
 
 thrust=$(
         cd $path_to_docs;
-        find ./ -iname "*.html" -printf '%P,'
+        find ./ -iname "*.html" -printf 'cccl/%P,'
     )
 
 echo "$thrust" > $path_to_docs/pagelist.txt
