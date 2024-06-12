@@ -1740,7 +1740,7 @@ struct DispatchRadixSort : SelectedPolicy
   //------------------------------------------------------------------------------
 
   /// Device-accessible allocation of temporary storage.
-  //  When NULL, the required allocation size is written to `temp_storage_bytes` and no work is
+  //  When nullptr, the required allocation size is written to `temp_storage_bytes` and no work is
   //  done.
   void* d_temp_storage;
 
@@ -1856,7 +1856,7 @@ struct DispatchRadixSort : SelectedPolicy
     do
     {
       // Return if the caller is simply requesting the size of the storage allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         temp_storage_bytes = 1;
         break;
@@ -2151,7 +2151,7 @@ struct DispatchRadixSort : SelectedPolicy
 
     // just return if no temporary storage is provided
     cudaError_t error = cudaSuccess;
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       return error;
     }
@@ -2310,7 +2310,7 @@ struct DispatchRadixSort : SelectedPolicy
               .doit(onesweep_kernel,
                     d_lookback,
                     d_ctrs + portion * num_passes + pass,
-                    portion < num_portions - 1 ? d_bins + ((portion + 1) * num_passes + pass) * RADIX_DIGITS : NULL,
+                    portion < num_portions - 1 ? d_bins + ((portion + 1) * num_passes + pass) * RADIX_DIGITS : nullptr,
                     d_bins + (portion * num_passes + pass) * RADIX_DIGITS,
                     d_keys.Alternate(),
                     d_keys.Current() + portion * PORTION_SIZE,
@@ -2457,7 +2457,7 @@ struct DispatchRadixSort : SelectedPolicy
       }
 
       // Return if the caller is simply requesting the size of the storage allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         return cudaSuccess;
       }
@@ -2669,7 +2669,7 @@ struct DispatchRadixSort : SelectedPolicy
    * @brief Internal dispatch routine
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When NULL, the required
+   *   Device-accessible allocation of temporary storage. When nullptr, the required
    *   allocation size is written to `temp_storage_bytes` and no work is done.
    *
    * @param[in,out] temp_storage_bytes
@@ -2816,7 +2816,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
   // Parameter members
   //------------------------------------------------------------------------------
 
-  /// Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+  /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.
   void* d_temp_storage;
 
@@ -3077,7 +3077,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
       }
 
       // Return if the caller is simply requesting the size of the storage allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         if (temp_storage_bytes == 0)
         {
@@ -3208,7 +3208,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
    * @brief Internal dispatch routine
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+   *   Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
    *   is written to `temp_storage_bytes` and no work is done.
    *
    * @param[in,out] temp_storage_bytes

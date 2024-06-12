@@ -269,9 +269,10 @@ struct MergeAgent
   typedef key1_type key_type;
   typedef item1_type item_type;
 
-  typedef typename thrust::detail::conditional<MERGE_ITEMS::value,
-                                               integer_constant<sizeof(key_type) + sizeof(item_type)>,
-                                               integer_constant<sizeof(key_type)>>::type tuning_type;
+  typedef ::cuda::std::__conditional_t<MERGE_ITEMS::value,
+                                       integer_constant<sizeof(key_type) + sizeof(item_type)>,
+                                       integer_constant<sizeof(key_type)>>
+    tuning_type;
 
   template <class Arch>
   struct PtxPlan : Tuning<Arch, tuning_type>::type
@@ -643,20 +644,20 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   size_t temp_storage1 = (1 + num_tiles) * sizeof(Size);
   size_t temp_storage2 = core::vshmem_size(merge_plan.shared_memory_size, num_tiles);
 
-  void* allocations[2]       = {NULL, NULL};
+  void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {temp_storage1, temp_storage2};
 
   status = core::alias_storage(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   CUDA_CUB_RET_IF_FAIL(status);
 
-  if (d_temp_storage == NULL)
+  if (d_temp_storage == nullptr)
   {
     return status;
   }
 
   // partition data into work balanced tiles
   Size* merge_partitions = (Size*) allocations[0];
-  char* vshmem_ptr       = temp_storage2 > 0 ? (char*) allocations[1] : NULL;
+  char* vshmem_ptr       = temp_storage2 > 0 ? (char*) allocations[1] : nullptr;
 
   {
     Size num_partitions = num_tiles + 1;
@@ -712,7 +713,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ItemsOutputIt> merge(
 
   cudaError_t status;
   status = doit_step<MERGE_ITEMS>(
-    NULL,
+    nullptr,
     storage_size,
     keys1_first,
     keys2_first,

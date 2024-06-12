@@ -27,41 +27,59 @@
 #endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
 
 #include <cuda/std/__exception/terminate.h>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 
-#include <nv/target>
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  include <cstdio>
+#  include <stdexcept>
 #endif // !_CCCL_COMPILER_NVRTC
+
+#include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-class cuda_error : public _CUDA_VSTD_NOVERSION::runtime_error
+
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+class cuda_error : public ::std::runtime_error
 {
-public:
-  cuda_error(::cudaError_t __status, const char* __msg) noexcept
-      : _CUDA_VSTD_NOVERSION::runtime_error("")
+private:
+  struct __msg_storage
   {
-    ::snprintf(
-      const_cast<char*>(this->what()), _CUDA_VSTD::__libcpp_refstring::__length, "cudaError %d: %s", __status, __msg);
+    char __buffer[256];
+  };
+
+  static char* __format_cuda_error(::cudaError_t __status, const char* __msg, char* __msg_buffer) noexcept
+  {
+    ::snprintf(__msg_buffer, 256, "cudaError %d: %s", __status, __msg);
+    return __msg_buffer;
   }
+
+public:
+  cuda_error(::cudaError_t __status, const char* __msg, __msg_storage __msg_buffer = {0}) noexcept
+      : ::std::runtime_error(__format_cuda_error(__status, __msg, __msg_buffer.__buffer))
+  {}
 };
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t __status, const char* __msg)
 {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw ::cuda::cuda_error(__status, __msg);),
                     ((void) __status; (void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
-#else
-  (void) __status;
-  (void) __msg;
-  _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
+#else // ^^^ !_LIBCUDACXX_NO_EXCEPTIONS ^^^ / vvv _LIBCUDACXX_NO_EXCEPTIONS vvv
+class cuda_error
+{
+public:
+  cuda_error(::cudaError_t, const char*) noexcept {}
+};
+
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t, const char*)
+{
+  _CUDA_VSTD_NOVERSION::terminate();
+}
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

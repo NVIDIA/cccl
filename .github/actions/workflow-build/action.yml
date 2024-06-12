@@ -5,6 +5,10 @@ inputs:
   workflows:
     description: "Space separated list of workflows in matrix file to run"
     required: true
+  allow_override:
+    description: "If true, the requested `workflows` will be ignored when a non-empty 'override' workflow exists in the matrix file."
+    default: "false"
+    required: false
   skip_tests:
     description: "Skip running tests"
     default: "false"
@@ -55,6 +59,7 @@ runs:
       id: build-workflow
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
         skip_tests: ${{ inputs.skip_tests == 'true' && '--skip-tests' || ''}}
         dirty_projects_flag: ${{ steps.inspect-changes.outputs.dirty_projects != '' && '--dirty-projects' || ''}}
         dirty_projects: ${{ steps.inspect-changes.outputs.dirty_projects }}
@@ -64,6 +69,7 @@ runs:
 
         ${{ env.matrix_parser }} ${{ inputs.matrix_file }}           \
             --workflows ${{ inputs.workflows }}                      \
+            ${{ env.allow_override }}                                \
             ${{ env.skip_tests }}                                    \
             ${{ env.dirty_projects_flag }} ${{ env.dirty_projects }}
 
@@ -89,7 +95,8 @@ runs:
         echo "::endgroup::"
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: workflow
         path: workflow/
+        compression-level: 0

@@ -38,13 +38,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \defgroup memory_management Memory Management
- *
- *  All Thrust functionalities related to memory allocation and deallocation.
- *
- */
-
-/** \addtogroup memory_management Memory Management
+/*! \addtogroup memory_management Memory Management
  *  \{
  */
 
@@ -144,6 +138,8 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
 };
 #endif
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen cannot handle both versions
+
 /*! This version of \p malloc allocates untyped uninitialized storage associated with a given system.
  *
  *  \param system The Thrust system with which to associate the storage.
@@ -179,6 +175,8 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
+
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /*! This version of \p malloc allocates typed uninitialized storage associated with a given system.
  *

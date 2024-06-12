@@ -12,37 +12,6 @@
 #ifndef _LIBCUDACXX_STDEXCEPT
 #define _LIBCUDACXX_STDEXCEPT
 
-/*
-    stdexcept synopsis
-
-namespace std
-{
-
-class logic_error;
-    class domain_error;
-    class invalid_argument;
-    class length_error;
-    class out_of_range;
-class runtime_error;
-    class range_error;
-    class overflow_error;
-    class underflow_error;
-
-for each class xxx_error:
-
-class xxx_error : public exception // at least indirectly
-{
-public:
-    explicit xxx_error(const string& what_arg);
-    explicit xxx_error(const char*   what_arg);
-
-    virtual const char* what() const noexcept // returns what_arg
-};
-
-}  // std
-
-*/
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -53,240 +22,19 @@ public:
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/exception.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__verbose_abort>
-#include <cuda/std/detail/libcxx/include/iosfwd>
 
-#if defined(_LIBCUDACXX_HAS_STRING)
-#  include <cuda/std/string>
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  include <stdexcept>
 #endif // _LIBCUDACXX_HAS_STRING
-
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-class _LIBCUDACXX_TYPE_VIS __libcpp_refstring
-{
-public:
-  // We are totally faking it here. The libc++ implementation has a base class stored at the front of the string
-  // This totales to 2 * size_t + int + pointer.
-  // To avoid having to implement refcounting, simply use an inplace array and cutoff
-  static constexpr size_t __length = 64;
-
-  _LIBCUDACXX_INLINE_VISIBILITY explicit __libcpp_refstring(const char* __msg) noexcept
-  {
-    for (size_t __i = 0; __i < __length - 1; ++__i)
-    {
-      __imp_[__i] = __msg[__i];
-      if (__msg[__i] == '\0')
-      {
-        return;
-      }
-    }
-    __imp_[__length - 1] = '\0';
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI const char* c_str() const noexcept
-  {
-    return __imp_;
-  }
-
-private:
-  char __imp_[__length];
-};
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
-
-class _LIBCUDACXX_TYPE_VIS logic_error : public exception
-{
-protected:
-  _CUDA_VSTD_NOVERSION::__libcpp_refstring __imp_;
-
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit logic_error(const string& __msg)
-      : exception()
-      , __imp_(__msg.c_str()){};
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit logic_error(const char* __msg)
-      : exception()
-      , __imp_(__msg)
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY logic_error(const logic_error& __other) noexcept
-      : exception()
-      , __imp_(__other.__imp_)
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY logic_error& operator=(const logic_error& __other) noexcept
-  {
-    __imp_ = __other.__imp_;
-    return *this;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~logic_error() noexcept {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY virtual const char* what() const noexcept
-  {
-    return __imp_.c_str();
-  }
-};
-
-class _LIBCUDACXX_TYPE_VIS runtime_error : public exception
-{
-private:
-  _CUDA_VSTD_NOVERSION::__libcpp_refstring __imp_;
-
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit runtime_error(const string& __msg) noexcept
-      : exception()
-      , __imp_(__msg.c_str()){};
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit runtime_error(const char* __msg) noexcept
-      : exception()
-      , __imp_(__msg)
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY runtime_error(const runtime_error& __other) noexcept
-      : exception()
-      , __imp_(__other.__imp_)
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY runtime_error& operator=(const runtime_error& __other) noexcept
-  {
-    __imp_ = __other.__imp_;
-    return *this;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~runtime_error() noexcept {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY virtual const char* what() const noexcept
-  {
-    return __imp_.c_str();
-  }
-};
-
-class _LIBCUDACXX_TYPE_VIS domain_error : public logic_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit domain_error(const string& __s)
-      : logic_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit domain_error(const char* __s)
-      : logic_error(__s)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI domain_error(const domain_error&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~domain_error() noexcept {}
-};
-
-class _LIBCUDACXX_TYPE_VIS invalid_argument : public logic_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit invalid_argument(const string& __s)
-      : logic_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit invalid_argument(const char* __s)
-      : logic_error(__s)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI invalid_argument(const invalid_argument&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~invalid_argument() noexcept {}
-};
-
-class _LIBCUDACXX_TYPE_VIS length_error : public logic_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit length_error(const string& __s)
-      : logic_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit length_error(const char* __s)
-      : logic_error(__s)
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI length_error(const length_error&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~length_error() noexcept {}
-};
-
-class _LIBCUDACXX_TYPE_VIS out_of_range : public logic_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit out_of_range(const string& __s)
-      : logic_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit out_of_range(const char* __s)
-      : logic_error(__s)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI out_of_range(const out_of_range&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~out_of_range() noexcept {}
-};
-
-class _LIBCUDACXX_TYPE_VIS range_error : public runtime_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit range_error(const string& __s)
-      : runtime_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit range_error(const char* __s)
-      : runtime_error(__s)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI range_error(const range_error&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~range_error() noexcept {}
-};
-
-class _LIBCUDACXX_TYPE_VIS overflow_error : public runtime_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit overflow_error(const string& __s)
-      : runtime_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit overflow_error(const char* __s)
-      : runtime_error(__s)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI overflow_error(const overflow_error&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~overflow_error() noexcept {}
-};
-
-class _LIBCUDACXX_TYPE_VIS underflow_error : public runtime_error
-{
-public:
-#if defined(_LIBCUDACXX_HAS_STRING)
-  _LIBCUDACXX_INLINE_VISIBILITY explicit underflow_error(const string& __s)
-      : runtime_error(__s)
-  {}
-#endif // _LIBCUDACXX_HAS_STRING
-  _LIBCUDACXX_INLINE_VISIBILITY explicit underflow_error(const char* __s)
-      : runtime_error(__s)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI underflow_error(const underflow_error&) noexcept = default;
-  _LIBCUDACXX_INLINE_VISIBILITY virtual ~underflow_error() noexcept {}
-};
-
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_runtime_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::runtime_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::runtime_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -296,8 +44,7 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_runtime_error(c
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_logic_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::logic_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::logic_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -307,8 +54,7 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_logic_error(con
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_domain_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::domain_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::domain_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -318,9 +64,8 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_domain_error(co
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_invalid_argument(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw _CUDA_VSTD_NOVERSION::invalid_argument(__msg);),
-                    ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (throw ::std::invalid_argument(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -330,8 +75,7 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_invalid_argumen
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_length_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::length_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::length_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -341,8 +85,7 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_length_error(co
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_out_of_range(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::out_of_range(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::out_of_range(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -352,8 +95,7 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_out_of_range(co
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_range_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::range_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::range_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -363,9 +105,8 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_range_error(con
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_overflow_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw _CUDA_VSTD_NOVERSION::overflow_error(__msg);),
-                    ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (throw ::std::overflow_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
@@ -375,9 +116,8 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_overflow_error(
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_underflow_error(const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw _CUDA_VSTD_NOVERSION::underflow_error(__msg);),
-                    ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (throw ::std::underflow_error(__msg);), ((void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 #else
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();

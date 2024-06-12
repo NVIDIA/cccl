@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "catch2_test_helper.h"
 #include "test_util.h"
 

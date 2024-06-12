@@ -186,13 +186,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use Bulk to square each element in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-square-t
   //!     :end-before: example-end bulk-square-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-temp-storage
@@ -250,13 +250,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEachN` to square each element in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-square-ref-t
   //!     :end-before: example-end bulk-square-ref-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-n-temp-storage
@@ -323,13 +323,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEach` to square each element in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-square-ref-t
   //!     :end-before: example-end bulk-square-ref-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-temp-storage
@@ -396,13 +396,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEachCopyN` to count odd elements in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-odd-count-t
   //!     :end-before: example-end bulk-odd-count-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-copy-n-temp-storage
@@ -472,13 +472,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEachCopy` to count odd elements in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-odd-count-t
   //!     :end-before: example-end bulk-odd-count-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-copy-temp-storage
@@ -544,13 +544,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use Bulk to square each element in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-square-t
   //!     :end-before: example-end bulk-square-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-wo-temp-storage
@@ -612,13 +612,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEachN` to square each element in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-square-ref-t
   //!     :end-before: example-end bulk-square-ref-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-n-wo-temp-storage
@@ -667,13 +667,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEach` to square each element in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-square-ref-t
   //!     :end-before: example-end bulk-square-ref-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-wo-temp-storage
@@ -743,13 +743,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEachCopyN` to count odd elements in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-odd-count-t
   //!     :end-before: example-end bulk-odd-count-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-copy-n-wo-temp-storage
@@ -801,13 +801,13 @@ public:
   //!
   //! The following code snippet demonstrates how to use `ForEachCopy` to count odd elements in a device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin bulk-odd-count-t
   //!     :end-before: example-end bulk-odd-count-t
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin for-each-copy-wo-temp-storage

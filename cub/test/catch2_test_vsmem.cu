@@ -223,7 +223,7 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
 {
   using item_t = cub::detail::value_t<InputIteratorT>;
 
-  /// Device-accessible allocation of temporary storage. When NULL, the required
+  /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.
   void* d_temp_storage;
 

@@ -161,7 +161,8 @@ struct TestZipIteratorTraversal
     typedef typename iterator_traversal<ZipIterator1>::type zip_iterator_traversal_type1;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_traversal_type1, random_access_traversal_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type1,
+    // random_access_traversal_tag>::value) );
 
 #if 0
     // test device types
@@ -173,7 +174,7 @@ struct TestZipIteratorTraversal
     typedef typename iterator_traversal<ZipIterator2>::type zip_iterator_traversal_type2;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_traversal_type2,
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type2,
     // thrust::random_access_traversal_tag>::value) );
   } // end operator()()
 };
@@ -198,7 +199,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator1>::type zip_iterator_system_type1;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
 
 #if 0
     // test device types
@@ -210,7 +211,8 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator2>::type zip_iterator_system_type2;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type2, experimental::space::device>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type2, experimental::space::device>::value)
+    // );
 
 #if 0
     // test any
@@ -222,7 +224,8 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator3>::type zip_iterator_system_type3;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type3, thrust::experimental::space::any>::value)
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type3,
+    // thrust::experimental::space::any>::value)
     // );
 
 #if 0
@@ -233,7 +236,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator4>::type zip_iterator_system_type4;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
 
 #if 0
     // test any/host
@@ -243,7 +246,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator5>::type zip_iterator_system_type5;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
 
 #if 0
     // test device/any
@@ -253,7 +256,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator6>::type zip_iterator_system_type6;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
 
 #if 0
     // test any/device
@@ -263,7 +266,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator7>::type zip_iterator_system_type7;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
   } // end operator()()
 };
 SimpleUnitTest<TestZipIteratorSystem, NumericTypes> TestZipIteratorSystemInstance;
@@ -293,7 +296,7 @@ DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
 struct SumTwoTuple
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x);
@@ -303,7 +306,7 @@ struct SumTwoTuple
 struct SumThreeTuple
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x);

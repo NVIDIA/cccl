@@ -119,6 +119,6 @@ __host__ __device__ int fake_main(int argc, char ** argv);
 
 // extern "C" to stop the name from being mangled
 extern "C" __global__ void main_kernel() {
-    fake_main(0, NULL);
+    fake_main(0, nullptr);
 }
 )program";

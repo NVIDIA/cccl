@@ -157,8 +157,9 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   using InputValueT  = thrust::iterator_value_t<UnwrapInputIt>;
   using OutputValueT = thrust::iterator_value_t<UnwrapOutputIt>;
 
-  constexpr bool can_compare_iterators = std::is_pointer<UnwrapInputIt>::value && std::is_pointer<UnwrapOutputIt>::value
-                                      && std::is_same<InputValueT, OutputValueT>::value;
+  constexpr bool can_compare_iterators =
+    ::cuda::std::is_pointer<UnwrapInputIt>::value && ::cuda::std::is_pointer<UnwrapOutputIt>::value
+    && std::is_same<InputValueT, OutputValueT>::value;
 
   auto first_unwrap  = thrust::try_unwrap_contiguous_iterator(first);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);

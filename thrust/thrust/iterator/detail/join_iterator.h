@@ -43,7 +43,7 @@ namespace join_iterator_detail
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename Difference, typename Reference>
 struct join_iterator_base
 {
-  typedef typename thrust::detail::remove_reference<Reference>::type value_type;
+  typedef ::cuda::std::__libcpp_remove_reference_t<Reference> value_type;
 
   typedef typename thrust::iterator_system<RandomAccessIterator1>::type system1;
   typedef typename thrust::iterator_system<RandomAccessIterator2>::type system2;

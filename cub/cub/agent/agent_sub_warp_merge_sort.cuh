@@ -45,6 +45,8 @@
 
 #include <thrust/system/cuda/detail/core/util.h>
 
+#include <cuda/std/cstdlib>
+
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -110,25 +112,9 @@ class AgentSubWarpSort
   struct BinaryOpT
   {
     template <typename T>
-    _CCCL_DEVICE bool operator()(T lhs, T rhs)
+    _CCCL_DEVICE bool operator()(T lhs, T rhs) const noexcept
     {
-      return this->impl(lhs, rhs);
-    }
-
-#if defined(__CUDA_FP16_TYPES_EXIST__)
-    _CCCL_DEVICE bool operator()(__half lhs, __half rhs)
-    {
-      // Need to explicitly cast to float for SM <= 52.
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_53, (return this->impl(lhs, rhs);), (return this->impl(__half2float(lhs), __half2float(rhs));));
-    }
-#endif
-
-  private:
-    template <typename T>
-    _CCCL_DEVICE bool impl(T lhs, T rhs)
-    {
-      if (IS_DESCENDING)
+      _CCCL_IF_CONSTEXPR (IS_DESCENDING)
       {
         return lhs > rhs;
       }
@@ -136,16 +122,33 @@ class AgentSubWarpSort
       {
         return lhs < rhs;
       }
+      _LIBCUDACXX_UNREACHABLE();
     }
+
+#if defined(__CUDA_FP16_TYPES_EXIST__)
+    _CCCL_DEVICE bool operator()(__half lhs, __half rhs) const noexcept
+    {
+      // Need to explicitly cast to float for SM <= 52.
+      _CCCL_IF_CONSTEXPR (IS_DESCENDING)
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hgt(lhs, rhs);), (return __half2float(lhs) > __half2float(rhs);));
+      }
+      else
+      {
+        NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
+      }
+      _LIBCUDACXX_UNREACHABLE();
+    }
+#endif // __CUDA_FP16_TYPES_EXIST__
   };
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
   _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
-    NV_IF_TARGET(NV_PROVIDES_SM_53, (return lhs == rhs;), (return __half2float(lhs) == __half2float(rhs);));
+    NV_IF_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
   }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
   template <typename T>
   _CCCL_DEVICE static bool equal(T lhs, T rhs)

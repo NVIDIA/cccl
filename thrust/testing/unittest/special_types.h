@@ -136,14 +136,12 @@ inline _CCCL_HOST_DEVICE void swap(user_swappable& x, user_swappable& y)
 class my_system : public THRUST_NS_QUALIFIER::device_execution_policy<my_system>
 {
 public:
-  my_system(int)
-      : correctly_dispatched(false)
-      , num_copies(0)
-  {}
+  my_system() = delete;
+
+  my_system(int) {}
 
   my_system(const my_system& other)
-      : correctly_dispatched(false)
-      , num_copies(other.num_copies + 1)
+      : num_copies(other.num_copies + 1)
   {}
 
   void validate_dispatch()
@@ -157,14 +155,11 @@ public:
   }
 
 private:
-  bool correctly_dispatched;
+  bool correctly_dispatched = false;
 
   // count the number of copies so that we can validate
   // that dispatch does not introduce any
-  unsigned int num_copies;
-
-  // disallow default construction
-  my_system();
+  unsigned int num_copies = 0;
 };
 
 struct my_tag : THRUST_NS_QUALIFIER::device_execution_policy<my_tag>

@@ -134,7 +134,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
   // create an unsigned version of n (we know n is positive from the comparison above)
   // to avoid a warning in the compare below
-  typename thrust::detail::make_unsigned<difference_type>::type unsigned_n(n);
+  ::cuda::std::__make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
   if (sizeof(difference_type) > sizeof(unsigned int)

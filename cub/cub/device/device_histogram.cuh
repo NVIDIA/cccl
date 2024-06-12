@@ -113,7 +113,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!      d_temp_storage, temp_storage_bytes,
@@ -192,20 +192,14 @@ struct DeviceHistogram
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
-
-    CounterT* d_histogram1[1] = {d_histogram};
-    int num_levels1[1]        = {num_levels};
-    LevelT lower_level1[1]    = {lower_level};
-    LevelT upper_level1[1]    = {upper_level};
-
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
+      &d_histogram,
+      &num_levels,
+      &lower_level,
+      &upper_level,
       num_samples,
       static_cast<OffsetT>(1),
       sizeof(SampleT) * num_samples,
@@ -289,7 +283,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage  = NULL;
+  //!    void*    d_temp_storage  = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramEven(
   //!        d_temp_storage, temp_storage_bytes,
@@ -376,19 +370,14 @@ struct DeviceHistogram
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
-    CounterT* d_histogram1[1] = {d_histogram};
-    int num_levels1[1]        = {num_levels};
-    LevelT lower_level1[1]    = {lower_level};
-    LevelT upper_level1[1]    = {upper_level};
-
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
+      &d_histogram,
+      &num_levels,
+      &lower_level,
+      &upper_level,
       num_row_samples,
       num_rows,
       row_stride_bytes,
@@ -433,6 +422,7 @@ struct DeviceHistogram
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples
   //!   (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
   //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
@@ -477,7 +467,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -571,9 +561,9 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
     cudaStream_t stream = 0)
   {
@@ -605,9 +595,9 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
     cudaStream_t stream,
     bool debug_synchronous)
@@ -632,6 +622,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
   //!   histograms from *RGBA* pixel samples).
@@ -653,8 +644,8 @@ struct DeviceHistogram
   //!   ``[0, num_row_pixels)``, let
   //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
   //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
-  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel
-  //!    ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
+  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
   //!   ``[sample_begin, sample_end)`` and
   //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
   //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
@@ -688,7 +679,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramEven<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -789,9 +780,9 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -850,9 +841,9 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -911,7 +902,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -981,24 +972,19 @@ struct DeviceHistogram
     SampleIteratorT d_samples,
     CounterT* d_histogram,
     int num_levels,
-    LevelT* d_levels,
+    const LevelT* d_levels,
     OffsetT num_samples,
     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
-
-    CounterT* d_histogram1[1] = {d_histogram};
-    int num_levels1[1]        = {num_levels};
-    LevelT* d_levels1[1]      = {d_levels};
-
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      &d_histogram,
+      &num_levels,
+      &d_levels,
       num_samples,
       (OffsetT) 1,
       (size_t) (sizeof(SampleT) * num_samples),
@@ -1012,7 +998,7 @@ struct DeviceHistogram
     SampleIteratorT d_samples,
     CounterT* d_histogram,
     int num_levels,
-    LevelT* d_levels,
+    const LevelT* d_levels,
     OffsetT num_samples,
     cudaStream_t stream,
     bool debug_synchronous)
@@ -1063,7 +1049,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::HistogramRange(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1142,23 +1128,19 @@ struct DeviceHistogram
     SampleIteratorT d_samples,
     CounterT* d_histogram,
     int num_levels,
-    LevelT* d_levels,
+    const LevelT* d_levels,
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
     cudaStream_t stream = 0)
   {
-    CounterT* d_histogram1[1] = {d_histogram};
-    int num_levels1[1]        = {num_levels};
-    LevelT* d_levels1[1]      = {d_levels};
-
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      &d_histogram,
+      &num_levels,
+      &d_levels,
       num_row_samples,
       num_rows,
       row_stride_bytes,
@@ -1172,7 +1154,7 @@ struct DeviceHistogram
     SampleIteratorT d_samples,
     CounterT* d_histogram,
     int num_levels,
-    LevelT* d_levels,
+    const LevelT* d_levels,
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -1200,6 +1182,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
@@ -1237,7 +1220,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1330,8 +1313,8 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
     cudaStream_t stream = 0)
   {
@@ -1362,8 +1345,8 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
     cudaStream_t stream,
     bool debug_synchronous)
@@ -1380,6 +1363,7 @@ struct DeviceHistogram
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
   //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
   //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
@@ -1428,7 +1412,7 @@ struct DeviceHistogram
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceHistogram::MultiHistogramRange<4, 3>(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1529,8 +1513,8 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
@@ -1587,8 +1571,8 @@ struct DeviceHistogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,

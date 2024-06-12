@@ -173,7 +173,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
     bool lt;
     NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (lt = val < input[retval + half];),
+                 (lt = __hlt(val, input[retval + half]);),
                  (lt = __half2float(val) < __half2float(input[retval + half]);));
 
     if (lt)
@@ -189,6 +189,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
   return retval;
 }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
 CUB_NAMESPACE_END

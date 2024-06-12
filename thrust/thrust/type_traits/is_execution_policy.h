@@ -48,7 +48,7 @@ THRUST_NAMESPACE_BEGIN
  *  otherwise.
  */
 template <typename T>
-using is_execution_policy = detail::is_base_of<detail::execution_policy_marker, T>;
+using is_execution_policy = ::cuda::std::is_base_of<detail::execution_policy_marker, T>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is an

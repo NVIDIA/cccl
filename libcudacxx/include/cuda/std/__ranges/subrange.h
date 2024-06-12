@@ -316,7 +316,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(copyable<_It>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin() const
   {
     return __begin_;
   }
@@ -328,7 +328,7 @@ public:
     return _CUDA_VSTD::move(__begin_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Sent end() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Sent end() const
   {
     return __end_;
   }

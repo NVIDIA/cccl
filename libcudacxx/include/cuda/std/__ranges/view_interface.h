@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
