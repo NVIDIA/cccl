@@ -140,26 +140,26 @@ template <size_t N> struct hash<_CUDA_VSTD::bitset<N>>;
 #include <cuda/std/__algorithm/count.h>
 #include <cuda/std/__algorithm/fill.h>
 #include <cuda/std/__algorithm/find.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__bit_reference>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/__type_traits/is_char_like_type.h>
-#include <cuda/std/detail/libcxx/include/climits>
-#include <cuda/std/detail/libcxx/include/cstddef>
+#include <cuda/std/climits>
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__bit_reference>
+#include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/detail/libcxx/include/string_view>
+#  include <cuda/std/string_view>
 #endif
-#include <cuda/std/detail/libcxx/include/version>
+#include <cuda/std/version>
 
 // standard-mandated includes
 
 // [bitset.syn]
 #include <cuda/std/detail/libcxx/include/iosfwd>
 #if defined(_LIBCUDACXX_HAS_STRING)
-#  include <cuda/std/detail/libcxx/include/string>
+#  include <cuda/std/string>
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -439,7 +439,8 @@ protected:
   {}
 
   _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4293)
+  _CCCL_DIAG_SUPPRESS_MSVC(4293) // shift count negative or too big
+                                 // MSVC is slightly overeager with diagnosing that here
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __bitset(unsigned long long __v) noexcept
       : __first_(_Size == __bits_per_word ? static_cast<__storage_type>(__v)
                                           : static_cast<__storage_type>(__v) & ((__storage_type(1) << _Size) - 1))
@@ -500,9 +501,9 @@ protected:
       __throw_overflow_error("bitset to_ulong overflow error");
     }
     return static_cast<unsigned long>(__first_);
-#else
+#else // ^^ MSVC ^^ | vv !MSVC vv
     return __first_;
-#endif
+#endif // !MSVC
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long long to_ullong() const
@@ -613,16 +614,18 @@ template <size_t _Size>
 struct hash<bitset<_Size>>;
 
 template <size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range(size_t __pos, const char * __msg)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+__throw_if_out_of_range(size_t __pos, const char* __msg)
 {
-    if (__pos >= _Size)
-    {
-      __throw_out_of_range(__msg);
-    }
+  if (__pos >= _Size)
+  {
+    __throw_out_of_range(__msg);
+  }
 }
 
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void __throw_if_out_of_range<0>(size_t __pos, const char * __msg)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void
+__throw_if_out_of_range<0>(size_t __pos, const char* __msg)
 {
   __throw_out_of_range(__msg);
 }
@@ -646,18 +649,7 @@ public:
   {}
   template <class _CharT, class = __enable_if_t<_IsCharLikeType<_CharT>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit bitset(
-    const _CharT* __str,
-#if (_LIBCUDACXX_STD_VER < 2026 && defined(_LIBCUDACXX_HAS_STRING)) || defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  if _LIBCUDACXX_STD_VER >= 2026
-    typename basic_string_view<_CharT>::size_type __n = basic_string_view<_CharT>::npos,
-#  else
-    typename basic_string<_CharT>::size_type __n = basic_string<_CharT>::npos,
-#  endif
-#else
-    size_t __n = static_cast<size_t>(-1),
-#endif
-    _CharT __zero = _CharT('0'),
-    _CharT __one  = _CharT('1'))
+    const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {
     size_t __rlen = _CUDA_VSTD::min(__n, char_traits<_CharT>::length(__str));
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
@@ -667,7 +659,6 @@ public:
 #endif
   }
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  if _LIBCUDACXX_STD_VER >= 2026
   template <class _CharT, class _Traits>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit bitset(
     basic_string_view<_CharT, _Traits> __str,
@@ -684,8 +675,7 @@ public:
     size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
     __init_from_string_view(basic_string_view<_CharT, _Traits>(__str.data() + __pos, __rlen), __zero, __one);
   }
-#  endif
-#endif
+#endif // defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #if defined(_LIBCUDACXX_HAS_STRING)
   template <class _CharT, class _Traits, class _Allocator>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit bitset(
@@ -703,7 +693,7 @@ public:
     size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
     __init_from_string_view(basic_string_view<_CharT, _Traits>(__str.data() + __pos, __rlen), __zero, __one);
   }
-#endif
+#endif // defined(_LIBCUDACXX_HAS_STRING)
 
   // 23.3.5.2 bitset operations:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset&
@@ -860,7 +850,7 @@ public:
   {
     return to_string<char, char_traits<char>, allocator<char>>(__zero, __one);
   }
-#endif
+#endif // defined(_LIBCUDACXX_HAS_STRING)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 size_t count() const noexcept
   {
     return static_cast<size_t>(_CUDA_VSTD::count(base::__make_iter(0), base::__make_iter(_Size), true));
@@ -876,13 +866,13 @@ public:
     return _CUDA_VSTD::equal(base::__make_iter(0), base::__make_iter(_Size), __rhs.__make_iter(0));
   }
 
-#if _LIBCUDACXX_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator!=(const bitset& __rhs) const noexcept
   {
     return !(*this == __rhs);
   }
-#endif
+#endif // C++ <= 17
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool test(size_t __pos) const
   {
@@ -944,7 +934,7 @@ private:
     }
     _CUDA_VSTD::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
   }
-#else
+#else // ^^ _LIBCUDACXX_HAS_STRING_VIEW ^^ | vv !_LIBCUDACXX_HAS_STRING_VIEW vv
   template <class _CharT, class _Traits = char_traits<_CharT>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
   __init_from_cstr(const _CharT* __str, size_t __size, _CharT __zero, _CharT __one)
@@ -966,7 +956,7 @@ private:
     }
     _CUDA_VSTD::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
   }
-#endif
+#endif // !_LIBCUDACXX_HAS_STRING_VIEW
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY size_t __hash_code() const noexcept
   {
