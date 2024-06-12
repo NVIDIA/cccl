@@ -204,12 +204,19 @@ _LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 template <class _Range, class _ElementType>
-_LIBCUDACXX_CONCEPT __span_compatible_range =
-  _CUDA_VRANGES::contiguous_range<_Range> && _CUDA_VRANGES::sized_range<_Range>
-  && (_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))
-  && !__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>
-  && !_CCCL_TRAIT(is_array, remove_cvref_t<_Range>)
-  && _CCCL_TRAIT(is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]);
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __span_compatible_range_,
+  requires()(
+    requires(_CUDA_VRANGES::contiguous_range<_Range>),
+    requires(_CUDA_VRANGES::sized_range<_Range>),
+    requires((_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))),
+    requires((!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>))),
+    requires((!__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>) ),
+    requires(_CCCL_TRAIT(
+      is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]))));
+
+template <class _Range, class _ElementType>
+_LIBCUDACXX_CONCEPT __span_compatible_range = _LIBCUDACXX_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
 
 #    if _CCCL_STD_VER >= 2020
 template <class _It, class _Tp>
