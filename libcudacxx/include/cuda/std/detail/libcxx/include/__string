@@ -62,8 +62,10 @@ template <> struct char_traits<char8_t>;  // c++20
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/find_end.h>
 #include <cuda/std/__algorithm/find_first_of.h>
+#include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/search.h>
 #include <cuda/std/__fwd/string.h>
