@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#define LIBCUDACXX_ENABLE_EXCEPTIONS
 // Test translation of launch function arguments to cudaLaunchConfig_t sent to cudaLaunchKernelEx internally
 // We replace cudaLaunchKernelEx with a test function here through a macro to intercept the cudaLaunchConfig_t
 #define cudaLaunchKernelEx cudaLaunchKernelExTestReplacement
@@ -176,25 +177,17 @@ auto configuration_test(
 
 TEST_CASE("Launch configuration", "[launch]")
 {
-  try
+  cudaStream_t stream;
+  CUDART(cudaStreamCreate(&stream));
+  SECTION("No cluster")
   {
-    cudaStream_t stream;
-    CUDART(cudaStreamCreate(&stream));
-    SECTION("No cluster")
-    {
-      configuration_test<false>(stream, 256, 4);
-    }
-    SECTION("With cluster")
-    {
-      configuration_test<true>(stream, 256, 2, 2);
-    }
+    configuration_test<false>(stream, 256, 4);
+  }
+  SECTION("With cluster")
+  {
+    configuration_test<true>(stream, 256, 2, 2);
+  }
 
-    CUDART(cudaStreamDestroy(stream));
-  }
-  catch (cuda::cuda_error& e)
-  {
-    printf("Launch error %s\n", e.what());
-    throw std::runtime_error(e.what());
-  }
+  CUDART(cudaStreamDestroy(stream));
   CHECK(replacementCalled);
 }

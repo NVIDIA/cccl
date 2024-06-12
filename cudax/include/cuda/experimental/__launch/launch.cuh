@@ -90,7 +90,7 @@ void launch(
   }
   if (status != cudaSuccess)
   {
-    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -111,7 +111,7 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
   }
   if (status != cudaSuccess)
   {
-    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -128,7 +128,7 @@ void launch(::cuda::stream_ref stream,
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -143,7 +143,7 @@ void launch(::cuda::stream_ref stream,
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -158,7 +158,7 @@ void launch(::cuda::stream_ref stream,
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
 
@@ -173,7 +173,7 @@ void launch(::cuda::stream_ref stream,
   }(std::forward<ActArgs>(actArgs)...);
   if (status != cudaSuccess)
   {
-    throw ::cuda::cuda_error(status, "Failed to launch a kernel");
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
 
