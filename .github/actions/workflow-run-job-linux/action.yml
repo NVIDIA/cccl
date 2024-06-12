@@ -1,0 +1,197 @@
+name: "Run Linux Job"
+description: "Run a job on a Linux runner."
+
+# This job now uses a docker-outside-of-docker (DOOD) strategy.
+#
+# The GitHub Actions runner application mounts the host's docker socket `/var/run/docker.sock` into the
+# container. By using a container with the `docker` CLI, this container can launch docker containers
+# using the host's docker daemon.
+#
+# This allows us to run actions that require node v20 in the `cruizba/ubuntu-dind:jammy-26.1.3` container, and
+# then launch our Ubuntu18.04-based GCC 6/7 containers to build and test CCCL.
+#
+# The main inconvenience to this approach is that any container mounts have to match the paths of the runner host,
+# not the paths as seen in the intermediate (`cruizba/ubuntu-dind`) container.
+#
+# Note: I am using `cruizba/ubuntu-dind:jammy-26.1.3` instead of `docker:latest`, because GitHub doesn't support
+# JS actions in alpine aarch64 containers, instead failing actions with this error:
+# ```
+# Error: JavaScript Actions in Alpine containers are only supported on x64 Linux runners. Detected Linux Arm64
+# ```
+
+inputs:
+  id:
+    description: "A unique identifier."
+    required: true
+  command:
+    description: "The command to run."
+    required: true
+  image:
+    description: "The Docker image to use."
+    required: true
+  runner:
+    description: "The GHA runs-on value."
+    required: true
+  cuda:
+    description: "The CUDA version to use when selecting a devcontainer."
+    required: true
+  host:
+    description: "The host compiler to use when selecting a devcontainer."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: sh
+      run: |
+        # Install script dependencies
+        apt update
+        apt install -y --no-install-recommends tree git
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        path: ${{github.event.repository.name}}
+        persist-credentials: false
+    - name: Add NVCC problem matcher
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
+    - name: Get AWS credentials for sccache bucket
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+        aws-region: us-east-2
+        role-duration-seconds: 43200 # 12 hours
+    - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        CI: true
+        RUNNER: "${{inputs.runner}}"
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
+        COMMAND: "${{inputs.command}}"
+        AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
+        AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
+        AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
+      run: |
+        echo "[host]      github.workspace: ${{github.workspace}}"
+        echo "[container] GITHUB_WORKSPACE: ${GITHUB_WORKSPACE:-}"
+        echo "[container]              PWD: $(pwd)"
+
+        # Necessary because we're doing docker-outside-of-docker:
+        # Make a symlink in the container that matches the host's ${{github.workspace}}, so that way `$(pwd)`
+        # in `.devcontainer/launch.sh` constructs volume paths relative to the hosts's ${{github.workspace}}.
+        mkdir -p "$(dirname "${{github.workspace}}")"
+        ln -s "$(pwd)" "${{github.workspace}}"
+        cd "${{github.workspace}}"
+
+        cat <<"EOF" > ci.sh
+        #! /usr/bin/env bash
+        set -eo pipefail
+        echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
+        echo -e "\e[1;34m${COMMAND}\e[0m"
+        eval "${COMMAND}" || exit_code=$?
+        if [ ! -z "$exit_code" ]; then
+          echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+          echo "::error:: To replicate this failure locally, follow the steps below:"
+          echo "1. Clone the repository, and navigate to the correct branch and commit:"
+          echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+          echo ""
+          echo "2. Run the failed command inside the same Docker container used by this CI job:"
+          echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} -- ${COMMAND}"
+          echo ""
+          echo "For additional information, see:"
+          echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+          echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+          exit $exit_code
+        fi
+        EOF
+
+        chmod +x ci.sh
+
+        mkdir "$RUNNER_TEMP/.aws";
+
+        cat <<EOF > "$RUNNER_TEMP/.aws/config"
+        [default]
+        bucket=rapids-sccache-devs
+        region=us-east-2
+        EOF
+
+        cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
+        [default]
+        aws_access_key_id=$AWS_ACCESS_KEY_ID
+        aws_session_token=$AWS_SESSION_TOKEN
+        aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+        EOF
+
+        chmod 0600 "$RUNNER_TEMP/.aws/credentials"
+        chmod 0664 "$RUNNER_TEMP/.aws/config"
+
+        declare -a gpu_request=()
+
+        # Explicitly pass which GPU to use if on a GPU runner
+        if [[ "${RUNNER}" = *"-gpu-"* ]]; then
+          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+        fi
+
+        host_path() {
+          sed "s@/__w@$(dirname "$(dirname "${{github.workspace}}")")@" <<< "$1"
+        }
+
+        # Launch this container using the host's docker daemon
+        set -x
+        ${{github.event.repository.name}}/.devcontainer/launch.sh \
+          --docker \
+          --cuda ${{inputs.cuda}} \
+          --host ${{inputs.host}} \
+          "${gpu_request[@]}" \
+          --env "CI=$CI" \
+          --env "VAULT_HOST=" \
+          --env "COMMAND=$COMMAND" \
+          --env "GITHUB_ENV=$GITHUB_ENV" \
+          --env "GITHUB_SHA=$GITHUB_SHA" \
+          --env "GITHUB_PATH=$GITHUB_PATH" \
+          --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+          --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+          --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+          --volume "${{github.workspace}}/ci.sh:/ci.sh" \
+          --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
+          --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
+          -- /ci.sh
+
+    - name: Prepare job artifacts
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "Prepare job artifacts"
+        result_dir="jobs/${{inputs.id}}"
+        mkdir -p "$result_dir"
+
+        touch "$result_dir/success"
+
+        # Finds a matching file in the repo directory and copies it to the results directory.
+        find_and_copy() {
+          filename="$1"
+          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
+          if [[ -z "$filepath" ]]; then
+            echo "${filename} does not exist in repo directory."
+            return 1
+          fi
+          cp -v "$filepath" "$result_dir"
+        }
+
+        find_and_copy "sccache_stats.json" || true # Ignore failures
+
+        echo "::group::Job artifacts"
+        tree "$result_dir"
+        echo "::endgroup::"
+
+    - name: Upload job artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: jobs-${{inputs.id}}
+        path: jobs
+        compression-level: 0

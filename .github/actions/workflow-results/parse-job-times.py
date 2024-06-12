@@ -32,17 +32,14 @@ def generate_job_id_map(workflow):
     for group_name, group_json in workflow.items():
         standalone = group_json['standalone'] if 'standalone' in group_json else []
         for job in standalone:
-            name = f"{group_name} / s.{job['id']} / {job['name']}"
+            name = f"{group_name} / {job['name']}"
             job_id_map[name] = job['id']
         two_stage = group_json['two_stage'] if 'two_stage' in group_json else []
         for pc in two_stage:
             producers = pc['producers']
-            for job in producers:
-                name = f"{group_name} / t.{pc['id']} / p.{job['id']} / {job['name']}"
-                job_id_map[name] = job['id']
             consumers = pc['consumers']
-            for job in consumers:
-                name = f"{group_name} / t.{pc['id']} / c.{job['id']} / {job['name']}"
+            for job in producers + consumers:
+                name = f"{group_name} / {pc['id']} / {job['name']}"
                 job_id_map[name] = job['id']
 
     return job_id_map

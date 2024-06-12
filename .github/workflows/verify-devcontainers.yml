@@ -72,7 +72,7 @@ jobs:
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
-        role-duration-seconds: 43200 # 12 hours)
+        role-duration-seconds: 43200 # 12 hours
     - name: Set environment variables
       run: |
         echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
