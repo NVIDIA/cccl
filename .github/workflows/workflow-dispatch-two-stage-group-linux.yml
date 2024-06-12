@@ -1,0 +1,28 @@
+name: "Workflow/Dispatch/TwoStageGroup/Linux"
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      pc-array:
+        description: "The dispatch.json's linux_two_stage.jobs.<name> array of producer/consumer chains."
+        type: string
+        required: true
+
+jobs:
+  dispatch-pcs:
+    name: ${{ matrix.id }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.pc-array) }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-linux.yml
+    with:
+      producers: ${{ toJSON(matrix.producers) }}
+      consumers: ${{ toJSON(matrix.consumers) }}

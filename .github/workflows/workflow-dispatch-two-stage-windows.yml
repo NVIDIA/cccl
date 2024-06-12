@@ -1,0 +1,61 @@
+name: "Workflow/Dispatch/TwoStage/Windows"
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      producers:
+        description: "The dispatch.json's windows_two_stage.jobs.<name>[*].producers array."
+        type: string
+        required: true
+      consumers:
+        description: "The dispatch.json's windows_two_stage.jobs.<name>[*].consumers array."
+        type: string
+        required: true
+
+jobs:
+  # Accumulating results from multiple producers is not easily implemented. For now, only a single producer is supported.
+  # The build-workflow.py script will emit an error if more than one producer is specified.
+  producer:
+    name: ${{ fromJSON(inputs.producers)[0].name }}
+    runs-on: ${{ fromJSON(inputs.producers)[0].runner }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run job
+        uses: ./.github/actions/workflow-run-job-windows
+        with:
+          id:      ${{ fromJSON(inputs.producers)[0].id }}
+          command: ${{ fromJSON(inputs.producers)[0].command }}
+          image:   ${{ fromJSON(inputs.producers)[0].image }}
+
+  consumers:
+    name: ${{ matrix.name }}
+    needs: producer
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.consumers) }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run job
+        uses: ./.github/actions/workflow-run-job-windows
+        with:
+          id:      ${{ matrix.id }}
+          command: ${{ matrix.command }}
+          image:   ${{ matrix.image }}

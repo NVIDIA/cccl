@@ -5,6 +5,7 @@ build*/
 .config
 _deps/catch2-src/
 .vscode/
+_site/
 compile_commands.json
 CMakeUserPresets.json
 /ci/rapids/.conda
