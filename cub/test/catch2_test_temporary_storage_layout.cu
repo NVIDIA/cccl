@@ -31,8 +31,10 @@
 
 #include <memory>
 
+#include "catch2_test_helper.h"
 #include "cub/detail/temporary_storage.cuh"
-#include "test_util.h"
+
+using values = c2h::enum_type_list<int, 1, 4, 42>;
 
 template <int Items>
 std::size_t GetTemporaryStorageSize(std::size_t (&sizes)[Items])
@@ -50,18 +52,17 @@ std::size_t GetActualZero()
   return GetTemporaryStorageSize(sizes);
 }
 
-template <int StorageSlots>
-void TestEmptyStorage()
+CUB_TEST("Test empty storage", "[temporary_storage_layout]", values)
 {
+  constexpr auto StorageSlots = c2h::get<0, TestType>::value;
   cub::detail::temporary_storage::layout<StorageSlots> temporary_storage;
-  AssertEquals(temporary_storage.get_size(), GetActualZero());
+  CHECK(temporary_storage.get_size() == GetActualZero());
 }
 
-template <int StorageSlots>
-void TestPartiallyFilledStorage()
+CUB_TEST("Test partially filled storage", "[temporary_storage_layout]", values)
 {
-  using target_type = std::uint64_t;
-
+  constexpr auto StorageSlots              = c2h::get<0, TestType>::value;
+  using target_type                        = std::uint64_t;
   constexpr std::size_t target_elements    = 42;
   constexpr std::size_t full_slot_elements = target_elements * sizeof(target_type);
   constexpr std::size_t empty_slot_elements{};
@@ -88,26 +89,25 @@ void TestPartiallyFilledStorage()
 
   temporary_storage.map_to_buffer(temp_storage.get(), temp_storage_bytes);
 
-  AssertEquals(temp_storage_bytes, GetTemporaryStorageSize(sizes));
+  CHECK(temp_storage_bytes == GetTemporaryStorageSize(sizes));
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
     if (slot_id % 2 == 0)
     {
-      AssertTrue(arrays[slot_id]->get() != nullptr);
+      CHECK(arrays[slot_id]->get() != nullptr);
     }
     else
     {
-      AssertTrue(arrays[slot_id]->get() == nullptr);
+      CHECK(arrays[slot_id]->get() == nullptr);
     }
   }
 }
 
-template <int StorageSlots>
-void TestGrow()
+CUB_TEST("Test grow", "[temporary_storage_layout]", values)
 {
-  using target_type = std::uint64_t;
-
+  constexpr auto StorageSlots                  = c2h::get<0, TestType>::value;
+  using target_type                            = std::uint64_t;
   constexpr std::size_t target_elements_number = 42;
 
   cub::detail::temporary_storage::layout<StorageSlots> preset_layout;
@@ -129,7 +129,7 @@ void TestGrow()
     postset_arrays[slot_id]->grow(target_elements_number);
   }
 
-  AssertEquals(preset_layout.get_size(), postset_layout.get_size());
+  CHECK(preset_layout.get_size() == postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
   std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
@@ -139,15 +139,14 @@ void TestGrow()
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    AssertEquals(postset_arrays[slot_id]->get(), preset_arrays[slot_id]->get());
+    CHECK(postset_arrays[slot_id]->get() == preset_arrays[slot_id]->get());
   }
 }
 
-template <int StorageSlots>
-void TestDoubleGrow()
+CUB_TEST("Test double grow", "[temporary_storage_layout]", values)
 {
-  using target_type = std::uint64_t;
-
+  constexpr auto StorageSlots                  = c2h::get<0, TestType>::value;
+  using target_type                            = std::uint64_t;
   constexpr std::size_t target_elements_number = 42;
 
   cub::detail::temporary_storage::layout<StorageSlots> preset_layout;
@@ -169,7 +168,7 @@ void TestDoubleGrow()
     postset_arrays[slot_id]->grow(2 * target_elements_number);
   }
 
-  AssertEquals(preset_layout.get_size(), postset_layout.get_size());
+  CHECK(preset_layout.get_size() == postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
   std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
@@ -179,22 +178,6 @@ void TestDoubleGrow()
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    AssertEquals(postset_arrays[slot_id]->get(), preset_arrays[slot_id]->get());
+    CHECK(postset_arrays[slot_id]->get() == preset_arrays[slot_id]->get());
   }
-}
-
-template <int StorageSlots>
-void Test()
-{
-  TestEmptyStorage<StorageSlots>();
-  TestPartiallyFilledStorage<StorageSlots>();
-  TestGrow<StorageSlots>();
-  TestDoubleGrow<StorageSlots>();
-}
-
-int main()
-{
-  Test<1>();
-  Test<4>();
-  Test<42>();
 }
