@@ -32,10 +32,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      # Build helper image for Thrust/CUB
-      - name: Build helper image
-        run: bash ./docs/make_env.bash "cccl:docs"
-
       # Build all docs
       - name: Build all docs
         run: ./docs/gen_docs.bash

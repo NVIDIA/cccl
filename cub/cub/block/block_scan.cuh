@@ -2258,8 +2258,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
   //! where each thread owns 2 consecutive items.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
-  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-array-init-value
@@ -2399,8 +2398,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
   //! where each thread owns 2 consecutive items.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
-  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-array-aggregate-init-value
