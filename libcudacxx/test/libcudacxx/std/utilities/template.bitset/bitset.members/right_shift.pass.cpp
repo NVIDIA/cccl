@@ -21,7 +21,7 @@ template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t En
 __host__ __device__ BITSET_TEST_CONSTEXPR bool test_right_shift()
 {
   span_stub<const char*> const cases = get_test_cases<N>();
-  if (Start != 0)
+  if (Start >= 9)
   {
     assert(End >= cases.size());
   }
@@ -59,8 +59,10 @@ __host__ __device__ int main(int, char**)
   static_assert(test_right_shift<63, 6>(), "");
   static_assert(test_right_shift<64, 0, 6>(), "");
   static_assert(test_right_shift<64, 6>(), "");
-  static_assert(test_right_shift<65, 0, 6>(), "");
-  static_assert(test_right_shift<65, 6>(), "");
+  static_assert(test_right_shift<65, 0, 3>(), "");
+  static_assert(test_right_shift<65, 3, 6>(), "");
+  static_assert(test_right_shift<65, 6, 9>(), "");
+  static_assert(test_right_shift<65, 9>(), "");
 #endif
 
   return 0;

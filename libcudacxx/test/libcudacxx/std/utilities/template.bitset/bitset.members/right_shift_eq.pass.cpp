@@ -73,8 +73,10 @@ __host__ __device__ int main(int, char**)
   static_assert(test_right_shift<31>(), "");
   static_assert(test_right_shift<32>(), "");
   static_assert(test_right_shift<33>(), "");
-  static_assert(test_right_shift<63, 0, 6>(), "");
-  static_assert(test_right_shift<63, 6>(), "");
+  static_assert(test_right_shift<63, 0, 3>(), "");
+  static_assert(test_right_shift<63, 3, 6>(), "");
+  static_assert(test_right_shift<63, 6, 9>(), "");
+  static_assert(test_right_shift<63, 9>(), "");
   static_assert(test_right_shift<64, 0, 3>(), "");
   static_assert(test_right_shift<64, 3, 6>(), "");
   static_assert(test_right_shift<64, 6, 9>(), "");
