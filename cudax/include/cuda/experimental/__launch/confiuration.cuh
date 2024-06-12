@@ -1,3 +1,13 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef _CUDAX__LAUNCH_CONFIGURATION
 #define _CUDAX__LAUNCH_CONFIGURATION
 #include <cuda/experimental/hierarchy.cuh>
@@ -21,27 +31,6 @@ struct launch_option
   }
 };
 } // namespace detail
-
-struct launch_on_option : public detail::launch_option
-{
-  // cudaStream_t until we have a proper stream abstraction
-  cudaStream_t stream;
-
-  launch_on_option(cudaStream_t stream)
-      : stream(stream){};
-
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
-  {
-    config.stream = stream;
-
-    return cudaSuccess;
-  }
-};
-
-static launch_on_option launch_on(cudaStream_t stream)
-{
-  return launch_on_option(stream);
-}
 
 struct cooperative_launch_option : public detail::launch_option
 {

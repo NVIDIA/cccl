@@ -37,6 +37,20 @@ bool constexpr __host__ __device__ operator==(const dim3& lhs, const dim3& rhs)
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
 }
 
+namespace Catch
+{
+template <>
+struct StringMaker<dim3>
+{
+  static std::string convert(dim3 const& dims)
+  {
+    std::ostringstream oss;
+    oss << "(" << dims.x << ", " << dims.y << ", " << dims.z << ")";
+    return oss.str();
+  }
+};
+} // namespace Catch
+
 template <typename Dims, typename Lambda>
 void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
 {
