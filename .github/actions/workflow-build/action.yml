@@ -58,8 +58,8 @@ runs:
       env:
         allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
         skip_tests: ${{ inputs.skip_tests == 'true' && '--skip-tests' || ''}}
-        dirty_projects_flag: ${{ steps.inspect-changes.outputs.dirty_projects != '' && '--dirty-projects' || ''}}
-        dirty_projects: ${{ steps.inspect-changes.outputs.dirty_projects }}
+        dirty_projects_flag: ${{ inputs.inspect_changes_script != '' && '--dirty-projects' || ''}}
+        dirty_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.dirty_projects || ''}}
         matrix_parser: ${{ inputs.matrix_parser && inputs.matrix_parser || '${GITHUB_ACTION_PATH}/build-workflow.py' }}
       run: |
         echo "Parsing matrix file into a workflow..."
