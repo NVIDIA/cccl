@@ -44,14 +44,14 @@ int main(int, char**)
 #endif
   assert(f(36, 36));
   assert(!f(36, 6));
-#if TEST_STD_VER > 2011
+
   typedef cuda::std::equal_to<> F2;
   const F2 f2 = F2();
   assert(f2(36, 36));
   assert(!f2(36, 6));
   assert(f2(36, 36.0));
   assert(f2(36.0, 36L));
-
+#if TEST_STD_VER > 2011
   constexpr bool foo = cuda::std::equal_to<int>()(36, 36);
   static_assert(foo, "");
 
