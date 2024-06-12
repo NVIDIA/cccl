@@ -57,7 +57,7 @@ concept copy_constructible =
 template <class _Tp, class... _Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __constructible_from_,
-  requires()(requires(destructible<_Tp>), requires(_LIBCUDACXX_TRAIT(is_constructible, _Tp, _Args...))));
+  requires()(requires(destructible<_Tp>), requires(_CCCL_TRAIT(is_constructible, _Tp, _Args...))));
 
 template <class _Tp, class... _Args>
 _LIBCUDACXX_CONCEPT constructible_from = _LIBCUDACXX_FRAGMENT(__constructible_from_, _Tp, _Args...);

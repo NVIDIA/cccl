@@ -1231,7 +1231,7 @@ struct DispatchSegmentedSort : SelectedPolicy
         auto medium_indices_iterator =
           THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get());
 
-        cub::DevicePartition::If(
+        cub::DevicePartition::IfNoNVTX(
           nullptr,
           three_way_partition_temp_storage_bytes,
           THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),
@@ -1511,7 +1511,7 @@ private:
     auto medium_indices_iterator =
       THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + num_segments);
 
-    error = CubDebug(cub::DevicePartition::If(
+    error = CubDebug(cub::DevicePartition::IfNoNVTX(
       device_partition_temp_storage.get(),
       three_way_partition_temp_storage_bytes,
       THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),

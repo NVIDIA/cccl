@@ -9,7 +9,7 @@ template <typename ValueT>
 struct index_to_value_t
 {
   template <typename IndexT>
-  __host__ __device__ __forceinline__ ValueT operator()(IndexT index)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ValueT operator()(IndexT index)
   {
     if (static_cast<std::uint64_t>(index) == 4300000000ULL)
     {
@@ -110,7 +110,7 @@ DECLARE_UNITTEST(TestUniqueByKeyCopyDispatchImplicit);
 template <typename T>
 struct is_equal_div_10_unique
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }
@@ -147,7 +147,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestUniqueByKeySimple(void)
+void TestUniqueByKeySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -195,7 +195,7 @@ void TestUniqueByKeySimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
 
 template <typename Vector>
-void TestUniqueCopyByKeySimple(void)
+void TestUniqueCopyByKeySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -409,6 +409,9 @@ struct TestUniqueCopyByKeyToDiscardIterator
 };
 VariableUnitTest<TestUniqueCopyByKeyToDiscardIterator, IntegralTypes> TestUniqueCopyByKeyToDiscardIteratorInstance;
 
+// OpenMP has issues with these tests, NVIDIA/cccl#1715
+#if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_OMP
+
 template <typename K>
 struct TestUniqueCopyByKeyLargeInput
 {
@@ -447,9 +450,6 @@ struct TestUniqueCopyByKeyLargeOutCount
 {
   void operator()()
   {
-    using type       = std::int32_t;
-    using index_type = std::int64_t;
-
     constexpr std::size_t num_items = 4400000000ULL;
 
     auto keys_in   = thrust::make_counting_iterator(0ULL);
@@ -468,3 +468,5 @@ struct TestUniqueCopyByKeyLargeOutCount
   }
 };
 SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;
+
+#endif // non-OpenMP backend

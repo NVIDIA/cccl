@@ -8,12 +8,22 @@
 #include <nv/target>
 #include <unittest/unittest.h>
 
+// WAR NVIDIA/cccl#1731
+// Some tests miscompile for non-CUDA backends on MSVC 2017 and 2019 (though 2022 is fine).
+// This is due to a bug in the compiler that breaks __THRUST_DEFINE_HAS_MEMBER_FUNCTION.
+#if defined(_MSC_VER) && _MSC_VER <= 1929 && THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA
+#  define WAR_BUG_1731
+#endif
+
+// The needs_copy_construct_via_allocator trait depends on has_member_function:
+#ifndef WAR_BUG_1731
+
 template <typename T>
 struct my_allocator_with_custom_construct1 : thrust::device_malloc_allocator<T>
 {
-  __host__ __device__ my_allocator_with_custom_construct1() {}
+  _CCCL_HOST_DEVICE my_allocator_with_custom_construct1() {}
 
-  __host__ __device__ void construct(T* p)
+  _CCCL_HOST_DEVICE void construct(T* p)
   {
     *p = 13;
   }
@@ -32,10 +42,10 @@ DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDefaultConstruct);
 template <typename T>
 struct my_allocator_with_custom_construct2 : thrust::device_malloc_allocator<T>
 {
-  __host__ __device__ my_allocator_with_custom_construct2() {}
+  _CCCL_HOST_DEVICE my_allocator_with_custom_construct2() {}
 
   template <typename Arg>
-  __host__ __device__ void construct(T* p, const Arg&)
+  _CCCL_HOST_DEVICE void construct(T* p, const Arg&)
   {
     *p = 13;
   }
@@ -52,6 +62,11 @@ void TestAllocatorCustomCopyConstruct(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomCopyConstruct);
 
+#endif // !WAR_BUG_1731
+
+// The has_member_destroy trait depends on has_member_function:
+#ifndef WAR_BUG_1731
+
 template <typename T>
 struct my_allocator_with_custom_destroy
 {
@@ -64,15 +79,15 @@ struct my_allocator_with_custom_destroy
 
   static bool g_state;
 
-  __host__ my_allocator_with_custom_destroy() {}
+  _CCCL_HOST my_allocator_with_custom_destroy() {}
 
-  __host__ my_allocator_with_custom_destroy(const my_allocator_with_custom_destroy& other)
+  _CCCL_HOST my_allocator_with_custom_destroy(const my_allocator_with_custom_destroy& other)
       : use_me_to_alloc(other.use_me_to_alloc)
   {}
 
-  __host__ ~my_allocator_with_custom_destroy() {}
+  _CCCL_HOST ~my_allocator_with_custom_destroy() {}
 
-  __host__ __device__ void destroy(T*)
+  _CCCL_HOST_DEVICE void destroy(T*)
   {
     NV_IF_TARGET(NV_IS_HOST, (g_state = true;));
   }
@@ -122,6 +137,8 @@ void TestAllocatorCustomDestroy(size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDestroy);
 
+#endif // !WAR_BUG_1731
+
 template <typename T>
 struct my_minimal_allocator
 {
@@ -132,13 +149,13 @@ struct my_minimal_allocator
   typedef T& reference;
   typedef const T& const_reference;
 
-  __host__ my_minimal_allocator() {}
+  _CCCL_HOST my_minimal_allocator() {}
 
-  __host__ my_minimal_allocator(const my_minimal_allocator& other)
+  _CCCL_HOST my_minimal_allocator(const my_minimal_allocator& other)
       : use_me_to_alloc(other.use_me_to_alloc)
   {}
 
-  __host__ ~my_minimal_allocator() {}
+  _CCCL_HOST ~my_minimal_allocator() {}
 
   value_type* allocate(std::ptrdiff_t n)
   {
@@ -169,13 +186,13 @@ DECLARE_VARIABLE_UNITTEST(TestAllocatorMinimal);
 void TestAllocatorTraitsRebind()
 {
   ASSERT_EQUAL(
-    (thrust::detail::is_same<typename thrust::detail::allocator_traits<
-                               thrust::device_malloc_allocator<int>>::template rebind_traits<float>::other,
-                             typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
+    (::cuda::std::is_same<typename thrust::detail::allocator_traits<
+                            thrust::device_malloc_allocator<int>>::template rebind_traits<float>::other,
+                          typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
     true);
 
   ASSERT_EQUAL(
-    (thrust::detail::is_same<
+    (::cuda::std::is_same<
       typename thrust::detail::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>::other,
       typename thrust::detail::allocator_traits<my_minimal_allocator<float>>>::value),
     true);
@@ -185,23 +202,23 @@ DECLARE_UNITTEST(TestAllocatorTraitsRebind);
 void TestAllocatorTraitsRebindCpp11()
 {
   ASSERT_EQUAL(
-    (thrust::detail::is_same<
+    (::cuda::std::is_same<
       typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_alloc<float>,
       thrust::device_malloc_allocator<float>>::value),
     true);
 
-  ASSERT_EQUAL((thrust::detail::is_same<
+  ASSERT_EQUAL((::cuda::std::is_same<
                  typename thrust::detail::allocator_traits<my_minimal_allocator<int>>::template rebind_alloc<float>,
                  my_minimal_allocator<float>>::value),
                true);
 
   ASSERT_EQUAL(
-    (thrust::detail::is_same<
+    (::cuda::std::is_same<
       typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<int>>::template rebind_traits<float>,
       typename thrust::detail::allocator_traits<thrust::device_malloc_allocator<float>>>::value),
     true);
 
-  ASSERT_EQUAL((thrust::detail::is_same<
+  ASSERT_EQUAL((::cuda::std::is_same<
                  typename thrust::detail::allocator_traits<my_minimal_allocator<int>>::template rebind_traits<float>,
                  typename thrust::detail::allocator_traits<my_minimal_allocator<float>>>::value),
                true);

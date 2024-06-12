@@ -11,6 +11,7 @@
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
@@ -40,16 +41,9 @@ struct resource
   {
     return false;
   }
-
-  template <AccessibilityType Accessibilty2                                         = Accessibilty,
-            cuda::std::enable_if_t<Accessibilty2 == AccessibilityType::Device, int> = 0>
-  friend void get_property(const resource&, cuda::mr::pinned_memory) noexcept
-  {}
 };
 static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::resource_with<resource<AccessibilityType::Host>, cuda::mr::pinned_memory>, "");
 static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::resource_with<resource<AccessibilityType::Device>, cuda::mr::pinned_memory>, "");
 
 template <AccessibilityType Accessibilty>
 struct async_resource : public resource<Accessibilty>
@@ -61,9 +55,7 @@ struct async_resource : public resource<Accessibilty>
   void deallocate_async(void*, size_t, size_t, cuda::stream_ref) {}
 };
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::async_resource_with<async_resource<AccessibilityType::Host>, cuda::mr::pinned_memory>, "");
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::async_resource_with<async_resource<AccessibilityType::Device>, cuda::mr::pinned_memory>, "");
 
 void test()
 {
@@ -78,15 +70,6 @@ void test()
     cuda::mr::cuda_pinned_memory_resource second{cudaHostAllocPortable};
     assert(!(first == second));
     assert((first != second));
-  }
-
-  { // comparison against a cuda_pinned_memory_resource wrapped inside a resource_ref<cuda::mr::pinned_memory>
-    cuda::mr::cuda_pinned_memory_resource second{};
-    cuda::mr::resource_ref<cuda::mr::pinned_memory> second_ref{second};
-    assert(first == second_ref);
-    assert(!(first != second_ref));
-    assert(second_ref == first);
-    assert(!(second_ref != first));
   }
 
   { // comparison against a cuda_pinned_memory_resource wrapped inside a resource_ref<>

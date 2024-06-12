@@ -53,7 +53,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, thrust::modulus, SmallIntegralTy
 
 #define UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)             \
   template <typename Vector>                                                              \
-  void TestFunctionalPlaceholders##name(void)                                             \
+  void TestFunctionalPlaceholders##name()                                                 \
   {                                                                                       \
     static const size_t num_samples = 10000;                                              \
     typedef typename Vector::value_type T;                                                \
@@ -73,7 +73,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, thrust::modulus, SmallIntegralTy
 template <typename T>
 struct unary_plus_reference
 {
-  __host__ __device__ T operator()(const T& x) const
+  _CCCL_HOST_DEVICE T operator()(const T& x) const
   { // Static cast to undo integral promotion
     return static_cast<T>(+x);
   }

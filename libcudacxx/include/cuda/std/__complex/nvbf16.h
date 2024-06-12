@@ -85,7 +85,7 @@ public:
 
   template <class _Up,
             __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, value_type, _Up), int>        = 0>
+            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>              = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
       : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
   {}
@@ -179,19 +179,19 @@ public:
   // We can utilize vectorized operations for those operators
   _LIBCUDACXX_INLINE_VISIBILITY friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
   {
-    __lhs.__repr_ += __rhs.__repr_;
+    __lhs.__repr_ = __hadd2(__lhs.__repr_, __rhs.__repr_);
     return __lhs;
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
   {
-    __lhs.__repr_ -= __rhs.__repr_;
+    __lhs.__repr_ = __hsub2(__lhs.__repr_, __rhs.__repr_);
     return __lhs;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const complex& __y)
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
-    return __x.__repr_ == __y.__repr_;
+    return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
 };
 

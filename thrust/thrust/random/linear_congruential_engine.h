@@ -65,7 +65,7 @@ namespace random
  *  #include <thrust/random/linear_congruential_engine.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    // create a minstd_rand object, which is an instance of linear_congruential_engine
  *    thrust::minstd_rand rng1;
@@ -143,7 +143,11 @@ public:
 
   /*! The smallest value this \p linear_congruential_engine may potentially produce.
    */
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen breaks on the ternary :shrug:
   static const result_type min = c == 0u ? 1u : 0u;
+#else
+  static const result_type min = 0u;
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /*! The largest value this \p linear_congruential_engine may potentially produce.
    */

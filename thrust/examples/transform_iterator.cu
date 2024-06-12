@@ -8,6 +8,8 @@
 #include <iterator>
 #include <string>
 
+#include "include/host_device.h"
+
 // this functor clamps a value to the range [lo, hi]
 template <typename T>
 struct clamp : public thrust::unary_function<T, T>
@@ -55,7 +57,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   std::cout << "\n";
 }
 
-int main(void)
+int main()
 {
   // clamp values to the range [1, 5]
   int lo = 1;

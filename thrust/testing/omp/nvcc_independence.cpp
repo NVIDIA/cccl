@@ -7,7 +7,7 @@
 
 #include <unittest/unittest.h>
 
-void TestNvccIndependenceTransform(void)
+void TestNvccIndependenceTransform()
 {
   typedef int T;
   const int n = 10;
@@ -25,7 +25,7 @@ void TestNvccIndependenceTransform(void)
 }
 DECLARE_UNITTEST(TestNvccIndependenceTransform);
 
-void TestNvccIndependenceReduce(void)
+void TestNvccIndependenceReduce()
 {
   typedef int T;
   const int n = 10;
@@ -42,7 +42,7 @@ void TestNvccIndependenceReduce(void)
 }
 DECLARE_UNITTEST(TestNvccIndependenceReduce);
 
-void TestNvccIndependenceExclusiveScan(void)
+void TestNvccIndependenceExclusiveScan()
 {
   typedef int T;
   const int n = 10;
@@ -59,7 +59,7 @@ void TestNvccIndependenceExclusiveScan(void)
 }
 DECLARE_UNITTEST(TestNvccIndependenceExclusiveScan);
 
-void TestNvccIndependenceSort(void)
+void TestNvccIndependenceSort()
 {
   typedef int T;
   const int n = 10;

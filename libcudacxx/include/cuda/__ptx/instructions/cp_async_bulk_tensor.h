@@ -450,7 +450,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 #endif // __cccl_ptx_isa >= 800
 /*
 // cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap,
-tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90
+tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -464,7 +464,7 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
@@ -478,7 +478,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
          "[%1, {%2}], [%3], %4; // 2a."
          :
@@ -490,13 +490,13 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
          : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();));
+      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap,
-tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90
+tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -510,7 +510,7 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
@@ -524,7 +524,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
          "[%1, {%2, %3}], [%4], %5; // 2b."
          :
@@ -537,13 +537,13 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
          : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();));
+      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap,
-tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90
+tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -557,7 +557,7 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
@@ -571,7 +571,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
          "[%1, {%2, %3, %4}], [%5], %6; // 2c."
          :
@@ -585,13 +585,13 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
          : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();));
+      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap,
-tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90
+tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -605,7 +605,7 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
@@ -619,7 +619,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
          "[%1, {%2, %3, %4, %5}], [%6], %7; // 2d."
          :
@@ -634,13 +634,13 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
          : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();));
+      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
 // cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap,
-tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90
+tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename=void>
@@ -654,7 +654,7 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
@@ -668,7 +668,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [%0], "
          "[%1, {%2, %3, %4, %5, %6}], [%7], %8; // 2e."
          :
@@ -684,7 +684,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
          : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();));
+      __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 800
 

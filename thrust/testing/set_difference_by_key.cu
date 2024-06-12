@@ -78,7 +78,7 @@ void TestSetDifferenceByKeyDispatchImplicit()
 DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
-void TestSetDifferenceByKeySimple(void)
+void TestSetDifferenceByKeySimple()
 {
   typedef typename Vector::iterator Iterator;
 

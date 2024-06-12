@@ -10,7 +10,7 @@
 
 // bitset<N>& set(size_t pos, bool val = true); // constexpr since C++23
 
-// Make sure we throw cuda::std::out_of_range when calling set() on an OOB index.
+// Make sure we throw ::std::out_of_range when calling set() on an OOB index.
 
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
@@ -26,7 +26,7 @@ int main(int, char**)
         v.set(0);
         assert(false);
       }
-      catch (cuda::std::out_of_range const&)
+      catch (::std::out_of_range const&)
       {}
     } {
       cuda::std::bitset<1> v("0");
@@ -35,7 +35,7 @@ int main(int, char**)
         v.set(2);
         assert(false);
       }
-      catch (cuda::std::out_of_range const&)
+      catch (::std::out_of_range const&)
       {}
     } {
       cuda::std::bitset<10> v("0000000000");
@@ -44,7 +44,7 @@ int main(int, char**)
         v.set(10);
         assert(false);
       }
-      catch (cuda::std::out_of_range const&)
+      catch (::std::out_of_range const&)
       {}
     })
 

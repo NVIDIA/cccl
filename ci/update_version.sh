@@ -33,6 +33,7 @@ CCCL_CMAKE_VERSION_FILE="lib/cmake/cccl/cccl-config-version.cmake"
 CUB_CMAKE_VERSION_FILE="cub/cub/cmake/cub-config-version.cmake"
 LIBCUDACXX_CMAKE_VERSION_FILE="libcudacxx/lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
 THRUST_CMAKE_VERSION_FILE="thrust/thrust/cmake/thrust-config-version.cmake"
+CUDAX_CMAKE_VERSION_FILE="cudax/lib/cmake/cudax/cudax-config-version.cmake"
 
 # Calculated version codes
 new_cccl_version=$((major * 1000000 + minor * 1000 + patch))     # MMMmmmppp
@@ -93,6 +94,10 @@ update_file "$THRUST_CMAKE_VERSION_FILE" "set(THRUST_VERSION_PATCH \([0-9]\+\))"
 update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_MAJOR \([0-9]\+\))" "set(CCCL_VERSION_MAJOR $major)"
 update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_MINOR \([0-9]\+\))" "set(CCCL_VERSION_MINOR $minor)"
 update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_PATCH \([0-9]\+\))" "set(CCCL_VERSION_PATCH $patch)"
+
+update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MAJOR \([0-9]\+\))" "set(cudax_VERSION_MAJOR $major)"
+update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MINOR \([0-9]\+\))" "set(cudax_VERSION_MINOR $minor)"
+update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_PATCH \([0-9]\+\))" "set(cudax_VERSION_PATCH $patch)"
 
 if [ "$DRY_RUN" = true ]; then
     echo "Dry run completed. No changes made."

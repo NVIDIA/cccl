@@ -55,7 +55,7 @@ CUB_NAMESPACE_BEGIN
 //! The WarpScan class provides :ref:`collective <collective-primitives>` methods for computing a
 //! parallel prefix scan of items partitioned across a CUDA thread warp.
 //!
-//! .. image:: ../img/warp_scan_logo.png
+//! .. image:: ../../img/warp_scan_logo.png
 //!     :align: center
 //!
 //! Overview
@@ -475,12 +475,63 @@ public:
   //! @param[out] inclusive_output
   //!   Calling thread's output item. May be aliased with `input`
   //!
-  //! @param[in] can_op
+  //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op);
+  }
+
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix sum scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-warp-scan-init-value
+  //!     :end-before: example-end inclusive-warp-scan-init-value
+  //!
+  //! Suppose the set of input ``thread_data`` in the first warp is
+  //! ``{0, 1, 2, 3, ..., 31}``, in the second warp is ``{1, 2, 3, 4, ..., 32}`` etc.
+  //!  The corresponding output ``thread_data`` for a max operation in the first
+  //! warp would be ``{3, 3, 3, 3, ..., 31}``, the output for the second warp would be
+  //! ``{3, 3, 3, 4, ..., 32}``, etc.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across warp)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T exclusive_output;
+    internal.InclusiveScan(input, inclusive_output, scan_op);
+
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
   }
 
   //! @rst
@@ -542,6 +593,66 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op, warp_aggregate);
+  }
+
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
+  //! all inputs.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! within a block of 128 threads (one scan per warp).
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-warp-scan-init-value-aggregate
+  //!     :end-before: example-end inclusive-warp-scan-init-value-aggregate
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{1, 1, 1, 1, ..., 1}``. For initial value equal to 3, the corresponding output
+  //! ``thread_data`` for a sum operation in the first warp would be
+  //! ``{4, 5, 6, 7, ..., 35}``, the output for the second warp would be
+  //! ``{4, 5, 6, 7, ..., 35}``, etc.  Furthermore,  ``warp_aggregate`` would be assigned
+  //! ``32`` for threads in each warp.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with ``input``
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across warp). It is not taken
+  //!   into account for warp_aggregate.
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[out] warp_aggregate
+  //!   Warp-wide aggregate reduction of input items.
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    // Perform the inclusive scan operation
+    internal.InclusiveScan(input, inclusive_output, scan_op);
+
+    // Update the inclusive_output and warp_aggregate using the Update function
+    T exclusive_output;
+    internal.Update(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
   }
 
   //! @}  end member group

@@ -10,6 +10,7 @@
 #include <cmath>
 #include <iomanip>
 
+#include "include/host_device.h"
 #include <float.h>
 
 // This example computes the minimum and maximum values
@@ -72,7 +73,7 @@ struct reduce_tuple
   }
 };
 
-int main(void)
+int main()
 {
   int M = 10; // number of rows
   int n = 11; // number of columns excluding padding

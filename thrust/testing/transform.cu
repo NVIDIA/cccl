@@ -17,7 +17,7 @@
 #endif
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnarySimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnarySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -77,7 +77,7 @@ void TestTransformUnaryDispatchImplicit()
 DECLARE_UNITTEST(TestTransformUnaryDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -142,7 +142,7 @@ void TestTransformIfUnaryNoStencilDispatchImplicit()
 DECLARE_UNITTEST(TestTransformIfUnaryNoStencilDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -214,7 +214,7 @@ void TestTransformIfUnaryDispatchImplicit()
 DECLARE_UNITTEST(TestTransformIfUnaryDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -283,7 +283,7 @@ void TestTransformBinaryDispatchImplicit()
 DECLARE_UNITTEST(TestTransformBinaryDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -425,7 +425,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformUnaryToDiscardIterator);
 struct repeat2
 {
   template <typename T>
-  __host__ __device__ thrust::pair<T, T> operator()(T x)
+  _CCCL_HOST_DEVICE thrust::pair<T, T> operator()(T x)
   {
     return thrust::make_pair(x, x);
   }
@@ -468,7 +468,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformUnaryToDiscardIteratorZipped);
 struct is_positive
 {
   template <typename T>
-  __host__ __device__ bool operator()(T& x)
+  _CCCL_HOST_DEVICE bool operator()(T& x)
   {
     return x > 0;
   } // end operator()()
@@ -756,14 +756,14 @@ struct plus_mod3
       : table(table)
   {}
 
-  __host__ __device__ T operator()(T a, T b)
+  _CCCL_HOST_DEVICE T operator()(T a, T b)
   {
     return table[(int) (a + b)];
   }
 };
 
 template <typename Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformWithIndirection(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformWithIndirection()
 {
   // add numbers modulo 3 with external lookup table
   typedef typename Vector::value_type T;

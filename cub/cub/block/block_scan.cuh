@@ -100,13 +100,13 @@ enum BlockScanAlgorithm
   //! ++++++++++++++++++++++++++
   //!
   //! A quick "tiled warpscans" prefix scan algorithm. Execution is comprised of four phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
-  //!    Each thread then places the partial reduction of its item(s) into shared memory.
-  //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style scan within each warp.
-  //! #. A propagation phase where the warp scan outputs in each warp are updated with the aggregate
-  //!    from each preceding warp.
-  //! #. Downsweep sequential scan in registers (if threads contribute more than one input),
-  //!    seeded with the raking scan output.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Each thread then places the partial reduction of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style scan within each warp.
+  //!   #. A propagation phase where the warp scan outputs in each warp are updated with the aggregate
+  //!      from each preceding warp.
+  //!   #. Downsweep sequential scan in registers (if threads contribute more than one input),
+  //!      seeded with the raking scan output.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -2244,6 +2244,63 @@ public:
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
+  //!
+  //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
+  //!
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-array-init-value
+  //!     :end-before: example-end inclusive-scan-array-init-value
+  //!
+  //!
+  //! @endrst
+  //!
+  //! @tparam ITEMS_PER_THREAD
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across block)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  template <int ITEMS_PER_THREAD, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  {
+    // Reduce consecutive thread items in registers
+    T thread_prefix = internal::ThreadReduce(input, scan_op);
+
+    // Exclusive thread block-scan
+    ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
+
+    // Exclusive scan in registers with prefix as seed
+    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
   //!
@@ -2323,6 +2380,69 @@ public:
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
       internal::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. Also provides every thread
+  //! with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
+  //!
+  //! .. literalinclude:: ../../test/catch2_test_block_scan_api.cu
+  //!
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-array-aggregate-init-value
+  //!     :end-before: example-end inclusive-scan-array-aggregate-init-value
+  //!
+  //! The value ``126`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ITEMS_PER_THREAD
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across block). It is not taken
+  //!   into account for block_aggregate.
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[out] block_aggregate
+  //!   Block-wide aggregate reduction of input items
+  template <int ITEMS_PER_THREAD, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  {
+    // Reduce consecutive thread items in registers
+    T thread_prefix = internal::ThreadReduce(input, scan_op);
+
+    // Exclusive thread block-scan
+    ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
+
+    // Exclusive scan in registers with prefix as seed
+    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst

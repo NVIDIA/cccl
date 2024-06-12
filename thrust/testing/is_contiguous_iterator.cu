@@ -34,7 +34,7 @@ THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<std::wstring_view::iterator
 THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<std::vector<bool>::iterator>::value));
 
 template <typename T>
-__host__ void test_is_contiguous_iterator()
+_CCCL_HOST void test_is_contiguous_iterator()
 {
   THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<T*>::value));
 
@@ -75,7 +75,7 @@ __host__ void test_is_contiguous_iterator()
 DECLARE_GENERIC_UNITTEST(test_is_contiguous_iterator);
 
 template <typename Vector>
-__host__ void test_is_contiguous_iterator_vectors()
+_CCCL_HOST void test_is_contiguous_iterator_vectors()
 {
   THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<typename Vector::iterator>::value));
 }
@@ -89,8 +89,8 @@ struct expect_passthrough
 template <typename IteratorT, typename PointerT, typename expected_unwrapped_type /* = expect_[pointer|passthrough] */>
 struct check_unwrapped_iterator
 {
-  using unwrapped_t = typename std::remove_reference<decltype(thrust::detail::try_unwrap_contiguous_iterator(
-    std::declval<IteratorT>()))>::type;
+  using unwrapped_t = ::cuda::std::__libcpp_remove_reference_t<decltype(thrust::try_unwrap_contiguous_iterator(
+    cuda::std::declval<IteratorT>()))>;
 
   static constexpr bool value =
     std::is_same<expected_unwrapped_type, expect_pointer>::value

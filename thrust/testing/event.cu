@@ -9,7 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-__host__ void test_event_default_constructed()
+_CCCL_HOST void test_event_default_constructed()
 {
   THRUST_STATIC_ASSERT((
     std::is_same<thrust::event<decltype(thrust::device)>, thrust::unique_eager_event<decltype(thrust::device)>>::value));
@@ -30,7 +30,7 @@ DECLARE_UNITTEST(test_event_default_constructed);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-__host__ void test_event_new_stream()
+_CCCL_HOST void test_event_new_stream()
 {
   auto e0 = thrust::device_event(thrust::new_stream);
 
@@ -46,7 +46,7 @@ DECLARE_UNITTEST(test_event_new_stream);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-__host__ void test_event_linear_chaining()
+_CCCL_HOST void test_event_linear_chaining()
 {
   constexpr std::int64_t n = 1024;
 
@@ -86,7 +86,7 @@ DECLARE_UNITTEST(test_event_linear_chaining);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-__host__ void test_event_when_all()
+_CCCL_HOST void test_event_when_all()
 {
   // Create events with new streams.
   auto e0 = thrust::when_all();

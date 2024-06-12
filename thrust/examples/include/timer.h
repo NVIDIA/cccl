@@ -41,25 +41,25 @@ struct timer
   cudaEvent_t start;
   cudaEvent_t end;
 
-  timer(void)
+  timer()
   {
     cuda_safe_call(cudaEventCreate(&start));
     cuda_safe_call(cudaEventCreate(&end));
     restart();
   }
 
-  ~timer(void)
+  ~timer()
   {
     cuda_safe_call(cudaEventDestroy(start));
     cuda_safe_call(cudaEventDestroy(end));
   }
 
-  void restart(void)
+  void restart()
   {
     cuda_safe_call(cudaEventRecord(start, 0));
   }
 
-  double elapsed(void)
+  double elapsed()
   {
     cuda_safe_call(cudaEventRecord(end, 0));
     cuda_safe_call(cudaEventSynchronize(end));
@@ -69,7 +69,7 @@ struct timer
     return ms_elapsed / 1e3;
   }
 
-  double epsilon(void)
+  double epsilon()
   {
     return 0.5e-6;
   }
@@ -85,26 +85,26 @@ struct timer
   clock_t start;
   clock_t end;
 
-  timer(void)
+  timer()
   {
     restart();
   }
 
-  ~timer(void) {}
+  ~timer() {}
 
-  void restart(void)
+  void restart()
   {
     start = clock();
   }
 
-  double elapsed(void)
+  double elapsed()
   {
     end = clock();
 
     return static_cast<double>(end - start) / static_cast<double>(CLOCKS_PER_SEC);
   }
 
-  double epsilon(void)
+  double epsilon()
   {
     return 1.0 / static_cast<double>(CLOCKS_PER_SEC);
   }

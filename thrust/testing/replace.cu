@@ -12,8 +12,13 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+// GCC 12 + omp + c++11 miscompiles some test cases and emits spurious warnings.
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ == 12 && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP \
+  && _CCCL_STD_VER == 2011
+#  define THRUST_GCC12_OMP_MISCOMPILE
+#endif
 template <class Vector>
-void TestReplaceSimple(void)
+void TestReplaceSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -87,8 +92,9 @@ void TestReplace(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestReplace);
 
+#ifndef THRUST_GCC12_OMP_MISCOMPILE
 template <class Vector>
-void TestReplaceCopySimple(void)
+void TestReplaceCopySimple()
 {
   typedef typename Vector::value_type T;
 
@@ -114,6 +120,7 @@ void TestReplaceCopySimple(void)
   ASSERT_EQUAL(dest, result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
+#endif
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator replace_copy(my_system& system, InputIterator, InputIterator, OutputIterator result, const T&, const T&)
@@ -196,14 +203,14 @@ DECLARE_VARIABLE_UNITTEST(TestReplaceCopyToDiscardIterator);
 template <typename T>
 struct less_than_five
 {
-  __host__ __device__ bool operator()(const T& val) const
+  _CCCL_HOST_DEVICE bool operator()(const T& val) const
   {
     return val < 5;
   }
 };
 
 template <class Vector>
-void TestReplaceIfSimple(void)
+void TestReplaceIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -261,7 +268,7 @@ void TestReplaceIfDispatchImplicit()
 DECLARE_UNITTEST(TestReplaceIfDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -356,7 +363,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencil(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestReplaceIfStencil);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -420,7 +427,7 @@ void TestReplaceCopyIfDispatchImplicit()
 DECLARE_UNITTEST(TestReplaceCopyIfDispatchImplicit);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple(void)
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
 {
   typedef typename Vector::value_type T;
 

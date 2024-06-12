@@ -12,7 +12,7 @@ using namespace unittest;
 template <typename Tuple>
 struct TuplePlus
 {
-  __host__ __device__ Tuple operator()(Tuple x, Tuple y) const
+  _CCCL_HOST_DEVICE Tuple operator()(Tuple x, Tuple y) const
   {
     using namespace thrust;
     return make_tuple(get<0>(x) + get<0>(y), get<1>(x) + get<1>(y));

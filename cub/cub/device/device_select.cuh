@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 #include <cub/util_deprecated.cuh>
@@ -108,7 +109,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::Flagged(
   //!      d_temp_storage, temp_storage_bytes,
@@ -176,6 +177,8 @@ struct DeviceSelect
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
+
     using OffsetT    = int; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
@@ -246,7 +249,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::Flagged(
   //!      d_temp_storage, temp_storage_bytes,
@@ -307,6 +310,8 @@ struct DeviceSelect
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
+
     using OffsetT    = int; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
@@ -394,7 +399,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::If(
   //!      d_temp_storage, temp_storage_bytes,
@@ -463,6 +468,8 @@ struct DeviceSelect
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
+
     using OffsetT      = int; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
@@ -478,7 +485,7 @@ struct DeviceSelect
       false>::Dispatch(d_temp_storage,
                        temp_storage_bytes,
                        d_in,
-                       NULL,
+                       nullptr,
                        d_out,
                        d_num_selected_out,
                        select_op,
@@ -545,7 +552,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::If(
   //!      d_temp_storage, temp_storage_bytes,
@@ -606,6 +613,8 @@ struct DeviceSelect
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
+
     using OffsetT      = int; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
@@ -624,7 +633,7 @@ struct DeviceSelect
       may_alias>::Dispatch(d_temp_storage,
                            temp_storage_bytes,
                            d_data, // in
-                           NULL,
+                           nullptr,
                            d_data, // out
                            d_num_selected_out,
                            select_op,
@@ -668,13 +677,13 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-iseven
   //!     :end-before: example-end segmented-select-iseven
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-flaggedif
@@ -743,6 +752,8 @@ struct DeviceSelect
     SelectOp select_op,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
+
     using OffsetT    = int; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
@@ -783,13 +794,13 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-iseven
   //!     :end-before: example-end segmented-select-iseven
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-select-flaggedif-inplace
@@ -846,6 +857,8 @@ struct DeviceSelect
     SelectOp select_op,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
+
     using OffsetT    = int; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
@@ -901,7 +914,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::Unique(
   //!      d_temp_storage, temp_storage_bytes,
@@ -963,6 +976,8 @@ struct DeviceSelect
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+
     using OffsetT      = int; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using SelectOp     = NullType; // Selection op (not used)
@@ -979,7 +994,7 @@ struct DeviceSelect
       false>::Dispatch(d_temp_storage,
                        temp_storage_bytes,
                        d_in,
-                       NULL,
+                       nullptr,
                        d_out,
                        d_num_selected_out,
                        SelectOp(),
@@ -1045,7 +1060,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::UniqueByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1143,6 +1158,8 @@ struct DeviceSelect
       EqualityOpT equality_op,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
+
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchUniqueByKey<
@@ -1204,7 +1221,7 @@ struct DeviceSelect
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSelect::UniqueByKey(
   //!      d_temp_storage, temp_storage_bytes,

@@ -108,11 +108,11 @@ public:
       , m_end(last)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return m_begin;
   }
-  iterator end(void) const
+  iterator end() const
   {
     return m_end;
   }
@@ -126,7 +126,7 @@ private:
 // note that the resulting iterator is explicitly tagged with ToSystem either way
 template <typename Iterator, typename FromSystem, typename ToSystem>
 struct move_to_system_base
-    : public eval_if<is_convertible<FromSystem, ToSystem>::value,
+    : public eval_if<::cuda::std::is_convertible<FromSystem, ToSystem>::value,
                      identity_<tagged_iterator_range<Iterator, ToSystem>>,
                      identity_<temporary_array<typename thrust::iterator_value<Iterator>::type, ToSystem>>>
 {};

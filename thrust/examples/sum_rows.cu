@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // convert a linear index to a row index
 template <typename T>
 struct linear_index_to_row_index : public thrust::unary_function<T, T>
@@ -23,7 +25,7 @@ struct linear_index_to_row_index : public thrust::unary_function<T, T>
   }
 };
 
-int main(void)
+int main()
 {
   int R = 5; // number of rows
   int C = 8; // number of columns

@@ -13,7 +13,7 @@ struct alloc_id
   std::size_t alignment;
   std::size_t offset;
 
-  __host__ __device__ bool operator==(const alloc_id& other) const
+  _CCCL_HOST_DEVICE bool operator==(const alloc_id& other) const
   {
     return id == other.id && size == other.size && alignment == other.alignment;
   }
@@ -268,7 +268,7 @@ void TestDisjointGlobalPool()
 {
   typedef PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource> Pool;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != NULL, true);
+  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }
 
 void TestUnsynchronizedDisjointGlobalPool()

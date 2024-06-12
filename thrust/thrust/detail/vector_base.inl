@@ -44,7 +44,7 @@ namespace detail
 {
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(void)
+vector_base<T, Alloc>::vector_base()
     : m_storage()
     , m_size(0)
 {
@@ -277,7 +277,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 {
   // check the type of InputIterator: if it's an integral type,
   // we need to interpret this call as (size_type, value_type)
-  typedef thrust::detail::is_integral<InputIterator> Integer;
+  typedef ::cuda::std::is_integral<InputIterator> Integer;
 
   init_dispatch(first, last, Integer());
 } // end vector_base::vector_base()
@@ -290,7 +290,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, cons
 {
   // check the type of InputIterator: if it's an integral type,
   // we need to interpret this call as (size_type, value_type)
-  typedef thrust::detail::is_integral<InputIterator> Integer;
+  typedef ::cuda::std::is_integral<InputIterator> Integer;
 
   init_dispatch(first, last, Integer());
 } // end vector_base::vector_base()
@@ -326,13 +326,13 @@ void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
 } // end vector_base::resize()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::size(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::size() const
 {
   return m_size;
 } // end vector_base::size()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::max_size(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::max_size() const
 {
   return m_storage.max_size();
 } // end vector_base::max_size()
@@ -378,13 +378,13 @@ void vector_base<T, Alloc>::reserve(size_type n)
 } // end vector_base::reserve()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::capacity(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::size_type vector_base<T, Alloc>::capacity() const
 {
   return m_storage.size();
 } // end vector_base::capacity()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::shrink_to_fit(void)
+void vector_base<T, Alloc>::shrink_to_fit()
 {
   // use the swap trick
   vector_base(*this).swap(*this);
@@ -404,43 +404,43 @@ vector_base<T, Alloc>::operator[](const size_type n) const
 } // end vector_base::operator[]
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::begin(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::begin()
 {
   return m_storage.begin();
 } // end vector_base::begin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::begin(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::begin() const
 {
   return m_storage.begin();
 } // end vector_base::begin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cbegin(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cbegin() const
 {
   return begin();
 } // end vector_base::cbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rbegin(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rbegin()
 {
   return reverse_iterator(end());
 } // end vector_base::rbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rbegin(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rbegin() const
 {
   return const_reverse_iterator(end());
 } // end vector_base::rbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crbegin(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crbegin() const
 {
   return rbegin();
 } // end vector_base::crbegin()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end()
 {
   iterator result = begin();
   thrust::advance(result, size());
@@ -448,7 +448,7 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>
 } // end vector_base::end()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end() const
 {
   const_iterator result = begin();
   thrust::advance(result, size());
@@ -456,43 +456,43 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, 
 } // end vector_base::end()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cend(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::cend() const
 {
   return end();
 } // end vector_base::cend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rend(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reverse_iterator vector_base<T, Alloc>::rend()
 {
   return reverse_iterator(begin());
 } // end vector_base::rend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rend(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::rend() const
 {
   return const_reverse_iterator(begin());
 } // end vector_base::rend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crend(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reverse_iterator vector_base<T, Alloc>::crend() const
 {
   return rend();
 } // end vector_base::crend()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::front(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::front() const
 {
   return *begin();
 } // end vector_base::front()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::front(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::front()
 {
   return *begin();
 } // end vector_base::front()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::back(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T, Alloc>::back() const
 {
   const_iterator ptr_to_back = end();
   --ptr_to_back;
@@ -500,7 +500,7 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_reference vector_base<T,
 } // end vector_base::vector_base
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::back(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::back()
 {
   iterator ptr_to_back = end();
   --ptr_to_back;
@@ -508,19 +508,19 @@ _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::reference vector_base<T, Alloc
 } // end vector_base::vector_base
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::pointer vector_base<T, Alloc>::data(void)
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::pointer vector_base<T, Alloc>::data()
 {
   return pointer(&front());
 } // end vector_base::data()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_pointer vector_base<T, Alloc>::data(void) const
+_CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_pointer vector_base<T, Alloc>::data() const
 {
   return const_pointer(&front());
 } // end vector_base::data()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::~vector_base(void)
+vector_base<T, Alloc>::~vector_base()
 {
   // destroy every living thing
   if (!empty())
@@ -530,13 +530,13 @@ vector_base<T, Alloc>::~vector_base(void)
 } // end vector_base::~vector_base()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::clear(void)
+void vector_base<T, Alloc>::clear()
 {
   erase(begin(), end());
 } // end vector_base::~vector_dev()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE bool vector_base<T, Alloc>::empty(void) const
+_CCCL_HOST_DEVICE bool vector_base<T, Alloc>::empty() const
 {
   return size() == 0;
 } // end vector_base::empty();
@@ -548,7 +548,7 @@ void vector_base<T, Alloc>::push_back(const value_type& x)
 } // end vector_base::push_back()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::pop_back(void)
+void vector_base<T, Alloc>::pop_back()
 {
   iterator e           = end();
   iterator ptr_to_back = e;
@@ -602,13 +602,13 @@ void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
   // we could have received assign(n, x), so disambiguate on the
   // type of InputIterator
-  typedef typename thrust::detail::is_integral<InputIterator> integral;
+  typedef typename ::cuda::std::is_integral<InputIterator> integral;
 
   assign_dispatch(first, last, integral());
 } // end vector_base::assign()
 
 template <typename T, typename Alloc>
-typename vector_base<T, Alloc>::allocator_type vector_base<T, Alloc>::get_allocator(void) const
+typename vector_base<T, Alloc>::allocator_type vector_base<T, Alloc>::get_allocator() const
 {
   return m_storage.get_allocator();
 } // end vector_base::get_allocator()
@@ -640,7 +640,7 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 {
   // we could have received insert(position, n, x), so disambiguate on the
   // type of InputIterator
-  typedef typename thrust::detail::is_integral<InputIterator> integral;
+  typedef typename ::cuda::std::is_integral<InputIterator> integral;
 
   insert_dispatch(position, first, last, integral());
 } // end vector_base::insert()
@@ -1150,7 +1150,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
   typedef typename thrust::iterator_system<InputIterator2>::type system2;
 
   // dispatch on the sameness of the two systems
-  return vector_equal(first1, last1, first2, thrust::detail::is_same<system1, system2>());
+  return vector_equal(first1, last1, first2, ::cuda::std::is_same<system1, system2>());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>

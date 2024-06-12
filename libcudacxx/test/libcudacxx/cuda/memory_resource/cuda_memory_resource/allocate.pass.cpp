@@ -11,6 +11,7 @@
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
@@ -61,7 +62,7 @@ void test()
         auto* ptr = res.allocate(5, 42);
         unused(ptr);
       }
-      catch (const cuda::std::bad_alloc&)
+      catch (const std::bad_alloc&)
       {
         break;
       }
@@ -77,7 +78,7 @@ void test()
         auto* ptr = res.allocate(5, 1337);
         unused(ptr);
       }
-      catch (const cuda::std::bad_alloc&)
+      catch (const std::bad_alloc&)
       {
         break;
       }

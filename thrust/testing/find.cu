@@ -13,7 +13,7 @@ struct equal_to_value_pred
       : value(value)
   {}
 
-  __host__ __device__ bool operator()(T v) const
+  _CCCL_HOST_DEVICE bool operator()(T v) const
   {
     return v == value;
   }
@@ -28,7 +28,7 @@ struct not_equal_to_value_pred
       : value(value)
   {}
 
-  __host__ __device__ bool operator()(T v) const
+  _CCCL_HOST_DEVICE bool operator()(T v) const
   {
     return v != value;
   }
@@ -43,14 +43,14 @@ struct less_than_value_pred
       : value(value)
   {}
 
-  __host__ __device__ bool operator()(T v) const
+  _CCCL_HOST_DEVICE bool operator()(T v) const
   {
     return v < value;
   }
 };
 
 template <class Vector>
-void TestFindSimple(void)
+void TestFindSimple()
 {
   Vector vec(5);
   vec[0] = 1;
@@ -104,7 +104,7 @@ void TestFindDispatchImplicit()
 DECLARE_UNITTEST(TestFindDispatchImplicit);
 
 template <class Vector>
-void TestFindIfSimple(void)
+void TestFindIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -160,7 +160,7 @@ void TestFindIfDispatchImplicit()
 DECLARE_UNITTEST(TestFindIfDispatchImplicit);
 
 template <class Vector>
-void TestFindIfNotSimple(void)
+void TestFindIfNotSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -325,11 +325,11 @@ class Weird
   int value;
 
 public:
-  __host__ __device__ Weird(int val, int)
+  _CCCL_HOST_DEVICE Weird(int val, int)
       : value(val)
   {}
 
-  friend __host__ __device__ bool operator==(int x, Weird y)
+  friend _CCCL_HOST_DEVICE bool operator==(int x, Weird y)
   {
     return x == y.value;
   }

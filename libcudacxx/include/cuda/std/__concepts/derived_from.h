@@ -40,8 +40,8 @@ template <class _Dp, class _Bp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __derived_from_,
   requires()(
-    requires(_LIBCUDACXX_TRAIT(is_base_of, _Bp, _Dp)),
-    requires(_LIBCUDACXX_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))));
+    requires(_CCCL_TRAIT(is_base_of, _Bp, _Dp)),
+    requires(_CCCL_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))));
 
 template <class _Dp, class _Bp>
 _LIBCUDACXX_CONCEPT derived_from = _LIBCUDACXX_FRAGMENT(__derived_from_, _Dp, _Bp);

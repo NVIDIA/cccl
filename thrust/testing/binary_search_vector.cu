@@ -22,7 +22,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundSimple(void)
+void TestVectorLowerBoundSimple()
 {
   Vector vec(5);
 
@@ -118,7 +118,7 @@ void TestVectorLowerBoundDispatchImplicit()
 DECLARE_UNITTEST(TestVectorLowerBoundDispatchImplicit);
 
 template <class Vector>
-void TestVectorUpperBoundSimple(void)
+void TestVectorUpperBoundSimple()
 {
   Vector vec(5);
 
@@ -212,7 +212,7 @@ void TestVectorUpperBoundDispatchImplicit()
 DECLARE_UNITTEST(TestVectorUpperBoundDispatchImplicit);
 
 template <class Vector>
-void TestVectorBinarySearchSimple(void)
+void TestVectorBinarySearchSimple()
 {
   Vector vec(5);
 

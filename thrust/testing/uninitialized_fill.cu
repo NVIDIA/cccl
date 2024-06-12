@@ -75,7 +75,7 @@ void TestUninitializedFillNDispatchImplicit()
 DECLARE_UNITTEST(TestUninitializedFillNDispatchImplicit);
 
 template <class Vector>
-void TestUninitializedFillPOD(void)
+void TestUninitializedFillPOD()
 {
   typedef typename Vector::value_type T;
 
@@ -130,19 +130,19 @@ DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
 struct CopyConstructTest
 {
-  __host__ __device__ CopyConstructTest(void)
+  _CCCL_HOST_DEVICE CopyConstructTest()
       : copy_constructed_on_host(false)
       , copy_constructed_on_device(false)
   {}
 
-  __host__ __device__ CopyConstructTest(const CopyConstructTest&)
+  _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (copy_constructed_on_device = true; copy_constructed_on_host = false;),
                  (copy_constructed_on_device = false; copy_constructed_on_host = true;));
   }
 
-  __host__ __device__ CopyConstructTest& operator=(const CopyConstructTest& x)
+  _CCCL_HOST_DEVICE CopyConstructTest& operator=(const CopyConstructTest& x)
   {
     copy_constructed_on_host   = x.copy_constructed_on_host;
     copy_constructed_on_device = x.copy_constructed_on_device;
@@ -185,7 +185,7 @@ struct TestUninitializedFillNonPOD
 DECLARE_UNITTEST(TestUninitializedFillNonPOD);
 
 template <class Vector>
-void TestUninitializedFillNPOD(void)
+void TestUninitializedFillNPOD()
 {
   typedef typename Vector::value_type T;
 

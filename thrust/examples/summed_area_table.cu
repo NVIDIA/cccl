@@ -9,6 +9,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example computes a summed area table using segmented scan
 // http://en.wikipedia.org/wiki/Summed_area_table
 
@@ -87,7 +89,7 @@ void print(size_t m, size_t n, thrust::device_vector<T>& d_data)
   }
 }
 
-int main(void)
+int main()
 {
   size_t m = 3; // number of rows
   size_t n = 4; // number of columns

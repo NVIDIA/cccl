@@ -10,7 +10,7 @@
 // defines the function prototype
 #include "device.h"
 
-int main(void)
+int main()
 {
   // generate 20 random numbers on the host
   thrust::host_vector<int> h_vec(20);

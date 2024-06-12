@@ -49,7 +49,7 @@ void TestSetSymmetricDifferenceDispatchImplicit()
 DECLARE_UNITTEST(TestSetSymmetricDifferenceDispatchImplicit);
 
 template <typename Vector>
-void TestSetSymmetricDifferenceSimple(void)
+void TestSetSymmetricDifferenceSimple()
 {
   typedef typename Vector::iterator Iterator;
 

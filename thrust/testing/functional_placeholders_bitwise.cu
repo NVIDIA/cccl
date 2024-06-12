@@ -78,14 +78,14 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitXor, ^, thrust::bit_xor, SmallIntegralTyp
 template <typename T>
 struct bit_negate_reference
 {
-  __host__ __device__ T operator()(const T& x) const
+  _CCCL_HOST_DEVICE T operator()(const T& x) const
   {
     return ~x;
   }
 };
 
 template <typename Vector>
-void TestFunctionalPlaceholdersBitNegate(void)
+void TestFunctionalPlaceholdersBitNegate()
 {
   typedef typename Vector::value_type T;
   typedef typename rebind_vector<Vector, bool>::type bool_vector;

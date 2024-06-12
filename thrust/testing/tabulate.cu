@@ -39,7 +39,7 @@ void TestTabulateDispatchImplicit()
 DECLARE_UNITTEST(TestTabulateDispatchImplicit);
 
 template <class Vector>
-void TestTabulateSimple(void)
+void TestTabulateSimple()
 {
   using namespace thrust::placeholders;
   typedef typename Vector::value_type T;

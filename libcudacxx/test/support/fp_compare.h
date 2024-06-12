@@ -8,16 +8,15 @@
 #ifndef SUPPORT_FP_COMPARE_H
 #define SUPPORT_FP_COMPARE_H
 
+#include <cuda/std/__algorithm_> // for cuda::std::max
 #include <cuda/std/cassert>
-
-#include <algorithm> // for std::max
-#include <cmath> // for std::abs
+#include <cuda/std/cmath> // for cuda::std::abs
 
 // See
 // https://www.boost.org/doc/libs/1_70_0/libs/test/doc/html/boost_test/testing_tools/extended_comparison/floating_point/floating_points_comparison_theory.html
 
 template <typename T>
-bool fptest_close(T val, T expected, T eps)
+__host__ __device__ bool fptest_close(T val, T expected, T eps)
 {
   constexpr T zero = T(0);
   assert(eps >= zero);
@@ -29,18 +28,18 @@ bool fptest_close(T val, T expected, T eps)
   }
   if (val == zero)
   {
-    return std::abs(expected) <= eps;
+    return cuda::std::abs(expected) <= eps;
   }
   if (expected == zero)
   {
-    return std::abs(val) <= eps;
+    return cuda::std::abs(val) <= eps;
   }
 
-  return std::abs(val - expected) < eps && std::abs(val - expected) / std::abs(val) < eps;
+  return cuda::std::abs(val - expected) < eps && cuda::std::abs(val - expected) / cuda::std::abs(val) < eps;
 }
 
 template <typename T>
-bool fptest_close_pct(T val, T expected, T percent)
+__host__ __device__ bool fptest_close_pct(T val, T expected, T percent)
 {
   constexpr T zero = T(0);
   assert(percent >= zero);
@@ -50,7 +49,7 @@ bool fptest_close_pct(T val, T expected, T percent)
   {
     return val == expected;
   }
-  T eps = (percent / T(100)) * std::max(std::abs(val), std::abs(expected));
+  T eps = (percent / T(100)) * cuda::std::max(cuda::std::abs(val), cuda::std::abs(expected));
 
   return fptest_close(val, expected, eps);
 }

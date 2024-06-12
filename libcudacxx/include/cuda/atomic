@@ -11,6 +11,14 @@
 #ifndef _CUDA_ATOMIC
 #define _CUDA_ATOMIC
 
-#include <cuda/std/atomic>
+#include <cuda/std/__cuda/atomic.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #endif // _CUDA_ATOMIC

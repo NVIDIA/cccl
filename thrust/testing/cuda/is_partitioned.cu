@@ -15,7 +15,7 @@ is_partitioned_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predi
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
+  _CCCL_HOST_DEVICE bool operator()(T x) const
   {
     return ((int) x % 2) == 0;
   }

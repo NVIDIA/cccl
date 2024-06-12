@@ -527,11 +527,11 @@ __MDSPAN_TEMPLATE_REQUIRES(
   class _AP,
   class... _SliceSpecs,
   /* requires */
-  ((_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left)
-    || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right) || __detail::_is_layout_stride<_LP>::value)
-   && __MDSPAN_FOLD_AND((_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
-                         || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
-                         || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
+  ((_CCCL_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left) || _CCCL_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right)
+    || __detail::_is_layout_stride<_LP>::value)
+   && __MDSPAN_FOLD_AND((_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
+                         || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
+                         || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
    && sizeof...(_SliceSpecs) == _EXT::rank()))
 __MDSPAN_INLINE_FUNCTION
 __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(

@@ -7,7 +7,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestEqualSimple(void)
+void TestEqualSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -110,7 +110,7 @@ struct only_set_when_both_expected
   long long expected;
   bool* flag;
 
-  __device__ bool operator()(long long x, long long y)
+  _CCCL_DEVICE bool operator()(long long x, long long y)
   {
     if (x == expected && y == expected)
     {

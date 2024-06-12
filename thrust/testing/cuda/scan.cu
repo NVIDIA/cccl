@@ -252,13 +252,13 @@ struct const_ref_plus_mod3
       : table(table)
   {}
 
-  __host__ __device__ const T& operator()(T a, T b)
+  _CCCL_HOST_DEVICE const T& operator()(T a, T b)
   {
     return table[(int) (a + b)];
   }
 };
 
-static void TestInclusiveScanWithConstAccumulator(void)
+static void TestInclusiveScanWithConstAccumulator()
 {
   // add numbers modulo 3 with external lookup table
   thrust::device_vector<int> data(7);

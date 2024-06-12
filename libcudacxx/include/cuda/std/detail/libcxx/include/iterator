@@ -685,7 +685,6 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/back_insert_iterator.h>
@@ -726,8 +725,9 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/initializer_list>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/iosfwd> // for forward declarations of vector and string.
+#include <cuda/std/initializer_list>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
@@ -744,17 +744,17 @@ struct __libcpp_is_trivial_iterator : public _LIBCUDACXX_BOOL_CONSTANT(is_pointe
 {};
 
 template <class _Iter>
-struct __libcpp_is_trivial_iterator<move_iterator<_Iter> >
+struct __libcpp_is_trivial_iterator<move_iterator<_Iter>>
     : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
 {};
 
 template <class _Iter>
-struct __libcpp_is_trivial_iterator<reverse_iterator<_Iter> >
+struct __libcpp_is_trivial_iterator<reverse_iterator<_Iter>>
     : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
 {};
 
 template <class _Iter>
-struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter> >
+struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter>>
     : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
 {};
 

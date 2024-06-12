@@ -34,7 +34,7 @@ THRUST_NAMESPACE_BEGIN
 namespace system
 {
 
-error_condition ::error_condition(void)
+error_condition ::error_condition()
     : m_val(0)
     , m_cat(&generic_category())
 {
@@ -49,12 +49,11 @@ error_condition ::error_condition(int val, const error_category& cat)
 } // end error_condition::error_condition()
 
 template <typename ErrorConditionEnum>
-error_condition ::error_condition(
-  ErrorConditionEnum e
+error_condition ::error_condition(ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
 #if !defined(_CCCL_COMPILER_MSVC)
-  ,
-  typename thrust::detail::enable_if<is_error_condition_enum<ErrorConditionEnum>::value>::type*
+                                  ,
+                                  ::cuda::std::__enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value>*
 #endif // !_CCCL_COMPILER_MSVC
 )
 {
@@ -70,7 +69,7 @@ void error_condition ::assign(int val, const error_category& cat)
 template <typename ErrorConditionEnum>
 // XXX WAR msvc's problem with enable_if
 #if !defined(_CCCL_COMPILER_MSVC)
-typename thrust::detail::enable_if<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>::type&
+::cuda::std::__enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>&
 #else
 error_condition&
 #endif // !_CCCL_COMPILER_MSVC
@@ -80,28 +79,28 @@ error_condition ::operator=(ErrorConditionEnum e)
   return *this;
 } // end error_condition::operator=()
 
-void error_condition ::clear(void)
+void error_condition ::clear()
 {
   m_val = 0;
   m_cat = &generic_category();
 } // end error_condition::clear()
 
-int error_condition ::value(void) const
+int error_condition ::value() const
 {
   return m_val;
 } // end error_condition::value()
 
-const error_category& error_condition ::category(void) const
+const error_category& error_condition ::category() const
 {
   return *m_cat;
 } // end error_condition::category()
 
-std::string error_condition ::message(void) const
+std::string error_condition ::message() const
 {
   return category().message(value());
 } // end error_condition::message()
 
-error_condition ::operator bool(void) const
+error_condition ::operator bool() const
 {
   return value() != 0;
 } // end error_condition::operator bool ()

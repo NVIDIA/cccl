@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example illustrates how to use the raw_reference_cast to convert
 // system-specific reference wrappers into native references.
 //
@@ -75,7 +77,7 @@ void print(const std::string& name, const Vector& v)
   std::cout << "\n";
 }
 
-int main(void)
+int main()
 {
   typedef thrust::device_vector<int> Vector;
   typedef Vector::iterator Iterator;

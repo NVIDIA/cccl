@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example computes the number of words in a text sample
 // with a single call to thrust::inner_product.  The algorithm
 // counts the number of characters which start a new word, i.e.
@@ -52,7 +54,7 @@ int word_count(const thrust::device_vector<char>& input)
   return wc;
 }
 
-int main(void)
+int main()
 {
   // Paragraph from 'The Raven' by Edgar Allan Poe
   // http://en.wikipedia.org/wiki/The_Raven

@@ -3,6 +3,7 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
+#include "include/host_device.h"
 #include "include/timer.h"
 #include <assert.h>
 
@@ -56,7 +57,7 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
   structures = h_structures;
 }
 
-int main(void)
+int main()
 {
   size_t N = 2 * 1024 * 1024;
 

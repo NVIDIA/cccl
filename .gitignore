@@ -1,5 +1,5 @@
 .idea/
-*build*/
+build*/
 .cache
 .aws
 .config

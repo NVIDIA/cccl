@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetUnionByKeyDescendingSimple(void)
+void TestSetUnionByKeyDescendingSimple()
 {
   typedef typename Vector::value_type T;
   typedef typename Vector::iterator Iterator;

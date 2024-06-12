@@ -402,9 +402,9 @@
               TP18,                                                                                               \
               TP19 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
 
-#  define __MDSPAN_INSTANTIATE_ONLY_IF_USED                                                                 \
-    __MDSPAN_TEMPLATE_REQUIRES(class __instantiate_only_if_used_tparam = void,                              \
-                               (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam))) \
+#  define __MDSPAN_INSTANTIATE_ONLY_IF_USED                                                           \
+    __MDSPAN_TEMPLATE_REQUIRES(class __instantiate_only_if_used_tparam = void,                        \
+                               (_CCCL_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam))) \
     /**/
 
 // </editor-fold> end Concept emulation }}}1
@@ -795,10 +795,10 @@ _LIBCUDACXX_END_NAMESPACE_STD
       _CUDA_VSTD::__fold_compatibility_impl::__fold_right_plus_impl((__PACK)..., __VA_ARGS__)
 #    define __MDSPAN_FOLD_COMMA(...) _CUDA_VSTD::__fold_compatibility_impl::__fold_comma_impl((__VA_ARGS__)...)
 
-#    define __MDSPAN_FOLD_AND_TEMPLATE(...)                                         \
-      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same,                                        \
-                        __fold_compatibility_impl::__bools<(__VA_ARGS__)..., true>, \
-                        __fold_compatibility_impl::__bools<true, (__VA_ARGS__)...>)
+#    define __MDSPAN_FOLD_AND_TEMPLATE(...)                                   \
+      _CCCL_TRAIT(_CUDA_VSTD::is_same,                                        \
+                  __fold_compatibility_impl::__bools<(__VA_ARGS__)..., true>, \
+                  __fold_compatibility_impl::__bools<true, (__VA_ARGS__)...>)
 
 #  endif
 

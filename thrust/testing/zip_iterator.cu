@@ -14,7 +14,7 @@ template <typename T>
 struct TestZipIteratorManipulation
 {
   template <typename Vector>
-  void test(void)
+  void test()
   {
     using namespace thrust;
 
@@ -35,6 +35,7 @@ struct TestZipIteratorManipulation
 
     // test construction
     ZipIterator iter0 = make_zip_iterator(t);
+    ASSERT_EQUAL(true, iter0 == ZipIterator{t});
 
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
@@ -160,7 +161,8 @@ struct TestZipIteratorTraversal
     typedef typename iterator_traversal<ZipIterator1>::type zip_iterator_traversal_type1;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_traversal_type1, random_access_traversal_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type1,
+    // random_access_traversal_tag>::value) );
 
 #if 0
     // test device types
@@ -172,7 +174,7 @@ struct TestZipIteratorTraversal
     typedef typename iterator_traversal<ZipIterator2>::type zip_iterator_traversal_type2;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_traversal_type2,
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type2,
     // thrust::random_access_traversal_tag>::value) );
   } // end operator()()
 };
@@ -197,7 +199,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator1>::type zip_iterator_system_type1;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
 
 #if 0
     // test device types
@@ -209,7 +211,8 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator2>::type zip_iterator_system_type2;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type2, experimental::space::device>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type2, experimental::space::device>::value)
+    // );
 
 #if 0
     // test any
@@ -221,7 +224,8 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator3>::type zip_iterator_system_type3;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type3, thrust::experimental::space::any>::value)
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type3,
+    // thrust::experimental::space::any>::value)
     // );
 
 #if 0
@@ -232,7 +236,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator4>::type zip_iterator_system_type4;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
 
 #if 0
     // test any/host
@@ -242,7 +246,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator5>::type zip_iterator_system_type5;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
 
 #if 0
     // test device/any
@@ -252,7 +256,7 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator6>::type zip_iterator_system_type6;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
 
 #if 0
     // test any/device
@@ -262,13 +266,13 @@ struct TestZipIteratorSystem
     typedef typename iterator_system<ZipIterator7>::type zip_iterator_system_type7;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
   } // end operator()()
 };
 SimpleUnitTest<TestZipIteratorSystem, NumericTypes> TestZipIteratorSystemInstance;
 
 template <typename Vector>
-void TestZipIteratorCopy(void)
+void TestZipIteratorCopy()
 {
   using namespace thrust;
   using T = typename Vector::value_type;
@@ -292,7 +296,7 @@ DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
 struct SumTwoTuple
 {
   template <typename Tuple>
-  __host__ __device__ typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x);
@@ -302,7 +306,7 @@ struct SumTwoTuple
 struct SumThreeTuple
 {
   template <typename Tuple>
-  __host__ __device__ typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x);
@@ -352,7 +356,7 @@ struct TestZipIteratorTransform
 };
 VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
 
-void TestZipIteratorCopyAoSToSoA(void)
+void TestZipIteratorCopyAoSToSoA()
 {
   using namespace thrust;
 
@@ -399,7 +403,7 @@ void TestZipIteratorCopyAoSToSoA(void)
 };
 DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
-void TestZipIteratorCopySoAToAoS(void)
+void TestZipIteratorCopySoAToAoS()
 {
   using namespace thrust;
 

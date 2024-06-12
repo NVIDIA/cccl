@@ -1,20 +1,23 @@
 #include <cuda/atomic>
 
-__global__ void add_relaxed_device_non_volatile(int* data, int n)
+__global__ void add_relaxed_device_non_volatile(int* data, int* out, int n)
 {
-  if (n)
-  {
-    auto ref = cuda::atomic_ref<int, cuda::thread_scope_device>{*(data)};
-    ref.fetch_add(n, cuda::std::memory_order_relaxed);
-  }
+  auto ref = cuda::atomic_ref<int, cuda::thread_scope_device>{*(data)};
+  *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
 }
 
 /*
-## SM80 checks
-; SM8X: Fatbin elf code
-; SM8X: code for sm_8{{[0-9]}}
-; SM8X-DAG:  {{^.*}}Function : {{.*}}add_relaxed_device_non_volatile{{.*$}}
-; SM8X-NOT:  {{^.*}}STL.{{[0-9]*}}{{.*$}}
-; SM8X:      {{^.*}}ATOM.E.ADD.STRONG.GPU{{.*$}}
-; SM8X-DAG:  {{^.*}}EXIT{{.*$}}
+
+; SM8X-LABEL: .target sm_80
+; SM8X:      .visible .entry [[FUNCTION:_.*add_relaxed_device_non_volatile.*]](
+; SM8X-DAG:  ld.param.u64 %rd[[#ATOM:]], [[[FUNCTION]]_param_0];
+; SM8X-DAG:  ld.param.u64 %rd[[#EXPECTED:]], [[[FUNCTION]]_param_1];
+; SM8X-DAG:  ld.param.u32 %r[[#INPUT:]], [[[FUNCTION]]_param_2];
+; SM8X-NEXT: cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#EXPECTED]];
+; SM8X-NEXT: //
+; SM8X-NEXT: atom.add.relaxed.gpu.u32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];
+; SM8X-NEXT: //
+; SM8X-NEXT: st.global.u32 [%rd[[#GOUT]]], %r[[#DEST]];
+; SM8X-NEXT: ret;
+
 */

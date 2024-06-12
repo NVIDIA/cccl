@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // this example illustrates how to make strided access to a range of values
 // examples:
 //   strided_range([0, 1, 2, 3, 4, 5, 6], 1) -> [0, 1, 2, 3, 4, 5, 6]
@@ -49,12 +51,12 @@ public:
       , stride(stride)
   {}
 
-  iterator begin(void) const
+  iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), stride_functor(stride)));
   }
 
-  iterator end(void) const
+  iterator end() const
   {
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
@@ -65,7 +67,7 @@ protected:
   difference_type stride;
 };
 
-int main(void)
+int main()
 {
   thrust::device_vector<int> data(8);
   data[0] = 10;

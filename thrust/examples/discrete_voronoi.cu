@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
 #include "include/timer.h"
 
 // Compute an approximate Voronoi Diagram with a Jump Flooding Algorithm (JFA)
@@ -207,7 +208,7 @@ void display_time(timer& t)
   std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << std::endl;
 }
 
-int main(void)
+int main()
 {
   int m = 2048; // number of rows
   int n = 2048; // number of columns

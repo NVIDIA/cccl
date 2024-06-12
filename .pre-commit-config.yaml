@@ -20,7 +20,20 @@ repos:
     rev: v17.0.6
     hooks:
       - id: clang-format
-        types_or: [c, c++, cuda]
+        types_or: [file]
+        files: |
+          (?x)^(
+            ^.*\.c$|
+            ^.*\.cpp$|
+            ^.*\.cu$|
+            ^.*\.cuh$|
+            ^.*\.cxx$|
+            ^.*\.h$|
+            ^.*\.hpp$|
+            ^.*\.inl$|
+            ^.*\.mm$|
+            ^libcudacxx/include/.*/[^.]*$
+          )
         args: ["-fallback-style=none", "-style=file", "-i"]
 
 default_language_version:

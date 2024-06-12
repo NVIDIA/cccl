@@ -33,8 +33,26 @@ Special commands are provided that can be included in commit messages to direct 
    - **Example:** `git commit -m "[skip ci] Update README."`
 
 - `[skip-tests]`: Skips CI jobs that execute tests, but runs all other jobs. Useful to avoid time-consuming tests when changes are unlikely to affect them.
+- `[all-projects]`: CI normally skips projects that don't have changes in themselves or their dependencies. This forces all projects to build.
+- `[workflow:<workflow>]`:  Execute jobs from the named workflow. Example: `[workflow:nightly]` runs all jobs defined in `matrix.yaml`'s `workflows.nightly` list.
 
 Use these commands judiciously. While they offer flexibility, they should be used appropriately to maintain the codebase's integrity and quality.
+
+### Temporarily Overriding the Pull Request Matrix
+
+If a workflow named `override` exists in the matrix.yaml file, this matrix will be used for pull requests instead of the `pull_request` matrix.
+This is useful for reducing resource usage when launching many CI workflows from a PR (for example, while testing CI features).
+The overridden CI job will be marked as a failure until the override is removed.
+
+Example:
+
+```
+workflows:
+  override:
+    - {jobs: ['test'], std: 17, ctk: *ctk_curr, cxx: [*gcc12, *llvm16, *msvc2022]}
+  pull_request:
+    - <...>
+```
 
 ### Accelerating Build Times with `sccache`
 
@@ -76,6 +94,35 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
 CCCL uses [NVIDIA's self-hosted action runners](https://docs.gha-runners.nvidia.com/runners/) for CI jobs. For security, PR workflows are triggered using the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/), which copies code to a prefixed branch to ensure only vetted code runs on the runners.
 
 The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test` comment.
+
+### SSH Signing Keys
+
+[Signed commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) are required for any internal NVIDIA contributors who want the convenience of CI running automatically whenever a commit is pushed to a branch (i.e., doesn't require using `/ok to test`).
+
+This is not required for external contributions, which will always require an explicit `/ok to test` comment from an approved account for each CI run.
+
+To enable commit signing using your existing ssh key, set the following git options:
+
+```bash
+git config --global gpg.format ssh
+git config --global user.signingKey ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub
+
+# These settings are optional. They tell git to automatically sign all new commits and tags.
+# If these are set to false, use `git commit -S` to manually sign each commit.
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true
+```
+
+Git is now configured to sign commits with your ssh key.
+
+To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys) in your browser or using the `gh` CLI tool:
+
+```
+gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
+```
+
+Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
+The same key may be used for both.
 
 ## Troubleshooting CI Failures
 

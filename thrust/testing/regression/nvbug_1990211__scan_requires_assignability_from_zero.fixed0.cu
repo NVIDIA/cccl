@@ -3,7 +3,7 @@
 
 struct uint2_adder
 {
-  __host__ __device__ uint2 operator()(uint2 a, uint2 b)
+  _CCCL_HOST_DEVICE uint2 operator()(uint2 a, uint2 b)
   {
     return make_uint2(a.x + b.x, a.y + b.y);
   }
@@ -12,7 +12,7 @@ struct uint2_adder
 int main()
 {
   int num_elements = 32;
-  uint2 *input = NULL, *output = NULL;
+  uint2 *input = nullptr, *output = nullptr;
   const uint2 zero = make_uint2(0, 0);
 
   thrust::exclusive_scan(

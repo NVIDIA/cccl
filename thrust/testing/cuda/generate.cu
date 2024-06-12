@@ -8,12 +8,12 @@ struct return_value
 {
   T val;
 
-  return_value(void) {}
+  return_value() {}
   return_value(T v)
       : val(v)
   {}
 
-  __host__ __device__ T operator()(void)
+  _CCCL_HOST_DEVICE T operator()(void)
   {
     return val;
   }

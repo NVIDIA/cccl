@@ -10,14 +10,15 @@
 
 // UNSUPPORTED: c++03
 
+#include "test_macros.h"
 #include <nv/target>
 
-#if !defined(__CUDACC_RTC__)
+#if !defined(TEST_COMPILER_NVRTC)
 #  include <assert.h>
 #  include <stdio.h>
 #endif
 
-#if defined(__NVCC__) || defined(__CUDACC_RTC__)
+#if defined(__NVCC__) || defined(TEST_COMPILER_NVRTC)
 #  define TEST_NVCC
 #elif defined(__NVCOMPILER)
 #  define TEST_NVCXX

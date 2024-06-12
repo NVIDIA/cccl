@@ -33,7 +33,6 @@ namespace std {
 #include <cuda/std/__expected/expected.h>
 #include <cuda/std/__expected/unexpect.h>
 #include <cuda/std/__expected/unexpected.h>
-
 #include <cuda/std/version>
 
 #endif // _LIBCUDACXX_EXPECTED

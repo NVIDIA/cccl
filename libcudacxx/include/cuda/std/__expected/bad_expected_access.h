@@ -19,7 +19,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/exception.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -28,13 +27,29 @@
 
 #if _CCCL_STD_VER > 2011
 
+#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#    ifdef __cpp_lib_expected
+#      include <expected>
+#    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#      include <exception>
+#    endif // !__cpp_lib_expected
+#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+
+#    ifdef __cpp_lib_expected
+
+using ::std::bad_expected_access;
+
+#    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
 
 template <class _Err>
 class bad_expected_access;
 
 template <>
-class bad_expected_access<void> : public exception
+class bad_expected_access<void> : public ::std::exception
 {
 protected:
   bad_expected_access() noexcept                             = default;
@@ -49,7 +64,7 @@ public:
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
-  _LIBCUDACXX_INLINE_VISIBILITY const char* what() const noexcept override
+  const char* what() const noexcept override
   {
     return "bad access to cuda::std::expected";
   }
@@ -59,7 +74,7 @@ template <class _Err>
 class bad_expected_access : public bad_expected_access<void>
 {
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY explicit bad_expected_access(_Err __e)
+  explicit bad_expected_access(_Err __e)
       : __unex_(_CUDA_VSTD::move(__e))
   {}
 
@@ -86,6 +101,9 @@ public:
 private:
   _Err __unex_;
 };
+#    endif // !__cpp_lib_expected
+
+#  endif // _LIBCUDACXX_NO_EXCEPTIONS
 
 template <class _Err, class _Arg>
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expected_access(_Arg&& __arg)

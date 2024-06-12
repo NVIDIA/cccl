@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include "include/host_device.h"
+
 // compute minimum and maximum values in a single reduction
 
 // minmax_pair stores the minimum and maximum
@@ -47,7 +49,7 @@ struct minmax_binary_op : public thrust::binary_function<minmax_pair<T>, minmax_
   }
 };
 
-int main(void)
+int main()
 {
   // input size
   size_t N = 10;

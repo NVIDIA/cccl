@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestAllOf(void)
+void TestAllOf()
 {
   typedef typename Vector::value_type T;
 
@@ -60,7 +60,7 @@ void TestAllOfDispatchImplicit()
 DECLARE_UNITTEST(TestAllOfDispatchImplicit);
 
 template <class Vector>
-void TestAnyOf(void)
+void TestAnyOf()
 {
   typedef typename Vector::value_type T;
 
@@ -115,7 +115,7 @@ void TestAnyOfDispatchImplicit()
 DECLARE_UNITTEST(TestAnyOfDispatchImplicit);
 
 template <class Vector>
-void TestNoneOf(void)
+void TestNoneOf()
 {
   typedef typename Vector::value_type T;
 

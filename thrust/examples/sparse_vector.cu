@@ -83,7 +83,7 @@ void sum_sparse_vectors(
     thrust::plus<ValueType>());
 }
 
-int main(void)
+int main()
 {
   // initialize sparse vector A with 4 elements
   thrust::device_vector<int> A_index(4);

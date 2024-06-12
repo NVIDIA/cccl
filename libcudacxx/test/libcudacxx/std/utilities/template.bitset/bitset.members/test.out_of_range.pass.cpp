@@ -26,7 +26,7 @@ int main(int, char**)
         (void) v.test(0);
         assert(false);
       }
-      catch (cuda::std::out_of_range const&)
+      catch (::std::out_of_range const&)
       {}
     } {
       cuda::std::bitset<1> v("0");
@@ -35,7 +35,7 @@ int main(int, char**)
         (void) v.test(2);
         assert(false);
       }
-      catch (cuda::std::out_of_range const&)
+      catch (::std::out_of_range const&)
       {}
     } {
       cuda::std::bitset<10> v("0000000000");
@@ -44,7 +44,7 @@ int main(int, char**)
         (void) v.test(10);
         assert(false);
       }
-      catch (cuda::std::out_of_range const&)
+      catch (::std::out_of_range const&)
       {}
     })
 

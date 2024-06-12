@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
@@ -124,7 +125,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <>
 class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __block_scope_barrier_base
 {
-  using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, (int) thread_scope_block>;
+  using __barrier_base = _CUDA_VSTD::__barrier_base<_CUDA_VSTD::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
   _CCCL_DEVICE friend inline _CUDA_VSTD::uint64_t*
@@ -168,10 +169,8 @@ public:
       }))
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY friend void
-  init(barrier* __b,
-       _CUDA_VSTD::ptrdiff_t __expected,
-       _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
+  _LIBCUDACXX_INLINE_VISIBILITY friend void init(
+    barrier* __b, _CUDA_VSTD::ptrdiff_t __expected, _CUDA_VSTD::__empty_completion = _CUDA_VSTD::__empty_completion())
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
@@ -246,6 +245,7 @@ public:
 private:
   _LIBCUDACXX_INLINE_VISIBILITY inline bool __test_wait_sm_80(arrival_token __token) const
   {
+    (void) __token;
     int32_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
@@ -263,6 +263,7 @@ private:
   // Document de drop > uint32_t for __nanosec on public for APIs
   _LIBCUDACXX_INLINE_VISIBILITY bool __try_wait(arrival_token __token) const
   {
+    (void) __token;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
@@ -345,6 +346,7 @@ private:
 
   _LIBCUDACXX_INLINE_VISIBILITY inline bool __test_wait_parity_sm_80(bool __phase_parity) const
   {
+    (void) __phase_parity;
     uint16_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
@@ -733,6 +735,7 @@ _LIBCUDACXX_INLINE_VISIBILITY inline _CUDA_VSTD::uint64_t*
 __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
   barrier<::cuda::thread_scope_block>& __barrier)
 {
+  (void) __barrier;
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
 }

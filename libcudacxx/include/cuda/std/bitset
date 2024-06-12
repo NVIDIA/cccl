@@ -13,10 +13,10 @@
 
 #include "detail/__config"
 
-#include "detail/__pragma_push"
+_CCCL_PUSH_MACROS
 
 #include "detail/libcxx/include/bitset"
 
-#include "detail/__pragma_pop"
+_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_BITSET

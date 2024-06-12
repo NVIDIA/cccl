@@ -20,39 +20,37 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef __cuda_std__
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 // Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
 // ::std::tuple_size<cuda::std::tuple> to enable structured bindings.
 // See https://github.com/NVIDIA/libcudacxx/issues/316
-#    include <utility>
-#  endif
+#  include <utility>
+#endif // !_CCCL_COMPILER_NVRTC
 
-#  include <cuda/std/__fwd/array.h>
-#  include <cuda/std/__fwd/pair.h>
-#  include <cuda/std/__fwd/subrange.h>
-#  include <cuda/std/__fwd/tuple.h>
-#  include <cuda/std/__tuple_dir/tuple_element.h>
-#  include <cuda/std/__tuple_dir/tuple_size.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/pair.h>
+#include <cuda/std/__fwd/subrange.h>
+#include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 // This is a workaround for the fact that structured bindings require that the specializations of
 // `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
 // See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
-#  if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER >= 2017
 namespace std
 {
-#    if defined(_CCCL_COMPILER_NVRTC)
+#  if defined(_CCCL_COMPILER_NVRTC)
 template <class... _Tp>
 struct tuple_size;
 
 template <size_t _Ip, class... _Tp>
 struct tuple_element;
-#    endif
+#  endif // _CCCL_COMPILER_NVRTC
 
 template <class _Tp, size_t _Size>
 struct tuple_size<_CUDA_VSTD::array<_Tp, _Size>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::array<_Tp, _Size>>
@@ -159,7 +157,7 @@ struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
     : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
 {};
 
-#    if !defined(_CCCL_COMPILER_MSVC_2017)
+#  if !defined(_CCCL_COMPILER_MSVC_2017)
 template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
     : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
@@ -199,12 +197,10 @@ template <size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
     : _CUDA_VSTD::tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
 {};
-#    endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER_MSVC_2017
 } // namespace std
-#  endif // _CCCL_STD_VER >= 2017
+#endif // _CCCL_STD_VER >= 2017
 
 _CCCL_DIAG_POP
-
-#endif // __cuda_std__
 
 #endif // _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H

@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 #include <cub/util_deprecated.cuh>
 
@@ -206,6 +207,12 @@ private:
       stream);
   }
 
+  // Name reported for NVTX ranges
+  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  {
+    return "cub::DeviceRadixSort";
+  }
+
 public:
   //! @name KeyT-value pairs
   //@{
@@ -256,7 +263,7 @@ public:
   //! ...
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes,
   //!     d_keys_in, d_keys_out, d_values_in, d_values_out, num_items);
@@ -329,6 +336,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -415,7 +423,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -424,7 +432,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-bits
@@ -506,6 +514,7 @@ public:
               int end_bit,
               cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -563,7 +572,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -572,7 +581,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs
@@ -644,6 +653,7 @@ public:
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -729,7 +739,7 @@ public:
   //! cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairs(
   //!   d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
@@ -797,6 +807,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -858,7 +870,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -867,7 +879,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-db
@@ -934,6 +946,8 @@ public:
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -992,7 +1006,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1001,7 +1015,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairs``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-bits-db
@@ -1078,6 +1092,8 @@ public:
               int end_bit,
               cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -1144,7 +1160,7 @@ public:
   //! ...
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairsDescending(
   //!     d_temp_storage, temp_storage_bytes,
@@ -1219,6 +1235,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -1294,7 +1312,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1303,7 +1321,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-bits
@@ -1386,6 +1404,8 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -1443,7 +1463,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1452,7 +1472,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending
@@ -1525,6 +1545,8 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -1605,7 +1627,7 @@ public:
   //! cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortPairsDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items);
@@ -1673,6 +1695,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -1734,7 +1758,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1743,7 +1767,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-db
@@ -1811,6 +1835,8 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -1869,7 +1895,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1878,7 +1904,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortPairsDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-bits-db
@@ -1956,6 +1982,8 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -2029,7 +2057,7 @@ public:
   //! ...
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeys(
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
@@ -2092,6 +2120,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -2143,7 +2173,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2152,7 +2182,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-bits
@@ -2222,6 +2252,8 @@ public:
              int end_bit,
              cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -2280,7 +2312,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2289,7 +2321,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys
@@ -2349,6 +2381,8 @@ public:
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -2446,7 +2480,7 @@ public:
   //! cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeys(
   //!   d_temp_storage, temp_storage_bytes, d_keys, num_items);
@@ -2504,6 +2538,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -2562,7 +2598,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2571,7 +2607,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-db
@@ -2629,6 +2665,8 @@ public:
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -2684,7 +2722,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2693,7 +2731,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeys``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-bits-db
@@ -2761,6 +2799,8 @@ public:
              int end_bit,
              cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -2827,7 +2867,7 @@ public:
   //! cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeysDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items);
@@ -2888,6 +2928,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -2950,7 +2992,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2959,7 +3001,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-bits
@@ -3030,6 +3072,8 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -3085,7 +3129,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3094,7 +3138,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending
@@ -3155,6 +3199,8 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -3227,7 +3273,7 @@ public:
   //! cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //! // Determine temporary device storage requirements
-  //! void     *d_temp_storage = NULL;
+  //! void     *d_temp_storage = nullptr;
   //! size_t   temp_storage_bytes = 0;
   //! cub::DeviceRadixSort::SortKeysDescending(
   //!   d_temp_storage, temp_storage_bytes, d_keys, num_items);
@@ -3285,6 +3331,8 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -3344,7 +3392,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3353,7 +3401,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-db
@@ -3412,6 +3460,8 @@ public:
       DecomposerT decomposer,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
@@ -3467,7 +3517,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -3476,7 +3526,7 @@ public:
   //! The following snippet shows how to sort an array of ``custom_t`` objects
   //! using ``cub::DeviceRadixSort::SortKeysDescending``:
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-bits-db
@@ -3545,6 +3595,8 @@ public:
       int end_bit,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;

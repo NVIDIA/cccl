@@ -298,7 +298,8 @@ public:
 };
 
 template <class Arg1, class Arg2, class Result>
-pointer_to_binary_function<Arg1,Arg2,Result> ptr_fun(Result (*f)(Arg1,Arg2));      // deprecated in C++11, removed in C++17
+pointer_to_binary_function<Arg1,Arg2,Result> ptr_fun(Result (*f)(Arg1,Arg2));      // deprecated in C++11, removed in
+C++17
 
 template<class S, class T>      // deprecated in C++11, removed in C++17
 class mem_fun_t : public unary_function<T*, S>
@@ -316,8 +317,9 @@ public:
     S operator()(T* p, A x) const;
 };
 
-template<class S, class T>          mem_fun_t<S,T>    mem_fun(S (T::*f)());      // deprecated in C++11, removed in C++17
-template<class S, class T, class A> mem_fun1_t<S,T,A> mem_fun(S (T::*f)(A));     // deprecated in C++11, removed in C++17
+template<class S, class T>          mem_fun_t<S,T>    mem_fun(S (T::*f)());      // deprecated in C++11, removed in
+C++17 template<class S, class T, class A> mem_fun1_t<S,T,A> mem_fun(S (T::*f)(A));     // deprecated in C++11, removed
+in C++17
 
 template<class S, class T>
 class mem_fun_ref_t : public unary_function<T, S>      // deprecated in C++11, removed in C++17
@@ -335,8 +337,9 @@ public:
     S operator()(T& p, A x) const;
 };
 
-template<class S, class T>          mem_fun_ref_t<S,T>    mem_fun_ref(S (T::*f)());      // deprecated in C++11, removed in C++17
-template<class S, class T, class A> mem_fun1_ref_t<S,T,A> mem_fun_ref(S (T::*f)(A));     // deprecated in C++11, removed in C++17
+template<class S, class T>          mem_fun_ref_t<S,T>    mem_fun_ref(S (T::*f)());      // deprecated in C++11, removed
+in C++17 template<class S, class T, class A> mem_fun1_ref_t<S,T,A> mem_fun_ref(S (T::*f)(A));     // deprecated in
+C++11, removed in C++17
 
 template <class S, class T>
 class const_mem_fun_t : public unary_function<const T*, S>      // deprecated in C++11, removed in C++17
@@ -354,8 +357,9 @@ public:
     S operator()(const T* p, A x) const;
 };
 
-template <class S, class T>          const_mem_fun_t<S,T>    mem_fun(S (T::*f)() const);      // deprecated in C++11, removed in C++17
-template <class S, class T, class A> const_mem_fun1_t<S,T,A> mem_fun(S (T::*f)(A) const);     // deprecated in C++11, removed in C++17
+template <class S, class T>          const_mem_fun_t<S,T>    mem_fun(S (T::*f)() const);      // deprecated in C++11,
+removed in C++17 template <class S, class T, class A> const_mem_fun1_t<S,T,A> mem_fun(S (T::*f)(A) const);     //
+deprecated in C++11, removed in C++17
 
 template <class S, class T>
 class const_mem_fun_ref_t : public unary_function<T, S>      // deprecated in C++11, removed in C++17
@@ -373,8 +377,9 @@ public:
     S operator()(const T& p, A x) const;
 };
 
-template <class S, class T>          const_mem_fun_ref_t<S,T>    mem_fun_ref(S (T::*f)() const);   // deprecated in C++11, removed in C++17
-template <class S, class T, class A> const_mem_fun1_ref_t<S,T,A> mem_fun_ref(S (T::*f)(A) const);  // deprecated in C++11, removed in C++17
+template <class S, class T>          const_mem_fun_ref_t<S,T>    mem_fun_ref(S (T::*f)() const);   // deprecated in
+C++11, removed in C++17 template <class S, class T, class A> const_mem_fun1_ref_t<S,T,A> mem_fun_ref(S (T::*f)(A)
+const);  // deprecated in C++11, removed in C++17
 
 template<class R, class T> unspecified mem_fn(R T::*);
 
@@ -508,17 +513,16 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #endif // no system header
 
 #ifdef __cuda_std__
-#ifndef _CCCL_COMPILER_NVRTC
-#include <errno.h>
-#endif // _CCCL_COMPILER_NVRTC
+#  ifndef _CCCL_COMPILER_NVRTC
+#    include <errno.h>
+#  endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
-#include <cuda/std/detail/libcxx/include/__functional_base>
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/binary_negate.h>
+#include <cuda/std/__functional/bind.h>
 #include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/bind_front.h>
-#include <cuda/std/__functional/bind.h>
 #include <cuda/std/__functional/binder1st.h>
 #include <cuda/std/__functional/binder2nd.h>
 #include <cuda/std/__functional/compose.h>
@@ -541,8 +545,8 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #include <cuda/std/__functional/unary_negate.h>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__functional/weak_result_type.h>
-
+#include <cuda/std/detail/libcxx/include/__functional_base>
 #include <cuda/std/detail/libcxx/include/iosfwd> // for forward declarations of vector and string.
 #include <cuda/std/version>
 
-#endif  // _LIBCUDACXX_FUNCTIONAL
+#endif // _LIBCUDACXX_FUNCTIONAL

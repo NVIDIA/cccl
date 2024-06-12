@@ -48,7 +48,7 @@ struct TestAllocatorAttachment
   static void assert_correct(T)
   {
     ASSERT_EQUAL(
-      (thrust::detail::is_same<
+      (::cuda::std::is_same<
         T,
         typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>::value),
       true);
@@ -58,10 +58,10 @@ struct TestAllocatorAttachment
   static void assert_npa_correct(T)
   {
     ASSERT_EQUAL(
-      (thrust::detail::is_same<T,
-                               typename PolicyInfo::template apply_base_second<
-                                 thrust::detail::execute_with_allocator,
-                                 thrust::mr::allocator<thrust::detail::max_align_t, ExpectedResource>>::type>::value),
+      (::cuda::std::is_same<T,
+                            typename PolicyInfo::template apply_base_second<
+                              thrust::detail::execute_with_allocator,
+                              thrust::mr::allocator<thrust::detail::max_align_t, ExpectedResource>>::type>::value),
       true);
   }
 

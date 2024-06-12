@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestScatterSimple(void)
+void TestScatterSimple()
 {
   Vector map(5); // scatter indices
   Vector src(5); // source vector
@@ -123,7 +123,7 @@ void TestScatterToDiscardIterator(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestScatterToDiscardIterator);
 
 template <class Vector>
-void TestScatterIfSimple(void)
+void TestScatterIfSimple()
 {
   Vector flg(5); // predicate array
   Vector map(5); // scatter indices
@@ -192,7 +192,7 @@ template <typename T>
 class is_even_scatter_if
 {
 public:
-  __host__ __device__ bool operator()(const T i) const
+  _CCCL_HOST_DEVICE bool operator()(const T i) const
   {
     return (i % 2) == 0;
   }
@@ -262,7 +262,7 @@ void TestScatterIfToDiscardIterator(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestScatterIfToDiscardIterator);
 
 template <typename Vector>
-void TestScatterCountingIterator(void)
+void TestScatterCountingIterator()
 {
   Vector source(10);
   thrust::sequence(source.begin(), source.end(), 0);
@@ -296,7 +296,7 @@ void TestScatterCountingIterator(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterCountingIterator);
 
 template <typename Vector>
-void TestScatterIfCountingIterator(void)
+void TestScatterIfCountingIterator()
 {
   Vector source(10);
   thrust::sequence(source.begin(), source.end(), 0);

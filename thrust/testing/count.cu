@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestCountSimple(void)
+void TestCountSimple()
 {
   Vector data(5);
   data[0] = 1;
@@ -35,14 +35,14 @@ DECLARE_VARIABLE_UNITTEST(TestCount);
 template <typename T>
 struct greater_than_five
 {
-  __host__ __device__ bool operator()(const T& x) const
+  _CCCL_HOST_DEVICE bool operator()(const T& x) const
   {
     return x > 5;
   }
 };
 
 template <class Vector>
-void TestCountIfSimple(void)
+void TestCountIfSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -71,7 +71,7 @@ void TestCountIf(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestCountIf);
 
 template <typename Vector>
-void TestCountFromConstIteratorSimple(void)
+void TestCountFromConstIteratorSimple()
 {
   Vector data(5);
   data[0] = 1;

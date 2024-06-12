@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017)
+#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #    include <cuda_runtime_api.h>
@@ -47,7 +47,7 @@ struct cuda_memory_resource
    * @brief Allocate device memory of size at least \p __bytes.
    * @param __bytes The size in bytes of the allocation.
    * @param __alignment The requested alignment of the allocation.
-   * @throw cuda::std::bad_alloc in case of invalid alignment or cuda::cuda_error of the returned error code.
+   * @throw std::bad_alloc in case of invalid alignment or cuda::cuda_error of the returned error code.
    * @return Pointer to the newly allocated memory
    */
   _CCCL_NODISCARD void* allocate(const size_t __bytes, const size_t __alignment = default_cuda_malloc_alignment) const
@@ -55,7 +55,7 @@ struct cuda_memory_resource
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_bad_alloc();
+      _CUDA_VSTD::__throw_bad_alloc();
     }
 
     void* __ptr{nullptr};
@@ -159,6 +159,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_MEMORY_RESOURCE_H

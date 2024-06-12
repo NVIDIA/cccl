@@ -42,6 +42,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/integer_math.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
@@ -387,7 +388,7 @@ struct DispatchMergeSort : SelectedPolicy
 
   // Problem state
 
-  /// Device-accessible allocation of temporary storage. When NULL, the required
+  /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.
   void* d_temp_storage;
 

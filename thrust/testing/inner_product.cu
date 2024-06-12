@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestInnerProductSimple(void)
+void TestInnerProductSimple()
 {
   typedef typename Vector::value_type T;
 
@@ -63,7 +63,7 @@ void TestInnerProductDispatchImplicit()
 DECLARE_UNITTEST(TestInnerProductDispatchImplicit);
 
 template <class Vector>
-void TestInnerProductWithOperator(void)
+void TestInnerProductWithOperator()
 {
   typedef typename Vector::value_type T;
 
@@ -109,7 +109,7 @@ struct only_set_when_both_expected
   long long expected;
   bool* flag;
 
-  __device__ long long operator()(long long x, long long y)
+  _CCCL_DEVICE long long operator()(long long x, long long y)
   {
     if (x == expected && y == expected)
     {

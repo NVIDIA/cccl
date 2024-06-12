@@ -9,11 +9,13 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // define a 2d float vector
 typedef thrust::tuple<float, float> vec2;
 
 // return a random vec2 in [0,1)^2
-vec2 make_random_vec2(void)
+vec2 make_random_vec2()
 {
   static thrust::default_random_engine rng;
   static thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
@@ -45,7 +47,7 @@ struct point_to_bucket_index : public thrust::unary_function<vec2, unsigned int>
   }
 };
 
-int main(void)
+int main()
 {
   const size_t N = 1000000;
 

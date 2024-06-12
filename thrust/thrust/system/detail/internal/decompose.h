@@ -45,17 +45,17 @@ public:
       , m_end(end)
   {}
 
-  _CCCL_HOST_DEVICE index_type begin(void) const
+  _CCCL_HOST_DEVICE index_type begin() const
   {
     return m_begin;
   }
 
-  _CCCL_HOST_DEVICE index_type end(void) const
+  _CCCL_HOST_DEVICE index_type end() const
   {
     return m_end;
   }
 
-  _CCCL_HOST_DEVICE index_type size(void) const
+  _CCCL_HOST_DEVICE index_type size() const
   {
     return m_end - m_begin;
   }
@@ -104,7 +104,7 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE index_type size(void) const
+  _CCCL_HOST_DEVICE index_type size() const
   {
     return m_intervals;
   }

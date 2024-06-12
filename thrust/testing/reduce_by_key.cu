@@ -8,7 +8,7 @@
 template <typename T>
 struct is_equal_div_10_reduce
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }
@@ -45,7 +45,7 @@ void initialize_values(Vector& values)
 }
 
 template <typename Vector>
-void TestReduceByKeySimple(void)
+void TestReduceByKeySimple()
 {
   typedef typename Vector::value_type T;
 
