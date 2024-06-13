@@ -7,7 +7,6 @@ Type Traits
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*struct*integer__sequence*
    ${repo_docs_api_path}/*struct*proclaim__contiguous__iterator*
    ${repo_docs_api_path}/*struct*conjunction*
    ${repo_docs_api_path}/*struct*disjunction*
