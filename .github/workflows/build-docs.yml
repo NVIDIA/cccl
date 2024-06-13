@@ -29,35 +29,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-
-      # Build helper image for Thrust/CUB
-      - name: Build helper image
-        run: bash ./docs/make_env.bash "cccl:docs"
-
-      # Build all docs
-      - name: Build all docs
-        run: ./docs/gen_docs.bash
-
-      # Copy all docs to the right folder
-      - name: Move docs to right folder
-
-        run: |
-          mkdir _site
-          cp -rf ./docs/_build/docs/cccl/latest/* _site
-          mkdir _site/cub
-          cp -rf ./docs/_build/docs/cub/latest/* _site/cub
-          mkdir _site/libcudacxx
-          cp -rf ./docs/_build/docs/libcudacxx/latest/* _site/libcudacxx
-          mkdir _site/thrust
-          cp -rf ./docs/_build/docs/thrust/latest/* _site/thrust
-          ./docs/scrape_docs.bash ./_site
-          cp ./docs/404.html _site/404.html
-
-      # Upload build artifacts
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Build and upload docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "true"
+          upload_pages_artifact: "true"
 
   # Deployment job
   deploy:

@@ -160,6 +160,23 @@ jobs:
       contents: read
     uses: ./.github/workflows/verify-devcontainers.yml
 
+  verify-docs:
+    name: Build and Verify Docs
+    if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and upload docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "true"
+          upload_pages_artifact: "false"
+
   build-rapids:
     name: Build RAPIDS
     secrets: inherit
@@ -182,6 +199,7 @@ jobs:
     needs:
       - verify-workflow
       - verify-devcontainers
+      - verify-docs
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -203,6 +221,7 @@ jobs:
 
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
+          check_result "verify-docs"          "success" "${{needs.verify-docs.result}}"
 
           if [[ "$status" != "success" ]]; then
             exit 1

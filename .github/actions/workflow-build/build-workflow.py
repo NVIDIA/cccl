@@ -788,7 +788,7 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     if args:
         if args.skip_tests:
             matrix_jobs = remove_skip_test_jobs(matrix_jobs)
-        if args.dirty_projects:
+        if args.dirty_projects != None:  # Explicitly check for None, as an empty list is valid:
             matrix_jobs = [job for job in matrix_jobs if job['project'] in args.dirty_projects]
 
     # Don't remove excluded jobs if we're currently parsing them:
