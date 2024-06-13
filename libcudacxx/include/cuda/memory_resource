@@ -3,7 +3,7 @@
 // Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,6 +19,17 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+//!@rst
+//! @file Defines facilities to allocate and deallocate memory in a type safe maner
+//!
+//! .. note::
+//!
+//!    The content of ``<cuda/memory_resource>`` is only available from C++14 onwards. The design is still experimental
+//!    and does not provide the usual API stability guarantees. To enable these features define
+//!    ``LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE``
+//!
+//!@endrst
 
 #include <cuda/__memory_resource/cuda_managed_memory_resource.h>
 #include <cuda/__memory_resource/cuda_memory_resource.h>
