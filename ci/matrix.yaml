@@ -199,7 +199,7 @@ jobs:
 
   # Thrust:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }
-  test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '=gpu-only'} }
+  test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
 # Project have the following properties:
 #
