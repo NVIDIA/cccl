@@ -20,6 +20,7 @@ jobs:
   get-devcontainer-list:
     name: Verify devcontainer files are up-to-date
     outputs:
+      skip: ${{ steps.inspect-changes.outputs.skip }}
       devcontainers: ${{ steps.get-list.outputs.devcontainers }}
     runs-on: ubuntu-latest
     steps:
@@ -95,7 +96,7 @@ jobs:
   verify-devcontainers:
     name: ${{matrix.devcontainer.name}}
     needs: get-devcontainer-list
-    if: ${{ needs.get-devcontainer-list.outputs.devcontainers != 'null' }}
+    if: ${{ needs.get-devcontainer-list.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

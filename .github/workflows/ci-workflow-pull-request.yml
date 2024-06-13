@@ -55,6 +55,7 @@ jobs:
           echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
       - name: Build workflow
+        if: ${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}
         id: build-workflow
         uses: ./.github/actions/workflow-build
         env:
@@ -71,7 +72,9 @@ jobs:
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -86,7 +89,9 @@ jobs:
 
   dispatch-groups-windows-two-stage:
     name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -101,7 +106,9 @@ jobs:
 
   dispatch-groups-linux-standalone:
     name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -116,7 +123,9 @@ jobs:
 
   dispatch-groups-windows-standalone:
     name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -131,7 +140,7 @@ jobs:
 
   verify-workflow:
     name: Verify and summarize workflow results
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[skip-matrix]') }}
     needs:
       - build-workflow
       - dispatch-groups-linux-two-stage
