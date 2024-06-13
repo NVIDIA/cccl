@@ -669,20 +669,20 @@ struct KernelConfig
 };
 
 /// Helper for dispatching into a policy chain
-template <int PTX_VERSION, typename PolicyT, typename PrevPolicyT>
+template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
 struct ChainedPolicy
 {
   /// The policy for the active compiler pass
   using ActivePolicy =
-    cub::detail::conditional_t<(CUB_PTX_ARCH < PTX_VERSION), typename PrevPolicyT::ActivePolicy, PolicyT>;
+    cub::detail::conditional_t<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
-    if (ptx_version < PTX_VERSION)
+    if (device_ptx_version < PolicyPtxVersion)
     {
-      return PrevPolicyT::Invoke(ptx_version, op);
+      return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
   }
