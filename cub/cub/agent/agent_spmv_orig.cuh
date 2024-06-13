@@ -264,7 +264,7 @@ struct AgentSpmv
   {
     // Value type to pair with index type OffsetT
     // (NullType if loading values directly during merge)
-    using MergeValueT = cub::detail::conditional_t<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
+    using MergeValueT = ::cuda::std::__conditional_t<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
 
     OffsetT row_end_offset;
     MergeValueT nonzero;

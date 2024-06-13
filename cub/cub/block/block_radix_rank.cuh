@@ -221,7 +221,7 @@ private:
 
   // Integer type for packing DigitCounters into columns of shared memory banks
   using PackedCounter =
-    cub::detail::conditional_t<SMEM_CONFIG == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
+    ::cuda::std::__conditional_t<SMEM_CONFIG == cudaSharedMemBankSizeEightByte, unsigned long long, unsigned int>;
 
   static constexpr DigitCounter max_tile_size = ::cuda::std::numeric_limits<DigitCounter>::max();
 
@@ -1195,16 +1195,16 @@ namespace detail
 // - Support multi-dimensional thread blocks in the rest of implementations
 // - Repurpose BlockRadixRank as an entry name with the algorithm template parameter
 template <RadixRankAlgorithm RankAlgorithm, int BlockDimX, int RadixBits, bool IsDescending, BlockScanAlgorithm ScanAlgorithm>
-using block_radix_rank_t = cub::detail::conditional_t<
+using block_radix_rank_t = ::cuda::std::__conditional_t<
   RankAlgorithm == RADIX_RANK_BASIC,
   BlockRadixRank<BlockDimX, RadixBits, IsDescending, false, ScanAlgorithm>,
-  cub::detail::conditional_t<
+  ::cuda::std::__conditional_t<
     RankAlgorithm == RADIX_RANK_MEMOIZE,
     BlockRadixRank<BlockDimX, RadixBits, IsDescending, true, ScanAlgorithm>,
-    cub::detail::conditional_t<
+    ::cuda::std::__conditional_t<
       RankAlgorithm == RADIX_RANK_MATCH,
       BlockRadixRankMatch<BlockDimX, RadixBits, IsDescending, ScanAlgorithm>,
-      cub::detail::conditional_t<
+      ::cuda::std::__conditional_t<
         RankAlgorithm == RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ANY>,
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ATOMIC_OR>>>>>;

@@ -694,7 +694,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 template <typename KeyT, typename ValueT>
 struct DeviceSegmentedSortPolicy
 {
-  using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::__conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   static constexpr int KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 

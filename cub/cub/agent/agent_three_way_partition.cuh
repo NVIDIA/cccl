@@ -197,9 +197,9 @@ struct AgentThreeWayPartition
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
-                               cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::__conditional_t<std::is_pointer<InputIteratorT>::value,
+                                 cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                 InputIteratorT>;
 
   // Parameterized BlockLoad type for input data
   using BlockLoadT = cub::BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM>;

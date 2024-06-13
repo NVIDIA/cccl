@@ -171,7 +171,7 @@ struct AgentSegmentFixup
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
-  using WrappedPairsInputIteratorT = cub::detail::conditional_t<
+  using WrappedPairsInputIteratorT = ::cuda::std::__conditional_t<
     std::is_pointer<PairsInputIteratorT>::value,
     CacheModifiedInputIterator<AgentSegmentFixupPolicyT::LOAD_MODIFIER, KeyValuePairT, OffsetT>,
     PairsInputIteratorT>;
@@ -180,9 +180,9 @@ struct AgentSegmentFixup
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedFixupInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<AggregatesOutputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentSegmentFixupPolicyT::LOAD_MODIFIER, ValueT, OffsetT>,
-                               AggregatesOutputIteratorT>;
+    ::cuda::std::__conditional_t<std::is_pointer<AggregatesOutputIteratorT>::value,
+                                 CacheModifiedInputIterator<AgentSegmentFixupPolicyT::LOAD_MODIFIER, ValueT, OffsetT>,
+                                 AggregatesOutputIteratorT>;
 
   // Reduce-value-by-segment scan operator
   using ReduceBySegmentOpT = ReduceByKeyOp<cub::Sum>;

@@ -228,8 +228,8 @@ template <
   typename OffsetT,
   typename AccumT = detail::accumulator_t<
     ScanOpT,
-    cub::detail::
-      conditional_t<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>,
+    ::cuda::std::
+      __conditional_t<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>,
     cub::detail::value_t<ValuesInputIteratorT>>,
   typename SelectedPolicy =
     DeviceScanByKeyPolicy<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>

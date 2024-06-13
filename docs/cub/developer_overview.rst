@@ -237,7 +237,7 @@ For example, :cpp:struct:`cub::WarpReduce` dispatches to two different implement
 
 .. code-block:: c++
 
-    using InternalWarpReduce = cub::detail::conditional_t<
+    using InternalWarpReduce = cuda::std::conditional_t<
       IS_POW_OF_TWO,
       WarpReduceShfl<T, LOGICAL_WARP_THREADS>,  // shuffle-based implementation
       WarpReduceSmem<T, LOGICAL_WARP_THREADS>>; // smem-based implementation

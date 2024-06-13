@@ -674,7 +674,7 @@ struct ChainedPolicy
 {
   /// The policy for the active compiler pass
   using ActivePolicy =
-    cub::detail::conditional_t<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
+    ::cuda::std::__conditional_t<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>

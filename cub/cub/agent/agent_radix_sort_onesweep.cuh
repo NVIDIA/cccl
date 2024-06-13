@@ -146,10 +146,10 @@ struct AgentRadixSortOnesweep
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
                 "for onesweep agent, the ranking algorithm must warp-strided key arrangement");
 
-  using BlockRadixRankT = cub::detail::conditional_t<
+  using BlockRadixRankT = ::cuda::std::_If<
     RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
     BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ATOMIC_OR, RANK_NUM_PARTS>,
-    cub::detail::conditional_t<
+    ::cuda::std::_If<
       RANK_ALGORITHM == RADIX_RANK_MATCH,
       BlockRadixRankMatch<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM>,
       BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ANY, RANK_NUM_PARTS>>>;

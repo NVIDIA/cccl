@@ -132,7 +132,7 @@ struct random_to_item_t
 template <typename T>
 struct random_to_item_t<T, cub::FLOATING_POINT>
 {
-  using storage_t = cub::detail::conditional_t<(sizeof(T) > 4), double, float>;
+  using storage_t = ::cuda::std::__conditional_t<(sizeof(T) > 4), double, float>;
   storage_t m_min;
   storage_t m_max;
 

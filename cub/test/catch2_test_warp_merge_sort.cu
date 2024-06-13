@@ -403,7 +403,7 @@ CUB_TEST(
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
-  using warp_sort_delegate = cub::detail::conditional_t<params::is_stable, warp_stable_sort_keys_t, warp_sort_keys_t>;
+  using warp_sort_delegate = ::cuda::std::__conditional_t<params::is_stable, warp_stable_sort_keys_t, warp_sort_keys_t>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -434,7 +434,7 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
   using params = params_t<TestType>;
   using type   = typename params::type;
   using warp_sort_delegate =
-    cub::detail::conditional_t<params::is_stable, warp_partial_stable_sort_keys_t, warp_partial_sort_keys_t>;
+    ::cuda::std::__conditional_t<params::is_stable, warp_partial_stable_sort_keys_t, warp_partial_sort_keys_t>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -465,10 +465,11 @@ CUB_TEST("Warp sort on keys-value pairs works",
          stability_list,
          value_types)
 {
-  using params             = params_t<TestType>;
-  using key_type           = typename params::type;
-  using value_type         = typename c2h::get<4, TestType>;
-  using warp_sort_delegate = cub::detail::conditional_t<params::is_stable, warp_stable_sort_pairs_t, warp_sort_pairs_t>;
+  using params     = params_t<TestType>;
+  using key_type   = typename params::type;
+  using value_type = typename c2h::get<4, TestType>;
+  using warp_sort_delegate =
+    ::cuda::std::__conditional_t<params::is_stable, warp_stable_sort_pairs_t, warp_sort_pairs_t>;
 
   // Prepare test data
   c2h::device_vector<key_type> d_keys_in(params::tile_size);
@@ -511,7 +512,7 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   using key_type   = typename params::type;
   using value_type = typename c2h::get<4, TestType>;
   using warp_sort_delegate =
-    cub::detail::conditional_t<params::is_stable, warp_partial_stable_sort_pairs_t, warp_partial_sort_pairs_t>;
+    ::cuda::std::__conditional_t<params::is_stable, warp_partial_stable_sort_pairs_t, warp_partial_sort_pairs_t>;
 
   // Prepare test data
   c2h::device_vector<key_type> d_keys_in(params::tile_size);

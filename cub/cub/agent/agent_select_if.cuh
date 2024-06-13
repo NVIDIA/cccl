@@ -219,17 +219,17 @@ struct AgentSelectIf
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<::cuda::std::is_pointer<InputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::__conditional_t<::cuda::std::is_pointer<InputIteratorT>::value,
+                                 CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                 InputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
   // or directly use the supplied input iterator type
   using WrappedFlagsInputIteratorT =
-    cub::detail::conditional_t<::cuda::std::is_pointer<FlagsInputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
-                               FlagsInputIteratorT>;
+    ::cuda::std::__conditional_t<::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+                                 CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
+                                 FlagsInputIteratorT>;
 
   // Parameterized BlockLoad type for input data
   using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;

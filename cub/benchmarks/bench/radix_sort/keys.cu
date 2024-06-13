@@ -46,7 +46,7 @@ struct policy_hub_t
 {
   static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
-  using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::__conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {

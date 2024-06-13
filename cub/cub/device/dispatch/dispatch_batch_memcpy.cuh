@@ -454,8 +454,8 @@ struct DispatchBatchMemcpy : SelectedPolicy
     // The number of thread blocks (or tiles) required to process all of the given buffers
     BlockOffsetT num_tiles = DivideAndRoundUp(num_buffers, TILE_SIZE);
 
-    using BlevBufferSrcsOutT    = cub::detail::conditional_t<IsMemcpy, void*, cub::detail::value_t<InputBufferIt>>;
-    using BlevBufferDstOutT     = cub::detail::conditional_t<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
+    using BlevBufferSrcsOutT    = ::cuda::std::__conditional_t<IsMemcpy, void*, cub::detail::value_t<InputBufferIt>>;
+    using BlevBufferDstOutT     = ::cuda::std::__conditional_t<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT  = BlevBufferSrcsOutT*;
     using BlevBufferDstsOutItT  = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT = BufferSizeT*;
