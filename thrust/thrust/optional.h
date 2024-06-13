@@ -23,7 +23,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/addressof.h>
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
 
