@@ -155,20 +155,12 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlaceAlgT>)
 
   // TODO Extract into helper TU
   const auto selected_elements = thrust::count_if(in.cbegin(), in.cend(), select_op);
+  thrust::device_vector<T> out(selected_elements);
 
   input_it_t d_in                  = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out                = thrust::raw_pointer_cast(in.data());
+  output_it_t d_out                = thrust::raw_pointer_cast(out.data());
   flag_it_t d_flags                = nullptr;
   num_selected_it_t d_num_selected = thrust::raw_pointer_cast(num_selected.data());
-
-  thrust::device_vector<T> out{};
-
-  // If this is not an in-place invocation, allocate memory for the output
-  if (!InPlaceAlgT::value)
-  {
-    out.resize(selected_elements);
-    d_out = thrust::raw_pointer_cast(out.data());
-  }
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
