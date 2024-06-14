@@ -8,3 +8,6 @@ _deps/catch2-src/
 _site/
 compile_commands.json
 CMakeUserPresets.json
+/ci/rapids/.conda
+/ci/rapids/.log
+/ci/rapids/.repos
