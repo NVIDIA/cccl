@@ -70,7 +70,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_bad_alloc();
+      _CUDA_VSTD::__throw_bad_alloc();
     }
 
     void* __ptr{nullptr};
