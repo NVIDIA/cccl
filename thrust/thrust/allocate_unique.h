@@ -15,7 +15,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/memory_algorithms.h>
 #include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/raw_pointer_cast.h>

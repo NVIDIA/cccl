@@ -33,7 +33,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
 
 #include <type_traits>
 
