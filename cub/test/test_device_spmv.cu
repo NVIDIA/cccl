@@ -37,6 +37,8 @@
 #include <thrust/mismatch.h>
 #include <thrust/scan.h>
 
+#include <cuda/std/type_traits>
+
 #include <iostream>
 #include <type_traits>
 #include <typeinfo>
@@ -205,7 +207,7 @@ struct csr_matrix
 
 private:
   template <typename VecValueT>
-  using vector_t = ::cuda::std::__conditional_t<HostStorage, c2h::host_vector<VecValueT>, c2h::device_vector<VecValueT>>;
+  using vector_t = ::cuda::std::_If<HostStorage, c2h::host_vector<VecValueT>, c2h::device_vector<VecValueT>>;
 
   vector_t<ValueT> m_values;
   vector_t<int> m_row_offsets;

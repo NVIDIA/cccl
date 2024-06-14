@@ -59,6 +59,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 #include <stdio.h>
@@ -131,14 +133,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
     DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
-    ::cuda::std::__conditional_t<ALT_DIGIT_BITS,
-                                 typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                                 typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+    ::cuda::std::_If<ALT_DIGIT_BITS,
+                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
+                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
 
   using ActiveDownsweepPolicyT =
-    ::cuda::std::__conditional_t<ALT_DIGIT_BITS,
-                                 typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                                 typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+    ::cuda::std::_If<ALT_DIGIT_BITS,
+                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
+                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
   enum
   {
@@ -284,14 +286,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
     DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
-    ::cuda::std::__conditional_t<ALT_DIGIT_BITS,
-                                 typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                                 typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+    ::cuda::std::_If<ALT_DIGIT_BITS,
+                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
+                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
 
   using ActiveDownsweepPolicyT =
-    ::cuda::std::__conditional_t<ALT_DIGIT_BITS,
-                                 typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                                 typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+    ::cuda::std::_If<ALT_DIGIT_BITS,
+                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
+                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
   enum
   {
@@ -547,9 +549,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   //
 
   using SegmentedPolicyT =
-    ::cuda::std::__conditional_t<ALT_DIGIT_BITS,
-                                 typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
-                                 typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
+    ::cuda::std::_If<ALT_DIGIT_BITS,
+                     typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
+                     typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
 
   enum
   {
@@ -892,7 +894,7 @@ struct DeviceRadixSortPolicy
   static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
   // Dominant-sized key/value type
-  using DominantT = ::cuda::std::__conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   //------------------------------------------------------------------------------
   // Architecture-specific tuning policies
@@ -963,9 +965,9 @@ struct DeviceRadixSortPolicy
       PRIMARY_RADIX_BITS - 1>;
 
     // Downsweep policies
-    using DownsweepPolicy = ::cuda::std::__conditional_t<KEYS_ONLY, DownsweepPolicyKeys, DownsweepPolicyPairs>;
+    using DownsweepPolicy = ::cuda::std::_If<KEYS_ONLY, DownsweepPolicyKeys, DownsweepPolicyPairs>;
 
-    using AltDownsweepPolicy = ::cuda::std::__conditional_t<KEYS_ONLY, AltDownsweepPolicyKeys, AltDownsweepPolicyPairs>;
+    using AltDownsweepPolicy = ::cuda::std::_If<KEYS_ONLY, AltDownsweepPolicyKeys, AltDownsweepPolicyPairs>;
 
     // Upsweep policies
     using UpsweepPolicy    = DownsweepPolicy;
@@ -1575,7 +1577,7 @@ struct DeviceRadixSortPolicy
       ONESWEEP_RADIX_BITS>;
 
     using OnesweepLargeKeyPolicy = //
-      ::cuda::std::__conditional_t<sizeof(KeyT) == 4, OnesweepPolicyKey32, OnesweepPolicyKey64>;
+      ::cuda::std::_If<sizeof(KeyT) == 4, OnesweepPolicyKey32, OnesweepPolicyKey64>;
 
     using OnesweepSmallKeyPolicySizes = //
       detail::radix::sm90_small_key_tuning<sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>;
@@ -1589,9 +1591,9 @@ struct DeviceRadixSortPolicy
       RADIX_SORT_STORE_DIRECT,
       8>;
     using OnesweepPolicy = //
-      ::cuda::std::__conditional_t<sizeof(KeyT) < 4, //
-                                   OnesweepSmallKeyPolicy, //
-                                   OnesweepLargeKeyPolicy>;
+      ::cuda::std::_If<sizeof(KeyT) < 4, //
+                       OnesweepSmallKeyPolicy, //
+                       OnesweepLargeKeyPolicy>;
 
     using ScanPolicy =
       AgentScanPolicy<512,

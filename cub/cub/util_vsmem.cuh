@@ -47,6 +47,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/discard_memory>
+#include <cuda/std/type_traits>
 
 #include <cstdint>
 
@@ -95,7 +96,7 @@ private:
 
 public:
   // Type alias to be used for static temporary storage declaration within the algorithm's kernel
-  using static_temp_storage_t = ::cuda::std::__conditional_t<needs_vsmem, cub::NullType, typename AgentT::TempStorage>;
+  using static_temp_storage_t = ::cuda::std::_If<needs_vsmem, cub::NullType, typename AgentT::TempStorage>;
 
   // The amount of global memory-backed virtual shared memory needed, padded to an integer multiple of 128 bytes
   static constexpr std::size_t vsmem_per_block = needs_vsmem ? (required_smem + padding_bytes) : 0;

@@ -48,6 +48,8 @@
 #include <cub/block/specializations/block_histogram_sort.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //! @brief BlockHistogramAlgorithm enumerates alternative algorithms for the parallel construction of
@@ -199,9 +201,9 @@ private:
 
   /// Internal specialization.
   using InternalBlockHistogram =
-    ::cuda::std::__conditional_t<ALGORITHM == BLOCK_HISTO_SORT,
-                                 BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
-                                 BlockHistogramAtomic<BINS>>;
+    ::cuda::std::_If<ALGORITHM == BLOCK_HISTO_SORT,
+                     BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
+                     BlockHistogramAtomic<BINS>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;

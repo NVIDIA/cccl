@@ -56,6 +56,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -228,9 +230,9 @@ template <typename InputIteratorT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT         = detail::accumulator_t<ScanOpT,
-                                                  ::cuda::std::__conditional_t<std::is_same<InitValueT, NullType>::value,
-                                                                               cub::detail::value_t<InputIteratorT>,
-                                                                               typename InitValueT::value_type>,
+                                                  ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
+                                                                   cub::detail::value_t<InputIteratorT>,
+                                                                   typename InitValueT::value_type>,
                                                   cub::detail::value_t<InputIteratorT>>,
           typename SelectedPolicy = DeviceScanPolicy<AccumT, ScanOpT>>
 struct DispatchScan : SelectedPolicy

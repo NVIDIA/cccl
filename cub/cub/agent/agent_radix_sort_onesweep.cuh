@@ -49,6 +49,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 /** \brief cub::RadixSortStoreAlgorithm enumerates different algorithms to write

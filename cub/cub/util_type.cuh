@@ -385,23 +385,20 @@ struct UnitWord
   };
 
   /// Biggest shuffle word that T is a whole multiple of and is not larger than the alignment of T
-  using ShuffleWord = ::cuda::std::__conditional_t<
-    IsMultiple<int>::IS_MULTIPLE,
-    unsigned int,
-    ::cuda::std::__conditional_t<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
+  using ShuffleWord =
+    ::cuda::std::_If<IsMultiple<int>::IS_MULTIPLE,
+                     unsigned int,
+                     ::cuda::std::_If<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
 
   /// Biggest volatile word that T is a whole multiple of and is not larger than the alignment of T
-  using VolatileWord =
-    ::cuda::std::__conditional_t<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
+  using VolatileWord = ::cuda::std::_If<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
 
   /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
-  using DeviceWord = ::cuda::std::__conditional_t<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
+  using DeviceWord = ::cuda::std::_If<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
 
   /// Biggest texture reference word that T is a whole multiple of and is not larger than the alignment of T
-  using TextureWord =
-    ::cuda::std::__conditional_t<IsMultiple<int4>::IS_MULTIPLE,
-                                 uint4,
-                                 ::cuda::std::__conditional_t<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
+  using TextureWord = ::cuda::std::
+    _If<IsMultiple<int4>::IS_MULTIPLE, uint4, ::cuda::std::_If<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
 };
 
 // float2 specialization workaround (for SM10-SM13)
