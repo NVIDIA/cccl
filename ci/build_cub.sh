@@ -32,7 +32,7 @@ else
     echo "Not building with NVCC, disabling RDC and benchmarks."
 fi
 
-if [[ "$HOST_COMPILER" == *icpc* ]]; then
+if [[ "$HOST_COMPILER" == *icpc* || "$HOST_COMPILER" == *nvhpc* ]]; then
     ENABLE_CUB_BENCHMARKS="false"
 fi
 

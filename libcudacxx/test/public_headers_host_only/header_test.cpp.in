@@ -25,3 +25,5 @@
 
 // This file tests that the respective header is includable on its own and be compiled with a host compiler
 #include <${header}>
+
+int main(int, char**) { return 0; }

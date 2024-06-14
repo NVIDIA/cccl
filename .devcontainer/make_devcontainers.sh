@@ -31,8 +31,13 @@ update_devcontainer() {
     local os="$8"
     local devcontainer_version="$9"
 
+    # NVHPC SDK comes with its own bundeled toolkit
+    local toolkit_name="-cuda${cuda_version}"
+    if [ $compiler_name == "nvhpc" ]; then
+        toolkit_name=""
+    fi
     local IMAGE_ROOT="rapidsai/devcontainers:${devcontainer_version}-cpp-"
-    local image="${IMAGE_ROOT}${compiler_name}${compiler_version}-cuda${cuda_version}-${os}"
+    local image="${IMAGE_ROOT}${compiler_name}${compiler_version}${toolkit_name}-${os}"
 
     jq --arg image "$image" --arg name "$name" \
        --arg cuda_version "$cuda_version" --arg compiler_name "$compiler_name" \

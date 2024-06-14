@@ -40,6 +40,9 @@ msvc2022: &msvc2022 { name: 'cl', version: '14.39', exe: 'cl++' }
 # oneAPI configs
 oneapi: &oneapi { name: 'oneapi', version: '2023.2.0', exe: 'icpc' }
 
+# nvhpc configs
+nvhpc: &nvhpc { name: 'nvhpc', version: '24.3', exe: 'nvc++' }
+
 # GHA Workflow job matrices:
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
@@ -59,7 +62,7 @@ workflows:
     # Current CTK
     - {jobs: ['build'], std: 'all', cxx: [*gcc7, *gcc8, *gcc9, *gcc10, *gcc11, *gcc12]}
     - {jobs: ['build'], std: 'all', cxx: [*llvm9, *llvm10, *llvm11, *llvm12, *llvm13, *llvm14, *llvm15, *llvm16]}
-    - {jobs: ['build'], std: 'all', cxx: [*oneapi, *msvc2019]}
+    - {jobs: ['build'], std: 'all', cxx: [*oneapi, *nvhpc, *msvc2019]}
     - {jobs: ['test'],  std: 'all', cxx: [*gcc13, *llvm17, *msvc2022]}
     # Modded builds:
     - {jobs: ['build'], std: 'all', cxx: [*gcc-newest, *llvm-newest], cpu: 'arm64'}
@@ -228,6 +231,7 @@ default_os_lookup:
   'ctk12.4-cl14.36': 'windows2022'
   'ctk12.4-cl14.39': 'windows2022'
   'ctk12.4-oneapi2023.2.0': 'ubuntu22.04'
+  'ctk12.4-nvhpc24.3': 'ubuntu22.04'
 
 # Lookup supported C++ standards for a given compiler when `std: 'all'`.
 all_stds:           [11, 14, 17, 20]
@@ -253,6 +257,7 @@ lookup_cxx_supported_stds:
   'cl14.29':        [    14, 17    ]
   'cl14.36':        [    14, 17, 20]
   'cl14.39':        [    14, 17, 20]
+  'nvhpc24.3':      [11, 14, 17, 20]
   'oneapi2023.2.0': [11, 14, 17    ]
 lookup_cudacxx_supported_stds:
   'nvcc11.1':       [11, 14, 17    ]

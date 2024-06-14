@@ -55,7 +55,6 @@ function(libcudacxx_add_internal_header_test header)
   # Create the source file for the header target from the template and add the file to the global project
   set(headertest_src "headers/${header_name}")
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cu")
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/header_test.cpp.in" "${headertest_src}.cpp")
 
   # Create the default target for that file
   libcudacxx_create_internal_header_test(${header_name}, ${headertest_src}, "")
