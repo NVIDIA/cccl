@@ -105,7 +105,6 @@
 #include <cub/iterator/counting_input_iterator.cuh>
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
-#include <cub/iterator/tex_ref_input_iterator.cuh>
 #include <cub/iterator/transform_input_iterator.cuh>
 
 // Util
