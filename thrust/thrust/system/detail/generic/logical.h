@@ -25,10 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/internal_functional.h>
-#include <thrust/find.h>
+#include <thrust/count.h>
 #include <thrust/logical.h>
-#include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -42,14 +40,16 @@ template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
 all_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
-  return thrust::find_if(exec, first, last, thrust::not_fn(pred)) == last;
+  // TODO(bgruber): we could implement this even better using an early exit
+  return thrust::count_if(exec, first, last, thrust::not_fn(pred)) == 0;
 }
 
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
 any_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
-  return thrust::find_if(exec, first, last, pred) != last;
+  // TODO(bgruber): we could implement this even better using an early exit
+  return thrust::count_if(exec, first, last, pred) > 0;
 }
 
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
