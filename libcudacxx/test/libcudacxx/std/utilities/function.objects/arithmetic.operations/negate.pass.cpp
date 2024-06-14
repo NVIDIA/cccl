@@ -46,13 +46,13 @@ int main(int, char**)
   static_assert((cuda::std::is_same<F::result_type, int>::value), "");
 #endif
   assert(f(36) == -36);
-#if TEST_STD_VER > 2011
+
   typedef cuda::std::negate<> F2;
   const F2 f2 = F2();
   assert(f2(36) == -36);
   assert(f2(36L) == -36);
   assert(f2(36.0) == -36);
-
+#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::negate<int>()(3);
   static_assert(foo == -3, "");
 

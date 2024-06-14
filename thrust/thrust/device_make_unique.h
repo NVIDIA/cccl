@@ -30,7 +30,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/allocate_unique.h>
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/device_allocator.h>
 #include <thrust/device_new.h>

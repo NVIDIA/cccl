@@ -19,7 +19,7 @@ ceil_div
 
    The function is only constexpr from C++14 onwards
 
-**Example**: This API is very useful for determining the _number of thread blocks_ required to process a fixed amount of work, given a fixed number of threads per block:
+**Example**: This API is very useful for determining the *number of thread blocks* required to process a fixed amount of work, given a fixed number of threads per block:
 
 .. code:: cuda
 

@@ -503,7 +503,7 @@ public:
   //!
   //! Suppose the set of input ``thread_data`` in the first warp is
   //! ``{0, 1, 2, 3, ..., 31}``, in the second warp is ``{1, 2, 3, 4, ..., 32}`` etc.
-  //!  The corresponding output ``thread_data`` for a max operation in the first
+  //! The corresponding output ``thread_data`` for a max operation in the first
   //! warp would be ``{3, 3, 3, 3, ..., 31}``, the output for the second warp would be
   //! ``{3, 3, 3, 4, ..., 32}``, etc.
   //! @endrst
@@ -578,6 +578,7 @@ public:
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan operator type having member
   //!   `T operator()(const T &a, const T &b)`
+  //!
   //! @param[in] input
   //!   Calling thread's input item
   //!
@@ -625,6 +626,7 @@ public:
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan operator type having member
   //!   `T operator()(const T &a, const T &b)`
+  //!
   //! @param[in] input
   //!   Calling thread's input item
   //!

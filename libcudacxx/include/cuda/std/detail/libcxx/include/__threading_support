@@ -56,7 +56,7 @@ _CCCL_PUSH_MACROS
 #  endif
 
 #  if defined(_LIBCUDACXX_HAS_THREAD_LIBRARY_EXTERNAL) || defined(_LIBCUDACXX_BUILDING_THREAD_LIBRARY_EXTERNAL)
-#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_FUNC_VIS
+#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_INLINE_VISIBILITY
 #  else
 #    define _LIBCUDACXX_THREAD_ABI_VISIBILITY inline _LIBCUDACXX_INLINE_VISIBILITY
 #  endif
@@ -687,8 +687,7 @@ struct alignas(64) __libcpp_contention_t
 #    endif
 };
 
-_LIBCUDACXX_FUNC_VIS
-__libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
+_LIBCUDACXX_INLINE_VISIBILITY __libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
 
 #  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 

@@ -7,3 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+#ifndef __CUDAX_HIERARCHY___
+#define __CUDAX_HIERARCHY___
+
+#include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
+
+#endif

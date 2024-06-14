@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
 #include <cuda/std/functional>
 // #include <cuda/std/string>
 

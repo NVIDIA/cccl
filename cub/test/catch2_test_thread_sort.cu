@@ -32,8 +32,8 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include "catch2_test_helper.h"
 #include "cub/thread/thread_sort.cuh"
-#include "test_util.h"
 
 struct CustomLess
 {
@@ -71,30 +71,34 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
   }
 }
 
-template <typename KeyT, typename ValueT, int ItemsPerThread>
-void Test()
+using value_types           = c2h::type_list<std::uint32_t, std::uint64_t>;
+using items_per_thread_list = c2h::enum_type_list<int, 2, 3, 4, 5, 7, 8, 9, 11>;
+
+CUB_TEST("Test", "[thread_sort]", value_types, items_per_thread_list)
 {
+  using key_t                             = std::uint32_t;
+  using value_t                           = c2h::get<0, TestType>;
+  constexpr int items_per_thread          = c2h::get<1, TestType>::value;
   constexpr unsigned int threads_in_block = 1024;
-  constexpr unsigned int elements         = threads_in_block * ItemsPerThread;
+  constexpr unsigned int elements         = threads_in_block * items_per_thread;
 
   thrust::default_random_engine re;
-  thrust::device_vector<std::uint8_t> data_source(elements);
+  c2h::device_vector<std::uint8_t> data_source(elements);
 
   for (int iteration = 0; iteration < 10; iteration++)
   {
-    thrust::sequence(data_source.begin(), data_source.end());
-    thrust::shuffle(data_source.begin(), data_source.end(), re);
-    thrust::device_vector<KeyT> in_keys(data_source);
-    thrust::device_vector<KeyT> out_keys(elements);
+    c2h::gen(CUB_SEED(2), data_source);
+    c2h::device_vector<key_t> in_keys(data_source);
+    c2h::device_vector<key_t> out_keys(elements);
 
     thrust::shuffle(data_source.begin(), data_source.end(), re);
-    thrust::device_vector<ValueT> in_values(data_source);
-    thrust::device_vector<ValueT> out_values(elements);
+    c2h::device_vector<value_t> in_values(data_source);
+    c2h::device_vector<value_t> out_values(elements);
 
-    thrust::host_vector<KeyT> host_keys(in_keys);
-    thrust::host_vector<ValueT> host_values(in_values);
+    c2h::host_vector<key_t> host_keys(in_keys);
+    c2h::host_vector<value_t> host_values(in_values);
 
-    kernel<KeyT, ValueT, ItemsPerThread><<<1, threads_in_block>>>(
+    kernel<key_t, value_t, items_per_thread><<<1, threads_in_block>>>(
       thrust::raw_pointer_cast(in_keys.data()),
       thrust::raw_pointer_cast(out_keys.data()),
       thrust::raw_pointer_cast(in_values.data()),
@@ -102,8 +106,8 @@ void Test()
 
     for (unsigned int tid = 0; tid < threads_in_block; tid++)
     {
-      const auto thread_begin = tid * ItemsPerThread;
-      const auto thread_end   = thread_begin + ItemsPerThread;
+      const auto thread_begin = tid * items_per_thread;
+      const auto thread_end   = thread_begin + items_per_thread;
 
       thrust::sort_by_key(host_keys.begin() + thread_begin,
                           host_keys.begin() + thread_end,
@@ -111,28 +115,7 @@ void Test()
                           CustomLess{});
     }
 
-    AssertEquals(host_keys, out_keys);
-    AssertEquals(host_values, out_values);
+    CHECK(host_keys == out_keys);
+    CHECK(host_values == out_values);
   }
-}
-
-template <typename KeyT, typename ValueT>
-void Test()
-{
-  Test<KeyT, ValueT, 2>();
-  Test<KeyT, ValueT, 3>();
-  Test<KeyT, ValueT, 4>();
-  Test<KeyT, ValueT, 5>();
-  Test<KeyT, ValueT, 7>();
-  Test<KeyT, ValueT, 8>();
-  Test<KeyT, ValueT, 9>();
-  Test<KeyT, ValueT, 11>();
-}
-
-int main()
-{
-  Test<std::uint32_t, std::uint32_t>();
-  Test<std::uint32_t, std::uint64_t>();
-
-  return 0;
 }

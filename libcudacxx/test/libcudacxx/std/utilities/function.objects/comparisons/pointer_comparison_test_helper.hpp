@@ -14,11 +14,8 @@ void do_pointer_comparison_test()
 {
   typedef CompareTemplate<T*> Compare;
   typedef CompareTemplate<std::uintptr_t> UIntCompare;
-#if TEST_STD_VER > 2011
   typedef CompareTemplate<void> VoidCompare;
-#else
-  typedef Compare VoidCompare;
-#endif
+
   std::vector<std::shared_ptr<T>> pointers;
   const std::size_t test_size = 100;
   for (size_t i = 0; i < test_size; ++i)

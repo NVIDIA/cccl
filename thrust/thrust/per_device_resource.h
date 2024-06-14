@@ -25,7 +25,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/system/detail/adl/per_device_resource.h>
