@@ -3720,7 +3720,7 @@ struct _FilesystemClock
 
   _LIBCUDACXX_EXPORTED_FROM_ABI static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
 
-  _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_FUNC_VIS static time_point now() noexcept;
+  _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY static time_point now() noexcept;
 
   _LIBCUDACXX_INLINE_VISIBILITY static time_t to_time_t(const time_point& __t) noexcept
   {
