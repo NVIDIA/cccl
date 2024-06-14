@@ -28,8 +28,8 @@ workflows:
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10, 'gcc11']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['clang9, 'clang10', 'clang11', 'clang12', 'clang13', 'clang14']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10', 'gcc11']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang15']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0',       ], std: 20,    cxx: ['msvc1436']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 20,    cxx: ['msvc2022']}
