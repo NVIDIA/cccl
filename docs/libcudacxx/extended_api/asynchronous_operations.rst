@@ -24,4 +24,4 @@ Asynchronous Operations
 .. note::
 
   **Asynchronous operations** like `memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>`
-  are non-blocking operations performed _as-if_ by a new thread of execution.
+  are non-blocking operations performed as-if by a new thread of execution.

@@ -17,6 +17,12 @@
   && _CCCL_STD_VER == 2011
 #  define THRUST_GCC12_OMP_MISCOMPILE
 #endif
+
+// New GCC, new miscompile. 13 + TBB this time.
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ == 13 && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
+#  define THRUST_GCC13_TBB_MISCOMPILE
+#endif
+
 template <class Vector>
 void TestReplaceSimple()
 {
@@ -92,7 +98,8 @@ void TestReplace(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestReplace);
 
-#ifndef THRUST_GCC12_OMP_MISCOMPILE
+#ifndef THRUST_GCC13_TBB_MISCOMPILE
+#  ifndef THRUST_GCC12_OMP_MISCOMPILE
 template <class Vector>
 void TestReplaceCopySimple()
 {
@@ -120,6 +127,7 @@ void TestReplaceCopySimple()
   ASSERT_EQUAL(dest, result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
+#  endif
 #endif
 
 template <typename InputIterator, typename OutputIterator, typename T>
