@@ -76,16 +76,16 @@ struct __ph
 {};
 
 #  if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_LIBCUDACXX_FUNC_VIS extern const __ph<1> _1;
-_LIBCUDACXX_FUNC_VIS extern const __ph<2> _2;
-_LIBCUDACXX_FUNC_VIS extern const __ph<3> _3;
-_LIBCUDACXX_FUNC_VIS extern const __ph<4> _4;
-_LIBCUDACXX_FUNC_VIS extern const __ph<5> _5;
-_LIBCUDACXX_FUNC_VIS extern const __ph<6> _6;
-_LIBCUDACXX_FUNC_VIS extern const __ph<7> _7;
-_LIBCUDACXX_FUNC_VIS extern const __ph<8> _8;
-_LIBCUDACXX_FUNC_VIS extern const __ph<9> _9;
-_LIBCUDACXX_FUNC_VIS extern const __ph<10> _10;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<1> _1;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<2> _2;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<3> _3;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<4> _4;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<5> _5;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<6> _6;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<7> _7;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<8> _8;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<9> _9;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<10> _10;
 #  else
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<1> _1{};
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<2> _2{};

@@ -1049,8 +1049,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_EXPORTED_FROM_ABI __declspec(dllimport)
 #    endif
 
-#    define _LIBCUDACXX_TYPE_VIS      _LIBCUDACXX_DLL_VIS
-#    define _LIBCUDACXX_FUNC_VIS      _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_HIDDEN
 #    define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -1073,14 +1071,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS inline _LIBCUDACXX_HIDDEN
 #    else
 #      define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-#    endif
-#  endif
-
-#  ifndef _LIBCUDACXX_FUNC_VIS
-#    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#      define _LIBCUDACXX_FUNC_VIS _CCCL_VISIBILITY_DEFAULT
-#    else
-#      define _LIBCUDACXX_FUNC_VIS
 #    endif
 #  endif
 
@@ -1113,8 +1103,8 @@ typedef __char32_t char32_t;
 #  endif
 
 #  ifndef _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
-#    define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_FUNC_VIS
-#  endif
+#    define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY
+#  endif // _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
 
 #  ifndef _LIBCUDACXX_EXCEPTION_ABI
 #    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
@@ -1440,21 +1430,13 @@ typedef unsigned int char32_t;
 #  endif
 
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
-extern "C" _LIBCUDACXX_FUNC_VIS void
+extern "C" _LIBCUDACXX_INLINE_VISIBILITY void
 __sanitizer_annotate_contiguous_container(const void*, const void*, const void*, const void*);
 #  endif
 
 #  ifndef _LIBCUDACXX_WEAK
 #    define _LIBCUDACXX_WEAK __attribute__((__weak__))
 #  endif
-
-// Redefine some macros for internal use
-#  if defined(__cuda_std__)
-#    undef _LIBCUDACXX_FUNC_VIS
-#    define _LIBCUDACXX_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY
-#    undef _LIBCUDACXX_TYPE_VIS
-#    define _LIBCUDACXX_TYPE_VIS
-#  endif // __cuda_std__
 
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
