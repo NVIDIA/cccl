@@ -35,7 +35,7 @@
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
-// TODO replace with DeviceScan interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
+// TODO(elstehle) replace with DeviceScan interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
 // Temporary wrapper that allows specializing the DeviceScan algorithm for different offset types
 template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename OffsetT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_scan_wrapper(
@@ -59,6 +59,7 @@ DECLARE_LAUNCH_WRAPPER(dispatch_scan_wrapper, dispatch_exclusive_scan);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+// TODO(elstehle) replace with actual offset types, once https://github.com/NVIDIA/cccl/issues/50 is addresed
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int64_t, std::uint64_t, std::int32_t, std::uint32_t>;
 
@@ -105,13 +106,10 @@ try
   offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
   offset_t num_items_min =
     num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
-  offset_t num_items = GENERATE_COPY(
-    values({
-      num_items_max,
-      static_cast<offset_t>(num_items_max - 1),
-      static_cast<offset_t>(1)
-    }),
-    take(2, random(num_items_min, num_items_max)));
+  // TODO(elstehle) remove single-item size, once https://github.com/NVIDIA/cccl/issues/50 is addresed
+  offset_t num_items =
+    GENERATE_COPY(values({num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1)}),
+                  take(2, random(num_items_min, num_items_max)));
 
   // Prepare input
   constexpr index_t segment_size = 1000;
