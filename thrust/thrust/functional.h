@@ -214,33 +214,7 @@ struct THRUST_DEPRECATED binary_function
  *  \see binary_function
  */
 template <typename T = void>
-struct plus
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs + rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs + rhs;
-  }
-}; // end plus
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(plus, +);
+using plus = ::cuda::std::plus<T>;
 
 /*! \p minus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>minus<T></tt>, and \c x and \c y are objects
@@ -277,33 +251,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(plus, +);
  *  \see binary_function
  */
 template <typename T = void>
-struct minus
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs - rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs - rhs;
-  }
-}; // end minus
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(minus, -);
+using minus = ::cuda::std::minus<T>;
 
 /*! \p multiplies is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>multiplies<T></tt>, and \c x and \c y are objects
@@ -340,33 +288,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(minus, -);
  *  \see binary_function
  */
 template <typename T = void>
-struct multiplies
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs * rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs * rhs;
-  }
-}; // end multiplies
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(multiplies, *);
+using multiplies = ::cuda::std::multiplies<T>;
 
 /*! \p divides is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>divides<T></tt>, and \c x and \c y are objects
@@ -403,33 +325,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(multiplies, *);
  *  \see binary_function
  */
 template <typename T = void>
-struct divides
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs / rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs / rhs;
-  }
-}; // end divides
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(divides, /);
+using divides = ::cuda::std::divides<T>;
 
 /*! \p modulus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>modulus<T></tt>, and \c x and \c y are objects
@@ -466,33 +362,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(divides, /);
  *  \see binary_function
  */
 template <typename T = void>
-struct modulus
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs % rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs % rhs;
-  }
-}; // end modulus
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(modulus, %);
+using modulus = ::cuda::std::modulus<T>;
 
 /*! \p negate is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>negate<T></tt>, and \c x is an object
@@ -624,33 +494,9 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x* x);
  *  \see binary_function
  */
 template <typename T = void>
-struct equal_to
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
+using equal_to = ::cuda::std::equal_to<T>;
 
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs == rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs == rhs;
-  }
-}; // end equal_to
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(equal_to, ==);
+// THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(equal_to, ==);
 
 /*! \p not_equal_to is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -665,33 +511,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(equal_to, ==);
  *  \see binary_function
  */
 template <typename T = void>
-struct not_equal_to
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs != rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs != rhs;
-  }
-}; // end not_equal_to
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(not_equal_to, !=);
+using not_equal_to = ::cuda::std::not_equal_to<T>;
 
 /*! \p greater is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -706,33 +526,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(not_equal_to, !=);
  *  \see binary_function
  */
 template <typename T = void>
-struct greater
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs > rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs > rhs;
-  }
-}; // end greater
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(greater, >);
+using greater = ::cuda::std::greater<T>;
 
 /*! \p less is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -747,33 +541,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(greater, >);
  *  \see binary_function
  */
 template <typename T = void>
-struct less
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs < rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs;
-  }
-}; // end less
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less, <);
+using less = ::cuda::std::less<T>;
 
 /*! \p greater_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -788,33 +556,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less, <);
  *  \see binary_function
  */
 template <typename T = void>
-struct greater_equal
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs >= rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs >= rhs;
-  }
-}; // end greater_equal
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(greater_equal, >=);
+using greater_equal = ::cuda::std::greater_equal<T>;
 
 /*! \p less_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -829,33 +571,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(greater_equal, >=);
  *  \see binary_function
  */
 template <typename T = void>
-struct less_equal
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs <= rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs <= rhs;
-  }
-}; // end less_equal
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less_equal, <=);
+using less_equal = ::cuda::std::less_equal<T>;
 
 /*! \}
  */
@@ -877,33 +593,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less_equal, <=);
  *  \see binary_function
  */
 template <typename T = void>
-struct logical_and
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs && rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs && rhs;
-  }
-}; // end logical_and
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(logical_and, &&);
+using logical_and = ::cuda::std::logical_and<T>;
 
 /*! \p logical_or is a function object. Specifically, it is an Adaptable Binary Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -917,33 +607,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(logical_and, &&);
  *  \see binary_function
  */
 template <typename T = void>
-struct logical_or
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>lhs || rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs || rhs;
-  }
-}; // end logical_or
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(logical_or, ||);
+using logical_or = ::cuda::std::logical_or<T>;
 
 /*! \p logical_not is a function object. Specifically, it is an Adaptable Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -971,33 +635,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(logical_or, ||);
  *  \see unary_function
  */
 template <typename T = void>
-struct logical_not
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = bool;
-
-  /*! Function call operator. The return value is <tt>!x</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr bool operator()(const T& x) const
-  {
-    return !x;
-  }
-}; // end logical_not
-
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(logical_not, !THRUST_FWD(x));
+using logical_not = ::cuda::std::logical_not<T>;
 
 /*! \}
  */
@@ -1041,33 +679,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(logical_not, !THRUST_FWD(x));
  *  \see binary_function
  */
 template <typename T = void>
-struct bit_and
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs & rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs & rhs;
-  }
-}; // end bit_and
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_and, &);
+using bit_and = ::cuda::std::bit_and<T>;
 
 /*! \p bit_or is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -1103,33 +715,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_and, &);
  *  \see binary_function
  */
 template <typename T = void>
-struct bit_or
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs | rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs | rhs;
-  }
-}; // end bit_or
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_or, |);
+using bit_or = ::cuda::std::bit_or<T>;
 
 /*! \p bit_xor is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -1165,33 +751,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_or, |);
  *  \see binary_function
  */
 template <typename T = void>
-struct bit_xor
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using first_argument_type = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  using second_argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>lhs ^ rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs ^ rhs;
-  }
-}; // end bit_xor
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_xor, ^);
+using bit_xor = ::cuda::std::bit_xor<T>;
 
 /*! \}
  */
@@ -1754,3 +1314,4 @@ THRUST_NAMESPACE_END
 
 #include <thrust/detail/functional.inl>
 #include <thrust/detail/functional/operators.h>
+#include <thrust/detail/type_traits/is_commutative.h>
