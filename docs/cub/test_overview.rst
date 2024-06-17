@@ -19,7 +19,7 @@ This guide is focused on new tests.
 .. code-block:: c++
 
     #include <cub/block/block_scan.cuh>
-    #include <thrust/host_vector.h>
+    #include "c2h/vector.cuh"
     #include "catch2_test_helper.h"
 
 Directory and File Naming
@@ -51,8 +51,7 @@ Say there's no need to cover many types with your test.
 .. code-block:: c++
 
     // 0) Define test name and tags
-    CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]")
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]")
     {
       using type = std::int32_t;
       constexpr int threads_per_block = 256;
@@ -89,13 +88,17 @@ This macro always takes two string arguments - a free-form test name and
 one or more tags. Then, in (1), we allocate device memory using ``c2h::device_vector``.
 ``c2h::device_vector`` and ``c2h::host_vector`` behave similarly to their Thrust counterparts,
 but are modified to provide more stable behavior in some testing edge cases.
-These must be used in place of Thrust vectors and manual allocations, unless the test code is
-being used for documentation examples.
+
+.. important::
+    Always use ``c2h::host_vector<T>``/``c2h::device_vector<T>``
+    instead of ``thrust::host_vector<T>``/``thrust::device_vector<T>``,
+    unless the test code is being used for documentation examples.
+
 Similarly, any thrust algorithms that executed on the device must be invoked with the
 `c2h::device_policy`` execution policy (not shown here) to support the same edge cases.
 The memory is filled with random data in (2).
 
-Generator ``c2h::gen`` takes two parameters.
+Generator ``c2h::gen`` takes at least two parameters.
 The first one is a random generator seed.
 Instead of providing a single value, we use the ``CUB_SEED`` macro.
 The macro expects a number of seeds that has to be generated.
@@ -103,30 +106,28 @@ In the example above, we require three random seeds to be generated.
 This leads to the whole test being executed three times
 with different seed values.
 
-Later,
-in (3) and (4),
-we allocate device output and host reference.
-Then, in (4),
-we populate host input data and perform reference computation on the host in (5).
-Then launch the CUB algorithm in (6).
-At this point, we have a reference solution on CPU and CUB solution on GPU.
-The two can be compared with ``REQUIRE`` assert.
+Later, in (3), we allocate device output and host reference.
+In (4), we allocate and populate the host input data.
+Then, we perform the reference computation on the host in (5).
 
-.. warning::
-    Standard algorithms (``std::``) have to be used as much as possible when computing reference solutions.
+.. important::
+    Standard library algorithms (``std::``) have to be used where possible when computing reference solutions.
+
+Afterwards, we launch the corresponding CUB algorithm in (6).
+At this point, we have a reference solution on the CPU and a CUB solution on the GPU.
+The two can be compared using Catch2's ``REQUIRE`` macro, which stops execution upon failure (preferred).
+Catch2 also offers the ``CHECK`` macro, which continues test execution if the check fails.
 
 If your test has to cover floating point types,
 it's sufficient to replace ``REQUIRE( a == b )`` with ``REQUIRE_APPROX_EQ(a, b)``.
 
-It's strongly advised to always use ``c2h::gen`` to produce input data.
-Other data generation methods might be used
-if absolutely necessary in tests of corner cases.
+.. important::
+    Using ``c2h::gen`` for producing input data is strongly advised.
 
-Do not use ``assert`` in tests.
-We run CUB tests in release mode.
-The issue with ``assert`` is that it only works in debug mode.
+Do not use ``assert`` in tests, which is usually only enabled in Debug mode,
+and we run CUB tests in Release mode.
 
-If a custom type has to be tested, the following helper should be used:
+If a custom (non-fundamental) type has to be tested, the following helper class template should be used:
 
 .. code-block:: c++
 
@@ -134,11 +135,32 @@ If a custom type has to be tested, the following helper should be used:
                                     c2h::equal_comparable_t>;
 
 Here we enumerate all the type properties that we are interested in.
-The produced type ends up having ``operator==`` and ``operator+``.
-There are more properties implemented.
-If some property is missing,
-it'd be better to add one in ``c2h``
+The produced type ends up having ``operator==`` (from ``equal_comparable_t``)
+and ``operator+`` (from ``accumulateable_t``).
+More properties are available.
+If a property is missing, please add it to the existing set in ``c2h``
 instead of writing a custom type from scratch.
+
+Generators
+=====================================
+
+We often need to test CUB algorithms against different inputs or problem sizes.
+If these are **runtime values**, we can use the Catch2 ``GENERATE`` macro:
+
+.. code-block:: c++
+
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]")
+    {
+      int num_items = GENERATE(1, 100, 1'000'000); // 0) Init. a variable with a generator
+      // ...
+    }
+
+This will lead to the test being executed three times, once for each argument to ``GENERATE(...)``.
+Multiple generators in a test inside the same scope will form the cartesian product of all combinations.
+Please consult the `Catch2 documentation <https://github.com/catchorg/Catch2/blob/devel/docs/generators.md>`_
+for more details.
+
+``CUB_SEED(3)`` uses a generator expression internally.
 
 
 Type Lists
@@ -148,14 +170,14 @@ Since CUB is a generic library,
 it's often required to test CUB algorithms against many types.
 To do so,
 it's sufficient to define a type list and provide it to the ``CUB_TEST`` macro.
+This is useful for **compile-time** parameterization of tests.
 
 .. code-block:: c++
 
     // 0) Define type list
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]",
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
             types) // 1) Provide it to the test case
     {
       // 2) Access current type with `c2h::get`
@@ -163,12 +185,13 @@ it's sufficient to define a type list and provide it to the ``CUB_TEST`` macro.
       // ...
     }
 
-This will lead to the test running two times.
-The first run will cause the ``type`` to be ``std::uint8_t``.
+This will lead to the test being compiled (instantiated) and run twice.
+The first run will cause ``type`` to be ``std::uint8_t``.
 The second one will cause ``type`` to be ``std::uint32_t``.
 
 .. warning::
-    It's important to use types in ``std::`` instead of primitive types like ``char`` and ``int``.
+    It's important to use types from the ``<cstdint>`` header
+    instead of built-in types like ``char`` and ``int``.
 
 Multidimensional Configuration Spaces
 =====================================
@@ -183,10 +206,8 @@ To do so, you can add another type list as follows:
     using block_sizes = c2h::enum_type_list<int, 128, 256>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]",
-            types,
-            block_sizes)
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+             types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
@@ -208,10 +229,8 @@ and multiple random sequence generations.
     using block_sizes = c2h::enum_type_list<int, 128, 256>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]",
-            types,
-            block_sizes)
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+             types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
@@ -241,7 +260,7 @@ Speedup Compilation Time
 Since type lists in the ``CUB_TEST`` form a Cartesian product,
 compilation time grows quickly with every new dimension.
 To keep the compilation process parallelized,
-it's possible to rely on ``%PARAM%`` machinery:
+it's possible to rely on our ``%PARAM%`` machinery:
 
 .. code-block:: c++
 
@@ -249,17 +268,15 @@ it's possible to rely on ``%PARAM%`` machinery:
     using block_sizes = c2h::enum_type_list<int, BLOCK_SIZE>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]",
-            types,
-            block_sizes)
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+             types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
       // ...
     }
 
-The comment with ``%PARAM%`` is recognized at CMake level.
+The comment with ``%PARAM%`` is recognized by our CMake scripts.
 It leads to multiple executables being produced from a single test source.
 
 .. code-block:: bash
@@ -280,10 +297,8 @@ Let's consider the final test that illustrates all of the tools we discussed abo
     using block_sizes = c2h::enum_type_list<int, BLOCK_SIZE>;
     using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-    CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]",
-            types,
-            block_sizes)
+    CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]",
+             types, block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
@@ -307,9 +322,9 @@ Let's consider the final test that illustrates all of the tools we discussed abo
     }
 
 Apart from discussed tools, here we also rely on ``Catch2`` to generate random input sizes
-in ``[0, max_num_items]`` range.
+in the range ``[0, max_num_items]`` for our input vector ``d_input``.
 Overall, the test will produce two executables.
 Each of these executables is going to generate ``2`` input problem sizes.
 For each problem size, ``3`` random vectors are generated.
 As a result, we have ``12`` different tests.
-This also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust alorithm.
+The code also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust alorithm.
