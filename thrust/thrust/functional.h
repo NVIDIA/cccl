@@ -209,8 +209,7 @@ struct binary_function
  *  \see https://en.cppreference.com/w/cpp/utility/functional/plus
  *  \see binary_function
  */
-template <typename T = void>
-using plus = ::cuda::std::plus<T>;
+using ::cuda::std::plus;
 
 /*! \p minus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>minus<T></tt>, and \c x and \c y are objects
@@ -246,8 +245,7 @@ using plus = ::cuda::std::plus<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/minus
  *  \see binary_function
  */
-template <typename T = void>
-using minus = ::cuda::std::minus<T>;
+using ::cuda::std::minus;
 
 /*! \p multiplies is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>multiplies<T></tt>, and \c x and \c y are objects
@@ -283,8 +281,7 @@ using minus = ::cuda::std::minus<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/multiplies
  *  \see binary_function
  */
-template <typename T = void>
-using multiplies = ::cuda::std::multiplies<T>;
+using ::cuda::std::multiplies;
 
 /*! \p divides is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>divides<T></tt>, and \c x and \c y are objects
@@ -320,8 +317,7 @@ using multiplies = ::cuda::std::multiplies<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/divides
  *  \see binary_function
  */
-template <typename T = void>
-using divides = ::cuda::std::divides<T>;
+using ::cuda::std::divides;
 
 /*! \p modulus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>modulus<T></tt>, and \c x and \c y are objects
@@ -357,8 +353,7 @@ using divides = ::cuda::std::divides<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/modulus
  *  \see binary_function
  */
-template <typename T = void>
-using modulus = ::cuda::std::modulus<T>;
+using ::cuda::std::modulus;
 
 /*! \p negate is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>negate<T></tt>, and \c x is an object
@@ -489,10 +484,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x* x);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/equal_to
  *  \see binary_function
  */
-template <typename T = void>
-using equal_to = ::cuda::std::equal_to<T>;
-
-// THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(equal_to, ==);
+using ::cuda::std::equal_to;
 
 /*! \p not_equal_to is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -506,8 +498,7 @@ using equal_to = ::cuda::std::equal_to<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/not_equal_to
  *  \see binary_function
  */
-template <typename T = void>
-using not_equal_to = ::cuda::std::not_equal_to<T>;
+using ::cuda::std::not_equal_to;
 
 /*! \p greater is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -521,8 +512,7 @@ using not_equal_to = ::cuda::std::not_equal_to<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater
  *  \see binary_function
  */
-template <typename T = void>
-using greater = ::cuda::std::greater<T>;
+using ::cuda::std::greater;
 
 /*! \p less is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -536,8 +526,7 @@ using greater = ::cuda::std::greater<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less
  *  \see binary_function
  */
-template <typename T = void>
-using less = ::cuda::std::less<T>;
+using ::cuda::std::less;
 
 /*! \p greater_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -551,8 +540,7 @@ using less = ::cuda::std::less<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater_equal
  *  \see binary_function
  */
-template <typename T = void>
-using greater_equal = ::cuda::std::greater_equal<T>;
+using ::cuda::std::greater_equal;
 
 /*! \p less_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -566,8 +554,7 @@ using greater_equal = ::cuda::std::greater_equal<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less_equal
  *  \see binary_function
  */
-template <typename T = void>
-using less_equal = ::cuda::std::less_equal<T>;
+using ::cuda::std::less_equal;
 
 /*! \}
  */
@@ -588,8 +575,7 @@ using less_equal = ::cuda::std::less_equal<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_and
  *  \see binary_function
  */
-template <typename T = void>
-using logical_and = ::cuda::std::logical_and<T>;
+using ::cuda::std::logical_and;
 
 /*! \p logical_or is a function object. Specifically, it is an Adaptable Binary Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -602,8 +588,7 @@ using logical_and = ::cuda::std::logical_and<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_or
  *  \see binary_function
  */
-template <typename T = void>
-using logical_or = ::cuda::std::logical_or<T>;
+using ::cuda::std::logical_or;
 
 /*! \p logical_not is a function object. Specifically, it is an Adaptable Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -630,8 +615,7 @@ using logical_or = ::cuda::std::logical_or<T>;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_not
  *  \see unary_function
  */
-template <typename T = void>
-using logical_not = ::cuda::std::logical_not<T>;
+using ::cuda::std::logical_not;
 
 /*! \}
  */
@@ -674,8 +658,7 @@ using logical_not = ::cuda::std::logical_not<T>;
  *
  *  \see binary_function
  */
-template <typename T = void>
-using bit_and = ::cuda::std::bit_and<T>;
+using ::cuda::std::bit_and;
 
 /*! \p bit_or is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -710,8 +693,7 @@ using bit_and = ::cuda::std::bit_and<T>;
  *
  *  \see binary_function
  */
-template <typename T = void>
-using bit_or = ::cuda::std::bit_or<T>;
+using ::cuda::std::bit_or;
 
 /*! \p bit_xor is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -746,8 +728,7 @@ using bit_or = ::cuda::std::bit_or<T>;
  *
  *  \see binary_function
  */
-template <typename T = void>
-using bit_xor = ::cuda::std::bit_xor<T>;
+using ::cuda::std::bit_xor;
 
 /*! \}
  */
