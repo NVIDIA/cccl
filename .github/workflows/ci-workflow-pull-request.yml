@@ -62,7 +62,6 @@ jobs:
           nightly_workflow: ${{ contains(github.event.head_commit.message, '[workflow:nightly]') && 'nightly' || '' }}
         with:
           allow_override: "true"
-          skip_tests: ${{ toJSON(contains(github.event.head_commit.message, '[skip-tests]')) }}
           inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
           workflows: >-
