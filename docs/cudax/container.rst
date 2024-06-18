@@ -13,8 +13,9 @@ annotations are checked by the type system.
 Uninitialized buffers
 ---------------------
 
-The ``<cuda/experimental/buffer>`` header contains facilities, that provide *heterogeneous* allocations to store objects
-in uninitialized memory. This is a common request in HPC due to the high cost of initialization of large arrays.
+The ``<cuda/experimental/buffer>`` header contains facilities, that provide *heterogeneous* and potentially
+*stream ordered* allocations to store objects in uninitialized memory. This is a common request in HPC due to the
+high cost of initialization of large arrays.
 
 .. warning::
 
@@ -25,3 +26,4 @@ in uninitialized memory. This is a common request in HPC due to the high cost of
    :maxdepth: 3
 
    container/uninitialized_buffer
+   container/uninitialized_async_buffer
