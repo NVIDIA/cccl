@@ -7,10 +7,22 @@ LID0=false
 LID1=false
 LID2=false
 LIMITED=false
+COMPUTE_SANITIZER=false
 
 ci_dir=$(dirname "$0")
 
-new_args=$("${ci_dir}/util/extract_switches.sh" -no-lid -lid0 -lid1 -lid2 -limited -- "$@")
+new_args=$("${ci_dir}/util/extract_switches.sh" \
+  -no-lid \
+  -lid0 \
+  -lid1 \
+  -lid2 \
+  -limited \
+  -compute-sanitizer-memcheck \
+  -compute-sanitizer-racecheck \
+  -compute-sanitizer-initcheck \
+  -compute-sanitizer-synccheck \
+  -- "$@")
+
 eval set -- ${new_args}
 while true; do
   case "$1" in
@@ -34,6 +46,26 @@ while true; do
     LIMITED=true
     shift
     ;;
+  -compute-sanitizer-memcheck)
+    COMPUTE_SANITIZER=true
+    TOOL=memcheck
+    shift
+    ;;
+  -compute-sanitizer-racecheck)
+    COMPUTE_SANITIZER=true
+    TOOL=racecheck
+    shift
+    ;;
+  -compute-sanitizer-initcheck)
+    COMPUTE_SANITIZER=true
+    TOOL=initcheck
+    shift
+    ;;
+  -compute-sanitizer-synccheck)
+    COMPUTE_SANITIZER=true
+    TOOL=synccheck
+    shift
+    ;;
   --)
     shift
     break
@@ -51,7 +83,6 @@ if $LIMITED; then
   readonly device_mem_GiB=8
   export CCCL_DEVICE_MEMORY_LIMIT=$((${device_mem_GiB} * 1024 * 1024 * 1024))
   export CCCL_DEBUG_CHECKED_ALLOC_FAILURES=1
-
 
   echo "Configuring limited environment:"
   echo "  CCCL_SEED_COUNT_OVERRIDE=${CCCL_SEED_COUNT_OVERRIDE}"
@@ -76,6 +107,11 @@ elif $LID2; then
   PRESETS=("cub-lid2-cpp$CXX_STANDARD")
 else
   PRESETS=("cub-cpp$CXX_STANDARD")
+fi
+
+if $COMPUTE_SANITIZER; then
+  echo "Setting CCCL_TEST_MODE=compute-sanitizer-${TOOL}"
+  export CCCL_TEST_MODE=compute-sanitizer-${TOOL}
 fi
 
 for PRESET in ${PRESETS[@]}; do
