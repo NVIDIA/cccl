@@ -1284,7 +1284,7 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
 #  endif
 
-#  if __check_builtin(__make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#  if __check_builtin(make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
 #    define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 #  endif
 
