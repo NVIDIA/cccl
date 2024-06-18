@@ -1,3 +1,21 @@
+the_override: &the_override
+  - compute_mem_nolid
+#  - compute_mem_lid0
+#  - compute_mem_lid1
+#  - compute_mem_lid2
+  - compute_race_nolid
+  - compute_race_lid0
+  - compute_race_lid1
+  - compute_race_lid2
+  - compute_init_nolid
+  - compute_init_lid0
+  - compute_init_lid1
+  - compute_init_lid2
+#  - compute_sync_nolid
+#  - compute_sync_lid0
+  # synccheck doesn't support lid1 (CDP launch)
+#  - compute_sync_lid2
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -8,6 +26,7 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
   #
   override:
+    - {jobs: *the_override, project: 'cub', std: 17, cxx: 'gcc13', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   pull_request:
     # Old CTK
@@ -178,6 +197,11 @@ jobs:
   # General:
   build: { gpu: false }
   test:  { gpu: true, needs: 'build' }
+  compute_sanitizer:
+    gpu: true
+    name: 'ComputeSanitizer'
+    needs: 'build'
+    invoke: { prefix: 'test', args: '-compute-sanitizer' }
 
   # CCCL:
   infra: { gpu: true } # example project launches a kernel
@@ -196,12 +220,29 @@ jobs:
   test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid1'} }
   # - captured in a CUDA graph for deferred launch (lid2):
   test_lid2:  { name: 'GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid2'} }
+  # Compute sanitizer jobs:
+  compute_mem_nolid:  { name: 'CSMem-TestGPU',       gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-memcheck  -no-lid'} }
+  compute_mem_lid0:   { name: 'CSMem-HostLaunch',    gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-memcheck  -lid0'} }
+  compute_mem_lid1:   { name: 'CSMem-DeviceLaunch',  gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-memcheck  -lid1'} }
+  compute_mem_lid2:   { name: 'CSMem-GraphCapture',  gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-memcheck  -lid2'} }
+  compute_race_nolid: { name: 'CSRace-TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-racecheck -no-lid'} }
+  compute_race_lid0:  { name: 'CSRace-HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-racecheck -lid0'} }
+  # No compute_race_lid1 job -- compute-sanitizer's racecheck tool doesn't support CDP
+  compute_race_lid2:  { name: 'CSRace-GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-racecheck -lid2'} }
+  compute_init_nolid: { name: 'CSInit-TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-initcheck -no-lid'} }
+  compute_init_lid0:  { name: 'CSInit-HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-initcheck -lid0'} }
+  # No compute_init_lid1 job -- compute-sanitizer's initcheck tool doesn't support CDP
+  compute_init_lid2:  { name: 'CSInit-GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-initcheck -lid2'} }
+  compute_sync_nolid: { name: 'CSSync-TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-synccheck -no-lid'} }
+  compute_sync_lid0:  { name: 'CSSync-HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-synccheck -lid0'} }
+  # No compute_sync_lid1 job -- compute-sanitizer's synccheck tool doesn't support CDP
+  compute_sync_lid2:  { name: 'CSSync-GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-synccheck -lid2'} }
 
   # Thrust:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
-# Project have the following properties:
+# Projects have the following properties:
 #
 # Keys are project subdirectories names. These will also be used in script names.
 #
@@ -221,7 +262,25 @@ projects:
   cub:
     name: 'CUB'
     stds: [11, 14, 17, 20]
-    job_map: { test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'] }
+    job_map:
+      test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2']
+      compute_sanitizer:
+        - compute_mem_nolid
+        - compute_mem_lid0
+        - compute_mem_lid1
+        - compute_mem_lid2
+        - compute_race_nolid
+        - compute_race_lid0
+        - compute_race_lid1
+        - compute_race_lid2
+        - compute_init_nolid
+        - compute_init_lid0
+        - compute_init_lid1
+        - compute_init_lid2
+        - compute_sync_nolid
+        - compute_sync_lid0
+        # synccheck doesn't support lid1 (CDP launch)
+        - compute_sync_lid2
   thrust:
     name: 'Thrust'
     stds: [11, 14, 17, 20]
