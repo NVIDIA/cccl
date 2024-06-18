@@ -212,20 +212,24 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan with init value")
   {
-    using op_t    = cub::Min;
+    using op_t    = cub::Sum;
     using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
+
+    // Scan operator
+    auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
+    compute_inclusive_scan_reference(
+      host_items.cbegin(), host_items.cend(), expected_result.begin(), scan_op, accum_t{});
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
-    compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, init_t{});
 
-    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{}, init_t{}, num_items);
+    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -233,7 +237,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test in-place
     _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
     {
-      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, init_t{}, num_items);
+      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
       // Verify result
       REQUIRE(expected_result == in_items);
