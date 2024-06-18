@@ -23,7 +23,18 @@ high cost of initialization of large arrays.
    before the underlying storage is deallocated.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
 
    container/uninitialized_buffer
    container/uninitialized_async_buffer
+
+Vectors
+--------
+
+The ``<cuda/experimental/vector>`` header provides high level containers, that provide *heterogeneous* and potentially
+*stream ordered* storage.
+
+.. toctree::
+   :maxdepth: 1
+
+   container/vector

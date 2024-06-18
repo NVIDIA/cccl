@@ -1,0 +1,426 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_VECTOR
+#define _CUDA_VECTOR
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/resource_ref.h>
+#include <cuda/std/__algorithms/copy.h>
+#include <cuda/std/__algorithms/move.h>
+#include <cuda/std/__concepts/_One_of.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__memory/uninitialized_algorithms.h>
+#include <cuda/std/span>
+#include <cuda/vector>
+
+#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
+  && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+
+//! @file The cuda::vector class provides a typed vector allocated from a given memory resource.
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+//! @rst
+//! .. _libcudacxx-extended-api-memory-resources-vector:
+//! `cuda::vector`
+//! --------------
+//!
+//! ``cuda::vector`` is a container that provides resizable typed storage allocated from a given `memory resource
+//! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment, release and growth of the allocation.
+//! The elements are initialized during construction, if the storage is not user provided through a
+//! `cuda::uninitialized_buffer <libcudacxx-extended-api-memory-resources-buffer>` with matching properties
+
+//! In addition to being type safe, ``cuda::vector`` also takes a set of `properties
+//! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
+//! at compile time. However, we can only forward stateless properties. If a user wants to a a stateful one, then they
+//! need to implement ``get_property(const device_buffer&, Property)``.
+//!
+//! .. note::
+//!
+//!    ``cuda::vector`` stores a reference to the provided memory `memory resource
+//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the users resposibility to ensure the lifetime of the
+//!    resource exceeds the lifetime of the vector.
+//!
+//! @endrst
+template <class _Tp, class... _Properties>
+class vector
+{
+private:
+  uninitialized_buffer<T, _Properties...> __buf_;
+  size_t __size_ = 0;
+
+public:
+  using value_type             = _Tp;
+  using reference              = _Tp&;
+  using const_reference        = const _Tp&;
+  using pointer                = _Tp*;
+  using const_pointer          = const _Tp*;
+  using iterator               = _Tp*;
+  using const_iterator         = const _Tp*;
+  using reverse_iterator       = reverse_iterator<iterator>;
+  using const_reverse_iterator = reverse_iterator<const_iterator>;
+  using size_type              = size_t;
+
+  //! @addtogroup construction
+  //! @{
+  //! @brief Constructs a \c vector from a memory resource
+  //! @param mr The memory resource to allocate the vector with.
+  //!
+  //! No storage is allocated
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr)
+      : __buf_(__mr, 0)
+      , __size_(0)
+  {}
+
+  //! @brief Constructs a \c vector of size \param size from a memory resource and value-initializes all elements
+  //! @param mr The memory resource to allocate the vector with.
+  //! @param size The size of the vector.
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size)
+      : __buf_(__mr, __size)
+      , __size_(__size)
+  {
+    cuda::std::uninitialized_default_construct_n(__buf_.begin(), __size_);
+  }
+
+  //! @brief Constructs a \c vector of size \param size from a memory resource and copy constructs its elements from
+  //! \param value
+  //! @param mr The memory resource to allocate the vector with.
+  //! @param size The size of the vector.
+  //! @param value The value all elements are copied from.
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, const _Tp& __value)
+      : __buf_(__mr, __size)
+      , __size_(__size)
+  {
+    cuda::std::uninitialized_fill_n(__buf_.begin(), __size_, __value);
+  }
+
+  //! @brief Copy constructs a \c vector
+  //! @param other The other vector
+  //!
+  //! The new vector has capacity of \param other.size() which is potentially less than \param other.capacity()
+  vector(const vector& __other)
+      : __buf_(__other.resource(), __other.size())
+      , __size_(__other.size())
+  {
+    _CUDA_VSTD::uninitialized_copy(__other.begin(), __other.end(), begin());
+  }
+
+  //! @brief Move constructs a \c vector
+  //! @param other The other vector
+  //!
+  //! The new vector takes ownership of the allocation of \param other
+  vector(vector&& __other) noexcept
+      : __buf_(_CUDA_VSTD::move(__buf_))
+      , __size_(__other.__size_)
+  {
+    __other.__size_ = 0;
+  }
+
+  //! @rst
+  //! @brief Constructs a \c vector from a `uninitialized_buffer <libcudacxx-extended-api-memory-resources-buffer>`
+  //! @param buf The uninitialized_buffer providing storage
+  //! @param size The intended size of the new vector. Defaults to ``buf.size()``
+  //!
+  //! .. warning::
+  //!
+  //!    This constructor does *NOT* initialize any elements. It is the users responsibility to ensure that the elements
+  //!    within [buf.begin(), buf:begin() + size) are properly initialized, e.g with
+  //!    `std::uninitialized_copy <https://en.cppreference.com/w/cpp/memory/uninitialized_copy>`__
+  //!
+  //! @endrst
+  vector(uninitialized_buffer<_Tp, _Properties...>&& __buf, const size_t __size = __buf.size()) noexcept
+      : __buf_(_CUDA_VSTD::move(__buf))
+      , __size_(__size)
+  {}
+
+  //! @rst
+  //! @brief Copy assignment of a \c vector to another \c vector
+  //! @param other The other vector
+  //!
+  //! .. note::
+  //!
+  //!    Even if the old vector would have enough storage available, we have to reallocate if the stored memory resource
+  //!    are not equal.
+  //!
+  //! @endrst
+  vector& operator=(const vector& __other)
+  {
+    // There is sufficient space in the allocation and the resources are compatible
+    if (resource() == __other.resource() && __buf_.size() == __other.__buf_.size())
+    {
+      if (__size_ >= __other.__size_)
+      {
+        const auto __res = _CUDA_VSTD::copy(__other.begin(), __other.end(), begin());
+        _CUDA_VSTD::__destroy(__res, end());
+      }
+      else
+      {
+        const auto __res = _CUDA_VSTD::copy(__other.begin(), __other.begin() + __size_, begin());
+        _CUDA_VSTD::uninitialized_copy(__other.begin() + __size_, __other.end(), __res);
+      }
+      return *this;
+    }
+
+    // We need to reallocate and copy
+    const uninitialized_buffer<T, _Properties...> __new_buf_{__other.resource(), __other.__size_};
+    _CUDA_VSTD::uninitialized_copy(__other.begin(), __other.end(), __new_buf_.begin());
+
+    // Now that everything is set up bring over the new data
+    _CUDA_VSTD::__destroy(begin(), end());
+    __buf_ = _CUDA_VSTD::move(__new_buf_);
+    return *this;
+  }
+
+  //! @brief Move assignment of a \c vector to another \c vector
+  //! @param other The other vector
+  vector& operator=(vector&& __other) noexcept
+  {
+    _CUDA_VSTD::__destroy(begin(), end());
+    __buf_  = _CUDA_VSTD::move(__other.__buf_);
+    __size_ = __other.__size_;
+    return *this;
+  }
+
+  //! @brief Destroys the \c vector deallocating the storage after destroying all elements
+  ~vector() noexcept
+  {
+    _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(is_trivially_destructible, _Tp))
+    {
+      _CUDA_VSTD::__destroy(begin(), end());
+    }
+  }
+  //! @}
+
+  //! @addtogroup iterators
+  //! @{
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator begin() noexcept
+  {
+    return __buf_.data();
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_iterator begin() const noexcept
+  {
+    return __buf_.data();
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_iterator cbegin() const noexcept
+  {
+    return __buf_.data();
+  }
+
+  //! @brief Returns pointer to the end of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator end() noexcept
+  {
+    return __buf_.data() + __size_;
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_iterator end() const noexcept
+  {
+    return __buf_.data() + __size_;
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_iterator cend() const noexcept
+  {
+    return __buf_.data() + __size_;
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reverse_iterator rbegin() noexcept
+  {
+    return reverse_iterator{end()};
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator rbegin() const noexcept
+  {
+    return const_reverse_iterator{end()};
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator crbegin() const noexcept
+  {
+    return const_reverse_iterator{end()};
+  }
+
+  //! @brief Returns pointer to the end of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reverse_iterator rend() noexcept
+  {
+    return reverse_iterator{begin()};
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator rend() const noexcept
+  {
+    return const_reverse_iterator{begin()};
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator crend() const noexcept
+  {
+    return const_reverse_iterator{begin()};
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer data() noexcept
+  {
+    return __buf_.data();
+  }
+
+  //! @brief Returns pointer to the start of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_pointer data() const noexcept
+  {
+    return __buf_.data();
+  }
+  //! @}
+
+  //! @addtogroup capacity
+  //! @{
+  //! @brief Returns the size of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t size() const noexcept
+  {
+    return __size_;
+  }
+
+  //! @brief Returns true if the vector is empty
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  {
+    return __size_ == 0;
+  }
+
+  //! @brief Returns the capacity of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t capacity() const noexcept
+  {
+    return __buf_.size();
+  }
+
+  //! @brief Returns the memory resource used to allocate the storage
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
+  {
+    return __mr_;
+  }
+  //! @}
+
+  //! @addtogroup access
+  //! @{
+  //! @brief Returns a reference to the \param n'th element of the vector
+  //! @param n The index of the element we want to access
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](const size_t __n) noexcept
+  {
+    return *(__buf_.data() + __n);
+  }
+
+  //! @brief Returns a reference to the \param n'th element of the vector
+  //! @param n The index of the element we want to access
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference operator[](const size_t __n) const noexcept
+  {
+    return *(__buf_.data() + __n);
+  }
+
+  //! @brief Returns a reference to the first element of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference first() noexcept
+  {
+    return *__buf_.data();
+  }
+
+  //! @brief Returns a reference to the first element of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference first() const noexcept
+  {
+    return *__buf_.data();
+  }
+
+  //! @brief Returns a reference to the last element of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference back() noexcept
+  {
+    return *(__buf_.data() + __size_ - 1);
+  }
+
+  //! @brief Returns a reference to the last element of the vector
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference back() const noexcept
+  {
+    return *(__buf_.data() + __size_ - 1);
+  }
+  //! @}
+
+  //! @addtogroup modification
+  //! @{
+  _LIBCUDACXX_INLINE_VISIBILITY void clear() noexcept
+  {
+    _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(is_trivially_destructible, _Tp))
+    {
+      _CUDA_VSTD::__destroy(begin(), end());
+    }
+    __size_ = 0;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY void resize(const size_t __count, const _Tp& __value = {}) noexcept
+  {
+    if (__count < __size_)
+    {
+      _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(is_trivially_destructible, _Tp))
+      {
+        _CUDA_VSTD::__destroy(begin() + __count, end());
+      }
+    }
+    else
+    {
+      if (__count < __buf_.size())
+      {
+        _CUDA_VSTD::uninitialized_fill_n(end(), __count - __size_, __value);
+      }
+      else
+      {
+        uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __count};
+        _CUDA_VSTD::uninitialized_fill_n(__new_buf.begin() + __size_, __count - __size_, __value);
+        _CUDA_VSTD::uninitialized_move(begin(), end(), __new_buf.begin());
+        __buf_ = _CUDA_VSTD::move(__new_buf);
+      }
+    }
+    __size_ = __count;
+    return;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY void swap(vector& __other) noexcept
+  {
+    __buf_.swap(__other.__buf_);
+    _CUDA_VSTD::swap(__size_, __other._size);
+  }
+  //! @}
+
+  //! @rst
+  //! @brief Forwards the `property <libcudacxx-extended-api-memory-resources-properties>` from the passed resource
+  //! @endrst
+  _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  friend constexpr void get_property(const vector&, _Property) noexcept {}
+};
+
+template <class _Tp>
+using device_vector = vector<_Tp, _CUDA_VMR::device_accessible>;
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#endif //_CUDA_VECTOR
