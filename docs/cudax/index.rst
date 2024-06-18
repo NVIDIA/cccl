@@ -8,6 +8,7 @@ CUDA Experimental
    :maxdepth: 3
 
    memory_resource
+   container
    ${repo_docs_api_path}/cudax_api
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
