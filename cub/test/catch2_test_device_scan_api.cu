@@ -43,12 +43,13 @@ CUB_TEST("Device inclusive scan works", "[scan][device]")
 
   int init = 1;
 
-  cub::DeviceScan::InclusiveScan(
+  cub::DeviceScan::InclusiveScanInit(
     d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
-  cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  cub::DeviceScan::InclusiveScan(
+  cub::DeviceScan::InclusiveScanInit(
     d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
   thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};

@@ -47,8 +47,6 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
 
-#include <cuda/std/functional>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -1199,15 +1197,15 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
-  //! @param[in]
-  //!   d_temp_storage Device-accessible allocation of temporary storage.
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
   //!   `temp_storage_bytes` and no work is done.
   //!
@@ -1234,7 +1232,7 @@ struct DeviceScan
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
+  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,

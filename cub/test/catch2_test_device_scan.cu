@@ -43,6 +43,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
@@ -229,7 +230,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
 
-    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
+    device_inclusive_scan_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -237,7 +238,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test in-place
     _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
     {
-      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
+      device_inclusive_scan_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
       // Verify result
       REQUIRE(expected_result == in_items);
