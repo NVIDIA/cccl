@@ -91,7 +91,7 @@ struct BlockReduceWarpReductions
   };
 
   ///  WarpReduce utility type
-  typedef typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce WarpReduce;
+  using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage

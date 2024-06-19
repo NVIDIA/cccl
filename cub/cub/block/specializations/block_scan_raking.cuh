@@ -91,7 +91,7 @@ struct BlockScanRaking
   };
 
   /// Layout type for padded thread block raking grid
-  typedef BlockRakingLayout<T, BLOCK_THREADS> BlockRakingLayout;
+  using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
 
   /// Constants
   enum
@@ -107,7 +107,7 @@ struct BlockScanRaking
   };
 
   ///  WarpScan utility type
-  typedef WarpScan<T, RAKING_THREADS> WarpScan;
+  using WarpScan = WarpScan<T, RAKING_THREADS>;
 
   /// Shared memory storage layout type
   struct _TempStorage

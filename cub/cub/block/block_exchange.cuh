@@ -86,7 +86,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-//!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+//!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
 //!
 //!        // Allocate shared memory for BlockExchange
 //!        __shared__ typename BlockExchange::TempStorage temp_storage;
@@ -887,7 +887,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockExchange
   //!        __shared__ typename BlockExchange::TempStorage temp_storage;
@@ -935,7 +935,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockExchange
   //!        __shared__ typename BlockExchange::TempStorage temp_storage;
@@ -989,7 +989,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockExchange
   //!        __shared__ typename BlockExchange::TempStorage temp_storage;
@@ -1041,7 +1041,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockExchange<int, 128, 4> BlockExchange;
+  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockExchange
   //!        __shared__ typename BlockExchange::TempStorage temp_storage;

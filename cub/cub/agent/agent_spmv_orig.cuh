@@ -224,40 +224,40 @@ struct AgentSpmv
   };
 
   /// 2D merge path coordinate type
-  typedef typename CubVector<OffsetT, 2>::Type CoordinateT;
+  using CoordinateT = typename CubVector<OffsetT, 2>::Type;
 
   /// Input iterator wrapper types (for applying cache modifiers)
 
-  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>
-    RowOffsetsSearchIteratorT;
+  using RowOffsetsSearchIteratorT =
+    CacheModifiedInputIterator<AgentSpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>;
 
-  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::ROW_OFFSETS_LOAD_MODIFIER, OffsetT, OffsetT> RowOffsetsIteratorT;
+  using RowOffsetsIteratorT = CacheModifiedInputIterator<AgentSpmvPolicyT::ROW_OFFSETS_LOAD_MODIFIER, OffsetT, OffsetT>;
 
-  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::COLUMN_INDICES_LOAD_MODIFIER, OffsetT, OffsetT>
-    ColumnIndicesIteratorT;
+  using ColumnIndicesIteratorT =
+    CacheModifiedInputIterator<AgentSpmvPolicyT::COLUMN_INDICES_LOAD_MODIFIER, OffsetT, OffsetT>;
 
-  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::VALUES_LOAD_MODIFIER, ValueT, OffsetT> ValueIteratorT;
+  using ValueIteratorT = CacheModifiedInputIterator<AgentSpmvPolicyT::VALUES_LOAD_MODIFIER, ValueT, OffsetT>;
 
-  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>
-    VectorValueIteratorT;
+  using VectorValueIteratorT =
+    CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Tuple type for scanning (pairs accumulated segment-value with segment-index)
-  typedef KeyValuePair<OffsetT, ValueT> KeyValuePairT;
+  using KeyValuePairT = KeyValuePair<OffsetT, ValueT>;
 
   // Reduce-value-by-segment scan operator
-  typedef ReduceByKeyOp<cub::Sum> ReduceBySegmentOpT;
+  using ReduceBySegmentOpT = ReduceByKeyOp<cub::Sum>;
 
   // BlockReduce specialization
-  typedef BlockReduce<ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS> BlockReduceT;
+  using BlockReduceT = BlockReduce<ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS>;
 
   // BlockScan specialization
-  typedef BlockScan<KeyValuePairT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockScanT;
+  using BlockScanT = BlockScan<KeyValuePairT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM>;
 
   // BlockScan specialization
-  typedef BlockScan<ValueT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockPrefixSumT;
+  using BlockPrefixSumT = BlockScan<ValueT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM>;
 
   // BlockExchange specialization
-  typedef BlockExchange<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD> BlockExchangeT;
+  using BlockExchangeT = BlockExchange<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD>;
 
   /// Merge item type (either a non-zero value or a row-end offset)
   union MergeItem

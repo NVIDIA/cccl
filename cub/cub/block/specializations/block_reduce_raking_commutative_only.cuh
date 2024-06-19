@@ -83,7 +83,7 @@ struct BlockReduceRakingCommutativeOnly
 
   // The fall-back implementation to use when BLOCK_THREADS is not a multiple of the warp size or not all threads have
   // valid values
-  typedef BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> FallBack;
+  using FallBack = BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Constants
   enum
@@ -105,10 +105,10 @@ struct BlockReduceRakingCommutativeOnly
   };
 
   ///  WarpReduce utility type
-  typedef WarpReduce<T, RAKING_THREADS> WarpReduce;
+  using WarpReduce = WarpReduce<T, RAKING_THREADS>;
 
   /// Layout type for padded thread block raking grid
-  typedef BlockRakingLayout<T, SHARING_THREADS> BlockRakingLayout;
+  using BlockRakingLayout = BlockRakingLayout<T, SHARING_THREADS>;
 
   /// Shared memory storage layout type
   union _TempStorage

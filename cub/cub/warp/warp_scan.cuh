@@ -99,7 +99,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize WarpScan for type int
-//!        typedef cub::WarpScan<int> WarpScan;
+//!        using WarpScan = cub::WarpScan<int>;
 //!
 //!        // Allocate WarpScan shared memory for 4 warps
 //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -125,7 +125,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize WarpScan for type int
-//!        typedef cub::WarpScan<int> WarpScan;
+//!        using WarpScan = cub::WarpScan<int>;
 //!
 //!        // Allocate WarpScan shared memory for one warp
 //!        __shared__ typename WarpScan::TempStorage temp_storage;
@@ -235,7 +235,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -281,7 +281,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -339,7 +339,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -388,7 +388,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -447,7 +447,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -554,7 +554,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -681,7 +681,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -742,7 +742,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -810,7 +810,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -880,7 +880,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -960,7 +960,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -1028,7 +1028,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -1104,7 +1104,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];

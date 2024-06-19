@@ -230,19 +230,19 @@ struct AgentHistogram
                                SampleIteratorT>;
 
   /// Pixel input iterator type (for applying cache modifier)
-  typedef CacheModifiedInputIterator<LOAD_MODIFIER, PixelT, OffsetT> WrappedPixelIteratorT;
+  using WrappedPixelIteratorT = CacheModifiedInputIterator<LOAD_MODIFIER, PixelT, OffsetT>;
 
   /// Qaud input iterator type (for applying cache modifier)
-  typedef CacheModifiedInputIterator<LOAD_MODIFIER, VecT, OffsetT> WrappedVecsIteratorT;
+  using WrappedVecsIteratorT = CacheModifiedInputIterator<LOAD_MODIFIER, VecT, OffsetT>;
 
   /// Parameterized BlockLoad type for samples
-  typedef BlockLoad<SampleT, BLOCK_THREADS, SAMPLES_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadSampleT;
+  using BlockLoadSampleT = BlockLoad<SampleT, BLOCK_THREADS, SAMPLES_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
   /// Parameterized BlockLoad type for pixels
-  typedef BlockLoad<PixelT, BLOCK_THREADS, PIXELS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadPixelT;
+  using BlockLoadPixelT = BlockLoad<PixelT, BLOCK_THREADS, PIXELS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
   /// Parameterized BlockLoad type for vecs
-  typedef BlockLoad<VecT, BLOCK_THREADS, VECS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadVecT;
+  using BlockLoadVecT = BlockLoad<VecT, BLOCK_THREADS, VECS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
   /// Shared memory type required by this thread block
   struct _TempStorage
@@ -505,7 +505,7 @@ struct AgentHistogram
     SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
     Int2Type<_NUM_ACTIVE_CHANNELS> num_active_channels)
   {
-    typedef PixelT AliasedPixels[PIXELS_PER_THREAD];
+    using AliasedPixels = PixelT[PIXELS_PER_THREAD];
 
     WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
 
@@ -520,7 +520,7 @@ struct AgentHistogram
     SampleT (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
     Int2Type<1> num_active_channels)
   {
-    typedef VecT AliasedVecs[VECS_PER_THREAD];
+    using AliasedVecs = VecT[VECS_PER_THREAD];
 
     WrappedVecsIteratorT d_wrapped_vecs((VecT*) (d_native_samples + block_offset));
 
@@ -547,7 +547,7 @@ struct AgentHistogram
     Int2Type<true> is_full_tile,
     Int2Type<false> is_aligned)
   {
-    typedef SampleT AliasedSamples[SAMPLES_PER_THREAD];
+    using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
 
     // Load using sample iterator
     BlockLoadSampleT(temp_storage.aliasable.sample_load)
@@ -562,7 +562,7 @@ struct AgentHistogram
     Int2Type<false> is_full_tile,
     Int2Type<true> is_aligned)
   {
-    typedef PixelT AliasedPixels[PIXELS_PER_THREAD];
+    using AliasedPixels = PixelT[PIXELS_PER_THREAD];
 
     WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
 
@@ -581,7 +581,7 @@ struct AgentHistogram
     Int2Type<false> is_full_tile,
     Int2Type<false> is_aligned)
   {
-    typedef SampleT AliasedSamples[SAMPLES_PER_THREAD];
+    using AliasedSamples = SampleT[SAMPLES_PER_THREAD];
 
     BlockLoadSampleT(temp_storage.aliasable.sample_load)
       .Load(d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
