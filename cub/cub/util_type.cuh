@@ -126,35 +126,6 @@ template <typename It, typename FallbackT>
 using non_void_value_t = typename non_void_value_impl<It, FallbackT>::type;
 } // namespace detail
 
-/**
- * \brief Type selection (<tt>IF ? ThenType : ElseType</tt>)
- *
- * \deprecated [Since 1.16.0] The cub::If APIs are deprecated.
- *             Use cub::detail::conditional_t instead.
- */
-template <bool IF, typename ThenType, typename ElseType>
-struct CUB_DEPRECATED If
-{
-  using Type = cub::detail::conditional_t<IF, ThenType, ElseType>;
-};
-
-/******************************************************************************
- * Type equality
- ******************************************************************************/
-
-/**
- * \brief Type equality test
- *
- * \deprecated [Since 1.16.0] The cub::Equals APIs are deprecated.
- *             Use std::is_same instead.
- */
-template <typename A, typename B>
-struct CUB_DEPRECATED Equals
-{
-  static constexpr int VALUE  = ::cuda::std::is_same<A, B>::value ? 1 : 0;
-  static constexpr int NEGATE = VALUE ? 0 : 1;
-};
-
 /******************************************************************************
  * Static math
  ******************************************************************************/
@@ -203,56 +174,6 @@ struct PowerOfTwo
   };
 };
 
-/******************************************************************************
- * Pointer vs. iterator detection
- ******************************************************************************/
-
-/**
- * \brief Pointer vs. iterator
- *
- * \deprecated [Since 1.16.0] The cub::IsPointer APIs are deprecated.
- *             Use std::is_pointer instead.
- */
-template <typename Tp>
-struct CUB_DEPRECATED IsPointer
-{
-  static constexpr int VALUE = ::cuda::std::is_pointer<Tp>::value;
-};
-
-/******************************************************************************
- * Qualifier detection
- ******************************************************************************/
-
-/**
- * \brief Volatile modifier test
- *
- * \deprecated [Since 1.16.0] The cub::IsVolatile APIs are deprecated.
- *             Use std::is_volatile instead.
- */
-template <typename Tp>
-struct CUB_DEPRECATED IsVolatile
-{
-  static constexpr int VALUE = ::cuda::std::is_volatile<Tp>::value;
-};
-
-/******************************************************************************
- * Qualifier removal
- ******************************************************************************/
-
-/**
- * \brief Removes \p const and \p volatile qualifiers from type \p Tp.
- *
- * \deprecated [Since 1.16.0] The cub::RemoveQualifiers APIs are deprecated.
- *             Use std::remove_cv instead.
- *
- * For example:
- *     <tt>typename RemoveQualifiers<volatile int>::Type         // int;</tt>
- */
-template <typename Tp, typename Up = Tp>
-struct CUB_DEPRECATED RemoveQualifiers
-{
-  using Type = typename ::cuda::std::remove_cv<Tp>::type;
-};
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /******************************************************************************
@@ -955,22 +876,6 @@ struct DoubleBuffer
         VALUE = sizeof(test<T>(0)) < sizeof(int)                         \
       };                                                                 \
     };
-
-/******************************************************************************
- * Simple enable-if (similar to Boost)
- ******************************************************************************/
-
-/**
- * \brief Simple enable-if (similar to Boost)
- *
- * \deprecated [Since 1.16.0] The cub::If APIs are deprecated.
- *             Use std::enable_if instead.
- */
-template <bool Condition, class T = void>
-struct CUB_DEPRECATED EnableIf
-{
-  using Type = typename ::cuda::std::enable_if<Condition, T>::type;
-};
 
 /******************************************************************************
  * Typedef-detection
