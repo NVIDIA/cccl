@@ -452,9 +452,6 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
-  int* selector = nullptr;
-  cudaMallocHost(&selector, sizeof(int));
-
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
   c2h::gen(CUB_SEED(2), keys_1);
