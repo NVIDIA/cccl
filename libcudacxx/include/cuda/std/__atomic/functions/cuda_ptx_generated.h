@@ -173,6 +173,59 @@ _CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __mem
     )
     memcpy(__ret, &__tmp, 8);
 }
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_acquire_v2_64_block(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.acquire.cta.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_relaxed_v2_64_block(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.relaxed.cta.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_volatile_v2_64_block(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.volatile.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==16, int> = 0>
+_CCCL_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    ulonglong2 __tmp{};
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_v2_64_block(__ptr, __tmp.x, __tmp.y); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_v2_64_block(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_v2_64_block(__ptr, __tmp.x, __tmp.y); __cuda_membar_block(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_v2_64_block(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      )
+    )
+    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==16, int> = 0>
+_CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    ulonglong2 __tmp{};
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_v2_64_block(__ptr, __tmp.x, __tmp.y); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_v2_64_block(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_v2_64_block(__ptr, __tmp.x, __tmp.y); __cuda_membar_block(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_v2_64_block(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      )
+    )
+    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;
+}
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_relaxed_32_block(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.relaxed.cta.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_release_32_block(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.release.cta.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_volatile_32_block(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
@@ -2448,7 +2501,7 @@ _CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __mem
 }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_acquire_v2_64_device(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.acquire.gpu.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_relaxed_v2_64_device(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.relaxed.gpu.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
-template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_volatile_v2_64_device(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.volatile.gpu.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_volatile_v2_64_device(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.volatile.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==16, int> = 0>
 _CCCL_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_device_tag) {
     ulonglong2 __tmp{};
@@ -2472,7 +2525,7 @@ _CCCL_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, 
         }
       )
     )
-    memcpy(__ret, &__tmp, 16);
+    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;
 }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==16, int> = 0>
 _CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_device_tag) {
@@ -2497,7 +2550,7 @@ _CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __mem
         }
       )
     )
-    memcpy(__ret, &__tmp, 16);
+    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;
 }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_relaxed_32_device(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.relaxed.gpu.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_release_32_device(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.release.gpu.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
@@ -4771,6 +4824,59 @@ _CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __mem
       )
     )
     memcpy(__ret, &__tmp, 8);
+}
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_acquire_v2_64_system(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.acquire.sys.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_relaxed_v2_64_system(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.relaxed.sys.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_load_volatile_v2_64_system(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {asm volatile("ld.volatile.v2.b64 {%0, %1}, [%2];" : "=l"(__dst_x), "=l"(__dst_y) : "l"(__ptr) : "memory"); }
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==16, int> = 0>
+_CCCL_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    ulonglong2 __tmp{};
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_v2_64_system(__ptr, __tmp.x, __tmp.y); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_v2_64_system(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_v2_64_system(__ptr, __tmp.x, __tmp.y); __cuda_membar_system(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_v2_64_system(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      )
+    )
+    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==16, int> = 0>
+_CCCL_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    ulonglong2 __tmp{};
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_v2_64_system(__ptr, __tmp.x, __tmp.y); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_v2_64_system(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _CCCL_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_v2_64_system(__ptr, __tmp.x, __tmp.y); __cuda_membar_system(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_v2_64_system(__ptr, __tmp.x, __tmp.y); break;
+          default: assert(0);
+        }
+      )
+    )
+    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;
 }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_relaxed_32_system(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.relaxed.sys.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _CUDA_A, class _CUDA_B> static inline _CCCL_DEVICE void __cuda_store_release_32_system(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.release.sys.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
