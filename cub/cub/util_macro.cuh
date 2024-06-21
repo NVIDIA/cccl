@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -49,19 +49,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef CUB_ALIGN
-#  if defined(_WIN32) || defined(_WIN64)
-/// Align struct
-#    define CUB_ALIGN(bytes) __declspec(align(32))
-#  else
-/// Align struct
-#    define CUB_ALIGN(bytes) __attribute__((aligned(bytes)))
-#  endif
-#endif
-
-#define CUB_PREVENT_MACRO_SUBSTITUTION
-
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  define CUB_PREVENT_MACRO_SUBSTITUTION
 template <typename T, typename U>
 constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
   -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
@@ -75,6 +64,7 @@ constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 {
   return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
 }
+#  undef CUB_PREVENT_MACRO_SUBSTITUTION
 #endif
 
 #ifndef CUB_MAX
@@ -94,27 +84,18 @@ constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 
 #ifndef CUB_QUOTIENT_CEILING
 /// Quotient of x/y rounded up to nearest integer
+// FIXME(bgruber): the following computation can overflow, use cuda::ceil_div instead
 #  define CUB_QUOTIENT_CEILING(x, y) (((x) + (y) -1) / (y))
 #endif
 
 #ifndef CUB_ROUND_UP_NEAREST
 /// x rounded up to the nearest multiple of y
-#  define CUB_ROUND_UP_NEAREST(x, y) ((((x) + (y) -1) / (y)) * y)
+#  define CUB_ROUND_UP_NEAREST(x, y) (CUB_QUOTIENT_CEILING(x, y) * y)
 #endif
 
 #ifndef CUB_ROUND_DOWN_NEAREST
 /// x rounded down to the nearest multiple of y
 #  define CUB_ROUND_DOWN_NEAREST(x, y) (((x) / (y)) * y)
-#endif
-
-#ifndef CUB_STATIC_ASSERT
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-#    define CUB_CAT_(a, b) a##b
-#    define CUB_CAT(a, b)  CUB_CAT_(a, b)
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
-
-/// Static assert
-#  define CUB_STATIC_ASSERT(cond, msg) typedef int CUB_CAT(cub_static_assert, __LINE__)[(cond) ? 1 : -1]
 #endif
 
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES

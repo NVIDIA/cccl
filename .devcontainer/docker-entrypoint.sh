@@ -40,6 +40,8 @@ else
     #
     # We cannot use `su -w` because that's not supported by the `su` in Ubuntu18.04, so we reset the following
     # environment variables to the expected values, then pass through everything else from the startup environment.
+    export VIRTUAL_ENV=;
+    export VIRTUAL_ENV_PROMPT=;
     export HOME="$HOME_FOLDER";
     export XDG_CACHE_HOME="$HOME_FOLDER/.cache";
     export XDG_CONFIG_HOME="$HOME_FOLDER/.config";

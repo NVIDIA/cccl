@@ -31,7 +31,7 @@ __host__ __device__ void test_max(cuda::std::size_t count)
     TEST_IGNORE_NODISCARD a.allocate(count);
     assert(false);
   }
-  catch (const cuda::std::bad_array_new_length&)
+  catch (const std::bad_array_new_length&)
   {}
 }
 

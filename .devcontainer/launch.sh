@@ -217,7 +217,7 @@ launch_docker() {
         RUN_ARGS+=(--entrypoint "${WORKSPACE_FOLDER:-/home/coder/cccl}/.devcontainer/docker-entrypoint.sh")
     fi
 
-    if test -n "${SSH_AUTH_SOCK:-}"; then
+    if test -n "${SSH_AUTH_SOCK:-}" && test -e "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
     fi

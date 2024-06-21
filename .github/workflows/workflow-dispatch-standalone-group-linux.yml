@@ -1,0 +1,43 @@
+name: "Workflow/Dispatch/StandaloneGroup/Linux"
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      job-array:
+        description: "The dispatch.json's linux_standalone.jobs.<name> array of dispatch jobs."
+        type: string
+        required: true
+
+jobs:
+  run-jobs:
+    name: "${{ matrix.name }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.job-array) }}
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: cruizba/ubuntu-dind:jammy-26.1.3 # See workflow-run-job-linux for details
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run job
+        uses: ./.github/actions/workflow-run-job-linux
+        with:
+          id:      ${{ matrix.id }}
+          command: ${{ matrix.command }}
+          image:   ${{ matrix.image }}
+          runner:  ${{ matrix.runner }}
+          cuda:    ${{ matrix.cuda }}
+          host:    ${{ matrix.host }}

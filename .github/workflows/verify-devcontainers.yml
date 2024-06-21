@@ -2,6 +2,12 @@ name: Verify devcontainers
 
 on:
   workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        description: 'For PRs, set the base SHA to conditionally run this workflow only when relevant files are modified.'
+        required: false
+
 
 defaults:
   run:
@@ -14,6 +20,7 @@ jobs:
   get-devcontainer-list:
     name: Verify devcontainer files are up-to-date
     outputs:
+      skip: ${{ steps.inspect-changes.outputs.skip }}
       devcontainers: ${{ steps.get-list.outputs.devcontainers }}
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +47,45 @@ jobs:
         else
           echo "::note::Dev Container files are up-to-date."
         fi
+    - name: Inspect changes
+      if: ${{ inputs.base_sha != '' }}
+      id: inspect-changes
+      env:
+        BASE_SHA: ${{ inputs.base_sha }}
+      run: |
+        echo "Fetch history and determine merge base..."
+        git fetch origin --unshallow -q
+        git fetch origin $BASE_SHA -q
+        merge_base_sha=$(git merge-base $GITHUB_SHA $BASE_SHA)
+
+        echo "Head SHA: $GITHUB_SHA"
+        echo "PR Base SHA: $BASE_SHA"
+        echo "Merge Base SHA: $merge_base_sha"
+
+        echo "Checking for changes to devcontainer/matrix files..."
+
+        all_dirty_files=$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}")
+        echo "::group::All dirty files"
+        echo "${all_dirty_files}"
+        echo "::endgroup::"
+
+        file_regex="^(.devcontainer|ci/matrix.yaml|.github/actions/workflow-build/build-workflow.py)"
+        echo "Regex: ${file_regex}"
+
+        relevant_dirty_files=$(echo "${all_dirty_files}" | grep -E "${file_regex}" || true)
+        echo "::group::Relevant dirty files"
+        echo "${relevant_dirty_files}"
+        echo "::endgroup::"
+
+        if [[ -z "${relevant_dirty_files}" ]]; then
+          echo "No relevant changes detected. Skipping devcontainer testing."
+          echo "skip=true" >> $GITHUB_OUTPUT
+        else
+          echo "Detected relevant changes. Continuing."
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
     - name: Get list of devcontainer.json paths and names
+      if: ${{ steps.inspect-changes.outputs.skip != 'true' }}
       id: get-list
       run: |
         devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | while read -r devcontainer; do
@@ -49,8 +94,9 @@ jobs:
         echo "devcontainers=${devcontainers}" | tee --append "${GITHUB_OUTPUT}"
 
   verify-devcontainers:
-    needs: get-devcontainer-list
     name: ${{matrix.devcontainer.name}}
+    needs: get-devcontainer-list
+    if: ${{ needs.get-devcontainer-list.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -72,7 +118,7 @@ jobs:
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
-        role-duration-seconds: 43200 # 12 hours)
+        role-duration-seconds: 43200 # 12 hours
     - name: Set environment variables
       run: |
         echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV

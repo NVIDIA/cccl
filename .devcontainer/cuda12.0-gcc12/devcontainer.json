@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:24.06-cpp-gcc12-cuda12.0-ubuntu22.04",
+  "image": "rapidsai/devcontainers:24.08-cpp-gcc12-cuda12.0",
   "hostRequirements": {
     "gpu": "optional"
   },

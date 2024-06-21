@@ -12,6 +12,7 @@ repo_url         = "https://github.com/NVIDIA/cccl"
 social_media_set = ""
 social_media     = [
     [ "github", "https://github.com/NVIDIA/cccl" ],
+    [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
 
 enhanced_search_enabled = true
@@ -210,6 +211,11 @@ doxygen_input = [
     "../../thrust/thrust/iterator/*.h",
     "../../thrust/thrust/mr/*.h",
     "../../thrust/thrust/random/*.h",
+    "../../thrust/thrust/system/*.h",
+    "../../thrust/thrust/system/cpp/pointer.h",
+    "../../thrust/thrust/system/omp/pointer.h",
+    "../../thrust/thrust/system/tbb/pointer.h",
+    "../../thrust/thrust/type_traits/*.h",
 ]
 
 # doxygen allows the creation of custom commands to ease in the documentation process.

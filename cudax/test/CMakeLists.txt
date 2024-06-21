@@ -48,8 +48,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   # Add tests:
   cudax_add_catch2_test(test_target hierarchy_tests ${cn_target}
-    hierarchy_smoke.cu
-    hierarchy_custom_types.cu
+    hierarchy/hierarchy_smoke.cu
+    hierarchy/hierarchy_custom_types.cu
   )
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 endforeach()

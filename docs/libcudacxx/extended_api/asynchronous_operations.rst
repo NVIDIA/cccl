@@ -20,3 +20,8 @@ Asynchronous Operations
    * - :ref:`cuda::memcpy_async_tx <libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx>`
      - Asynchronously copies one range to another with manual transaction accounting
      - libcu++ 1.2.0 / CCCL 2.0.0 / CUDA 11.1
+
+.. note::
+
+  **Asynchronous operations** like `memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>`
+  are non-blocking operations performed as-if by a new thread of execution.

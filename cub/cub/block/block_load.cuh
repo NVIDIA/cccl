@@ -1199,8 +1199,7 @@ private:
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    CUB_STATIC_ASSERT((int(BLOCK_THREADS) % int(WARP_THREADS) == 0),
-                      "BLOCK_THREADS must be a multiple of WARP_THREADS");
+    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
     typedef BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
@@ -1298,8 +1297,7 @@ private:
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    CUB_STATIC_ASSERT((int(BLOCK_THREADS) % int(WARP_THREADS) == 0),
-                      "BLOCK_THREADS must be a multiple of WARP_THREADS");
+    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
     typedef BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;

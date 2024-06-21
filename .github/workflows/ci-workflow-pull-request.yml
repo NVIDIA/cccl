@@ -30,7 +30,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
@@ -38,8 +37,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
+      pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
-      workflow_keys: ${{ steps.build-workflow.outputs.workflow_keys }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -48,7 +48,13 @@ jobs:
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
+      - name: Export PR info
+        id: export-pr-info
+        run: |
+          echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
+          echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
       - name: Build workflow
+        if: ${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}
         id: build-workflow
         uses: ./.github/actions/workflow-build
         env:
@@ -58,13 +64,16 @@ jobs:
           allow_override: "true"
           skip_tests: ${{ toJSON(contains(github.event.head_commit.message, '[skip-tests]')) }}
           inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
-          inspect_changes_base_sha: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
+          inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
           workflows: >-
             ${{ env.pr_worflow }}
             ${{ env.nightly_workflow }}
 
-  run-workflow:
+  dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -72,20 +81,71 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow_keys) }}
-    uses: ./.github/workflows/workflow-dispatch.yml
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
-      name: ${{ matrix.name }}
-      jobs: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)[matrix.name]) }}
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
 
-  # This job acts as a sentry and will fail if any leaf job in the workflow tree fails, as
-  # run-workflow always succeeds. Use this job when checking for successful matrix workflow job completion.
+  dispatch-groups-windows-two-stage:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-linux-standalone:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-standalone:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+
   verify-workflow:
     name: Verify and summarize workflow results
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[skip-matrix]') }}
     needs:
       - build-workflow
-      - run-workflow
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-windows-two-stage
+      - dispatch-groups-linux-standalone
+      - dispatch-groups-windows-standalone
     permissions:
       contents: read
       pull-requests: write # Posts a comment back to the PR.
@@ -96,23 +156,51 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Get Base Branch from PR
-        id: get-pr-info
-        uses: nv-gha-runners/get-pr-info@main
-
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}
+          pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   verify-devcontainers:
     name: Verify Dev Containers
+    if: ${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}
+    needs: build-workflow
     permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/verify-devcontainers.yml
+    with:
+      base_sha: ${{ needs.build-workflow.outputs.base_sha }}
+
+  verify-docs:
+    name: Build and Verify Docs
+    if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and upload docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "true"
+          upload_pages_artifact: "false"
+
+  build-rapids:
+    name: Build RAPIDS
+    secrets: inherit
+    permissions:
+      actions: read
+      packages: read
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/build-rapids.yml
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:
@@ -125,6 +213,7 @@ jobs:
     needs:
       - verify-workflow
       - verify-devcontainers
+      - verify-docs
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -146,6 +235,7 @@ jobs:
 
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
+          check_result "verify-docs"          "success" "${{needs.verify-docs.result}}"
 
           if [[ "$status" != "success" ]]; then
             exit 1

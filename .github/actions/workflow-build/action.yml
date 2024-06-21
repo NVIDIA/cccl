@@ -32,11 +32,8 @@ inputs:
 
 outputs:
   workflow:
-    description: "The dispatchable workflow matrix"
-    value: ${{ steps.build-workflow.outputs.workflow }}
-  workflow_keys:
-    description: "The keys of the parsed workflow"
-    value: ${{ steps.build-workflow.outputs.workflow_keys }}
+    description: "The dispatchable workflows"
+    value: ${{ steps.outputs.outputs.WORKFLOW }}
 
 runs:
   using: "composite"
@@ -61,8 +58,8 @@ runs:
       env:
         allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
         skip_tests: ${{ inputs.skip_tests == 'true' && '--skip-tests' || ''}}
-        dirty_projects_flag: ${{ steps.inspect-changes.outputs.dirty_projects != '' && '--dirty-projects' || ''}}
-        dirty_projects: ${{ steps.inspect-changes.outputs.dirty_projects }}
+        dirty_projects_flag: ${{ inputs.inspect_changes_script != '' && '--dirty-projects' || ''}}
+        dirty_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.dirty_projects || ''}}
         matrix_parser: ${{ inputs.matrix_parser && inputs.matrix_parser || '${GITHUB_ACTION_PATH}/build-workflow.py' }}
       run: |
         echo "Parsing matrix file into a workflow..."
@@ -85,13 +82,21 @@ runs:
         cat workflow/job_list.txt
         echo "::endgroup::"
 
-        echo "Setting outputs..."
-        echo "::group::GHA Output: WORKFLOW"
-        printf "WORKFLOW=%s\n" "$(cat workflow/workflow.json | jq -c '.')" | tee -a "${GITHUB_OUTPUT}"
+    - name: Create dispatch workflows
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        "${GITHUB_ACTION_PATH}/prepare-workflow-dispatch.py" workflow/workflow.json
+
+        echo "::group::Dispatch Workflows"
+        cat workflow/dispatch.json
         echo "::endgroup::"
 
-        echo "::group::GHA Output: WORKFLOW_KEYS"
-        printf "WORKFLOW_KEYS=%s\n" "$(cat workflow/workflow_keys.json | jq -c '.')" | tee -a "${GITHUB_OUTPUT}"
+    - name: Set outputs
+      id: outputs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "::group::GHA Output: WORKFLOW"
+        printf "WORKFLOW=%s\n" "$(cat workflow/dispatch.json | jq -c '.')" | tee -a "${GITHUB_OUTPUT}"
         echo "::endgroup::"
 
     - name: Upload artifacts
