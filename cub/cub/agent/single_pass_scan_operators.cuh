@@ -617,6 +617,7 @@ struct ScanTileState<T, true>
     }
   }
 
+private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_no /*enforce_st_release*/)
   {
@@ -629,6 +630,7 @@ struct ScanTileState<T, true>
     detail::store_release(ptr, alias);
   }
 
+public:
   /**
    * Update the specified tile's inclusive value and corresponding status.
    * @tparam EnforceStoreRelease
@@ -1042,6 +1044,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     }
   }
 
+private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_no /*enforce_st_release*/)
   {
@@ -1054,6 +1057,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     detail::store_release(ptr, alias);
   }
 
+public:
   /**
    * Update the specified tile's inclusive value and corresponding status.
    * @tparam EnforceStoreRelease
