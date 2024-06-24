@@ -3,23 +3,23 @@
 
 CUB provides state-of-the-art, reusable software components for every layer
 of the CUDA programming model:
-- [<b><em>Device-wide primitives</em></b>](https://nvlabs.github.io/cub/group___device_module.html)
+- [<b><em>Device-wide primitives</em></b>](https://nvidia.github.io/cccl/cub/device_wide.html#device-module)
   - Sort, prefix scan, reduction, histogram, etc.
   - Compatible with CUDA dynamic parallelism
-- [<b><em>Block-wide "collective" primitives</em></b>](https://nvlabs.github.io/cub/group___block_module.html)
+- [<b><em>Block-wide "collective" primitives</em></b>](https://nvidia.github.io/cccl/cub/block_wide.html#block-module)
   - I/O, sort, prefix scan, reduction, histogram, etc.
   - Compatible with arbitrary thread block sizes and types
-- [<b><em>Warp-wide "collective" primitives</em></b>](https://nvlabs.github.io/cub/group___warp_module.html)
+- [<b><em>Warp-wide "collective" primitives</em></b>](https://nvidia.github.io/cccl/cub/warp_wide.html#warp-module)
   - Warp-wide prefix scan, reduction, etc.
   - Safe and architecture-specific
-- [<b><em>Thread and resource utilities</em></b>](https://nvlabs.github.io/cub/group___util_io.html)
+- <b><em>Thread and resource utilities</em></b>
   - PTX intrinsics, device reflection, texture-caching iterators, caching memory allocators, etc.
 
-![Orientation of collective primitives within the CUDA software stack](http://nvlabs.github.io/cub/cub_overview.png)
+![Orientation of collective primitives within the CUDA software stack](https://nvidia.github.io/cccl/cub/_images/cub_overview.png)
 
 CUB is included in the NVIDIA HPC SDK and the CUDA Toolkit.
 
-We recommend the [CUB Project Website](http://nvlabs.github.io/cub) for further information and examples.
+We recommend the [CUB Project Website](https://nvidia.github.io/cccl/cub/) for further information and examples.
 
 <br><hr>
 <h3>A Simple Example</h3>
