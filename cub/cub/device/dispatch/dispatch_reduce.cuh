@@ -195,7 +195,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::uninitialized_copy(d_out + blockIdx.x, block_aggregate);
+    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
   }
 }
 
