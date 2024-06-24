@@ -35,7 +35,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/cuda/detail/core/alignment.h>
 
 #include <cassert>
 
@@ -71,7 +70,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class T>
   size_t _CCCL_DEVICE align_up(size_t offset) const
   {
-    size_t alignment = alignment_of<T>::value;
+    size_t alignment = alignof(T);
     return alignment * ((offset + (alignment - 1)) / alignment);
   }
 
