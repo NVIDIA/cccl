@@ -36,7 +36,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cassert>
+#include <thrust/system/cuda/config.h>
+
+#include <cuda/cmath>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -70,8 +72,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class T>
   size_t _CCCL_DEVICE align_up(size_t offset) const
   {
-    size_t alignment = alignof(T);
-    return alignment * ((offset + (alignment - 1)) / alignment);
+    return ::cuda::ceil_div(offset, alignof(T)) * alignof(T);
   }
 
   size_t _CCCL_DEVICE argument_pack_size(size_t size) const
