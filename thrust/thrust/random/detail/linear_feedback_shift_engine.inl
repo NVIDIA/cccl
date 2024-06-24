@@ -69,8 +69,8 @@ template <typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
 linear_feedback_shift_engine<UIntType, w, k, q, s>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
-  typedef std::basic_ostream<CharT, Traits> ostream_type;
-  typedef typename ostream_type::ios_base ios_base;
+  using ostream_type = std::basic_ostream<CharT, Traits>;
+  using ios_base     = typename ostream_type::ios_base;
 
   // save old flags & fill character
   const typename ios_base::fmtflags flags = os.flags();
@@ -94,8 +94,8 @@ template <typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
 linear_feedback_shift_engine<UIntType, w, k, q, s>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
-  typedef std::basic_istream<CharT, Traits> istream_type;
-  typedef typename istream_type::ios_base ios_base;
+  using istream_type = std::basic_istream<CharT, Traits>;
+  using ios_base     = typename istream_type::ios_base;
 
   // save old flags
   const typename ios_base::fmtflags flags = is.flags();

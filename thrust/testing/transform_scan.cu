@@ -86,7 +86,7 @@ DECLARE_UNITTEST(TestTransformExclusiveScanDispatchImplicit);
 template <class Vector>
 void TestTransformScanSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -282,8 +282,8 @@ VariableUnitTest<TestTransformScan, IntegralTypes> TestTransformScanInstance;
 template <class Vector>
 void TestTransformScanCountingIterator()
 {
-  typedef typename Vector::value_type T;
-  typedef typename thrust::iterator_system<typename Vector::iterator>::type space;
+  using T     = typename Vector::value_type;
+  using space = typename thrust::iterator_system<typename Vector::iterator>::type;
 
   thrust::counting_iterator<T, space> first(1);
 

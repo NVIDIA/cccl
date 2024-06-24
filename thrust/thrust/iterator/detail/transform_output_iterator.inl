@@ -65,13 +65,13 @@ private:
 template <typename UnaryFunction, typename OutputIterator>
 struct transform_output_iterator_base
 {
-  typedef thrust::iterator_adaptor<transform_output_iterator<UnaryFunction, OutputIterator>,
-                                   OutputIterator,
-                                   thrust::use_default,
-                                   thrust::use_default,
-                                   thrust::use_default,
-                                   transform_output_iterator_proxy<UnaryFunction, OutputIterator>>
-    type;
+  using type =
+    thrust::iterator_adaptor<transform_output_iterator<UnaryFunction, OutputIterator>,
+                             OutputIterator,
+                             thrust::use_default,
+                             thrust::use_default,
+                             thrust::use_default,
+                             transform_output_iterator_proxy<UnaryFunction, OutputIterator>>;
 };
 
 // Register transform_output_iterator_proxy with 'is_proxy_reference' from

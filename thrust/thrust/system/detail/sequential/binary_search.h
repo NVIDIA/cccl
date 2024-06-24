@@ -55,7 +55,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
 
-  typedef typename thrust::iterator_difference<ForwardIterator>::type difference_type;
+  using difference_type = typename thrust::iterator_difference<ForwardIterator>::type;
 
   difference_type len = thrust::distance(first, last);
 
@@ -93,7 +93,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   // wrap comp
   thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
 
-  typedef typename thrust::iterator_difference<ForwardIterator>::type difference_type;
+  using difference_type = typename thrust::iterator_difference<ForwardIterator>::type;
 
   difference_type len = thrust::distance(first, last);
 

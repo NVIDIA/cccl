@@ -13,7 +13,7 @@ __global__ void uninitialized_copy_kernel(ExecutionPolicy exec, Iterator1 first,
 template <typename ExecutionPolicy>
 void TestUninitializedCopyDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector v1(5);
   v1[0] = 0;
@@ -50,7 +50,7 @@ DECLARE_UNITTEST(TestUninitializedCopyDeviceDevice);
 
 void TestUninitializedCopyCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector v1(5);
   v1[0] = 0;
@@ -88,7 +88,7 @@ __global__ void uninitialized_copy_n_kernel(ExecutionPolicy exec, Iterator1 firs
 template <typename ExecutionPolicy>
 void TestUninitializedCopyNDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector v1(5);
   v1[0] = 0;
@@ -125,7 +125,7 @@ DECLARE_UNITTEST(TestUninitializedCopyNDeviceDevice);
 
 void TestUninitializedCopyNCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector v1(5);
   v1[0] = 0;

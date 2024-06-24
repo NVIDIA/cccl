@@ -128,12 +128,12 @@ __THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_allocate_with_hint_impl, allocate)
 template <typename Alloc>
 class has_member_allocate_with_hint
 {
-  typedef typename allocator_traits<Alloc>::pointer pointer;
-  typedef typename allocator_traits<Alloc>::size_type size_type;
-  typedef typename allocator_traits<Alloc>::const_void_pointer const_void_pointer;
+  using pointer            = typename allocator_traits<Alloc>::pointer;
+  using size_type          = typename allocator_traits<Alloc>::size_type;
+  using const_void_pointer = typename allocator_traits<Alloc>::const_void_pointer;
 
 public:
-  typedef typename has_member_allocate_with_hint_impl<Alloc, pointer(size_type, const_void_pointer)>::type type;
+  using type = typename has_member_allocate_with_hint_impl<Alloc, pointer(size_type, const_void_pointer)>::type;
   static const bool value = type::value;
 };
 
@@ -244,10 +244,10 @@ __THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_max_size_impl, max_size)
 template <typename Alloc>
 class has_member_max_size
 {
-  typedef typename allocator_traits<Alloc>::size_type size_type;
+  using size_type = typename allocator_traits<Alloc>::size_type;
 
 public:
-  typedef typename has_member_max_size_impl<Alloc, size_type()>::type type;
+  using type              = typename has_member_max_size_impl<Alloc, size_type()>::type;
   static const bool value = type::value;
 };
 
@@ -264,7 +264,7 @@ _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_max_size<Alloc>::value,
                                              typename allocator_traits<Alloc>::size_type>
 max_size(const Alloc&)
 {
-  typedef typename allocator_traits<Alloc>::size_type size_type;
+  using size_type = typename allocator_traits<Alloc>::size_type;
   return thrust::detail::integer_traits<size_type>::const_max;
 }
 

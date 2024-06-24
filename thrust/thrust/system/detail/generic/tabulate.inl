@@ -43,7 +43,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperat
 _CCCL_HOST_DEVICE void tabulate(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)
 {
-  typedef typename iterator_difference<ForwardIterator>::type difference_type;
+  using difference_type = typename iterator_difference<ForwardIterator>::type;
 
   // by default, counting_iterator uses a 64b difference_type on 32b platforms to avoid overflowing its counter.
   // this causes problems when a zip_iterator is created in transform's implementation -- ForwardIterator is

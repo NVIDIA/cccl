@@ -21,11 +21,11 @@
 #include "util.h"
 
 // define some common lists of types
-typedef unittest::type_list<int, unsigned int, float> ThirtyTwoBitTypes;
+using ThirtyTwoBitTypes = unittest::type_list<int, unsigned int, float>;
 
-typedef unittest::type_list<long long, unsigned long long, double> SixtyFourBitTypes;
+using SixtyFourBitTypes = unittest::type_list<long long, unsigned long long, double>;
 
-typedef unittest::type_list<
+using IntegralTypes = unittest::type_list<
   char,
   signed char,
   unsigned char,
@@ -36,21 +36,20 @@ typedef unittest::type_list<
   long,
   unsigned long,
   long long,
-  unsigned long long>
-  IntegralTypes;
+  unsigned long long>;
 
-typedef unittest::type_list<signed char, signed short, signed int, signed long, signed long long> SignedIntegralTypes;
+using SignedIntegralTypes = unittest::type_list<signed char, short, int, long, long long>;
 
-typedef unittest::type_list<unsigned char, unsigned short, unsigned int, unsigned long, unsigned long long>
-  UnsignedIntegralTypes;
+using UnsignedIntegralTypes =
+  unittest::type_list<unsigned char, unsigned short, unsigned int, unsigned long, unsigned long long>;
 
-typedef unittest::type_list<char, signed char, unsigned char> ByteTypes;
+using ByteTypes = unittest::type_list<char, signed char, unsigned char>;
 
-typedef unittest::type_list<char, signed char, unsigned char, short, unsigned short> SmallIntegralTypes;
+using SmallIntegralTypes = unittest::type_list<char, signed char, unsigned char, short, unsigned short>;
 
-typedef unittest::type_list<long long, unsigned long long> LargeIntegralTypes;
+using LargeIntegralTypes = unittest::type_list<long long, unsigned long long>;
 
-typedef unittest::type_list<float, double> FloatingPointTypes;
+using FloatingPointTypes = unittest::type_list<float, double>;
 
 // A type that behaves as if it was a normal numeric type,
 // so it can be used in the same tests as "normal" numeric types.
@@ -218,7 +217,7 @@ class integer_traits<custom_numeric> : public integer_traits_base<int, INT_MIN, 
 
 THRUST_NAMESPACE_END
 
-typedef unittest::type_list<
+using NumericTypes = unittest::type_list<
   char,
   signed char,
   unsigned char,
@@ -232,10 +231,9 @@ typedef unittest::type_list<
   unsigned long long,
   float,
   double,
-  custom_numeric>
-  NumericTypes;
+  custom_numeric>;
 
-typedef unittest::type_list<
+using BuiltinNumericTypes = unittest::type_list<
   char,
   signed char,
   unsigned char,
@@ -248,8 +246,7 @@ typedef unittest::type_list<
   long long,
   unsigned long long,
   float,
-  double>
-  BuiltinNumericTypes;
+  double>;
 
 inline void chop_prefix(std::string& str, const std::string& prefix)
 {
@@ -288,8 +285,8 @@ enum TestStatus
   UnknownException = 4
 };
 
-typedef std::set<std::string> ArgumentSet;
-typedef std::map<std::string, std::string> ArgumentMap;
+using ArgumentSet = std::set<std::string>;
+using ArgumentMap = std::map<std::string, std::string>;
 
 std::vector<size_t> get_test_sizes();
 void set_test_sizes(const std::string&);
@@ -313,7 +310,7 @@ class UnitTestDriver;
 
 class UnitTestDriver
 {
-  typedef std::map<std::string, UnitTest*> TestMap;
+  using TestMap = std::map<std::string, UnitTest*>;
 
   TestMap test_map;
 
@@ -539,7 +536,7 @@ public:
   void run()
   {
     // get the first type in the list
-    typedef typename unittest::get_type<TypeList, 0>::type first_type;
+    using first_type = typename unittest::get_type<TypeList, 0>::type;
 
     unittest::for_each_type<TypeList, TestName, first_type, 0> for_each;
 
@@ -566,7 +563,7 @@ public:
     for (size_t i = 0; i != sizes.size(); ++i)
     {
       // get the first type in the list
-      typedef typename unittest::get_type<TypeList, 0>::type first_type;
+      using first_type = typename unittest::get_type<TypeList, 0>::type;
 
       unittest::for_each_type<TypeList, TestName, first_type, 0> loop;
 
@@ -597,13 +594,13 @@ struct VectorUnitTest : public UnitTest
   void run()
   {
     // zip up the type list with Alloc
-    typedef typename unittest::transform1<TypeList, Alloc>::type AllocList;
+    using AllocList = typename unittest::transform1<TypeList, Alloc>::type;
 
     // zip up the type list & alloc list with Vector
-    typedef typename unittest::transform2<TypeList, AllocList, Vector>::type VectorList;
+    using VectorList = typename unittest::transform2<TypeList, AllocList, Vector>::type;
 
     // get the first type in the list
-    typedef typename unittest::get_type<VectorList, 0>::type first_type;
+    using first_type = typename unittest::get_type<VectorList, 0>::type;
 
     unittest::for_each_type<VectorList, TestName, first_type, 0> loop;
 

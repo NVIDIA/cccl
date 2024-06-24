@@ -88,12 +88,12 @@ public:
   /*! \typedef base_type
    *  \brief The type of the adapted base random number engine.
    */
-  typedef Engine base_type;
+  using base_type = Engine;
 
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
    */
-  typedef typename base_type::result_type result_type;
+  using result_type = typename base_type::result_type;
 
   // engine characteristics
 

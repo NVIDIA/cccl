@@ -36,7 +36,7 @@ void device_free(thrust::device_ptr<void> ptr)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef thrust::iterator_system<thrust::device_ptr<void>>::type system;
+  using system = thrust::iterator_system<thrust::device_ptr<void>>::type;
 
   // XXX lower to select_system(system) here
   system s;

@@ -55,7 +55,7 @@ struct reduce_by_key_functor
 {
   AssociativeOperator binary_op;
 
-  typedef typename thrust::tuple<ValueType, TailFlagType> result_type;
+  using result_type = typename thrust::tuple<ValueType, TailFlagType>;
 
   _CCCL_HOST_DEVICE reduce_by_key_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)
@@ -87,9 +87,9 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  typedef typename thrust::iterator_traits<InputIterator1>::difference_type difference_type;
+  using difference_type = typename thrust::iterator_traits<InputIterator1>::difference_type;
 
-  typedef unsigned int FlagType; // TODO use difference_type
+  using FlagType = unsigned int; // TODO use difference_type
 
   // Use the input iterator's value type per https://wg21.link/P0571
   using ValueType = typename thrust::iterator_value<InputIterator2>::type;
@@ -154,7 +154,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
-  typedef typename thrust::iterator_value<InputIterator1>::type KeyType;
+  using KeyType = typename thrust::iterator_value<InputIterator1>::type;
 
   // use equal_to<KeyType> as default BinaryPredicate
   return thrust::reduce_by_key(
@@ -176,9 +176,9 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  typedef typename thrust::detail::eval_if<thrust::detail::is_output_iterator<OutputIterator2>::value,
-                                           thrust::iterator_value<InputIterator2>,
-                                           thrust::iterator_value<OutputIterator2>>::type T;
+  using T = typename thrust::detail::eval_if<thrust::detail::is_output_iterator<OutputIterator2>::value,
+                                             thrust::iterator_value<InputIterator2>,
+                                             thrust::iterator_value<OutputIterator2>>::type;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(

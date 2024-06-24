@@ -14,8 +14,8 @@ __global__ void transform_kernel(
 template <typename ExecutionPolicy>
 void TestTransformUnaryDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -74,8 +74,8 @@ __global__ void transform_if_kernel(
 template <typename ExecutionPolicy>
 void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -141,8 +141,8 @@ __global__ void transform_if_kernel(
 template <typename ExecutionPolicy>
 void TestTransformIfUnaryDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -217,8 +217,8 @@ __global__ void transform_kernel(
 template <typename ExecutionPolicy>
 void TestTransformBinaryDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -286,8 +286,8 @@ __global__ void transform_if_kernel(
 template <typename ExecutionPolicy>
 void TestTransformIfBinaryDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -351,8 +351,8 @@ DECLARE_UNITTEST(TestTransformIfBinaryDeviceDevice);
 
 void TestTransformUnaryCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector::iterator iter;
 
@@ -381,8 +381,8 @@ DECLARE_UNITTEST(TestTransformUnaryCudaStreams);
 
 void TestTransformBinaryCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector::iterator iter;
 

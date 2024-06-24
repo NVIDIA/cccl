@@ -133,8 +133,8 @@ struct Tuning<sm30, Key, Value>
                                          / COMBINED_INPUT_BYTES)>::value>::value,
   };
 
-  typedef PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>
-    type;
+  using type =
+    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm30
 
 template <class Key, class Value>
@@ -157,8 +157,8 @@ struct Tuning<sm35, Key, Value> : Tuning<sm30, Key, Value>
             value>::value,
   };
 
-  typedef PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>
-    type;
+  using type =
+    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm35
 
 template <class Key, class Value>
@@ -181,8 +181,8 @@ struct Tuning<sm52, Key, Value> : Tuning<sm30, Key, Value>
             value>::value,
   };
 
-  typedef PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>
-    type;
+  using type =
+    PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm52
 
 template <class KeysInputIt,
@@ -195,32 +195,33 @@ template <class KeysInputIt,
           class Size>
 struct ReduceByKeyAgent
 {
-  typedef typename iterator_traits<KeysInputIt>::value_type key_type;
-  typedef typename iterator_traits<ValuesInputIt>::value_type value_type;
-  typedef Size size_type;
+  using key_type   = typename iterator_traits<KeysInputIt>::value_type;
+  using value_type = typename iterator_traits<ValuesInputIt>::value_type;
+  using size_type  = Size;
 
-  typedef cub::KeyValuePair<size_type, value_type> size_value_pair_t;
-  typedef cub::KeyValuePair<key_type, value_type> key_value_pair_t;
+  using size_value_pair_t = cub::KeyValuePair<size_type, value_type>;
+  using key_value_pair_t  = cub::KeyValuePair<key_type, value_type>;
 
-  typedef cub::ReduceByKeyScanTileState<value_type, size_type> ScanTileState;
-  typedef cub::ReduceBySegmentOp<ReductionOp> ReduceBySegmentOp;
+  using ScanTileState     = cub::ReduceByKeyScanTileState<value_type, size_type>;
+  using ReduceBySegmentOp = cub::ReduceBySegmentOp<ReductionOp>;
 
   template <class Arch>
   struct PtxPlan : Tuning<Arch, key_type, value_type>::type
   {
-    typedef Tuning<Arch, key_type, value_type> tuning;
+    using tuning = Tuning<Arch, key_type, value_type>;
 
-    typedef typename core::LoadIterator<PtxPlan, KeysInputIt>::type KeysLoadIt;
-    typedef typename core::LoadIterator<PtxPlan, ValuesInputIt>::type ValuesLoadIt;
+    using KeysLoadIt   = typename core::LoadIterator<PtxPlan, KeysInputIt>::type;
+    using ValuesLoadIt = typename core::LoadIterator<PtxPlan, ValuesInputIt>::type;
 
-    typedef typename core::BlockLoad<PtxPlan, KeysLoadIt>::type BlockLoadKeys;
-    typedef typename core::BlockLoad<PtxPlan, ValuesLoadIt>::type BlockLoadValues;
+    using BlockLoadKeys   = typename core::BlockLoad<PtxPlan, KeysLoadIt>::type;
+    using BlockLoadValues = typename core::BlockLoad<PtxPlan, ValuesLoadIt>::type;
 
-    typedef cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver> BlockDiscontinuityKeys;
+    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
 
-    typedef cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState, Arch::ver> TilePrefixCallback;
-    typedef cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>
-      BlockScan;
+    using TilePrefixCallback =
+      cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState, Arch::ver>;
+    using BlockScan =
+      cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
 
     union TempStorage
     {
@@ -238,16 +239,16 @@ struct ReduceByKeyAgent
     }; // union TempStorage
   }; // struct PtxPlan
 
-  typedef typename core::specialize_plan_msvc10_war<PtxPlan>::type::type ptx_plan;
+  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
-  typedef typename ptx_plan::KeysLoadIt KeysLoadIt;
-  typedef typename ptx_plan::ValuesLoadIt ValuesLoadIt;
-  typedef typename ptx_plan::BlockLoadKeys BlockLoadKeys;
-  typedef typename ptx_plan::BlockLoadValues BlockLoadValues;
-  typedef typename ptx_plan::BlockDiscontinuityKeys BlockDiscontinuityKeys;
-  typedef typename ptx_plan::TilePrefixCallback TilePrefixCallback;
-  typedef typename ptx_plan::BlockScan BlockScan;
-  typedef typename ptx_plan::TempStorage TempStorage;
+  using KeysLoadIt             = typename ptx_plan::KeysLoadIt;
+  using ValuesLoadIt           = typename ptx_plan::ValuesLoadIt;
+  using BlockLoadKeys          = typename ptx_plan::BlockLoadKeys;
+  using BlockLoadValues        = typename ptx_plan::BlockLoadValues;
+  using BlockDiscontinuityKeys = typename ptx_plan::BlockDiscontinuityKeys;
+  using TilePrefixCallback     = typename ptx_plan::TilePrefixCallback;
+  using BlockScan              = typename ptx_plan::BlockScan;
+  using TempStorage            = typename ptx_plan::TempStorage;
 
   enum
   {
@@ -749,7 +750,7 @@ struct InitAgent
   template <class Arch>
   struct PtxPlan : PtxPolicy<128>
   {};
-  typedef core::specialize_plan<PtxPlan> ptx_plan;
+  using ptx_plan = core::specialize_plan<PtxPlan>;
 
   //---------------------------------------------------------------------
   // Agent entry point
@@ -795,12 +796,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     return cudaErrorNotSupported;
   }
 
-  typedef AgentLauncher<
-    ReduceByKeyAgent<KeysInputIt, ValuesInputIt, KeysOutputIt, ValuesOutputIt, EqualityOp, ReductionOp, NumRunsOutputIt, Size>>
-    reduce_by_key_agent;
+  using reduce_by_key_agent = AgentLauncher<
+    ReduceByKeyAgent<KeysInputIt, ValuesInputIt, KeysOutputIt, ValuesOutputIt, EqualityOp, ReductionOp, NumRunsOutputIt, Size>>;
 
-  typedef typename reduce_by_key_agent::ScanTileState ScanTileState;
-  typedef AgentLauncher<InitAgent<ScanTileState, Size, NumRunsOutputIt>> init_agent;
+  using ScanTileState = typename reduce_by_key_agent::ScanTileState;
+  using init_agent    = AgentLauncher<InitAgent<ScanTileState, Size, NumRunsOutputIt>>;
 
   AgentPlan reduce_by_key_plan = reduce_by_key_agent::get_plan(stream);
   AgentPlan init_plan          = init_agent::get_plan();
@@ -1016,9 +1016,9 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   ValOutputIt values_output,
   BinaryPred binary_pred)
 {
-  typedef typename thrust::detail::eval_if<thrust::detail::is_output_iterator<ValOutputIt>::value,
-                                           thrust::iterator_value<ValInputIt>,
-                                           thrust::iterator_value<ValOutputIt>>::type value_type;
+  using value_type = typename thrust::detail::eval_if<thrust::detail::is_output_iterator<ValOutputIt>::value,
+                                                      thrust::iterator_value<ValInputIt>,
+                                                      thrust::iterator_value<ValOutputIt>>::type;
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, plus<value_type>());
 }
@@ -1032,7 +1032,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   KeyOutputIt keys_output,
   ValOutputIt values_output)
 {
-  typedef typename thrust::iterator_value<KeyInputIt>::type KeyT;
+  using KeyT = typename thrust::iterator_value<KeyInputIt>::type;
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, equal_to<KeyT>());
 }

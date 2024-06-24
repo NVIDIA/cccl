@@ -61,7 +61,7 @@ template <class InputType, class IndexType, class Predicate>
 struct arg_min_f
 {
   Predicate predicate;
-  typedef tuple<InputType, IndexType> pair_type;
+  using pair_type = tuple<InputType, IndexType>;
 
   _CCCL_HOST_DEVICE arg_min_f(Predicate p)
       : predicate(p)
@@ -100,7 +100,7 @@ template <class InputType, class IndexType, class Predicate>
 struct arg_max_f
 {
   Predicate predicate;
-  typedef tuple<InputType, IndexType> pair_type;
+  using pair_type = tuple<InputType, IndexType>;
 
   _CCCL_HOST_DEVICE arg_max_f(Predicate p)
       : predicate(p)
@@ -140,11 +140,11 @@ struct arg_minmax_f
 {
   Predicate predicate;
 
-  typedef tuple<InputType, IndexType> pair_type;
-  typedef tuple<pair_type, pair_type> two_pairs_type;
+  using pair_type      = tuple<InputType, IndexType>;
+  using two_pairs_type = tuple<pair_type, pair_type>;
 
-  typedef arg_min_f<InputType, IndexType, Predicate> arg_min_t;
-  typedef arg_max_f<InputType, IndexType, Predicate> arg_max_t;
+  using arg_min_t = arg_min_f<InputType, IndexType, Predicate>;
+  using arg_max_t = arg_max_f<InputType, IndexType, Predicate>;
 
   _CCCL_HOST_DEVICE arg_minmax_f(Predicate p)
       : predicate(p)
@@ -186,14 +186,14 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   using core::cuda_optional;
   using core::get_agent_plan;
 
-  typedef typename detail::make_unsigned_special<Size>::type UnsignedSize;
+  using UnsignedSize = typename detail::make_unsigned_special<Size>::type;
 
   if (num_items == 0)
   {
     return cudaErrorNotSupported;
   }
 
-  typedef AgentLauncher<__reduce::ReduceAgent<InputIt, OutputIt, T, Size, ReductionOp>> reduce_agent;
+  using reduce_agent = AgentLauncher<__reduce::ReduceAgent<InputIt, OutputIt, T, Size, ReductionOp>>;
 
   typename reduce_agent::Plan reduce_plan = reduce_agent::get_plan(stream);
 
@@ -278,7 +278,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       // then fill the device with threadblocks
       reduce_grid_size = static_cast<int>((min) (num_tiles, static_cast<size_t>(reduce_device_occupancy)));
 
-      typedef AgentLauncher<__reduce::DrainAgent<Size>> drain_agent;
+      using drain_agent    = AgentLauncher<__reduce::DrainAgent<Size>>;
       AgentPlan drain_plan = drain_agent::get_plan();
       drain_plan.grid_size = 1;
       drain_agent da(drain_plan, stream, "__reduce::drain_agent");
@@ -295,7 +295,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     ra.launch(input_it, d_block_reductions, num_items, even_share, queue, reduction_op);
     CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-    typedef AgentLauncher<__reduce::ReduceAgent<T*, OutputIt, T, Size, ReductionOp>> reduce_agent_single;
+    using reduce_agent_single = AgentLauncher<__reduce::ReduceAgent<T*, OutputIt, T, Size, ReductionOp>>;
 
     reduce_plan.grid_size = 1;
     reduce_agent_single ra1(reduce_plan, stream, vshmem_ptr, "reduce_agent: single tile reduce");
@@ -364,18 +364,18 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
     return last;
   }
 
-  typedef typename iterator_traits<ItemsIt>::value_type InputType;
-  typedef typename iterator_traits<ItemsIt>::difference_type IndexType;
+  using InputType = typename iterator_traits<ItemsIt>::value_type;
+  using IndexType = typename iterator_traits<ItemsIt>::difference_type;
 
   IndexType num_items = static_cast<IndexType>(thrust::distance(first, last));
 
-  typedef tuple<ItemsIt, counting_iterator_t<IndexType>> iterator_tuple;
-  typedef zip_iterator<iterator_tuple> zip_iterator;
+  using iterator_tuple = tuple<ItemsIt, counting_iterator_t<IndexType>>;
+  using zip_iterator   = zip_iterator<iterator_tuple>;
 
   iterator_tuple iter_tuple = thrust::make_tuple(first, counting_iterator_t<IndexType>(0));
 
-  typedef ArgFunctor<InputType, IndexType, BinaryPred> arg_min_t;
-  typedef tuple<InputType, IndexType> T;
+  using arg_min_t = ArgFunctor<InputType, IndexType, BinaryPred>;
+  using T         = tuple<InputType, IndexType>;
 
   zip_iterator begin = make_zip_iterator(iter_tuple);
 
@@ -400,7 +400,7 @@ min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  typedef typename iterator_value<ItemsIt>::type value_type;
+  using value_type = typename iterator_value<ItemsIt>::type;
   return cuda_cub::min_element(policy, first, last, less<value_type>());
 }
 
@@ -419,7 +419,7 @@ max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Bina
 template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  typedef typename iterator_value<ItemsIt>::type value_type;
+  using value_type = typename iterator_value<ItemsIt>::type;
   return cuda_cub::max_element(policy, first, last, less<value_type>());
 }
 
@@ -464,7 +464,7 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
 template <class Derived, class ItemsIt>
 pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  typedef typename iterator_value<ItemsIt>::type value_type;
+  using value_type = typename iterator_value<ItemsIt>::type;
   return cuda_cub::minmax_element(policy, first, last, less<value_type>());
 }
 

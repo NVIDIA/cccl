@@ -49,24 +49,24 @@ template <typename T, typename Alloc>
 class vector_base
 {
 private:
-  typedef thrust::detail::contiguous_storage<T, Alloc> storage_type;
+  using storage_type = thrust::detail::contiguous_storage<T, Alloc>;
 
 public:
-  // typedefs
-  typedef typename storage_type::value_type value_type;
-  typedef typename storage_type::pointer pointer;
-  typedef typename storage_type::const_pointer const_pointer;
-  typedef typename storage_type::reference reference;
-  typedef typename storage_type::const_reference const_reference;
-  typedef typename storage_type::size_type size_type;
-  typedef typename storage_type::difference_type difference_type;
-  typedef typename storage_type::allocator_type allocator_type;
+  // aliases
+  using value_type      = typename storage_type::value_type;
+  using pointer         = typename storage_type::pointer;
+  using const_pointer   = typename storage_type::const_pointer;
+  using reference       = typename storage_type::reference;
+  using const_reference = typename storage_type::const_reference;
+  using size_type       = typename storage_type::size_type;
+  using difference_type = typename storage_type::difference_type;
+  using allocator_type  = typename storage_type::allocator_type;
 
-  typedef typename storage_type::iterator iterator;
-  typedef typename storage_type::const_iterator const_iterator;
+  using iterator       = typename storage_type::iterator;
+  using const_iterator = typename storage_type::const_iterator;
 
-  typedef thrust::reverse_iterator<iterator> reverse_iterator;
-  typedef thrust::reverse_iterator<const_iterator> const_reverse_iterator;
+  using reverse_iterator       = thrust::reverse_iterator<iterator>;
+  using const_reverse_iterator = thrust::reverse_iterator<const_iterator>;
 
   /*! This constructor creates an empty vector_base.
    */

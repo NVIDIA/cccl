@@ -23,8 +23,8 @@ _CCCL_HOST_DEVICE void assert_static(bool condition, const char* filename, int l
 
 #  define ASSERT_STATIC_ASSERT(X)                                                              \
     {                                                                                          \
-      bool triggered = false;                                                                  \
-      typedef unittest::static_assert_exception ex_t;                                          \
+      bool triggered                      = false;                                             \
+      using ex_t                          = unittest::static_assert_exception;                 \
       thrust::device_ptr<ex_t> device_ptr = thrust::device_new<ex_t>();                        \
       ex_t* raw_ptr                       = thrust::raw_pointer_cast(device_ptr);              \
       ::cudaMemcpyToSymbol(unittest::detail::device_exception, &raw_ptr, sizeof(ex_t*));       \
@@ -56,7 +56,7 @@ _CCCL_HOST_DEVICE void assert_static(bool condition, const char* filename, int l
 #  define ASSERT_STATIC_ASSERT(X)                                                              \
     {                                                                                          \
       bool triggered = false;                                                                  \
-      typedef unittest::static_assert_exception ex_t;                                          \
+      using ex_t     = unittest::static_assert_exception;                                      \
       try                                                                                      \
       {                                                                                        \
         X;                                                                                     \

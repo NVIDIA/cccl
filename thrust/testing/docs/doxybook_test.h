@@ -135,7 +135,7 @@ class test_derived_class : test_class<int, double>
 
   double test_derived_member_variable = 3.14; ///< A test member variable.
 
-  typedef double test_typedef;
+  using test_typedef = double;
 
   /*! \brief \c test_derived_member_function is a function intended to exercise
    *  and test Doxybook rendering.

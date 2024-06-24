@@ -25,7 +25,7 @@ public:
 template <class Vector>
 void TestForEachSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input(5);
   Vector output(7, (T) 0);
@@ -90,7 +90,7 @@ DECLARE_UNITTEST(TestForEachDispatchImplicit);
 template <class Vector>
 void TestForEachNSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input(5);
   Vector output(7, (T) 0);

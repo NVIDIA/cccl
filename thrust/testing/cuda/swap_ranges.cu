@@ -13,7 +13,7 @@ __global__ void swap_ranges_kernel(ExecutionPolicy exec, Iterator1 first1, Itera
 template <typename ExecutionPolicy>
 void TestSwapRangesDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector v1(5);
   v1[0] = 0;
@@ -61,7 +61,7 @@ DECLARE_UNITTEST(TestSwapRangesDeviceDevice);
 
 void TestSwapRangesCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector v1(5);
   v1[0] = 0;

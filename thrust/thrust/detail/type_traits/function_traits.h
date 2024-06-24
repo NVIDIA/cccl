@@ -67,7 +67,7 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(has_second_argument_type, second_argument_type)
 template <typename AdaptableBinaryFunction>
 struct result_type
 {
-  typedef typename AdaptableBinaryFunction::result_type type;
+  using type = typename AdaptableBinaryFunction::result_type;
 };
 
 template <typename T>

@@ -14,9 +14,9 @@ __global__ void tabulate_kernel(ExecutionPolicy exec, Iterator first, Iterator l
 template <typename ExecutionPolicy>
 void TestTabulateDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
   using namespace thrust::placeholders;
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
 
@@ -73,8 +73,8 @@ DECLARE_UNITTEST(TestTabulateDeviceDevice);
 void TestTabulateCudaStreams()
 {
   using namespace thrust::placeholders;
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(5);
 

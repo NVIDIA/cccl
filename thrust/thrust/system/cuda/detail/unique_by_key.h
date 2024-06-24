@@ -272,7 +272,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
   KeyOutputIt keys_result,
   ValOutputIt values_result)
 {
-  typedef typename iterator_traits<KeyInputIt>::value_type key_type;
+  using key_type = typename iterator_traits<KeyInputIt>::value_type;
   return cuda_cub::unique_by_key_copy(
     policy, keys_first, keys_last, values_first, keys_result, values_result, equal_to<key_type>());
 }
@@ -297,7 +297,7 @@ template <class Derived, class KeyInputIt, class ValInputIt>
 pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
 unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInputIt keys_last, ValInputIt values_first)
 {
-  typedef typename iterator_traits<KeyInputIt>::value_type key_type;
+  using key_type = typename iterator_traits<KeyInputIt>::value_type;
   return cuda_cub::unique_by_key(policy, keys_first, keys_last, values_first, equal_to<key_type>());
 }
 

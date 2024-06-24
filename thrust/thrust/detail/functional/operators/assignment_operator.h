@@ -63,7 +63,7 @@ struct assign
 template <typename Eval, typename T>
 struct assign_result
 {
-  typedef actor<composite<transparent_binary_operator<assign>, actor<Eval>, typename as_actor<T>::type>> type;
+  using type = actor<composite<transparent_binary_operator<assign>, actor<Eval>, typename as_actor<T>::type>>;
 }; // end assign_result
 
 template <typename Eval, typename T>

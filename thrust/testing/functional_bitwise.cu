@@ -44,8 +44,8 @@ struct bit_xor
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 void TestBinaryFunctional()
 {
-  typedef typename InputVector::value_type InputType;
-  typedef typename OutputVector::value_type OutputType;
+  using InputType  = typename InputVector::value_type;
+  using OutputType = typename OutputVector::value_type;
 
   thrust::host_vector<InputType> std_input1 = unittest::random_samples<InputType>(NUM_SAMPLES);
   thrust::host_vector<InputType> std_input2 = unittest::random_samples<InputType>(NUM_SAMPLES);

@@ -114,7 +114,7 @@ template <typename DerivedPolicy, typename InputIterator, typename OutputType, t
 OutputType reduce(
   execution_policy<DerivedPolicy>&, InputIterator begin, InputIterator end, OutputType init, BinaryFunction binary_op)
 {
-  typedef typename thrust::iterator_difference<InputIterator>::type Size;
+  using Size = typename thrust::iterator_difference<InputIterator>::type;
 
   Size n = thrust::distance(begin, end);
 
@@ -124,7 +124,7 @@ OutputType reduce(
   }
   else
   {
-    typedef typename reduce_detail::body<InputIterator, OutputType, BinaryFunction> Body;
+    using Body = typename reduce_detail::body<InputIterator, OutputType, BinaryFunction>;
     Body reduce_body(begin, init, binary_op);
     ::tbb::parallel_reduce(::tbb::blocked_range<Size>(0, n), reduce_body);
     return binary_op(init, reduce_body.sum);

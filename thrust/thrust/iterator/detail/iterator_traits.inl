@@ -36,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename Iterator>
 struct iterator_value
 {
-  typedef typename thrust::iterator_traits<Iterator>::value_type type;
+  using type = typename thrust::iterator_traits<Iterator>::value_type;
 }; // end iterator_value
 
 template <typename Iterator>
@@ -45,7 +45,7 @@ using iterator_value_t = typename iterator_value<Iterator>::type;
 template <typename Iterator>
 struct iterator_pointer
 {
-  typedef typename thrust::iterator_traits<Iterator>::pointer type;
+  using type = typename thrust::iterator_traits<Iterator>::pointer;
 }; // end iterator_pointer
 
 template <typename Iterator>
@@ -54,7 +54,7 @@ using iterator_pointer_t = typename iterator_pointer<Iterator>::type;
 template <typename Iterator>
 struct iterator_reference
 {
-  typedef typename iterator_traits<Iterator>::reference type;
+  using type = typename iterator_traits<Iterator>::reference;
 }; // end iterator_reference
 
 template <typename Iterator>
@@ -63,7 +63,7 @@ using iterator_reference_t = typename iterator_reference<Iterator>::type;
 template <typename Iterator>
 struct iterator_difference
 {
-  typedef typename thrust::iterator_traits<Iterator>::difference_type type;
+  using type = typename thrust::iterator_traits<Iterator>::difference_type;
 }; // end iterator_difference
 
 template <typename Iterator>
@@ -91,13 +91,13 @@ struct iterator_system : detail::iterator_system_impl<Iterator>
 template <>
 struct iterator_system<void*>
 {
-  typedef thrust::iterator_system<int*>::type type;
+  using type = thrust::iterator_system<int*>::type;
 }; // end iterator_system<void*>
 
 template <>
 struct iterator_system<const void*>
 {
-  typedef thrust::iterator_system<const int*>::type type;
+  using type = thrust::iterator_system<const int*>::type;
 }; // end iterator_system<void*>
 
 template <typename Iterator>

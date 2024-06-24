@@ -48,8 +48,8 @@ namespace cuda
 namespace detail
 {
 
-typedef cudaError_t(CUDARTAPI* allocation_fn)(void**, std::size_t);
-typedef cudaError_t(CUDARTAPI* deallocation_fn)(void*);
+using allocation_fn   = cudaError_t (*)(void**, std::size_t);
+using deallocation_fn = cudaError_t (*)(void*);
 
 template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
@@ -90,11 +90,11 @@ inline cudaError_t CUDARTAPI cudaMallocManaged(void** ptr, std::size_t bytes)
   return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
 }
 
-typedef detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void>> device_memory_resource;
-typedef detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>
-  managed_memory_resource;
-typedef detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_pointer<void>>
-  pinned_memory_resource;
+using device_memory_resource = detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void>>;
+using managed_memory_resource =
+  detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void>>;
+using pinned_memory_resource =
+  detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_pointer<void>>;
 
 } // namespace detail
 //! \endcond
@@ -102,17 +102,17 @@ typedef detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda:
 /*! The memory resource for the CUDA system. Uses <tt>cudaMalloc</tt> and wraps
  *  the result with \p cuda::pointer.
  */
-typedef detail::device_memory_resource memory_resource;
+using memory_resource = detail::device_memory_resource;
 /*! The universal memory resource for the CUDA system. Uses
  *  <tt>cudaMallocManaged</tt> and wraps the result with
  *  \p cuda::universal_pointer.
  */
-typedef detail::managed_memory_resource universal_memory_resource;
+using universal_memory_resource = detail::managed_memory_resource;
 /*! The host pinned memory resource for the CUDA system. Uses
  *  <tt>cudaMallocHost</tt> and wraps the result with \p
  *  cuda::universal_pointer.
  */
-typedef detail::pinned_memory_resource universal_host_pinned_memory_resource;
+using universal_host_pinned_memory_resource = detail::pinned_memory_resource;
 
 } // namespace cuda
 } // namespace system

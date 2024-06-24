@@ -50,7 +50,7 @@ struct simple_negate : public thrust::unary_function<T, T>
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  typedef typename std::iterator_traits<Iterator>::value_type T;
+  using T = typename std::iterator_traits<Iterator>::value_type;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
@@ -64,8 +64,8 @@ int main()
   int hi = 5;
 
   // define some types
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator VectorIterator;
+  using Vector         = thrust::device_vector<int>;
+  using VectorIterator = Vector::iterator;
 
   // initialize values
   Vector values(8);
@@ -82,7 +82,7 @@ int main()
   print_range("values         ", values.begin(), values.end());
 
   // define some more types
-  typedef thrust::transform_iterator<clamp<int>, VectorIterator> ClampedVectorIterator;
+  using ClampedVectorIterator = thrust::transform_iterator<clamp<int>, VectorIterator>;
 
   // create a transform_iterator that applies clamp() to the values array
   ClampedVectorIterator cv_begin = thrust::make_transform_iterator(values.begin(), clamp<int>(lo, hi));
@@ -97,8 +97,8 @@ int main()
 
   ////
   // combine transform_iterator with other fancy iterators like counting_iterator
-  typedef thrust::counting_iterator<int> CountingIterator;
-  typedef thrust::transform_iterator<clamp<int>, CountingIterator> ClampedCountingIterator;
+  using CountingIterator        = thrust::counting_iterator<int>;
+  using ClampedCountingIterator = thrust::transform_iterator<clamp<int>, CountingIterator>;
 
   CountingIterator count_begin(0);
   CountingIterator count_end(10);
@@ -112,7 +112,7 @@ int main()
 
   ////
   // combine transform_iterator with another transform_iterator
-  typedef thrust::transform_iterator<thrust::negate<int>, ClampedCountingIterator> NegatedClampedCountingIterator;
+  using NegatedClampedCountingIterator = thrust::transform_iterator<thrust::negate<int>, ClampedCountingIterator>;
 
   NegatedClampedCountingIterator ncs_begin = thrust::make_transform_iterator(cs_begin, thrust::negate<int>());
   NegatedClampedCountingIterator ncs_end   = thrust::make_transform_iterator(cs_end, thrust::negate<int>());
@@ -121,7 +121,7 @@ int main()
 
   ////
   // when a functor does not define result_type, a third template argument must be provided
-  typedef thrust::transform_iterator<simple_negate<int>, VectorIterator, int> NegatedVectorIterator;
+  using NegatedVectorIterator = thrust::transform_iterator<simple_negate<int>, VectorIterator, int>;
 
   NegatedVectorIterator nv_begin(values.begin(), simple_negate<int>());
   NegatedVectorIterator nv_end(values.end(), simple_negate<int>());

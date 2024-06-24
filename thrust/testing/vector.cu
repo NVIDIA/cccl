@@ -70,7 +70,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorInitializerList);
 template <class Vector>
 void TestVectorFrontBack()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(3);
   v[0] = 0;
@@ -85,8 +85,8 @@ DECLARE_VECTOR_UNITTEST(TestVectorFrontBack);
 template <class Vector>
 void TestVectorData()
 {
-  typedef typename Vector::pointer PointerT;
-  typedef typename Vector::const_pointer PointerConstT;
+  using PointerT      = typename Vector::pointer;
+  using PointerConstT = typename Vector::const_pointer;
 
   Vector v(3);
   v[0] = 0;
@@ -144,7 +144,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorElementAssignment);
 template <class Vector>
 void TestVectorFromSTLVector()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   std::vector<T> stl_vector(3);
   stl_vector[0] = 0;
@@ -170,7 +170,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorFromSTLVector);
 template <class Vector>
 void TestVectorFillAssign()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::host_vector<T> v;
   v.assign(3, 13);
@@ -185,7 +185,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
 template <class Vector>
 void TestVectorAssignFromSTLVector()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   std::vector<T> stl_vector(3);
   stl_vector[0] = 0;
@@ -205,7 +205,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorAssignFromSTLVector);
 template <class Vector>
 void TestVectorFromBiDirectionalIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   std::list<T> stl_list;
   stl_list.push_back(0);
@@ -224,7 +224,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorFromBiDirectionalIterator);
 template <class Vector>
 void TestVectorAssignFromBiDirectionalIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   std::list<T> stl_list;
   stl_list.push_back(0);
@@ -244,7 +244,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorAssignFromBiDirectionalIterator);
 template <class Vector>
 void TestVectorAssignFromHostVector()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::host_vector<T> h(3);
   h[0] = 0;
@@ -261,7 +261,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorAssignFromHostVector);
 template <class Vector>
 void TestVectorToAndFromHostVector()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::host_vector<T> h(3);
   h[0] = 0;
@@ -302,7 +302,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorToAndFromHostVector);
 template <class Vector>
 void TestVectorAssignFromDeviceVector()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::device_vector<T> d(3);
   d[0] = 0;
@@ -319,7 +319,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorAssignFromDeviceVector);
 template <class Vector>
 void TestVectorToAndFromDeviceVector()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::device_vector<T> h(3);
   h[0] = 0;
@@ -360,7 +360,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorToAndFromDeviceVector);
 template <class Vector>
 void TestVectorWithInitialValue()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   const T init = 17;
 
@@ -823,7 +823,7 @@ DECLARE_VECTOR_UNITTEST(TestVectorUninitialisedCopy);
 template <class Vector>
 void TestVectorShrinkToFit()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v;
 
@@ -868,7 +868,7 @@ void TestVectorContainingLargeType()
   // Thrust issue #5
   // http://code.google.com/p/thrust/issues/detail?id=5
   const static int N = 100;
-  typedef LargeStruct<N> T;
+  using T            = LargeStruct<N>;
 
   thrust::device_vector<T> dv1;
   thrust::host_vector<T> hv1;

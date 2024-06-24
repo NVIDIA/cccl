@@ -51,7 +51,7 @@ DECLARE_UNITTEST(TestSetDifferenceDispatchImplicit);
 template <typename Vector>
 void TestSetDifferenceSimple()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector a(4), b(5);
 

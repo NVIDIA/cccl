@@ -124,7 +124,7 @@ struct summary_stats_binary_op
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  typedef typename std::iterator_traits<Iterator>::value_type T;
+  using T = typename std::iterator_traits<Iterator>::value_type;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
@@ -133,7 +133,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
 
 int main()
 {
-  typedef float T;
+  using T = float;
 
   // initialize host array
   T h_x[] = {4, 7, 13, 16};
