@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -79,30 +79,38 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   {
     return size;
   }
-  template <class Arg, class... Args>
-  size_t _CCCL_DEVICE argument_pack_size(size_t size, Arg const& arg, Args const&... args) const
+
+  template <class... Args>
+  size_t _CCCL_DEVICE argument_pack_size(size_t size, Args const&...) const
   {
-    size = align_up<Arg>(size);
-    return argument_pack_size(size + sizeof(Arg), args...);
+    // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
+    int dummy[] = {(size += align_up<Args>(size) + sizeof(Args), 0)...};
+    (void) dummy;
+    return size;
   }
 
   template <class Arg>
-  size_t _CCCL_DEVICE copy_arg(char* buffer, size_t offset, Arg arg) const
+  void _CCCL_DEVICE copy_arg(char*& buffer, size_t& offset, Arg arg) const
   {
+    // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
+    // static_assert(::cuda::std::is_trivially_copyable<Arg>::value, "");
+
     offset = align_up<Arg>(offset);
     for (int i = 0; i != sizeof(Arg); ++i)
     {
-      buffer[offset + i] = *((char*) &arg + i);
+      buffer[offset + i] = reinterpret_cast<const char*>(&arg)[i];
     }
-    return offset + sizeof(Arg);
+    offset += sizeof(Arg);
   }
 
   _CCCL_DEVICE void fill_arguments(char*, size_t) const {}
 
-  template <class Arg, class... Args>
-  _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Arg const& arg, Args const&... args) const
+  template <class... Args>
+  _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Args const&... args) const
   {
-    fill_arguments(buffer, copy_arg(buffer, offset, arg), args...);
+    // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
+    int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
+    (void) dummy;
   }
 
 #ifdef THRUST_RDC_ENABLED
