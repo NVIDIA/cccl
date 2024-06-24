@@ -861,7 +861,7 @@ struct ReduceByKeyScanTileState;
 template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePair<KeyT, ValueT>>
 {
-  typedef ScanTileState<KeyValuePair<KeyT, ValueT>> SuperClass;
+  using SuperClass = ScanTileState<KeyValuePair<KeyT, ValueT>>;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
@@ -1082,7 +1082,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  typedef WarpReduce<T, CUB_PTX_WARP_THREADS> WarpReduceT;
+  using WarpReduceT = WarpReduce<T, (1 << (5))>;
 
   // Temporary storage type
   struct _TempStorage
@@ -1098,7 +1098,7 @@ struct TilePrefixCallbackOp
   {};
 
   // Type of status word
-  typedef typename ScanTileStateT::StatusWord StatusWord;
+  using StatusWord = typename ScanTileStateT::StatusWord;
 
   // Fields
   _TempStorage& temp_storage; ///< Reference to a warp-reduction instance

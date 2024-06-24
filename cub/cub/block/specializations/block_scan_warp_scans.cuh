@@ -86,10 +86,10 @@ struct BlockScanWarpScans
   };
 
   ///  WarpScan utility type
-  typedef WarpScan<T, WARP_THREADS> WarpScanT;
+  using WarpScanT = WarpScan<T, WARP_THREADS>;
 
   ///  WarpScan utility type
-  typedef WarpScan<T, WARPS> WarpAggregateScan;
+  using WarpAggregateScan = WarpScan<T, WARPS>;
 
   /// Shared memory storage layout type
 

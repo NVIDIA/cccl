@@ -131,7 +131,7 @@ struct AgentRadixSortOnesweep
   using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
   using digit_extractor_t = typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;
 
-  typedef PortionOffsetT AtomicOffsetT;
+  using AtomicOffsetT = PortionOffsetT;
 
   static constexpr RadixRankAlgorithm RANK_ALGORITHM = AgentRadixSortOnesweepPolicy::RANK_ALGORITHM;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = AgentRadixSortOnesweepPolicy::SCAN_ALGORITHM;
@@ -140,7 +140,7 @@ struct AgentRadixSortOnesweep
       ? AgentRadixSortOnesweepPolicy::STORE_ALGORITHM
       : RADIX_SORT_STORE_DIRECT;
 
-  typedef RadixSortTwiddle<IS_DESCENDING, KeyT> Twiddle;
+  using Twiddle = RadixSortTwiddle<IS_DESCENDING, KeyT>;
 
   static_assert(RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
@@ -229,14 +229,8 @@ struct AgentRadixSortOnesweep
 
   struct CountsCallback
   {
-    typedef AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy,
-                                   IS_DESCENDING,
-                                   KeyT,
-                                   ValueT,
-                                   OffsetT,
-                                   PortionOffsetT,
-                                   DecomposerT>
-      AgentT;
+    using AgentT =
+      AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
     AgentT& agent;
     int (&bins)[BINS_PER_THREAD];
     bit_ordered_type (&keys)[ITEMS_PER_THREAD];

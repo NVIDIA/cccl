@@ -342,7 +342,7 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(T* ptr, Int2Type<false> /*is_primitive*/)
 {
   // Word type for memcopying
-  typedef typename UnitWord<T>::VolatileWord VolatileWord;
+  using VolatileWord = typename UnitWord<T>::VolatileWord;
 
   constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
@@ -368,7 +368,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T* ptr, Int2Type<LOAD_VOLATILE> /*mo
 template <typename T, int MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T const* ptr, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_pointer*/)
 {
-  typedef typename UnitWord<T>::DeviceWord DeviceWord;
+  using DeviceWord = typename UnitWord<T>::DeviceWord;
 
   constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
 

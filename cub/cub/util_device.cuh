@@ -319,7 +319,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  typedef void (*EmptyKernelPtr)();
+  using EmptyKernelPtr        = void (*)();
   EmptyKernelPtr empty_kernel = EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
@@ -693,7 +693,7 @@ template <int PTX_VERSION, typename PolicyT>
 struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
 {
   /// The policy for the active compiler pass
-  typedef PolicyT ActivePolicy;
+  using ActivePolicy = PolicyT;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>

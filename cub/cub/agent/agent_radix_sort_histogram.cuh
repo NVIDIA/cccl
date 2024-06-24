@@ -102,9 +102,9 @@ struct AgentRadixSortHistogram
   using bit_ordered_type       = typename traits::bit_ordered_type;
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
-  typedef RadixSortTwiddle<IS_DESCENDING, KeyT> Twiddle;
-  typedef std::uint32_t ShmemCounterT;
-  typedef ShmemCounterT ShmemAtomicCounterT;
+  using Twiddle             = RadixSortTwiddle<IS_DESCENDING, KeyT>;
+  using ShmemCounterT       = std::uint32_t;
+  using ShmemAtomicCounterT = ShmemCounterT;
 
   using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
   using digit_extractor_t = typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;

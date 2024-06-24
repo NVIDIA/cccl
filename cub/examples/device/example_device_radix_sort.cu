@@ -50,7 +50,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console

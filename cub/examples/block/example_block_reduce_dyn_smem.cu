@@ -52,7 +52,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 /// Verbose output

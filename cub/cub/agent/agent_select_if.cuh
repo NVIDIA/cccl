@@ -248,7 +248,7 @@ struct AgentSelectIf
   using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
-  typedef InputT ItemExchangeT[TILE_ITEMS];
+  using ItemExchangeT = InputT[TILE_ITEMS];
 
   // Shared memory type for this thread block
   union _TempStorage
