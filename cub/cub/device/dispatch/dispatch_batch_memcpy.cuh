@@ -48,6 +48,7 @@
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
