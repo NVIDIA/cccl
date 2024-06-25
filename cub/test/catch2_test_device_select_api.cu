@@ -32,6 +32,7 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
+#include <thrust/memory.h>
 
 #include <cstddef>
 
@@ -58,10 +59,9 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   is_even_t is_even{};
 
   // Determine temporary device storage requirements
-  void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSelect::FlaggedIf(
-    d_temp_storage,
+    nullptr,
     temp_storage_bytes,
     d_in.begin(),
     d_flags.begin(),
@@ -71,11 +71,11 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     is_even);
 
   // Allocate temporary storage
-  cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // Run selection
   cub::DeviceSelect::FlaggedIf(
-    d_temp_storage,
+    thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     d_in.begin(),
     d_flags.begin(),
@@ -102,17 +102,22 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   is_even_t is_even{};
 
   // Determine temporary device storage requirements
-  void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSelect::FlaggedIf(
-    d_temp_storage, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
+    nullptr, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
 
   // Allocate temporary storage
-  cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // Run selection
   cub::DeviceSelect::FlaggedIf(
-    d_temp_storage, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_data.begin(),
+    d_flags.begin(),
+    d_num_selected_out.data(),
+    num_items,
+    is_even);
 
   thrust::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif-inplace
