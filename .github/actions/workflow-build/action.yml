@@ -9,10 +9,6 @@ inputs:
     description: "If true, the requested `workflows` will be ignored when a non-empty 'override' workflow exists in the matrix file."
     default: "false"
     required: false
-  skip_tests:
-    description: "Skip running tests"
-    default: "false"
-    required: false
   inspect_changes_script:
     description: "If defined, run this script to determine which projects/deps need to be tested."
     default: ""
@@ -57,7 +53,6 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
-        skip_tests: ${{ inputs.skip_tests == 'true' && '--skip-tests' || ''}}
         dirty_projects_flag: ${{ inputs.inspect_changes_script != '' && '--dirty-projects' || ''}}
         dirty_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.dirty_projects || ''}}
         matrix_parser: ${{ inputs.matrix_parser && inputs.matrix_parser || '${GITHUB_ACTION_PATH}/build-workflow.py' }}
@@ -67,7 +62,6 @@ runs:
         ${{ env.matrix_parser }} ${{ inputs.matrix_file }}           \
             --workflows ${{ inputs.workflows }}                      \
             ${{ env.allow_override }}                                \
-            ${{ env.skip_tests }}                                    \
             ${{ env.dirty_projects_flag }} ${{ env.dirty_projects }}
 
         echo "::group::Workflow"
