@@ -30,6 +30,7 @@
 #include <cub/util_compiler.cuh>
 
 #include <cstdint>
+#include <cstdlib>
 #include <tuple>
 #include <type_traits>
 
@@ -250,10 +251,22 @@ struct Catch::StringMaker<cudaError>
 
 #define CUB_TEST_STR(a) #a
 
+namespace detail
+{
+std::size_t adjust_seed_count(std::size_t requested)
+{
+  // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
+  // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
+  static const char* override_str = std::getenv("CCCL_SEED_COUNT_OVERRIDE");
+  static int override             = override_str ? std::atoi(override_str) : 0;
+  return override_str ? override : requested;
+}
+} // namespace detail
+
 #define CUB_SEED(N)                                                                                                    \
   c2h::seed_t                                                                                                          \
   {                                                                                                                    \
     GENERATE_COPY(take(                                                                                                \
-      N,                                                                                                               \
+      detail::adjust_seed_count(N),                                                                                    \
       random(std::numeric_limits<unsigned long long int>::min(), std::numeric_limits<unsigned long long int>::max()))) \
   }
