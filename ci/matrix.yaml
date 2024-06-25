@@ -1,15 +1,15 @@
 the_override: &the_override
-  - compute_mem_nolid
+#  - compute_mem_nolid
 #  - compute_mem_lid0
 #  - compute_mem_lid1
 #  - compute_mem_lid2
-  - compute_race_nolid
+#  - compute_race_nolid
   - compute_race_lid0
-  - compute_race_lid1
+  # racecheck doesn't support lid1 (CDP launch)
   - compute_race_lid2
-  - compute_init_nolid
+#  - compute_init_nolid
   - compute_init_lid0
-  - compute_init_lid1
+  # initcheck doesn't support lid1 (CDP launch)
   - compute_init_lid2
 #  - compute_sync_nolid
 #  - compute_sync_lid0
@@ -26,7 +26,7 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
   #
   override:
-    - {jobs: *the_override, project: 'cub', std: 17, cxx: 'gcc13', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
+    - {jobs: *the_override, project: 'cub', std: 17, cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   pull_request:
     # Old CTK
@@ -271,11 +271,11 @@ projects:
         - compute_mem_lid2
         - compute_race_nolid
         - compute_race_lid0
-        - compute_race_lid1
+        # racecheck doesn't support lid1 (CDP launch)
         - compute_race_lid2
         - compute_init_nolid
         - compute_init_lid0
-        - compute_init_lid1
+        # initcheck doesn't support lid1 (CDP launch)
         - compute_init_lid2
         - compute_sync_nolid
         - compute_sync_lid0
