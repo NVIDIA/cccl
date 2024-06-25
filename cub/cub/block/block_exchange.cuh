@@ -225,7 +225,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
     }
 
     CTA_SYNC();
@@ -274,7 +274,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
         }
       }
 
@@ -330,7 +330,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
     }
 
     WARP_SYNC(0xffffffff);
@@ -369,7 +369,7 @@ private:
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
-        detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+        detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
       }
 
       WARP_SYNC(0xffffffff);
@@ -401,7 +401,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
         }
 
         WARP_SYNC(0xffffffff);
@@ -440,7 +440,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
     }
 
     CTA_SYNC();
@@ -497,7 +497,7 @@ private:
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
-            detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+            detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
           }
         }
       }
@@ -547,7 +547,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
     }
 
     WARP_SYNC(0xffffffff);
@@ -560,7 +560,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      detail::uninitialized_copy(output_items + ITEM, temp_storage.buff[item_offset]);
+      detail::uninitialized_copy_single(output_items + ITEM, temp_storage.buff[item_offset]);
     }
   }
 
@@ -591,7 +591,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
         }
 
         WARP_SYNC(0xffffffff);
@@ -636,7 +636,7 @@ private:
       {
         item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
       }
-      detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
     }
 
     CTA_SYNC();
@@ -690,7 +690,7 @@ private:
           {
             item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
           }
-          detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
         }
       }
 
@@ -745,7 +745,7 @@ private:
       {
         item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
       }
-      detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
     }
 
     CTA_SYNC();
@@ -800,7 +800,7 @@ private:
           {
             item_offset = SHR_ADD(item_offset, LOG_SMEM_BANKS, item_offset);
           }
-          detail::uninitialized_copy(temp_storage.buff + item_offset, input_items[ITEM]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[ITEM]);
         }
       }
 

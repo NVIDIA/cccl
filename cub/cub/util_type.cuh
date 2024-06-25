@@ -303,7 +303,7 @@ struct InputValue
     }
     else
     {
-      detail::uninitialized_copy(&m_immediate_value, other.m_immediate_value);
+      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
     }
   }
 
