@@ -112,6 +112,7 @@ fi
 if $COMPUTE_SANITIZER; then
   echo "Setting CCCL_TEST_MODE=compute-sanitizer-${TOOL}"
   export CCCL_TEST_MODE=compute-sanitizer-${TOOL}
+  export CCCL_SEED_COUNT_OVERRIDE=1
 fi
 
 for PRESET in ${PRESETS[@]}; do
