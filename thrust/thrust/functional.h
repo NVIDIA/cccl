@@ -213,7 +213,13 @@ struct THRUST_DEPRECATED binary_function
  *  \see https://en.cppreference.com/w/cpp/utility/functional/plus
  *  \see binary_function
  */
-using ::cuda::std::plus;
+template <typename T = void>
+struct plus : public ::cuda::std::plus<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end plus
 
 /*! \p minus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>minus<T></tt>, and \c x and \c y are objects
@@ -249,7 +255,13 @@ using ::cuda::std::plus;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/minus
  *  \see binary_function
  */
-using ::cuda::std::minus;
+template <typename T = void>
+struct minus : public ::cuda::std::minus<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end minus
 
 /*! \p multiplies is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>multiplies<T></tt>, and \c x and \c y are objects
@@ -285,7 +297,13 @@ using ::cuda::std::minus;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/multiplies
  *  \see binary_function
  */
-using ::cuda::std::multiplies;
+template <typename T = void>
+struct multiplies : public ::cuda::std::multiplies<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end multiplies
 
 /*! \p divides is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>divides<T></tt>, and \c x and \c y are objects
@@ -321,7 +339,13 @@ using ::cuda::std::multiplies;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/divides
  *  \see binary_function
  */
-using ::cuda::std::divides;
+template <typename T = void>
+struct divides : public ::cuda::std::divides<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end divides
 
 /*! \p modulus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>modulus<T></tt>, and \c x and \c y are objects
@@ -357,7 +381,13 @@ using ::cuda::std::divides;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/modulus
  *  \see binary_function
  */
-using ::cuda::std::modulus;
+template <typename T = void>
+struct modulus : public ::cuda::std::modulus<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end modulus
 
 /*! \p negate is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>negate<T></tt>, and \c x is an object
@@ -488,7 +518,13 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x* x);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/equal_to
  *  \see binary_function
  */
-using ::cuda::std::equal_to;
+template <typename T = void>
+struct equal_to : public ::cuda::std::equal_to<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end equal_to
 
 /*! \p not_equal_to is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -502,7 +538,13 @@ using ::cuda::std::equal_to;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/not_equal_to
  *  \see binary_function
  */
-using ::cuda::std::not_equal_to;
+template <typename T = void>
+struct not_equal_to : public ::cuda::std::not_equal_to<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end not_equal_to
 
 /*! \p greater is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -516,7 +558,13 @@ using ::cuda::std::not_equal_to;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater
  *  \see binary_function
  */
-using ::cuda::std::greater;
+template <typename T = void>
+struct greater : public ::cuda::std::greater<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end greater
 
 /*! \p less is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -530,7 +578,13 @@ using ::cuda::std::greater;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less
  *  \see binary_function
  */
-using ::cuda::std::less;
+template <typename T = void>
+struct less : public ::cuda::std::less<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end less
 
 /*! \p greater_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -544,7 +598,13 @@ using ::cuda::std::less;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater_equal
  *  \see binary_function
  */
-using ::cuda::std::greater_equal;
+template <typename T = void>
+struct greater_equal : public ::cuda::std::greater_equal<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end greater_equal
 
 /*! \p less_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -558,7 +618,13 @@ using ::cuda::std::greater_equal;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less_equal
  *  \see binary_function
  */
-using ::cuda::std::less_equal;
+template <typename T = void>
+struct less_equal : public ::cuda::std::less_equal<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end less_equal
 
 /*! \}
  */
@@ -579,7 +645,13 @@ using ::cuda::std::less_equal;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_and
  *  \see binary_function
  */
-using ::cuda::std::logical_and;
+template <typename T = void>
+struct logical_and : public ::cuda::std::logical_and<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end logical_and
 
 /*! \p logical_or is a function object. Specifically, it is an Adaptable Binary Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -592,7 +664,13 @@ using ::cuda::std::logical_and;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_or
  *  \see binary_function
  */
-using ::cuda::std::logical_or;
+template <typename T = void>
+struct logical_or : public ::cuda::std::logical_or<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end logical_or
 
 /*! \p logical_not is a function object. Specifically, it is an Adaptable Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -619,7 +697,13 @@ using ::cuda::std::logical_or;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_not
  *  \see unary_function
  */
-using ::cuda::std::logical_not;
+template <typename T = void>
+struct logical_not : public ::cuda::std::logical_not<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end logical_not
 
 /*! \}
  */
@@ -662,7 +746,13 @@ using ::cuda::std::logical_not;
  *
  *  \see binary_function
  */
-using ::cuda::std::bit_and;
+template <typename T = void>
+struct bit_and : public ::cuda::std::bit_and<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end bit_and
 
 /*! \p bit_or is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -697,7 +787,13 @@ using ::cuda::std::bit_and;
  *
  *  \see binary_function
  */
-using ::cuda::std::bit_or;
+template <typename T = void>
+struct bit_or : public ::cuda::std::bit_or<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end bit_or
 
 /*! \p bit_xor is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -732,7 +828,13 @@ using ::cuda::std::bit_or;
  *
  *  \see binary_function
  */
-using ::cuda::std::bit_xor;
+template <typename T = void>
+struct bit_xor : public ::cuda::std::bit_xor<T>
+{
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+}; // end bit_xor
 
 /*! \}
  */
