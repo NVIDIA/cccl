@@ -22,14 +22,32 @@ namespace cudax = cuda::experimental;
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-#undef NDEBUG
-#include <cassert>
+static void __device__ cudax_require_impl(
+  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+{
+  if (!condition)
+  {
+    // TODO do warp aggregate prints for easier readibility?
+    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
+           filename,
+           linenum,
+           funcname,
+           blockIdx.x,
+           blockIdx.y,
+           blockIdx.z,
+           threadIdx.x,
+           threadIdx.y,
+           threadIdx.z,
+           condition_text);
+    __trap();
+  }
+}
 
 // TODO make it work on NVC++
 #ifdef __CUDA_ARCH__
-#  define HOST_DEV_REQUIRE assert
+#  define CUDAX_REQUIRE(condition) cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
 #else
-#  define HOST_DEV_REQUIRE REQUIRE
+#  define CUDAX_REQUIRE REQUIRE
 #endif
 
 bool constexpr __host__ __device__ operator==(const dim3& lhs, const dim3& rhs)
