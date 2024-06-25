@@ -84,7 +84,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-//!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+//!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
 //!
 //!        // Allocate shared memory for BlockDiscontinuity
 //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -377,7 +377,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -450,7 +450,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -539,7 +539,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -627,7 +627,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -732,7 +732,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -850,7 +850,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -979,7 +979,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -1108,7 +1108,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;

@@ -125,10 +125,10 @@ struct AgentRadixSortUpsweep
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   // Integer type for digit counters (to be packed into words of PackedCounters)
-  typedef unsigned char DigitCounter;
+  using DigitCounter = unsigned char;
 
   // Integer type for packing DigitCounters into columns of shared memory banks
-  typedef unsigned int PackedCounter;
+  using PackedCounter = unsigned int;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
@@ -167,7 +167,7 @@ struct AgentRadixSortUpsweep
   };
 
   // Input iterator wrapper type (for applying cache modifier)s
-  typedef CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT> KeysItr;
+  using KeysItr = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;

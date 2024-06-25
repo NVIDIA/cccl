@@ -126,35 +126,6 @@ template <typename It, typename FallbackT>
 using non_void_value_t = typename non_void_value_impl<It, FallbackT>::type;
 } // namespace detail
 
-/**
- * \brief Type selection (<tt>IF ? ThenType : ElseType</tt>)
- *
- * \deprecated [Since 1.16.0] The cub::If APIs are deprecated.
- *             Use cub::detail::conditional_t instead.
- */
-template <bool IF, typename ThenType, typename ElseType>
-struct CUB_DEPRECATED If
-{
-  using Type = cub::detail::conditional_t<IF, ThenType, ElseType>;
-};
-
-/******************************************************************************
- * Type equality
- ******************************************************************************/
-
-/**
- * \brief Type equality test
- *
- * \deprecated [Since 1.16.0] The cub::Equals APIs are deprecated.
- *             Use std::is_same instead.
- */
-template <typename A, typename B>
-struct CUB_DEPRECATED Equals
-{
-  static constexpr int VALUE  = ::cuda::std::is_same<A, B>::value ? 1 : 0;
-  static constexpr int NEGATE = VALUE ? 0 : 1;
-};
-
 /******************************************************************************
  * Static math
  ******************************************************************************/
@@ -203,56 +174,6 @@ struct PowerOfTwo
   };
 };
 
-/******************************************************************************
- * Pointer vs. iterator detection
- ******************************************************************************/
-
-/**
- * \brief Pointer vs. iterator
- *
- * \deprecated [Since 1.16.0] The cub::IsPointer APIs are deprecated.
- *             Use std::is_pointer instead.
- */
-template <typename Tp>
-struct CUB_DEPRECATED IsPointer
-{
-  static constexpr int VALUE = ::cuda::std::is_pointer<Tp>::value;
-};
-
-/******************************************************************************
- * Qualifier detection
- ******************************************************************************/
-
-/**
- * \brief Volatile modifier test
- *
- * \deprecated [Since 1.16.0] The cub::IsVolatile APIs are deprecated.
- *             Use std::is_volatile instead.
- */
-template <typename Tp>
-struct CUB_DEPRECATED IsVolatile
-{
-  static constexpr int VALUE = ::cuda::std::is_volatile<Tp>::value;
-};
-
-/******************************************************************************
- * Qualifier removal
- ******************************************************************************/
-
-/**
- * \brief Removes \p const and \p volatile qualifiers from type \p Tp.
- *
- * \deprecated [Since 1.16.0] The cub::RemoveQualifiers APIs are deprecated.
- *             Use std::remove_cv instead.
- *
- * For example:
- *     <tt>typename RemoveQualifiers<volatile int>::Type         // int;</tt>
- */
-template <typename Tp, typename Up = Tp>
-struct CUB_DEPRECATED RemoveQualifiers
-{
-  using Type = typename ::cuda::std::remove_cv<Tp>::type;
-};
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /******************************************************************************
@@ -382,7 +303,7 @@ struct InputValue
     }
     else
     {
-      detail::uninitialized_copy(&m_immediate_value, other.m_immediate_value);
+      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
     }
   }
 
@@ -418,22 +339,23 @@ struct AlignBytes
   };
 
   /// The "truly aligned" type
-  typedef T Type;
+  using Type = T;
 };
 
 // Specializations where host C++ compilers (e.g., 32-bit Windows) may disagree
 // with device C++ compilers (EDG) on types passed as template parameters through
 // kernel functions
 
-#  define __CUB_ALIGN_BYTES(t, b)  \
-    template <>                    \
-    struct AlignBytes<t>           \
-    {                              \
-      enum                         \
-      {                            \
-        ALIGN_BYTES = b            \
-      };                           \
-      typedef __align__(b) t Type; \
+#  define __CUB_ALIGN_BYTES(t, b)                                                                  \
+    template <>                                                                                    \
+    struct AlignBytes<t>                                                                           \
+    {                                                                                              \
+      enum                                                                                         \
+      {                                                                                            \
+        ALIGN_BYTES = b                                                                            \
+      };                                                                                           \
+      typedef __align__(b) t Type;                                                                 \
+      /* TODO(bgruber): rewriting the above to using Type __align__(b) = t; does not compile :S */ \
     };
 
 __CUB_ALIGN_BYTES(short4, 8)
@@ -515,30 +437,30 @@ struct UnitWord
 template <>
 struct UnitWord<float2>
 {
-  typedef int ShuffleWord;
-  typedef unsigned long long VolatileWord;
-  typedef unsigned long long DeviceWord;
-  typedef float2 TextureWord;
+  using ShuffleWord  = int;
+  using VolatileWord = unsigned long long;
+  using DeviceWord   = unsigned long long;
+  using TextureWord  = float2;
 };
 
 // float4 specialization workaround (for SM10-SM13)
 template <>
 struct UnitWord<float4>
 {
-  typedef int ShuffleWord;
-  typedef unsigned long long VolatileWord;
-  typedef ulonglong2 DeviceWord;
-  typedef float4 TextureWord;
+  using ShuffleWord  = int;
+  using VolatileWord = unsigned long long;
+  using DeviceWord   = ulonglong2;
+  using TextureWord  = float4;
 };
 
 // char2 specialization workaround (for SM10-SM13)
 template <>
 struct UnitWord<char2>
 {
-  typedef unsigned short ShuffleWord;
-  typedef unsigned short VolatileWord;
-  typedef unsigned short DeviceWord;
-  typedef unsigned short TextureWord;
+  using ShuffleWord  = unsigned short;
+  using VolatileWord = unsigned short;
+  using DeviceWord   = unsigned short;
+  using TextureWord  = unsigned short;
 };
 
 // clang-format off
@@ -552,7 +474,7 @@ template <typename T> struct UnitWord<const volatile T> : UnitWord<T> {};
  ******************************************************************************/
 
 /**
- * \brief Exposes a member typedef \p Type that names the corresponding CUDA vector type if one exists.  Otherwise \p
+ * \brief Exposes a member alias \p Type that names the corresponding CUDA vector type if one exists.  Otherwise \p
  * Type refers to the CubVector structure itself, which will wrap the corresponding \p x, \p y, etc. vector fields.
  */
 template <typename T, int vec_elements>
@@ -575,8 +497,8 @@ struct CubVector<T, 1>
 {
   T x;
 
-  typedef T BaseType;
-  typedef CubVector<T, 1> Type;
+  using BaseType = T;
+  using Type     = CubVector<T, 1>;
 };
 
 /**
@@ -588,8 +510,8 @@ struct CubVector<T, 2>
   T x;
   T y;
 
-  typedef T BaseType;
-  typedef CubVector<T, 2> Type;
+  using BaseType = T;
+  using Type     = CubVector<T, 2>;
 };
 
 /**
@@ -602,8 +524,8 @@ struct CubVector<T, 3>
   T y;
   T z;
 
-  typedef T BaseType;
-  typedef CubVector<T, 3> Type;
+  using BaseType = T;
+  using Type     = CubVector<T, 3>;
 };
 
 /**
@@ -617,8 +539,8 @@ struct CubVector<T, 4>
   T z;
   T w;
 
-  typedef T BaseType;
-  typedef CubVector<T, 4> Type;
+  using BaseType = T;
+  using Type     = CubVector<T, 4>;
 };
 
 /**
@@ -629,8 +551,8 @@ struct CubVector<T, 4>
     template <>                                                                             \
     struct CubVector<base_type, 1> : short_type##1                                          \
     {                                                                                       \
-      typedef base_type BaseType;                                                           \
-      typedef short_type##1 Type;                                                           \
+      using BaseType = base_type;                                                           \
+      using Type     = short_type##1;                                                       \
       _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
       {                                                                                     \
         CubVector retval;                                                                   \
@@ -648,8 +570,8 @@ struct CubVector<T, 4>
     template <>                                                                             \
     struct CubVector<base_type, 2> : short_type##2                                          \
     {                                                                                       \
-      typedef base_type BaseType;                                                           \
-      typedef short_type##2 Type;                                                           \
+      using BaseType = base_type;                                                           \
+      using Type     = short_type##2;                                                       \
       _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
       {                                                                                     \
         CubVector retval;                                                                   \
@@ -669,8 +591,8 @@ struct CubVector<T, 4>
     template <>                                                                             \
     struct CubVector<base_type, 3> : short_type##3                                          \
     {                                                                                       \
-      typedef base_type BaseType;                                                           \
-      typedef short_type##3 Type;                                                           \
+      using BaseType = base_type;                                                           \
+      using Type     = short_type##3;                                                       \
       _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
       {                                                                                     \
         CubVector retval;                                                                   \
@@ -692,8 +614,8 @@ struct CubVector<T, 4>
     template <>                                                                             \
     struct CubVector<base_type, 4> : short_type##4                                          \
     {                                                                                       \
-      typedef base_type BaseType;                                                           \
-      typedef short_type##4 Type;                                                           \
+      using BaseType = base_type;                                                           \
+      using Type     = short_type##4;                                                       \
       _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector& other) const \
       {                                                                                     \
         CubVector retval;                                                                   \
@@ -746,7 +668,7 @@ template <typename T>
 struct Uninitialized
 {
   /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
-  typedef typename UnitWord<T>::DeviceWord DeviceWord;
+  using DeviceWord = typename UnitWord<T>::DeviceWord;
 
   static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
   static constexpr ::cuda::std::size_t WORD_SIZE = sizeof(DeviceWord);
@@ -775,8 +697,8 @@ template <typename _Key,
           >
 struct KeyValuePair
 {
-  typedef _Key Key; ///< Key data type
-  typedef _Value Value; ///< Value data type
+  using Key   = _Key; ///< Key data type
+  using Value = _Value; ///< Value data type
 
   Key key; ///< Item key
   Value value; ///< Item value
@@ -815,10 +737,10 @@ struct KeyValuePair
 template <typename K, typename V>
 struct KeyValuePair<K, V, true, false>
 {
-  typedef K Key;
-  typedef V Value;
+  using Key   = K;
+  using Value = V;
 
-  typedef char Pad[AlignBytes<V>::ALIGN_BYTES - AlignBytes<K>::ALIGN_BYTES];
+  using Pad = char[AlignBytes<V>::ALIGN_BYTES - AlignBytes<K>::ALIGN_BYTES];
 
   Value value; // Value has larger would-be alignment and goes first
   Key key;
@@ -844,10 +766,10 @@ struct KeyValuePair<K, V, true, false>
 template <typename K, typename V>
 struct KeyValuePair<K, V, false, true>
 {
-  typedef K Key;
-  typedef V Value;
+  using Key   = K;
+  using Value = V;
 
-  typedef char Pad[AlignBytes<K>::ALIGN_BYTES - AlignBytes<V>::ALIGN_BYTES];
+  using Pad = char[AlignBytes<K>::ALIGN_BYTES - AlignBytes<V>::ALIGN_BYTES];
 
   Key key; // Key has larger would-be alignment and goes first
   Value value;
@@ -957,22 +879,6 @@ struct DoubleBuffer
     };
 
 /******************************************************************************
- * Simple enable-if (similar to Boost)
- ******************************************************************************/
-
-/**
- * \brief Simple enable-if (similar to Boost)
- *
- * \deprecated [Since 1.16.0] The cub::If APIs are deprecated.
- *             Use std::enable_if instead.
- */
-template <bool Condition, class T = void>
-struct CUB_DEPRECATED EnableIf
-{
-  using Type = typename ::cuda::std::enable_if<Condition, T>::type;
-};
-
-/******************************************************************************
  * Typedef-detection
  ******************************************************************************/
 
@@ -1069,7 +975,7 @@ struct BaseTraits
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
-  typedef _UnsignedBits UnsignedBits;
+  using UnsignedBits = _UnsignedBits;
 
   static constexpr Category CATEGORY       = UNSIGNED_INTEGER;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
@@ -1114,7 +1020,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
-  typedef _UnsignedBits UnsignedBits;
+  using UnsignedBits = _UnsignedBits;
 
   static constexpr Category CATEGORY       = SIGNED_INTEGER;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
@@ -1266,7 +1172,7 @@ struct FpLimits<__nv_fp8_e5m2>
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 {
-  typedef _UnsignedBits UnsignedBits;
+  using UnsignedBits = _UnsignedBits;
 
   static constexpr Category CATEGORY       = FLOATING_POINT;
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);

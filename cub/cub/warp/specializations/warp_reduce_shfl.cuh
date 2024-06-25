@@ -134,7 +134,7 @@ struct WarpReduceShfl
   };
 
   /// Shared memory storage layout type
-  typedef NullType TempStorage;
+  using TempStorage = NullType;
 
   //---------------------------------------------------------------------
   // Thread fields

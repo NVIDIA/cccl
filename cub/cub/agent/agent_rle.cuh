@@ -262,7 +262,7 @@ struct AgentRle
   using WarpExchangeOffsets = WarpExchange<OffsetT, ITEMS_PER_THREAD>;
   using WarpExchangeLengths = WarpExchange<LengthT, ITEMS_PER_THREAD>;
 
-  typedef LengthOffsetPair WarpAggregates[WARPS];
+  using WarpAggregates = LengthOffsetPair[WARPS];
 
   // Shared memory type for this thread block
   struct _TempStorage

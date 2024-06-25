@@ -703,7 +703,7 @@ private:
  * __global__ void ExampleKernel(...)
  * {
  *     // Specialize BlockMergeSort for a 1D block of 128 threads owning 4 integer items each
- *     typedef cub::BlockMergeSort<int, 128, 4> BlockMergeSort;
+ *     using BlockMergeSort = cub::BlockMergeSort<int, 128, 4>;
  *
  *     // Allocate shared memory for BlockMergeSort
  *     __shared__ typename BlockMergeSort::TempStorage temp_storage_shuffle;

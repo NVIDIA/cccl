@@ -172,21 +172,21 @@ struct AgentScan
   };
 
   // Parameterized BlockLoad type
-  typedef BlockLoad<AccumT,
-                    AgentScanPolicyT::BLOCK_THREADS,
-                    AgentScanPolicyT::ITEMS_PER_THREAD,
-                    AgentScanPolicyT::LOAD_ALGORITHM>
-    BlockLoadT;
+  using BlockLoadT =
+    BlockLoad<AccumT,
+              AgentScanPolicyT::BLOCK_THREADS,
+              AgentScanPolicyT::ITEMS_PER_THREAD,
+              AgentScanPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockStore type
-  typedef BlockStore<AccumT,
-                     AgentScanPolicyT::BLOCK_THREADS,
-                     AgentScanPolicyT::ITEMS_PER_THREAD,
-                     AgentScanPolicyT::STORE_ALGORITHM>
-    BlockStoreT;
+  using BlockStoreT =
+    BlockStore<AccumT,
+               AgentScanPolicyT::BLOCK_THREADS,
+               AgentScanPolicyT::ITEMS_PER_THREAD,
+               AgentScanPolicyT::STORE_ALGORITHM>;
 
   // Parameterized BlockScan type
-  typedef BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM> BlockScanT;
+  using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
@@ -194,7 +194,7 @@ struct AgentScan
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
-  typedef BlockScanRunningPrefixOp<AccumT, ScanOpT> RunningPrefixCallbackOp;
+  using RunningPrefixCallbackOp = BlockScanRunningPrefixOp<AccumT, ScanOpT>;
 
   // Shared memory type for this thread block
   union _TempStorage

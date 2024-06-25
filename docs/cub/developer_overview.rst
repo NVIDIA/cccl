@@ -247,7 +247,7 @@ so the actual ``_TempStorage`` type is defined as:
 
 .. code-block:: c++
 
-    typedef typename InternalWarpReduce::TempStorage _TempStorage;
+    using _TempStorage = typename InternalWarpReduce::TempStorage;
 
 and algorithm implementation look like:
 
