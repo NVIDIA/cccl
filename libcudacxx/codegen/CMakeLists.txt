@@ -7,14 +7,18 @@
 
 add_custom_target(libcudacxx.atomics.codegen)
 
+include(${CMAKE_SOURCE_DIR}/cub/cmake/CPM.cmake)
+CPMAddPackage("gh:fmtlib/fmt#10.2.1")
+
 add_executable(
     codegen
     EXCLUDE_FROM_ALL
     codegen.cpp
 )
 
+target_link_libraries(codegen fmt)
 target_compile_features(
-    codegen PRIVATE cxx_std_14
+    codegen PRIVATE cxx_std_17
 )
 
 add_dependencies(libcudacxx.atomics.codegen codegen)
@@ -24,7 +28,7 @@ set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/__atomic/
 
 add_custom_target(
     libcudacxx.atomics.codegen.execute
-    COMMAND codegen
+    COMMAND codegen "${atomic_generated_output}"
     BYPRODUCTS "${atomic_generated_output}"
 )
 
