@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cassert>
 #include <iostream>
 
 #include "testing_common.cuh"
@@ -34,10 +33,10 @@ struct custom_level_test
   template <typename DynDims>
   __host__ __device__ void operator()(const DynDims& dims) const
   {
-    HOST_DEV_REQUIRE(dims.count() == 84 * 1024);
-    HOST_DEV_REQUIRE(dims.count(custom_level(), cudax::grid) == 42);
-    HOST_DEV_REQUIRE(dims.extents() == dim3(42 * 512, 2, 2));
-    HOST_DEV_REQUIRE(dims.extents(custom_level(), cudax::grid) == dim3(42, 1, 1));
+    CUDAX_REQUIRE(dims.count() == 84 * 1024);
+    CUDAX_REQUIRE(dims.count(custom_level(), cudax::grid) == 42);
+    CUDAX_REQUIRE(dims.extents() == dim3(42 * 512, 2, 2));
+    CUDAX_REQUIRE(dims.extents(custom_level(), cudax::grid) == dim3(42, 1, 1));
   }
 
   void run()
@@ -47,11 +46,11 @@ struct custom_level_test
     custom_block.dummy     = 2;
     auto custom_dims       = cudax::grid_dims<256>() & cudax::cluster_dims<8>() & custom_block;
     auto custom_block_back = custom_dims.level(cudax::block);
-    REQUIRE(custom_block_back.dummy == 2);
+    CUDAX_REQUIRE(custom_block_back.dummy == 2);
 
     auto custom_dims_fragment = custom_dims.fragment(cudax::thread, cudax::block);
     auto custom_block_back2   = custom_dims_fragment.level(cudax::block);
-    REQUIRE(custom_block_back2.dummy == 2);
+    CUDAX_REQUIRE(custom_block_back2.dummy == 2);
 
     // Check creating a custom level type works
     auto custom_level_dims = cudax::dimensions<cudax::dimensions_index_type, 2, 2, 2>();
@@ -95,8 +94,8 @@ TEST_CASE("Disabled lvalue copy", "hierarchy")
   auto hierarchy_rev = cudax::make_hierarchy(std::move(block_dims2), cudax::grid_dims(256));
   static_assert(std::is_same_v<decltype(hierarchy), decltype(hierarchy_rev)>);
 
-  REQUIRE(hierarchy.count() == 256 * 64);
-  REQUIRE(hierarchy_rev.count() == 256 * 64);
+  CUDAX_REQUIRE(hierarchy.count() == 256 * 64);
+  CUDAX_REQUIRE(hierarchy_rev.count() == 256 * 64);
 
   auto hierarchy_static = cudax::make_hierarchy(std::move(block_dims_static), cudax::grid_dims(256));
 
