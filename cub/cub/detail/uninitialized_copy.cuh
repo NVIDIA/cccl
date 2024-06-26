@@ -47,7 +47,7 @@ namespace detail
 
 #if defined(_NVHPC_CUDA)
 template <typename T, typename U>
-_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
+_CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
 {
   // NVBug 3384810
   new (ptr) T(::cuda::std::forward<U>(val));
