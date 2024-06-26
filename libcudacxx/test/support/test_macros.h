@@ -189,6 +189,11 @@
 #else
 #  define TEST_CONSTEXPR_CXX23
 #endif
+#if TEST_STD_VER >= 2023
+#  define TEST_CONSTEXPR_CXX23 constexpr
+#else
+#  define TEST_CONSTEXPR_CXX23
+#endif
 #if TEST_STD_VER > 2014
 #  define TEST_THROW_SPEC(...)
 #else
