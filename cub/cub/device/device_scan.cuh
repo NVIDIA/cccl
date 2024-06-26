@@ -1176,6 +1176,8 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - Note that because initial value is the last argument the cudaStream_t
+  //!   argument also needs be passed explicitly.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1221,33 +1223,31 @@ struct DeviceScan
   //! @param[in] scan_op
   //!   Binary scan functor
   //!
-  //! @param[in] init_value
-  //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
-  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
   //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //!   CUDA stream to launch kernels within.
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
+  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    InitValueT init_value,
     int num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream,
+    InitValueT init_value)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
     // Signed integer type for global offsets
-    using OffsetT              = int;
-    using AccumT               = cub::detail::accumulator_t<ScanOpT, InitValueT, cub::detail::value_t<InputIteratorT>>;
-    constexpr bool IsInclusive = true;
+    using OffsetT = int;
+    using AccumT  = cub::detail::accumulator_t<ScanOpT, InitValueT, cub::detail::value_t<InputIteratorT>>;
+    constexpr bool ForceInclusive = true;
 
     return DispatchScan<
       InputIteratorT,
@@ -1257,14 +1257,14 @@ struct DeviceScan
       OffsetT,
       AccumT,
       DeviceScanPolicy<AccumT, ScanOpT>,
-      IsInclusive>::Dispatch(d_temp_storage,
-                             temp_storage_bytes,
-                             d_in,
-                             d_out,
-                             scan_op,
-                             detail::InputValue<InitValueT>(init_value),
-                             num_items,
-                             stream);
+      ForceInclusive>::Dispatch(d_temp_storage,
+                                temp_storage_bytes,
+                                d_in,
+                                d_out,
+                                scan_op,
+                                detail::InputValue<InitValueT>(init_value),
+                                num_items,
+                                stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>

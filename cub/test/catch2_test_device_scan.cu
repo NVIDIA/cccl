@@ -43,7 +43,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
@@ -211,6 +210,11 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     }
   }
 
+// To call DeviceScan::InclusiveScan with initial value, the cudaStream_t argument needs
+// to be passed explicitly in order to maintain backwards compatibility. Since
+// DECLARE_LAUNCH_WRAPPER passes stream by default as the last argument for TEST_LAUNCH = 2
+// we need to skip these set of tests.
+#if TEST_LAUNCH != 2
   SECTION("inclusive scan with init value")
   {
     using op_t    = cub::Sum;
@@ -229,8 +233,9 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    cudaStream_t stream{};
 
-    device_inclusive_scan_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
+    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, num_items, stream, init_t{});
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -238,12 +243,13 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test in-place
     _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
     {
-      device_inclusive_scan_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
+      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, num_items, stream, init_t{});
 
       // Verify result
       REQUIRE(expected_result == in_items);
     }
   }
+#endif
 
   SECTION("exclusive scan")
   {
