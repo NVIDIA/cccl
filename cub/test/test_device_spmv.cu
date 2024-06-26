@@ -32,6 +32,7 @@
 #include <cub/util_debug.cuh>
 
 #include <thrust/distance.h>
+#include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
 #include <thrust/mismatch.h>
 #include <thrust/scan.h>
@@ -41,6 +42,7 @@
 #include <typeinfo>
 
 #include "test_util.h"
+#include <c2h/device_policy.cuh>
 #include <c2h/vector.cuh>
 
 bool g_verbose = false;
@@ -121,7 +123,14 @@ struct csr_matrix
 
   void finalize()
   {
-    thrust::exclusive_scan(m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
+    _CCCL_IF_CONSTEXPR (HostStorage)
+    {
+      thrust::exclusive_scan(thrust::host, m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
+    }
+    else
+    {
+      thrust::exclusive_scan(c2h::device_policy, m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
+    }
     AssertEquals(m_row_offsets.back(), m_num_nonzeros);
   }
 
@@ -238,7 +247,8 @@ bool compare_results(
   std::true_type /* is_fp */, const c2h::host_vector<ValueT>& h_vec1, const c2h::device_vector<ValueT>& d_vec2)
 {
   c2h::device_vector<ValueT> d_vec1(h_vec1);
-  auto err = thrust::mismatch(d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin(), fp_almost_equal_functor<ValueT>{});
+  auto err = thrust::mismatch(
+    c2h::device_policy, d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin(), fp_almost_equal_functor<ValueT>{});
   if (err.first == d_vec1.cend() || err.second == d_vec2.cend())
   {
     return true;
@@ -258,7 +268,7 @@ bool compare_results(
   std::false_type /* is_fp */, const c2h::host_vector<ValueT>& h_vec1, const c2h::device_vector<ValueT>& d_vec2)
 {
   c2h::device_vector<ValueT> d_vec1(h_vec1);
-  auto err = thrust::mismatch(d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin());
+  auto err = thrust::mismatch(c2h::device_policy, d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin());
   if (err.first == d_vec1.cend() || err.second == d_vec2.cend())
   {
     return true;
