@@ -22,7 +22,7 @@ namespace cudax = cuda::experimental;
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-static void __device__ cudax_require_impl(
+inline void __device__ cudax_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
