@@ -95,6 +95,7 @@ function(add_bench_dir bench_dir)
     add_bench(base_bench_target ${base_bench_name} "${bench_src}")
     add_dependencies(${benches_meta_target} ${base_bench_target})
     target_compile_definitions(${base_bench_target} PRIVATE TUNE_BASE=1)
+    target_compile_options(${base_bench_target} PRIVATE "--extended-lambda")
 
     if (CUB_ENABLE_TUNING)
       # tuning
@@ -105,7 +106,7 @@ function(add_bench_dir bench_dir)
       add_bench(bench_target ${tuning_name} "${bench_src}")
       # for convenience, make tuning variant buildable by default
       file(WRITE "${tuning_path}" "#pragma once\n#define TUNE_BASE 1\n")
-      target_compile_options(${bench_target} PRIVATE "-include${tuning_path}")
+      target_compile_options(${bench_target} PRIVATE "--extended-lambda -include${tuning_path}")
     else()
       # benchmarking
       register_cccl_benchmark("${bench_name}" "")
