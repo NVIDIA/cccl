@@ -22,10 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_signed.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-enum class __atomic_cuda_memory_orders
+enum class __atomic_cuda_memorder
 {
   _relaxed,
   _release,
@@ -35,142 +39,83 @@ enum class __atomic_cuda_memory_orders
   _volatile,
 };
 
-template <__atomic_cuda_memory_orders _Order>
-struct __atomic_memorder_constraint;
+template <__atomic_cuda_memorder _Order>
+using __atomic_cuda_memorder_tag = integral_constant<__atomic_cuda_memorder, _Order>;
 
-template <>
-struct __atomic_memorder_constraint<__atomic_cuda_memory_orders::_relaxed>
+using __atomic_cuda_relaxed  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_relaxed>;
+using __atomic_cuda_release  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_release>;
+using __atomic_cuda_acquire  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_acquire>;
+using __atomic_cuda_acq_rel  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_acq_rel>;
+using __atomic_cuda_seq_cst  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_seq_cst>;
+using __atomic_cuda_volatile = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_volatile>;
+
+template <bool _Volatile>
+using __atomic_mmio_tag = integral_constant<bool, _Volatile>;
+
+using __atomic_mmio_enable  = __atomic_mmio_tag<true>;
+using __atomic_mmio_disable = __atomic_mmio_tag<false>;
+
+enum class __atomic_cuda_operand
 {
-  static constexpr char value[] = ".relaxed";
-};
-template <>
-struct __atomic_memorder_constraint<__atomic_cuda_memory_orders::_release>
-{
-  static constexpr char value[] = ".release";
-};
-template <>
-struct __atomic_memorder_constraint<__atomic_cuda_memory_orders::_acquire>
-{
-  static constexpr char value[] = ".acquire";
-};
-template <>
-struct __atomic_memorder_constraint<__atomic_cuda_memory_orders::_acq_rel>
-{
-  static constexpr char value[] = ".acq_rel";
-};
-template <>
-struct __atomic_memorder_constraint<__atomic_cuda_memory_orders::_seq_cst>
-{
-  static constexpr char value[] = ".sc";
-};
-template <>
-struct __atomic_memorder_constraint<__atomic_cuda_memory_orders::_volatile>
-{
-  static constexpr char value[] = "";
+  _f,
+  _s,
+  _u,
+  _b,
 };
 
-using __atomic_memorder_constraint_relaxed  = __atomic_memorder_constraint<__atomic_cuda_memory_orders::_relaxed>;
-using __atomic_memorder_constraint_release  = __atomic_memorder_constraint<__atomic_cuda_memory_orders::_release>;
-using __atomic_memorder_constraint_acquire  = __atomic_memorder_constraint<__atomic_cuda_memory_orders::_acquire>;
-using __atomic_memorder_constraint_acq_rel  = __atomic_memorder_constraint<__atomic_cuda_memory_orders::_acq_rel>;
-using __atomic_memorder_constraint_seq_cst  = __atomic_memorder_constraint<__atomic_cuda_memory_orders::_seq_cst>;
-using __atomic_memorder_constraint_volatile = __atomic_memorder_constraint<__atomic_cuda_memory_orders::_volatile>;
+template <__atomic_cuda_operand _Op, size_t _Size>
+struct __atomic_cuda_operand_tag
+{};
 
-template <typename T>
-struct __atomic_scope_constraint;
+using __atomic_cuda_operand_f16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 16>;
+using __atomic_cuda_operand_s16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 16>;
+using __atomic_cuda_operand_u16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 16>;
+using __atomic_cuda_operand_b16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 16>;
+using __atomic_cuda_operand_f32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 32>;
+using __atomic_cuda_operand_s32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 32>;
+using __atomic_cuda_operand_u32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 32>;
+using __atomic_cuda_operand_b32  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 32>;
+using __atomic_cuda_operand_f64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 64>;
+using __atomic_cuda_operand_s64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 64>;
+using __atomic_cuda_operand_u64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 64>;
+using __atomic_cuda_operand_b64  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 64>;
+using __atomic_cuda_operand_f128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 128>;
+using __atomic_cuda_operand_s128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 128>;
+using __atomic_cuda_operand_u128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 128>;
+using __atomic_cuda_operand_b128 = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 128>;
 
-template <>
-struct __atomic_scope_constraint<__thread_scope_device_tag>
+template <class _AtomicType, class _OpTag>
+struct __atomic_cuda_operand_deduction
 {
-  static constexpr char value[] = ".gpu";
-};
-template <>
-struct __atomic_scope_constraint<__thread_scope_system_tag>
-{
-  static constexpr char value[] = ".sys";
-};
-template <>
-struct __atomic_scope_constraint<__thread_scope_block_tag>
-{
-  static constexpr char value[] = ".cta";
-};
-
-template <typename T>
-struct __atomic_membar_scope_constraint;
-
-template <>
-struct __atomic_membar_scope_constraint<__thread_scope_device_tag>
-{
-  static constexpr char value[] = ".gl";
-};
-template <>
-struct __atomic_membar_scope_constraint<__thread_scope_system_tag>
-{
-  static constexpr char value[] = ".sys";
-};
-template <>
-struct __atomic_membar_scope_constraint<__thread_scope_block_tag>
-{
-  static constexpr char value[] = ".cta";
+  using __type = _AtomicType;
+  using __tag  = _OpTag;
 };
 
-enum class __atomic_cuda_operation
-{
-  _add,
-  _or,
-  _xor,
-  _and,
-  _min,
-  _max,
-};
+template <typename _Type>
+using __atomic_cuda_deduce_bitwise =
+  _If<sizeof(_Type) == 4,
+      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
+      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>>;
 
-template <__atomic_cuda_operation T>
-struct __atomic_operation_constraint;
+template <typename _Type>
+using __atomic_cuda_deduce_arithmetic =
+  _If<_CCCL_TRAIT(is_floating_point, _Type),
+      _If<sizeof(_Type) == 4,
+          __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
+          __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+      _If<_CCCL_TRAIT(is_signed, _Type),
+          _If<sizeof(_Type) == 4,
+              __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
+              __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>,
+          _If<sizeof(_Type) == 4,
+              __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
+              __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>;
 
-template <>
-struct __atomic_operation_constraint<__atomic_cuda_operation::_add>
-{
-  static constexpr char value[] = ".add";
-};
-template <>
-struct __atomic_operation_constraint<__atomic_cuda_operation::_or>
-{
-  static constexpr char value[] = ".or";
-};
-template <>
-struct __atomic_operation_constraint<__atomic_cuda_operation::_xor>
-{
-  static constexpr char value[] = ".xor";
-};
-template <>
-struct __atomic_operation_constraint<__atomic_cuda_operation::_and>
-{
-  static constexpr char value[] = ".and";
-};
-template <>
-struct __atomic_operation_constraint<__atomic_cuda_operation::_min>
-{
-  static constexpr char value[] = ".min";
-};
-template <>
-struct __atomic_operation_constraint<__atomic_cuda_operation::_max>
-{
-  static constexpr char value[] = ".max";
-};
-
-template <bool>
-struct __atomic_mmio_constraint;
-
-template <>
-struct __atomic_mmio_constraint<true>
-{
-  static constexpr char value[] = ".mmio";
-};
-template <>
-struct __atomic_mmio_constraint<false>
-{
-  static constexpr char value[] = "";
-};
+template <typename _Type>
+using __atomic_cuda_deduce_minmax =
+  _If<sizeof(_Type) == 4,
+      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
+      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -36,6 +36,10 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_generated_helper.h>
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+#if defined(_CCCL_CUDA_COMPILER)
+
 enum class __atomic_operand_type
 {
   _f,
@@ -48,463 +52,1799 @@ template <__atomic_operand_type, size_t>
 struct __atomic_operand_tag
 {};
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_b,16>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("ld.%2%3%4.b16 %0,[%1];"
-                : "=h"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_block_tag)
+{ asm volatile("membar.cta;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_device_tag)
+{ asm volatile("membar.gl;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_system_tag)
+{ asm volatile("membar.sys;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_block_tag, __atomic_cuda_acq_rel)
+{ asm volatile("fence.cta.acq_rel;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_block_tag, __atomic_cuda_seq_cst)
+{ asm volatile("fence.cta.sc;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_cluster_tag, __atomic_cuda_acq_rel)
+{ asm volatile("fence.cluster.acq_rel;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_cluster_tag, __atomic_cuda_seq_cst)
+{ asm volatile("fence.cluster.sc;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_device_tag, __atomic_cuda_acq_rel)
+{ asm volatile("fence.gpu.acq_rel;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_device_tag, __atomic_cuda_seq_cst)
+{ asm volatile("fence.gpu.sc;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_system_tag, __atomic_cuda_acq_rel)
+{ asm volatile("fence.sys.acq_rel;" ::: "memory"); }
+static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_system_tag, __atomic_cuda_seq_cst)
+{ asm volatile("fence.sys.sc;" ::: "memory"); }
+
+template <class _Fn, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& __cuda_fetch, int __memorder, _Sco) {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (
+      switch (__memorder) {
+        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); _CCCL_FALLTHROUGH();
+        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: __cuda_fetch(__atomic_cuda_acquire{}); break;
+        case __ATOMIC_ACQ_REL: __cuda_fetch(__atomic_cuda_acq_rel{}); break;
+        case __ATOMIC_RELEASE: __cuda_fetch(__atomic_cuda_release{}); break;
+        case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_relaxed{}); break;
+        default: assert(0);
+      }
+    ),
+    NV_IS_DEVICE, (
+      switch (__memorder) {
+        case __ATOMIC_SEQ_CST: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: __cuda_membar(_Sco{}); _CCCL_FALLTHROUGH();
+        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: __cuda_fetch(__atomic_cuda_volatile{}); __cuda_membar(_Sco{}); break;
+        case __ATOMIC_RELEASE: __cuda_membar(_Sco{}); __cuda_fetch(__atomic_cuda_volatile{}); break;
+        case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_volatile{}); break;
+        default: assert(0);
+      }
+    )
+  )
 }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_u,16>, _Mmio, _Scope, _Memorder)
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f32, __thread_scope_block_tag)
+{ asm volatile("atom.add.acquire.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f32, __thread_scope_block_tag)
+{ asm volatile("atom.add.relaxed.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f32, __thread_scope_block_tag)
+{ asm volatile("atom.add.release.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f32, __thread_scope_block_tag)
+{ asm volatile("atom.add.acq_rel.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f32, __thread_scope_block_tag)
+{ asm volatile("atom.add.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acquire.cluster.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.relaxed.cluster.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.release.cluster.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acq_rel.cluster.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.cluster.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f32, __thread_scope_device_tag)
+{ asm volatile("atom.add.acquire.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f32, __thread_scope_device_tag)
+{ asm volatile("atom.add.relaxed.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f32, __thread_scope_device_tag)
+{ asm volatile("atom.add.release.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f32, __thread_scope_device_tag)
+{ asm volatile("atom.add.acq_rel.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f32, __thread_scope_device_tag)
+{ asm volatile("atom.add.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f32, __thread_scope_system_tag)
+{ asm volatile("atom.add.acquire.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f32, __thread_scope_system_tag)
+{ asm volatile("atom.add.relaxed.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f32, __thread_scope_system_tag)
+{ asm volatile("atom.add.release.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f32, __thread_scope_system_tag)
+{ asm volatile("atom.add.acq_rel.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f32, __thread_scope_system_tag)
+{ asm volatile("atom.add.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr), "f"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f64, __thread_scope_block_tag)
+{ asm volatile("atom.add.acquire.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f64, __thread_scope_block_tag)
+{ asm volatile("atom.add.relaxed.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f64, __thread_scope_block_tag)
+{ asm volatile("atom.add.release.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f64, __thread_scope_block_tag)
+{ asm volatile("atom.add.acq_rel.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f64, __thread_scope_block_tag)
+{ asm volatile("atom.add.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acquire.cluster.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.relaxed.cluster.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.release.cluster.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acq_rel.cluster.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.cluster.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f64, __thread_scope_device_tag)
+{ asm volatile("atom.add.acquire.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f64, __thread_scope_device_tag)
+{ asm volatile("atom.add.relaxed.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f64, __thread_scope_device_tag)
+{ asm volatile("atom.add.release.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f64, __thread_scope_device_tag)
+{ asm volatile("atom.add.acq_rel.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f64, __thread_scope_device_tag)
+{ asm volatile("atom.add.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_f64, __thread_scope_system_tag)
+{ asm volatile("atom.add.acquire.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_f64, __thread_scope_system_tag)
+{ asm volatile("atom.add.relaxed.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_f64, __thread_scope_system_tag)
+{ asm volatile("atom.add.release.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_f64, __thread_scope_system_tag)
+{ asm volatile("atom.add.acq_rel.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_f64, __thread_scope_system_tag)
+{ asm volatile("atom.add.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr), "d"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.add.acquire.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.add.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.add.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.add.acq_rel.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.add.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acquire.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.relaxed.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.release.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acq_rel.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.add.acquire.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.add.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.add.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.add.acq_rel.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.add.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.add.acquire.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.add.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.add.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.add.acq_rel.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.add.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.add.acquire.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.add.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.add.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.add.acq_rel.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.add.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acquire.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.relaxed.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.release.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acq_rel.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.add.acquire.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.add.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.add.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.add.acq_rel.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.add.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.add.acquire.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.add.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.add.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.add.acq_rel.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.add.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.add.acquire.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.add.relaxed.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.add.release.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.add.acq_rel.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.add.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acquire.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.relaxed.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.release.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acq_rel.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.add.acquire.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.add.relaxed.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.add.release.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.add.acq_rel.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.add.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.add.acquire.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.add.relaxed.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.add.release.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.add.acq_rel.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.add.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.add.acquire.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.add.relaxed.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.add.release.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.add.acq_rel.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.add.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acquire.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.relaxed.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.release.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.acq_rel.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.add.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.add.acquire.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.add.relaxed.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.add.release.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.add.acq_rel.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.add.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.add.acquire.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.add.relaxed.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.add.release.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.add.acq_rel.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.add.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+
+template <typename _Type, typename _Tag, typename _Sco>
+struct __cuda_atomic_bind_fetch_add {
+  _Type* __ptr;
+  _Type* __dst;
+  _Type* __op;
+
+  template <typename _Atomic_Memorder>
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+    __cuda_atomic_fetch_add(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  }
+};
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
 {
-  asm volatile("ld.%2%3%4.u16 %0,[%1];"
-                : "=h"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+  using __proxy_t        = typename __atomic_cuda_deduce_arithmetic<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_arithmetic<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_add<__proxy_t, __proxy_tag, _Sco> __bound_add{__ptr_proxy, __dst_proxy, __op_proxy};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_add, __memorder, _Sco{});
 }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_s,16>, _Mmio, _Scope, _Memorder)
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.and.acquire.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.and.relaxed.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.and.release.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.and.acq_rel.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.and.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.acquire.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.relaxed.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.release.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.acq_rel.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.and.acquire.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.and.relaxed.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.and.release.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.and.acq_rel.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.and.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.and.acquire.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.and.relaxed.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.and.release.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.and.acq_rel.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.and.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.and.acquire.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.and.relaxed.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.and.release.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.and.acq_rel.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.and.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.acquire.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.relaxed.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.release.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.acq_rel.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.and.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.and.acquire.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.and.relaxed.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.and.release.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.and.acq_rel.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.and.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.and.acquire.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.and.relaxed.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.and.release.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.and.acq_rel.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.and.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+
+template <typename _Type, typename _Tag, typename _Sco>
+struct __cuda_atomic_bind_fetch_and {
+  _Type* __ptr;
+  _Type* __dst;
+  _Type* __op;
+
+  template <typename _Atomic_Memorder>
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+    __cuda_atomic_fetch_and(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  }
+};
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
 {
-  asm volatile("ld.%2%3%4.s16 %0,[%1];"
-                : "=h"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+  using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_and<__proxy_t, __proxy_tag, _Sco> __bound_and{__ptr_proxy, __dst_proxy, __op_proxy};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_and, __memorder, _Sco{});
 }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_b,32>, _Mmio, _Scope, _Memorder)
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.max.acquire.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.max.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.max.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.max.acq_rel.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.max.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acquire.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.relaxed.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.release.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acq_rel.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.max.acquire.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.max.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.max.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.max.acq_rel.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.max.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.max.acquire.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.max.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.max.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.max.acq_rel.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.max.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.max.acquire.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.max.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.max.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.max.acq_rel.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.max.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acquire.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.relaxed.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.release.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acq_rel.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.max.acquire.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.max.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.max.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.max.acq_rel.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.max.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.max.acquire.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.max.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.max.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.max.acq_rel.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.max.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.max.acquire.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.max.relaxed.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.max.release.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.max.acq_rel.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.max.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acquire.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.relaxed.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.release.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acq_rel.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.max.acquire.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.max.relaxed.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.max.release.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.max.acq_rel.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.max.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.max.acquire.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.max.relaxed.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.max.release.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.max.acq_rel.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.max.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.max.acquire.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.max.relaxed.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.max.release.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.max.acq_rel.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.max.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acquire.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.relaxed.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.release.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.acq_rel.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.max.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.max.acquire.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.max.relaxed.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.max.release.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.max.acq_rel.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.max.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.max.acquire.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.max.relaxed.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.max.release.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.max.acq_rel.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.max.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+
+template <typename _Type, typename _Tag, typename _Sco>
+struct __cuda_atomic_bind_fetch_max {
+  _Type* __ptr;
+  _Type* __dst;
+  _Type* __op;
+
+  template <typename _Atomic_Memorder>
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+    __cuda_atomic_fetch_max(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  }
+};
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
 {
-  asm volatile("ld.%2%3%4.b32 %0,[%1];"
-                : "=r"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+  using __proxy_t        = typename __atomic_cuda_deduce_minmax<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_max<__proxy_t, __proxy_tag, _Sco> __bound_max{__ptr_proxy, __dst_proxy, __op_proxy};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_max, __memorder, _Sco{});
 }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_f,32>, _Mmio, _Scope, _Memorder)
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.min.acquire.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.min.relaxed.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.min.release.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.min.acq_rel.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_block_tag)
+{ asm volatile("atom.min.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acquire.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.relaxed.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.release.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acq_rel.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.cluster.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.min.acquire.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.min.relaxed.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.min.release.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.min.acq_rel.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_device_tag)
+{ asm volatile("atom.min.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.min.acquire.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.min.relaxed.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.min.release.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.min.acq_rel.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u32, __thread_scope_system_tag)
+{ asm volatile("atom.min.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.min.acquire.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.min.relaxed.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.min.release.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.min.acq_rel.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_block_tag)
+{ asm volatile("atom.min.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acquire.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.relaxed.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.release.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acq_rel.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.cluster.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.min.acquire.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.min.relaxed.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.min.release.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.min.acq_rel.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_device_tag)
+{ asm volatile("atom.min.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.min.acquire.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.min.relaxed.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.min.release.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.min.acq_rel.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_u64, __thread_scope_system_tag)
+{ asm volatile("atom.min.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.min.acquire.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.min.relaxed.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.min.release.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.min.acq_rel.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_block_tag)
+{ asm volatile("atom.min.cta.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acquire.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.relaxed.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.release.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acq_rel.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.cluster.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.min.acquire.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.min.relaxed.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.min.release.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.min.acq_rel.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_device_tag)
+{ asm volatile("atom.min.gpu.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.min.acquire.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.min.relaxed.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.min.release.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.min.acq_rel.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_system_tag)
+{ asm volatile("atom.min.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.min.acquire.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.min.relaxed.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.min.release.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.min.acq_rel.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_block_tag)
+{ asm volatile("atom.min.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acquire.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.relaxed.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.release.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.acq_rel.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
+{ asm volatile("atom.min.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.min.acquire.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.min.relaxed.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.min.release.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.min.acq_rel.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_device_tag)
+{ asm volatile("atom.min.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.min.acquire.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.min.relaxed.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.min.release.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.min.acq_rel.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_system_tag)
+{ asm volatile("atom.min.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+
+template <typename _Type, typename _Tag, typename _Sco>
+struct __cuda_atomic_bind_fetch_min {
+  _Type* __ptr;
+  _Type* __dst;
+  _Type* __op;
+
+  template <typename _Atomic_Memorder>
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+    __cuda_atomic_fetch_min(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  }
+};
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
 {
-  asm volatile("ld.%2%3%4.f32 %0,[%1];"
-                : "=f"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+  using __proxy_t        = typename __atomic_cuda_deduce_minmax<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_min<__proxy_t, __proxy_tag, _Sco> __bound_min{__ptr_proxy, __dst_proxy, __op_proxy};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_min, __memorder, _Sco{});
 }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_u,32>, _Mmio, _Scope, _Memorder)
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.or.acquire.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.or.relaxed.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.or.release.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.or.acq_rel.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.or.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.acquire.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.relaxed.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.release.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.acq_rel.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.or.acquire.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.or.relaxed.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.or.release.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.or.acq_rel.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.or.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.or.acquire.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.or.relaxed.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.or.release.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.or.acq_rel.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.or.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.or.acquire.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.or.relaxed.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.or.release.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.or.acq_rel.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.or.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.acquire.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.relaxed.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.release.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.acq_rel.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.or.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.or.acquire.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.or.relaxed.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.or.release.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.or.acq_rel.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.or.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.or.acquire.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.or.relaxed.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.or.release.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.or.acq_rel.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.or.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+
+template <typename _Type, typename _Tag, typename _Sco>
+struct __cuda_atomic_bind_fetch_or {
+  _Type* __ptr;
+  _Type* __dst;
+  _Type* __op;
+
+  template <typename _Atomic_Memorder>
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+    __cuda_atomic_fetch_or(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  }
+};
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
 {
-  asm volatile("ld.%2%3%4.u32 %0,[%1];"
-                : "=r"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+  using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_or<__proxy_t, __proxy_tag, _Sco> __bound_or{__ptr_proxy, __dst_proxy, __op_proxy};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_or, __memorder, _Sco{});
 }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_s,32>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("ld.%2%3%4.s32 %0,[%1];"
-                : "=r"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.xor.acquire.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.xor.relaxed.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.xor.release.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.xor.acq_rel.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_block_tag)
+{ asm volatile("atom.xor.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.acquire.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.relaxed.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.release.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.acq_rel.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.cluster.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.xor.acquire.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.xor.relaxed.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.xor.release.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.xor.acq_rel.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_device_tag)
+{ asm volatile("atom.xor.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.xor.acquire.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.xor.relaxed.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.xor.release.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.xor.acq_rel.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b32, __thread_scope_system_tag)
+{ asm volatile("atom.xor.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.xor.acquire.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.xor.relaxed.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.xor.release.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.xor.acq_rel.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_block_tag)
+{ asm volatile("atom.xor.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.acquire.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.relaxed.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.release.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.acq_rel.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_cluster_tag)
+{ asm volatile("atom.xor.cluster.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.xor.acquire.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.xor.relaxed.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.xor.release.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.xor.acq_rel.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_device_tag)
+{ asm volatile("atom.xor.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.xor.acquire.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.xor.relaxed.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.xor.release.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.xor.acq_rel.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
+template <class _Type>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_b64, __thread_scope_system_tag)
+{ asm volatile("atom.xor.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_b,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("ld.%2%3%4.b64 %0,[%1];"
-                : "=l"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
+template <typename _Type, typename _Tag, typename _Sco>
+struct __cuda_atomic_bind_fetch_xor {
+  _Type* __ptr;
+  _Type* __dst;
+  _Type* __op;
 
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_f,64>, _Mmio, _Scope, _Memorder)
+  template <typename _Atomic_Memorder>
+  inline _CCCL_DEVICE void operator()(_Atomic_Memorder) {
+    __cuda_atomic_fetch_xor(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
+  }
+};
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
 {
-  asm volatile("ld.%2%3%4.f64 %0,[%1];"
-                : "=d"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_u,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("ld.%2%3%4.u64 %0,[%1];"
-                : "=l"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_s,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("ld.%2%3%4.s64 %0,[%1];"
-                : "=l"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_b,16>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.b16 %0,[%1];"
-                :: "l"(__ptr), "h"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_u,16>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.u16 %0,[%1];"
-                :: "l"(__ptr), "h"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_s,16>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.s16 %0,[%1];"
-                :: "l"(__ptr), "h"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_b,32>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.b32 %0,[%1];"
-                :: "l"(__ptr), "r"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_f,32>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.f32 %0,[%1];"
-                :: "l"(__ptr), "f"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_u,32>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.u32 %0,[%1];"
-                :: "l"(__ptr), "r"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_s,32>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.s32 %0,[%1];"
-                :: "l"(__ptr), "r"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_b,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.b64 %0,[%1];"
-                :: "l"(__ptr), "l"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_f,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.f64 %0,[%1];"
-                :: "l"(__ptr), "d"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_u,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.u64 %0,[%1];"
-                :: "l"(__ptr), "l"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_store(
-  _Type* __ptr, _Type __val, __atomic_operand_tag<__atomic_operand_type::_s,64>, _Mmio, _Scope, _Memorder)
-{
-  asm volatile("st.%2%3%4.s64 %0,[%1];"
-                :: "l"(__ptr), "l"(__val), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                 : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.b32 %0,[%1],%2;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_f,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.f32 %0,[%1],%2;"
-                : "=f"(__dst)
-                : "l"(__ptr), "f"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_s,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.s32 %0,[%1],%2;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_u,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.u32 %0,[%1],%2;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.b64 %0,[%1],%2;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_f,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.f64 %0,[%1],%2;"
-                : "=d"(__dst)
-                : "l"(__ptr), "d"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_s,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.s64 %0,[%1],%2;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_exchange(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_u,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.exch.%3%4.u64 %0,[%1],%2;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,16>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.b16 %0,[%1],%2,%3;"
-                : "=h"(__dst)
-                : "l"(__ptr), "h"(__cmp), "h"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.b32 %0,[%1],%2,%3;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__cmp), "r"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_f,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.f32 %0,[%1],%2,%3;"
-                : "=f"(__dst)
-                : "l"(__ptr), "f"(__cmp), "f"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_s,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.s32 %0,[%1],%2,%3;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__cmp), "r"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_u,32>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.u32 %0,[%1],%2,%3;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__cmp), "r"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.b64 %0,[%1],%2,%3;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__cmp), "l"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_f,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.f64 %0,[%1],%2,%3;"
-                : "=d"(__dst)
-                : "l"(__ptr), "d"(__cmp), "d"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_s,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.s64 %0,[%1],%2,%3;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__cmp), "l"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_compare_exchange(
-  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, __atomic_operand_tag<__atomic_operand_type::_u,64>, _Scope, _Memorder)
-{
-  asm volatile("atom.cas.%4%5.u64 %0,[%1],%2,%3;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__cmp), "l"(__op), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,32>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.b32 %0,[%1],%2;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_f,32>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.f32 %0,[%1],%2;"
-                : "=f"(__dst)
-                : "l"(__ptr), "f"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_u,32>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.u32 %0,[%1],%2;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_s,32>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.s32 %0,[%1],%2;"
-                : "=r"(__dst)
-                : "l"(__ptr), "r"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_b,64>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.b64 %0,[%1],%2;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_f,64>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.f64 %0,[%1],%2;"
-                : "=d"(__dst)
-                : "l"(__ptr), "d"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_u,64>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.u64 %0,[%1],%2;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}
-
-template <class _Type, class _Op, class _Scope, class _Memorder>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_operand_tag<__atomic_operand_type::_s,64>, _Op, _Scope, _Memorder)
-{
-  asm volatile("atom.%3%4%5.s64 %0,[%1],%2;"
-                : "=l"(__dst)
-                : "l"(__ptr), "l"(__op), "C"(_Op::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
+  using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_xor<__proxy_t, __proxy_tag, _Sco> __bound_xor{__ptr_proxy, __dst_proxy, __op_proxy};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_xor, __memorder, _Sco{});
 }
 
 #endif // defined(_CCCL_CUDA_COMPILER)

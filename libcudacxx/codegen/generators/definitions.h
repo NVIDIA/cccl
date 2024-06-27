@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+#include <fmt/format.h>
+
 enum class Operand
 {
   Floating,
@@ -34,17 +36,49 @@ static std::string operand(Operand op)
   return op_map[op];
 }
 
+static std::string operand_deduced(Operand op)
+{
+  static std::map op_map = {
+    std::pair{Operand::Floating, ""},
+    std::pair{Operand::Unsigned, "u"},
+    std::pair{Operand::Signed, "s"},
+    std::pair{Operand::Bit, "b"},
+  };
+  return op_map[op];
+}
+
+static std::string operand_proxy_type(Operand op, size_t sz)
+{
+  if (op == Operand::Floating)
+  {
+    if (sz == 32)
+    {
+      return {"float"};
+    }
+    else
+    {
+      return {"double"};
+    }
+  }
+  else if (op == Operand::Signed)
+  {
+    return fmt::format("int{}_t", sz);
+  }
+  // Binary and unsigned can be the same proxy_type
+  return fmt::format("uint{}_t", sz);
+}
+
 static std::string constraints(Operand op, size_t sz)
 {
   static std::map constraint_map = {
-    std::pair{4,
+    std::pair{32,
               std::map{
                 std::pair{Operand::Bit, "r"},
                 std::pair{Operand::Unsigned, "r"},
                 std::pair{Operand::Signed, "r"},
                 std::pair{Operand::Floating, "f"},
               }},
-    std::pair{8,
+    std::pair{64,
               std::map{
                 std::pair{Operand::Bit, "l"},
                 std::pair{Operand::Unsigned, "l"},
@@ -52,7 +86,7 @@ static std::string constraints(Operand op, size_t sz)
                 std::pair{Operand::Floating, "d"},
               }}};
 
-  if (sz == 2)
+  if (sz == 16)
   {
     return {"h"};
   }
@@ -62,7 +96,7 @@ static std::string constraints(Operand op, size_t sz)
   }
 }
 
-enum class Semantics
+enum class Semantic
 {
   Relaxed,
   Release,
@@ -72,15 +106,28 @@ enum class Semantics
   Volatile,
 };
 
-static std::string semantics(Semantics sem)
+static std::string semantic(Semantic sem)
 {
   static std::map sem_map = {
-    std::pair{Semantics::Relaxed, ".relaxed"},
-    std::pair{Semantics::Release, ".release"},
-    std::pair{Semantics::Acquire, ".acquire"},
-    std::pair{Semantics::Acq_Rel, ".acq_rel"},
-    std::pair{Semantics::Seq_Cst, ".sc"}, // Only used in seq_cst fence operations
-    std::pair{Semantics::Volatile, ""},
+    std::pair{Semantic::Relaxed, ".relaxed"},
+    std::pair{Semantic::Release, ".release"},
+    std::pair{Semantic::Acquire, ".acquire"},
+    std::pair{Semantic::Acq_Rel, ".acq_rel"},
+    std::pair{Semantic::Seq_Cst, ".sc"}, // Only used in seq_cst fence operations
+    std::pair{Semantic::Volatile, ""},
+  };
+  return sem_map[sem];
+}
+
+static std::string semantic_tag(Semantic sem)
+{
+  static std::map sem_map = {
+    std::pair{Semantic::Relaxed, "relaxed"},
+    std::pair{Semantic::Release, "release"},
+    std::pair{Semantic::Acquire, "acquire"},
+    std::pair{Semantic::Acq_Rel, "acq_rel"},
+    std::pair{Semantic::Seq_Cst, "seq_cst"}, // Only used in seq_cst fence operations
+    std::pair{Semantic::Volatile, "volatile"},
   };
   return sem_map[sem];
 }
@@ -104,6 +151,19 @@ static std::string scope(Scope sco)
     std::pair{Scope::Cluster, ".cluster"},
     std::pair{Scope::GPU, ".gpu"},
     std::pair{Scope::System, ".sys"},
+  };
+  return sco_map[sco];
+}
+
+static std::string scope_tag(Scope sco)
+{
+  static std::map sco_map = {
+    std::pair{Scope::Thread, "__thread_scope_thread_tag"},
+    std::pair{Scope::Warp, ""},
+    std::pair{Scope::CTA, "__thread_scope_block_tag"},
+    std::pair{Scope::Cluster, "__thread_scope_cluster_tag"},
+    std::pair{Scope::GPU, "__thread_scope_device_tag"},
+    std::pair{Scope::System, "__thread_scope_system_tag"},
   };
   return sco_map[sco];
 }

@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda_ptx_generated.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -30,6 +32,155 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_CUDA_COMPILER)
+
+template <class... _Types, class _Scope>
+static inline _CCCL_DEVICE void __cuda_atomic_dispatch_rmw(_Types... _args, _Scope)
+{
+  constexpr __atomic_scope_constraint<_Scope> __sco{};
+  constexpr __atomic_membar_scope_constraint<_Scope> __membar_sco{};
+  constexpr _Tag __tag{};
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70,
+    (switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+      case __ATOMIC_SEQ_CST:
+        __cuda_fence(__sco, __atomic_memorder_constraint_seq_cst{});
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_CONSUME:
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_ACQUIRE:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_acquire{});
+        break;
+      case __ATOMIC_ACQ_REL:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_acq_rel{});
+        break;
+      case __ATOMIC_RELEASE:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_release{});
+        break;
+      case __ATOMIC_RELAXED:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_relaxed{});
+        break;
+      default:
+        assert(0);
+    }),
+    NV_IS_DEVICE,
+    (switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+      case __ATOMIC_SEQ_CST:
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_ACQ_REL:
+        __cuda_membar(__membar_sco);
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_CONSUME:
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_ACQUIRE:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_volatile{});
+        __cuda_membar_block();
+        break;
+      case __ATOMIC_RELEASE:
+        __cuda_membar_block();
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_volatile{});
+        break;
+      case __ATOMIC_RELAXED:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_volatile{});
+        break;
+      default:
+        assert(0);
+    }))
+
+  return (__old == *__expected);
+}
+
+template <class _Type, class _Scope, class _Tag>
+static inline _CCCL_DEVICE void
+__cuda_atomic_compare_exchange(_Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Tag, _Scope)
+{
+  constexpr __atomic_scope_constraint<_Scope> __sco{};
+  constexpr __atomic_membar_scope_constraint<_Scope> __membar_sco{};
+  constexpr _Tag __tag{};
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70,
+    (switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+      case __ATOMIC_SEQ_CST:
+        __cuda_fence(__sco, __atomic_memorder_constraint_seq_cst{});
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_CONSUME:
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_ACQUIRE:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_acquire{});
+        break;
+      case __ATOMIC_ACQ_REL:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_acq_rel{});
+        break;
+      case __ATOMIC_RELEASE:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_release{});
+        break;
+      case __ATOMIC_RELAXED:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_relaxed{});
+        break;
+      default:
+        assert(0);
+    }),
+    NV_IS_DEVICE,
+    (switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+      case __ATOMIC_SEQ_CST:
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_ACQ_REL:
+        __cuda_membar(__membar_sco);
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_CONSUME:
+        _CCCL_FALLTHROUGH();
+      case __ATOMIC_ACQUIRE:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_volatile{});
+        __cuda_membar_block();
+        break;
+      case __ATOMIC_RELEASE:
+        __cuda_membar_block();
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_volatile{});
+        break;
+      case __ATOMIC_RELAXED:
+        __cuda_atomic_compare_exchange(
+          __ptr, *__expected, __old, __desired, __tag, __sco, __atomic_memorder_constraint_volatile{});
+        break;
+      default:
+        assert(0);
+    }))
+
+  return (__old == *__expected);
+}
+
+template <typename _Tp, typename _Sco>
+_CCCL_DEVICE bool __atomic_compare_exchange_cuda(
+  _Tp volatile* __ptr,
+  _Tp* __expected,
+  const _Tp __desired,
+  bool __weak,
+  int __success_memorder,
+  int __failure_memorder,
+  _Sco)
+{
+  using __proxy_t  = _If<sizeof(_Tp) == 4, uint32_t, uint64_t>;
+  using __op_tag_t = __atomic_operand_tag<__atomic_operand_type::_b, sizeof(__proxy_t) * 8>;
+
+  volatile __proxy_t* __atom = reinterpret_cast<volatile __proxy_t*>(__ptr);
+  __proxy_t* __old           = reinterpret_cast<__proxy_t*>(__expected);
+  __proxy_t __new            = *reinterpret_cast<__proxy_t*>(&__desired);
+
+  bool __result = __cuda_atomic_compare_exchange(
+    __atom, *__old, *__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
+  return __result;
+}
 
 template <typename _Tp,
           typename _Sco,

@@ -53,6 +53,10 @@ static void FormatHeader(std::ostream& out)
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_generated_helper.h>
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+#if defined(_CCCL_CUDA_COMPILER)
+
 enum class __atomic_operand_type
 {
   _f,
