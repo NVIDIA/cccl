@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
   FormatHeader(stream);
   FormatFence(stream);
-  // FormatLoad(stream);
+  FormatLoad(stream);
   // FormatStore(stream);
   // FormatExchange(stream);
   // FormatCompareAndSwap(stream);

@@ -23,15 +23,10 @@ static void FormatLoad(std::ostream& out)
   // 1 - Operand Size
   // 2 - Constraint
   const std::string asm_intrinsic_format = R"XXX(
-template <class _Type, class _Mmio, class _Scope, class _Memorder>
+template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, __atomic_operand_tag<__atomic_operand_type::_{0},{1}>, _Mmio, _Scope, _Memorder)
-{{
-  asm volatile("ld.%2%3%4.{0}{1} %0,[%1];"
-                : "={2}"(__dst)
-                : "l"(__ptr), "C"(_Mmio::value), "C"(_Scope::value), "C"(_Memorder::value)
-                : "memory");
-}}
+  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_{3}, __atomic_cuda_operand_{0}{1}, {5})
+{{ asm volatile("ld.{2}{4}.{4} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }}
 )XXX";
 
   constexpr Operand supported_types[] = {

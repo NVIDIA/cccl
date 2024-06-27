@@ -91,13 +91,13 @@ struct __atomic_cuda_operand_deduction
   using __tag  = _OpTag;
 };
 
-template <typename _Type>
+template <class _Type>
 using __atomic_cuda_deduce_bitwise =
   _If<sizeof(_Type) == 4,
       __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
       __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>>;
 
-template <typename _Type>
+template <class _Type>
 using __atomic_cuda_deduce_arithmetic =
   _If<_CCCL_TRAIT(is_floating_point, _Type),
       _If<sizeof(_Type) == 4,
@@ -111,11 +111,15 @@ using __atomic_cuda_deduce_arithmetic =
               __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
               __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>;
 
-template <typename _Type>
+template <class _Type>
 using __atomic_cuda_deduce_minmax =
-  _If<sizeof(_Type) == 4,
-      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
-      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>>;
+  _If<_CCCL_TRAIT(is_signed, _Type),
+      _If<sizeof(_Type) == 4,
+          __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
+          __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>,
+      _If<sizeof(_Type) == 4,
+          __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
+          __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

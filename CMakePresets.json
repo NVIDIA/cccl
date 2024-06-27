@@ -485,7 +485,7 @@
       "configurePreset": "libcudacxx-codegen",
       "filter": {
         "include": {
-          "name": "^libcudacxx\\.atomics\\.codegen.*$"
+          "name": "^libcudacxx\\.test\\.atomics.codegen.*$"
         }
       }
     },

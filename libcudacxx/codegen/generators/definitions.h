@@ -17,6 +17,21 @@
 
 #include <fmt/format.h>
 
+enum class Mmio
+{
+  Disabled,
+  Enabled,
+};
+
+static std::string mmio(Mmio m)
+{
+  static std::map mmio_map{
+    std::pair{Mmio::Disabled, std::string{""}},
+    std::pair{Mmio::Enabled, std::string{"volatile "}},
+  };
+  return mmio_map[m];
+}
+
 enum class Operand
 {
   Floating,
