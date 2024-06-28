@@ -222,6 +222,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       add_test(NAME ${test_target} COMMAND
         "${CMAKE_COMMAND}"
         "-DTEST=$<TARGET_FILE:${test_target}>"
+        "-DTYPE=Catch2"
         -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
       )
     else() # Not CUB_SEPARATE_CATCH2
@@ -251,6 +252,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
         add_test(NAME ${config_c2run_target} COMMAND
           "${CMAKE_COMMAND}"
           "-DTEST=$<TARGET_FILE:${config_c2run_target}>"
+          "-DTYPE=Catch2"
           -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         )
       endif() # per config catch2 runner
