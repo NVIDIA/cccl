@@ -145,7 +145,7 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool IsInclusive = false>
+          bool ForceInclusive = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -170,9 +170,10 @@ struct AgentScan
   enum
   {
     // Inclusive scan if no init_value type is provided
-    HAS_INIT = !std::is_same<InitValueT, NullType>::value, // we used to rely on initial value not beeing null ptr to
-                                                           // distinguish between inclusive and exclusive scan
-    IS_INCLUSIVE     = IsInclusive || !HAS_INIT,
+    HAS_INIT     = !std::is_same<InitValueT, NullType>::value,
+    IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not beeing null ptr
+                                                // or the ForceInclusive tag to be true for inclusive scan
+                                                // to get picked up.
     BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
     ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD,
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
@@ -245,7 +246,7 @@ struct AgentScan
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
     AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT init_value,
+    AccumT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
     Int2Type<false> /*is_inclusive*/)
@@ -256,7 +257,7 @@ struct AgentScan
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
     AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT init_value,
+    AccumT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
     Int2Type<true> /*has_init*/)

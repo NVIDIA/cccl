@@ -33,12 +33,29 @@
 #include <cstdint>
 
 #include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
+// Circumvate DECLARE_LAUNCH_WRAPPER appending stream as the last argument
+// by default since init_value needs to be the last argument.
+template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitT>
+CUB_RUNTIME_FUNCTION static cudaError_t inclusive_scan_init_wrapper(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ScanOpT scan_op,
+  int num_items,
+  InitT init,
+  cudaStream_t stream = 0)
+{
+  return cub::DeviceScan::InclusiveScan(
+    d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, stream, init);
+}
+
+DECLARE_LAUNCH_WRAPPER(inclusive_scan_init_wrapper, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
@@ -210,14 +227,9 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     }
   }
 
-// To call DeviceScan::InclusiveScan with initial value, the cudaStream_t argument needs
-// to be passed explicitly in order to maintain backwards compatibility. Since
-// DECLARE_LAUNCH_WRAPPER passes stream by default as the last argument for TEST_LAUNCH = 2
-// we need to skip these set of tests.
-#if TEST_LAUNCH != 2
   SECTION("inclusive scan with init value")
   {
-    using op_t    = cub::Sum;
+    using op_t    = cub::Min;
     using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
@@ -226,16 +238,15 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_reference(
-      host_items.cbegin(), host_items.cend(), expected_result.begin(), scan_op, accum_t{});
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
-    cudaStream_t stream{};
+    compute_inclusive_scan_reference(
+      host_items.cbegin(), host_items.cend(), expected_result.begin(), scan_op, accum_t{});
 
-    device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, num_items, stream, init_t{});
+    device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, num_items, init_t{});
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -243,13 +254,12 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test in-place
     _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
     {
-      device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, num_items, stream, init_t{});
+      device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, num_items, init_t{});
 
       // Verify result
       REQUIRE(expected_result == in_items);
     }
   }
-#endif
 
   SECTION("exclusive scan")
   {

@@ -1166,7 +1166,8 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
-  //! The ``init_value`` value is applied as the initial value, and is assigned to ``*d_data``.
+  //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
+  //! is assigned to ``*d_dout``.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
