@@ -204,13 +204,40 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
  */
+
+template <typename T, typename InputIterator>
+struct is_callable_with_input
+{
+private:
+  using value_type = typename std::iterator_traits<InputIterator>::value_type;
+
+  template <typename U>
+  static auto test(int)
+    -> decltype(std::declval<U>()(std::declval<value_type>(), std::declval<value_type>()), std::true_type());
+
+  template <typename>
+  static auto test(...) -> std::false_type;
+
+public:
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  AssociativeOperator binary_op);
+_CCCL_HOST_DEVICE
+  typename std::enable_if<is_callable_with_input<AssociativeOperator, InputIterator>::value, OutputIterator>::type
+  inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                 InputIterator first,
+                 InputIterator last,
+                 OutputIterator result,
+                 AssociativeOperator binary_op);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE typename std::enable_if<!is_callable_with_input<T, InputIterator>::value, OutputIterator>::type
+inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+               InputIterator first,
+               InputIterator last,
+               OutputIterator result,
+               T init);
 
 /*! \p inclusive_scan computes an inclusive prefix sum operation. The
  *  term 'inclusive' means that each result includes the corresponding
@@ -234,11 +261,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
- * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
- *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
- *  \tparam AssociativeOperator is a model of <a
+ * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a> and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's \c
+ * first_argument_type and \c second_argument_type. \tparam AssociativeOperator is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *

@@ -81,6 +81,43 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename InitialValueType,
           typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  InitialValueType init,
+  BinaryFunction binary_op)
+{
+  using namespace thrust::detail;
+
+  // Use the input iterator's value type per https://wg21.link/P0571
+  using ValueType = InitialValueType;
+
+  // wrap binary_op
+  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op(binary_op);
+
+  if (first != last)
+  {
+    ValueType sum = wrapped_binary_op(*first, init);
+
+    *result = sum;
+
+    for (++first, ++result; first != last; ++first, ++result)
+    {
+      *result = sum = wrapped_binary_op(sum, *first);
+    }
+  }
+
+  return result;
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename InitialValueType,
+          typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
