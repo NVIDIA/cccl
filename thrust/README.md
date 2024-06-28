@@ -9,10 +9,10 @@ It builds on top of established parallel programming frameworks (such as CUDA,
 It also provides a number of general-purpose facilities similar to those found
   in the C++ Standard Library.
 
-The NVIDIA C++ Standard Library is an open source project; it is available on
+Thrust is an open source project; it is available on
   [GitHub] and included in the NVIDIA HPC SDK and CUDA Toolkit.
 If you have one of those SDKs installed, no additional installation or compiler
-  flags are needed to use libcu++.
+  flags are needed to use Thrust.
 
 ## Examples
 
@@ -186,7 +186,7 @@ Thrust is an open source project developed on [GitHub].
 Thrust is distributed under the [Apache License v2.0 with LLVM Exceptions].
 Some parts are distributed under the [Apache License v2.0] and the [Boost License v1.0].
 
-[GitHub]: https://github.com/nvidia/thrust
+[GitHub]: https://github.com/NVIDIA/cccl/tree/main/thrust
 
 [contributing section]: https://nvidia.github.io/thrust/contributing.html
 
