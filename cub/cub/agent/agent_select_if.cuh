@@ -166,6 +166,9 @@ struct partition_distinct_output_t
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam ScanTileStateT
+ *   The tile state class used in the decoupled look-back
+ *
  * @tparam KEEP_REJECTS
  *   Whether or not we push rejected items to the back of the output
  */
@@ -176,6 +179,7 @@ template <typename AgentSelectIfPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
+          typename ScanTileStateT,
           bool KEEP_REJECTS,
           bool MayAlias>
 struct AgentSelectIf
@@ -189,9 +193,6 @@ struct AgentSelectIf
 
   // The flag value type
   using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
-
-  // Tile status descriptor interface type
-  using ScanTileStateT = ScanTileState<OffsetT>;
 
   // Constants
   enum
@@ -235,12 +236,6 @@ struct AgentSelectIf
   // Parameterized BlockLoad type for input data
   using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
 
-  // If this may be an *in-place* stream compaction, we need to ensure that all the tile's items have been loaded before
-  // signalling this thread block's partial or inclusive state to avoid a race where a subsequent thread block may have
-  // already overwritten this tile's input.
-  static constexpr EnforceStoreRelease needs_store_release =
-    ((!KEEP_REJECTS) && MayAlias && (!BlockLoadT::loads_via_smem)) ? EnforceStoreRelease::yes : EnforceStoreRelease::no;
-
   // Parameterized BlockLoad type for flags
   using BlockLoadFlags = BlockLoad<FlagT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
 
@@ -251,9 +246,8 @@ struct AgentSelectIf
   using BlockScanT = BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT, needs_store_release>;
+  using DelayConstructorT     = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   typedef InputT ItemExchangeT[TILE_ITEMS];
@@ -773,7 +767,7 @@ struct AgentSelectIf
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
     // Ensure temporary storage used during block load can be reused
-    // Also, in case of in-place stream compaction (i.e., needs_store_release), this is needed to order the loads of
+    // Also, in case of in-place stream compaction, this is needed to order the loads of
     // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
     CTA_SYNC();
 
@@ -786,7 +780,7 @@ struct AgentSelectIf
       // Update tile status if this is not the last tile
       if (!IS_LAST_TILE)
       {
-        tile_state.template SetInclusive<needs_store_release>(0, num_tile_selections);
+        tile_state.SetInclusive(0, num_tile_selections);
       }
     }
 
@@ -851,7 +845,7 @@ struct AgentSelectIf
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
     // Ensure temporary storage used during block load can be reused
-    // Also, in case of in-place stream compaction (i.e., needs_store_release), this is needed to order the loads of
+    // Also, in case of in-place stream compaction, this is needed to order the loads of
     // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
     CTA_SYNC();
 

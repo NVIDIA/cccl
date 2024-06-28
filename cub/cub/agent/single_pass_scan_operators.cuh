@@ -125,26 +125,18 @@ enum ScanTileStatus
 };
 
 /**
- * Indicates whether to use a st.release when writing the partial or inclusive tile state (EnforceStoreRelease::yes) or
- * not.
+ * Enum class used for specifying the memory order that shall be enforced while reading and writing the tile status.
  */
-enum class EnforceStoreRelease
+enum class MemoryOrder
 {
-  no,
-  yes
+  // Uses relaxed loads when reading a tile's status and relaxed stores when updating a tile's status
+  relaxed,
+  // Uses load acquire when reading a tile's status and store release when updating a tile's status
+  acquire_release
 };
 
 namespace detail
 {
-
-template <EnforceStoreRelease StoreRelease>
-using store_release_tag_t =
-  ::cuda::std::conditional<(StoreRelease == EnforceStoreRelease::no),
-                           Int2Type<static_cast<int>(EnforceStoreRelease::no)>,
-                           Int2Type<static_cast<int>(EnforceStoreRelease::yes)>>;
-using store_release_tag_no  = store_release_tag_t<EnforceStoreRelease::no>;
-using store_release_tag_yes = store_release_tag_t<EnforceStoreRelease::yes>;
-
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
@@ -511,7 +503,7 @@ using default_reduce_by_key_delay_constructor_t =
 /**
  * Tile status interface.
  */
-template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
+template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE, MemoryOrder Order = MemoryOrder::relaxed>
 struct ScanTileState;
 
 /**
@@ -519,8 +511,8 @@ struct ScanTileState;
  * that can be combined into one machine word that can be
  * read/written coherently in a single access.
  */
-template <typename T>
-struct ScanTileState<T, true>
+template <typename T, MemoryOrder Order>
+struct ScanTileState<T, true, Order>
 {
   // Status word type
   using StatusWord = cub::detail::conditional_t<
@@ -618,27 +610,49 @@ struct ScanTileState<T, true>
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_no /*enforce_st_release*/)
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), void>::type
+  StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_relaxed(ptr, alias);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_yes /*enforce_st_release*/)
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), void>::type
+  StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_release(ptr, alias);
   }
 
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), TxnWord>::type
+  LoadStatus(TxnWord* ptr)
+  {
+    return detail::load_relaxed(ptr);
+  }
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE
+  typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), TxnWord>::type
+  LoadStatus(TxnWord* ptr)
+  {
+    // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
+  }
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), void>::type
+  ThreadfenceForLoadAcqPreVolta()
+  {}
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), void>::type
+  ThreadfenceForLoadAcqPreVolta()
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+  }
+
 public:
-  /**
-   * Update the specified tile's inclusive value and corresponding status.
-   * @tparam EnforceStoreRelease
-   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
-   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
-   *   look-back to ensure transitivity.
-   */
-  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -648,17 +662,9 @@ public:
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status.
-   * @tparam EnforceStoreRelease
-   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
-   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
-   *   look-back to ensure transitivity.
-   */
-  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -668,7 +674,7 @@ public:
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
@@ -681,16 +687,19 @@ public:
     TileDescriptor tile_descriptor;
 
     {
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
 
     while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff))
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
+
+    // For pre-Volta and load acquire we emit relaxed loads in LoadStatus and hoist the threadfence here
+    ThreadfenceForLoadAcqPreVolta();
 
     status = tile_descriptor.status;
     value  = tile_descriptor.value;
@@ -712,8 +721,8 @@ public:
  * Tile status interface specialized for scan status and value types that
  * cannot be combined into one machine word.
  */
-template <typename T>
-struct ScanTileState<T, false>
+template <typename T, MemoryOrder Order>
+struct ScanTileState<T, false, Order>
 {
   // Status word type
   using StatusWord = unsigned int;
@@ -832,14 +841,6 @@ struct ScanTileState<T, false>
     }
   }
 
-  /**
-   * Update the specified tile's inclusive value and corresponding status.
-   * @tparam EnforceStoreRelease
-   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
-   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
-   *   look-back to ensure transitivity.
-   */
-  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
@@ -847,14 +848,6 @@ struct ScanTileState<T, false>
     detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status.
-   * @tparam EnforceStoreRelease
-   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
-   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
-   *   look-back to ensure transitivity.
-   */
-  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
@@ -894,6 +887,15 @@ struct ScanTileState<T, false>
     return d_tile_inclusive[TILE_STATUS_PADDING + tile_idx];
   }
 };
+
+/**
+ * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
+ *
+ * @tparam T The ScanTileState's value type
+ * @tparam Order The memory order to be implemented by the ScanTileState
+ */
+template <typename T, MemoryOrder Order>
+using TileStateWithMemoryOrderT = ScanTileState<T, Traits<T>::PRIMITIVE, Order>;
 
 /******************************************************************************
  * ReduceByKey tile status interface types for block-cooperative scans
@@ -1044,28 +1046,6 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     }
   }
 
-private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_no /*enforce_st_release*/)
-  {
-    detail::store_relaxed(ptr, alias);
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StoreStatus(TxnWord* ptr, TxnWord alias, detail::store_release_tag_yes /*enforce_st_release*/)
-  {
-    detail::store_release(ptr, alias);
-  }
-
-public:
-  /**
-   * Update the specified tile's inclusive value and corresponding status.
-   * @tparam EnforceStoreRelease
-   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
-   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
-   *   look-back to ensure transitivity.
-   */
-  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -1076,17 +1056,9 @@ public:
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status.
-   * @tparam EnforceStoreRelease
-   *   Whether to enfore a `st.release` operation when writing the tile status to help introduce memory order. It is
-   *   strongly advised to stay consistent with regards to enforcing `st.release` across *all* tiles of a decoupled
-   *   look-back to ensure transitivity.
-   */
-  template <EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -1097,7 +1069,7 @@ public:
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias, detail::store_release_tag_t<StoreRelease>{});
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
@@ -1159,9 +1131,8 @@ public:
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          int LEGACY_PTX_ARCH              = 0,
-          typename DelayConstructorT       = detail::default_delay_constructor_t<T>,
-          EnforceStoreRelease StoreRelease = EnforceStoreRelease::no>
+          int LEGACY_PTX_ARCH        = 0,
+          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1243,7 +1214,7 @@ struct TilePrefixCallbackOp
     {
       detail::uninitialized_copy(&temp_storage.block_aggregate, block_aggregate);
 
-      tile_status.template SetPartial<StoreRelease>(tile_idx, block_aggregate);
+      tile_status.SetPartial(tile_idx, block_aggregate);
     }
 
     int predecessor_idx = tile_idx - threadIdx.x - 1;
@@ -1271,7 +1242,7 @@ struct TilePrefixCallbackOp
     if (threadIdx.x == 0)
     {
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
-      tile_status.template SetInclusive<StoreRelease>(tile_idx, inclusive_prefix);
+      tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
       detail::uninitialized_copy(&temp_storage.exclusive_prefix, exclusive_prefix);
 
