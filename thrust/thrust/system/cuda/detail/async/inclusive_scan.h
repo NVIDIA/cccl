@@ -126,6 +126,92 @@ async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first,
   return ev;
 }
 
+template <typename DerivedPolicy,
+          typename ForwardIt,
+          typename Size,
+          typename OutputIt,
+          typename InitialValueType,
+          typename BinaryOp>
+unique_eager_event async_inclusive_scan_n(
+  execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, InitialValueType init, BinaryOp op)
+{
+  using InputValueT             = cub::detail::InputValue<InitialValueType>;
+  using AccumT                  = typename thrust::iterator_traits<ForwardIt>::value_type;
+  constexpr bool ForceInclusive = true;
+
+  using Dispatch32 =
+    cub::DispatchScan<ForwardIt,
+                      OutputIt,
+                      BinaryOp,
+                      InputValueT,
+                      thrust::detail::int32_t,
+                      InitialValueType,
+                      cub::DeviceScanPolicy<AccumT, BinaryOp>,
+                      ForceInclusive>;
+  using Dispatch64 =
+    cub::DispatchScan<ForwardIt,
+                      OutputIt,
+                      BinaryOp,
+                      InputValueT,
+                      thrust::detail::int64_t,
+                      InitialValueType,
+                      cub::DeviceScanPolicy<AccumT, BinaryOp>,
+                      ForceInclusive>;
+
+  InputValueT init_value(init);
+
+  auto const device_alloc = get_async_device_allocator(policy);
+  unique_eager_event ev;
+
+  // Determine temporary device storage requirements.
+  cudaError_t status;
+  size_t tmp_size = 0;
+  {
+    THRUST_INDEX_TYPE_DISPATCH2(
+      status,
+      Dispatch32::Dispatch,
+      Dispatch64::Dispatch,
+      n,
+      (nullptr, tmp_size, first, out, op, init_value, n_fixed, nullptr));
+    thrust::cuda_cub::throw_on_error(
+      status,
+      "after determining tmp storage "
+      "requirements for inclusive_scan");
+  }
+
+  // Allocate temporary storage.
+  auto content        = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  void* const tmp_ptr = raw_pointer_cast(content.get());
+
+  // Set up stream with dependencies.
+  cudaStream_t const user_raw_stream = thrust::cuda_cub::stream(policy);
+
+  if (thrust::cuda_cub::default_stream() != user_raw_stream)
+  {
+    ev = make_dependent_event(
+      std::tuple_cat(std::make_tuple(std::move(content), unique_stream(nonowning, user_raw_stream)),
+                     extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
+  }
+  else
+  {
+    ev = make_dependent_event(std::tuple_cat(
+      std::make_tuple(std::move(content)), extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
+  }
+
+  // Run scan.
+  {
+    THRUST_INDEX_TYPE_DISPATCH2(
+      status,
+      Dispatch32::Dispatch,
+      Dispatch64::Dispatch,
+      n,
+      (tmp_ptr, tmp_size, first, out, op, init_value, n_fixed, user_raw_stream));
+    thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
+  }
+
+  return ev;
+}
+
 } // namespace detail
 } // namespace cuda
 } // namespace system
@@ -139,6 +225,23 @@ auto async_inclusive_scan(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel&& last, OutputIt&& out, BinaryOp&& op)
   THRUST_RETURNS(thrust::system::cuda::detail::async_inclusive_scan_n(
     policy, first, thrust::distance(first, THRUST_FWD(last)), THRUST_FWD(out), THRUST_FWD(op)))
+
+  // ADL entry point.
+  template <typename DerivedPolicy,
+            typename ForwardIt,
+            typename Sentinel,
+            typename OutputIt,
+            typename InitialValueType,
+            typename BinaryOp>
+  auto async_inclusive_scan(
+    execution_policy<DerivedPolicy>& policy,
+    ForwardIt first,
+    Sentinel&& last,
+    OutputIt&& out,
+    InitialValueType&& init,
+    BinaryOp&& op)
+    THRUST_RETURNS(thrust::system::cuda::detail::async_inclusive_scan_n(
+      policy, first, distance(first, THRUST_FWD(last)), THRUST_FWD(out), THRUST_FWD(init), THRUST_FWD(op)))
 
 } // namespace cuda_cub
 
