@@ -20,10 +20,29 @@ namespace mixin
 {
 
 //------------------------------------------------------------------------------
+namespace postfix_args_init
+{
+
+template <typename value_type, typename alternate_binary_op = thrust::maximum<>>
+struct all_overloads
+{
+  using postfix_args_type = std::tuple< // List any extra arg overloads:
+    std::tuple<value_type, alternate_binary_op> // - initial_value with binary_op
+    >;
+
+  static postfix_args_type generate_postfix_args()
+  {
+    return postfix_args_type{std::make_tuple(value_type{42}, alternate_binary_op{})};
+  }
+};
+
+} // namespace postfix_args_init
+
+//------------------------------------------------------------------------------
 namespace postfix_args
 {
 
-template <typename alternate_binary_op = thrust::maximum<>>
+template <typename value_type, typename alternate_binary_op = thrust::maximum<>>
 struct all_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:
