@@ -841,6 +841,9 @@ struct ScanTileState<T, false, Order>
     }
   }
 
+  /**
+   * Update the specified tile's inclusive value and corresponding status
+   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
@@ -848,6 +851,9 @@ struct ScanTileState<T, false, Order>
     detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
   }
 
+  /**
+   * Update the specified tile's partial value and corresponding status
+   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
@@ -1046,6 +1052,9 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     }
   }
 
+  /**
+   * Update the specified tile's inclusive value and corresponding status
+   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -1056,7 +1065,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
@@ -1069,7 +1078,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
@@ -1123,10 +1132,6 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
  * @tparam DelayConstructorT
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
- * @tparam EnforceStoreRelease
- *   Whether to enfore a `st.release` operation when writing the tile status (i.e., when calling the tile's `SetPartial`
- *   and `SetInclusive` member functions) to help introduce memory order. It is strongly advised to stay consistent with
- *   regards to enforcing `st.release` across *all* tiles of a decoupled look-back to ensure transitivity.
  */
 template <typename T,
           typename ScanOpT,
