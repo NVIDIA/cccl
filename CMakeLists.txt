@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 # sccache cannot handle the -Fd option generationg pdb files
-if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.25)
   cmake_policy(SET CMP0141 NEW)
 endif()
 
