@@ -148,9 +148,7 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
-    {
-      cudax::launch(stream, config, empty_kernel, 0);
-    }
+    cudax::launch(stream, config, empty_kernel, 0);
 
     SECTION("Large dynamic smem")
     {

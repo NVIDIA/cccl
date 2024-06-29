@@ -41,13 +41,13 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
   cudaLaunchConfig_t config               = {0};
   cudaError_t status                      = cudaSuccess;
   constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
-  constexpr unsigned int num_attrs_needed = conf.num_attrs_needed() + has_cluster_level;
+  constexpr unsigned int num_attrs_needed = detail::kernel_config_count_attr_space(conf) + has_cluster_level;
   cudaLaunchAttribute attrs[num_attrs_needed == 0 ? 1 : num_attrs_needed];
   config.attrs    = &attrs[0];
   config.numAttrs = 0;
   config.stream   = stream.get();
 
-  status = conf.apply(config, reinterpret_cast<void*>(kernel_fn));
+  status = detail::apply_kernel_config(conf, config, reinterpret_cast<void*>(kernel_fn));
   if (status != cudaSuccess)
   {
     return status;
@@ -72,6 +72,48 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
 }
 } // namespace detail
 
+/**
+ * @brief Launch a kernel functor with specified configuration and arguments
+ *
+ * Launches a kernel functor object on the specified stream and with specified configuration.
+ * Kernel functor object is a type with __device__ operator().
+ * Functor might or might not accept the configuration as its first argument.
+ *
+ *
+ * @par Snippet
+ * @code
+ * #include <cstdio>
+ * #include <cuda/experimental/launch.cuh>
+ *
+ * struct kernel {
+ *     template <typename Congifuration>
+ *     __device__ void operator()(Configuration conf, unsigned int thread_to_print) {
+ *         if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+ *             printf("Hello from the GPU\n");
+ *         }
+ *     }
+ * };
+ *
+ * void launch_kernel(cuda::stream_ref stream) {
+ *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
+ *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *
+ *     cudax::launch(stream, config, kernel(), 42);
+ * }
+ * @endcode
+ *
+ * @param stream
+ * cuda::stream_ref to launch the kernel into
+ *
+ * @param conf
+ * configuration for this launch
+ *
+ * @param kernel
+ * kernel functor to be launched
+ *
+ * @param args
+ * arguments to be passed into the kernel functor
+ */
 template <typename... Args, typename... Config, typename Dimensions, typename Kernel>
 void launch(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
@@ -94,6 +136,47 @@ void launch(
   }
 }
 
+/**
+ * @brief Launch a kernel functor with specified thread hierarchy and arguments
+ *
+ * Launches a kernel functor object on the specified stream and with specified thread hierarchy.
+ * Kernel functor object is a type with __device__ operator().
+ * Functor might or might not accept the hierarchy as its first argument.
+ *
+ *
+ * @par Snippet
+ * @code
+ * #include <cstdio>
+ * #include <cuda/experimental/launch.cuh>
+ *
+ * struct kernel {
+ *     template <typename Dimensions>
+ *     __device__ void operator()(Dimensions dims, unsigned int thread_to_print) {
+ *         if (dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+ *             printf("Hello from the GPU\n");
+ *         }
+ *     }
+ * };
+ *
+ * void launch_kernel(cuda::stream_ref stream) {
+ *     auto dims = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
+ *
+ *     cudax::launch(stream, dims, kernel(), 42);
+ * }
+ * @endcode
+ *
+ * @param stream
+ * cuda::stream_ref to launch the kernel into
+ *
+ * @param dims
+ * thread hierarchy dimensions for this launch
+ *
+ * @param kernel
+ * kernel functor to be launched
+ *
+ * @param args
+ * arguments to be passed into the kernel functor
+ */
 template <typename... Args, typename... Levels, typename Kernel>
 void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
 {
@@ -115,8 +198,46 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
   }
 }
 
-/* Functions accepting __global__ function pointer (needs to be instantiated or template arguments need to be passed
- * into launch template, but it will support implicit conversion of arguments) */
+/**
+ * @brief Launch a kernel function with specified configuration and arguments
+ *
+ * Launches a kernel function on the specified stream and with specified configuration.
+ * Kernel function is a function with __global__ annotation.
+ * Function might or might not accept the configuration as its first argument.
+ *
+ *
+ * @par Snippet
+ * @code
+ * #include <cstdio>
+ * #include <cuda/experimental/launch.cuh>
+ *
+ * template <typename Congifuration>
+ * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+ *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+ *         printf("Hello from the GPU\n");
+ *     }
+ * }
+ *
+ * void launch_kernel(cuda::stream_ref stream) {
+ *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
+ *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *
+ *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
+ * }
+ * @endcode
+ *
+ * @param stream
+ * cuda::stream_ref to launch the kernel into
+ *
+ * @param conf
+ * configuration for this launch
+ *
+ * @param kernel
+ * kernel function to be launched
+ *
+ * @param args
+ * arguments to be passed into the kernel function
+ */
 template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
 void launch(::cuda::stream_ref stream,
             const kernel_config<Dimensions, Config...>& conf,
@@ -132,6 +253,45 @@ void launch(::cuda::stream_ref stream,
   }
 }
 
+/**
+ * @brief Launch a kernel function with specified thread hierarchy and arguments
+ *
+ * Launches a kernel function on the specified stream and with specified thread hierarchy.
+ * Kernel function is a function with __global__ annotation.
+ * Function might or might not accept the hierarchy as its first argument.
+ *
+ *
+ * @par Snippet
+ * @code
+ * #include <cstdio>
+ * #include <cuda/experimental/launch.cuh>
+ *
+ * template <typename Dimensions>
+ * __global__ void kernel(Dimensions dims, unsigned int thread_to_print) {
+ *     if (dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+ *         printf("Hello from the GPU\n");
+ *     }
+ * }
+ *
+ * void launch_kernel(cuda::stream_ref stream) {
+ *     auto dims = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
+ *
+ *     cudax::launch(stream, dims, kernel<decltype(dims)>, 42);
+ * }
+ * @endcode
+ *
+ * @param stream
+ * cuda::stream_ref to launch the kernel into
+ *
+ * @param dims
+ * thread hierarchy dimensions for this launch
+ *
+ * @param kernel
+ * kernel function to be launched
+ *
+ * @param args
+ * arguments to be passed into the kernel function
+ */
 template <typename... ExpArgs, typename... ActArgs, typename... Levels>
 void launch(::cuda::stream_ref stream,
             const hierarchy_dimensions<Levels...>& dims,
@@ -147,6 +307,12 @@ void launch(::cuda::stream_ref stream,
   }
 }
 
+/**
+ * @copydoc launch(::cuda::stream_ref stream,
+            const kernel_config<Dimensions, Config...>& conf,
+            void (*kernel)(kernel_config<Dimensions, Config...>, ExpArgs...),
+            ActArgs&&... actArgs)
+*/
 template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
 void launch(::cuda::stream_ref stream,
             const kernel_config<Dimensions, Config...>& conf,
@@ -162,6 +328,12 @@ void launch(::cuda::stream_ref stream,
   }
 }
 
+/**
+ * @copydoc launch(::cuda::stream_ref stream,
+            const hierarchy_dimensions<Levels...>& dims,
+            void (*kernel)(hierarchy_dimensions<Levels...>, ExpArgs...),
+            ActArgs&&... actArgs)
+*/
 template <typename... ExpArgs, typename... ActArgs, typename... Levels>
 void launch(::cuda::stream_ref stream,
             const hierarchy_dimensions<Levels...>& dims,
