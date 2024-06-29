@@ -11,3 +11,7 @@ CMakeUserPresets.json
 /ci/rapids/.conda
 /ci/rapids/.log
 /ci/rapids/.repos
+*.egg-info/
+*.pyc
+__pycache__
+*.pyd
