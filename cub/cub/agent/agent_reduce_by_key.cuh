@@ -269,8 +269,8 @@ struct AgentReduceByKey
     TilePrefixCallbackOp<OffsetValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
 
   // Key and value exchange types
-  typedef KeyOutputT KeyExchangeT[TILE_ITEMS + 1];
-  typedef AccumT ValueExchangeT[TILE_ITEMS + 1];
+  using KeyExchangeT   = KeyOutputT[TILE_ITEMS + 1];
+  using ValueExchangeT = AccumT[TILE_ITEMS + 1];
 
   // Shared memory type for this thread block
   union _TempStorage

@@ -193,7 +193,7 @@ enum BlockReduceAlgorithm
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-//!        typedef cub::BlockReduce<int, 128> BlockReduce;
+//!        using BlockReduce = cub::BlockReduce<int, 128>;
 //!
 //!        // Allocate shared memory for BlockReduce
 //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -247,9 +247,9 @@ private:
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
   };
 
-  typedef BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> WarpReductions;
-  typedef BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> RakingCommutativeOnly;
-  typedef BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> Raking;
+  using WarpReductions        = BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using RakingCommutativeOnly = BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using Raking                = BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Internal specialization type
   using InternalBlockReduce =
@@ -260,7 +260,7 @@ private:
                                                           Raking>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
-  typedef typename InternalBlockReduce::TempStorage _TempStorage;
+  using _TempStorage = typename InternalBlockReduce::TempStorage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -325,7 +325,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -375,7 +375,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -429,7 +429,7 @@ public:
   //!    __global__ void ExampleKernel(int num_valid, ...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -493,7 +493,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -536,7 +536,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -584,7 +584,7 @@ public:
   //!    __global__ void ExampleKernel(int num_valid, ...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;

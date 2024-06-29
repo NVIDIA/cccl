@@ -158,8 +158,8 @@ template <class SORT_ITEMS, class Comparator>
 struct dispatch;
 
 // sort keys in ascending order
-template <class K>
-struct dispatch<thrust::detail::false_type, thrust::less<K>>
+template <class KeyOrVoid>
+struct dispatch<thrust::detail::false_type, thrust::less<KeyOrVoid>>
 {
   template <class Key, class Item, class Size>
   THRUST_RUNTIME_FUNCTION static cudaError_t
@@ -182,8 +182,8 @@ struct dispatch<thrust::detail::false_type, thrust::less<K>>
 }; // struct dispatch -- sort keys in ascending order;
 
 // sort keys in descending order
-template <class K>
-struct dispatch<thrust::detail::false_type, thrust::greater<K>>
+template <class KeyOrVoid>
+struct dispatch<thrust::detail::false_type, thrust::greater<KeyOrVoid>>
 {
   template <class Key, class Item, class Size>
   THRUST_RUNTIME_FUNCTION static cudaError_t
@@ -206,8 +206,8 @@ struct dispatch<thrust::detail::false_type, thrust::greater<K>>
 }; // struct dispatch -- sort keys in descending order;
 
 // sort pairs in ascending order
-template <class K>
-struct dispatch<thrust::detail::true_type, thrust::less<K>>
+template <class KeyOrVoid>
+struct dispatch<thrust::detail::true_type, thrust::less<KeyOrVoid>>
 {
   template <class Key, class Item, class Size>
   THRUST_RUNTIME_FUNCTION static cudaError_t
@@ -231,8 +231,8 @@ struct dispatch<thrust::detail::true_type, thrust::less<K>>
 }; // struct dispatch -- sort pairs in ascending order;
 
 // sort pairs in descending order
-template <class K>
-struct dispatch<thrust::detail::true_type, thrust::greater<K>>
+template <class KeyOrVoid>
+struct dispatch<thrust::detail::true_type, thrust::greater<KeyOrVoid>>
 {
   template <class Key, class Item, class Size>
   THRUST_RUNTIME_FUNCTION static cudaError_t
@@ -254,6 +254,14 @@ struct dispatch<thrust::detail::true_type, thrust::greater<K>>
       stream);
   }
 }; // struct dispatch -- sort pairs in descending order;
+
+template <class SORT_ITEMS, class KeyOrVoid>
+struct dispatch<SORT_ITEMS, ::cuda::std::less<KeyOrVoid>> : dispatch<SORT_ITEMS, thrust::less<KeyOrVoid>>
+{};
+
+template <class SORT_ITEMS, class KeyOrVoid>
+struct dispatch<SORT_ITEMS, ::cuda::std::greater<KeyOrVoid>> : dispatch<SORT_ITEMS, thrust::greater<KeyOrVoid>>
+{};
 
 template <typename SORT_ITEMS, typename Derived, typename Key, typename Item, typename Size, typename CompareOp>
 THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* keys, Item* items, Size count, CompareOp)
@@ -312,32 +320,43 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
 namespace __smart_sort
 {
 
+// TODO(bgruber): we can drop thrust::less etc. when they truly alias to the ::cuda::std ones
 template <class Key, class CompareOp>
-struct can_use_primitive_sort
-    : ::cuda::std::_And<::cuda::std::is_arithmetic<Key>,
-                        ::cuda::std::disjunction<::cuda::std::is_same<CompareOp, thrust::less<Key>>,
-                                                 ::cuda::std::is_same<CompareOp, thrust::greater<Key>>>>
-{};
+using can_use_primitive_sort = ::cuda::std::integral_constant<
+  bool,
+  ::cuda::std::is_arithmetic<Key>::value
+    && (::cuda::std::is_same<CompareOp, thrust::less<Key>>::value
+        || ::cuda::std::is_same<CompareOp, ::cuda::std::less<Key>>::value
+        || ::cuda::std::is_same<CompareOp, thrust::less<void>>::value
+        || ::cuda::std::is_same<CompareOp, ::cuda::std::less<void>>::value
+        || ::cuda::std::is_same<CompareOp, thrust::greater<Key>>::value
+        || ::cuda::std::is_same<CompareOp, ::cuda::std::greater<Key>>::value
+        || ::cuda::std::is_same<CompareOp, thrust::greater<void>>::value
+        || ::cuda::std::is_same<CompareOp, ::cuda::std::greater<void>>::value)>;
 
-template <class Iterator, class CompareOp>
-struct enable_if_primitive_sort
-    : ::cuda::std::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
-{};
-
-template <class Iterator, class CompareOp>
-struct enable_if_comparison_sort
-    : thrust::detail::disable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
-{};
-
-template <class SORT_ITEMS, class STABLE, class Policy, class KeysIt, class ItemsIt, class CompareOp>
-THRUST_RUNTIME_FUNCTION typename enable_if_comparison_sort<KeysIt, CompareOp>::type
+template <
+  class SORT_ITEMS,
+  class STABLE,
+  class Policy,
+  class KeysIt,
+  class ItemsIt,
+  class CompareOp,
+  ::cuda::std::__enable_if_t<!can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
+THRUST_RUNTIME_FUNCTION void
 smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
   __merge_sort::merge_sort<SORT_ITEMS, STABLE>(policy, keys_first, keys_last, items_first, compare_op);
 }
 
-template <class SORT_ITEMS, class STABLE, class Policy, class KeysIt, class ItemsIt, class CompareOp>
-THRUST_RUNTIME_FUNCTION typename enable_if_primitive_sort<KeysIt, CompareOp>::type smart_sort(
+template <
+  class SORT_ITEMS,
+  class /*STABLE*/,
+  class Policy,
+  class KeysIt,
+  class ItemsIt,
+  class CompareOp,
+  ::cuda::std::__enable_if_t<can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
+THRUST_RUNTIME_FUNCTION void smart_sort(
   execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
   // ensure sequences have trivial iterators

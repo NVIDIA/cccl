@@ -86,10 +86,10 @@ struct BlockScanWarpScans
   };
 
   ///  WarpScan utility type
-  typedef WarpScan<T, WARP_THREADS> WarpScanT;
+  using WarpScanT = WarpScan<T, WARP_THREADS>;
 
   ///  WarpScan utility type
-  typedef WarpScan<T, WARPS> WarpAggregateScan;
+  using WarpAggregateScan = WarpScan<T, WARPS>;
 
   /// Shared memory storage layout type
 
@@ -194,7 +194,7 @@ struct BlockScanWarpScans
     // Last lane in each warp shares its warp-aggregate
     if (lane_id == WARP_THREADS - 1)
     {
-      detail::uninitialized_copy(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     CTA_SYNC();
@@ -417,7 +417,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        detail::uninitialized_copy(&temp_storage.block_prefix, block_prefix);
+        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
 
         exclusive_output = block_prefix; // The block prefix is the exclusive output for tid0
       }
@@ -524,7 +524,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        detail::uninitialized_copy(&temp_storage.block_prefix, block_prefix);
+        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
       }
     }
 

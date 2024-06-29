@@ -51,7 +51,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
@@ -186,8 +186,8 @@ int Solve(Key* h_keys, Value* h_values, int num_items, int* h_offsets_reference,
  */
 int main(int argc, char** argv)
 {
-  typedef unsigned int Key;
-  typedef int Value;
+  using Key   = unsigned int;
+  using Value = int;
 
   int timing_iterations = 0;
   int num_items         = 40;

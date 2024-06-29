@@ -527,7 +527,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
     SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
   };
 
-  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
@@ -608,7 +608,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
     SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8
   };
 
-  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
@@ -688,7 +688,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
     SHFL_C = ((32 - LOGICAL_WARP_THREADS) << 8) | (LOGICAL_WARP_THREADS - 1)
   };
 
-  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 

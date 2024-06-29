@@ -933,10 +933,10 @@ public:
       }
 
       // Use the search transform op for converting samples to privatized bins
-      typedef SearchTransform<const LevelT*> PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = SearchTransform<const LevelT*>;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      typedef PassThruTransform OutputDecodeOpT;
+      using OutputDecodeOpT = PassThruTransform;
 
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
       OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1135,10 +1135,10 @@ public:
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      typedef PassThruTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = PassThruTransform;
 
       // Use the search transform op for converting privatized bins to output bins
-      typedef SearchTransform<const LevelT*> OutputDecodeOpT;
+      using OutputDecodeOpT = SearchTransform<const LevelT*>;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1301,10 +1301,10 @@ public:
       }
 
       // Use the scale transform op for converting samples to privatized bins
-      typedef ScaleTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = ScaleTransform;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      typedef PassThruTransform OutputDecodeOpT;
+      using OutputDecodeOpT = PassThruTransform;
 
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
       OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1520,10 +1520,10 @@ public:
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      typedef PassThruTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = PassThruTransform;
 
       // Use the scale transform op for converting privatized bins to output bins
-      typedef ScaleTransform OutputDecodeOpT;
+      using OutputDecodeOpT = ScaleTransform;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};

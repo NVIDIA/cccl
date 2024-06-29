@@ -923,7 +923,7 @@ struct ReduceByKeyScanTileState;
 template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePair<KeyT, ValueT>>
 {
-  typedef ScanTileState<KeyValuePair<KeyT, ValueT>> SuperClass;
+  using SuperClass = ScanTileState<KeyValuePair<KeyT, ValueT>>;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
@@ -1141,7 +1141,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  typedef WarpReduce<T, CUB_PTX_WARP_THREADS> WarpReduceT;
+  using WarpReduceT = WarpReduce<T, (1 << (5))>;
 
   // Temporary storage type
   struct _TempStorage
@@ -1157,7 +1157,7 @@ struct TilePrefixCallbackOp
   {};
 
   // Type of status word
-  typedef typename ScanTileStateT::StatusWord StatusWord;
+  using StatusWord = typename ScanTileStateT::StatusWord;
 
   // Fields
   _TempStorage& temp_storage; ///< Reference to a warp-reduction instance
@@ -1217,7 +1217,7 @@ struct TilePrefixCallbackOp
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
     {
-      detail::uninitialized_copy(&temp_storage.block_aggregate, block_aggregate);
+      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
 
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
@@ -1249,9 +1249,9 @@ struct TilePrefixCallbackOp
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
       tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
-      detail::uninitialized_copy(&temp_storage.exclusive_prefix, exclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 
-      detail::uninitialized_copy(&temp_storage.inclusive_prefix, inclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
 
     // Return exclusive_prefix

@@ -123,8 +123,8 @@ enum BlockHistogramAlgorithm
 //!
 //!    __global__ void ExampleKernel(...)
 //!    {
-//!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character
-//!    samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256> BlockHistogram;
+//!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
+//!        using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
 //!
 //!        // Allocate shared memory for BlockHistogram
 //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
@@ -204,7 +204,7 @@ private:
                                BlockHistogramAtomic<BINS>>;
 
   /// Shared memory storage layout type for BlockHistogram
-  typedef typename InternalBlockHistogram::TempStorage _TempStorage;
+  using _TempStorage = typename InternalBlockHistogram::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -265,7 +265,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!      // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
-  //!      typedef cub::BlockHistogram<unsigned char, 128, 4, 256> BlockHistogram;
+  //!      using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
   //!
   //!      // Allocate shared memory for BlockHistogram
   //!      __shared__ typename BlockHistogram::TempStorage temp_storage;
@@ -324,9 +324,8 @@ public:
   //!
   //!    __global__ void ExampleKernel(...)
   //!    {
-  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4
-  //!        // character samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256>
-  //!        // BlockHistogram;
+  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
+  //!        using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
   //!
   //!        // Allocate shared memory for BlockHistogram
   //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
@@ -383,9 +382,8 @@ public:
   //!
   //!    __global__ void ExampleKernel(...)
   //!    {
-  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4
-  //!        // character samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256>
-  //!        // BlockHistogram;
+  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
+  //!        using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
   //!
   //!        // Allocate shared memory for BlockHistogram
   //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
