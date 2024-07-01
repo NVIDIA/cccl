@@ -45,20 +45,19 @@ struct discard_iterator_base
 {
   // XXX value_type should actually be void
   //     but this interferes with zip_iterator<discard_iterator>
-  typedef any_assign value_type;
-  typedef any_assign& reference;
-  typedef std::ptrdiff_t incrementable;
+  using value_type    = any_assign;
+  using reference     = any_assign&;
+  using incrementable = std::ptrdiff_t;
 
-  typedef typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag> base_iterator;
+  using base_iterator = typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag>;
 
-  typedef
-    typename thrust::iterator_adaptor<discard_iterator<System>,
-                                      base_iterator,
-                                      value_type,
-                                      typename thrust::iterator_system<base_iterator>::type,
-                                      typename thrust::iterator_traversal<base_iterator>::type,
-                                      reference>
-      type;
+  using type = typename thrust::iterator_adaptor<
+    discard_iterator<System>,
+    base_iterator,
+    value_type,
+    typename thrust::iterator_system<base_iterator>::type,
+    typename thrust::iterator_traversal<base_iterator>::type,
+    reference>;
 }; // end discard_iterator_base
 
 } // namespace detail

@@ -126,7 +126,7 @@ struct sm60
 // list of sm, checked from left to right order
 // the rightmost is the lowest sm arch supported
 // --------------------------------------------
-typedef typelist<sm60, sm52, sm35, sm30> sm_list;
+using sm_list = typelist<sm60, sm52, sm35, sm30>;
 
 // lowest supported SM arch
 // --------------------------------------------------------------------------
@@ -141,10 +141,10 @@ struct lowest_supported_sm_arch_impl<SM, typelist<Head, Tail...>>
 template <class SM>
 struct lowest_supported_sm_arch_impl<SM, typelist<>>
 {
-  typedef SM type;
+  using type = SM;
 };
 
-typedef typename lowest_supported_sm_arch_impl<void, sm_list>::type lowest_supported_sm_arch;
+using lowest_supported_sm_arch = typename lowest_supported_sm_arch_impl<void, sm_list>::type;
 
 // metafunction to match next viable PtxPlan specialization
 // --------------------------------------------------------------------------
@@ -199,10 +199,9 @@ struct specialize_plan_msvc10_war
   // if Plan has tuning type, this means it has SM-specific tuning
   // so loop through sm_list to find match,
   // otherwise just specialize on provided SM
-  typedef ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
-                                   specialize_plan_impl_loop<Plan, SM, sm_list>,
-                                   Plan<SM>>
-    type;
+  using type = ::cuda::std::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
+                                        specialize_plan_impl_loop<Plan, SM, sm_list>,
+                                        Plan<SM>>;
 };
 
 template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
@@ -255,7 +254,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<>>
   {
     value = V
   };
-  typedef ::cuda::std::__conditional_t<value, thrust::detail::true_type, thrust::detail::false_type> type;
+  using type = ::cuda::std::__conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
 template <class Agent, size_t MAX_SHMEM>
@@ -312,7 +311,7 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(has_Plan, Plan)
 template <class Agent>
 struct return_Plan
 {
-  typedef typename Agent::Plan type;
+  using type = typename Agent::Plan;
 };
 
 template <class Agent>
@@ -329,7 +328,7 @@ struct get_agent_plan_impl;
 template <class Agent, class SM, class... Tail>
 struct get_agent_plan_impl<Agent, typelist<SM, Tail...>>
 {
-  typedef typename get_plan<Agent>::type Plan;
+  using Plan = typename get_plan<Agent>::type;
   Plan THRUST_RUNTIME_FUNCTION static get(int ptx_version)
   {
     if (ptx_version >= SM::ver)
@@ -346,10 +345,10 @@ struct get_agent_plan_impl<Agent, typelist<SM, Tail...>>
 template <class Agent>
 struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
 {
-  typedef typename get_plan<Agent>::type Plan;
+  using Plan = typename get_plan<Agent>::type;
   Plan THRUST_RUNTIME_FUNCTION static get(int /* ptx_version */)
   {
-    typedef typename get_plan<Agent>::type Plan;
+    using Plan = typename get_plan<Agent>::type;
     return Plan(specialize_plan<Agent::template PtxPlan, lowest_supported_sm_arch>());
   }
 };
@@ -511,13 +510,13 @@ THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t
 template <class PtxPlan, class It>
 struct LoadIterator
 {
-  typedef typename iterator_traits<It>::value_type value_type;
-  typedef typename iterator_traits<It>::difference_type size_type;
+  using value_type = typename iterator_traits<It>::value_type;
+  using size_type  = typename iterator_traits<It>::difference_type;
 
-  typedef ::cuda::std::__conditional_t<is_contiguous_iterator<It>::value,
-                                       cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
-                                       It>
-    type;
+  using type =
+    ::cuda::std::__conditional_t<is_contiguous_iterator<It>::value,
+                                 cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                                 It>;
 }; // struct Iterator
 
 template <class PtxPlan, class It>
@@ -546,7 +545,7 @@ struct get_arch;
 template <template <class> class Plan, class Arch>
 struct get_arch<Plan<Arch>>
 {
-  typedef Arch type;
+  using type = Arch;
 };
 
 // BlockLoad
@@ -699,7 +698,7 @@ inline void _CCCL_DEVICE sync_threadblock()
 template <class T>
 struct uninitialized
 {
-  typedef typename cub::UnitWord<T>::DeviceWord DeviceWord;
+  using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
   enum
   {
@@ -725,8 +724,8 @@ struct uninitialized
 template <class T, size_t N>
 struct uninitialized_array
 {
-  typedef T value_type;
-  typedef T ref[N];
+  using value_type = T;
+  using ref        = T[N];
   enum
   {
     SIZE = N

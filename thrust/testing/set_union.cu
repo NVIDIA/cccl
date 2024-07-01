@@ -51,7 +51,7 @@ DECLARE_UNITTEST(TestSetUnionDispatchImplicit);
 template <typename Vector>
 void TestSetUnionSimple()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector a(3), b(4);
 
@@ -82,7 +82,7 @@ DECLARE_VECTOR_UNITTEST(TestSetUnionSimple);
 template <typename Vector>
 void TestSetUnionWithEquivalentElementsSimple()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector a(3), b(5);
 

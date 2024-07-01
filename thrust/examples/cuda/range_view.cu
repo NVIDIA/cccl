@@ -19,11 +19,11 @@ template <class Iterator>
 class range_view
 {
 public:
-  typedef Iterator iterator;
-  typedef typename thrust::iterator_traits<iterator>::value_type value_type;
-  typedef typename thrust::iterator_traits<iterator>::pointer pointer;
-  typedef typename thrust::iterator_traits<iterator>::difference_type difference_type;
-  typedef typename thrust::iterator_traits<iterator>::reference reference;
+  using iterator        = Iterator;
+  using value_type      = typename thrust::iterator_traits<iterator>::value_type;
+  using pointer         = typename thrust::iterator_traits<iterator>::pointer;
+  using difference_type = typename thrust::iterator_traits<iterator>::difference_type;
+  using reference       = typename thrust::iterator_traits<iterator>::reference;
 
 private:
   const iterator first;

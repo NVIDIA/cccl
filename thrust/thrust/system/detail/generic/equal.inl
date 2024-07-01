@@ -42,7 +42,7 @@ template <typename DerivedPolicy, typename InputIterator1, typename InputIterato
 _CCCL_HOST_DEVICE bool
 equal(thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
-  typedef typename thrust::iterator_traits<InputIterator1>::value_type InputType1;
+  using InputType1 = typename thrust::iterator_traits<InputIterator1>::value_type;
 
   return thrust::equal(exec, first1, last1, first2, thrust::detail::equal_to<InputType1>());
 }

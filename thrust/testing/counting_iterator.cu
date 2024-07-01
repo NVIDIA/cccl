@@ -14,7 +14,7 @@ THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 // ensure that we properly support thrust::counting_iterator from cuda::std
 void test_iterator_traits()
 {
-  typedef cuda::std::iterator_traits<thrust::counting_iterator<int>> It;
+  using It       = cuda::std::iterator_traits<thrust::counting_iterator<int>>;
   using category = thrust::detail::iterator_category_with_system_and_traversal<std::random_access_iterator_tag,
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
@@ -232,8 +232,8 @@ DECLARE_UNITTEST(TestCountingIteratorLowerBound);
 
 void TestCountingIteratorDifference()
 {
-  typedef thrust::counting_iterator<thrust::detail::uint64_t> Iterator;
-  typedef thrust::iterator_difference<Iterator>::type Difference;
+  using Iterator   = thrust::counting_iterator<thrust::detail::uint64_t>;
+  using Difference = thrust::iterator_difference<Iterator>::type;
 
   Difference diff = std::numeric_limits<thrust::detail::uint32_t>::max() + 1;
 

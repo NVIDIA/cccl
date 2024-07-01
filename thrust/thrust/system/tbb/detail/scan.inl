@@ -240,7 +240,7 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
 
   if (n != 0)
   {
-    typedef typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType> Body;
+    using Body = typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType>;
     Body scan_body(first, result, binary_op, *first);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
@@ -264,7 +264,7 @@ OutputIterator exclusive_scan(
 
   if (n != 0)
   {
-    typedef typename scan_detail::exclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType> Body;
+    using Body = typename scan_detail::exclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType>;
     Body scan_body(first, result, binary_op, init);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }

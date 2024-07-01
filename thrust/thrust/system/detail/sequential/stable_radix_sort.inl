@@ -151,9 +151,9 @@ struct RadixEncoder<double> : public thrust::unary_function<double, thrust::deta
 template <unsigned int RadixBits, typename KeyType>
 struct bucket_functor
 {
-  typedef RadixEncoder<KeyType> Encoder;
-  typedef typename Encoder::result_type EncodedType;
-  typedef size_t result_type;
+  using Encoder                    = RadixEncoder<KeyType>;
+  using EncodedType                = typename Encoder::result_type;
+  using result_type                = size_t;
   static const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
   Encoder encode;
@@ -188,7 +188,7 @@ inline _CCCL_HOST_DEVICE void radix_shuffle_n(
   Integer bit_shift,
   size_t* histogram)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type KeyType;
+  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
 
   // note that we are going to mutate the histogram during this sequential scatter
   thrust::scatter(
@@ -216,7 +216,7 @@ _CCCL_HOST_DEVICE void radix_shuffle_n(
   Integer bit_shift,
   size_t* histogram)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type KeyType;
+  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
 
   // note that we are going to mutate the histogram during this sequential scatter
   thrust::scatter(
@@ -242,10 +242,10 @@ _CCCL_HOST_DEVICE void radix_sort(
   RandomAccessIterator4 vals2,
   const size_t N)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type KeyType;
+  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
 
-  typedef RadixEncoder<KeyType> Encoder;
-  typedef typename Encoder::result_type EncodedType;
+  using Encoder     = RadixEncoder<KeyType>;
+  using EncodedType = typename Encoder::result_type;
 
   const unsigned int NumHistograms = (8 * sizeof(EncodedType) + (RadixBits - 1)) / RadixBits;
   const unsigned int HistogramSize = 1 << RadixBits;
@@ -528,7 +528,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   RandomAccessIterator2 keys2,
   const size_t N)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type KeyType;
+  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
   radix_sort_dispatcher<sizeof(KeyType)>()(exec, keys1, keys2, N);
 }
 
@@ -545,7 +545,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   RandomAccessIterator4 vals2,
   const size_t N)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type KeyType;
+  using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
   radix_sort_dispatcher<sizeof(KeyType)>()(exec, keys1, keys2, vals1, vals2, N);
 }
 
@@ -555,7 +555,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void stable_radix_sort(
   sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type KeyType;
+  using KeyType = typename thrust::iterator_value<RandomAccessIterator>::type;
 
   size_t N = last - first;
 
@@ -571,8 +571,8 @@ _CCCL_HOST_DEVICE void stable_radix_sort_by_key(
   RandomAccessIterator1 last1,
   RandomAccessIterator2 first2)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type KeyType;
-  typedef typename thrust::iterator_value<RandomAccessIterator2>::type ValueType;
+  using KeyType   = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using ValueType = typename thrust::iterator_value<RandomAccessIterator2>::type;
 
   size_t N = last1 - first1;
 

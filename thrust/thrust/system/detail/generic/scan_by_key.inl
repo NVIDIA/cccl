@@ -51,7 +51,7 @@ struct segmented_scan_functor
 {
   AssociativeOperator binary_op;
 
-  typedef typename thrust::tuple<OutputType, HeadFlagType> result_type;
+  using result_type = typename thrust::tuple<OutputType, HeadFlagType>;
 
   _CCCL_HOST_DEVICE segmented_scan_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)
@@ -144,7 +144,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   InputIterator2 first2,
   OutputIterator result)
 {
-  typedef typename thrust::iterator_traits<InputIterator2>::value_type InitType;
+  using InitType = typename thrust::iterator_traits<InputIterator2>::value_type;
   return thrust::exclusive_scan_by_key(exec, first1, last1, first2, result, InitType{});
 }
 

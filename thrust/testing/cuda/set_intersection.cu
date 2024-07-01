@@ -23,8 +23,8 @@ __global__ void set_intersection_kernel(
 template <typename ExecutionPolicy>
 void TestSetIntersectionDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   Vector a(3), b(4);
 
@@ -72,8 +72,8 @@ DECLARE_UNITTEST(TestSetIntersectionDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   Vector a(3), b(4);
 

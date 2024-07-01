@@ -87,7 +87,7 @@ struct linear_congruential_engine_discard
   template <typename LinearCongruentialEngine>
   _CCCL_HOST_DEVICE static void discard(LinearCongruentialEngine& lcg, unsigned long long z)
   {
-    typedef typename LinearCongruentialEngine::result_type result_type;
+    using result_type   = typename LinearCongruentialEngine::result_type;
     const result_type c = LinearCongruentialEngine::increment;
     const result_type a = LinearCongruentialEngine::multiplier;
     const result_type m = LinearCongruentialEngine::modulus;

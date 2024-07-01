@@ -75,7 +75,7 @@ DECLARE_UNITTEST(TestSetIntersectionByKeyDispatchImplicit);
 template <typename Vector>
 void TestSetIntersectionByKeySimple()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   // clang-format off
   Vector a_key(3), b_key(4);

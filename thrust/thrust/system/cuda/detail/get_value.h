@@ -46,7 +46,7 @@ template <typename DerivedPolicy, typename Pointer>
 inline _CCCL_HOST_DEVICE typename thrust::iterator_value<Pointer>::type
 get_value_msvc2005_war(execution_policy<DerivedPolicy>& exec, Pointer ptr)
 {
-  typedef typename thrust::iterator_value<Pointer>::type result_type;
+  using result_type = typename thrust::iterator_value<Pointer>::type;
 
   // XXX war nvbugs/881631
   struct war_nvbugs_881631

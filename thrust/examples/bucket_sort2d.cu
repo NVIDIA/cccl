@@ -12,7 +12,7 @@
 #include "include/host_device.h"
 
 // define a 2d float vector
-typedef thrust::tuple<float, float> vec2;
+using vec2 = thrust::tuple<float, float>;
 
 // return a random vec2 in [0,1)^2
 vec2 make_random_vec2()

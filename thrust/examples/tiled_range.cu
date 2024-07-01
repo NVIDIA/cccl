@@ -21,7 +21,7 @@ template <typename Iterator>
 class tiled_range
 {
 public:
-  typedef typename thrust::iterator_difference<Iterator>::type difference_type;
+  using difference_type = typename thrust::iterator_difference<Iterator>::type;
 
   struct tile_functor : public thrust::unary_function<difference_type, difference_type>
   {
@@ -37,12 +37,12 @@ public:
     }
   };
 
-  typedef typename thrust::counting_iterator<difference_type> CountingIterator;
-  typedef typename thrust::transform_iterator<tile_functor, CountingIterator> TransformIterator;
-  typedef typename thrust::permutation_iterator<Iterator, TransformIterator> PermutationIterator;
+  using CountingIterator    = typename thrust::counting_iterator<difference_type>;
+  using TransformIterator   = typename thrust::transform_iterator<tile_functor, CountingIterator>;
+  using PermutationIterator = typename thrust::permutation_iterator<Iterator, TransformIterator>;
 
   // type of the tiled_range iterator
-  typedef PermutationIterator iterator;
+  using iterator = PermutationIterator;
 
   // construct repeated_range for the range [first,last)
   tiled_range(Iterator first, Iterator last, difference_type tiles)
@@ -80,7 +80,7 @@ int main()
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << std::endl;
 
-  typedef thrust::device_vector<int>::iterator Iterator;
+  using Iterator = thrust::device_vector<int>::iterator;
 
   // create tiled_range with two tiles
   tiled_range<Iterator> two(data.begin(), data.end(), 2);

@@ -60,13 +60,13 @@ template <typename T, typename Alloc = std::allocator<T>>
 class host_vector : public detail::vector_base<T, Alloc>
 {
 private:
-  typedef detail::vector_base<T, Alloc> Parent;
+  using Parent = detail::vector_base<T, Alloc>;
 
 public:
   /*! \cond
    */
-  typedef typename Parent::size_type size_type;
-  typedef typename Parent::value_type value_type;
+  using size_type  = typename Parent::size_type;
+  using value_type = typename Parent::value_type;
   /*! \endcond
    */
 

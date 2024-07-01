@@ -78,7 +78,7 @@ struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::__enable_if_t<is_wrapped_reference<::cuda::std::__remove_cv_t<T>>::value>>
 {
-  typedef ::cuda::std::__add_lvalue_reference_t<typename pointer_element<typename T::pointer>::type> type;
+  using type = ::cuda::std::__add_lvalue_reference_t<typename pointer_element<typename T::pointer>::type>;
 };
 
 } // namespace raw_reference_detail
@@ -112,13 +112,13 @@ struct raw_reference_tuple_helper
 template <typename... Ts>
 struct raw_reference_tuple_helper<thrust::tuple<Ts...>>
 {
-  typedef thrust::tuple<typename raw_reference_tuple_helper<Ts>::type...> type;
+  using type = thrust::tuple<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 template <typename... Ts>
 struct raw_reference_tuple_helper<thrust::detail::tuple_of_iterator_references<Ts...>>
 {
-  typedef thrust::detail::tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...> type;
+  using type = thrust::detail::tuple_of_iterator_references<typename raw_reference_tuple_helper<Ts>::type...>;
 };
 
 } // namespace raw_reference_detail
@@ -132,22 +132,22 @@ template <typename... Ts>
 struct raw_reference<thrust::tuple<Ts...>>
 {
 private:
-  typedef thrust::tuple<Ts...> tuple_type;
+  using tuple_type = thrust::tuple<Ts...>;
 
 public:
-  typedef typename eval_if<is_unwrappable<tuple_type>::value,
-                           raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
-                           ::cuda::std::add_lvalue_reference<tuple_type>>::type type;
+  using type = typename eval_if<is_unwrappable<tuple_type>::value,
+                                raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
+                                ::cuda::std::add_lvalue_reference<tuple_type>>::type;
 };
 
 template <typename... Ts>
 struct raw_reference<thrust::detail::tuple_of_iterator_references<Ts...>>
 {
 private:
-  typedef detail::tuple_of_iterator_references<Ts...> tuple_type;
+  using tuple_type = detail::tuple_of_iterator_references<Ts...>;
 
 public:
-  typedef typename raw_reference_detail::raw_reference_tuple_helper<tuple_type>::type type;
+  using type = typename raw_reference_detail::raw_reference_tuple_helper<tuple_type>::type;
 };
 
 } // namespace detail

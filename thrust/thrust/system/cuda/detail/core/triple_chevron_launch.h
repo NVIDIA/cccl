@@ -48,7 +48,7 @@ namespace launcher
 
 struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 {
-  typedef size_t Size;
+  using Size = size_t;
   dim3 const grid;
   dim3 const block;
   Size const shared_mem;

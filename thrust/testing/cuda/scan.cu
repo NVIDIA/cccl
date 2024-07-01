@@ -114,8 +114,8 @@ VariableUnitTest<TestScanDeviceDevice, IntegralTypes> TestScanDeviceDeviceInstan
 
 void TestScanCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector::iterator iter;
 

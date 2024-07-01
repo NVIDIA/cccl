@@ -12,31 +12,31 @@ struct rebind_vector;
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::host_vector<T, Allocator>, U>
 {
-  typedef typename thrust::detail::allocator_traits<Allocator> alloc_traits;
-  typedef typename alloc_traits::template rebind_alloc<U> new_alloc;
-  typedef thrust::host_vector<U, new_alloc> type;
+  using alloc_traits = typename thrust::detail::allocator_traits<Allocator>;
+  using new_alloc    = typename alloc_traits::template rebind_alloc<U>;
+  using type         = thrust::host_vector<U, new_alloc>;
 };
 
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::device_vector<T, Allocator>, U>
 {
-  typedef thrust::device_vector<U, typename Allocator::template rebind<U>::other> type;
+  using type = thrust::device_vector<U, typename Allocator::template rebind<U>::other>;
 };
 
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
 {
-  typedef thrust::universal_vector<U, typename Allocator::template rebind<U>::other> type;
+  using type = thrust::universal_vector<U, typename Allocator::template rebind<U>::other>;
 };
 
 #define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)                        \
   template <typename Vector>                                                                          \
   void TestFunctionalPlaceholders##name()                                                             \
   {                                                                                                   \
-    typedef typename Vector::value_type T;                                                            \
-    typedef typename rebind_vector<Vector, bool>::type bool_vector;                                   \
-    Vector lhs = unittest::random_samples<T>(num_samples);                                            \
-    Vector rhs = unittest::random_samples<T>(num_samples);                                            \
+    using T           = typename Vector::value_type;                                                  \
+    using bool_vector = typename rebind_vector<Vector, bool>::type;                                   \
+    Vector lhs        = unittest::random_samples<T>(num_samples);                                     \
+    Vector rhs        = unittest::random_samples<T>(num_samples);                                     \
                                                                                                       \
     bool_vector reference(lhs.size());                                                                \
     thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), reference.begin(), functor<T>());          \
@@ -55,9 +55,9 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(LogicalOr, ||, thrust::logical_or);
 template <typename Vector>
 void TestFunctionalPlaceholdersLogicalNot()
 {
-  typedef typename Vector::value_type T;
-  typedef typename rebind_vector<Vector, bool>::type bool_vector;
-  Vector input = unittest::random_samples<T>(num_samples);
+  using T           = typename Vector::value_type;
+  using bool_vector = typename rebind_vector<Vector, bool>::type;
+  Vector input      = unittest::random_samples<T>(num_samples);
 
   if (input.size() > 0)
   {

@@ -51,7 +51,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename Upstream>
 class device_ptr_memory_resource final : public thrust::mr::memory_resource<device_ptr<void>>
 {
-  typedef typename Upstream::pointer upstream_ptr;
+  using upstream_ptr = typename Upstream::pointer;
 
 public:
   /*! Initialize the adaptor with the global instance of the upstream resource. Obtains
@@ -93,7 +93,7 @@ template <typename T>
 class device_allocator
     : public thrust::mr::stateless_resource_allocator<T, device_ptr_memory_resource<device_memory_resource>>
 {
-  typedef thrust::mr::stateless_resource_allocator<T, device_ptr_memory_resource<device_memory_resource>> base;
+  using base = thrust::mr::stateless_resource_allocator<T, device_ptr_memory_resource<device_memory_resource>>;
 
 public:
   /*! The \p rebind metafunction provides the type of a \p device_allocator
@@ -104,9 +104,9 @@ public:
   template <typename U>
   struct rebind
   {
-    /*! The typedef \p other gives the type of the rebound \p device_allocator.
+    /*! The alias \p other gives the type of the rebound \p device_allocator.
      */
-    typedef device_allocator<U> other;
+    using other = device_allocator<U>;
   };
 
   /*! Default constructor has no effect. */

@@ -38,33 +38,33 @@ namespace detail
 #if defined(_CCCL_COMPILER_MSVC)
 
 #  if (_MSC_VER < 1300)
-typedef signed char int8_t;
-typedef signed short int16_t;
-typedef signed int int32_t;
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+using int8_t   = signed char;
+using int16_t  = signed short;
+using int32_t  = signed int;
+using uint8_t  = unsigned char;
+using uint16_t = unsigned short;
+using uint32_t = unsigned int;
 #  else
-typedef signed __int8 int8_t;
-typedef signed __int16 int16_t;
-typedef signed __int32 int32_t;
-typedef unsigned __int8 uint8_t;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int32 uint32_t;
+using int8_t   = signed __int8;
+using int16_t  = signed __int16;
+using int32_t  = signed __int32;
+using uint8_t  = unsigned __int8;
+using uint16_t = unsigned __int16;
+using uint32_t = unsigned __int32;
 #  endif
-typedef signed __int64 int64_t;
-typedef unsigned __int64 uint64_t;
+using int64_t  = signed __int64;
+using uint64_t = unsigned __int64;
 
 #else
 
-typedef ::int8_t int8_t;
-typedef ::int16_t int16_t;
-typedef ::int32_t int32_t;
-typedef ::int64_t int64_t;
-typedef ::uint8_t uint8_t;
-typedef ::uint16_t uint16_t;
-typedef ::uint32_t uint32_t;
-typedef ::uint64_t uint64_t;
+using int8_t   = ::int8_t;
+using int16_t  = ::int16_t;
+using int32_t  = ::int32_t;
+using int64_t  = ::int64_t;
+using uint8_t  = ::uint8_t;
+using uint16_t = ::uint16_t;
+using uint32_t = ::uint32_t;
+using uint64_t = ::uint64_t;
 
 #endif
 
@@ -78,28 +78,28 @@ struct divine_uintptr_t;
 template <>
 struct divine_intptr_t<4>
 {
-  typedef thrust::detail::int32_t type;
+  using type = thrust::detail::int32_t;
 };
 template <>
 struct divine_uintptr_t<4>
 {
-  typedef thrust::detail::uint32_t type;
+  using type = thrust::detail::uint32_t;
 };
 
 // 64b platforms
 template <>
 struct divine_intptr_t<8>
 {
-  typedef thrust::detail::int64_t type;
+  using type = thrust::detail::int64_t;
 };
 template <>
 struct divine_uintptr_t<8>
 {
-  typedef thrust::detail::uint64_t type;
+  using type = thrust::detail::uint64_t;
 };
 
-typedef divine_intptr_t<>::type intptr_t;
-typedef divine_uintptr_t<>::type uintptr_t;
+using intptr_t  = divine_intptr_t<>::type;
+using uintptr_t = divine_uintptr_t<>::type;
 
 } // namespace detail
 

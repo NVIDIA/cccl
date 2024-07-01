@@ -53,7 +53,7 @@ struct binary_traits;
  *  or member variables, but only type information. The only reason it exists
  *  is to make it more convenient to define types that are models of the
  *  concept Adaptable Unary Function. Specifically, any model of Adaptable
- *  Unary Function must define nested \c typedefs. Those \c typedefs are
+ *  Unary Function must define nested aliases. Those are
  *  provided by the base class \p unary_function.
  *
  *  The following code snippet demonstrates how to construct an
@@ -80,19 +80,19 @@ struct unary_function
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
    */
-  typedef Argument argument_type;
+  using argument_type = Argument;
 
   /*! \typedef result_type;
    *  \brief The type of the function object's result.
    */
-  typedef Result result_type;
+  using result_type = Result;
 }; // end unary_function
 
 /*! \p binary_function is an empty base class: it contains no member functions
  *  or member variables, but only type information. The only reason it exists
  *  is to make it more convenient to define types that are models of the
  *  concept Adaptable Binary Function. Specifically, any model of Adaptable
- *  Binary Function must define nested \c typedefs. Those \c typedefs are
+ *  Binary Function must define nested aliases. Those are
  *  provided by the base class \p binary_function.
  *
  *  The following code snippet demonstrates how to construct an
@@ -119,17 +119,17 @@ struct binary_function
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef Argument1 first_argument_type;
+  using first_argument_type = Argument1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef Argument2 second_argument_type;
+  using second_argument_type = Argument2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef Result result_type;
+  using result_type = Result;
 }; // end binary_function
 
 /*! \}
@@ -215,17 +215,17 @@ struct plus
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs + rhs</tt>.
    */
@@ -278,17 +278,17 @@ struct minus
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs - rhs</tt>.
    */
@@ -341,17 +341,17 @@ struct multiplies
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs * rhs</tt>.
    */
@@ -404,17 +404,17 @@ struct divides
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs / rhs</tt>.
    */
@@ -467,17 +467,17 @@ struct modulus
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs % rhs</tt>.
    */
@@ -527,12 +527,12 @@ struct negate
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
    */
-  typedef T argument_type;
+  using argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>-x</tt>.
    */
@@ -581,12 +581,12 @@ struct square
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
    */
-  typedef T argument_type;
+  using argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>x*x</tt>.
    */
@@ -625,17 +625,17 @@ struct equal_to
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs == rhs</tt>.
    */
@@ -666,17 +666,17 @@ struct not_equal_to
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs != rhs</tt>.
    */
@@ -707,17 +707,17 @@ struct greater
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs > rhs</tt>.
    */
@@ -748,17 +748,17 @@ struct less
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs < rhs</tt>.
    */
@@ -789,17 +789,17 @@ struct greater_equal
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs >= rhs</tt>.
    */
@@ -830,17 +830,17 @@ struct less_equal
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs <= rhs</tt>.
    */
@@ -878,17 +878,17 @@ struct logical_and
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs && rhs</tt>.
    */
@@ -918,17 +918,17 @@ struct logical_or
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs || rhs</tt>.
    */
@@ -972,17 +972,17 @@ struct logical_not
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>!x</tt>.
    */
@@ -1042,17 +1042,17 @@ struct bit_and
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs & rhs</tt>.
    */
@@ -1104,17 +1104,17 @@ struct bit_or
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs | rhs</tt>.
    */
@@ -1166,17 +1166,17 @@ struct bit_xor
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs ^ rhs</tt>.
    */
@@ -1223,12 +1223,12 @@ struct identity
   /*! \typedef argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T argument_type;
+  using argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>x</tt>.
    */
@@ -1272,17 +1272,17 @@ struct maximum
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
    */
@@ -1326,17 +1326,17 @@ struct minimum
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs < rhs ? lhs : rhs</tt>.
    */
@@ -1373,17 +1373,17 @@ struct project1st
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T1 first_argument_type;
+  using first_argument_type = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T2 second_argument_type;
+  using second_argument_type = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T1 result_type;
+  using result_type = T1;
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
@@ -1430,17 +1430,17 @@ struct project2nd
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T1 first_argument_type;
+  using first_argument_type = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T2 second_argument_type;
+  using second_argument_type = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T2 result_type;
+  using result_type = T2;
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */

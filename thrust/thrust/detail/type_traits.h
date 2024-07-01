@@ -76,13 +76,13 @@ struct eval_if
 template <typename Then, typename Else>
 struct eval_if<true, Then, Else>
 {
-  typedef typename Then::type type;
+  using type = typename Then::type;
 }; // end eval_if
 
 template <typename Then, typename Else>
 struct eval_if<false, Then, Else>
 {
-  typedef typename Else::type type;
+  using type = typename Else::type;
 }; // end eval_if
 
 template <typename T>
@@ -90,7 +90,7 @@ template <typename T>
 //  XXX WAR nvcc's confusion with thrust::identity
 struct identity_
 {
-  typedef T type;
+  using type = T;
 }; // end identity
 
 template <bool, typename T>
@@ -99,7 +99,7 @@ struct lazy_enable_if
 template <typename T>
 struct lazy_enable_if<true, T>
 {
-  typedef typename T::type type;
+  using type = typename T::type;
 };
 
 template <bool condition, typename T = void>
@@ -122,7 +122,7 @@ struct is_numeric : ::cuda::std::_And<::cuda::std::is_convertible<int, T>, ::cud
 
 struct largest_available_float
 {
-  typedef double type;
+  using type = double;
 };
 
 // T1 wins if they are both the same size

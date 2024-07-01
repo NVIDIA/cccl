@@ -47,7 +47,7 @@ namespace detail
 template <typename Predicate>
 struct unary_negate
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   Predicate pred;
 
@@ -66,7 +66,7 @@ struct unary_negate
 template <typename Predicate>
 struct binary_negate
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   Predicate pred;
 
@@ -114,7 +114,7 @@ struct predicate_to_integral
 template <typename T1>
 struct equal_to
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   template <typename T2>
   _CCCL_HOST_DEVICE bool operator()(const T1& lhs, const T2& rhs) const
@@ -143,7 +143,7 @@ struct equal_to_value
 template <typename Predicate>
 struct tuple_binary_predicate
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   _CCCL_HOST_DEVICE tuple_binary_predicate(const Predicate& p)
       : pred(p)
@@ -161,7 +161,7 @@ struct tuple_binary_predicate
 template <typename Predicate>
 struct tuple_not_binary_predicate
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   _CCCL_HOST_DEVICE tuple_not_binary_predicate(const Predicate& p)
       : pred(p)
@@ -179,7 +179,7 @@ struct tuple_not_binary_predicate
 template <typename Generator>
 struct host_generate_functor
 {
-  typedef void result_type;
+  using result_type = void;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE host_generate_functor(Generator g)
@@ -212,7 +212,7 @@ struct host_generate_functor
 template <typename Generator>
 struct device_generate_functor
 {
-  typedef void result_type;
+  using result_type = void;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE device_generate_functor(Generator g)
@@ -252,7 +252,7 @@ struct generate_functor
 template <typename ResultType, typename BinaryFunction>
 struct zipped_binary_op
 {
-  typedef ResultType result_type;
+  using result_type = ResultType;
 
   _CCCL_HOST_DEVICE zipped_binary_op(BinaryFunction binary_op)
       : m_binary_op(binary_op)
@@ -291,7 +291,7 @@ struct enable_if_non_const_reference_or_tuple_of_iterator_references
 template <typename UnaryFunction>
 struct unary_transform_functor
 {
-  typedef void result_type;
+  using result_type = void;
 
   UnaryFunction f;
 

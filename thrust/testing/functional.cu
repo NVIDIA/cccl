@@ -21,8 +21,8 @@ const size_t NUM_SAMPLES = 10000;
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestUnaryFunctional()
 {
-  typedef typename InputVector::value_type InputType;
-  typedef typename OutputVector::value_type OutputType;
+  using InputType  = typename InputVector::value_type;
+  using OutputType = typename OutputVector::value_type;
 
   thrust::host_vector<InputType> std_input = unittest::random_samples<InputType>(NUM_SAMPLES);
   thrust::host_vector<OutputType> std_output(NUM_SAMPLES);
@@ -39,8 +39,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestUnaryFunctional()
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestBinaryFunctional()
 {
-  typedef typename InputVector::value_type InputType;
-  typedef typename OutputVector::value_type OutputType;
+  using InputType  = typename InputVector::value_type;
+  using OutputType = typename OutputVector::value_type;
 
   thrust::host_vector<InputType> std_input1 = unittest::random_samples<InputType>(NUM_SAMPLES);
   thrust::host_vector<InputType> std_input2 = unittest::random_samples<InputType>(NUM_SAMPLES);
@@ -179,7 +179,7 @@ DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_not, LogicalNot);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input(4);
   input[0] = 0;
@@ -198,7 +198,7 @@ DECLARE_VECTOR_UNITTEST(TestIdentityFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject1stFunctional()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector lhs(4);
   Vector rhs(4);
@@ -222,7 +222,7 @@ DECLARE_VECTOR_UNITTEST(TestProject1stFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject2ndFunctional()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector lhs(4);
   Vector rhs(4);
@@ -246,7 +246,7 @@ DECLARE_VECTOR_UNITTEST(TestProject2ndFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMaximumFunctional()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input1(4);
   Vector input2(4);
@@ -273,7 +273,7 @@ DECLARE_VECTOR_UNITTEST(TestMaximumFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMinimumFunctional()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input1(4);
   Vector input2(4);
@@ -300,7 +300,7 @@ DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input(5);
   input[0] = 1;
@@ -333,7 +333,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input1(5);
   Vector input2(5);

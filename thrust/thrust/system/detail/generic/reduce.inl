@@ -44,7 +44,7 @@ template <typename ExecutionPolicy, typename InputIterator>
 _CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  typedef typename thrust::iterator_value<InputIterator>::type InputType;
+  using InputType = typename thrust::iterator_value<InputIterator>::type;
 
   // use InputType(0) as init by default
   return thrust::reduce(exec, first, last, InputType(0));

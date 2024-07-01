@@ -42,7 +42,7 @@ namespace detail
 template <typename Pointer>
 class normal_iterator : public iterator_adaptor<normal_iterator<Pointer>, Pointer>
 {
-  typedef iterator_adaptor<normal_iterator<Pointer>, Pointer> super_t;
+  using super_t = iterator_adaptor<normal_iterator<Pointer>, Pointer>;
 
 public:
   _CCCL_HOST_DEVICE normal_iterator() {}
