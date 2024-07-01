@@ -49,13 +49,13 @@ template <class Derived, class InputIt, class StencilIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, stencil, first, thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, stencil, first, thrust::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, first, thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, first, thrust::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class T>
@@ -77,14 +77,14 @@ OutputIt _CCCL_HOST_DEVICE remove_copy_if(
   OutputIt result,
   Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, stencil, result, thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, stencil, result, thrust::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class OutputIt, class Predicate>
 OutputIt _CCCL_HOST_DEVICE
 remove_copy_if(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, result, thrust::detail::not1(predicate));
+  return cuda_cub::copy_if(policy, first, last, result, thrust::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class OutputIt, class T>

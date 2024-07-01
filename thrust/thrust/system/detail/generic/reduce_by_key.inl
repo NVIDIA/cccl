@@ -107,13 +107,12 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   // compute head flags
   thrust::detail::temporary_array<FlagType, ExecutionPolicy> head_flags(exec, n);
   thrust::transform(
-    exec, keys_first, keys_last - 1, keys_first + 1, head_flags.begin() + 1, thrust::detail::not2(binary_pred));
+    exec, keys_first, keys_last - 1, keys_first + 1, head_flags.begin() + 1, thrust::not_fn(binary_pred));
   head_flags[0] = 1;
 
   // compute tail flags
   thrust::detail::temporary_array<FlagType, ExecutionPolicy> tail_flags(exec, n); // COPY INSTEAD OF TRANSFORM
-  thrust::transform(
-    exec, keys_first, keys_last - 1, keys_first + 1, tail_flags.begin(), thrust::detail::not2(binary_pred));
+  thrust::transform(exec, keys_first, keys_last - 1, keys_first + 1, tail_flags.begin(), thrust::not_fn(binary_pred));
   tail_flags[n - 1] = 1;
 
   // scan the values by flag

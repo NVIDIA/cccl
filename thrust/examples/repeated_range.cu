@@ -23,7 +23,7 @@ class repeated_range
 public:
   using difference_type = typename thrust::iterator_difference<Iterator>::type;
 
-  struct repeat_functor : public thrust::unary_function<difference_type, difference_type>
+  struct repeat_functor
   {
     difference_type repeats;
 

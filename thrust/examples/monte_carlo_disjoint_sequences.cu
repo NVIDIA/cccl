@@ -23,7 +23,7 @@
 // past n states of the RNG. This function is accelerated and executes
 // in O(lg n) time.
 
-struct estimate_pi : public thrust::unary_function<unsigned int, float>
+struct estimate_pi
 {
   __host__ __device__ float operator()(unsigned int thread_id)
   {

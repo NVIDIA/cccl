@@ -12,7 +12,7 @@
 
 // this functor clamps a value to the range [lo, hi]
 template <typename T>
-struct clamp : public thrust::unary_function<T, T>
+struct clamp
 {
   T lo, hi;
 
@@ -39,7 +39,7 @@ struct clamp : public thrust::unary_function<T, T>
 };
 
 template <typename T>
-struct simple_negate : public thrust::unary_function<T, T>
+struct simple_negate
 {
   __host__ __device__ T operator()(T x)
   {
