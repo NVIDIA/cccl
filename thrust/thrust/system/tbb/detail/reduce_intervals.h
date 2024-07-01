@@ -81,7 +81,7 @@ struct body
     RandomAccessIterator1 my_last  = first + offset_to_last;
 
     // carefully pass the init value for the interval with raw_reference_cast
-    typedef typename BinaryFunction::result_type sum_type;
+    using sum_type = decltype(binary_op(*my_first, *my_first));
     result[interval_idx] =
       thrust::reduce(thrust::seq, my_first + 1, my_last, sum_type(thrust::raw_reference_cast(*my_first)), binary_op);
   }
