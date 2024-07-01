@@ -29,25 +29,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-/**
- * @brief The default alignment by a cudaMalloc{...} call
- */
+//! @brief The default alignment by a cudaMalloc{...} call
 _LIBCUDACXX_INLINE_VAR constexpr size_t default_cuda_malloc_alignment = 256;
 
-/**
- * @brief The default alignment by a cudaMallocHost{...} call
- */
+//! @brief The default alignment by a cudaMallocHost{...} call
 _LIBCUDACXX_INLINE_VAR constexpr size_t default_cuda_malloc_host_alignment = alignof(_CUDA_VSTD::max_align_t);
 
-/**
- * @brief The \c device_accessible property signals that the allocated memory is device accessible
- */
+//! @brief The device_accessible property signals that the allocated memory is device accessible
 struct device_accessible
 {};
 
-/**
- * @brief The \c host_accessible property signals that the allocated memory is host accessible
- */
+//! @brief The device_accessible property signals that the allocated memory is host accessible
 struct host_accessible
 {};
 
