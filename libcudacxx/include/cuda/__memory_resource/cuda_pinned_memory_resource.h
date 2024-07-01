@@ -179,6 +179,9 @@ public:
 static_assert(resource_with<cuda_pinned_memory_resource, device_accessible>, "");
 static_assert(resource_with<cuda_pinned_memory_resource, host_accessible>, "");
 
+//! @brief globally available instance of a ``cuda_pinned_memory_resource`` with flags set to ``cudaHostAllocDefault``
+_LIBCUDACXX_CPO_ACCESSIBILITY cuda_pinned_memory_resource default_pinned_memory_resource{};
+
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014

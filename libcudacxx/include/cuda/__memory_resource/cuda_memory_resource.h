@@ -155,6 +155,9 @@ struct cuda_memory_resource
 };
 static_assert(resource_with<cuda_memory_resource, device_accessible>, "");
 
+//! @brief globally available instance of a ``cuda_memory_resource``
+_LIBCUDACXX_CPO_ACCESSIBILITY cuda_memory_resource default_memory_resource{};
+
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014

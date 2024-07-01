@@ -29,6 +29,21 @@ void ensure_device_ptr(void* ptr)
   assert(attributes.type == cudaMemoryTypeDevice);
 }
 
+void test_default_resource()
+{
+  { // allocate / deallocate with alignment through default memory resource
+    constexpr size_t desired_alignment = 64;
+    auto* ptr                          = cuda::mr::default_memory_resource.allocate(42, desired_alignment);
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    ensure_device_ptr(ptr);
+
+    // also check the alignment
+    const auto alignment = reinterpret_cast<cuda::std::uintptr_t>(ptr);
+    assert(alignment >= desired_alignment);
+    cuda::mr::default_memory_resource.deallocate(ptr, 42, desired_alignment);
+  }
+}
+
 void test()
 {
   cuda::mr::cuda_memory_resource res{};
@@ -91,5 +106,6 @@ void test()
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, test();)
+  NV_IF_TARGET(NV_IS_HOST, test_default_resource();)
   return 0;
 }

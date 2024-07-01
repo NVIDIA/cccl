@@ -29,6 +29,25 @@ void ensure_pinned_host_ptr(void* ptr)
   assert((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != nullptr));
 }
 
+void test_default_resource()
+{
+  { // allocate / deallocate
+    auto* ptr = cuda::mr::default_pinned_memory_resource.allocate(42);
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    ensure_pinned_host_ptr(ptr);
+
+    cuda::mr::default_pinned_memory_resource.deallocate(ptr, 42);
+  }
+
+  { // allocate / deallocate with alignment
+    auto* ptr = cuda::mr::default_pinned_memory_resource.allocate(42, 4);
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    ensure_pinned_host_ptr(ptr);
+
+    cuda::mr::default_pinned_memory_resource.deallocate(ptr, 42, 4);
+  }
+}
+
 void test(const unsigned int flag)
 {
   cuda::mr::cuda_pinned_memory_resource res{flag};
@@ -95,5 +114,6 @@ void test()
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, test();)
+  NV_IF_TARGET(NV_IS_HOST, test_default_resource();)
   return 0;
 }
