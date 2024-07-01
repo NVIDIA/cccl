@@ -2,8 +2,8 @@
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
-# sccache cannot handle the -Fd option generationg pdb files
-if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+# sccache cannot handle the -Fd option generating pdb files:
+if (POLICY CMP0141)
   cmake_policy(SET CMP0141 NEW)
 endif()
 
