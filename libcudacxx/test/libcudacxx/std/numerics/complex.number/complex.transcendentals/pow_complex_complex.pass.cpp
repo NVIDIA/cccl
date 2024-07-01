@@ -19,18 +19,19 @@
 #include "../cases.h"
 #include "test_macros.h"
 
-template <class T>
-__host__ __device__ void test(const cuda::std::complex<T>& a, const cuda::std::complex<T>& b, cuda::std::complex<T> x)
+template <class T, class U = T>
+__host__ __device__ void test(const cuda::std::complex<T>& a, const cuda::std::complex<U>& b, cuda::std::complex<T> x)
 {
+  static_assert(cuda::std::is_same<decltype(pow(a, b)), cuda::std::complex<T>>::value, "");
   cuda::std::complex<T> c = pow(a, b);
   is_about(real(c), real(x));
   is_about(imag(c), imag(x));
 }
 
-template <class T>
+template <class T, class U = T>
 __host__ __device__ void test()
 {
-  test(cuda::std::complex<T>(2, 3), cuda::std::complex<T>(2, 0), cuda::std::complex<T>(-5, 12));
+  test(cuda::std::complex<T>(2, 3), cuda::std::complex<U>(2, 0), cuda::std::complex<T>(-5, 12));
 }
 
 template <class T>
@@ -70,21 +71,23 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-// CUDA treats long double as double
-//  test<long double>();
+  // CUDA treats long double as double
+  //  test<long double>();
+
+  // Also test conversions
+  test<float, int>();
+  test<double, size_t>();
+
+  test_edges<double>();
+
 #ifdef _LIBCUDACXX_HAS_NVFP16
   test<__half>();
-#endif
+  test_edges<__half>();
+#endif // _LIBCUDACXX_HAS_NVFP16
 #ifdef _LIBCUDACXX_HAS_NVBF16
   test<__nv_bfloat16>();
-#endif
-  test_edges<double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
-  test_edges<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
   test_edges<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }
