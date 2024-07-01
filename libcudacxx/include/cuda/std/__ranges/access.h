@@ -129,7 +129,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto begin = __begin::__fn{};
+_CCCL_GLOBAL_VARIABLE auto begin = __begin::__fn{};
 } // namespace __cpo
 
 // [range.range]
@@ -221,7 +221,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto end = __end::__fn{};
+_CCCL_GLOBAL_VARIABLE auto end = __end::__fn{};
 } // namespace __cpo
 
 // [range.access.cbegin]
@@ -251,7 +251,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cbegin = __cbegin::__fn{};
+_CCCL_GLOBAL_VARIABLE auto cbegin = __cbegin::__fn{};
 } // namespace __cpo
 
 // [range.access.cend]
@@ -281,7 +281,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cend = __cend::__fn{};
+_CCCL_GLOBAL_VARIABLE auto cend = __cend::__fn{};
 } // namespace __cpo
 #endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
 

@@ -138,7 +138,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto rbegin = __rbegin::__fn{};
+_CCCL_GLOBAL_VARIABLE auto rbegin = __rbegin::__fn{};
 } // namespace __cpo
 
 // [range.access.crbegin]
@@ -168,7 +168,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto crbegin = __crbegin::__fn{};
+_CCCL_GLOBAL_VARIABLE auto crbegin = __crbegin::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2017 && && !_CCCL_COMPILER_MSVC_2017

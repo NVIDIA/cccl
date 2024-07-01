@@ -1039,7 +1039,7 @@ struct __ignore_t
 
 namespace
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY __ignore_t<unsigned char> ignore{};
+_CCCL_GLOBAL_VARIABLE __ignore_t<unsigned char> ignore{};
 } // namespace
 
 template <class... _Tp>

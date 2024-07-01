@@ -94,7 +94,7 @@ struct __fn
 {
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(__unqualified_iter_move<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(auto) operator()(_Ip&& __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(auto) operator()(_Ip && __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
   {
     return iter_move(_CUDA_VSTD::forward<_Ip>(__i));
@@ -120,7 +120,7 @@ struct __fn
 _LIBCUDACXX_END_NAMESPACE_CPO
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto iter_move = __iter_move::__fn{};
+_CCCL_GLOBAL_VARIABLE auto iter_move = __iter_move::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
