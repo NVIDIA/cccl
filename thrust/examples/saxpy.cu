@@ -18,7 +18,7 @@
 // implements the operation with a single transformation
 // and represents "best practice".
 
-struct saxpy_functor : public thrust::binary_function<float, float, float>
+struct saxpy_functor
 {
   const float a;
 

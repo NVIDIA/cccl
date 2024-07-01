@@ -57,7 +57,7 @@ __global__ void remove_copy_if_kernel(
 #endif
 
 template <typename T>
-struct is_even : thrust::unary_function<T, bool>
+struct is_even
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
   {
@@ -66,7 +66,7 @@ struct is_even : thrust::unary_function<T, bool>
 };
 
 template <typename T>
-struct is_true : thrust::unary_function<T, bool>
+struct is_true
 {
   _CCCL_HOST_DEVICE bool operator()(T x)
   {

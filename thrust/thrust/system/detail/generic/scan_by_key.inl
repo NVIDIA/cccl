@@ -118,7 +118,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
     // compute head flags
     thrust::detail::temporary_array<HeadFlagType, DerivedPolicy> flags(exec, n);
     flags[0] = 1;
-    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, thrust::detail::not2(binary_pred));
+    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, thrust::not_fn(binary_pred));
 
     // scan key-flag tuples,
     // For additional details refer to Section 2 of the following paper
@@ -207,7 +207,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
     // compute head flags
     thrust::detail::temporary_array<HeadFlagType, DerivedPolicy> flags(exec, n);
     flags[0] = 1;
-    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, thrust::detail::not2(binary_pred));
+    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, thrust::not_fn(binary_pred));
 
     // shift input one to the right and initialize segments with init
     thrust::detail::temporary_array<OutputType, DerivedPolicy> temp(exec, n);

@@ -133,7 +133,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator
 find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
-  return thrust::find_if(exec, first, last, thrust::detail::not1(pred));
+  return thrust::find_if(exec, first, last, thrust::not_fn(pred));
 } // end find()
 
 } // end namespace generic

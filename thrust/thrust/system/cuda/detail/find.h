@@ -157,7 +157,7 @@ template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 find_if_not(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
-  return cuda_cub::find_if(policy, first, last, thrust::detail::not1(predicate));
+  return cuda_cub::find_if(policy, first, last, thrust::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class T>

@@ -38,11 +38,13 @@ THRUST_NAMESPACE_BEGIN
 /*! \addtogroup function_objects Function Objects
  */
 
+//! \deprecated [Since 2.6]
 template <typename Operation>
-struct unary_traits;
+struct THRUST_DEPRECATED unary_traits;
 
+//! \deprecated [Since 2.6]
 template <typename Operation>
-struct binary_traits;
+struct THRUST_DEPRECATED binary_traits;
 
 /*! \addtogroup function_object_adaptors Function Object Adaptors
  *  \ingroup function_objects
@@ -70,12 +72,13 @@ struct binary_traits;
  *  \note Because C++11 language support makes the functionality of
  *        \c unary_function obsolete, its use is optional if C++11 language
  *        features are enabled.
+ *  \deprecated [Since 2.6]
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_function
  *  \see binary_function
  */
 template <typename Argument, typename Result>
-struct unary_function
+struct THRUST_DEPRECATED unary_function
 {
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
@@ -109,12 +112,13 @@ struct unary_function
  *  \note Because C++11 language support makes the functionality of
  *        \c binary_function obsolete, its use is optional if C++11 language
  *        features are enabled.
+ *  \deprecated [Since 2.6]
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_function
  *  \see unary_function
  */
 template <typename Argument1, typename Argument2, typename Result>
-struct binary_function
+struct THRUST_DEPRECATED binary_function
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
@@ -1479,13 +1483,16 @@ struct project2nd<void, void>
  *  that <tt>f(x)</tt> always returns the same value as <tt>!pred(x)</tt>.
  *  There is rarely any reason to construct a <tt>unary_negate</tt> directly;
  *  it is almost always easier to use the helper function not1.
- *
+ *  \deprecated [Since 2.6]
  *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_negate
  *  \see not1
  */
 template <typename Predicate>
-struct unary_negate : public thrust::unary_function<typename Predicate::argument_type, bool>
+struct THRUST_DEPRECATED unary_negate
 {
+  using argument_type = typename Predicate::argument_type;
+  using result_type   = bool;
+
   /*! Constructor takes a \p Predicate object to negate.
    *  \param p The \p Predicate object to negate.
    */
@@ -1508,6 +1515,7 @@ struct unary_negate : public thrust::unary_function<typename Predicate::argument
    */
 }; // end unary_negate
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 /*! \p not1 is a helper function to simplify the creation of Adaptable Predicates:
  *  it takes an Adaptable Predicate \p pred as an argument and returns a new Adaptable
  *  Predicate that represents the negation of \p pred. That is: if \c pred is an object
@@ -1518,15 +1526,16 @@ struct unary_negate : public thrust::unary_function<typename Predicate::argument
  *  \param pred The Adaptable Predicate to negate.
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x)</tt> always returns
  *          the same value as <tt>!pred(x)</tt>.
- *
  *  \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/unary_negate">Adaptable Predicate</a>.
- *
+ *  \deprecated [Since 2.6]
  *  \see unary_negate
  *  \see not2
  */
 template <typename Predicate>
-_CCCL_HOST_DEVICE unary_negate<Predicate> not1(const Predicate& pred);
+_CCCL_HOST_DEVICE
+  THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate> not1(const Predicate& pred);
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /*! \p binary_negate is a function object adaptor: it is an Adaptable Binary
  *  Predicate that represents the logical negation of some other Adaptable
@@ -1535,14 +1544,16 @@ _CCCL_HOST_DEVICE unary_negate<Predicate> not1(const Predicate& pred);
  *  such that <tt>f(x,y)</tt> always returns the same value as <tt>!pred(x,y)</tt>.
  *  There is rarely any reason to construct a <tt>binary_negate</tt> directly;
  *  it is almost always easier to use the helper function not2.
- *
+ *  \deprecated [Since 2.6]
  *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_negate
  */
 template <typename Predicate>
-struct binary_negate
-    : public thrust::
-        binary_function<typename Predicate::first_argument_type, typename Predicate::second_argument_type, bool>
+struct THRUST_DEPRECATED binary_negate
 {
+  using first_argument_type  = typename Predicate::first_argument_type;
+  using second_argument_type = typename Predicate::second_argument_type;
+  using result_type          = bool;
+
   /*! Constructor takes a \p Predicate object to negate.
    *  \param p The \p Predicate object to negate.
    */
@@ -1553,8 +1564,7 @@ struct binary_negate
   /*! Function call operator. The return value is <tt>!pred(x,y)</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool operator()(const typename Predicate::first_argument_type& x,
-                                    const typename Predicate::second_argument_type& y)
+  _CCCL_HOST_DEVICE bool operator()(const first_argument_type& x, const second_argument_type& y)
   {
     return !pred(x, y);
   }
@@ -1566,6 +1576,7 @@ struct binary_negate
    */
 }; // end binary_negate
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 /*! \p not2 is a helper function to simplify the creation of Adaptable Binary Predicates:
  *  it takes an Adaptable Binary Predicate \p pred as an argument and returns a new Adaptable
  *  Binary Predicate that represents the negation of \p pred. That is: if \c pred is an object
@@ -1576,15 +1587,48 @@ struct binary_negate
  *  \param pred The Adaptable Binary Predicate to negate.
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x,y)</tt> always returns
  *          the same value as <tt>!pred(x,y)</tt>.
- *
  *  \tparam Binary Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/AdaptableBinaryPredicate">Adaptable Binary Predicate</a>.
- *
+ *  \deprecated [Since 2.6]
  *  \see binary_negate
  *  \see not1
  */
 template <typename BinaryPredicate>
-_CCCL_HOST_DEVICE binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
+_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead")
+  binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+namespace detail
+{
+template <typename F>
+struct not_fun_t
+{
+  F f;
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...)))
+    -> decltype(!f(std::forward<Ts>(args)...))
+  {
+    return !f(std::forward<Ts>(args)...);
+  }
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const noexcept(noexcept(!f(std::forward<Ts>(args)...)))
+    -> decltype(!f(std::forward<Ts>(args)...))
+  {
+    return !f(std::forward<Ts>(args)...);
+  }
+};
+} // namespace detail
+
+//! Takes a predicate (a callable returning bool) and returns a new predicate that returns the negated result.
+//! \see https://en.cppreference.com/w/cpp/utility/functional/not_fn
+// TODO(bgruber): alias to ::cuda::std::not_fn in C++17
+template <class F>
+_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::__decay_t<F>>
+{
+  return detail::not_fun_t<::cuda::std::__decay_t<F>>{std::forward<F>(f)};
+}
 
 /*! \}
  */

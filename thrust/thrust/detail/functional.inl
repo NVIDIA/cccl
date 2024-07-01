@@ -79,6 +79,7 @@ struct binary_traits_imp<Result (*)(Argument1, Argument2)>
 
 } // namespace detail
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename Operation>
 struct unary_traits
 {
@@ -87,7 +88,9 @@ struct unary_traits
   using result_type   = typename detail::unary_traits_imp<Operation*>::result_type;
   using argument_type = typename detail::unary_traits_imp<Operation*>::argument_type;
 }; // end unary_traits
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename Result, typename Argument>
 struct unary_traits<Result (*)(Argument)>
 {
@@ -96,7 +99,9 @@ struct unary_traits<Result (*)(Argument)>
   using result_type   = Result;
   using argument_type = Argument;
 }; // end unary_traits
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename Operation>
 struct binary_traits
 {
@@ -106,7 +111,9 @@ struct binary_traits
   using first_argument_type  = typename detail::binary_traits_imp<Operation*>::first_argument_type;
   using second_argument_type = typename detail::binary_traits_imp<Operation*>::second_argument_type;
 }; // end binary_traits
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename Result, typename Argument1, typename Argument2>
 struct binary_traits<Result (*)(Argument1, Argument2)>
 {
@@ -116,17 +123,22 @@ struct binary_traits<Result (*)(Argument1, Argument2)>
   using first_argument_type  = Argument1;
   using second_argument_type = Argument2;
 }; // end binary_traits
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename Predicate>
 _CCCL_HOST_DEVICE unary_negate<Predicate> not1(const Predicate& pred)
 {
   return unary_negate<Predicate>(pred);
 } // end not1()
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename BinaryPredicate>
 _CCCL_HOST_DEVICE binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred)
 {
   return binary_negate<BinaryPredicate>(pred);
 } // end not2()
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 THRUST_NAMESPACE_END

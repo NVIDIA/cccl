@@ -35,6 +35,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scatter.h>
 
+#include <cuda/std/utility>
+
 #include <limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -48,11 +50,16 @@ namespace radix_sort_detail
 {
 
 template <typename T>
-struct RadixEncoder : public thrust::identity<T>
-{};
+struct RadixEncoder
+{
+  _CCCL_HOST_DEVICE T operator()(T x) const
+  {
+    return x;
+  }
+};
 
 template <>
-struct RadixEncoder<char> : public thrust::unary_function<char, unsigned char>
+struct RadixEncoder<char>
 {
   _CCCL_HOST_DEVICE unsigned char operator()(char x) const
   {
@@ -68,7 +75,7 @@ struct RadixEncoder<char> : public thrust::unary_function<char, unsigned char>
 };
 
 template <>
-struct RadixEncoder<signed char> : public thrust::unary_function<signed char, unsigned char>
+struct RadixEncoder<signed char>
 {
   _CCCL_HOST_DEVICE unsigned char operator()(signed char x) const
   {
@@ -77,7 +84,7 @@ struct RadixEncoder<signed char> : public thrust::unary_function<signed char, un
 };
 
 template <>
-struct RadixEncoder<short> : public thrust::unary_function<short, unsigned short>
+struct RadixEncoder<short>
 {
   _CCCL_HOST_DEVICE unsigned short operator()(short x) const
   {
@@ -86,7 +93,7 @@ struct RadixEncoder<short> : public thrust::unary_function<short, unsigned short
 };
 
 template <>
-struct RadixEncoder<int> : public thrust::unary_function<int, unsigned int>
+struct RadixEncoder<int>
 {
   _CCCL_HOST_DEVICE unsigned long operator()(long x) const
   {
@@ -95,7 +102,7 @@ struct RadixEncoder<int> : public thrust::unary_function<int, unsigned int>
 };
 
 template <>
-struct RadixEncoder<long> : public thrust::unary_function<long, unsigned long>
+struct RadixEncoder<long>
 {
   _CCCL_HOST_DEVICE unsigned long operator()(long x) const
   {
@@ -104,7 +111,7 @@ struct RadixEncoder<long> : public thrust::unary_function<long, unsigned long>
 };
 
 template <>
-struct RadixEncoder<long long> : public thrust::unary_function<long long, unsigned long long>
+struct RadixEncoder<long long>
 {
   _CCCL_HOST_DEVICE unsigned long long operator()(long long x) const
   {
@@ -114,7 +121,7 @@ struct RadixEncoder<long long> : public thrust::unary_function<long long, unsign
 
 // ideally we'd use uint32 here and uint64 below
 template <>
-struct RadixEncoder<float> : public thrust::unary_function<float, thrust::detail::uint32_t>
+struct RadixEncoder<float>
 {
   _CCCL_HOST_DEVICE thrust::detail::uint32_t operator()(float x) const
   {
@@ -131,7 +138,7 @@ struct RadixEncoder<float> : public thrust::unary_function<float, thrust::detail
 };
 
 template <>
-struct RadixEncoder<double> : public thrust::unary_function<double, thrust::detail::uint64_t>
+struct RadixEncoder<double>
 {
   _CCCL_HOST_DEVICE thrust::detail::uint64_t operator()(double x) const
   {
@@ -152,7 +159,7 @@ template <unsigned int RadixBits, typename KeyType>
 struct bucket_functor
 {
   using Encoder                    = RadixEncoder<KeyType>;
-  using EncodedType                = typename Encoder::result_type;
+  using EncodedType                = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
   using result_type                = size_t;
   static const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
@@ -245,7 +252,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   using KeyType = typename thrust::iterator_value<RandomAccessIterator1>::type;
 
   using Encoder     = RadixEncoder<KeyType>;
-  using EncodedType = typename Encoder::result_type;
+  using EncodedType = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
 
   const unsigned int NumHistograms = (8 * sizeof(EncodedType) + (RadixBits - 1)) / RadixBits;
   const unsigned int HistogramSize = 1 << RadixBits;
