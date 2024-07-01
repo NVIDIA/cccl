@@ -68,18 +68,19 @@ namespace detail
 /**
  * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
  */
-template <bool KeepRejects>
+template <bool KeepRejects, bool MayAlias>
 struct agent_select_if_wrapper_t
 {
   // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
-  // argument following a parameter pack expansion like `AgentSelectIf<Ts..., KeepRejects>`
+  // argument following a parameter pack expansion like `AgentSelectIf<Ts..., KeepRejects, MayAlias>`
   template <typename AgentSelectIfPolicyT,
             typename InputIteratorT,
             typename FlagsInputIteratorT,
             typename SelectedOutputIteratorT,
             typename SelectOpT,
             typename EqualityOpT,
-            typename OffsetT>
+            typename OffsetT,
+            typename ScanTileStateT>
   struct agent_t
       : public AgentSelectIf<AgentSelectIfPolicyT,
                              InputIteratorT,
@@ -88,7 +89,9 @@ struct agent_select_if_wrapper_t
                              SelectOpT,
                              EqualityOpT,
                              OffsetT,
-                             KeepRejects>
+                             ScanTileStateT,
+                             KeepRejects,
+                             MayAlias>
   {
     using AgentSelectIf<AgentSelectIfPolicyT,
                         InputIteratorT,
@@ -97,7 +100,9 @@ struct agent_select_if_wrapper_t
                         SelectOpT,
                         EqualityOpT,
                         OffsetT,
-                        KeepRejects>::AgentSelectIf;
+                        ScanTileStateT,
+                        KeepRejects,
+                        MayAlias>::AgentSelectIf;
   };
 };
 } // namespace detail
@@ -182,17 +187,19 @@ template <typename ChainedPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          bool KEEP_REJECTS>
+          bool KEEP_REJECTS,
+          bool MayAlias>
 __launch_bounds__(int(
   cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
     SelectOpT,
     EqualityOpT,
-    OffsetT>::agent_policy_t::BLOCK_THREADS))
+    OffsetT,
+    ScanTileStateT>::agent_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
     InputIteratorT d_in,
     FlagsInputIteratorT d_flags,
@@ -207,13 +214,14 @@ __launch_bounds__(int(
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
     SelectOpT,
     EqualityOpT,
-    OffsetT>;
+    OffsetT,
+    ScanTileStateT>;
 
   using AgentSelectIfPolicyT = typename VsmemHelperT::agent_policy_t;
 
@@ -287,9 +295,23 @@ struct DispatchSelectIf : SelectedPolicy
   /******************************************************************************
    * Types and constants
    ******************************************************************************/
+  template <typename ActivePolicyT>
+  struct SelectIfTileState
+  {
+    // Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data
+    static constexpr bool loads_via_smem =
+      !(ActivePolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT || ActivePolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED
+        || ActivePolicyT::LOAD_ALGORITHM == BLOCK_LOAD_VECTORIZE);
 
-  // Tile status descriptor interface type
-  using ScanTileStateT = ScanTileState<OffsetT>;
+    // If this may be an *in-place* stream compaction, we need to ensure that all of a tile's items have been loaded
+    // before signalling a subsequent thread block's partial or inclusive state, hence we need a store release on a tile
+    // state. Similarly, we need to make sure that the load of previous tile states precede writing of the
+    // stream-compacted items and, hence, we need a load acquire when reading those tile states.
+    static constexpr auto memory_order =
+      ((!KEEP_REJECTS) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
+
+    using ScanTileStateT = TileStateWithMemoryOrderT<OffsetT, memory_order>;
+  };
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -399,15 +421,18 @@ struct DispatchSelectIf : SelectedPolicy
   {
     using Policy = typename ActivePolicyT::SelectIfPolicyT;
 
+    using ScanTileStateT = typename SelectIfTileState<Policy>::ScanTileStateT;
+
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+      detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
       InputIteratorT,
       FlagsInputIteratorT,
       SelectedOutputIteratorT,
       SelectOpT,
       EqualityOpT,
-      OffsetT>;
+      OffsetT,
+      ScanTileStateT>;
 
     cudaError error = cudaSuccess;
 
@@ -568,18 +593,22 @@ struct DispatchSelectIf : SelectedPolicy
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
 
+    using ScanTileStateT = typename SelectIfTileState<typename ActivePolicyT::SelectIfPolicyT>::ScanTileStateT;
+
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceSelectSweepKernel<MaxPolicyT,
-                              InputIteratorT,
-                              FlagsInputIteratorT,
-                              SelectedOutputIteratorT,
-                              NumSelectedIteratorT,
-                              ScanTileStateT,
-                              SelectOpT,
-                              EqualityOpT,
-                              OffsetT,
-                              KEEP_REJECTS>);
+      DeviceSelectSweepKernel<
+        MaxPolicyT,
+        InputIteratorT,
+        FlagsInputIteratorT,
+        SelectedOutputIteratorT,
+        NumSelectedIteratorT,
+        ScanTileStateT,
+        SelectOpT,
+        EqualityOpT,
+        OffsetT,
+        KEEP_REJECTS,
+        MayAlias>);
   }
 
   /**

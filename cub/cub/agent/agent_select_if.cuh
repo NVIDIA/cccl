@@ -166,6 +166,9 @@ struct partition_distinct_output_t
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam ScanTileStateT
+ *   The tile state class used in the decoupled look-back
+ *
  * @tparam KEEP_REJECTS
  *   Whether or not we push rejected items to the back of the output
  */
@@ -176,7 +179,9 @@ template <typename AgentSelectIfPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          bool KEEP_REJECTS>
+          typename ScanTileStateT,
+          bool KEEP_REJECTS,
+          bool MayAlias>
 struct AgentSelectIf
 {
   //---------------------------------------------------------------------
@@ -188,9 +193,6 @@ struct AgentSelectIf
 
   // The flag value type
   using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
-
-  // Tile status descriptor interface type
-  using ScanTileStateT = ScanTileState<OffsetT>;
 
   // Constants
   enum
@@ -764,6 +766,9 @@ struct AgentSelectIf
     InitializeSelections<true, IS_LAST_TILE>(
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
+    // Ensure temporary storage used during block load can be reused
+    // Also, in case of in-place stream compaction, this is needed to order the loads of
+    // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
     CTA_SYNC();
 
     // Exclusive scan of selection_flags
@@ -839,6 +844,9 @@ struct AgentSelectIf
     InitializeSelections<false, IS_LAST_TILE>(
       tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
+    // Ensure temporary storage used during block load can be reused
+    // Also, in case of in-place stream compaction, this is needed to order the loads of
+    // *all threads of this thread block* before the st.release of the thread writing this thread block's tile state
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
@@ -858,7 +866,11 @@ struct AgentSelectIf
       num_tile_selections -= num_discount;
     }
 
-    // Scatter flagged items
+    // note (only applies to in-place stream compaction): We can avoid having to introduce explicit memory order between
+    // the look-back (i.e., loading previous tiles' states) and scattering items (which means, potentially overwriting
+    // previous tiles' input items, in case of in-place compaction), because this is implicitly ensured through
+    // execution dependency: The scatter stage requires the offset from the prefix-sum and it can only know the
+    // prefix-sum after having read that from the decoupled look-back. Scatter flagged items
     Scatter<IS_LAST_TILE, false>(
       items,
       selection_flags,

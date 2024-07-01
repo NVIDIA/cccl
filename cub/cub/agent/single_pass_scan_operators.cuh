@@ -51,6 +51,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 #include <nv/target>
@@ -122,9 +124,19 @@ enum ScanTileStatus
   SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
 };
 
+/**
+ * Enum class used for specifying the memory order that shall be enforced while reading and writing the tile status.
+ */
+enum class MemoryOrder
+{
+  // Uses relaxed loads when reading a tile's status and relaxed stores when updating a tile's status
+  relaxed,
+  // Uses load acquire when reading a tile's status and store release when updating a tile's status
+  acquire_release
+};
+
 namespace detail
 {
-
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
@@ -491,7 +503,7 @@ using default_reduce_by_key_delay_constructor_t =
 /**
  * Tile status interface.
  */
-template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
+template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE, MemoryOrder Order = MemoryOrder::relaxed>
 struct ScanTileState;
 
 /**
@@ -499,8 +511,8 @@ struct ScanTileState;
  * that can be combined into one machine word that can be
  * read/written coherently in a single access.
  */
-template <typename T>
-struct ScanTileState<T, true>
+template <typename T, MemoryOrder Order>
+struct ScanTileState<T, true, Order>
 {
   // Status word type
   using StatusWord = cub::detail::conditional_t<
@@ -597,9 +609,50 @@ struct ScanTileState<T, true>
     }
   }
 
-  /**
-   * Update the specified tile's inclusive value and corresponding status
-   */
+private:
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), void>::type
+  StoreStatus(TxnWord* ptr, TxnWord alias)
+  {
+    detail::store_relaxed(ptr, alias);
+  }
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), void>::type
+  StoreStatus(TxnWord* ptr, TxnWord alias)
+  {
+    detail::store_release(ptr, alias);
+  }
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), TxnWord>::type
+  LoadStatus(TxnWord* ptr)
+  {
+    return detail::load_relaxed(ptr);
+  }
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE
+  typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), TxnWord>::type
+  LoadStatus(TxnWord* ptr)
+  {
+    // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
+  }
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), void>::type
+  ThreadfenceForLoadAcqPreVolta()
+  {}
+
+  template <MemoryOrder Order_ = Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), void>::type
+  ThreadfenceForLoadAcqPreVolta()
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+  }
+
+public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -609,12 +662,9 @@ struct ScanTileState<T, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status
-   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -624,7 +674,7 @@ struct ScanTileState<T, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
@@ -637,16 +687,19 @@ struct ScanTileState<T, true>
     TileDescriptor tile_descriptor;
 
     {
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
 
     while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff))
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
+
+    // For pre-Volta and load acquire we emit relaxed loads in LoadStatus and hoist the threadfence here
+    ThreadfenceForLoadAcqPreVolta();
 
     status = tile_descriptor.status;
     value  = tile_descriptor.value;
@@ -668,8 +721,8 @@ struct ScanTileState<T, true>
  * Tile status interface specialized for scan status and value types that
  * cannot be combined into one machine word.
  */
-template <typename T>
-struct ScanTileState<T, false>
+template <typename T, MemoryOrder Order>
+struct ScanTileState<T, false, Order>
 {
   // Status word type
   using StatusWord = unsigned int;
@@ -841,6 +894,15 @@ struct ScanTileState<T, false>
   }
 };
 
+/**
+ * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
+ *
+ * @tparam T The ScanTileState's value type
+ * @tparam Order The memory order to be implemented by the ScanTileState
+ */
+template <typename T, MemoryOrder Order>
+using TileStateWithMemoryOrderT = ScanTileState<T, Traits<T>::PRIMITIVE, Order>;
+
 /******************************************************************************
  * ReduceByKey tile status interface types for block-cooperative scans
  ******************************************************************************/
@@ -1006,9 +1068,6 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status
-   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
   {
     TileDescriptor tile_descriptor;

@@ -45,17 +45,22 @@ namespace cuda_cub
 
 // in-place
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class StencilIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, stencil, first, thrust::detail::not1(predicate));
+  THRUST_CDP_DISPATCH((return cuda_cub::detail::copy_if<cuda_cub::detail::InputMayAliasOutput::yes>(policy, first, last, stencil, first, thrust::detail::not1(predicate));),
+                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, first, thrust::detail::not1(predicate));));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
-  return cuda_cub::copy_if(policy, first, last, first, thrust::detail::not1(predicate));
+  THRUST_CDP_DISPATCH(
+    (return cuda_cub::detail::copy_if<cuda_cub::detail::InputMayAliasOutput::yes>(policy, first, last, static_cast<cub::NullType*>(nullptr), first, thrust::detail::not1(predicate));),
+    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, first, thrust::detail::not1(predicate));));
 }
 
 template <class Derived, class InputIt, class T>
