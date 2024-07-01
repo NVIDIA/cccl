@@ -549,23 +549,53 @@ struct vec_gen_helper_t
     vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
   }
 
-VEC_SPECIALIZATION(int, 2);
-VEC_SPECIALIZATION(long, 2);
-VEC_SPECIALIZATION(longlong, 2);
-VEC_SPECIALIZATION(longlong, 4);
-
 VEC_SPECIALIZATION(char, 2);
+VEC_SPECIALIZATION(char, 3);
 VEC_SPECIALIZATION(char, 4);
 
-VEC_SPECIALIZATION(short, 2);
-
-VEC_SPECIALIZATION(double, 2);
-
+// VEC_SPECIALIZATION(uchar, 2);
 VEC_SPECIALIZATION(uchar, 3);
+// VEC_SPECIALIZATION(uchar, 4);
+
+VEC_SPECIALIZATION(short, 2);
+VEC_SPECIALIZATION(short, 3);
+VEC_SPECIALIZATION(short, 4);
+
+// VEC_SPECIALIZATION(ushort, 2);
+// VEC_SPECIALIZATION(ushort, 3);
+// VEC_SPECIALIZATION(ushort, 4);
+
+VEC_SPECIALIZATION(int, 2);
+VEC_SPECIALIZATION(int, 3);
+VEC_SPECIALIZATION(int, 4);
+
+// VEC_SPECIALIZATION(uint, 2);
+// VEC_SPECIALIZATION(uint, 3);
+// VEC_SPECIALIZATION(uint, 4);
+
+VEC_SPECIALIZATION(long, 2);
+VEC_SPECIALIZATION(long, 3);
+VEC_SPECIALIZATION(long, 4);
+
+// VEC_SPECIALIZATION(ulong, 2);
+// VEC_SPECIALIZATION(ulong, 3);
+// VEC_SPECIALIZATION(ulong, 4);
+
+VEC_SPECIALIZATION(longlong, 2);
+VEC_SPECIALIZATION(longlong, 3);
+VEC_SPECIALIZATION(longlong, 4);
 
 VEC_SPECIALIZATION(ulonglong, 2);
-
+// VEC_SPECIALIZATION(ulonglong, 3);
 VEC_SPECIALIZATION(ulonglong, 4);
+
+VEC_SPECIALIZATION(float, 2);
+VEC_SPECIALIZATION(float, 3);
+VEC_SPECIALIZATION(float, 4);
+
+VEC_SPECIALIZATION(double, 2);
+VEC_SPECIALIZATION(double, 3);
+VEC_SPECIALIZATION(double, 4);
 
 template <typename VecType, typename Type>
 struct vec_gen_t
