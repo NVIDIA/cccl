@@ -42,57 +42,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
-// unary_negate does not need to know argument_type
-template <typename Predicate>
-struct unary_negate
-{
-  using result_type = bool;
-
-  Predicate pred;
-
-  _CCCL_HOST_DEVICE explicit unary_negate(const Predicate& pred)
-      : pred(pred)
-  {}
-
-  template <typename T>
-  _CCCL_HOST_DEVICE bool operator()(const T& x)
-  {
-    return !bool(pred(x));
-  }
-};
-
-// binary_negate does not need to know first_argument_type or second_argument_type
-template <typename Predicate>
-struct binary_negate
-{
-  using result_type = bool;
-
-  Predicate pred;
-
-  _CCCL_HOST_DEVICE explicit binary_negate(const Predicate& pred)
-      : pred(pred)
-  {}
-
-  template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE bool operator()(const T1& x, const T2& y)
-  {
-    return !bool(pred(x, y));
-  }
-};
-
-template <typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::unary_negate<Predicate> not1(const Predicate& pred)
-{
-  return thrust::detail::unary_negate<Predicate>(pred);
-}
-
-template <typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::binary_negate<Predicate> not2(const Predicate& pred)
-{
-  return thrust::detail::binary_negate<Predicate>(pred);
-}
-
 // convert a predicate to a 0 or 1 integral value
 template <typename Predicate, typename IntegralType>
 struct predicate_to_integral
@@ -107,19 +56,6 @@ struct predicate_to_integral
   _CCCL_HOST_DEVICE IntegralType operator()(const T& x)
   {
     return pred(x) ? IntegralType(1) : IntegralType(0);
-  }
-};
-
-// note that detail::equal_to does not force conversion from T2 -> T1 as equal_to does
-template <typename T1>
-struct equal_to
-{
-  using result_type = bool;
-
-  template <typename T2>
-  _CCCL_HOST_DEVICE bool operator()(const T1& lhs, const T2& rhs) const
-  {
-    return lhs == rhs;
   }
 };
 

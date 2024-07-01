@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__functional/binary_function.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -46,12 +47,14 @@ public:
   }
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY binary_negate<_Predicate>
 not2(const _Predicate& __pred)
 {
   return binary_negate<_Predicate>(__pred);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 

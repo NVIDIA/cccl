@@ -54,7 +54,7 @@ struct bbox
 };
 
 // reduce a pair of bounding boxes (a,b) to a bounding box containing a and b
-struct bbox_reduction : public thrust::binary_function<bbox, bbox, bbox>
+struct bbox_reduction
 {
   __host__ __device__ bbox operator()(bbox a, bbox b)
   {

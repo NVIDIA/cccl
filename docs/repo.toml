@@ -252,6 +252,8 @@ doxygen_predefined = [
   "THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
   "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
   "THRUST_FWD(x)=x",
+  "THRUST_DEPRECATED_BECAUSE(x)=",
+  "THRUST_DEPRECATED="
 ]
 
 # make sure to use ./fetch_imgs.sh

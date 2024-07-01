@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__functional/unary_function.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -47,12 +48,14 @@ public:
   }
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY unary_negate<_Predicate>
 not1(const _Predicate& __pred)
 {
   return unary_negate<_Predicate>(__pred);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 

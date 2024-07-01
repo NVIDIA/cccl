@@ -312,7 +312,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
     stencil.begin(),
     output.begin(),
     thrust::minus<T>(),
-    thrust::not1(identity));
+    thrust::not_fn(identity));
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
   ASSERT_EQUAL(output, result);
