@@ -87,5 +87,8 @@
 #if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
 #  define _CCCL_CUDACC_BELOW_12_3
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1205000
+#  define _CCCL_CUDACC_BELOW_12_5
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1205000
 
 #endif // __CCCL_COMPILER_H
