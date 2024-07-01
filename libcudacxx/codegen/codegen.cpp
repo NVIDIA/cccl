@@ -29,7 +29,8 @@ int main()
     // 8,
     // 16,
     32,
-    64};
+    64,
+    128};
   std::map<std::string, std::string> ld_semantics{
     {"relaxed", ".relaxed"}, {"acquire", ".acquire"}, {"volatile", ".volatile"}};
 
@@ -164,56 +165,113 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
     out << "}\n";
     for (auto& sz : ld_sizes)
     {
-      for (auto& sem : ld_semantics)
+      // Using vectorized loads
+      if (sz == 128)
       {
-        out << "template<class _CUDA_A, class _CUDA_B> ";
-        out << "static inline _CCCL_DEVICE void __cuda_load_" << sem.first << "_" << sz << "_" << s.first
-            << "(_CUDA_A __ptr, _CUDA_B& __dst) {";
-        if (ld_as_atom)
+        constexpr auto base_sz = 64;
+        constexpr auto vec_sz = 2;
+        static_assert(vec_sz == 2, "Code generation is currently hardcoded for v2.b64.");
+
+        for (auto& sem : ld_semantics)
         {
-          out << "asm volatile(\"atom.add" << (sem.first == "volatile" ? "" : sem.second.c_str()) << s.second << ".u"
-              << sz << " %0, [%1], 0;\" : ";
+          out << "template<class _CUDA_A, class _CUDA_B> ";
+          out << "static inline _CCCL_DEVICE void __cuda_load_" << sem.first << "_v" << vec_sz << "_" << base_sz << "_" << s.first
+              << "(_CUDA_A __ptr, _CUDA_B& __dst_x, _CUDA_B& __dst_y) {";
+          out << "asm volatile(\"ld" << sem.second << (sem.first == "volatile" ? "" : s.second.c_str()) << ".v" << vec_sz << ".b" << base_sz
+              << " {%0, %1}, [%2];\" : ";
+          out << "\"=" << registers("b", base_sz) << "\"(__dst_x), ";
+          out << "\"=" << registers("b", base_sz) << "\"(__dst_y)";
+          out << " : \"l\"(__ptr)";
+          out << " : \"memory\"); }\n";
         }
-        else
+        for (auto& cv : cv_qualifier)
         {
-          out << "asm volatile(\"ld" << sem.second << (sem.first == "volatile" ? "" : s.second.c_str()) << ".b" << sz
-              << " %0,[%1];\" : ";
+          out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
+          out << "_CCCL_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, "
+              << scopenametag(s.first) << ") {\n";
+          out << "    ulonglong" << vec_sz << " __tmp{};\n";
+          out << "    NV_DISPATCH_TARGET(\n";
+          out << "      NV_PROVIDES_SM_70, (\n";
+          out << "        switch (__memorder) {\n";
+          out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_ACQUIRE: __cuda_load_acquire_v" << vec_sz << "_" << base_sz << "_" << s.first
+              << "(__ptr, __tmp.x, __tmp.y); break;\n";
+          out << "          case __ATOMIC_RELAXED: __cuda_load_relaxed_v" << vec_sz << "_" << base_sz << "_" << s.first
+              << "(__ptr, __tmp.x, __tmp.y); break;\n";
+          out << "          default: assert(0);\n";
+          out << "        }\n";
+          out << "      ),\n";
+          out << "      NV_IS_DEVICE, (\n";
+          out << "        switch (__memorder) {\n";
+          out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "(); _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_ACQUIRE: __cuda_load_volatile_v" << vec_sz << "_" << base_sz << "_" << s.first
+              << "(__ptr, __tmp.x, __tmp.y); __cuda_membar_" << s.first << "(); break;\n";
+          out << "          case __ATOMIC_RELAXED: __cuda_load_volatile_v" << vec_sz << "_" << base_sz << "_" << s.first
+              << "(__ptr, __tmp.x, __tmp.y); break;\n";
+          out << "          default: assert(0);\n";
+          out << "        }\n";
+          out << "      )\n";
+          out << "    )\n";
+          out << "    *reinterpret_cast<ulonglong2*>(__ret) = __tmp;\n";
+          out << "}\n";
         }
-        out << "\"=" << registers("b", sz) << "\"(__dst) : \"l\"(__ptr)";
-        out << " : \"memory\"); }\n";
       }
-      for (auto& cv : cv_qualifier)
+      // Using scalar loads
+      else
       {
-        out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
-        out << "_CCCL_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, "
-            << scopenametag(s.first) << ") {\n";
-        out << "    uint" << sz << "_t __tmp = 0;\n";
-        out << "    NV_DISPATCH_TARGET(\n";
-        out << "      NV_PROVIDES_SM_70, (\n";
-        out << "        switch (__memorder) {\n";
-        out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _CCCL_FALLTHROUGH();\n";
-        out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
-        out << "          case __ATOMIC_ACQUIRE: __cuda_load_acquire_" << sz << "_" << s.first
-            << "(__ptr, __tmp); break;\n";
-        out << "          case __ATOMIC_RELAXED: __cuda_load_relaxed_" << sz << "_" << s.first
-            << "(__ptr, __tmp); break;\n";
-        out << "          default: assert(0);\n";
-        out << "        }\n";
-        out << "      ),\n";
-        out << "      NV_IS_DEVICE, (\n";
-        out << "        switch (__memorder) {\n";
-        out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "(); _CCCL_FALLTHROUGH();\n";
-        out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
-        out << "          case __ATOMIC_ACQUIRE: __cuda_load_volatile_" << sz << "_" << s.first
-            << "(__ptr, __tmp); __cuda_membar_" << s.first << "(); break;\n";
-        out << "          case __ATOMIC_RELAXED: __cuda_load_volatile_" << sz << "_" << s.first
-            << "(__ptr, __tmp); break;\n";
-        out << "          default: assert(0);\n";
-        out << "        }\n";
-        out << "      )\n";
-        out << "    )\n";
-        out << "    memcpy(__ret, &__tmp, " << sz / 8 << ");\n";
-        out << "}\n";
+        for (auto& sem : ld_semantics)
+        {
+          out << "template<class _CUDA_A, class _CUDA_B> ";
+          out << "static inline _CCCL_DEVICE void __cuda_load_" << sem.first << "_" << sz << "_" << s.first
+              << "(_CUDA_A __ptr, _CUDA_B& __dst) {";
+          if (ld_as_atom)
+          {
+            out << "asm volatile(\"atom.add" << (sem.first == "volatile" ? "" : sem.second.c_str()) << s.second << ".u"
+                << sz << " %0, [%1], 0;\" : ";
+          }
+          else
+          {
+            out << "asm volatile(\"ld" << sem.second << (sem.first == "volatile" ? "" : s.second.c_str()) << ".b" << sz
+                << " %0,[%1];\" : ";
+          }
+          out << "\"=" << registers("b", sz) << "\"(__dst) : \"l\"(__ptr)";
+          out << " : \"memory\"); }\n";
+        }
+        for (auto& cv : cv_qualifier)
+        {
+          out << "template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==" << sz / 8 << ", int> = 0>\n";
+          out << "_CCCL_DEVICE void __atomic_load_cuda(const " << cv << "_Type *__ptr, _Type *__ret, int __memorder, "
+              << scopenametag(s.first) << ") {\n";
+          out << "    uint" << sz << "_t __tmp = 0;\n";
+          out << "    NV_DISPATCH_TARGET(\n";
+          out << "      NV_PROVIDES_SM_70, (\n";
+          out << "        switch (__memorder) {\n";
+          out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_ACQUIRE: __cuda_load_acquire_" << sz << "_" << s.first
+              << "(__ptr, __tmp); break;\n";
+          out << "          case __ATOMIC_RELAXED: __cuda_load_relaxed_" << sz << "_" << s.first
+              << "(__ptr, __tmp); break;\n";
+          out << "          default: assert(0);\n";
+          out << "        }\n";
+          out << "      ),\n";
+          out << "      NV_IS_DEVICE, (\n";
+          out << "        switch (__memorder) {\n";
+          out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "(); _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();\n";
+          out << "          case __ATOMIC_ACQUIRE: __cuda_load_volatile_" << sz << "_" << s.first
+              << "(__ptr, __tmp); __cuda_membar_" << s.first << "(); break;\n";
+          out << "          case __ATOMIC_RELAXED: __cuda_load_volatile_" << sz << "_" << s.first
+              << "(__ptr, __tmp); break;\n";
+          out << "          default: assert(0);\n";
+          out << "        }\n";
+          out << "      )\n";
+          out << "    )\n";
+          out << "    memcpy(__ret, &__tmp, " << sz / 8 << ");\n";
+          out << "}\n";
+        }
       }
     }
     for (auto& sz : st_sizes)
