@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -46,6 +46,7 @@
 #include <cub/detail/uninitialized_copy.cuh>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -57,12 +58,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_POP
 #  endif // !_CCCL_CUDACC_BELOW_11_8
 #endif // _CCCL_HAS_NV_BF16
-
-#if !defined(_CCCL_COMPILER_NVRTC)
-#  include <iterator>
-#else
-#  include <cuda/std/iterator>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -88,22 +83,18 @@ CUB_NAMESPACE_BEGIN
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 namespace detail
 {
-
-template <bool Test, class T1, class T2>
-using conditional_t = typename ::cuda::std::conditional<Test, T1, T2>::type;
-
+//! Alias to the given iterator's value_type.
+// Aliases to std::iterator_traits, since users can specialize this template to provide traits for their iterators. We
+// only defer to the libcu++ implementation for NVRTC.
 template <typename Iterator>
 using value_t =
-#  if !defined(_CCCL_COMPILER_NVRTC)
-  typename std::iterator_traits<Iterator>::value_type;
-#  else // defined(_CCCL_COMPILER_NVRTC)
+#  ifdef _CCCL_COMPILER_NVRTC
   typename ::cuda::std::iterator_traits<Iterator>::value_type;
+#  else // !defined(_CCCL_COMPILER_NVRTC)
+  typename std::iterator_traits<Iterator>::value_type;
 #  endif // defined(_CCCL_COMPILER_NVRTC)
 
-template <typename It,
-          typename FallbackT,
-          bool = ::cuda::std::
-            is_same<typename ::cuda::std::remove_cv<typename ::cuda::std::remove_pointer<It>::type>::type, void>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::__remove_pointer_t<It>>::value>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -112,8 +103,7 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  using type =
-    typename ::cuda::std::conditional<::cuda::std::is_same<value_t<It>, void>::value, FallbackT, value_t<It>>::type;
+  using type = ::cuda::std::_If<::cuda::std::is_void<value_t<It>>::value, FallbackT, value_t<It>>;
 };
 
 /**
@@ -326,17 +316,8 @@ private:
 template <typename T>
 struct AlignBytes
 {
-  struct Pad
-  {
-    T val;
-    char byte;
-  };
-
-  enum
-  {
-    /// The "true CUDA" alignment of T in bytes
-    ALIGN_BYTES = sizeof(Pad) - sizeof(T)
-  };
+  /// The "true CUDA" alignment of T in bytes
+  static constexpr unsigned ALIGN_BYTES = alignof(T);
 
   /// The "truly aligned" type
   using Type = T;
@@ -350,10 +331,8 @@ struct AlignBytes
     template <>                                                                                    \
     struct AlignBytes<t>                                                                           \
     {                                                                                              \
-      enum                                                                                         \
-      {                                                                                            \
-        ALIGN_BYTES = b                                                                            \
-      };                                                                                           \
+      static constexpr unsigned ALIGN_BYTES = b;                                                   \
+                                                                                                   \
       typedef __align__(b) t Type;                                                                 \
       /* TODO(bgruber): rewriting the above to using Type __align__(b) = t; does not compile :S */ \
     };
@@ -395,42 +374,31 @@ template <typename T> struct AlignBytes<const volatile T> : AlignBytes<T> {};
 template <typename T>
 struct UnitWord
 {
-  enum
-  {
-    ALIGN_BYTES = AlignBytes<T>::ALIGN_BYTES
-  };
+  static constexpr auto ALIGN_BYTES = AlignBytes<T>::ALIGN_BYTES;
 
   template <typename Unit>
   struct IsMultiple
   {
-    enum
-    {
-      UNIT_ALIGN_BYTES = AlignBytes<Unit>::ALIGN_BYTES,
-      IS_MULTIPLE      = (sizeof(T) % sizeof(Unit) == 0) && (int(ALIGN_BYTES) % int(UNIT_ALIGN_BYTES) == 0)
-    };
+    static constexpr auto UNIT_ALIGN_BYTES = AlignBytes<Unit>::ALIGN_BYTES;
+    static constexpr bool IS_MULTIPLE =
+      (sizeof(T) % sizeof(Unit) == 0) && (int(ALIGN_BYTES) % int(UNIT_ALIGN_BYTES) == 0);
   };
 
-  /// Biggest shuffle word that T is a whole multiple of and is not larger than
-  /// the alignment of T
-  using ShuffleWord = cub::detail::conditional_t<
-    IsMultiple<int>::IS_MULTIPLE,
-    unsigned int,
-    cub::detail::conditional_t<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
+  /// Biggest shuffle word that T is a whole multiple of and is not larger than the alignment of T
+  using ShuffleWord =
+    ::cuda::std::_If<IsMultiple<int>::IS_MULTIPLE,
+                     unsigned int,
+                     ::cuda::std::_If<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
 
-  /// Biggest volatile word that T is a whole multiple of and is not larger than
-  /// the alignment of T
-  using VolatileWord = cub::detail::conditional_t<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
+  /// Biggest volatile word that T is a whole multiple of and is not larger than the alignment of T
+  using VolatileWord = ::cuda::std::_If<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
 
-  /// Biggest memory-access word that T is a whole multiple of and is not larger
-  /// than the alignment of T
-  using DeviceWord = cub::detail::conditional_t<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
+  /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
+  using DeviceWord = ::cuda::std::_If<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
 
-  /// Biggest texture reference word that T is a whole multiple of and is not
-  /// larger than the alignment of T
-  using TextureWord =
-    cub::detail::conditional_t<IsMultiple<int4>::IS_MULTIPLE,
-                               uint4,
-                               cub::detail::conditional_t<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
+  /// Biggest texture reference word that T is a whole multiple of and is not larger than the alignment of T
+  using TextureWord = ::cuda::std::
+    _If<IsMultiple<int4>::IS_MULTIPLE, uint4, ::cuda::std::_If<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
 };
 
 // float2 specialization workaround (for SM10-SM13)
@@ -483,11 +451,8 @@ struct CubVector
   static_assert(!sizeof(T), "CubVector can only have 1-4 elements");
 };
 
-enum
-{
-  /// The maximum number of elements in CUDA vector types
-  MAX_VEC_ELEMENTS = 4,
-};
+/// The maximum number of elements in CUDA vector types
+_LIBCUDACXX_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
 
 /**
  * Generic vector-1 type
@@ -498,7 +463,7 @@ struct CubVector<T, 1>
   T x;
 
   using BaseType = T;
-  using Type     = CubVector<T, 1>;
+  using Type     = CubVector;
 };
 
 /**
@@ -511,7 +476,7 @@ struct CubVector<T, 2>
   T y;
 
   using BaseType = T;
-  using Type     = CubVector<T, 2>;
+  using Type     = CubVector;
 };
 
 /**
@@ -525,7 +490,7 @@ struct CubVector<T, 3>
   T z;
 
   using BaseType = T;
-  using Type     = CubVector<T, 3>;
+  using Type     = CubVector;
 };
 
 /**
@@ -540,7 +505,7 @@ struct CubVector<T, 4>
   T w;
 
   using BaseType = T;
-  using Type     = CubVector<T, 4>;
+  using Type     = CubVector;
 };
 
 /**
@@ -654,7 +619,6 @@ CUB_DEFINE_VECTOR_TYPE(double,             double)
 CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
 // clang-format on
 
-// Undefine macros
 #  undef CUB_DEFINE_VECTOR_TYPE
 
 /******************************************************************************
@@ -820,28 +784,20 @@ template <typename T>
 struct DoubleBuffer
 {
   /// Pair of device buffer pointers
-  T* d_buffers[2];
+  T* d_buffers[2]{};
 
   ///  Selector into \p d_buffers (i.e., the active/valid buffer)
-  int selector;
+  int selector = 0;
 
   /// \brief Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DoubleBuffer()
-  {
-    selector     = 0;
-    d_buffers[0] = nullptr;
-    d_buffers[1] = nullptr;
-  }
+  DoubleBuffer() = default;
 
   /// \brief Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DoubleBuffer(T* d_current, ///< The currently valid buffer
                                                    T* d_alternate) ///< Alternate storage buffer of the same size as \p
                                                                    ///< d_current
-  {
-    selector     = 0;
-    d_buffers[0] = d_current;
-    d_buffers[1] = d_alternate;
-  }
+      : d_buffers{d_current, d_alternate}
+  {}
 
   /// \brief Return pointer to the currently valid buffer
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T* Current()
@@ -862,20 +818,18 @@ struct DoubleBuffer
 
 /**
  * \brief Defines a structure \p detector_name that is templated on type \p T.  The \p detector_name struct exposes a
- * constant member \p VALUE indicating whether or not parameter \p T exposes a nested type \p nested_type_name
+ * constant member \p value indicating whether or not parameter \p T exposes a nested type \p nested_type_name
  */
-#  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name) \
-    template <typename T>                                                \
-    struct detector_name                                                 \
-    {                                                                    \
-      template <typename C>                                              \
-      static char& test(typename C::nested_type_name*);                  \
-      template <typename>                                                \
-      static int& test(...);                                             \
-      enum                                                               \
-      {                                                                  \
-        VALUE = sizeof(test<T>(0)) < sizeof(int)                         \
-      };                                                                 \
+#  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name)                                  \
+    template <typename T, typename = void>                                                                \
+    struct detector_name : ::cuda::std::false_type                                                        \
+    {                                                                                                     \
+      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;                  \
+    };                                                                                                    \
+    template <typename T>                                                                                 \
+    struct detector_name<T, ::cuda::std::__void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
+    {                                                                                                     \
+      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                   \
     };
 
 /******************************************************************************
@@ -886,50 +840,19 @@ struct DoubleBuffer
  * \brief Determine whether or not BinaryOp's functor is of the form <tt>bool operator()(const T& a, const T&b)</tt> or
  * <tt>bool operator()(const T& a, const T&b, unsigned int idx)</tt>
  */
-template <typename T, typename BinaryOp>
-struct BinaryOpHasIdxParam
+template <typename T, typename BinaryOp, typename = void>
+struct BinaryOpHasIdxParam : ::cuda::std::false_type
 {
-private:
-  /*
-      template <typename BinaryOpT, bool (BinaryOpT::*)(const T &a, const T &b, unsigned int idx) const>  struct SFINAE1
-     {}; template <typename BinaryOpT, bool (BinaryOpT::*)(const T &a, const T &b, unsigned int idx)>        struct
-     SFINAE2 {}; template <typename BinaryOpT, bool (BinaryOpT::*)(T a, T b, unsigned int idx) const> struct SFINAE3 {};
-      template <typename BinaryOpT, bool (BinaryOpT::*)(T a, T b, unsigned int idx)>                      struct SFINAE4
-     {};
-  */
-  template <typename BinaryOpT, bool (BinaryOpT::*)(const T& a, const T& b, int idx) const>
-  struct SFINAE5
-  {};
-  template <typename BinaryOpT, bool (BinaryOpT::*)(const T& a, const T& b, int idx)>
-  struct SFINAE6
-  {};
-  template <typename BinaryOpT, bool (BinaryOpT::*)(T a, T b, int idx) const>
-  struct SFINAE7
-  {};
-  template <typename BinaryOpT, bool (BinaryOpT::*)(T a, T b, int idx)>
-  struct SFINAE8
-  {};
-  /*
-      template <typename BinaryOpT> static char Test(SFINAE1<BinaryOpT, &BinaryOpT::operator()> *);
-      template <typename BinaryOpT> static char Test(SFINAE2<BinaryOpT, &BinaryOpT::operator()> *);
-      template <typename BinaryOpT> static char Test(SFINAE3<BinaryOpT, &BinaryOpT::operator()> *);
-      template <typename BinaryOpT> static char Test(SFINAE4<BinaryOpT, &BinaryOpT::operator()> *);
-  */
-  template <typename BinaryOpT>
-  _CCCL_HOST_DEVICE static char Test(SFINAE5<BinaryOpT, &BinaryOpT::operator()>*);
-  template <typename BinaryOpT>
-  _CCCL_HOST_DEVICE static char Test(SFINAE6<BinaryOpT, &BinaryOpT::operator()>*);
-  template <typename BinaryOpT>
-  _CCCL_HOST_DEVICE static char Test(SFINAE7<BinaryOpT, &BinaryOpT::operator()>*);
-  template <typename BinaryOpT>
-  _CCCL_HOST_DEVICE static char Test(SFINAE8<BinaryOpT, &BinaryOpT::operator()>*);
+  CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
+};
 
-  template <typename BinaryOpT>
-  _CCCL_HOST_DEVICE static int Test(...);
-
-public:
-  /// Whether the functor BinaryOp has a third <tt>unsigned int</tt> index param
-  static constexpr bool HAS_PARAM = sizeof(Test<BinaryOp>(nullptr)) == sizeof(char);
+template <typename T, typename BinaryOp>
+struct BinaryOpHasIdxParam<T,
+                           BinaryOp,
+                           ::cuda::std::__void_t<decltype(::cuda::std::declval<BinaryOp>()(
+                             ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
+{
+  CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
 };
 
 /******************************************************************************
@@ -960,13 +883,9 @@ enum Category
 template <Category _CATEGORY, bool _PRIMITIVE, bool _NULL_TYPE, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
-  /// Category
   static constexpr Category CATEGORY = _CATEGORY;
-  enum
-  {
-    PRIMITIVE = _PRIMITIVE,
-    NULL_TYPE = _NULL_TYPE,
-  };
+  static constexpr bool PRIMITIVE    = _PRIMITIVE;
+  static constexpr bool NULL_TYPE    = _NULL_TYPE;
 };
 
 /**
@@ -980,12 +899,8 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
   static constexpr Category CATEGORY       = UNSIGNED_INTEGER;
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(0);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1);
-
-  enum
-  {
-    PRIMITIVE = true,
-    NULL_TYPE = false,
-  };
+  static constexpr bool PRIMITIVE          = true;
+  static constexpr bool NULL_TYPE          = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1026,12 +941,8 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = HIGH_BIT;
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-
-  enum
-  {
-    PRIMITIVE = true,
-    NULL_TYPE = false,
-  };
+  static constexpr bool PRIMITIVE          = true;
+  static constexpr bool NULL_TYPE          = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1178,12 +1089,8 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
   static constexpr UnsignedBits HIGH_BIT   = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits LOWEST_KEY = UnsignedBits(-1);
   static constexpr UnsignedBits MAX_KEY    = UnsignedBits(-1) ^ HIGH_BIT;
-
-  enum
-  {
-    PRIMITIVE = true,
-    NULL_TYPE = false,
-  };
+  static constexpr bool PRIMITIVE          = true;
+  static constexpr bool NULL_TYPE          = false;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
@@ -1240,7 +1147,6 @@ struct NumericTraits<__uint128_t>
   static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
   static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
-
   static constexpr bool PRIMITIVE = false;
   static constexpr bool NULL_TYPE = false;
 
@@ -1275,7 +1181,6 @@ struct NumericTraits<__int128_t>
   static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
   static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
   static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
-
   static constexpr bool PRIMITIVE = false;
   static constexpr bool NULL_TYPE = false;
 

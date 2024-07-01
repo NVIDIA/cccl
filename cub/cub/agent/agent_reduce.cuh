@@ -51,6 +51,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -145,9 +147,9 @@ struct AgentReduce
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
+                     InputIteratorT>;
 
   /// Constants
   static constexpr int BLOCK_THREADS      = AgentReducePolicy::BLOCK_THREADS;

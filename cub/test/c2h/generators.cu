@@ -40,6 +40,8 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/type_traits>
+
 #include <cstdint>
 
 #include <c2h/custom_type.cuh>
@@ -132,7 +134,7 @@ struct random_to_item_t
 template <typename T>
 struct random_to_item_t<T, cub::FLOATING_POINT>
 {
-  using storage_t = cub::detail::conditional_t<(sizeof(T) > 4), double, float>;
+  using storage_t = ::cuda::std::_If<(sizeof(T) > 4), double, float>;
   storage_t m_min;
   storage_t m_max;
 

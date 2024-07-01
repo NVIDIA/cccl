@@ -52,6 +52,8 @@
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -264,7 +266,7 @@ struct AgentSpmv
   {
     // Value type to pair with index type OffsetT
     // (NullType if loading values directly during merge)
-    using MergeValueT = cub::detail::conditional_t<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
+    using MergeValueT = ::cuda::std::_If<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
 
     OffsetT row_end_offset;
     MergeValueT nonzero;

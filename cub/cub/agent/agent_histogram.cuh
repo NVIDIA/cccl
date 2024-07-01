@@ -49,6 +49,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -225,9 +227,9 @@ struct AgentHistogram
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedSampleIteratorT =
-    cub::detail::conditional_t<std::is_pointer<SampleIteratorT>::value,
-                               CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
-                               SampleIteratorT>;
+    ::cuda::std::_If<std::is_pointer<SampleIteratorT>::value,
+                     CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
+                     SampleIteratorT>;
 
   /// Pixel input iterator type (for applying cache modifier)
   using WrappedPixelIteratorT = CacheModifiedInputIterator<LOAD_MODIFIER, PixelT, OffsetT>;
