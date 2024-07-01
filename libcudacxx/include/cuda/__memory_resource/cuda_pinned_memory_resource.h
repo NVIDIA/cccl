@@ -32,6 +32,7 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/resource_ref.h>
+#  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__new/bad_alloc.h>
 
@@ -67,7 +68,6 @@ public:
   _CCCL_NODISCARD void* allocate(const size_t __bytes,
                                  const size_t __alignment = default_cuda_malloc_host_alignment) const
   {
-    // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
       _CUDA_VSTD::__throw_bad_alloc();
@@ -86,7 +86,6 @@ public:
    */
   void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_host_alignment) const
   {
-    // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
                        "Invalid alignment passed to cuda_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "cuda_pinned_memory_resource::deallocate failed", __ptr);

@@ -28,7 +28,8 @@ function(cudax_add_header_test label definitions)
     set(headertest_target ${config_prefix}.headers.${label})
     add_library(${headertest_target} OBJECT ${headertest_srcs})
     target_link_libraries(${headertest_target} PUBLIC ${cn_target})
-    target_compile_definitions(${headertest_target} PRIVATE ${definitions})
+    target_compile_definitions(${headertest_target} PRIVATE ${definitions}
+                               "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
     cudax_clone_target_properties(${headertest_target} ${cn_target})
 
     add_dependencies(cudax.all.headers ${headertest_target})

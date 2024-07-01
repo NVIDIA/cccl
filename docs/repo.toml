@@ -25,7 +25,7 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cub", "thrust", "cccl" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
@@ -265,5 +265,59 @@ doxygen_conf_extra = """
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "__*" "THRUST_NS_QUALIFIER" "optional"
+  AUTOLINK_SUPPORT       = YES
+"""
+
+
+[repo_docs.projects.cudax]
+name = "Cudax: Experimental new features"
+docs_root = "cudax"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/cudax"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+enhanced_search_enabled = true
+api_output_directory = "api"
+use_fast_doxygen_conversion = true
+sphinx_generate_doxygen_groups = true
+sphinx_generate_doxygen_pages = true
+sphinx_exclude_patterns = []
+
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+]
+
+doxygen_input = [
+    "../../cudax/include/cuda/experimental/__memory_resource/*.h",
+]
+
+doxygen_predefined = [
+  "_CCCL_DEVICE=",
+  "_CCCL_EXEC_CHECK_DISABLE=",
+  "_CCCL_FORCEINLINE=",
+  "_CCCL_HOST=",
+  "_CCCL_HOST_DEVICE=",
+  "_CCCL_NODISCARD=[[nodiscard]]",
+  "_CCCL_NODISCARD_FRIEND=",
+  "_CCCL_STD_VER=2020",
+  "_LIBCUDACXX_EAT_REST(x)=",
+  "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+]
+
+# make sure to use ./fetch_imgs.sh
+doxygen_conf_extra = """
+  IMAGE_PATH             = ${config_root}/img
+  DISTRIBUTE_GROUP_DOC   = Yes
+  DOXYFILE_ENCODING      = UTF-8
+  INPUT_ENCODING         = UTF-8
+  EXTENSION_MAPPING      = cuh=c++ cu=c++
+  EXAMPLE_RECURSIVE      = NO
+  EXAMPLE_PATTERNS       = *.cu
+  EXCLUDE_SYMBOLS        = "__*"
   AUTOLINK_SUPPORT       = YES
 """

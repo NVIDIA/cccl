@@ -8,14 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_VERSION__
-#define __CUDAX_VERSION__
+#ifndef __CUDAX_MEMORY_RESOURCE_H
+#define __CUDAX_MEMORY_RESOURCE_H
 
-#include <cuda/std/version>
+#include <cuda/experimental/__memory_resource/cuda_async_memory_resource.h>
+#include <cuda/experimental/__memory_resource/cuda_memory_pool.h>
 
-#define CUDAX_VERSION       CCCL_VERSION
-#define CUDAX_VERSION_MAJOR CCCL_MAJOR_VERSION
-#define CUDAX_VERSION_MINOR CCCL_MINOR_VERSION
-#define CUDAX_VERSION_PATCH CCCL_PATCH_VERSION
-
-#endif // __CUDAX_HIERARCHY_DIMENSIONS___
+#endif // __CUDAX_MEMORY_RESOURCE_H
