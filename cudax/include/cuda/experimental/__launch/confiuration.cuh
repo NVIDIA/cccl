@@ -227,7 +227,7 @@ dynamic_shared_memory(std::size_t count) noexcept
  *
  * This launch option causes the launched grid to be scheduled with the specified priority.
  * More about stream priorities and valid values can be found in the CUDA programming guide
- * `here <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>_
+ * `here <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
  */
 struct launch_priority : public detail::launch_option
 {
