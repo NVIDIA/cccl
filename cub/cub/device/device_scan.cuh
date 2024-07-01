@@ -1164,6 +1164,109 @@ struct DeviceScan
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), num_items, stream);
   }
 
+  //! @rst
+  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! The ``init_value`` value is applied as the initial value, and is assigned to ``*d_data``.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
+  //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - Note that because initial value is the last argument the cudaStream_t
+  //!   argument also needs be passed explicitly.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive max-scan of an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin device-inclusive-scan
+  //!     :end-before: example-end device-inclusive-scan
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
+  //!   having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage.
+  //!   When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within.
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    int num_items,
+    cudaStream_t stream,
+    InitValueT init_value)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
+
+    // Signed integer type for global offsets
+    using OffsetT = int;
+    using AccumT  = cub::detail::accumulator_t<ScanOpT, InitValueT, cub::detail::value_t<InputIteratorT>>;
+    constexpr bool ForceInclusive = true;
+
+    return DispatchScan<
+      InputIteratorT,
+      OutputIteratorT,
+      ScanOpT,
+      detail::InputValue<InitValueT>,
+      OffsetT,
+      AccumT,
+      DeviceScanPolicy<AccumT, ScanOpT>,
+      ForceInclusive>::Dispatch(d_temp_storage,
+                                temp_storage_bytes,
+                                d_in,
+                                d_out,
+                                scan_op,
+                                detail::InputValue<InitValueT>(init_value),
+                                num_items,
+                                stream);
+  }
+
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
