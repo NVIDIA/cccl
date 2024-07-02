@@ -35,9 +35,7 @@ concept __boolean_testable_impl = convertible_to<_Tp, bool>;
 
 template <class _Tp>
 concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t) {
-  {
-    !_CUDA_VSTD::forward<_Tp>(__t)
-  } -> __boolean_testable_impl;
+  { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
 };
 
 #elif _CCCL_STD_VER > 2011

@@ -66,9 +66,7 @@ struct incrementable_traits<_Tp>
 
 template <class _Tp>
 concept __has_integral_minus = requires(const _Tp& __x, const _Tp& __y) {
-  {
-    __x - __y
-  } -> integral;
+  { __x - __y } -> integral;
 };
 
 template <__has_integral_minus _Tp>

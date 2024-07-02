@@ -38,8 +38,8 @@ struct __builtin_new_allocator
   {
     typedef void* pointer_type;
 
-    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __builtin_new_deleter(
-      size_t __size, size_t __align) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI
+    _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __builtin_new_deleter(size_t __size, size_t __align) noexcept
         : __size_(__size)
         , __align_(__align)
     {}

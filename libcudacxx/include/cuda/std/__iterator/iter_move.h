@@ -102,9 +102,8 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(__move_deref<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const
-    noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
-      -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Ip&& __i) const noexcept(noexcept(
+    _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))) -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i));
   }
@@ -129,9 +128,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  if _CCCL_STD_VER >= 2020
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
-    {
-      _CUDA_VRANGES::iter_move(__t)
-    } -> __can_reference;
+    { _CUDA_VRANGES::iter_move(__t) } -> __can_reference;
   }
 using iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));
 

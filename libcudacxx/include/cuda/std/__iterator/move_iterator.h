@@ -62,9 +62,7 @@ struct __move_iter_category_base<_Iter>
 
 template <class _Iter, class _Sent>
 concept __move_iter_comparable = requires {
-  {
-    declval<const _Iter&>() == declval<_Sent>()
-  } -> convertible_to<bool>;
+  { declval<const _Iter&>() == declval<_Sent>() } -> convertible_to<bool>;
 };
 
 template <class _Iter>
@@ -434,9 +432,8 @@ operator!=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
-operator<=>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-  -> compare_three_way_result_t<_Iter1, _Iter2>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator<=>(
+  const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) -> compare_three_way_result_t<_Iter1, _Iter2>
 {
   return __x.base() <=> __y.base();
 }
@@ -483,9 +480,7 @@ template <class _Iter>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_iterator<_Iter>
 operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
   requires requires {
-    {
-      __x.base() + __n
-    } -> same_as<_Iter>;
+    { __x.base() + __n } -> same_as<_Iter>;
   }
 {
   return __x + __n;

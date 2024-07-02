@@ -31,8 +31,8 @@ template <class _Callable>
 class result_of;
 
 template <class _Fp, class... _Args>
-class _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_TEMPLATE_VIS result_of<_Fp(_Args...)>
-    : public __invoke_of<_Fp, _Args...>
+class _LIBCUDACXX_DEPRECATED_IN_CXX17
+_LIBCUDACXX_TEMPLATE_VIS result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
 {};
 
 #  if _CCCL_STD_VER > 2011
