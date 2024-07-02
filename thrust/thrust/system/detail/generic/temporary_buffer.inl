@@ -40,9 +40,9 @@ namespace generic
 
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE
-  thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
-  get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
-                       typename thrust::pointer<T, DerivedPolicy>::difference_type n)
+thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+get_temporary_buffer(thrust::execution_policy<DerivedPolicy>& exec,
+                     typename thrust::pointer<T, DerivedPolicy>::difference_type n)
 {
   thrust::pointer<T, DerivedPolicy> ptr = thrust::malloc<T>(exec, n);
 

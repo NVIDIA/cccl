@@ -349,8 +349,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto to_address(_Tp* __p) noexcep
 }
 
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto to_address(const _Pointer& __p) noexcept
-  -> decltype(_CUDA_VSTD::__to_address(__p))
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);
 }

@@ -85,7 +85,7 @@ constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 #ifndef CUB_QUOTIENT_CEILING
 /// Quotient of x/y rounded up to nearest integer
 // FIXME(bgruber): the following computation can overflow, use cuda::ceil_div instead
-#  define CUB_QUOTIENT_CEILING(x, y) (((x) + (y) -1) / (y))
+#  define CUB_QUOTIENT_CEILING(x, y) (((x) + (y) - 1) / (y))
 #endif
 
 #ifndef CUB_ROUND_UP_NEAREST

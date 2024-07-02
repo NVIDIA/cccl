@@ -58,8 +58,8 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 decltype((void) declval<_Compare&>()(
-    declval<_LHS&>(), declval<_RHS&>()))
+  inline _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
   __do_compare_assert(int, _LHS& __l, _RHS& __r)
   {
     _LIBCUDACXX_DEBUG_ASSERT(!__comp_(__l, __r), "Comparator does not induce a strict weak ordering");

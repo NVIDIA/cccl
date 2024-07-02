@@ -102,7 +102,7 @@ static_assert(!totally_ordered<int (S::*)() volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&>, "");
 static_assert(!totally_ordered<int (S::*)() volatile & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&&>, "");
-static_assert(!totally_ordered < int(S::*)() volatile&& noexcept >, "");
+static_assert(!totally_ordered < int(S::*)() volatile && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&>, "");

@@ -128,8 +128,8 @@ public:
   // [expected.object.ctor], constructors
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr expected() noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr expected() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
       : __base(true)
   {}
 
@@ -179,10 +179,10 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Up, class _OtherErr)
   _LIBCUDACXX_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _LIBCUDACXX_AND(
     !_CCCL_TRAIT(is_convertible, const _Up&, _Tp) || !_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit expected(
-    const expected<_Up, _OtherErr>&
-      __other) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, const _Up&)
-                        && _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, const _Up&)
+    && _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
@@ -217,10 +217,10 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Up, class _OtherErr)
   _LIBCUDACXX_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _LIBCUDACXX_AND(
     !_CCCL_TRAIT(is_convertible, _Up, _Tp) || !_CCCL_TRAIT(is_convertible, _OtherErr, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit expected(
-    expected<_Up, _OtherErr>&&
-      __other) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)
-                        && _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)
+    && _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
@@ -256,18 +256,18 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                          _LIBCUDACXX_AND _CCCL_TRAIT(is_convertible, const _OtherErr&, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr expected(
-    const unexpected<_OtherErr>&
-      __unex) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr expected(const unexpected<_OtherErr>& __unex) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                          _LIBCUDACXX_AND(!_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit expected(
-    const unexpected<_OtherErr>&
-      __unex) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
@@ -1260,9 +1260,9 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Up, class _OtherErr)
   _LIBCUDACXX_REQUIRES(__can_convert<_Up, _OtherErr, const _OtherErr&>::value _LIBCUDACXX_AND(
     !_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit expected(
-    const expected<_Up, _OtherErr>&
-      __other) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(__other.__has_val_)
   {
     if (!__other.__has_val_)
@@ -1300,18 +1300,18 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                          _LIBCUDACXX_AND _CCCL_TRAIT(is_convertible, const _OtherErr&, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr expected(
-    const unexpected<_OtherErr>&
-      __unex) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr expected(const unexpected<_OtherErr>& __unex) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                          _LIBCUDACXX_AND(!_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit expected(
-    const unexpected<_OtherErr>&
-      __unex) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
+    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(unexpect, __unex.error())
   {}
 

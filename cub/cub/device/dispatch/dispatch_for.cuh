@@ -171,8 +171,8 @@ struct dispatch_t : PolicyHubT
   {}
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
-    cudaError_t Invoke(::cuda::std::false_type /* block size is not known at compile time */)
+  CUB_RUNTIME_FUNCTION
+  _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::false_type /* block size is not known at compile time */)
   {
     using max_policy_t = typename dispatch_t::MaxPolicy;
 
@@ -228,8 +228,8 @@ struct dispatch_t : PolicyHubT
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
-    cudaError_t Invoke(::cuda::std::true_type /* block size is known at compile time */)
+  CUB_RUNTIME_FUNCTION
+  _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::true_type /* block size is known at compile time */)
   {
     using max_policy_t = typename dispatch_t::MaxPolicy;
 

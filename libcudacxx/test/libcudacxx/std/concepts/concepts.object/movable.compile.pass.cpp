@@ -51,7 +51,7 @@ static_assert(movable<int (S::*)() volatile noexcept>, "");
 static_assert(movable<int (S::*)() volatile&>, "");
 static_assert(movable<int (S::*)() volatile & noexcept>, "");
 static_assert(movable<int (S::*)() volatile&&>, "");
-static_assert(movable < int(S::*)() volatile&& noexcept >, "");
+static_assert(movable < int(S::*)() volatile && noexcept >, "");
 static_assert(movable<int (S::*)() const volatile>, "");
 static_assert(movable<int (S::*)() const volatile noexcept>, "");
 static_assert(movable<int (S::*)() const volatile&>, "");

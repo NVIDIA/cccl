@@ -36,8 +36,8 @@ struct __fn
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin()))
-    -> decltype(__c.begin())
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
+    noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
@@ -67,8 +67,8 @@ struct __fn
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.end()))
-    -> decltype(__c.end())
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
+    noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }

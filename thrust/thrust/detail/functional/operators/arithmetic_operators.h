@@ -107,16 +107,16 @@ operator-(const actor<T1>& _1, const actor<T2>& _2)
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::multiplies<>>, typename as_actor<T1>::type, actor<T2>>>
-  operator*(const T1& _1, const actor<T2>& _2)
+actor<composite<transparent_binary_operator<thrust::multiplies<>>, typename as_actor<T1>::type, actor<T2>>>
+operator*(const T1& _1, const actor<T2>& _2)
 {
   return compose(transparent_binary_operator<thrust::multiplies<>>(), make_actor(_1), make_actor(_2));
 } // end operator*()
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::multiplies<>>, actor<T1>, typename as_actor<T2>::type>>
-  operator*(const actor<T1>& _1, const T2& _2)
+actor<composite<transparent_binary_operator<thrust::multiplies<>>, actor<T1>, typename as_actor<T2>::type>>
+operator*(const actor<T1>& _1, const T2& _2)
 {
   return compose(transparent_binary_operator<thrust::multiplies<>>(), make_actor(_1), make_actor(_2));
 } // end operator*()
@@ -130,16 +130,16 @@ operator*(const actor<T1>& _1, const actor<T2>& _2)
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::divides<>>, actor<T1>, typename as_actor<T2>::type>>
-  operator/(const actor<T1>& _1, const T2& _2)
+actor<composite<transparent_binary_operator<thrust::divides<>>, actor<T1>, typename as_actor<T2>::type>>
+operator/(const actor<T1>& _1, const T2& _2)
 {
   return compose(transparent_binary_operator<thrust::divides<>>(), make_actor(_1), make_actor(_2));
 } // end operator/()
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::divides<>>, typename as_actor<T1>::type, actor<T2>>>
-  operator/(const T1& _1, const actor<T2>& _2)
+actor<composite<transparent_binary_operator<thrust::divides<>>, typename as_actor<T1>::type, actor<T2>>>
+operator/(const T1& _1, const actor<T2>& _2)
 {
   return compose(transparent_binary_operator<thrust::divides<>>(), make_actor(_1), make_actor(_2));
 } // end operator/()
@@ -153,16 +153,16 @@ operator/(const actor<T1>& _1, const actor<T2>& _2)
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::modulus<>>, actor<T1>, typename as_actor<T2>::type>>
-  operator%(const actor<T1>& _1, const T2& _2)
+actor<composite<transparent_binary_operator<thrust::modulus<>>, actor<T1>, typename as_actor<T2>::type>>
+operator%(const actor<T1>& _1, const T2& _2)
 {
   return compose(transparent_binary_operator<thrust::modulus<>>(), make_actor(_1), make_actor(_2));
 } // end operator%()
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::modulus<>>, typename as_actor<T1>::type, actor<T2>>>
-  operator%(const T1& _1, const actor<T2>& _2)
+actor<composite<transparent_binary_operator<thrust::modulus<>>, typename as_actor<T1>::type, actor<T2>>>
+operator%(const T1& _1, const actor<T2>& _2)
 {
   return compose(transparent_binary_operator<thrust::modulus<void>>(), make_actor(_1), make_actor(_2));
 } // end operator%()

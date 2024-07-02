@@ -301,15 +301,15 @@ struct DeviceBatchMemcpyPolicy
   {
     static constexpr bool PREFER_POW2_BITS = true;
     using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<
-      BLOCK_THREADS,
-      BUFFERS_PER_THREAD,
-      TLEV_BYTES_PER_THREAD,
-      PREFER_POW2_BITS,
-      LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
-      WARP_LEVEL_THRESHOLD,
-      BLOCK_LEVEL_THRESHOLD,
-      buff_delay_constructor_t,
-      block_delay_constructor_t>;
+               BLOCK_THREADS,
+               BUFFERS_PER_THREAD,
+               TLEV_BYTES_PER_THREAD,
+               PREFER_POW2_BITS,
+               LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+               WARP_LEVEL_THRESHOLD,
+               BLOCK_LEVEL_THRESHOLD,
+               buff_delay_constructor_t,
+               block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
       AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
@@ -320,15 +320,15 @@ struct DeviceBatchMemcpyPolicy
   {
     static constexpr bool PREFER_POW2_BITS = false;
     using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<
-      BLOCK_THREADS,
-      BUFFERS_PER_THREAD,
-      TLEV_BYTES_PER_THREAD,
-      PREFER_POW2_BITS,
-      LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
-      WARP_LEVEL_THRESHOLD,
-      BLOCK_LEVEL_THRESHOLD,
-      buff_delay_constructor_t,
-      block_delay_constructor_t>;
+               BLOCK_THREADS,
+               BUFFERS_PER_THREAD,
+               TLEV_BYTES_PER_THREAD,
+               PREFER_POW2_BITS,
+               LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+               WARP_LEVEL_THRESHOLD,
+               BLOCK_LEVEL_THRESHOLD,
+               buff_delay_constructor_t,
+               block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
       AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
