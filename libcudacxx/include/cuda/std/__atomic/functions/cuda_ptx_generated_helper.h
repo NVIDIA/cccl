@@ -50,10 +50,10 @@ using __atomic_cuda_seq_cst  = __atomic_cuda_memorder_tag<__atomic_cuda_memorder
 using __atomic_cuda_volatile = __atomic_cuda_memorder_tag<__atomic_cuda_memorder::_volatile>;
 
 template <bool _Volatile>
-using __atomic_mmio_tag = integral_constant<bool, _Volatile>;
+using __atomic_cuda_mmio_tag = integral_constant<bool, _Volatile>;
 
-using __atomic_mmio_enable  = __atomic_mmio_tag<true>;
-using __atomic_mmio_disable = __atomic_mmio_tag<false>;
+using __atomic_cuda_mmio_enable  = __atomic_cuda_mmio_tag<true>;
+using __atomic_cuda_mmio_disable = __atomic_cuda_mmio_tag<false>;
 
 enum class __atomic_cuda_operand
 {
@@ -93,9 +93,13 @@ struct __atomic_cuda_operand_deduction
 
 template <class _Type>
 using __atomic_cuda_deduce_bitwise =
-  _If<sizeof(_Type) == 4,
-      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
-      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>>;
+  _If<sizeof(_Type) == 2,
+      __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_b16>,
+      _If<sizeof(_Type) == 4,
+          __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
+          _If<sizeof(_Type) == 8,
+              __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>,
+              __atomic_cuda_operand_deduction<longlong2, __atomic_cuda_operand_b128>>>>;
 
 template <class _Type>
 using __atomic_cuda_deduce_arithmetic =

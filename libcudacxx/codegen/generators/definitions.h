@@ -26,8 +26,17 @@ enum class Mmio
 static std::string mmio(Mmio m)
 {
   static std::map mmio_map{
-    std::pair{Mmio::Disabled, std::string{""}},
-    std::pair{Mmio::Enabled, std::string{"volatile "}},
+    std::pair{Mmio::Disabled, ""},
+    std::pair{Mmio::Enabled, ".mmio"},
+  };
+  return mmio_map[m];
+}
+
+static std::string mmio_tag(Mmio m)
+{
+  static std::map mmio_map{
+    std::pair{Mmio::Disabled, "__atomic_cuda_mmio_disable"},
+    std::pair{Mmio::Enabled, "__atomic_cuda_mmio_enable"},
   };
   return mmio_map[m];
 }
@@ -44,17 +53,6 @@ static std::string operand(Operand op)
 {
   static std::map op_map = {
     std::pair{Operand::Floating, "f"},
-    std::pair{Operand::Unsigned, "u"},
-    std::pair{Operand::Signed, "s"},
-    std::pair{Operand::Bit, "b"},
-  };
-  return op_map[op];
-}
-
-static std::string operand_deduced(Operand op)
-{
-  static std::map op_map = {
-    std::pair{Operand::Floating, ""},
     std::pair{Operand::Unsigned, "u"},
     std::pair{Operand::Signed, "s"},
     std::pair{Operand::Bit, "b"},
@@ -99,7 +97,15 @@ static std::string constraints(Operand op, size_t sz)
                 std::pair{Operand::Unsigned, "l"},
                 std::pair{Operand::Signed, "l"},
                 std::pair{Operand::Floating, "d"},
-              }}};
+              }},
+    std::pair{128,
+              std::map{
+                std::pair{Operand::Bit, "l"},
+                std::pair{Operand::Unsigned, "l"},
+                std::pair{Operand::Signed, "l"},
+                std::pair{Operand::Floating, "d"},
+              }},
+  };
 
   if (sz == 16)
   {
@@ -128,7 +134,7 @@ static std::string semantic(Semantic sem)
     std::pair{Semantic::Release, ".release"},
     std::pair{Semantic::Acquire, ".acquire"},
     std::pair{Semantic::Acq_Rel, ".acq_rel"},
-    std::pair{Semantic::Seq_Cst, ".sc"}, // Only used in seq_cst fence operations
+    std::pair{Semantic::Seq_Cst, ".sc"},
     std::pair{Semantic::Volatile, ""},
   };
   return sem_map[sem];
@@ -137,12 +143,12 @@ static std::string semantic(Semantic sem)
 static std::string semantic_tag(Semantic sem)
 {
   static std::map sem_map = {
-    std::pair{Semantic::Relaxed, "relaxed"},
-    std::pair{Semantic::Release, "release"},
-    std::pair{Semantic::Acquire, "acquire"},
-    std::pair{Semantic::Acq_Rel, "acq_rel"},
-    std::pair{Semantic::Seq_Cst, "seq_cst"}, // Only used in seq_cst fence operations
-    std::pair{Semantic::Volatile, "volatile"},
+    std::pair{Semantic::Relaxed, "__atomic_cuda_relaxed"},
+    std::pair{Semantic::Release, "__atomic_cuda_release"},
+    std::pair{Semantic::Acquire, "__atomic_cuda_acquire"},
+    std::pair{Semantic::Acq_Rel, "__atomic_cuda_acq_rel"},
+    std::pair{Semantic::Seq_Cst, "__atomic_cuda_seq_cst"},
+    std::pair{Semantic::Volatile, "__atomic_cuda_volatile"},
   };
   return sem_map[sem];
 }

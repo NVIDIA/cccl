@@ -84,7 +84,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
   const std::string asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_{5}, __atomic_cuda_operand_{1}{2}, {7})
+  _Type* __ptr, _Type& __dst, _Type __op, {5}, __atomic_cuda_operand_{1}{2}, {7})
 {{ asm volatile("atom.{0}{4}{6}.{1}{2} %0,[%1],%2;" : "={3}"(__dst) : "l"(__ptr), "{3}"(__op) : "memory"); }})XXX";
 
   // 0 - Atomic Operation

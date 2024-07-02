@@ -53,7 +53,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
   // 2 - Fence order tag
   // 3 - Fence order
   const std::string intrinsic_fence = R"XXX(
-static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, __atomic_cuda_{2})
+static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
 {{ asm volatile("fence{1}{3};" ::: "memory"); }})XXX";
 
   const std::array fence_scopes{
