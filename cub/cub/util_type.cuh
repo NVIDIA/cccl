@@ -46,7 +46,6 @@
 #include <cub/detail/uninitialized_copy.cuh>
 
 #include <cuda/std/cstdint>
-#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -58,6 +57,12 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_POP
 #  endif // !_CCCL_CUDACC_BELOW_11_8
 #endif // _CCCL_HAS_NV_BF16
+
+#ifdef _CCCL_COMPILER_NVRTC
+#  include <cuda/std/iterator>
+#else // !defined(_CCCL_COMPILER_NVRTC)
+#  include <iterator>
+#endif // defined(_CCCL_COMPILER_NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
