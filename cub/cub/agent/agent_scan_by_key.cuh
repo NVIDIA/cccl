@@ -122,6 +122,8 @@ struct AgentScanByKeyPolicy
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
  */
 template <typename AgentScanByKeyPolicyT,
           typename KeysInputIteratorT,
@@ -235,7 +237,7 @@ struct AgentScanByKey
     SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
     SizeValuePairT& tile_aggregate,
     TilePrefixCallbackT& prefix_op,
-    Int2Type<false> /* is_incclusive */)
+    Int2Type<false> /* is_inclusive */)
   {
     BlockScanT(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, pair_scan_op, prefix_op);
     tile_aggregate = prefix_op.GetBlockAggregate();
@@ -281,7 +283,7 @@ struct AgentScanByKey
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
-// Zip values and segment_flags
+// Unzip values and segment_flags
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
