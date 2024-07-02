@@ -134,13 +134,14 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT __convertible_to_non_slicing = _LIBCUDACXX_FRAGMENT(__convertible_to_non_slicing_, _From, _To);
 
+// We relaxthe requirement on tuple_size due to a gcc issue
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __pair_like_,
   requires(_Tp __t)(
     requires(!is_reference_v<_Tp>),
     typename(typename tuple_size<_Tp>::type),
-    requires(tuple_size<_Tp>::value == 2), // relaxed because of gcc issues
+    requires(tuple_size<_Tp>::value == 2),
     typename(tuple_element_t<0, remove_const_t<_Tp>>),
     typename(tuple_element_t<1, remove_const_t<_Tp>>),
     requires(convertible_to<decltype(_CUDA_VSTD::get<0>(__t)), const tuple_element_t<0, _Tp>&>),
