@@ -1271,18 +1271,21 @@ struct maximum
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  using first_argument_type = T;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  using second_argument_type = T;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  using result_type = T;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
    */
@@ -1325,18 +1328,21 @@ struct minimum
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  using first_argument_type = T;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  using second_argument_type = T;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  using result_type = T;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! Function call operator. The return value is <tt>lhs < rhs ? lhs : rhs</tt>.
    */
@@ -1372,18 +1378,21 @@ struct project1st
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  using first_argument_type = T1;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  using second_argument_type = T2;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  using result_type = T1;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
@@ -1429,18 +1438,21 @@ struct project2nd
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  using first_argument_type = T1;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  using second_argument_type = T2;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  using result_type = T2;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
