@@ -464,7 +464,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -486,7 +487,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -508,7 +510,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -531,7 +534,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -554,7 +558,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -577,7 +582,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -603,13 +609,13 @@ template <typename Derived1,
           typename Difference2>
 inline _CCCL_HOST_DEVICE
 
-  // divine the type this operator returns
-  typename thrust::detail::distance_from_result<
-    iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
-    iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>::type
+// divine the type this operator returns
+typename thrust::detail::distance_from_result<
+  iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
+  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>::type
 
-  operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+          iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return iterator_core_access ::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
 }

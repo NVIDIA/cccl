@@ -105,9 +105,9 @@ struct execute_on_stream : execute_on_stream_base<execute_on_stream>
   using base_t = execute_on_stream_base<execute_on_stream>;
 
   _CCCL_HOST_DEVICE execute_on_stream()
-      : base_t(){};
+      : base_t() {};
   _CCCL_HOST_DEVICE execute_on_stream(cudaStream_t stream)
-      : base_t(stream){};
+      : base_t(stream) {};
 };
 
 struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_stream_nosync>
@@ -115,9 +115,9 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
   using base_t = execute_on_stream_nosync_base<execute_on_stream_nosync>;
 
   _CCCL_HOST_DEVICE execute_on_stream_nosync()
-      : base_t(){};
+      : base_t() {};
   _CCCL_HOST_DEVICE execute_on_stream_nosync(cudaStream_t stream)
-      : base_t(stream){};
+      : base_t(stream) {};
 };
 
 struct par_t

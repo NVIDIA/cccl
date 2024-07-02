@@ -79,8 +79,8 @@ default_construct_range(Allocator& a, Pointer p, Size n)
 }
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE typename disable_if<
-  needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>::type
+_CCCL_HOST_DEVICE
+typename disable_if<needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>::type
 default_construct_range(Allocator& a, Pointer p, Size n)
 {
   thrust::uninitialized_fill_n(allocator_system<Allocator>::get(a), p, n, typename pointer_element<Pointer>::type());

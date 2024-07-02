@@ -118,9 +118,7 @@ concept random_access_range = bidirectional_range<_Tp> && random_access_iterator
 
 template <class _Tp>
 concept contiguous_range = random_access_range<_Tp> && contiguous_iterator<iterator_t<_Tp>> && requires(_Tp& __t) {
-  {
-    _CUDA_VRANGES::data(__t)
-  } -> same_as<add_pointer_t<range_reference_t<_Tp>>>;
+  { _CUDA_VRANGES::data(__t) } -> same_as<add_pointer_t<range_reference_t<_Tp>>>;
 };
 
 template <class _Tp>

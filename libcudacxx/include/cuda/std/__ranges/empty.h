@@ -43,9 +43,7 @@ concept __can_invoke_size = !__member_empty<_Tp> && requires(_Tp&& __t) { _CUDA_
 template <class _Tp>
 concept __can_compare_begin_end = !__member_empty<_Tp> && !__can_invoke_size<_Tp> && requires(_Tp&& __t) {
   bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t));
-  {
-    _CUDA_VRANGES::begin(__t)
-  } -> forward_iterator;
+  { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>

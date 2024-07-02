@@ -31,9 +31,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _BidirectionalIterator, class _OutputIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<_BidirectionalIterator, _OutputIterator>
-  __move_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 pair<_BidirectionalIterator, _OutputIterator>
+__move_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
 {
   while (__first != __last)
   {

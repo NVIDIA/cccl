@@ -605,10 +605,10 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE
-    typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
-                                      && detail::reduce_add_exists<>::value,
-                                    T>::type
-    ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Sum /* reduction_op */)
+  typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
+                                    && detail::reduce_add_exists<>::value,
+                                  T>::type
+  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Sum /* reduction_op */)
   {
     T output = input;
 
@@ -621,10 +621,10 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE
-    typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
-                                      && detail::reduce_min_exists<>::value,
-                                    T>::type
-    ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Min /* reduction_op */)
+  typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
+                                    && detail::reduce_min_exists<>::value,
+                                  T>::type
+  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Min /* reduction_op */)
   {
     T output = input;
 
@@ -637,10 +637,10 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE
-    typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
-                                      && detail::reduce_max_exists<>::value,
-                                    T>::type
-    ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Max /* reduction_op */)
+  typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
+                                    && detail::reduce_max_exists<>::value,
+                                  T>::type
+  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Max /* reduction_op */)
   {
     T output = input;
 

@@ -346,20 +346,21 @@ struct AgentPartition
       OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
       OffsetT partition_diag =
-        ping ? MergePath<KeyT>(
-          keys_ping + keys1_beg,
-          keys_ping + keys2_beg,
-          keys1_end - keys1_beg,
-          keys2_end - keys2_beg,
-          partition_at,
-          compare_op)
-             : MergePath<KeyT>(
-               keys_pong + keys1_beg,
-               keys_pong + keys2_beg,
-               keys1_end - keys1_beg,
-               keys2_end - keys2_beg,
-               partition_at,
-               compare_op);
+        ping
+          ? MergePath<KeyT>(
+              keys_ping + keys1_beg,
+              keys_ping + keys2_beg,
+              keys1_end - keys1_beg,
+              keys2_end - keys2_beg,
+              partition_at,
+              compare_op)
+          : MergePath<KeyT>(
+              keys_pong + keys1_beg,
+              keys_pong + keys2_beg,
+              keys1_end - keys1_beg,
+              keys2_end - keys2_beg,
+              partition_at,
+              compare_op);
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }

@@ -99,17 +99,17 @@ _CCCL_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
 
 template <class T1, class T2>
 inline _CCCL_HOST_DEVICE
-  _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__is_swappable<T1>::value && _CUDA_VSTD::__is_swappable<T2>::value, void>
-  swap(pair<T1, T2>& lhs, pair<T1, T2>& rhs) noexcept(
-    (_CUDA_VSTD::__is_nothrow_swappable<T1>::value && _CUDA_VSTD::__is_nothrow_swappable<T2>::value))
+_CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__is_swappable<T1>::value && _CUDA_VSTD::__is_swappable<T2>::value, void>
+swap(pair<T1, T2>& lhs, pair<T1, T2>& rhs) noexcept(
+  (_CUDA_VSTD::__is_nothrow_swappable<T1>::value && _CUDA_VSTD::__is_nothrow_swappable<T2>::value))
 {
   lhs.swap(rhs);
 }
 
 template <class T1, class T2>
 inline _CCCL_HOST_DEVICE
-  pair<typename _CUDA_VSTD::__unwrap_ref_decay<T1>::type, typename _CUDA_VSTD::__unwrap_ref_decay<T2>::type>
-  make_pair(T1&& t1, T2&& t2)
+pair<typename _CUDA_VSTD::__unwrap_ref_decay<T1>::type, typename _CUDA_VSTD::__unwrap_ref_decay<T2>::type>
+make_pair(T1&& t1, T2&& t2)
 {
   return pair<typename _CUDA_VSTD::__unwrap_ref_decay<T1>::type, typename _CUDA_VSTD::__unwrap_ref_decay<T2>::type>(
     _CUDA_VSTD::forward<T1>(t1), _CUDA_VSTD::forward<T2>(t2));

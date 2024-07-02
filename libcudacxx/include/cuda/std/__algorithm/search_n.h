@@ -79,14 +79,14 @@ __search_n(_ForwardIterator __first,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, class _Tp>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  _RandomAccessIterator
-  __search_n(_RandomAccessIterator __first,
-             _RandomAccessIterator __last,
-             _Size __count,
-             const _Tp& __value_,
-             _BinaryPredicate __pred,
-             random_access_iterator_tag)
+_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
+__search_n(_RandomAccessIterator __first,
+           _RandomAccessIterator __last,
+           _Size __count,
+           const _Tp& __value_,
+           _BinaryPredicate __pred,
+           random_access_iterator_tag)
 {
   if (__count <= 0)
   {

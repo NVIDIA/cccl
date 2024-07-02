@@ -45,19 +45,21 @@ struct _ProjectedPred
   {}
 
   template <class _Tp>
-  typename __invoke_of<_Pred&,
-                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>()))>::
-    type constexpr _LIBCUDACXX_INLINE_VISIBILITY
+  typename __invoke_of<
+    _Pred&,
+    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>()))>::type constexpr
+    _LIBCUDACXX_INLINE_VISIBILITY
     operator()(_Tp&& __v) const
   {
     return _CUDA_VSTD::__invoke(__pred, _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_Tp>(__v)));
   }
 
   template <class _T1, class _T2>
-  typename __invoke_of<_Pred&,
-                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T1>())),
-                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>()))>::
-    type constexpr _LIBCUDACXX_INLINE_VISIBILITY
+  typename __invoke_of<
+    _Pred&,
+    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T1>())),
+    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>()))>::type constexpr
+    _LIBCUDACXX_INLINE_VISIBILITY
     operator()(_T1&& __lhs, _T2&& __rhs) const
   {
     return _CUDA_VSTD::__invoke(__pred,

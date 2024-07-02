@@ -65,7 +65,7 @@ static_assert(equality_comparable<int (S::*)() volatile noexcept>, "");
 static_assert(equality_comparable<int (S::*)() volatile&>, "");
 static_assert(equality_comparable<int (S::*)() volatile & noexcept>, "");
 static_assert(equality_comparable<int (S::*)() volatile&&>, "");
-static_assert(equality_comparable < int(S::*)() volatile&& noexcept >, "");
+static_assert(equality_comparable < int(S::*)() volatile && noexcept >, "");
 static_assert(equality_comparable<int (S::*)() const volatile>, "");
 static_assert(equality_comparable<int (S::*)() const volatile noexcept>, "");
 static_assert(equality_comparable<int (S::*)() const volatile&>, "");

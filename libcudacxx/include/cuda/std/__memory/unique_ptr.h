@@ -86,9 +86,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS default_delete<_Tp[]>
   {}
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-    __enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
-    operator()(_Up* __ptr) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 __enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
+  operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
     delete[] __ptr;
@@ -190,7 +190,8 @@ public:
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit unique_ptr(pointer __p) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 explicit unique_ptr(pointer __p) noexcept
       : __ptr_(__p, __value_init_tag())
   {}
 
@@ -535,9 +536,9 @@ public:
 };
 
 template <class _Tp, class _Dp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<__is_swappable<_Dp>::value, void>
-  swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_Dp>::value, void>
+swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept
 {
   __x.swap(__y);
 }
@@ -551,7 +552,8 @@ operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 
 #if _CCCL_STD_VER <= 2017
 template <class _T1, class _D1, class _T2, class _D2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -561,7 +563,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 #endif
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator<(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -573,7 +576,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -582,7 +586,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator<=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -591,7 +596,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator>=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -604,8 +610,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 template <class _T1, class _D1, class _T2, class _D2>
   requires three_way_comparable_with<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
 _LIBCUDACXX_HIDE_FROM_ABI
-  compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
-  operator<=>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
+compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
+operator<=>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
   return compare_three_way()(__x.get(), __y.get());
 }
@@ -621,7 +627,8 @@ operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
 
 #if _CCCL_STD_VER <= 2017
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
@@ -630,7 +637,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator!=(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
@@ -639,7 +647,8 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+inline
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 
   bool
   operator!=(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
@@ -710,9 +719,9 @@ operator>=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 #  if _CCCL_STD_VER >= 2020
 template <class _T1, class _D1>
   requires three_way_comparable<typename unique_ptr<_T1, _D1>::pointer>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer>
-  operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer>
+operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return compare_three_way()(__x.get(), static_cast<typename unique_ptr<_T1, _D1>::pointer>(nullptr));
 }
@@ -739,16 +748,16 @@ struct __unique_if<_Tp[_Np]>
 
 template <class _Tp, class... _Args>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  typename __unique_if<_Tp>::__unique_single
-  make_unique(_Args&&... __args)
+typename __unique_if<_Tp>::__unique_single
+make_unique(_Args&&... __args)
 {
   return unique_ptr<_Tp>(new _Tp(_CUDA_VSTD::forward<_Args>(__args)...));
 }
 
 template <class _Tp>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  typename __unique_if<_Tp>::__unique_array_unknown_bound
-  make_unique(size_t __n)
+typename __unique_if<_Tp>::__unique_array_unknown_bound
+make_unique(size_t __n)
 {
   typedef __remove_extent_t<_Tp> _Up;
   return unique_ptr<_Tp>(new _Up[__n]());
