@@ -134,7 +134,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT __convertible_to_non_slicing = _LIBCUDACXX_FRAGMENT(__convertible_to_non_slicing_, _From, _To);
 
-// We relaxthe requirement on tuple_size due to a gcc issue
+// We relax the requirement on tuple_size due to a gcc issue
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __pair_like_,
