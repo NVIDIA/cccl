@@ -51,6 +51,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 #include <nv/target>
@@ -476,16 +478,16 @@ using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
 
 template <class T>
 using default_delay_constructor_t =
-  cub::detail::conditional_t<Traits<T>::PRIMITIVE, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
+  ::cuda::std::_If<Traits<T>::PRIMITIVE, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
 
 template <class T>
 using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
 
 template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
-  detail::conditional_t<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
-                        reduce_by_key_delay_constructor_t<350, 450>,
-                        default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
+  ::cuda::std::_If<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
+                   reduce_by_key_delay_constructor_t<350, 450>,
+                   default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
 } // namespace detail
 
 /**
@@ -503,16 +505,13 @@ template <typename T>
 struct ScanTileState<T, true>
 {
   // Status word type
-  using StatusWord = cub::detail::conditional_t<
+  using StatusWord = ::cuda::std::_If<
     sizeof(T) == 8,
     unsigned long long,
-    cub::detail::conditional_t<sizeof(T) == 4,
-                               unsigned int,
-                               cub::detail::conditional_t<sizeof(T) == 2, unsigned short, unsigned char>>>;
+    ::cuda::std::_If<sizeof(T) == 4, unsigned int, ::cuda::std::_If<sizeof(T) == 2, unsigned short, unsigned char>>>;
 
   // Unit word type
-  using TxnWord = cub::detail::
-    conditional_t<sizeof(T) == 8, ulonglong2, cub::detail::conditional_t<sizeof(T) == 4, uint2, unsigned int>>;
+  using TxnWord = ::cuda::std::_If<sizeof(T) == 8, ulonglong2, ::cuda::std::_If<sizeof(T) == 4, uint2, unsigned int>>;
 
   // Device word type
   struct TileDescriptor
@@ -889,18 +888,15 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   };
 
   // Status word type
-  using StatusWord = cub::detail::conditional_t<
+  using StatusWord = ::cuda::std::_If<
     STATUS_WORD_SIZE == 8,
     unsigned long long,
-    cub::detail::conditional_t<STATUS_WORD_SIZE == 4,
-                               unsigned int,
-                               cub::detail::conditional_t<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
+    ::cuda::std::
+      _If<STATUS_WORD_SIZE == 4, unsigned int, ::cuda::std::_If<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
 
   // Status word type
-  using TxnWord =
-    cub::detail::conditional_t<TXN_WORD_SIZE == 16,
-                               ulonglong2,
-                               cub::detail::conditional_t<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
+  using TxnWord = ::cuda::std::
+    _If<TXN_WORD_SIZE == 16, ulonglong2, ::cuda::std::_If<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
   struct TileDescriptorBigStatus
@@ -920,7 +916,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
   // Device word type
   using TileDescriptor =
-    cub::detail::conditional_t<sizeof(ValueT) == sizeof(KeyT), TileDescriptorBigStatus, TileDescriptorLittleStatus>;
+    ::cuda::std::_If<sizeof(ValueT) == sizeof(KeyT), TileDescriptorBigStatus, TileDescriptorLittleStatus>;
 
   // Device storage
   TxnWord* d_tile_descriptors;
