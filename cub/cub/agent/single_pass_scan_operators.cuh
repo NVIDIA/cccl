@@ -498,12 +498,57 @@ using default_reduce_by_key_delay_constructor_t =
   detail::conditional_t<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
                         reduce_by_key_delay_constructor_t<350, 450>,
                         default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
+
+/**
+ * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
+ *
+ * @tparam T The ScanTileState's value type
+ * @tparam Order The memory order to be implemented by the ScanTileState
+ */
+template <typename ScanTileStateT, MemoryOrder Order>
+struct tile_state_with_memory_order
+{
+  ScanTileStateT& tile_state;
+  using T          = typename ScanTileStateT::ValueT;
+  using StatusWord = typename ScanTileStateT::StatusWord;
+
+  /**
+   * Update the specified tile's inclusive value and corresponding status
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
+  {
+    tile_state.template SetInclusive<Order>(tile_idx, tile_inclusive);
+  }
+
+  /**
+   * Update the specified tile's partial value and corresponding status
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
+  {
+    tile_state.template SetPartial<Order>(tile_idx, tile_partial);
+  }
+
+  /**
+   * Wait for the corresponding tile to become non-invalid
+   */
+  template <class DelayT = detail::default_no_delay_t>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
+  {
+    tile_state.template WaitForValid<DelayT, Order>(tile_idx, status, value, delay);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
+  {
+    return tile_state.template LoadValid<Order>(tile_idx);
+  }
+};
+
 } // namespace detail
 
 /**
  * Tile status interface.
  */
-template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE, MemoryOrder Order = MemoryOrder::relaxed>
+template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
 struct ScanTileState;
 
 /**
@@ -511,9 +556,11 @@ struct ScanTileState;
  * that can be combined into one machine word that can be
  * read/written coherently in a single access.
  */
-template <typename T, MemoryOrder Order>
-struct ScanTileState<T, true, Order>
+template <typename T>
+struct ScanTileState<T, true>
 {
+  using ValueT = T;
+
   // Status word type
   using StatusWord = cub::detail::conditional_t<
     sizeof(T) == 8,
@@ -610,49 +657,49 @@ struct ScanTileState<T, true, Order>
   }
 
 private:
-  template <MemoryOrder Order_ = Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), void>::type
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_relaxed(ptr, alias);
   }
 
-  template <MemoryOrder Order_ = Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), void>::type
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
     detail::store_release(ptr, alias);
   }
 
-  template <MemoryOrder Order_ = Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), TxnWord>::type
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), TxnWord>::type
   LoadStatus(TxnWord* ptr)
   {
     return detail::load_relaxed(ptr);
   }
 
-  template <MemoryOrder Order_ = Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), TxnWord>::type
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), TxnWord>::type
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
     NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
   }
 
-  template <MemoryOrder Order_ = Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::relaxed), void>::type
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
   ThreadfenceForLoadAcqPreVolta()
   {}
 
-  template <MemoryOrder Order_ = Order>
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order_ == MemoryOrder::acquire_release), void>::type
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
   ThreadfenceForLoadAcqPreVolta()
   {
     NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
   }
 
 public:
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -662,9 +709,10 @@ public:
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -674,32 +722,32 @@ public:
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    StoreStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = detail::default_delay_t<T>>
+  template <class DelayT = detail::default_delay_t<T>, MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay_or_prevent_hoisting = {})
   {
     TileDescriptor tile_descriptor;
 
     {
-      TxnWord alias   = LoadStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
 
     while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff))
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = LoadStatus(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
 
     // For pre-Volta and load acquire we emit relaxed loads in LoadStatus and hoist the threadfence here
-    ThreadfenceForLoadAcqPreVolta();
+    ThreadfenceForLoadAcqPreVolta<Order>();
 
     status = tile_descriptor.status;
     value  = tile_descriptor.value;
@@ -721,8 +769,8 @@ public:
  * Tile status interface specialized for scan status and value types that
  * cannot be combined into one machine word.
  */
-template <typename T, MemoryOrder Order>
-struct ScanTileState<T, false, Order>
+template <typename T>
+struct ScanTileState<T, false>
 {
   // Status word type
   using StatusWord = unsigned int;
@@ -844,6 +892,7 @@ struct ScanTileState<T, false, Order>
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
@@ -854,6 +903,7 @@ struct ScanTileState<T, false, Order>
   /**
    * Update the specified tile's partial value and corresponding status
    */
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
@@ -864,7 +914,7 @@ struct ScanTileState<T, false, Order>
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = detail::default_no_delay_t>
+  template <class DelayT = detail::default_no_delay_t, MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
   {
     do
@@ -893,15 +943,6 @@ struct ScanTileState<T, false, Order>
     return d_tile_inclusive[TILE_STATUS_PADDING + tile_idx];
   }
 };
-
-/**
- * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
- *
- * @tparam T The ScanTileState's value type
- * @tparam Order The memory order to be implemented by the ScanTileState
- */
-template <typename T, MemoryOrder Order>
-using TileStateWithMemoryOrderT = ScanTileState<T, Traits<T>::PRIMITIVE, Order>;
 
 /******************************************************************************
  * ReduceByKey tile status interface types for block-cooperative scans

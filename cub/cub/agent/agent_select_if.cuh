@@ -187,6 +187,22 @@ struct AgentSelectIf
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
+  // Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data
+  static constexpr bool loads_via_smem =
+    !(AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT
+      || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED
+      || AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_VECTORIZE);
+
+  // If this may be an *in-place* stream compaction, we need to ensure that all of a tile's items have been loaded
+  // before signalling a subsequent thread block's partial or inclusive state, hence we need a store release when
+  // updating a tile state. Similarly, we need to make sure that the load of previous tile states precede writing of
+  // the stream-compacted items and, hence, we need a load acquire when reading those tile states.
+  static constexpr MemoryOrder memory_order =
+    ((!KEEP_REJECTS) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
+
+  // If we need to enforce memory order for in-place stream compaction, wrap the default decoupled look-back tile
+  // state in a helper class that enforces memory order on reads and writes
+  using MemoryOrderedTileStateT = detail::tile_state_with_memory_order<ScanTileStateT, memory_order>;
 
   // The input value type
   using InputT = cub::detail::value_t<InputIteratorT>;
@@ -247,7 +263,7 @@ struct AgentSelectIf
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT     = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, MemoryOrderedTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -739,14 +755,15 @@ struct AgentSelectIf
    * @param tile_offset
    *   Tile offset
    *
-   * @param tile_state
-   *   Global tile state descriptor
+   * @param tile_state_wrapper
+   *   A global tile state descriptor wrapped in a MemoryOrderedTileStateT that ensures consistent memory order across
+   *   all tile status updates and loads
    *
    * @return The running count of selections (including this tile)
    */
   template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
-  ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state)
+  ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
     InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
@@ -780,7 +797,7 @@ struct AgentSelectIf
       // Update tile status if this is not the last tile
       if (!IS_LAST_TILE)
       {
-        tile_state.SetInclusive(0, num_tile_selections);
+        tile_state_wrapper.SetInclusive(0, num_tile_selections);
       }
     }
 
@@ -817,14 +834,15 @@ struct AgentSelectIf
    * @param tile_offset
    *   Tile offset
    *
-   * @param tile_state
-   *   Global tile state descriptor
+   * @param tile_state_wrapper
+   *   A global tile state descriptor wrapped in a MemoryOrderedTileStateT that ensures consistent memory order across
+   *   all tile status updates and loads
    *
    * @return The running count of selections (including this tile)
    */
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
-  ConsumeSubsequentTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
+  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(
+    int num_tile_items, int tile_idx, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
     InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
@@ -850,7 +868,7 @@ struct AgentSelectIf
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
-    TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    TilePrefixCallbackOpT prefix_op(tile_state_wrapper, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
 
     OffsetT num_tile_selections   = prefix_op.GetBlockAggregate();
@@ -897,21 +915,22 @@ struct AgentSelectIf
    * @param tile_offset
    *   Tile offset
    *
-   * @param tile_state
-   *   Global tile state descriptor
+   * @param tile_state_wrapper
+   *   A global tile state descriptor wrapped in a MemoryOrderedTileStateT that ensures consistent memory order across
+   *   all tile status updates and loads
    */
   template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
-  ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
+  ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
     OffsetT num_selections;
     if (tile_idx == 0)
     {
-      num_selections = ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state);
+      num_selections = ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state_wrapper);
     }
     else
     {
-      num_selections = ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state);
+      num_selections = ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state_wrapper);
     }
 
     return num_selections;
@@ -936,6 +955,9 @@ struct AgentSelectIf
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
+    // Ensure consistent memory order across all tile status updates and loads
+    auto tile_state_wrapper = MemoryOrderedTileStateT{tile_state};
+
     // Blocks are launched in increasing order, so just assign one tile per block
     int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
@@ -943,13 +965,13 @@ struct AgentSelectIf
     if (tile_idx < num_tiles - 1)
     {
       // Not the last tile (full)
-      ConsumeTile<false>(TILE_ITEMS, tile_idx, tile_offset, tile_state);
+      ConsumeTile<false>(TILE_ITEMS, tile_idx, tile_offset, tile_state_wrapper);
     }
     else
     {
       // The last tile (possibly partially-full)
       OffsetT num_remaining  = num_items - tile_offset;
-      OffsetT num_selections = ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state);
+      OffsetT num_selections = ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state_wrapper);
 
       if (threadIdx.x == 0)
       {

@@ -295,23 +295,7 @@ struct DispatchSelectIf : SelectedPolicy
   /******************************************************************************
    * Types and constants
    ******************************************************************************/
-  template <typename ActivePolicyT>
-  struct SelectIfTileState
-  {
-    // Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data
-    static constexpr bool loads_via_smem =
-      !(ActivePolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT || ActivePolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED
-        || ActivePolicyT::LOAD_ALGORITHM == BLOCK_LOAD_VECTORIZE);
-
-    // If this may be an *in-place* stream compaction, we need to ensure that all of a tile's items have been loaded
-    // before signalling a subsequent thread block's partial or inclusive state, hence we need a store release on a tile
-    // state. Similarly, we need to make sure that the load of previous tile states precede writing of the
-    // stream-compacted items and, hence, we need a load acquire when reading those tile states.
-    static constexpr auto memory_order =
-      ((!KEEP_REJECTS) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
-
-    using ScanTileStateT = TileStateWithMemoryOrderT<OffsetT, memory_order>;
-  };
+  using ScanTileStateT = ScanTileState<OffsetT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -420,8 +404,6 @@ struct DispatchSelectIf : SelectedPolicy
   Invoke(ScanInitKernelPtrT scan_init_kernel, SelectIfKernelPtrT select_if_kernel)
   {
     using Policy = typename ActivePolicyT::SelectIfPolicyT;
-
-    using ScanTileStateT = typename SelectIfTileState<Policy>::ScanTileStateT;
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
@@ -592,8 +574,6 @@ struct DispatchSelectIf : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
-    using ScanTileStateT = typename SelectIfTileState<typename ActivePolicyT::SelectIfPolicyT>::ScanTileStateT;
 
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
