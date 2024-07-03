@@ -135,6 +135,8 @@ struct AgentScanPolicy : ScalingType
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
  */
 template <typename AgentScanPolicyT,
           typename InputIteratorT,

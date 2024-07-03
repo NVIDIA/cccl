@@ -65,7 +65,7 @@ CUB_NAMESPACE_BEGIN
  *****************************************************************************/
 
 /**
- * @brief Scan kernel entry point (multi-block)
+ * @brief Scan by key kernel entry point (multi-block)
  *
  * @tparam ChainedPolicyT
  *   Chained tuning policy
