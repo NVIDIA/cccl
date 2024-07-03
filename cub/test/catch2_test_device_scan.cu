@@ -51,7 +51,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t inclusive_scan_init_wrapper(
   InitT init,
   cudaStream_t stream = 0)
 {
-  return cub::DeviceScan::InclusiveScan(
+  return cub::DeviceScan::InclusiveScanInit(
     d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, stream, init);
 }
 

@@ -1233,7 +1233,7 @@ struct DeviceScan
   //! @param[in] init_value
   //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
-  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
+  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,

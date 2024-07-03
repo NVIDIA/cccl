@@ -46,7 +46,7 @@ CUB_TEST("Device inclusive scan works", "[scan][device]")
 
   int init = 1;
 
-  cub::DeviceScan::InclusiveScan(
+  cub::DeviceScan::InclusiveScanInit(
     d_temp_storage,
     temp_storage_bytes,
     input.begin(),
@@ -61,7 +61,7 @@ CUB_TEST("Device inclusive scan works", "[scan][device]")
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run inclusive prefix sum
-  cub::DeviceScan::InclusiveScan(
+  cub::DeviceScan::InclusiveScanInit(
     d_temp_storage,
     temp_storage_bytes,
     input.begin(),
