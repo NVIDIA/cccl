@@ -347,7 +347,7 @@ void TestReduceByKeyCudaStreamsNoSync()
 DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
-class div_op : public thrust::unary_function<std::int64_t, std::int64_t>
+class div_op
 {
   std::int64_t m_divisor;
 
@@ -363,7 +363,7 @@ public:
 };
 
 // Produces unique sequence for key
-class mod_op : public thrust::unary_function<std::int64_t, std::int64_t>
+class mod_op
 {
   std::int64_t m_divisor;
 

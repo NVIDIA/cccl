@@ -22,7 +22,6 @@
 // values in the padded region of the grid
 template <typename IndexType, typename ValueType>
 struct transform_tuple
-    : public thrust::unary_function<thrust::tuple<IndexType, ValueType>, thrust::tuple<bool, ValueType, ValueType>>
 {
   using InputTuple  = typename thrust::tuple<IndexType, ValueType>;
   using OutputTuple = typename thrust::tuple<bool, ValueType, ValueType>;
@@ -45,9 +44,6 @@ struct transform_tuple
 // contains the smallest and largest *valid* values.
 template <typename IndexType, typename ValueType>
 struct reduce_tuple
-    : public thrust::binary_function<thrust::tuple<bool, ValueType, ValueType>,
-                                     thrust::tuple<bool, ValueType, ValueType>,
-                                     thrust::tuple<bool, ValueType, ValueType>>
 {
   using Tuple = typename thrust::tuple<bool, ValueType, ValueType>;
 

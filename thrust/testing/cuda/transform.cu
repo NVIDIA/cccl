@@ -325,7 +325,7 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
     stencil.begin(),
     output.begin(),
     thrust::minus<T>(),
-    thrust::not1(identity),
+    thrust::not_fn(identity),
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);

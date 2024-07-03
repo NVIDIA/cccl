@@ -311,7 +311,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 
   Vector output(5);
 
-  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not1(thrust::identity<T>()));
+  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(thrust::identity<T>()));
 
   ASSERT_EQUAL(output[0], 0);
   ASSERT_EQUAL(output[1], 1);
@@ -350,7 +350,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
 
   Vector output(5);
 
-  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::not2(thrust::equal_to<T>()));
+  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::not_fn(thrust::equal_to<T>()));
 
   ASSERT_EQUAL(output[0], 0);
   ASSERT_EQUAL(output[1], 1);

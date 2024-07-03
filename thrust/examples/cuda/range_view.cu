@@ -132,7 +132,7 @@ range_view<typename Vector::iterator> __host__ make_range_view(Vector& v)
 // This saxpy functor stores view of X, Y, Z array, and accesses them in
 // vector-like way
 template <class View1, class View2, class View3>
-struct saxpy_functor : public thrust::unary_function<int, void>
+struct saxpy_functor
 {
   const float a;
   View1 x;
@@ -165,7 +165,7 @@ __host__ __device__ void saxpy(float A, View1 X, View2 Y, View3 Z)
                    saxpy_functor<View1, View2, View3>(A, X, Y, Z));
 }
 
-struct f1 : public thrust::unary_function<float, float>
+struct f1
 {
   __host__ __device__ float operator()(float x) const
   {

@@ -23,7 +23,7 @@ class tiled_range
 public:
   using difference_type = typename thrust::iterator_difference<Iterator>::type;
 
-  struct tile_functor : public thrust::unary_function<difference_type, difference_type>
+  struct tile_functor
   {
     difference_type tile_size;
 

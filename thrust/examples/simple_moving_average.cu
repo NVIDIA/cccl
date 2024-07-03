@@ -24,7 +24,7 @@
 // compute the difference of two positions in the cumumulative sum and
 // divide by the SMA window size w.
 template <typename T>
-struct minus_and_divide : public thrust::binary_function<T, T, T>
+struct minus_and_divide
 {
   T w;
 
