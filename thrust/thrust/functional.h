@@ -144,32 +144,30 @@ struct binary_function
  *  \{
  */
 
-#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                          \
-  template <>                                                                         \
-  struct func<void>                                                                   \
-  {                                                                                   \
-    using is_transparent = void;                                                      \
-    _CCCL_EXEC_CHECK_DISABLE                                                          \
-    template <typename T>                                                             \
-    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) \
-      THRUST_TRAILING_RETURN(decltype(impl))                                          \
-    {                                                                                 \
-      return impl;                                                                    \
-    }                                                                                 \
+#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                            \
+  template <>                                                                                           \
+  struct func<void>                                                                                     \
+  {                                                                                                     \
+    using is_transparent = void;                                                                        \
+    _CCCL_EXEC_CHECK_DISABLE                                                                            \
+    template <typename T>                                                                               \
+    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) -> decltype(impl) \
+    {                                                                                                   \
+      return impl;                                                                                      \
+    }                                                                                                   \
   }
 
-#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                    \
-  template <>                                                                                    \
-  struct func<void>                                                                              \
-  {                                                                                              \
-    using is_transparent = void;                                                                 \
-    _CCCL_EXEC_CHECK_DISABLE                                                                     \
-    template <typename T1, typename T2>                                                          \
-    _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const noexcept(noexcept(impl)) \
-      THRUST_TRAILING_RETURN(decltype(impl))                                                     \
-    {                                                                                            \
-      return impl;                                                                               \
-    }                                                                                            \
+#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                                      \
+  template <>                                                                                                      \
+  struct func<void>                                                                                                \
+  {                                                                                                                \
+    using is_transparent = void;                                                                                   \
+    _CCCL_EXEC_CHECK_DISABLE                                                                                       \
+    template <typename T1, typename T2>                                                                            \
+    _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const noexcept(noexcept(impl)) -> decltype(impl) \
+    {                                                                                                              \
+      return impl;                                                                                                 \
+    }                                                                                                              \
   }
 
 #define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(func, op) \
@@ -1400,7 +1398,7 @@ struct project1st<void, void>
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
-    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)))
+    -> decltype(THRUST_FWD(t1))
   {
     return THRUST_FWD(t1);
   }
@@ -1457,7 +1455,7 @@ struct project2nd<void, void>
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
-    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t2)))
+    -> decltype(THRUST_FWD(t2))
   {
     return THRUST_FWD(t2);
   }

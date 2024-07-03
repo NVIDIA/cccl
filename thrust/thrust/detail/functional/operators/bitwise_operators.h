@@ -107,7 +107,7 @@ struct bit_not
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(~THRUST_FWD(t1)))
-    THRUST_TRAILING_RETURN(decltype(~THRUST_FWD(t1)))
+    -> decltype(~THRUST_FWD(t1))
   {
     return ~THRUST_FWD(t1);
   }
@@ -128,8 +128,7 @@ struct bit_lshift
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
-    noexcept(noexcept(THRUST_FWD(t1) << THRUST_FWD(t2)))
-      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) << THRUST_FWD(t2)))
+    noexcept(noexcept(THRUST_FWD(t1) << THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) << THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) << THRUST_FWD(t2);
   }
@@ -164,8 +163,7 @@ struct bit_rshift
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1& t1, T2&& t2) const
-    noexcept(noexcept(THRUST_FWD(t1) >> THRUST_FWD(t2)))
-      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) >> THRUST_FWD(t2)))
+    noexcept(noexcept(THRUST_FWD(t1) >> THRUST_FWD(t2))) -> decltype(THRUST_FWD(t1) >> THRUST_FWD(t2))
   {
     return THRUST_FWD(t1) >> THRUST_FWD(t2);
   }
