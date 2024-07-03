@@ -75,7 +75,36 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
       out << fmt::format(intrinsic_fence, scope_tag(sco), scope(sco), semantic_tag(sem), semantic(sem));
     }
   }
-  out << "\n";
+  out << std::endl
+      << R"XXX(
+template <typename _Sco>
+static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco) {
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_70, (
+      switch (__memorder) {
+        case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); break;
+        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _CCCL_FALLTHROUGH();
+        case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __atomic_cuda_release{}); break;
+        case __ATOMIC_RELAXED: break;
+        default: assert(0);
+      }
+    ),
+    NV_IS_DEVICE, (
+      switch (__memorder) {
+        case __ATOMIC_SEQ_CST: _CCCL_FALLTHROUGH();
+        case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _CCCL_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _CCCL_FALLTHROUGH();
+        case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); break;
+        case __ATOMIC_RELAXED: break;
+        default: assert(0);
+      }
+    )
+  )
+}
+)XXX";
 }
 
 #endif // FENCE_H

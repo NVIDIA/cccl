@@ -53,9 +53,9 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST: __cuda_membar(_Sco{}); _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); _CCCL_FALLTHROUGH();
         case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
-        case __ATOMIC_ACQUIRE: __cuda_load(__atomic_cuda_volatile{}); __cuda_membar(_Sco{}); break;
+        case __ATOMIC_ACQUIRE: __cuda_load(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: __cuda_load(__atomic_cuda_volatile{}); break;
         default: assert(0);
       }
@@ -168,7 +168,7 @@ struct __cuda_atomic_bind_load {
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_load(_Type* __ptr, _Type& __dst, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __dst, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
@@ -178,7 +178,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(_Type* __ptr, _Type& __dst, i
   __cuda_atomic_load_memory_order_dispatch(__bound_load, __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_load(volatile _Type* __ptr, _Type& __dst, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, _Type& __dst, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
@@ -207,7 +207,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store_memory_order_dispatch(_Fn &_
     NV_IS_DEVICE, (
       switch (__memorder) {
         case __ATOMIC_RELEASE: _CCCL_FALLTHROUGH();
-        case __ATOMIC_SEQ_CST: __cuda_membar(_Sco{}); _CCCL_FALLTHROUGH();
+        case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); _CCCL_FALLTHROUGH();
         case __ATOMIC_RELAXED: __cuda_store(__atomic_cuda_volatile{}); break;
         default: assert(0);
       }
@@ -319,7 +319,7 @@ struct __cuda_atomic_bind_store {
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_store(_Type* __ptr, _Type& __val, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_store_cuda(_Type* __ptr, _Type& __val, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
@@ -329,7 +329,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(_Type* __ptr, _Type& __val, 
   __cuda_atomic_store_memory_order_dispatch(__bound_store, __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __cuda_atomic_store(volatile _Type* __ptr, _Type& __val, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_store_cuda(volatile _Type* __ptr, _Type& __val, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
