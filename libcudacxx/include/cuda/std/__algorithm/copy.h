@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 #include <cuda/std/detail/libcxx/include/cstring>
@@ -70,7 +70,7 @@ template <class _AlgPolicy,
           class _Tp,
           class _Up,
           __enable_if_t<_CCCL_TRAIT(is_same, __remove_const_t<_Tp>, _Up), int> = 0,
-          __enable_if_t<_CCCL_TRAIT(is_trivially_copy_assignable, _Up), int>   = 0>
+          __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>          = 0>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*>
 __copy(_Tp* __first, _Tp* __last, _Up* __result)
 {
