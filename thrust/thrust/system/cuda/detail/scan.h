@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       OutputIt,
                       ScanOp,
                       InputValueT,
-                      thrust::detail::int32_t,
+                      std::int32_t,
                       InitValueT,
                       cub::DeviceScanPolicy<AccumT, ScanOp>,
                       ForceInclusive>;
@@ -131,7 +131,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       OutputIt,
                       ScanOp,
                       InputValueT,
-                      thrust::detail::int64_t,
+                      std::int64_t,
                       InitValueT,
                       cub::DeviceScanPolicy<AccumT, ScanOp>,
                       ForceInclusive>;
@@ -157,7 +157,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Run scan:
   {
     // Allocate temporary storage:
-    thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp{policy, tmp_size};
+    thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
     THRUST_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,

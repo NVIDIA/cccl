@@ -144,7 +144,7 @@ unique_eager_event async_inclusive_scan_n(
                       OutputIt,
                       BinaryOp,
                       InputValueT,
-                      thrust::detail::int32_t,
+                      std::int32_t,
                       InitialValueType,
                       cub::DeviceScanPolicy<AccumT, BinaryOp>,
                       ForceInclusive>;
@@ -153,7 +153,7 @@ unique_eager_event async_inclusive_scan_n(
                       OutputIt,
                       BinaryOp,
                       InputValueT,
-                      thrust::detail::int64_t,
+                      std::int64_t,
                       InitialValueType,
                       cub::DeviceScanPolicy<AccumT, BinaryOp>,
                       ForceInclusive>;
@@ -180,7 +180,7 @@ unique_eager_event async_inclusive_scan_n(
   }
 
   // Allocate temporary storage.
-  auto content        = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content        = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
   void* const tmp_ptr = raw_pointer_cast(content.get());
 
   // Set up stream with dependencies.
