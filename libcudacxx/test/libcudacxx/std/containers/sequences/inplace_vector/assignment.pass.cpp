@@ -207,7 +207,7 @@ __host__ __device__ constexpr bool test()
 {
   test<int>();
 
-  if (!cuda::std::is_constant_evaluated())
+  if (!cuda::std::__libcpp_is_constant_evaluated())
   {
     test<NonTrivial>();
     test<NonTrivialDestructor>();
