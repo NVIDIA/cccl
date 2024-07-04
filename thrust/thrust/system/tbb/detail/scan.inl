@@ -47,6 +47,100 @@ namespace scan_detail
 {
 
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction, typename ValueType>
+struct inclusive_body_init
+{
+  InputIterator input;
+  OutputIterator output;
+  thrust::detail::wrapped_function<BinaryFunction, ValueType> binary_op;
+  ValueType sum;
+  bool first_call;
+
+  inclusive_body_init(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
+      : input(input)
+      , output(output)
+      , binary_op(binary_op)
+      , sum(init)
+      , first_call(true)
+  {}
+
+  inclusive_body_init(inclusive_body_init& b, ::tbb::split)
+      : input(b.input)
+      , output(b.output)
+      , binary_op(b.binary_op)
+      , sum(b.sum)
+      , first_call(true)
+  {}
+
+  template <typename Size>
+  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::pre_scan_tag)
+  {
+    InputIterator iter = input + r.begin();
+
+    ValueType temp = *iter;
+
+    ++iter;
+
+    for (Size i = r.begin() + 1; i != r.end(); ++i, ++iter)
+    {
+      temp = binary_op(temp, *iter);
+    }
+
+    if (first_call)
+    {
+      sum = temp;
+    }
+    else
+    {
+      sum = binary_op(sum, temp);
+    }
+
+    first_call = false;
+  }
+
+  template <typename Size>
+  void operator()(const ::tbb::blocked_range<Size>& r, ::tbb::final_scan_tag)
+  {
+    InputIterator iter1  = input + r.begin();
+    OutputIterator iter2 = output + r.begin();
+
+    if (first_call)
+    {
+      *iter2 = sum = binary_op(*iter1, sum);
+      ++iter1;
+      ++iter2;
+      for (Size i = r.begin() + 1; i != r.end(); ++i, ++iter1, ++iter2)
+      {
+        *iter2 = sum = binary_op(sum, *iter1);
+      }
+    }
+    else
+    {
+      for (Size i = r.begin(); i != r.end(); ++i, ++iter1, ++iter2)
+      {
+        *iter2 = sum = binary_op(sum, *iter1);
+      }
+    }
+
+    first_call = false;
+  }
+
+  void reverse_join(inclusive_body_init& b)
+  {
+    // Only accumulate this functor's partial sum if this functor has been
+    // called at least once -- otherwise we'll over-count the initial value.
+    if (!first_call)
+    {
+      sum = binary_op(b.sum, sum);
+    }
+  }
+
+  void assign(inclusive_body_init& b)
+  {
+    sum = b.sum;
+  }
+};
+
+template <typename InputIterator, typename OutputIterator, typename BinaryFunction, typename ValueType>
 struct inclusive_body
 {
   InputIterator input;
@@ -55,11 +149,11 @@ struct inclusive_body
   ValueType sum;
   bool first_call;
 
-  inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType dummy)
+  inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
       : input(input)
       , output(output)
-      , binary_op{binary_op}
-      , sum(dummy)
+      , binary_op(binary_op)
+      , sum(init)
       , first_call(true)
   {}
 
@@ -241,6 +335,30 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
   {
     using Body = typename scan_detail::inclusive_body<InputIterator, OutputIterator, BinaryFunction, ValueType>;
     Body scan_body(first, result, binary_op, *first);
+    ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
+  }
+
+  thrust::advance(result, n);
+
+  return result;
+}
+
+template <typename InputIterator, typename OutputIterator, typename InitialValueType, typename BinaryFunction>
+OutputIterator inclusive_scan(
+  tag, InputIterator first, InputIterator last, OutputIterator result, InitialValueType init, BinaryFunction binary_op)
+{
+  using namespace thrust::detail;
+
+  // Use the input iterator's value type per https://wg21.link/P0571
+  using ValueType = InitialValueType;
+
+  using Size = typename thrust::iterator_difference<InputIterator>::type;
+  Size n     = thrust::distance(first, last);
+
+  if (n != 0)
+  {
+    typedef typename scan_detail::inclusive_body_init<InputIterator, OutputIterator, BinaryFunction, ValueType> Body;
+    Body scan_body(first, result, binary_op, init);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
 
