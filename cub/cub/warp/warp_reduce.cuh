@@ -49,6 +49,8 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -172,8 +174,8 @@ public:
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpReduce = cub::detail::
-    conditional_t<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpReduce =
+    ::cuda::std::_If<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 

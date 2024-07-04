@@ -44,7 +44,7 @@ struct greater_than_five
 template <class Vector>
 void TestCountIfSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;

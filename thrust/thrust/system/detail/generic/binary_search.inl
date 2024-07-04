@@ -160,7 +160,7 @@ _CCCL_HOST_DEVICE OutputType binary_search(
   thrust::detail::temporary_array<OutputType, DerivedPolicy> d_output(exec, 1);
 
   { // copy value to device
-    typedef typename thrust::iterator_system<const T*>::type value_in_system_t;
+    using value_in_system_t = typename thrust::iterator_system<const T*>::type;
     value_in_system_t value_in_system;
     using thrust::system::detail::generic::select_system;
     thrust::copy_n(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(value_in_system)),
@@ -176,7 +176,7 @@ _CCCL_HOST_DEVICE OutputType binary_search(
 
   OutputType output;
   { // copy result to host and return
-    typedef typename thrust::iterator_system<OutputType*>::type result_out_system_t;
+    using result_out_system_t = typename thrust::iterator_system<OutputType*>::type;
     result_out_system_t result_out_system;
     using thrust::system::detail::generic::select_system;
     thrust::copy_n(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -224,7 +224,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   const T& value,
   StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_traits<ForwardIterator>::difference_type difference_type;
+  using difference_type = typename thrust::iterator_traits<ForwardIterator>::difference_type;
 
   return begin + detail::binary_search<difference_type>(exec, begin, end, value, comp, detail::lbf());
 }
@@ -245,7 +245,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   const T& value,
   StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_traits<ForwardIterator>::difference_type difference_type;
+  using difference_type = typename thrust::iterator_traits<ForwardIterator>::difference_type;
 
   return begin + detail::binary_search<difference_type>(exec, begin, end, value, comp, detail::ubf());
 }

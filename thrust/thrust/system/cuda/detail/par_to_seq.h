@@ -54,7 +54,7 @@ struct has_par<0> : thrust::detail::false_type
 template <class Policy>
 struct cvt_to_seq_impl
 {
-  typedef thrust::detail::seq_t seq_t;
+  using seq_t = thrust::detail::seq_t;
 
   static seq_t _CCCL_HOST_DEVICE doit(Policy&)
   {
@@ -68,13 +68,13 @@ struct cvt_to_seq_impl<
     thrust::detail::execute_with_allocator<Allocator,
                                            execute_on_stream_base> >
 {
-  typedef thrust::detail::execute_with_allocator<Allocator,
+  using Policy = thrust::detail::execute_with_allocator<Allocator,
                                                  execute_on_stream_base>
-      Policy;
-  typedef thrust::detail::execute_with_allocator<
+     ;
+  using seq_t = thrust::detail::execute_with_allocator<
       Allocator,
       thrust::system::detail::sequential::execution_policy>
-      seq_t;
+     ;
 
 
   static seq_t _CCCL_HOST_DEVICE

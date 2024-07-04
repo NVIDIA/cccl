@@ -50,7 +50,7 @@ template <typename InputIterator, typename UnaryFunction>
 InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
 {
   using thrust::system::detail::generic::select_system;
-  typedef typename thrust::iterator_system<InputIterator>::type System;
+  using System = typename thrust::iterator_system<InputIterator>::type;
 
   System system;
   return thrust::for_each(select_system(system), first, last, f);
@@ -71,7 +71,7 @@ InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System;
+  using System = typename thrust::iterator_system<InputIterator>::type;
 
   System system;
   return thrust::for_each_n(select_system(system), first, n, f);

@@ -46,7 +46,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
+  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
   thrust::sort(exec, first, last, thrust::less<value_type>());
 } // end sort()
 
@@ -68,7 +68,7 @@ _CCCL_HOST_DEVICE void sort_by_key(
   RandomAccessIterator1 keys_last,
   RandomAccessIterator2 values_first)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type;
+  using value_type = typename thrust::iterator_value<RandomAccessIterator1>::type;
   thrust::sort_by_key(exec, keys_first, keys_last, values_first, thrust::less<value_type>());
 } // end sort_by_key()
 
@@ -91,7 +91,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 stable_sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
+  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
   thrust::stable_sort(exec, first, last, thrust::less<value_type>());
 } // end stable_sort()
 
@@ -102,7 +102,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   RandomAccessIterator1 keys_last,
   RandomAccessIterator2 values_first)
 {
-  typedef typename iterator_value<RandomAccessIterator1>::type value_type;
+  using value_type = typename iterator_value<RandomAccessIterator1>::type;
   thrust::stable_sort_by_key(exec, keys_first, keys_last, values_first, thrust::less<value_type>());
 } // end stable_sort_by_key()
 
@@ -124,7 +124,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 is_sorted_until(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  typedef typename thrust::iterator_value<ForwardIterator>::type InputType;
+  using InputType = typename thrust::iterator_value<ForwardIterator>::type;
 
   return thrust::is_sorted_until(exec, first, last, thrust::less<InputType>());
 } // end is_sorted_until()
@@ -138,8 +138,8 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
     return last;
   }
 
-  typedef thrust::tuple<ForwardIterator, ForwardIterator> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using IteratorTuple = thrust::tuple<ForwardIterator, ForwardIterator>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ForwardIterator first_plus_one = first;
   thrust::advance(first_plus_one, 1);

@@ -29,6 +29,9 @@
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/transform.h>
+#include <thrust/zip_function.h>
 
 #include <nvbench_helper.cuh>
 
@@ -90,3 +93,120 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+
+namespace babelstream
+{
+// The benchmarks in this namespace are inspired by the BabelStream thrust version:
+// https://github.com/UoB-HPC/BabelStream/blob/main/src/thrust/ThrustStream.cu
+
+// Modified from BabelStream to also work for integers
+constexpr auto startA      = 1; // BabelStream: 0.1
+constexpr auto startB      = 2; // BabelStream: 0.2
+constexpr auto startC      = 3; // BabelStream: 0.1
+constexpr auto startScalar = 4; // BabelStream: 0.4
+
+using element_types    = nvbench::type_list<std::int8_t, std::int16_t, float, double, __int128>;
+auto array_size_powers = std::vector<std::int64_t>{25};
+
+template <typename T>
+static void mul(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(n);
+  state.add_global_memory_writes<T>(n);
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
+    const T scalar = startScalar;
+    thrust::transform(c.begin(), c.end(), b.begin(), [=] __device__ __host__(const T& ci) {
+      return ci * scalar;
+    });
+  });
+}
+
+NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
+  .set_name("mul")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", array_size_powers);
+
+template <typename T>
+static void add(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(2 * n);
+  state.add_global_memory_writes<T>(n);
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
+    thrust::transform(a.begin(), a.end(), b.begin(), c.begin(), [] __device__ __host__(const T& ai, const T& bi) {
+      return ai + bi;
+    });
+  });
+}
+
+NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
+  .set_name("add")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", array_size_powers);
+
+template <typename T>
+static void triad(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(2 * n);
+  state.add_global_memory_writes<T>(n);
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
+    const T scalar = startScalar;
+    thrust::transform(b.begin(), b.end(), c.begin(), a.begin(), [=] __device__ __host__(const T& bi, const T& ci) {
+      return bi + scalar * ci;
+    });
+  });
+}
+
+NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
+  .set_name("triad")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", array_size_powers);
+
+template <typename T>
+static void nstream(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
+  thrust::device_vector<T> a(n, startA);
+  thrust::device_vector<T> b(n, startB);
+  thrust::device_vector<T> c(n, startC);
+
+  state.add_element_count(n);
+  state.add_global_memory_reads<T>(3 * n);
+  state.add_global_memory_writes<T>(n);
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
+    const T scalar = startScalar;
+    thrust::transform(
+      thrust::make_zip_iterator(a.begin(), b.begin(), c.begin()),
+      thrust::make_zip_iterator(a.end(), b.end(), c.end()),
+      a.begin(),
+      thrust::make_zip_function([=] __device__ __host__(const T& ai, const T& bi, const T& ci) {
+        return ai + bi + scalar * ci;
+      }));
+  });
+}
+
+NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
+  .set_name("nstream")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", array_size_powers);
+} // namespace babelstream

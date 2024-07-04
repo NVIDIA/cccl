@@ -128,7 +128,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
   execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 
 {
-  typedef typename iterator_traits<KeysIt>::difference_type size_type;
+  using size_type = typename iterator_traits<KeysIt>::difference_type;
 
   size_type count = static_cast<size_type>(thrust::distance(keys_first, keys_last));
 
@@ -450,14 +450,14 @@ void _CCCL_HOST_DEVICE stable_sort_by_key(
 template <class Derived, class ItemsIt>
 void _CCCL_HOST_DEVICE sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  typedef typename thrust::iterator_value<ItemsIt>::type item_type;
+  using item_type = typename thrust::iterator_value<ItemsIt>::type;
   cuda_cub::sort(policy, first, last, less<item_type>());
 }
 
 template <class Derived, class ItemsIt>
 void _CCCL_HOST_DEVICE stable_sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
-  typedef typename thrust::iterator_value<ItemsIt>::type item_type;
+  using item_type = typename thrust::iterator_value<ItemsIt>::type;
   cuda_cub::stable_sort(policy, first, last, less<item_type>());
 }
 
@@ -465,7 +465,7 @@ template <class Derived, class KeysIt, class ValuesIt>
 void _CCCL_HOST_DEVICE
 sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
-  typedef typename thrust::iterator_value<KeysIt>::type key_type;
+  using key_type = typename thrust::iterator_value<KeysIt>::type;
   cuda_cub::sort_by_key(policy, keys_first, keys_last, values, less<key_type>());
 }
 
@@ -473,7 +473,7 @@ template <class Derived, class KeysIt, class ValuesIt>
 void _CCCL_HOST_DEVICE
 stable_sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
-  typedef typename thrust::iterator_value<KeysIt>::type key_type;
+  using key_type = typename thrust::iterator_value<KeysIt>::type;
   cuda_cub::stable_sort_by_key(policy, keys_first, keys_last, values, less<key_type>());
 }
 

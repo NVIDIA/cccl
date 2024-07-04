@@ -50,6 +50,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -120,6 +122,8 @@ struct AgentScanByKeyPolicy
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
  */
 template <typename AgentScanByKeyPolicyT,
           typename KeysInputIteratorT,
@@ -152,14 +156,14 @@ struct AgentScanByKey
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedKeysInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<KeysInputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
-                               KeysInputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<KeysInputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
+                     KeysInputIteratorT>;
 
   using WrappedValuesInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<ValuesInputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                               ValuesInputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<ValuesInputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                     ValuesInputIteratorT>;
 
   using BlockLoadKeysT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
 
@@ -233,7 +237,7 @@ struct AgentScanByKey
     SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
     SizeValuePairT& tile_aggregate,
     TilePrefixCallbackT& prefix_op,
-    Int2Type<false> /* is_incclusive */)
+    Int2Type<false> /* is_inclusive */)
   {
     BlockScanT(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, pair_scan_op, prefix_op);
     tile_aggregate = prefix_op.GetBlockAggregate();
@@ -279,7 +283,7 @@ struct AgentScanByKey
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
-// Zip values and segment_flags
+// Unzip values and segment_flags
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {

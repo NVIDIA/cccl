@@ -86,20 +86,20 @@ public:
   /*! \typedef base1_type
    *  \brief The type of the first adapted base random number engine.
    */
-  typedef Engine1 base1_type;
+  using base1_type = Engine1;
 
   /*! \typedef base2_type
    *  \brief The type of the second adapted base random number engine.
    */
-  typedef Engine2 base2_type;
+  using base2_type = Engine2;
 
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p xor_combine_engine.
    */
-  typedef typename thrust::detail::eval_if<
+  using result_type = typename thrust::detail::eval_if<
     (sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
     thrust::detail::identity_<typename base2_type::result_type>,
-    thrust::detail::identity_<typename base1_type::result_type>>::type result_type;
+    thrust::detail::identity_<typename base1_type::result_type>>::type;
 
   /*! The size of the first shift used in the generation algorithm.
    */

@@ -99,8 +99,8 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
 {
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -111,8 +111,8 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
 {
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;

@@ -125,7 +125,7 @@ public:
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
    */
-  typedef UIntType result_type;
+  using result_type = UIntType;
 
   // engine characteristics
 
@@ -263,7 +263,7 @@ operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIn
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p minstd_rand0
  *        shall produce the value \c 1043618065 .
  */
-typedef linear_congruential_engine<thrust::detail::uint32_t, 16807, 0, 2147483647> minstd_rand0;
+using minstd_rand0 = linear_congruential_engine<thrust::detail::uint32_t, 16807, 0, 2147483647>;
 
 /*! \typedef minstd_rand
  *  \brief A random number engine with predefined parameters which implements a version of
@@ -271,7 +271,7 @@ typedef linear_congruential_engine<thrust::detail::uint32_t, 16807, 0, 214748364
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p minstd_rand
  *        shall produce the value \c 399268537 .
  */
-typedef linear_congruential_engine<thrust::detail::uint32_t, 48271, 0, 2147483647> minstd_rand;
+using minstd_rand = linear_congruential_engine<thrust::detail::uint32_t, 48271, 0, 2147483647>;
 
 /*! \} // predefined_random
  */

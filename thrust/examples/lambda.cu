@@ -24,7 +24,7 @@
 using namespace thrust::placeholders;
 
 // implementing SAXPY with a functor is cumbersome and verbose
-struct saxpy_functor : public thrust::binary_function<float, float, float>
+struct saxpy_functor
 {
   float a;
 

@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,6 @@
 
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 #include <cub/iterator/counting_input_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
@@ -38,15 +37,14 @@
 
 #include <cuda/std/__cccl/dialect.h>
 
-#include "catch2_test_helper.h"
-#include "test_util.h"
+#include <cstdint>
 
-using integral_types = c2h::type_list<signed char, short, int, long, long long>;
+#include "catch2_test_helper.h"
+
+using scalar_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
 using types = metal::append<
-  integral_types,
-  float,
-  double,
+  scalar_types,
   char2,
   short2,
   int2,
@@ -68,8 +66,7 @@ using types = metal::append<
   longlong4,
   float4,
   double4,
-  TestFoo,
-  TestBar>;
+  c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
 
 template <typename InputIteratorT, typename T>
 __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)
@@ -97,12 +94,9 @@ __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIterato
 template <typename InputIteratorT, typename T>
 void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
 {
-  // c2h::device_vector<InputIteratorT> and operator== below are so expensive to instantiate, they add **minutes** of
-  // compile-time (measured with clang++-18 in CUDA mode).
-#if 0
   c2h::device_vector<T> d_out(h_reference.size());
-  c2h::device_vector<InputIteratorT> d_itrs(2, d_in); // need any iterator to copy, because InputIteratorT may not be
-                                                      // default-constructible
+  c2h::device_vector<InputIteratorT> d_itrs(2, d_in); // TODO(bgruber): using a raw allocation halves the compile time
+                                                      // (nvcc 12.5), because we instantiate a lot of device_vectors
 
   test_iterator_kernel<<<1, 1>>>(d_in, thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_itrs.data()));
   CubDebugExit(cudaPeekAtLastError());
@@ -112,27 +106,9 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(h_reference == c2h::host_vector<T>(d_out)); // comparing host_vectors compiles a lot faster than mixed vectors
   CHECK(d_in + 21 == h_itrs[0]);
   CHECK(d_in == h_itrs[1]);
-#else
-  c2h::device_vector<T> d_out(h_reference.size());
-  InputIteratorT* d_itrs;
-  CHECK(cudaSuccess == cudaMalloc(&d_itrs, sizeof(InputIteratorT) * 2));
-
-  test_iterator_kernel<<<1, 1>>>(d_in, thrust::raw_pointer_cast(d_out.data()), d_itrs);
-  CubDebugExit(cudaPeekAtLastError());
-  CubDebugExit(cudaDeviceSynchronize());
-
-  InputIteratorT h_itrs[2]{d_in, d_in};
-  CHECK(cudaSuccess == cudaMemcpy(h_itrs, d_itrs, sizeof(InputIteratorT) * 2, cudaMemcpyDeviceToHost));
-
-  CHECK(0 == CompareDeviceResults(h_reference.data(), thrust::raw_pointer_cast(d_out.data()), h_reference.size()));
-  CHECK(d_in + 21 == h_itrs[0]);
-  CHECK(d_in == h_itrs[1]);
-
-  CHECK(cudaSuccess == cudaFree(d_itrs));
-#endif
 }
 
-CUB_TEST("Test constant iterator", "[iterator]", integral_types)
+CUB_TEST("Test constant iterator", "[iterator]", scalar_types)
 {
   using T                = c2h::get<0, TestType>;
   const T base           = static_cast<T>(GENERATE(0, 99));
@@ -140,7 +116,7 @@ CUB_TEST("Test constant iterator", "[iterator]", integral_types)
   test_iterator(cub::ConstantInputIterator<T>(base), h_reference);
 }
 
-CUB_TEST("Test counting iterator", "[iterator]", integral_types)
+CUB_TEST("Test counting iterator", "[iterator]", scalar_types)
 {
   using T                = c2h::get<0, TestType>;
   const T base           = static_cast<T>(GENERATE(0, 99));
@@ -172,12 +148,9 @@ CUB_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
   constexpr auto cache_modifier = c2h::get<1, TestType>::value;
   constexpr int TEST_VALUES     = 11000;
 
-  c2h::host_vector<T> h_data(TEST_VALUES);
-  for (int i = 0; i < TEST_VALUES; ++i)
-  {
-    RandomBits(h_data[i]);
-  }
-  c2h::device_vector<T> d_data(h_data);
+  c2h::device_vector<T> d_data(TEST_VALUES);
+  c2h::gen(CUB_SEED(1), d_data);
+  c2h::host_vector<T> h_data(d_data);
 
   const auto h_reference = c2h::host_vector<T>{
     h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
@@ -187,13 +160,11 @@ CUB_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
 }
 
 template <typename T>
-struct TransformOp
+struct transform_op_t
 {
   _CCCL_HOST_DEVICE T operator()(T input) const
   {
-    T addend;
-    InitValue(INTEGER_SEED, addend, 1);
-    return input + addend;
+    return input + input;
   }
 };
 
@@ -202,14 +173,11 @@ CUB_TEST("Test transform iterator", "[iterator]", types)
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;
 
-  c2h::host_vector<T> h_data(TEST_VALUES);
-  for (int i = 0; i < TEST_VALUES; ++i)
-  {
-    InitValue(INTEGER_SEED, h_data[i], i);
-  }
-  c2h::device_vector<T> d_data(h_data.begin(), h_data.end());
+  c2h::device_vector<T> d_data(TEST_VALUES);
+  c2h::gen(CUB_SEED(1), d_data);
+  c2h::host_vector<T> h_data(d_data);
 
-  TransformOp<T> op;
+  transform_op_t<T> op;
   const auto h_reference = c2h::host_vector<T>{
     op(h_data[0]),
     op(h_data[100]),
@@ -219,7 +187,7 @@ CUB_TEST("Test transform iterator", "[iterator]", types)
     op(h_data[21]),
     op(h_data[11]),
     op(h_data[0])};
-  test_iterator(cub::TransformInputIterator<T, TransformOp<T>, const T*>(
+  test_iterator(cub::TransformInputIterator<T, transform_op_t<T>, const T*>(
                   const_cast<const T*>(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data()))), op),
                 h_reference);
 }
@@ -229,12 +197,9 @@ CUB_TEST("Test tex-obj texture iterator", "[iterator]", types)
   using T                            = c2h::get<0, TestType>;
   constexpr unsigned int TEST_VALUES = 11000;
 
-  c2h::host_vector<T> h_data(TEST_VALUES);
-  for (unsigned int i = 0; i < TEST_VALUES; ++i)
-  {
-    RandomBits(h_data[i]);
-  }
-  c2h::device_vector<T> d_data(h_data.begin(), h_data.end());
+  c2h::device_vector<T> d_data(TEST_VALUES);
+  c2h::gen(CUB_SEED(1), d_data);
+  c2h::host_vector<T> h_data(d_data);
 
   const auto h_reference = c2h::host_vector<T>{
     h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
@@ -249,14 +214,11 @@ CUB_TEST("Test texture transform iterator", "[iterator]", types)
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;
 
-  c2h::host_vector<T> h_data(TEST_VALUES);
-  for (int i = 0; i < TEST_VALUES; ++i)
-  {
-    InitValue(INTEGER_SEED, h_data[i], i);
-  }
-  c2h::device_vector<T> d_data(h_data.begin(), h_data.end());
+  c2h::device_vector<T> d_data(TEST_VALUES);
+  c2h::gen(CUB_SEED(1), d_data);
+  c2h::host_vector<T> h_data(d_data.begin(), d_data.end());
 
-  TransformOp<T> op;
+  transform_op_t<T> op;
   const auto h_reference = c2h::host_vector<T>{
     op(h_data[0]),
     op(h_data[100]),
@@ -271,7 +233,7 @@ CUB_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  cub::TransformInputIterator<T, TransformOp<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  cub::TransformInputIterator<T, transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }

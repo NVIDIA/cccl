@@ -51,7 +51,7 @@ public:
     RandomAccessIterator iter;
     IndexType n;
 
-    typedef ValueType result_type;
+    using result_type = ValueType;
 
     _CCCL_HOST_DEVICE tail_flag_functor(RandomAccessIterator first, RandomAccessIterator last)
         : binary_pred()
@@ -72,10 +72,10 @@ public:
     }
   };
 
-  typedef thrust::counting_iterator<IndexType> counting_iterator;
+  using counting_iterator = thrust::counting_iterator<IndexType>;
 
 public:
-  typedef thrust::transform_iterator<tail_flag_functor, counting_iterator> iterator;
+  using iterator = thrust::transform_iterator<tail_flag_functor, counting_iterator>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE tail_flags(RandomAccessIterator first, RandomAccessIterator last)

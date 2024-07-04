@@ -7,8 +7,8 @@
 template <typename Allocator>
 void test_implementation(Allocator alloc)
 {
-  typedef typename thrust::detail::allocator_traits<Allocator> Traits;
-  typedef typename Allocator::pointer Ptr;
+  using Traits = typename thrust::detail::allocator_traits<Allocator>;
+  using Ptr    = typename Allocator::pointer;
 
   Ptr p = Traits::allocate(alloc, 123);
   Traits::deallocate(alloc, p, 123);

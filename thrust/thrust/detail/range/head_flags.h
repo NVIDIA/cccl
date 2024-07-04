@@ -41,7 +41,7 @@ template <typename RandomAccessIterator,
           typename IndexType       = typename thrust::iterator_difference<RandomAccessIterator>::type>
 class head_flags_with_init
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type init_type;
+  using init_type = typename thrust::iterator_value<RandomAccessIterator>::type;
 
   // XXX WAR cudafe issue
   // private:
@@ -53,7 +53,7 @@ public:
     init_type init;
     IndexType n;
 
-    typedef ValueType result_type;
+    using result_type = ValueType;
 
     _CCCL_HOST_DEVICE head_flag_functor(init_type init, IndexType n)
         : binary_pred()
@@ -81,13 +81,12 @@ public:
     }
   };
 
-  typedef thrust::counting_iterator<IndexType> counting_iterator;
+  using counting_iterator = thrust::counting_iterator<IndexType>;
 
 public:
-  typedef thrust::transform_iterator<
+  using iterator = thrust::transform_iterator<
     head_flag_functor,
-    thrust::zip_iterator<thrust::tuple<counting_iterator, RandomAccessIterator, RandomAccessIterator>>>
-    iterator;
+    thrust::zip_iterator<thrust::tuple<counting_iterator, RandomAccessIterator, RandomAccessIterator>>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE head_flags_with_init(RandomAccessIterator first, RandomAccessIterator last, init_type init)
@@ -143,7 +142,7 @@ public:
     BinaryPredicate binary_pred; // this must be the first member for performance reasons
     IndexType n;
 
-    typedef ValueType result_type;
+    using result_type = ValueType;
 
     _CCCL_HOST_DEVICE head_flag_functor(IndexType n)
         : binary_pred()
@@ -166,13 +165,12 @@ public:
     }
   };
 
-  typedef thrust::counting_iterator<IndexType> counting_iterator;
+  using counting_iterator = thrust::counting_iterator<IndexType>;
 
 public:
-  typedef thrust::transform_iterator<
+  using iterator = thrust::transform_iterator<
     head_flag_functor,
-    thrust::zip_iterator<thrust::tuple<counting_iterator, RandomAccessIterator, RandomAccessIterator>>>
-    iterator;
+    thrust::zip_iterator<thrust::tuple<counting_iterator, RandomAccessIterator, RandomAccessIterator>>>;
 
   _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last)
       : m_begin(thrust::make_transform_iterator(

@@ -20,7 +20,7 @@ __host__ __device__ bool is_alpha(const char c)
 }
 
 // determines whether the right character begins a new word
-struct is_word_start : public thrust::binary_function<const char&, const char&, bool>
+struct is_word_start
 {
   __host__ __device__ bool operator()(const char& left, const char& right) const
   {

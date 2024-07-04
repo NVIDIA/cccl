@@ -34,7 +34,7 @@ struct TestZipIteratorReduceByKey
     device_vector<T> d_data1 = h_data1;
     device_vector<T> d_data2 = h_data2;
 
-    typedef tuple<T, T> Tuple;
+    using Tuple = tuple<T, T>;
 
     // integer key, tuple value
     {

@@ -33,6 +33,8 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include "catch2_test_helper.h"
 
 /******************************************************************************
@@ -161,7 +163,7 @@ public:
   {
     typename BlockLoadRunItemT::TempStorage load_uniques_storage;
     typename BlockLoadRunLengthsT::TempStorage load_run_lengths_storage;
-    cub::detail::conditional_t<TEST_RUN_OFFSETS_, typename BlockRunOffsetScanT::TempStorage, cub::NullType>
+    ::cuda::std::_If<TEST_RUN_OFFSETS_, typename BlockRunOffsetScanT::TempStorage, cub::NullType>
       run_offsets_scan_storage;
     struct
     {

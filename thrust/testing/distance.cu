@@ -7,7 +7,7 @@
 template <typename Vector>
 void TestDistance()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector v(100);
 

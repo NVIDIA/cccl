@@ -26,7 +26,7 @@
 template <class Vector>
 void TestReplaceSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -103,7 +103,7 @@ DECLARE_VARIABLE_UNITTEST(TestReplace);
 template <class Vector>
 void TestReplaceCopySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -220,7 +220,7 @@ struct less_than_five
 template <class Vector>
 void TestReplaceIfSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -278,7 +278,7 @@ DECLARE_UNITTEST(TestReplaceIfDispatchImplicit);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -373,7 +373,7 @@ DECLARE_VARIABLE_UNITTEST(TestReplaceIfStencil);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -437,7 +437,7 @@ DECLARE_UNITTEST(TestReplaceCopyIfDispatchImplicit);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;

@@ -24,19 +24,19 @@ struct type_list
 template <typename List, unsigned int i>
 struct get_type
 {
-  typedef null_type type;
+  using type = null_type;
 };
 
 template <typename T, typename... Ts>
 struct get_type<type_list<T, Ts...>, 0>
 {
-  typedef T type;
+  using type = T;
 };
 
 template <typename T, typename... Ts, unsigned int i>
 struct get_type<type_list<T, Ts...>, i>
 {
-  typedef typename get_type<type_list<Ts...>, i - 1>::type type;
+  using type = typename get_type<type_list<Ts...>, i - 1>::type;
 };
 
 template <typename T, unsigned int i>
@@ -56,7 +56,7 @@ struct for_each_type
     f(n);
 
     // get the next type
-    typedef typename get_type<TypeList, i + 1>::type next_type;
+    using next_type = typename get_type<TypeList, i + 1>::type;
 
     // recurse to i + 1
     for_each_type<TypeList, Function, next_type, i + 1> loop;
@@ -70,7 +70,7 @@ struct for_each_type
     f();
 
     // get the next type
-    typedef typename get_type<TypeList, i + 1>::type next_type;
+    using next_type = typename get_type<TypeList, i + 1>::type;
 
     // recurse to i + 1
     for_each_type<TypeList, Function, next_type, i + 1> loop;
@@ -100,13 +100,13 @@ struct for_each_type<TypeList, Function, null_type, i>
 template <template <typename> class Template, typename T>
 struct ApplyTemplate1
 {
-  typedef Template<T> type;
+  using type = Template<T>;
 };
 
 template <template <typename> class Template>
 struct ApplyTemplate1<Template, null_type>
 {
-  typedef null_type type;
+  using type = null_type;
 };
 
 // this type and its specializations instantiates
@@ -116,25 +116,25 @@ struct ApplyTemplate1<Template, null_type>
 template <template <typename, typename> class Template, typename T1, typename T2>
 struct ApplyTemplate2
 {
-  typedef Template<T1, T2> type;
+  using type = Template<T1, T2>;
 };
 
 template <template <typename, typename> class Template, typename T>
 struct ApplyTemplate2<Template, T, null_type>
 {
-  typedef null_type type;
+  using type = null_type;
 };
 
 template <template <typename, typename> class Template, typename T>
 struct ApplyTemplate2<Template, null_type, T>
 {
-  typedef null_type type;
+  using type = null_type;
 };
 
 template <template <typename, typename> class Template>
 struct ApplyTemplate2<Template, null_type, null_type>
 {
-  typedef null_type type;
+  using type = null_type;
 };
 
 // this type creates a new type_list by applying a Template to each of
@@ -145,7 +145,7 @@ struct transform1;
 template <typename... Ts, template <typename> class Template>
 struct transform1<type_list<Ts...>, Template>
 {
-  typedef type_list<typename ApplyTemplate1<Template, Ts>::type...> type;
+  using type = type_list<typename ApplyTemplate1<Template, Ts>::type...>;
 };
 
 template <typename TypeList1, typename TypeList2, template <typename, typename> class Template>
@@ -154,7 +154,7 @@ struct transform2;
 template <typename... T1s, typename... T2s, template <typename, typename> class Template>
 struct transform2<type_list<T1s...>, type_list<T2s...>, Template>
 {
-  typedef type_list<typename ApplyTemplate2<Template, T1s, T2s>::type...> type;
+  using type = type_list<typename ApplyTemplate2<Template, T1s, T2s>::type...>;
 };
 
 } // namespace unittest

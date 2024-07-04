@@ -105,13 +105,13 @@ class constant_iterator : public detail::constant_iterator_base<Value, Increment
   /*! \cond
    */
   friend class thrust::iterator_core_access;
-  typedef typename detail::constant_iterator_base<Value, Incrementable, System>::type super_t;
-  typedef typename detail::constant_iterator_base<Value, Incrementable, System>::incrementable incrementable;
-  typedef typename detail::constant_iterator_base<Value, Incrementable, System>::base_iterator base_iterator;
+  using super_t       = typename detail::constant_iterator_base<Value, Incrementable, System>::type;
+  using incrementable = typename detail::constant_iterator_base<Value, Incrementable, System>::incrementable;
+  using base_iterator = typename detail::constant_iterator_base<Value, Incrementable, System>::base_iterator;
 
 public:
-  typedef typename super_t::reference reference;
-  typedef typename super_t::value_type value_type;
+  using reference  = typename super_t::reference;
+  using value_type = typename super_t::value_type;
 
   /*! \endcond
    */

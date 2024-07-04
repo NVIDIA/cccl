@@ -51,6 +51,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -144,6 +146,9 @@ struct AgentReduceByKeyPolicy
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
+ *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
  */
 template <typename AgentReduceByKeyPolicyT,
           typename KeysInputIteratorT,
@@ -225,27 +230,27 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<KeysInputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
-                               KeysInputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<KeysInputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
+                     KeysInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for values Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<ValuesInputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
-                               ValuesInputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<ValuesInputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
+                     ValuesInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for fixup values Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<AggregatesOutputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
-                               AggregatesOutputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<AggregatesOutputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
+                     AggregatesOutputIteratorT>;
 
   // Reduce-value-by-segment scan operator
   using ReduceBySegmentOpT = ReduceBySegmentOp<ReductionOpT>;

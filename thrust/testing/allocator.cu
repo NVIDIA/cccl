@@ -112,7 +112,7 @@ struct my_allocator_with_custom_destroy
     return !(*this == other);
   }
 
-  typedef thrust::detail::true_type is_always_equal;
+  using is_always_equal = thrust::detail::true_type;
 
   // use composition rather than inheritance
   // to avoid inheriting std::allocator's member
@@ -142,12 +142,11 @@ DECLARE_VARIABLE_UNITTEST(TestAllocatorCustomDestroy);
 template <typename T>
 struct my_minimal_allocator
 {
-  typedef T value_type;
+  using value_type = T;
 
-  // XXX ideally, we shouldn't require
-  //     these two typedefs
-  typedef T& reference;
-  typedef const T& const_reference;
+  // XXX ideally, we shouldn't require these two aliases
+  using reference       = T&;
+  using const_reference = const T&;
 
   _CCCL_HOST my_minimal_allocator() {}
 

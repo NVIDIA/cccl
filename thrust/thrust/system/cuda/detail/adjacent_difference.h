@@ -211,7 +211,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt _CCCL_HOST_DEVICE
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  typedef typename iterator_traits<InputIt>::value_type input_type;
+  using input_type = typename iterator_traits<InputIt>::value_type;
   return cuda_cub::adjacent_difference(policy, first, last, result, minus<input_type>());
 }
 

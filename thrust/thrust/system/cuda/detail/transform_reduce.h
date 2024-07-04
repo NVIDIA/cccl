@@ -131,7 +131,7 @@ template <class Derived, class InputIt, class TransformOp, class T, class Reduce
 T _CCCL_HOST_DEVICE transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
-  typedef typename iterator_traits<InputIt>::difference_type size_type;
+  using size_type           = typename iterator_traits<InputIt>::difference_type;
   const size_type num_items = static_cast<size_type>(thrust::distance(first, last));
 
   THRUST_CDP_DISPATCH(

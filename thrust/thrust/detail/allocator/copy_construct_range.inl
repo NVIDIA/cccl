@@ -93,8 +93,8 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   Pointer result)
 {
   // zip up the iterators
-  typedef thrust::tuple<InputIterator, Pointer> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using IteratorTuple = thrust::tuple<InputIterator, Pointer>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(first, result));
   ZipIterator end   = begin;
@@ -104,8 +104,8 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   thrust::advance(end, n);
 
   // create a functor
-  typedef typename iterator_traits<InputIterator>::value_type InputType;
-  typedef typename iterator_traits<Pointer>::value_type OutputType;
+  using InputType  = typename iterator_traits<InputIterator>::value_type;
+  using OutputType = typename iterator_traits<Pointer>::value_type;
 
   // do the for_each
   // note we use to_system to dispatch the for_each
@@ -129,14 +129,14 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   Pointer result)
 {
   // zip up the iterators
-  typedef thrust::tuple<InputIterator, Pointer> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using IteratorTuple = thrust::tuple<InputIterator, Pointer>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(first, result));
 
   // create a functor
-  typedef typename iterator_traits<InputIterator>::value_type InputType;
-  typedef typename iterator_traits<Pointer>::value_type OutputType;
+  using InputType  = typename iterator_traits<InputIterator>::value_type;
+  using OutputType = typename iterator_traits<Pointer>::value_type;
 
   // do the for_each_n
   // note we use to_system to dispatch the for_each_n

@@ -49,7 +49,7 @@ private:
 // A simple allocator for caching cudaMalloc allocations.
 struct cached_allocator
 {
-  typedef char value_type;
+  using value_type = char;
 
   cached_allocator() {}
 
@@ -120,8 +120,8 @@ struct cached_allocator
   }
 
 private:
-  typedef std::multimap<std::ptrdiff_t, char*> free_blocks_type;
-  typedef std::map<char*, std::ptrdiff_t> allocated_blocks_type;
+  using free_blocks_type      = std::multimap<std::ptrdiff_t, char*>;
+  using allocated_blocks_type = std::map<char*, std::ptrdiff_t>;
 
   free_blocks_type free_blocks;
   allocated_blocks_type allocated_blocks;

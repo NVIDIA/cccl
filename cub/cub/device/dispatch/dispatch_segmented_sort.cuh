@@ -58,6 +58,8 @@
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/type_traits>
+
 #include <type_traits>
 
 #include <nv/target>
@@ -694,7 +696,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 template <typename KeyT, typename ValueT>
 struct DeviceSegmentedSortPolicy
 {
-  using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   static constexpr int KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 

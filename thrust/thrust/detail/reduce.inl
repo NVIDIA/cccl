@@ -153,7 +153,7 @@ typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System;
+  using System = typename thrust::iterator_system<InputIterator>::type;
 
   System system;
 
@@ -165,7 +165,7 @@ T reduce(InputIterator first, InputIterator last, T init)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System;
+  using System = typename thrust::iterator_system<InputIterator>::type;
 
   System system;
 
@@ -177,7 +177,7 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System;
+  using System = typename thrust::iterator_system<InputIterator>::type;
 
   System system;
 
@@ -194,10 +194,10 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
-  typedef typename thrust::iterator_system<OutputIterator1>::type System3;
-  typedef typename thrust::iterator_system<OutputIterator2>::type System4;
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -223,10 +223,10 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
-  typedef typename thrust::iterator_system<OutputIterator1>::type System3;
-  typedef typename thrust::iterator_system<OutputIterator2>::type System4;
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -260,10 +260,10 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
-  typedef typename thrust::iterator_system<OutputIterator1>::type System3;
-  typedef typename thrust::iterator_system<OutputIterator2>::type System4;
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;

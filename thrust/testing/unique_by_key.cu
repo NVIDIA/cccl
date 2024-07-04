@@ -149,7 +149,7 @@ void initialize_values(Vector& values)
 template <typename Vector>
 void TestUniqueByKeySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector keys;
   Vector values;
@@ -197,7 +197,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
 template <typename Vector>
 void TestUniqueCopyByKeySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector keys;
   Vector values;
@@ -252,20 +252,20 @@ struct TestUniqueByKey
 {
   void operator()(const size_t n)
   {
-    typedef unsigned int V; // ValueType
+    using V = unsigned int; // ValueType
 
     thrust::host_vector<K> h_keys   = unittest::random_integers<bool>(n);
     thrust::host_vector<V> h_vals   = unittest::random_integers<V>(n);
     thrust::device_vector<K> d_keys = h_keys;
     thrust::device_vector<V> d_vals = h_vals;
 
-    typedef typename thrust::host_vector<K>::iterator HostKeyIterator;
-    typedef typename thrust::host_vector<V>::iterator HostValIterator;
-    typedef typename thrust::device_vector<K>::iterator DeviceKeyIterator;
-    typedef typename thrust::device_vector<V>::iterator DeviceValIterator;
+    using HostKeyIterator   = typename thrust::host_vector<K>::iterator;
+    using HostValIterator   = typename thrust::host_vector<V>::iterator;
+    using DeviceKeyIterator = typename thrust::device_vector<K>::iterator;
+    using DeviceValIterator = typename thrust::device_vector<V>::iterator;
 
-    typedef typename thrust::pair<HostKeyIterator, HostValIterator> HostIteratorPair;
-    typedef typename thrust::pair<DeviceKeyIterator, DeviceValIterator> DeviceIteratorPair;
+    using HostIteratorPair   = typename thrust::pair<HostKeyIterator, HostValIterator>;
+    using DeviceIteratorPair = typename thrust::pair<DeviceKeyIterator, DeviceValIterator>;
 
     HostIteratorPair h_last   = thrust::unique_by_key(h_keys.begin(), h_keys.end(), h_vals.begin());
     DeviceIteratorPair d_last = thrust::unique_by_key(d_keys.begin(), d_keys.end(), d_vals.begin());
@@ -291,7 +291,7 @@ struct TestUniqueCopyByKey
 {
   void operator()(const size_t n)
   {
-    typedef unsigned int V; // ValueType
+    using V = unsigned int; // ValueType
 
     thrust::host_vector<K> h_keys   = unittest::random_integers<bool>(n);
     thrust::host_vector<V> h_vals   = unittest::random_integers<V>(n);
@@ -303,13 +303,13 @@ struct TestUniqueCopyByKey
     thrust::device_vector<K> d_keys_output(n);
     thrust::device_vector<V> d_vals_output(n);
 
-    typedef typename thrust::host_vector<K>::iterator HostKeyIterator;
-    typedef typename thrust::host_vector<V>::iterator HostValIterator;
-    typedef typename thrust::device_vector<K>::iterator DeviceKeyIterator;
-    typedef typename thrust::device_vector<V>::iterator DeviceValIterator;
+    using HostKeyIterator   = typename thrust::host_vector<K>::iterator;
+    using HostValIterator   = typename thrust::host_vector<V>::iterator;
+    using DeviceKeyIterator = typename thrust::device_vector<K>::iterator;
+    using DeviceValIterator = typename thrust::device_vector<V>::iterator;
 
-    typedef typename thrust::pair<HostKeyIterator, HostValIterator> HostIteratorPair;
-    typedef typename thrust::pair<DeviceKeyIterator, DeviceValIterator> DeviceIteratorPair;
+    using HostIteratorPair   = typename thrust::pair<HostKeyIterator, HostValIterator>;
+    using DeviceIteratorPair = typename thrust::pair<DeviceKeyIterator, DeviceValIterator>;
 
     HostIteratorPair h_last = thrust::unique_by_key_copy(
       h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys_output.begin(), h_vals_output.begin());
@@ -337,7 +337,7 @@ struct TestUniqueCopyByKeyToDiscardIterator
 {
   void operator()(const size_t n)
   {
-    typedef unsigned int V; // ValueType
+    using V = unsigned int; // ValueType
 
     thrust::host_vector<K> h_keys   = unittest::random_integers<bool>(n);
     thrust::host_vector<V> h_vals   = unittest::random_integers<V>(n);
