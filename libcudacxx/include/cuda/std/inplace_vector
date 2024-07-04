@@ -124,6 +124,27 @@ __select_inplace_vector_specialization()
   }
 }
 
+template <class _Base>
+struct _Rollback_change_size
+{
+  using iterator = typename _Base::iterator;
+  _Base* __obj_;
+  iterator& __first_;
+  iterator __current_;
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr _Rollback_change_size(
+    _Base* __obj, iterator& __first, iterator& __current) noexcept
+      : __obj_(__obj)
+      , __first_(__first)
+      , __current_(__current)
+  {}
+
+  _LIBCUDACXX_INLINE_VISIBILITY void operator()() const noexcept
+  {
+    __obj_->__change_size(__current_ - __first_);
+  }
+};
+
 template <class _Tp, size_t _Capacity, __inplace_vector_specialization>
 struct __inplace_vector_destruct_base
 {
@@ -156,16 +177,6 @@ struct __inplace_vector_destruct_base
   _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base& operator=(__inplace_vector_destruct_base&&) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base(const size_type __size)
-      : __elems_()
-      , __size_(__size)
-  {
-    if (_Capacity < __size)
-    {
-      _CUDA_VSTD::__throw_bad_alloc();
-    }
-  }
 
   _LIBCUDACXX_INLINE_VISIBILITY ~__inplace_vector_destruct_base() noexcept
   {
@@ -206,16 +217,6 @@ struct __inplace_vector_destruct_base<_Tp, _Capacity, __inplace_vector_specializ
   _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base& operator=(__inplace_vector_destruct_base&&) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __inplace_vector_destruct_base(const size_type __size)
-      : __elems_()
-      , __size_(__size)
-  {
-    if (_Capacity < __size)
-    {
-      _CUDA_VSTD::__throw_bad_alloc();
-    }
-  }
 };
 
 template <class _Tp,
@@ -233,17 +234,16 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   constexpr __inplace_vector_base() = default;
   _LIBCUDACXX_INLINE_VISIBILITY
   __inplace_vector_base(const __inplace_vector_base& __other) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>(__other.__size_)
+      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>()
   {
     __uninitialized_copy(__other.begin(), __other.end(), begin());
   }
   _LIBCUDACXX_INLINE_VISIBILITY
   __inplace_vector_base(__inplace_vector_base&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
-      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>(__other.__size_)
+      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>()
   {
     __uninitialized_move(__other.begin(), __other.end(), begin());
-    _CUDA_VSTD::__destroy(__other.begin(), __other.end());
-    __other.__size_ = 0;
+    __other.__destroy(__other.begin(), __other.end());
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_base& operator=(const __inplace_vector_base& __other) noexcept(
@@ -253,14 +253,13 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
     if (__diff < 0)
     {
       const auto __new_end = _CUDA_VSTD::copy(__other.begin(), __other.end(), begin());
-      _CUDA_VSTD::__destroy(__new_end, end());
+      __destroy(__new_end, end());
     }
     else
     {
       _CUDA_VSTD::copy(__other.begin(), __other.begin() + size(), begin());
       __uninitialized_copy(__other.begin() + size(), __other.end(), end());
     }
-    __change_size(__diff);
     return *this;
   }
 
@@ -271,25 +270,19 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
     if (__diff < 0)
     {
       const auto __new_end = _CUDA_VSTD::move(__other.begin(), __other.end(), begin());
-      _CUDA_VSTD::__destroy(__new_end, end());
+      __destroy(__new_end, end());
     }
     else
     {
       _CUDA_VSTD::move(__other.begin(), __other.begin() + size(), begin());
       __uninitialized_move(__other.begin() + size(), __other.end(), end());
     }
-    __change_size(__diff);
 
     // Need to reset the other container
-    _CUDA_VSTD::__destroy(__other.begin(), __other.end());
-    __other.__change_size(-static_cast<ptrdiff_t>(__other.size()));
+    __other.__destroy(__other.begin(), __other.end());
 
     return *this;
   }
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __inplace_vector_base(const size_type __size)
-      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>(__size)
-  {}
 
   // [containers.sequences.inplace.vector.members] size/capacity
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
@@ -340,6 +333,12 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   }
 
   // [containers.sequences.inplace.vector.modifiers], modifiers
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy(iterator __first, iterator __last) noexcept
+  {
+    _CUDA_VSTD::__destroy(__first, __last);
+    __change_size(__first - __last);
+  }
+
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr reference
   unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
@@ -349,30 +348,116 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
     return *__final;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY static void __uninitialized_value_construct(iterator __first, iterator __last) noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
   {
-    _CUDA_VSTD::uninitialized_value_construct(__first, __last);
+    iterator __idx = __first;
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+    }
+    __change_size(__last - __first);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY static void __uninitialized_fill(
-    iterator __first, iterator __last, const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_value_construct(iterator __first, iterator __last)
   {
-    _CUDA_VSTD::uninitialized_fill(__first, __last, __value);
+    iterator __idx = __first;
+    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __first, __idx});
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+    }
+    __guard.__complete();
+    __change_size(__last - __first);
   }
 
-  template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY static void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
   {
-    _CUDA_VSTD::uninitialized_copy(__first, __last, __dest);
+    iterator __idx = __first;
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+    }
+    __change_size(__last - __first);
   }
 
-  template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY static void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
   {
-    _CUDA_VSTD::uninitialized_move(__first, __last, __dest);
+    iterator __idx = __first;
+    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __first, __idx});
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+    }
+    __guard.__complete();
+    __change_size(__last - __first);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    iterator __curr = __dest;
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+    }
+    __change_size(__curr - __dest);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
+  {
+    iterator __curr = __dest;
+    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __dest, __curr});
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+    }
+    __guard.__complete();
+    __change_size(__curr - __dest);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    iterator __curr = __dest;
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+    }
+    __change_size(__curr - __dest);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
+  {
+    iterator __curr = __dest;
+    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __dest, __curr});
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+    }
+    __guard.__complete();
+    __change_size(__curr - __dest);
   }
 };
 
@@ -407,16 +492,6 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
     __size_         = __other.__size_;
     __other.__size_ = 0;
     return *this;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __inplace_vector_base(const size_type __size)
-      : __elems_()
-      , __size_(__size)
-  {
-    if (_Capacity < __size)
-    {
-      _CUDA_VSTD::__throw_bad_alloc();
-    }
   }
 
   // [containers.sequences.inplace.vector.members] size/capacity
@@ -478,30 +553,47 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
     return *__final;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy(iterator __first, iterator __last) noexcept
+  {
+    __change_size(__first - __last);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
   __uninitialized_value_construct(iterator __first, iterator __last) noexcept
   {
     _CUDA_VSTD::fill(__first, __last, _Tp());
+    __change_size(__last - __first);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
   __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
   {
     _CUDA_VSTD::fill(__first, __last, __value);
+    __change_size(__last - __first);
   }
 
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
   __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+    __change_size(_CUDA_VRANGES::distance(__first, __last));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+    __change_size(_CUDA_VSTD::distance(__first, __last));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
   }
 
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
   __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+    __change_size(_CUDA_VRANGES::distance(__first, __last));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+    __change_size(_CUDA_VSTD::distance(__first, __last));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
   }
 };
 
@@ -517,14 +609,6 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
   constexpr __inplace_vector_base() = default;
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __inplace_vector_base(const size_type __size)
-  {
-    if (__size != 0)
-    {
-      _CUDA_VSTD::__throw_bad_alloc();
-    }
-  }
 
   // [containers.sequences.inplace.vector.members] size/capacity
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
@@ -584,21 +668,25 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
 #  endif // _CCCL_COMPILER_MSVC
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __uninitialized_value_construct(iterator, iterator) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy(iterator, iterator) noexcept
   {
     _LIBCUDACXX_UNREACHABLE();
   }
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __uninitialized_fill(iterator, iterator, const _Tp&) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __uninitialized_value_construct(iterator, iterator) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __uninitialized_fill(iterator, iterator, const _Tp&) noexcept
   {
     _LIBCUDACXX_UNREACHABLE();
   }
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __uninitialized_copy(_Iter, _Iter, iterator) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __uninitialized_copy(_Iter, _Iter, iterator) noexcept
   {
     _LIBCUDACXX_UNREACHABLE();
   }
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __uninitialized_move(_Iter, _Iter, iterator) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __uninitialized_move(_Iter, _Iter, iterator) noexcept
   {
     _LIBCUDACXX_UNREACHABLE();
   }
@@ -633,20 +721,32 @@ public:
   constexpr inplace_vector& operator=(inplace_vector&&)      = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit inplace_vector(const size_type __size)
-      : __base(__size)
+      : __base()
   {
     if (__size > 0)
     {
-      __base::__uninitialized_value_construct(this->begin(), this->end());
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      iterator __begin = this->begin();
+      this->__uninitialized_value_construct(__begin, __begin + __size);
     }
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(const size_type __size, const _Tp& __value)
-      : __base(__size)
+      : __base()
   {
     if (__size > 0)
     {
-      __base::__uninitialized_fill(this->begin(), this->end(), __value);
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      iterator __begin = this->begin();
+      this->__uninitialized_fill(__begin, __begin + __size, __value);
     }
   }
 
@@ -654,7 +754,7 @@ public:
   _LIBCUDACXX_REQUIRES(
     __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Iter __first, _Iter __last)
-      : __base(0)
+      : __base()
   {
     for (; __first != __last; ++__first)
     {
@@ -665,20 +765,31 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Iter __first, _Iter __last)
-      : __base(_CUDA_VSTD::distance(__first, __last))
+      : __base()
   {
     if (__first != __last)
     {
-      __base::__uninitialized_copy(__first, __last, this->begin());
+      const auto __size = static_cast<size_t>(_CUDA_VSTD::distance(__first, __last));
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_copy(__first, __last, this->begin());
     }
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(initializer_list<_Tp> __ilist)
-      : __base(__ilist.size())
+      : __base()
   {
     if (__ilist.size() != 0)
     {
-      __base::__uninitialized_copy(__ilist.begin(), __ilist.end(), this->begin());
+      if (_Capacity < __ilist.size())
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), this->begin());
     }
   }
 
@@ -687,7 +798,7 @@ public:
   _LIBCUDACXX_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
-      : __base(0)
+      : __base()
   {
     auto __first = __range.begin();
     auto __last  = __range.end();
@@ -701,11 +812,17 @@ public:
   _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
                          _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
-      : __base(_CUDA_VRANGES::size(__range))
+      : __base()
   {
-    if (this->size() > 0)
+    const auto __size = _CUDA_VRANGES::size(__range);
+    if (__size > 0)
     {
-      __base::__uninitialized_move(__range.begin(), __unwrap_end(__range), this->begin());
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_move(__range.begin(), __unwrap_end(__range), this->begin());
     }
   }
 
@@ -713,11 +830,17 @@ public:
   _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
                          _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
-      : __base(_CUDA_VRANGES::distance(__range.begin(), __range.end()))
+      : __base()
   {
-    if (this->size() > 0)
+    const auto __size = static_cast<size_t>(_CUDA_VRANGES::distance(__range.begin(), __range.end()));
+    if (__size > 0)
     {
-      __base::__uninitialized_move(__range.begin(), __unwrap_end(__range), this->begin());
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_move(__range.begin(), __unwrap_end(__range), this->begin());
     }
   }
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -739,14 +862,13 @@ public:
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
-      _CUDA_VSTD::__destroy(__new_end, this->end());
+      this->__destroy(__new_end, this->end());
     }
     else
     {
       _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + this->size(), this->begin());
-      __base::__uninitialized_copy(__ilist.begin() + this->size(), __ilist.end(), this->end());
+      this->__uninitialized_copy(__ilist.begin() + this->size(), __ilist.end(), this->end());
     }
-    this->__change_size(__diff);
     return *this;
   }
 
@@ -764,15 +886,14 @@ public:
     {
       const pointer __begin = this->begin();
       _CUDA_VSTD::fill(__begin, __begin + __size, __value);
-      _CUDA_VSTD::__destroy(__begin + __size, this->end());
+      this->__destroy(__begin + __size, this->end());
     }
     else
     {
       const iterator __end = this->end();
       _CUDA_VSTD::fill(this->begin(), __end, __value);
-      __base::__uninitialized_fill(__end, __end + __diff, __value);
+      this->__uninitialized_fill(__end, __end + __diff, __value);
     }
-    this->__change_size(__diff);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter)
@@ -791,8 +912,7 @@ public:
     {
       if (__first == __last)
       {
-        _CUDA_VSTD::__destroy(__current, __end);
-        this->__change_size(__current - __end);
+        this->__destroy(__current, __end);
         return;
       }
       *__current = *__first;
@@ -818,15 +938,14 @@ public:
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
-      _CUDA_VSTD::__destroy(__new_end, this->end());
+      this->__destroy(__new_end, this->end());
     }
     else
     {
       _Iter __middle = _CUDA_VSTD::next(__first, this->size());
       _CUDA_VSTD::copy(__first, __middle, this->begin());
-      __base::__uninitialized_copy(__middle, __last, this->end());
+      this->__uninitialized_copy(__middle, __last, this->end());
     }
-    this->__change_size(__diff);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(initializer_list<_Tp> __ilist)
@@ -841,14 +960,13 @@ public:
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
-      _CUDA_VSTD::__destroy(__new_end, this->end());
+      this->__destroy(__new_end, this->end());
     }
     else
     {
       _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + this->size(), this->begin());
-      __base::__uninitialized_copy(__ilist.begin() + this->size(), __ilist.end(), this->end());
+      this->__uninitialized_copy(__ilist.begin() + this->size(), __ilist.end(), this->end());
     }
-    this->__change_size(__diff);
   }
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -870,8 +988,7 @@ public:
     {
       if (__first == __last)
       {
-        _CUDA_VSTD::__destroy(__current, __end);
-        this->__change_size(__current - __end);
+        this->__destroy(__current, __end);
         return;
       }
       *__current = *__first;
@@ -901,15 +1018,14 @@ public:
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
-      _CUDA_VSTD::__destroy(__new_end, this->end());
+      this->__destroy(__new_end, this->end());
     }
     else
     {
       const auto __middle = _CUDA_VSTD::next(__first, this->size());
       _CUDA_VSTD::copy(__first, __middle, this->begin());
-      __base::__uninitialized_copy(__middle, __last, this->end());
+      this->__uninitialized_copy(__middle, __last, this->end());
     }
-    this->__change_size(__diff);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Range)
@@ -930,15 +1046,14 @@ public:
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
-      _CUDA_VSTD::__destroy(__new_end, this->end());
+      this->__destroy(__new_end, this->end());
     }
     else
     {
       const auto __middle = _CUDA_VSTD::next(__first, this->size());
       _CUDA_VSTD::copy(__first, __middle, this->begin());
-      __base::__uninitialized_copy(__middle, __last, this->end());
+      this->__uninitialized_copy(__middle, __last, this->end());
     }
-    this->__change_size(__diff);
   }
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
@@ -1084,26 +1199,24 @@ public:
 
     if (__pos == __end)
     {
-      __base::__uninitialized_fill(__end, __end + __count, __value);
-      this->__change_size(__count);
+      this->__uninitialized_fill(__end, __end + __count, __value);
       return __pos;
     }
 
     const pointer __middle = __pos + __count;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
-      __base::__uninitialized_fill(__end, __middle, __value);
-      __base::__uninitialized_move(__pos, __end, __middle);
+      this->__uninitialized_fill(__end, __middle, __value);
+      this->__uninitialized_move(__pos, __end, __middle);
       _CUDA_VSTD::fill(__pos, __end, __value);
     }
     else
     { // some elements get copied into existing storage
-      __base::__uninitialized_move(__end - __count, __end, __end);
+      this->__uninitialized_move(__end - __count, __end, __end);
       _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
       _CUDA_VSTD::fill(__pos, __middle, __value);
     }
 
-    this->__change_size(__count);
     return __pos;
   }
 
@@ -1147,8 +1260,7 @@ public:
 
     if (__pos == __end)
     {
-      __base::__uninitialized_copy(__first, __last, __end);
-      this->__change_size(__count);
+      this->__uninitialized_copy(__first, __last, __end);
       return __pos;
     }
 
@@ -1157,18 +1269,17 @@ public:
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
       _Iter __imiddle = _CUDA_VSTD::next(__first, __to_copy);
-      __base::__uninitialized_copy(__imiddle, __last, __end);
-      __base::__uninitialized_move(__pos, __end, __middle);
+      this->__uninitialized_copy(__imiddle, __last, __end);
+      this->__uninitialized_move(__pos, __end, __middle);
       _CUDA_VSTD::copy(__first, __imiddle, __pos);
     }
     else
     { // all new elements get copied into existing storage
-      __base::__uninitialized_move(__end - __count, __end, __end);
+      this->__uninitialized_move(__end - __count, __end, __end);
       _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
       _CUDA_VSTD::copy(__first, __last, __pos);
     }
 
-    this->__change_size(__count);
     return __pos;
   }
 
@@ -1193,8 +1304,7 @@ public:
 
     if (__pos == __end)
     {
-      __base::__uninitialized_copy(__ilist.begin(), __ilist.end(), __end);
-      this->__change_size(__count);
+      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), __end);
       return __pos;
     }
 
@@ -1203,18 +1313,17 @@ public:
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
       auto __imiddel = __ilist.begin() + __to_copy;
-      __base::__uninitialized_copy(__imiddel, __ilist.end(), __end);
-      __base::__uninitialized_move(__pos, __end, __middle);
+      this->__uninitialized_copy(__imiddel, __ilist.end(), __end);
+      this->__uninitialized_move(__pos, __end, __middle);
       _CUDA_VSTD::copy(__ilist.begin(), __imiddel, __pos);
     }
     else
     { // all new elements get copied into existing storage
-      __base::__uninitialized_move(__end - __count, __end, __end);
+      this->__uninitialized_move(__end - __count, __end, __end);
       _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
       _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), __pos);
     }
 
-    this->__change_size(__count);
     return __pos;
   }
 
@@ -1390,8 +1499,7 @@ public:
 
     auto __first  = __range.begin();
     auto __middle = _CUDA_VRANGES::next(__first, __diff);
-    __base::__uninitialized_move(__first, __middle, this->end());
-    this->__change_size(static_cast<ptrdiff_t>(__diff));
+    this->__uninitialized_move(__first, __middle, this->end());
     return __middle;
   }
 
@@ -1407,8 +1515,7 @@ public:
     const ptrdiff_t __diff = __size < __capacity ? __size : __capacity;
 
     auto __middle = _CUDA_VRANGES::next(__first, __diff);
-    __base::__uninitialized_move(__first, __middle, this->end());
-    this->__change_size(__diff);
+    this->__uninitialized_move(__first, __middle, this->end());
     return __middle;
   }
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -1430,8 +1537,7 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void pop_back() noexcept
   {
     const auto __end = this->end();
-    _CUDA_VSTD::__destroy(__end, __end + 1);
-    this->__change_size(-1);
+    this->__destroy(__end, __end + 1);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator
@@ -1450,8 +1556,7 @@ public:
     }
 
     _CUDA_VSTD::move(__pos + 1, __end, __pos);
-    this->__change_size(-1);
-    _CUDA_VSTD::__destroy(__end - 1, __end);
+    this->__destroy(__end - 1, __end);
     return __pos;
   }
 
@@ -1472,15 +1577,13 @@ public:
     }
 
     const auto __new_end = _CUDA_VSTD::move(__last, __end, __first);
-    _CUDA_VSTD::__destroy(__new_end, __end);
-    this->__change_size(__first - __last);
+    this->__destroy(__new_end, __end);
     return __first;
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void clear() noexcept
   {
-    _CUDA_VSTD::__destroy(this->begin(), this->end());
-    this->__change_size(-static_cast<ptrdiff_t>(this->size()));
+    this->__destroy(this->begin(), this->end());
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __size)
@@ -1488,7 +1591,7 @@ public:
     const auto __diff = static_cast<ptrdiff_t>(__size - this->size());
     if (__diff < 0)
     {
-      _CUDA_VSTD::__destroy(this->begin() + __size, this->end());
+      this->__destroy(this->begin() + __size, this->end());
     }
     else
     {
@@ -1496,10 +1599,10 @@ public:
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
+
       const iterator __end = this->end();
-      __base::__uninitialized_value_construct(__end, __end + __diff);
+      this->__uninitialized_value_construct(__end, __end + __diff);
     }
-    this->__change_size(__diff);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __size, const _Tp& __value)
@@ -1507,7 +1610,7 @@ public:
     const auto __diff = static_cast<ptrdiff_t>(__size - this->size());
     if (__diff < 0)
     {
-      _CUDA_VSTD::__destroy(this->begin() + __size, this->end());
+      this->__destroy(this->begin() + __size, this->end());
     }
     else
     {
@@ -1515,10 +1618,10 @@ public:
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
+
       const iterator __end = this->end();
-      __base::__uninitialized_fill(__end, __end + __diff, __value);
+      this->__uninitialized_fill(__end, __end + __diff, __value);
     }
-    this->__change_size(__diff);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr void reserve(const size_type __size)
@@ -1543,18 +1646,15 @@ public:
     if (this->size() < __other.size())
     {
       const auto __new_mid = _CUDA_VSTD::swap_ranges(this->begin(), this->end(), __other.begin());
-      __base::__uninitialized_move(__new_mid, __other.end(), this->end());
-      _CUDA_VSTD::__destroy(__new_mid, __other.end());
+      this->__uninitialized_move(__new_mid, __other.end(), this->end());
+      __other.__destroy(__new_mid, __other.end());
     }
     else
     {
       const auto __new_mid = _CUDA_VSTD::swap_ranges(__other.begin(), __other.end(), this->begin());
-      __base::__uninitialized_move(__new_mid, this->end(), __other.end());
-      _CUDA_VSTD::__destroy(__new_mid, this->end());
+      __other.__uninitialized_move(__new_mid, this->end(), __other.end());
+      this->__destroy(__new_mid, this->end());
     }
-    const auto __diff = static_cast<ptrdiff_t>(this->size() - __other.size());
-    this->__change_size(__diff);
-    __other.__change_size(-__diff);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
@@ -1622,11 +1722,8 @@ public:
   {
     const pointer __old_end  = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove(__cont.begin(), __old_end, __value);
-    _CUDA_VSTD::__destroy(__new_end, __old_end);
-
-    const auto __diff = __new_end - __old_end;
-    __cont.__change_size(__diff);
-    return static_cast<size_type>(-__diff);
+    __cont.__destroy(__new_end, __old_end);
+    return static_cast<size_type>(__old_end - __new_end);
   }
 
   template <class _Pred>
@@ -1635,11 +1732,8 @@ public:
   {
     const pointer __old_end  = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove_if(__cont.begin(), __old_end, _CUDA_VSTD::move(__pred));
-    _CUDA_VSTD::__destroy(__new_end, __old_end);
-
-    const auto __diff = __new_end - __old_end;
-    __cont.__change_size(__diff);
-    return static_cast<size_type>(-__diff);
+    __cont.__destroy(__new_end, __old_end);
+    return static_cast<size_type>(__old_end - __new_end);
   }
 };
 
