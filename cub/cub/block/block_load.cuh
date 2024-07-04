@@ -194,6 +194,10 @@ InternalLoadDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITE
   // Biggest memory access word that T is a whole multiple of
   using DeviceWord = typename UnitWord<T>::DeviceWord;
 
+  _CCCL_DIAG_PUSH
+#  if defined(CUB_CLANG_VERSION) && CUB_CLANG_VERSION >= 100000
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wsizeof-array-div")
+#  endif // defined(CUB_CLANG_VERSION) && CUB_CLANG_VERSION >= 100000
   enum
   {
     TOTAL_WORDS = sizeof(items) / sizeof(DeviceWord),
@@ -204,6 +208,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITE
 
     VECTORS_PER_THREAD = TOTAL_WORDS / VECTOR_SIZE,
   };
+  _CCCL_DIAG_POP
 
   // Vector type
   using Vector = typename CubVector<DeviceWord, VECTOR_SIZE>::Type;
