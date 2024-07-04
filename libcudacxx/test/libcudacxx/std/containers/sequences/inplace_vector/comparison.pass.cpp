@@ -23,10 +23,10 @@ template <class T>
 __host__ __device__ constexpr void test_equality()
 {
   constexpr size_t max_capacity = 42ull;
-  using vec                     = cuda::std::inplace_vector<T, max_capacity>;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
 
-  vec lhs{T(1), T(42), T(1337), T(0)};
-  vec rhs{T(0), T(1), T(2), T(3), T(4)};
+  inplace_vector lhs{T(1), T(42), T(1337), T(0)};
+  inplace_vector rhs{T(0), T(1), T(2), T(3), T(4)};
 
   auto res_equality = lhs == lhs;
   static_assert(cuda::std::is_same<decltype(res_equality), bool>::value, "");
@@ -41,10 +41,10 @@ template <class T>
 __host__ __device__ constexpr void test_relation()
 {
   constexpr size_t max_capacity = 42ull;
-  using vec                     = cuda::std::inplace_vector<T, max_capacity>;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
 
-  vec lhs{T(0), T(1), T(1), T(3), T(4)};
-  vec rhs{T(0), T(1), T(2), T(3), T(4)};
+  inplace_vector lhs{T(0), T(1), T(1), T(3), T(4)};
+  inplace_vector rhs{T(0), T(1), T(2), T(3), T(4)};
 
   auto res_less = lhs < rhs;
   static_assert(cuda::std::is_same<decltype(res_less), bool>::value, "");
@@ -73,6 +73,7 @@ __host__ __device__ constexpr void test()
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {

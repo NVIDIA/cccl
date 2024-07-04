@@ -26,70 +26,71 @@
 template <class T>
 __host__ __device__ constexpr void test_copy()
 {
+  // Zero capacity inplace_vector is nothrow_copy_assignable
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 42>>::value
                     == cuda::std::is_nothrow_copy_constructible<T>::value
                   && cuda::std::is_nothrow_copy_assignable<T>::value,
                 "");
 
-  {
+  { // inplace_vector<T, 0> can be copy assigned
     const cuda::std::inplace_vector<T, 0> input{};
     cuda::std::inplace_vector<T, 0> no_capacity{};
     no_capacity = input;
     assert(no_capacity.empty());
   }
 
-  {
-    const cuda::std::inplace_vector<T, 42> input{};
-    cuda::std::inplace_vector<T, 42> empty_to_empty{};
-    empty_to_empty = input;
-    assert(empty_to_empty.empty());
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be copy assigned an empty input
+    const inplace_vector input{};
+    inplace_vector vec{};
+    vec = input;
+    assert(vec.empty());
   }
 
-  {
-    const cuda::std::inplace_vector<T, 42> input{};
-    cuda::std::inplace_vector<T, 42> empty_to_non_empty{T(1), T(42), T(1337), T(0)};
-    empty_to_non_empty = input;
-    assert(empty_to_non_empty.empty());
+  { // inplace_vector<T, N> can be copy assigned an empty input, shrinking
+    const inplace_vector input{};
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec = input;
+    assert(vec.empty());
   }
 
-  {
-    const cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_empty{};
-    non_empty_to_empty = input;
-    assert(!non_empty_to_empty.empty());
-    assert(cuda::std::equal(non_empty_to_empty.begin(), non_empty_to_empty.end(), input.begin(), input.end()));
+  { // inplace_vector<T, N> can be copy assigned a non-empty input, growing from empty
+    const inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{};
+    vec = input;
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 
-  {
-    const cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_non_empty_shrink{T(0), T(42), T(1337), T(42), T(5)};
-    non_empty_to_non_empty_shrink = input;
-    assert(!non_empty_to_non_empty_shrink.empty());
-    assert(cuda::std::equal(
-      non_empty_to_non_empty_shrink.begin(), non_empty_to_non_empty_shrink.end(), input.begin(), input.end()));
+  { // inplace_vector<T, N> can be copy assigned a non-empty input, shrinking
+    const inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
+    vec = input;
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 
-  {
-    const cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_non_empty_grow{T(0), T(42)};
-    non_empty_to_non_empty_grow = input;
-    assert(!non_empty_to_non_empty_grow.empty());
-    assert(cuda::std::equal(
-      non_empty_to_non_empty_grow.begin(), non_empty_to_non_empty_grow.end(), input.begin(), input.end()));
+  { // inplace_vector<T, N> can be copy assigned a non-empty input, growing
+    const inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{T(0), T(42)};
+    vec = input;
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_move()
 {
+  // Zero capacity inplace_vector is nothrow_move_assignable
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 42>>::value
                     == cuda::std::is_nothrow_move_constructible<T>::value
                   && cuda::std::is_nothrow_move_assignable<T>::value,
                 "");
 
-  {
+  { // inplace_vector<T, 0> can be move assigned
     cuda::std::inplace_vector<T, 0> input{};
     cuda::std::inplace_vector<T, 0> no_capacity{};
     no_capacity = cuda::std::move(input);
@@ -97,101 +98,96 @@ __host__ __device__ constexpr void test_move()
     assert(input.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> input{};
-    cuda::std::inplace_vector<T, 42> empty_to_empty{};
-    empty_to_empty = cuda::std::move(input);
-    assert(empty_to_empty.empty());
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be move assigned an empty input
+    inplace_vector input{};
+    inplace_vector vec{};
+    vec = cuda::std::move(input);
+    assert(vec.empty());
     assert(input.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> input{};
-    cuda::std::inplace_vector<T, 42> empty_to_non_empty{T(1), T(42), T(1337), T(0)};
-    empty_to_non_empty = cuda::std::move(input);
-    assert(empty_to_non_empty.empty());
+  { // inplace_vector<T, N> can be move assigned an empty input, shrinking
+    inplace_vector input{};
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec = cuda::std::move(input);
+    assert(vec.empty());
     assert(input.empty());
   }
 
-  const cuda::std::initializer_list<T> expected{T(1), T(42), T(1337), T(0)};
-  {
-    cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_empty{};
-    non_empty_to_empty = cuda::std::move(input);
-    assert(!non_empty_to_empty.empty());
-    assert(cuda::std::equal(non_empty_to_empty.begin(), non_empty_to_empty.end(), expected.begin(), expected.end()));
+  const cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
+  { // inplace_vector<T, N> can be move assigned a non-empty input, growing from empty. clears input
+    inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{};
+    vec = cuda::std::move(input);
+    assert(!vec.empty());
     assert(input.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_non_empty_shrink{T(0), T(42), T(1337), T(42), T(5)};
-    non_empty_to_non_empty_shrink = cuda::std::move(input);
-    assert(!non_empty_to_non_empty_shrink.empty());
-    assert(cuda::std::equal(
-      non_empty_to_non_empty_shrink.begin(), non_empty_to_non_empty_shrink.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N> can be move assigned a non-empty input, shrinking. clears input
+    inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
+    vec = cuda::std::move(input);
+    assert(!vec.empty());
     assert(input.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_non_empty_grow{T(0), T(42)};
-    non_empty_to_non_empty_grow = cuda::std::move(input);
-    assert(!non_empty_to_non_empty_grow.empty());
-    assert(cuda::std::equal(
-      non_empty_to_non_empty_grow.begin(), non_empty_to_non_empty_grow.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N> can be move assigned a non-empty input, growing. clears input
+    inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{T(0), T(42)};
+    vec = cuda::std::move(input);
+    assert(!vec.empty());
     assert(input.empty());
+    assert(equal_range(vec, expected));
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_init_list()
 {
-  {
+  { // inplace_vector<T, 0> can be assigned an empty initializer_list
     const cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 0> no_capacity{};
-    no_capacity = input;
-    assert(no_capacity.empty());
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec = input;
+    assert(vec.empty());
   }
 
-  {
-    const cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 42> empty_to_empty{};
-    empty_to_empty = input;
-    assert(empty_to_empty.empty());
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  const cuda::std::initializer_list<T> empty_input{};
+  { // inplace_vector<T, N> can be assigned an empty initializer_list
+    cuda::std::inplace_vector<T, 42> vec{};
+    vec = empty_input;
+    assert(vec.empty());
   }
 
-  {
-    const cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 42> empty_to_non_empty{T(1), T(42), T(1337), T(0)};
-    empty_to_non_empty = input;
-    assert(empty_to_non_empty.empty());
+  { // inplace_vector<T, N> can be assigned an empty initializer_list, shrinking
+    cuda::std::inplace_vector<T, 42> vec{T(1), T(42), T(1337), T(0)};
+    vec = empty_input;
+    assert(vec.empty());
   }
 
-  {
-    const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_empty{};
-    non_empty_to_empty = input;
-    assert(!non_empty_to_empty.empty());
-    assert(cuda::std::equal(non_empty_to_empty.begin(), non_empty_to_empty.end(), input.begin(), input.end()));
+  const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
+  { // inplace_vector<T, N> can be assigned a non-empty initializer_list, from empty
+    cuda::std::inplace_vector<T, 42> vec{};
+    vec = input;
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 
-  {
-    const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_non_empty_shrink{T(0), T(42), T(1337), T(42), T(5)};
-    non_empty_to_non_empty_shrink = input;
-    assert(!non_empty_to_non_empty_shrink.empty());
-    assert(cuda::std::equal(
-      non_empty_to_non_empty_shrink.begin(), non_empty_to_non_empty_shrink.end(), input.begin(), input.end()));
+  { // inplace_vector<T, N> can be assigned a non-empty initializer_list, shrinking
+    cuda::std::inplace_vector<T, 42> vec{T(0), T(42), T(1337), T(42), T(5)};
+    vec = input;
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 
-  {
-    const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> non_empty_to_non_empty_grow{T(0), T(42)};
-    non_empty_to_non_empty_grow = input;
-    assert(!non_empty_to_non_empty_grow.empty());
-    assert(cuda::std::equal(
-      non_empty_to_non_empty_grow.begin(), non_empty_to_non_empty_grow.end(), input.begin(), input.end()));
+  { // inplace_vector<T, N> can be assigned a non-empty initializer_list, growing from non empty
+    cuda::std::inplace_vector<T, 42> vec{T(0), T(42)};
+    vec = input;
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 }
 
@@ -206,6 +202,7 @@ __host__ __device__ constexpr void test()
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {
@@ -221,12 +218,12 @@ __host__ __device__ constexpr bool test()
 void test_exceptions()
 { // assignment throws std::bad_alloc
   constexpr size_t capacity = 4;
-  using vec                 = cuda::std::inplace_vector<int, capacity>;
+  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  inplace_vector too_small{};
 
   try
   {
     cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-    vec too_small{};
     too_small = input;
   }
   catch (const std::bad_alloc&)

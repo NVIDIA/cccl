@@ -24,9 +24,9 @@ template <class T>
 __host__ __device__ constexpr void test()
 {
   constexpr size_t max_capacity = 42ull;
-  using vec                     = cuda::std::inplace_vector<T, max_capacity>;
-  vec range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-  const vec const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  inplace_vector range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+  const inplace_vector const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
 
   const auto empty = range.empty();
   static_assert(cuda::std::is_same<decltype(empty), const bool>::value, "");
@@ -37,33 +37,34 @@ __host__ __device__ constexpr void test()
   assert(!const_empty);
 
   const auto size = range.size();
-  static_assert(cuda::std::is_same<decltype(size), const typename vec::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(size), const typename inplace_vector::size_type>::value, "");
   assert(size == 6);
 
   const auto const_size = const_range.size();
-  static_assert(cuda::std::is_same<decltype(const_size), const typename vec::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_size), const typename inplace_vector::size_type>::value, "");
   assert(const_size == 6);
 
   const auto max_size = range.max_size();
-  static_assert(cuda::std::is_same<decltype(max_size), const typename vec::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(max_size), const typename inplace_vector::size_type>::value, "");
   assert(max_size == max_capacity);
 
   const auto const_max_size = const_range.max_size();
-  static_assert(cuda::std::is_same<decltype(const_max_size), const typename vec::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_max_size), const typename inplace_vector::size_type>::value, "");
   assert(const_max_size == max_capacity);
 
   const auto capacity = range.capacity();
-  static_assert(cuda::std::is_same<decltype(capacity), const typename vec::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(capacity), const typename inplace_vector::size_type>::value, "");
   assert(capacity == max_capacity);
 
   const auto const_capacity = const_range.capacity();
-  static_assert(cuda::std::is_same<decltype(const_capacity), const typename vec::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_capacity), const typename inplace_vector::size_type>::value, "");
   assert(const_capacity == max_capacity);
 }
 
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {

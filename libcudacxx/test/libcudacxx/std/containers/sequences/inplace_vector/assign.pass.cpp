@@ -32,32 +32,36 @@ _CCCL_DIAG_SUPPRESS_MSVC(5246)
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_ranges()
 {
-  {
-    cuda::std::inplace_vector<T, 42> input_range_empty{};
-    input_range_empty.assign_range(Range<T, 0>{});
-    assert(input_range_empty.empty());
+  { // inplace_vector<T, 0>::assign_range with an empty input
+    cuda::std::inplace_vector<T, 0> inplace_vector{};
+    inplace_vector.assign_range(Range<T, 0>{});
+    assert(inplace_vector.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> input_range_shrink_empty{T(1), T(42), T(1337), T(0)};
-    input_range_shrink_empty.assign_range(Range<T, 0>{});
-    assert(input_range_shrink_empty.empty());
+  { // inplace_vector<T, N>::assign_range with an empty input
+    cuda::std::inplace_vector<T, 42> inplace_vector{};
+    inplace_vector.assign_range(Range<T, 0>{});
+    assert(inplace_vector.empty());
   }
 
-  {
-    const cuda::std::array<T, 2> expected = {T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> input_range_shrink{T(1), T(42), T(1337), T(0)};
-    input_range_shrink.assign_range(Range<T, 2>{T(42), T(42)});
-    assert(!input_range_shrink.empty());
-    assert(cuda::std::equal(input_range_shrink.begin(), input_range_shrink.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::assign_range with an empty input, shrinking
+    cuda::std::inplace_vector<T, 42> inplace_vector{T(1), T(42), T(1337), T(0)};
+    inplace_vector.assign_range(Range<T, 0>{});
+    assert(inplace_vector.empty());
   }
 
-  {
-    const cuda::std::array<T, 6> expected = {T(42), T(42), T(42), T(42), T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> input_range_grow{T(1), T(42), T(1337), T(0)};
-    input_range_grow.assign_range(Range<T, 6>{T(42), T(42), T(42), T(42), T(42), T(42)});
-    assert(!input_range_grow.empty());
-    assert(cuda::std::equal(input_range_grow.begin(), input_range_grow.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::assign_range with a non-empty input, shrinking
+    cuda::std::inplace_vector<T, 42> inplace_vector{T(1), T(42), T(1337), T(0)};
+    inplace_vector.assign_range(Range<T, 2>{T(42), T(42)});
+    assert(!inplace_vector.empty());
+    assert(equal_range(inplace_vector, cuda::std::array<T, 2>{T(42), T(42)}));
+  }
+
+  { // inplace_vector<T, N>::assign_range with a non-empty input, growing
+    cuda::std::inplace_vector<T, 42> inplace_vector{T(1), T(42), T(1337), T(0)};
+    inplace_vector.assign_range(Range<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)});
+    assert(!inplace_vector.empty());
+    assert(equal_range(inplace_vector, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
   }
 }
 #endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
@@ -110,7 +114,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> size_value_shrink{T(1), T(42), T(1337), T(0)};
     size_value_shrink.assign(2, T(42));
     assert(!size_value_shrink.empty());
-    assert(cuda::std::equal(size_value_shrink.begin(), size_value_shrink.end(), expected.begin(), expected.end()));
+    assert(equal_range(size_value_shrink, expected));
   }
 
   {
@@ -118,7 +122,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> size_value_grow{T(1), T(42), T(1337), T(0)};
     size_value_grow.assign(6, T(42));
     assert(!size_value_grow.empty());
-    assert(cuda::std::equal(size_value_grow.begin(), size_value_grow.end(), expected.begin(), expected.end()));
+    assert(equal_range(size_value_grow, expected));
   }
 
   {
@@ -143,8 +147,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> input_iter_iter_shrink{T(1), T(42), T(1337), T(0)};
     input_iter_iter_shrink.assign(iter{expected.begin()}, iter{expected.end()});
     assert(!input_iter_iter_shrink.empty());
-    assert(
-      cuda::std::equal(input_iter_iter_shrink.begin(), input_iter_iter_shrink.end(), expected.begin(), expected.end()));
+    assert(equal_range(input_iter_iter_shrink, expected));
   }
 
   {
@@ -153,8 +156,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> input_iter_iter_grow{T(1), T(42), T(1337), T(0)};
     input_iter_iter_grow.assign(iter{expected.begin()}, iter{expected.end()});
     assert(!input_iter_iter_grow.empty());
-    assert(
-      cuda::std::equal(input_iter_iter_grow.begin(), input_iter_iter_grow.end(), expected.begin(), expected.end()));
+    assert(equal_range(input_iter_iter_grow, expected));
   }
 
   {
@@ -176,7 +178,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> iter_iter_shrink{T(1), T(42), T(1337), T(0)};
     iter_iter_shrink.assign(expected.begin(), expected.end());
     assert(!iter_iter_shrink.empty());
-    assert(cuda::std::equal(iter_iter_shrink.begin(), iter_iter_shrink.end(), expected.begin(), expected.end()));
+    assert(equal_range(iter_iter_shrink, expected));
   }
 
   {
@@ -184,7 +186,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> iter_iter_grow{T(1), T(42), T(1337), T(0)};
     iter_iter_grow.assign(expected.begin(), expected.end());
     assert(!iter_iter_grow.empty());
-    assert(cuda::std::equal(iter_iter_grow.begin(), iter_iter_grow.end(), expected.begin(), expected.end()));
+    assert(equal_range(iter_iter_grow, expected));
   }
 
   {
@@ -206,7 +208,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> init_list_shrink{T(1), T(42), T(1337), T(0)};
     init_list_shrink.assign(expected);
     assert(!init_list_shrink.empty());
-    assert(cuda::std::equal(init_list_shrink.begin(), init_list_shrink.end(), expected.begin(), expected.end()));
+    assert(equal_range(init_list_shrink, expected));
   }
 
   {
@@ -214,7 +216,7 @@ __host__ __device__ constexpr void test()
     cuda::std::inplace_vector<T, 42> init_list_grow{T(1), T(42), T(1337), T(0)};
     init_list_grow.assign(expected);
     assert(!init_list_grow.empty());
-    assert(cuda::std::equal(init_list_grow.begin(), init_list_grow.end(), expected.begin(), expected.end()));
+    assert(equal_range(init_list_grow, expected));
   }
 
 #if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
@@ -228,6 +230,7 @@ __host__ __device__ constexpr void test()
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {
@@ -240,14 +243,44 @@ __host__ __device__ constexpr bool test()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
+template <template <class, size_t> class Range>
+void test_exceptions()
+{ // assign_range throws std::bad_alloc
+  constexpr size_t capacity = 4;
+  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  inplace_vector too_small{};
+  try
+  {
+    too_small.assign_range(Range<int, 2 + capacity>{0, 1, 2, 3, 4, 5, 6});
+  }
+  catch (const std::bad_alloc&)
+  {}
+  catch (...)
+  {
+    assert(false);
+  }
+}
+
 void test_exceptions()
 { // assign throws std::bad_alloc
   constexpr size_t capacity = 4;
-  using vec                 = cuda::std::inplace_vector<int, capacity>;
+  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  inplace_vector too_small{};
+  cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
 
   try
   {
-    vec too_small{};
+    too_small.assign(2 * capacity);
+  }
+  catch (const std::bad_alloc&)
+  {}
+  catch (...)
+  {
+    assert(false);
+  }
+
+  try
+  {
     too_small.assign(2 * capacity, 42);
   }
   catch (const std::bad_alloc&)
@@ -260,8 +293,6 @@ void test_exceptions()
   try
   {
     using iter = cpp17_input_iterator<const int*>;
-    cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small{};
     too_small.assign(iter{input.begin()}, iter{input.end()});
   }
   catch (const std::bad_alloc&)
@@ -273,8 +304,6 @@ void test_exceptions()
 
   try
   {
-    cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small{};
     too_small.assign(input.begin(), input.end());
   }
   catch (const std::bad_alloc&)
@@ -286,8 +315,7 @@ void test_exceptions()
 
   try
   {
-    cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-    vec too_small{};
+    inplace_vector too_small{};
     too_small.assign(input);
   }
   catch (const std::bad_alloc&)
@@ -298,44 +326,10 @@ void test_exceptions()
   }
 
 #  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
-  try
-  {
-    input_range<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small{};
-    too_small.assign_range(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    assert(false);
-  }
-
-  try
-  {
-    uncommon_range<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small{};
-    too_small.assign_range(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    assert(false);
-  }
-
-  try
-  {
-    sized_uncommon_range<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small{};
-    too_small.assign_range(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    assert(false);
-  }
+  test_exceptions<input_range>();
+  test_exceptions<uncommon_range>();
+  test_exceptions<sized_uncommon_range>();
+  test_exceptions<cuda::std::array>();
 #  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
