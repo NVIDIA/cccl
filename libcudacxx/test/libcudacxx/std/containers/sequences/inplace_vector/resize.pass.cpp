@@ -118,6 +118,7 @@ __host__ __device__ constexpr void test()
     shrink_to_fit.shrink_to_fit();
     assert(cuda::std::equal(shrink_to_fit.begin(), shrink_to_fit.end(), expected.begin(), expected.end()));
   }
+
   {
     cuda::std::initializer_list<T> expected{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     vec reserve{T(1), T(1337), T(1), T(12), T(0), T(-1)};

@@ -44,6 +44,7 @@ __host__ __device__ constexpr void test()
     assert(cuda::std::equal(left.begin(), left.end(), expected_left.begin(), expected_left.end()));
     assert(cuda::std::equal(right.begin(), right.end(), expected_right.begin(), expected_right.end()));
   }
+
   {
     using vec = cuda::std::inplace_vector<T, 0>;
     vec empty{};
