@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -181,26 +182,38 @@ __construct_at(_Tp* __location, _Args&&... __args)
 // The internal functions are available regardless of the language version (with the exception of the `__destroy_at`
 // taking an array).
 template <class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __destroy(_ForwardIterator, _ForwardIterator);
 
-template <class _Tp, __enable_if_t<!is_array<_Tp>::value, int> = 0>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __destroy_at(_Tp* __loc)
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Tp,
+          __enable_if_t<!is_array<_Tp>::value, int>                  = 0,
+          __enable_if_t<!is_trivially_destructible<_Tp>::value, int> = 0>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _LIBCUDACXX_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   __loc->~_Tp();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Tp,
+          __enable_if_t<!is_array<_Tp>::value, int>                 = 0,
+          __enable_if_t<is_trivially_destructible<_Tp>::value, int> = 0>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
+{
+  _LIBCUDACXX_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
+}
+
 #if _CCCL_STD_VER >= 2020
 template <class _Tp, __enable_if_t<is_array<_Tp>::value, int> = 0>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __destroy_at(_Tp* __loc)
+_LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy_at(_Tp* __loc)
 {
   _LIBCUDACXX_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   _CUDA_VSTD::__destroy(_CUDA_VSTD::begin(*__loc), _CUDA_VSTD::end(*__loc));
 }
-#endif
+#endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _ForwardIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 __destroy(_ForwardIterator __first, _ForwardIterator __last)
 {
   for (; __first != __last; ++__first)
@@ -211,7 +224,7 @@ __destroy(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 template <class _BidirectionalIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _BidirectionalIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator
 __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   while (__last != __first)
@@ -222,7 +235,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
   return __last;
 }
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2017
 
 template <class _Tp, enable_if_t<!is_array_v<_Tp>, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
@@ -255,7 +268,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_
   return __first;
 }
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
