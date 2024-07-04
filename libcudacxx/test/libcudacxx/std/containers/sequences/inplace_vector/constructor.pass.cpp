@@ -32,15 +32,15 @@ _CCCL_DIAG_SUPPRESS_MSVC(5246)
 template <class T>
 __host__ __device__ constexpr void test_default()
 {
-  {
-    cuda::std::inplace_vector<T, 0> no_capacity{};
-    assert(no_capacity.empty());
+  { // inplace_vecto<T, 0> is default_constructible
+    cuda::std::inplace_vector<T, 0> vec{};
+    assert(vec.empty());
     static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> with_capacity{};
-    assert(with_capacity.empty());
+  { // inplace_vecto<T, N> is default_constructible
+    cuda::std::inplace_vector<T, 42> vec{};
+    assert(vec.empty());
     static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 42>>::value, "");
   }
 }
@@ -48,167 +48,173 @@ __host__ __device__ constexpr void test_default()
 template <class T>
 __host__ __device__ constexpr void test_copy_move()
 {
+  // Zero capacity inplace_vector is trivial
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
   static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
-
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::is_nothrow_copy_constructible<T>::value,
                 "");
   static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::is_nothrow_move_constructible<T>::value,
                 "");
-  {
+  { // inplace_vector<T, 0> can be copy constructed
     cuda::std::inplace_vector<T, 0> input{};
-    cuda::std::inplace_vector<T, 0> no_capacity_copy(input);
-    assert(no_capacity_copy.empty());
-
-    cuda::std::inplace_vector<T, 0> no_capacity_move(cuda::std::move(input));
-    assert(no_capacity_move.empty());
+    cuda::std::inplace_vector<T, 0> vec(input);
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> input{};
-    cuda::std::inplace_vector<T, 42> with_capacity_empty_copy(input);
-    assert(with_capacity_empty_copy.empty());
-
-    cuda::std::inplace_vector<T, 42> with_capacity_empty_move(cuda::std::move(input));
-    assert(with_capacity_empty_move.empty());
-  }
-
-  {
-    cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> with_capacity_copy(input);
-    assert(!with_capacity_copy.empty());
-    assert(with_capacity_copy.size() == input.size());
-    assert(cuda::std::equal(with_capacity_copy.begin(), with_capacity_copy.end(), input.begin(), input.end()));
-
-    cuda::std::inplace_vector<T, 42> with_capacity_move(cuda::std::move(input));
+  { // inplace_vector<T, 0> can be move constructed
+    cuda::std::inplace_vector<T, 0> input{};
+    cuda::std::inplace_vector<T, 0> vec(cuda::std::move(input));
     assert(input.empty());
-    assert(!with_capacity_move.empty());
-    assert(with_capacity_copy.size() == with_capacity_copy.size());
-    assert(cuda::std::equal(
-      with_capacity_copy.begin(), with_capacity_copy.end(), with_capacity_copy.begin(), with_capacity_copy.end()));
+    assert(vec.empty());
+  }
+
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be copy constructed from empty input
+    const inplace_vector input{};
+    inplace_vector vec(input);
+    assert(vec.empty());
+  }
+
+  { // inplace_vector<T, N> can be move constructed with empty input
+    inplace_vector input{};
+    inplace_vector vec(cuda::std::move(input));
+    assert(vec.empty());
+    assert(input.empty());
+  }
+
+  { // inplace_vector<T, N> can be copy constructed from non-empty input
+    inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec(input);
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
+  }
+
+  { // inplace_vector<T, N> can be move constructed from non-empty input, clears input
+    inplace_vector input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec(cuda::std::move(input));
+    assert(!vec.empty());
+    assert(input.empty());
+    assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_size()
 {
-  {
-    cuda::std::inplace_vector<T, 0> no_capacity(0);
-    assert(no_capacity.empty());
+  { // inplace_vector<T, 0> can be constructed from a size
+    cuda::std::inplace_vector<T, 0> vec(0);
+    assert(vec.empty());
     static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)), "");
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> with_capacity_empty(0);
-    assert(with_capacity_empty.empty());
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 42>(0)), "");
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be constructed from a size, is empty if zero
+    inplace_vector vec(0);
+    assert(vec.empty());
+    static_assert(!noexcept(inplace_vector(0)), "");
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> with_capacity_non_empty(3);
-    assert(!with_capacity_non_empty.empty());
-    assert(with_capacity_non_empty.size() == 3);
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 42>(3)), "");
-
-    const T expected[] = {T(), T(), T()};
-    assert(cuda::std::equal(with_capacity_non_empty.begin(), with_capacity_non_empty.end(), expected, expected + 3));
+  { // inplace_vector<T, N> can be constructed from a size, elements are value initialized
+    constexpr size_t size{3};
+    inplace_vector vec(size);
+    assert(!vec.empty());
+    assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
+    static_assert(!noexcept(inplace_vector(3)), "");
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_size_value()
 {
-  {
-    cuda::std::inplace_vector<T, 0> no_capacity(0, T(42));
-    assert(no_capacity.empty());
+  { // inplace_vector<T, 0> can be constructed from a size and a const T&
+    cuda::std::inplace_vector<T, 0> vec(0, T(42));
+    assert(vec.empty());
     static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))), "");
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> with_capacity_empty(0, T(42));
-    assert(with_capacity_empty.empty());
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 42>(0, T(42))), "");
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be constructed from a size and a const T&, is empty if zero
+    inplace_vector vec(0, T(42));
+    assert(vec.empty());
+    static_assert(!noexcept(inplace_vector(0, T(42))), "");
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> with_capacity_non_empty(3, T(42));
-    assert(!with_capacity_non_empty.empty());
-    assert(with_capacity_non_empty.size() == 3);
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 42>(3, T(42))), "");
-
-    const T expected[] = {T(42), T(42), T(42)};
-    assert(cuda::std::equal(with_capacity_non_empty.begin(), with_capacity_non_empty.end(), expected, expected + 3));
+  { // inplace_vector<T, N> can be constructed from a size and a const T&, elements are copied
+    constexpr size_t size{3};
+    inplace_vector vec(size, T(42));
+    assert(!vec.empty());
+    assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
+    static_assert(!noexcept(inplace_vector(3, T(42))), "");
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_iter()
 {
-  const T input[] = {T(1), T(42), T(1337), T(0)};
-  {
+  const cuda::std::array<T, 4> input{T(1), T(42), T(1337), T(0)};
+  { // inplace_vector<T, 0> can be constructed from two equal input iterators
     using iter = cpp17_input_iterator<const T*>;
-    cuda::std::inplace_vector<T, 0> from_input_iter_no_capacity(iter{input}, iter{input});
-    assert(from_input_iter_no_capacity.empty());
+    cuda::std::inplace_vector<T, 0> vec(iter{input.begin()}, iter{input.begin()});
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, 0> can be constructed from two equal forward iterators
     using iter = forward_iterator<const T*>;
-    cuda::std::inplace_vector<T, 0> from_forward_iter_no_capacity(iter{input}, iter{input});
-    assert(from_forward_iter_no_capacity.empty());
+    cuda::std::inplace_vector<T, 0> vec(iter{input.begin()}, iter{input.begin()});
+    assert(vec.empty());
   }
 
-  {
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be constructed from two equal input iterators
     using iter = cpp17_input_iterator<const T*>;
-    cuda::std::inplace_vector<T, 42> from_input_iter_empty(iter{input}, iter{input});
-    assert(from_input_iter_empty.empty());
+    inplace_vector vec(iter{input.begin()}, iter{input.begin()});
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N> can be constructed from two equal forward iterators
     using iter = forward_iterator<const T*>;
-    cuda::std::inplace_vector<T, 42> from_forward_iter_empty(iter{input}, iter{input});
-    assert(from_forward_iter_empty.empty());
+    inplace_vector vec(iter{input.begin()}, iter{input.begin()});
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N> can be constructed from two input iterators
     using iter = cpp17_input_iterator<const T*>;
-    cuda::std::inplace_vector<T, 42> from_input_iter_non_empty(iter{input}, iter{input + 3});
-    assert(!from_input_iter_non_empty.empty());
-    assert(from_input_iter_non_empty.size() == 3);
-    assert(cuda::std::equal(from_input_iter_non_empty.begin(), from_input_iter_non_empty.end(), input, input + 3));
+    inplace_vector vec(iter{input.begin()}, iter{input.end()});
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 
-  {
+  { // inplace_vector<T, N> can be constructed from two forward iterators
     using iter = forward_iterator<const T*>;
-    cuda::std::inplace_vector<T, 42> from_forward_iter_non_empty(iter{input}, iter{input + 3});
-    assert(!from_forward_iter_non_empty.empty());
-    assert(from_forward_iter_non_empty.size() == 3);
-    assert(cuda::std::equal(from_forward_iter_non_empty.begin(), from_forward_iter_non_empty.end(), input, input + 3));
+    inplace_vector vec(iter{input.begin()}, iter{input.end()});
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 }
 
 template <class T>
 __host__ __device__ constexpr void test_init_list()
 {
-  {
+  { // inplace_vector<T, 0> can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 0> no_capacity(input);
-    assert(no_capacity.empty());
+    cuda::std::inplace_vector<T, 0> vec(input);
+    assert(vec.empty());
   }
 
-  {
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 42> from_empty(input);
-    assert(from_empty.empty());
+    inplace_vector vec(input);
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> from_non_empty(input);
-    assert(!from_non_empty.empty());
-    assert(from_non_empty.size() == input.size());
-    assert(cuda::std::equal(from_non_empty.begin(), from_non_empty.end(), input.begin(), input.end()));
+  { // inplace_vector<T, N> can be constructed from a non- empty initializer_list
+    const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec(input);
+    assert(!vec.empty());
+    assert(equal_range(vec, input));
   }
 }
 
@@ -216,22 +222,21 @@ __host__ __device__ constexpr void test_init_list()
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
-  {
-    cuda::std::inplace_vector<T, 0> no_capacity(Range<T, 0>{});
-    assert(no_capacity.empty());
+  { // inplace_vector<T, 0> can be constructed from an empty range
+    cuda::std::inplace_vector<T, 0> vec(Range<T, 0>{});
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> from_empty(Range<T, 0>{});
-    assert(from_empty.empty());
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N> can be constructed from an empty range
+    inplace_vector vec(Range<T, 0>{});
+    assert(vec.empty());
   }
 
-  {
-    const cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
-    cuda::std::inplace_vector<T, 42> from_non_empty(Range<T, 4>{T(1), T(42), T(1337), T(0)});
-    assert(!from_non_empty.empty());
-    assert(from_non_empty.size() == expected.size());
-    assert(cuda::std::equal(from_non_empty.begin(), from_non_empty.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N> can be constructed from a non-empty range
+    inplace_vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
+    assert(!vec.empty());
+    assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
 }
 
@@ -280,6 +285,7 @@ __host__ __device__ constexpr void test()
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
   test<NonTrivial>();
   test<ThrowingDefaultConstruct>();
   test<ThrowingCopyConstructor>();
@@ -298,11 +304,11 @@ __host__ __device__ constexpr bool test()
 void test_exceptions()
 { // constructors throw std::bad_alloc
   constexpr size_t capacity = 4;
-  using vec                 = cuda::std::inplace_vector<int, capacity>;
+  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
 
   try
   {
-    vec too_small(2 * capacity);
+    inplace_vector too_small(2 * capacity);
   }
   catch (const std::bad_alloc&)
   {}
@@ -313,7 +319,7 @@ void test_exceptions()
 
   try
   {
-    vec too_small(2 * capacity, 42);
+    inplace_vector too_small(2 * capacity, 42);
   }
   catch (const std::bad_alloc&)
   {}
@@ -326,7 +332,7 @@ void test_exceptions()
   {
     using iter = cpp17_input_iterator<const int*>;
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small(iter{input.begin()}, iter{input.end()});
+    inplace_vector too_small(iter{input.begin()}, iter{input.end()});
   }
   catch (const std::bad_alloc&)
   {}
@@ -338,7 +344,7 @@ void test_exceptions()
   try
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small(input.begin(), input.end());
+    inplace_vector too_small(input.begin(), input.end());
   }
   catch (const std::bad_alloc&)
   {}
@@ -350,7 +356,7 @@ void test_exceptions()
   try
   {
     cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-    vec too_small(input);
+    inplace_vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -363,7 +369,7 @@ void test_exceptions()
   try
   {
     input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    vec too_small(input);
+    inplace_vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -375,7 +381,7 @@ void test_exceptions()
   try
   {
     uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    vec too_small(input);
+    inplace_vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -387,7 +393,7 @@ void test_exceptions()
   try
   {
     sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    vec too_small(input);
+    inplace_vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -399,7 +405,7 @@ void test_exceptions()
   try
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vec too_small(input);
+    inplace_vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}

@@ -74,6 +74,7 @@ __host__ __device__ constexpr void test()
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {

@@ -15,7 +15,12 @@
 
 struct Trivial
 {
-  int val_ = 0;
+  int val_;
+
+  Trivial() = default;
+  __host__ __device__ constexpr Trivial(const int val) noexcept
+      : val_(val)
+  {}
 
   __host__ __device__ friend constexpr bool operator==(const Trivial& lhs, const Trivial& rhs) noexcept
   {
@@ -238,5 +243,12 @@ static_assert(cuda::std::ranges::forward_range<sized_uncommon_range<int, 4>>);
 static_assert(!cuda::std::ranges::common_range<sized_uncommon_range<int, 4>>);
 static_assert(cuda::std::ranges::sized_range<sized_uncommon_range<int, 4>>);
 #endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
+
+// Helper function to compare two ranges
+template <class Range1, class Range2>
+__host__ __device__ constexpr bool equal_range(const Range1& range1, const Range2& range2)
+{
+  return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
+}
 
 #endif // TEST_CONTAINER_SEQUENCES_INPLACE_VECTOR_TYPES_H

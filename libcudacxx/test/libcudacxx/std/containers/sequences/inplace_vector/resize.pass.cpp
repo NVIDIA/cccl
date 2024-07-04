@@ -24,6 +24,74 @@
 #  include <stdexcept>
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
+template <class T>
+__host__ __device__ constexpr void test_resize()
+{
+  constexpr size_t max_capacity = 42ull;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+
+  { // inplace_vector<T, 0>::resize with a size
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.resize(0);
+    assert(vec.empty());
+  }
+
+  { // inplace_vector<T, 0>::resize with a size and value
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.resize(0, T{42});
+    assert(vec.empty());
+  }
+
+  { // inplace_vector<T, N>::resize with a size, shrinking
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    vec.resize(1);
+    assert(equal_range(vec, cuda::std::array<T, 1>{T(1)}));
+  }
+
+  { // inplace_vector<T, N>::resize with a size and value, shrinking
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    vec.resize(1, T(5));
+    assert(equal_range(vec, cuda::std::array<T, 1>{T(1)}));
+  }
+
+  { // inplace_vector<T, N>::resize with a size, growing, new elements are value initialized
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    vec.resize(8);
+    assert(equal_range(vec, cuda::std::array<T, 8>{T(1), T(1337), T(42), T(12), T(0), T(-1), T(0), T(0)}));
+  }
+
+  { // inplace_vector<T, N>::resize with a size and value, growing, new elements are copied
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    vec.resize(8, T(5));
+    assert(equal_range(vec, cuda::std::array<T, 8>{T(1), T(1337), T(42), T(12), T(0), T(-1), T(5), T(5)}));
+  }
+}
+
+template <class T>
+__host__ __device__ constexpr void test_clear()
+{
+  constexpr size_t max_capacity = 42ull;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+
+  { // inplace_vector<T, 0>::clear
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.clear();
+    assert(vec.empty());
+  }
+
+  { // inplace_vector<T, N>::clear, from empty
+    inplace_vector vec{};
+    vec.clear();
+    assert(vec.empty());
+  }
+
+  { // inplace_vector<T, N>::clear
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    vec.clear();
+    assert(vec.empty());
+  }
+}
+
 struct is_one
 {
   template <class T>
@@ -34,102 +102,134 @@ struct is_one
 };
 
 template <class T>
-__host__ __device__ constexpr void test()
+__host__ __device__ constexpr void test_pop_back()
 {
   constexpr size_t max_capacity = 42ull;
-  using vec                     = cuda::std::inplace_vector<T, max_capacity>;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
 
-  {
-    cuda::std::initializer_list<T> expected{T(1)};
-    vec resize_shrink{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    resize_shrink.resize(1);
-    assert(cuda::std::equal(resize_shrink.begin(), resize_shrink.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::pop_back
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    vec.pop_back();
+    assert(equal_range(vec, cuda::std::array<T, 5>{T(1), T(1337), T(42), T(12), T(0)}));
+  }
+}
+
+template <class T>
+__host__ __device__ constexpr void test_erase()
+{
+  constexpr size_t max_capacity = 42ull;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+
+  { // inplace_vector<T, N>::erase(iter)
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    auto res = vec.erase(vec.begin() + 1);
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value, "");
+    assert(*res == T(42));
+    assert(equal_range(vec, cuda::std::array<T, 5>{T(1), T(42), T(12), T(0), T(-1)}));
   }
 
-  {
-    cuda::std::initializer_list<T> expected{T(1)};
-    vec resize_value_shrink{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    resize_value_shrink.resize(1, T(5));
-    assert(cuda::std::equal(resize_value_shrink.begin(), resize_value_shrink.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::erase(iter, iter), iterators are equal
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    auto res = vec.erase(vec.begin() + 1, vec.begin() + 1);
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value, "");
+    assert(*res == T(1337));
+    assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(42), T(12), T(0), T(-1)}));
   }
 
-  {
-    cuda::std::initializer_list<T> expected{T(1), T(1337), T(42), T(12), T(0), T(-1), T(0), T(0), T(0)};
-    vec resize_grow{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    resize_grow.resize(9);
-    assert(cuda::std::equal(resize_grow.begin(), resize_grow.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::erase(iter, iter)
+    inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    auto res = vec.erase(vec.begin() + 1, vec.begin() + 3);
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value, "");
+    assert(*res == T(12));
+    assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(12), T(0), T(-1)}));
   }
 
-  {
-    cuda::std::initializer_list<T> expected{T(1), T(1337), T(42), T(12), T(0), T(-1), T(5), T(5), T(5)};
-    vec resize_value_grow{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    resize_value_grow.resize(9, T(5));
-    assert(cuda::std::equal(resize_value_grow.begin(), resize_value_grow.end(), expected.begin(), expected.end()));
+  { // erase(inplace_vector<T, 0>, value)
+    cuda::std::inplace_vector<T, 0> vec{};
+    auto res = erase(vec, T(1));
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    assert(res == 0);
+    assert(vec.empty());
   }
 
-  {
-    vec clear{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    clear.clear();
-    assert(clear.empty());
+  { // erase_if(inplace_vector<T, 0>, pred)
+    cuda::std::inplace_vector<T, 0> vec{};
+    auto res = erase_if(vec, is_one{});
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    assert(res == 0);
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::initializer_list<T> expected{T(1), T(1337), T(42), T(12), T(0)};
-    vec pop_back{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    pop_back.pop_back();
-    assert(cuda::std::equal(pop_back.begin(), pop_back.end(), expected.begin(), expected.end()));
+  { // erase(inplace_vector<T, N>, value)
+    inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
+    auto res = erase(vec, T(1));
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    assert(res == 2);
+    assert(equal_range(vec, cuda::std::array<T, 4>{T(1337), T(12), T(0), T(-1)}));
   }
 
-  {
-    cuda::std::initializer_list<T> expected_iter{T(1), T(42), T(12), T(0), T(-1)};
-    vec erase_iter{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    auto res_erase_iter = erase_iter.erase(erase_iter.begin() + 1);
-    static_assert(cuda::std::is_same<decltype(res_erase_iter), typename vec::iterator>::value, "");
-    assert(*res_erase_iter == T(42));
-    assert(cuda::std::equal(erase_iter.begin(), erase_iter.end(), expected_iter.begin(), expected_iter.end()));
+  { // erase_if(inplace_vector<T, N>, pred)
+    inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
+    auto res = erase_if(vec, is_one{});
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    assert(res == 2);
+    assert(equal_range(vec, cuda::std::array<T, 4>{T(1337), T(12), T(0), T(-1)}));
+  }
+}
 
-    cuda::std::initializer_list<T> expected_iter_iter{T(1), T(12), T(0), T(-1)};
-    vec erase_iter_iter{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    auto res_erase_iter_iter = erase_iter_iter.erase(erase_iter_iter.begin() + 1, erase_iter_iter.begin() + 3);
-    static_assert(cuda::std::is_same<decltype(res_erase_iter_iter), typename vec::iterator>::value, "");
-    assert(*res_erase_iter_iter == T(12));
-    assert(cuda::std::equal(
-      erase_iter_iter.begin(), erase_iter_iter.end(), expected_iter_iter.begin(), expected_iter_iter.end()));
+template <class T>
+__host__ __device__ constexpr void test_shrink_to_fit()
+{
+  constexpr size_t max_capacity = 42ull;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+
+  { // inplace_vector<T, 0>::shrink_to_fit
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.shrink_to_fit();
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::initializer_list<T> expected{T(1337), T(12), T(0), T(-1)};
-    vec erased{T(1), T(1337), T(1), T(12), T(0), T(-1)};
-    auto res_erase = erase(erased, T(1));
-    static_assert(cuda::std::is_same<decltype(res_erase), typename vec::size_type>::value, "");
-    assert(res_erase == 2);
-    assert(cuda::std::equal(erased.begin(), erased.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::shrink_to_fit
+    inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
+    vec.shrink_to_fit();
+    assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(1), T(12), T(0), T(-1)}));
+  }
+}
 
-    vec erased_if{T(1), T(1337), T(1), T(12), T(0), T(-1)};
-    auto res_erase_if = erase_if(erased_if, is_one{});
-    static_assert(cuda::std::is_same<decltype(res_erase_if), typename vec::size_type>::value, "");
-    assert(res_erase_if == 2);
-    assert(cuda::std::equal(erased_if.begin(), erased_if.end(), expected.begin(), expected.end()));
+template <class T>
+__host__ __device__ constexpr void test_reserve()
+{
+  constexpr size_t max_capacity = 42ull;
+  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+
+  { // inplace_vector<T, 0>::reserve
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.reserve(0);
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::initializer_list<T> expected{T(1), T(1337), T(1), T(12), T(0), T(-1)};
-    vec shrink_to_fit{T(1), T(1337), T(1), T(12), T(0), T(-1)};
-    shrink_to_fit.shrink_to_fit();
-    assert(cuda::std::equal(shrink_to_fit.begin(), shrink_to_fit.end(), expected.begin(), expected.end()));
+  { // inplace_vector<T, N>::reserve
+    inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
+    vec.reserve(13);
+    assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(1), T(12), T(0), T(-1)}));
   }
+}
 
-  {
-    cuda::std::initializer_list<T> expected{T(1), T(1337), T(1), T(12), T(0), T(-1)};
-    vec reserve{T(1), T(1337), T(1), T(12), T(0), T(-1)};
-    reserve.reserve(13);
-    assert(cuda::std::equal(reserve.begin(), reserve.end(), expected.begin(), expected.end()));
-  }
+template <class T>
+__host__ __device__ constexpr void test()
+{
+  test_resize<T>();
+  test_clear<T>();
+  test_pop_back<T>();
+  test_erase<T>();
+  test_shrink_to_fit<T>();
+  test_reserve<T>();
 }
 
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {
@@ -145,8 +245,8 @@ __host__ __device__ constexpr bool test()
 void test_exceptions()
 { // resize and reserve throw std::bad_alloc
   {
-    using vec = cuda::std::inplace_vector<int, 42>;
-    vec too_small{};
+    using inplace_vector = cuda::std::inplace_vector<int, 42>;
+    inplace_vector too_small{};
     try
     {
       too_small.resize(1337);

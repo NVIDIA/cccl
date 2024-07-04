@@ -24,40 +24,41 @@
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  {
-    using vec = cuda::std::inplace_vector<T, 42>;
-    cuda::std::initializer_list<T> expected_left{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    cuda::std::initializer_list<T> expected_right{T(0), T(42), T(1337), T(42), T(5), T(-42)};
+  { // inplace_vector<T, 0> can be swapped
+    using inplace_vector = cuda::std::inplace_vector<T, 0>;
+    inplace_vector empty{};
+    empty.swap(empty);
+    static_assert(noexcept(empty.swap(empty)), "");
+    swap(empty, empty);
+    static_assert(noexcept(swap(empty, empty)), "");
+  }
 
-    vec left(expected_left);
-    vec right(expected_right);
+  { // inplace_vector<T, N> can be swapped
+    using inplace_vector = cuda::std::inplace_vector<T, 42>;
+    const cuda::std::initializer_list<T> expected_left{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    const cuda::std::initializer_list<T> expected_right{T(0), T(42), T(1337), T(42), T(5), T(-42)};
+
+    inplace_vector left(expected_left);
+    inplace_vector right(expected_right);
 
     left.swap(right);
     constexpr bool nothrow_swap =
       cuda::std::is_nothrow_swappable<T>::value && cuda::std::is_nothrow_move_constructible<T>::value;
     static_assert(noexcept(left.swap(right)) == nothrow_swap, "");
-    assert(cuda::std::equal(left.begin(), left.end(), expected_right.begin(), expected_right.end()));
-    assert(cuda::std::equal(right.begin(), right.end(), expected_left.begin(), expected_left.end()));
+    assert(equal_range(left, expected_right));
+    assert(equal_range(right, expected_left));
 
     swap(left, right);
     static_assert(noexcept(swap(left, right)) == nothrow_swap, "");
-    assert(cuda::std::equal(left.begin(), left.end(), expected_left.begin(), expected_left.end()));
-    assert(cuda::std::equal(right.begin(), right.end(), expected_right.begin(), expected_right.end()));
-  }
-
-  {
-    using vec = cuda::std::inplace_vector<T, 0>;
-    vec empty{};
-    empty.swap(empty);
-    static_assert(noexcept(empty.swap(empty)), "");
-    swap(empty, empty);
-    static_assert(noexcept(swap(empty, empty)), "");
+    assert(equal_range(left, expected_left));
+    assert(equal_range(right, expected_right));
   }
 }
 
 __host__ __device__ constexpr bool test()
 {
   test<int>();
+  test<Trivial>();
 
   if (!cuda::std::__libcpp_is_constant_evaluated())
   {

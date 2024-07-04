@@ -219,6 +219,7 @@ struct __inplace_vector_destruct_base<_Tp, _Capacity, __inplace_vector_specializ
   {}
 };
 
+// Specialization for non-trivial types. Nothing in here can be constexpr
 template <class _Tp,
           size_t _Capacity,
           __inplace_vector_specialization _Spec = __select_inplace_vector_specialization<_Tp, _Capacity>()>
@@ -249,8 +250,7 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_base& operator=(const __inplace_vector_base& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
   {
-    const auto __diff = static_cast<ptrdiff_t>(__other.size() - size());
-    if (__diff < 0)
+    if (__other.size() < size())
     {
       const auto __new_end = _CUDA_VSTD::copy(__other.begin(), __other.end(), begin());
       __destroy(__new_end, end());
@@ -266,8 +266,7 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_base& operator=(__inplace_vector_base&& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
-    const auto __diff = static_cast<ptrdiff_t>(__other.size() - size());
-    if (__diff < 0)
+    if (__other.size() < size())
     {
       const auto __new_end = _CUDA_VSTD::move(__other.begin(), __other.end(), begin());
       __destroy(__new_end, end());
@@ -333,12 +332,6 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   }
 
   // [containers.sequences.inplace.vector.modifiers], modifiers
-  _LIBCUDACXX_INLINE_VISIBILITY void __destroy(iterator __first, iterator __last) noexcept
-  {
-    _CUDA_VSTD::__destroy(__first, __last);
-    __change_size(__first - __last);
-  }
-
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr reference
   unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
@@ -346,6 +339,13 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
     auto __final = _CUDA_VSTD::__construct_at(end(), _CUDA_VSTD::forward<_Args>(__args)...);
     this->__change_size(1);
     return *__final;
+  }
+
+protected:
+  _LIBCUDACXX_INLINE_VISIBILITY void __destroy(iterator __first, iterator __last) noexcept
+  {
+    _CUDA_VSTD::__destroy(__first, __last);
+    __change_size(__first - __last);
   }
 
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
@@ -553,6 +553,7 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
     return *__final;
   }
 
+protected:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy(iterator __first, iterator __last) noexcept
   {
     __change_size(__first - __last);
@@ -664,10 +665,11 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   {
     _LIBCUDACXX_UNREACHABLE();
 #  if defined(_CCCL_COMPILER_MSVC)
-    return *(end() - 1);
+    return *begin();
 #  endif // _CCCL_COMPILER_MSVC
   }
 
+protected:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy(iterator, iterator) noexcept
   {
     _LIBCUDACXX_UNREACHABLE();
@@ -720,33 +722,33 @@ public:
   constexpr inplace_vector& operator=(const inplace_vector&) = default;
   constexpr inplace_vector& operator=(inplace_vector&&)      = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit inplace_vector(const size_type __size)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit inplace_vector(const size_type __count)
       : __base()
   {
-    if (__size > 0)
+    if (__count > 0)
     {
-      if (_Capacity < __size)
+      if (_Capacity < __count)
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
 
       iterator __begin = this->begin();
-      this->__uninitialized_value_construct(__begin, __begin + __size);
+      this->__uninitialized_value_construct(__begin, __begin + __count);
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(const size_type __size, const _Tp& __value)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(const size_type __count, const _Tp& __value)
       : __base()
   {
-    if (__size > 0)
+    if (__count > 0)
     {
-      if (_Capacity < __size)
+      if (_Capacity < __count)
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
 
       iterator __begin = this->begin();
-      this->__uninitialized_fill(__begin, __begin + __size, __value);
+      this->__uninitialized_fill(__begin, __begin + __count, __value);
     }
   }
 
@@ -832,10 +834,10 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
       : __base()
   {
-    const auto __size = static_cast<size_t>(_CUDA_VRANGES::distance(__range.begin(), __range.end()));
-    if (__size > 0)
+    const auto __count = static_cast<size_t>(_CUDA_VRANGES::distance(__range.begin(), __range.end()));
+    if (__count > 0)
     {
-      if (_Capacity < __size)
+      if (_Capacity < __count)
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
@@ -847,52 +849,52 @@ public:
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
   {
+    const auto __count = __ilist.size();
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__size == 0, "Cannot assign to inplace_vector with zero capacity ");
+      _LIBCUDACXX_ASSERT(__count == 0, "Cannot assign to inplace_vector with zero capacity ");
       return *this;
     }
 
-    if (_Capacity < __ilist.size())
+    if (_Capacity < __count)
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(__ilist.size() - this->size());
-    if (__diff < 0)
+    const auto __size = this->size();
+    if (__count < __size)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
       this->__destroy(__new_end, this->end());
     }
     else
     {
-      _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + this->size(), this->begin());
-      this->__uninitialized_copy(__ilist.begin() + this->size(), __ilist.end(), this->end());
+      _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + __size, this->begin());
+      this->__uninitialized_copy(__ilist.begin() + __size, __ilist.end(), this->end());
     }
     return *this;
   }
 
   // inplace_vector.assign
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(const size_type __size, const _Tp& __value)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(const size_type __count, const _Tp& __value)
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__size == 0, "Cannot assign to inplace_vector with zero capacity ");
+      _LIBCUDACXX_ASSERT(__count == 0, "Cannot assign to inplace_vector with zero capacity ");
       return;
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(__size - this->size());
-    if (__diff < 0)
+    const pointer __begin = this->begin();
+    const iterator __end  = this->end();
+    if (__count < this->size())
     {
-      const pointer __begin = this->begin();
-      _CUDA_VSTD::fill(__begin, __begin + __size, __value);
-      this->__destroy(__begin + __size, this->end());
+      _CUDA_VSTD::fill(__begin, __begin + __count, __value);
+      this->__destroy(__begin + __count, __end);
     }
     else
     {
-      const iterator __end = this->end();
-      _CUDA_VSTD::fill(this->begin(), __end, __value);
-      this->__uninitialized_fill(__end, __end + __diff, __value);
+      _CUDA_VSTD::fill(__begin, __end, __value);
+      this->__uninitialized_fill(__end, __begin + __count, __value);
     }
   }
 
@@ -934,7 +936,8 @@ public:
       return;
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(_CUDA_VSTD::distance(__first, __last) - this->size());
+    const auto __diff =
+      static_cast<ptrdiff_t>(_CUDA_VSTD::distance(__first, __last)) - static_cast<ptrdiff_t>(this->size());
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
@@ -956,7 +959,7 @@ public:
       return;
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(__ilist.size() - this->size());
+    const auto __diff = static_cast<ptrdiff_t>(__ilist.size()) - static_cast<ptrdiff_t>(this->size());
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
@@ -1014,7 +1017,7 @@ public:
 
     const auto __first = __range.begin();
     const auto __last  = __unwrap_end(__range);
-    const auto __diff  = static_cast<ptrdiff_t>(__size - this->size());
+    const auto __diff  = static_cast<ptrdiff_t>(__size) - static_cast<ptrdiff_t>(this->size());
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
@@ -1042,7 +1045,7 @@ public:
       return;
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(__size - this->size());
+    const auto __diff = static_cast<ptrdiff_t>(__size) - static_cast<ptrdiff_t>(this->size());
     if (__diff < 0)
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
@@ -1493,6 +1496,11 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      return __range.begin();
+    }
+
     const auto __capacity = _Capacity - this->size();
     const auto __size     = _CUDA_VRANGES::size(__range);
     const auto __diff     = __size < __capacity ? __size : __capacity;
@@ -1509,6 +1517,11 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      return __range.begin();
+    }
+
     const auto __capacity  = static_cast<ptrdiff_t>(_Capacity - this->size());
     auto __first           = __range.begin();
     const auto __size      = static_cast<ptrdiff_t>(_CUDA_VRANGES::distance(__first, __unwrap_end(__range)));
@@ -1583,19 +1596,27 @@ public:
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void clear() noexcept
   {
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      return;
+    }
     this->__destroy(this->begin(), this->end());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __size)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __count)
   {
-    const auto __diff = static_cast<ptrdiff_t>(__size - this->size());
-    if (__diff < 0)
+    const auto __diff = static_cast<ptrdiff_t>(__count) - static_cast<ptrdiff_t>(this->size());
+    if (__diff == 0)
     {
-      this->__destroy(this->begin() + __size, this->end());
+      return;
+    }
+    else if (__diff < 0)
+    {
+      this->__destroy(this->begin() + __count, this->end());
     }
     else
     {
-      if (_Capacity < __size)
+      if (_Capacity < __count)
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
@@ -1605,16 +1626,20 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __size, const _Tp& __value)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __count, const _Tp& __value)
   {
-    const auto __diff = static_cast<ptrdiff_t>(__size - this->size());
-    if (__diff < 0)
+    const auto __diff = static_cast<ptrdiff_t>(__count) - static_cast<ptrdiff_t>(this->size());
+    if (__diff == 0)
     {
-      this->__destroy(this->begin() + __size, this->end());
+      return;
+    }
+    else if (__diff < 0)
+    {
+      this->__destroy(this->begin() + __count, this->end());
     }
     else
     {
-      if (_Capacity < __size)
+      if (_Capacity < __count)
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
@@ -1624,9 +1649,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void reserve(const size_type __size)
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void reserve(const size_type __count)
   {
-    if (_Capacity < __size)
+    if (_Capacity < __count)
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
@@ -1720,6 +1745,10 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type
   erase(inplace_vector& __cont, const _Up& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      return 0;
+    }
     const pointer __old_end  = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove(__cont.begin(), __old_end, __value);
     __cont.__destroy(__new_end, __old_end);
@@ -1730,6 +1759,10 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type
   erase_if(inplace_vector& __cont, _Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      return 0;
+    }
     const pointer __old_end  = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove_if(__cont.begin(), __old_end, _CUDA_VSTD::move(__pred));
     __cont.__destroy(__new_end, __old_end);
