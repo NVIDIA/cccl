@@ -90,7 +90,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 
   template <class Arg>
-  void _CCCL_DEVICE copy_arg(char*& buffer, size_t& offset, Arg arg) const
+  void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, Arg arg) const
   {
     // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
     // static_assert(::cuda::std::is_trivially_copyable<Arg>::value, "");
