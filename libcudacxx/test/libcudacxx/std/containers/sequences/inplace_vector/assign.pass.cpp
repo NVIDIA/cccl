@@ -120,6 +120,7 @@ __host__ __device__ constexpr void test()
     assert(!size_value_grow.empty());
     assert(cuda::std::equal(size_value_grow.begin(), size_value_grow.end(), expected.begin(), expected.end()));
   }
+
   {
     using iter                            = cpp17_input_iterator<const T*>;
     const cuda::std::array<T, 0> expected = {};

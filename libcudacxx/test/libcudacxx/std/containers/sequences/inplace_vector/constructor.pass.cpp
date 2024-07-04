@@ -65,6 +65,7 @@ __host__ __device__ constexpr void test_copy_move()
     cuda::std::inplace_vector<T, 0> no_capacity_move(cuda::std::move(input));
     assert(no_capacity_move.empty());
   }
+
   {
     cuda::std::inplace_vector<T, 42> input{};
     cuda::std::inplace_vector<T, 42> with_capacity_empty_copy(input);
@@ -73,6 +74,7 @@ __host__ __device__ constexpr void test_copy_move()
     cuda::std::inplace_vector<T, 42> with_capacity_empty_move(cuda::std::move(input));
     assert(with_capacity_empty_move.empty());
   }
+
   {
     cuda::std::inplace_vector<T, 42> input{T(1), T(42), T(1337), T(0)};
     cuda::std::inplace_vector<T, 42> with_capacity_copy(input);
@@ -150,21 +152,25 @@ __host__ __device__ constexpr void test_iter()
     cuda::std::inplace_vector<T, 0> from_input_iter_no_capacity(iter{input}, iter{input});
     assert(from_input_iter_no_capacity.empty());
   }
+
   {
     using iter = forward_iterator<const T*>;
     cuda::std::inplace_vector<T, 0> from_forward_iter_no_capacity(iter{input}, iter{input});
     assert(from_forward_iter_no_capacity.empty());
   }
+
   {
     using iter = cpp17_input_iterator<const T*>;
     cuda::std::inplace_vector<T, 42> from_input_iter_empty(iter{input}, iter{input});
     assert(from_input_iter_empty.empty());
   }
+
   {
     using iter = forward_iterator<const T*>;
     cuda::std::inplace_vector<T, 42> from_forward_iter_empty(iter{input}, iter{input});
     assert(from_forward_iter_empty.empty());
   }
+
   {
     using iter = cpp17_input_iterator<const T*>;
     cuda::std::inplace_vector<T, 42> from_input_iter_non_empty(iter{input}, iter{input + 3});
@@ -172,6 +178,7 @@ __host__ __device__ constexpr void test_iter()
     assert(from_input_iter_non_empty.size() == 3);
     assert(cuda::std::equal(from_input_iter_non_empty.begin(), from_input_iter_non_empty.end(), input, input + 3));
   }
+
   {
     using iter = forward_iterator<const T*>;
     cuda::std::inplace_vector<T, 42> from_forward_iter_non_empty(iter{input}, iter{input + 3});
@@ -189,11 +196,13 @@ __host__ __device__ constexpr void test_init_list()
     cuda::std::inplace_vector<T, 0> no_capacity(input);
     assert(no_capacity.empty());
   }
+
   {
     cuda::std::initializer_list<T> input{};
     cuda::std::inplace_vector<T, 42> from_empty(input);
     assert(from_empty.empty());
   }
+
   {
     cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
     cuda::std::inplace_vector<T, 42> from_non_empty(input);
@@ -211,10 +220,12 @@ __host__ __device__ constexpr void test_range()
     cuda::std::inplace_vector<T, 0> no_capacity(Range<T, 0>{});
     assert(no_capacity.empty());
   }
+
   {
     cuda::std::inplace_vector<T, 42> from_empty(Range<T, 0>{});
     assert(from_empty.empty());
   }
+
   {
     const cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
     cuda::std::inplace_vector<T, 42> from_non_empty(Range<T, 4>{T(1), T(42), T(1337), T(0)});
