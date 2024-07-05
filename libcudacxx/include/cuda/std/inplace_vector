@@ -1337,9 +1337,18 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
+    auto __first = __range.begin();
+    auto __last  = __range.end();
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      if (__first != __last)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+      return nullptr;
+    }
+
     const iterator __old_end = this->end();
-    auto __first             = __range.begin();
-    auto __last              = __range.end();
     for (; __first != __last; ++__first)
     {
       emplace_back(*__first);
@@ -1355,7 +1364,17 @@ public:
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
-    return insert(__cpos, __range.begin(), __unwrap_end(__range));
+    auto __first = __range.begin();
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      if (__first != __range.end())
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+      return nullptr;
+    }
+
+    return insert(__cpos, __first, __unwrap_end(__range));
   }
 
   _LIBCUDACXX_TEMPLATE(class _Range)
@@ -1376,7 +1395,17 @@ public:
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void append_range(_Range&& __range)
   {
-    insert(this->end(), __range.begin(), __unwrap_end(__range));
+    auto __first = __range.begin();
+    _CCCL_IF_CONSTEXPR (_Capacity == 0)
+    {
+      if (__first != __range.end())
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+      return;
+    }
+
+    insert(this->end(), __first, __unwrap_end(__range));
   }
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
