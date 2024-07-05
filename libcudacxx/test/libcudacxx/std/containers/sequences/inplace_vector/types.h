@@ -13,6 +13,8 @@
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct Trivial
 {
   int val_;
@@ -94,7 +96,9 @@ struct ThrowingDefaultConstruct
     return lhs.val_ < rhs.val_;
   }
 };
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
 static_assert(!cuda::std::is_nothrow_default_constructible<ThrowingDefaultConstruct>::value, "");
+#endif // !TEST_COMPILER_GCC < 10
 
 struct ThrowingCopyConstructor
 {

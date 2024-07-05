@@ -106,14 +106,18 @@ __host__ __device__ constexpr void test_size()
   { // inplace_vector<T, 0> can be constructed from a size
     cuda::std::inplace_vector<T, 0> vec(0);
     assert(vec.empty());
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
     static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)), "");
+#endif // !TEST_COMPILER_GCC < 10
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from a size, is empty if zero
     inplace_vector vec(0);
     assert(vec.empty());
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
     static_assert(!noexcept(inplace_vector(0)), "");
+#endif // !TEST_COMPILER_GCC < 10
   }
 
   { // inplace_vector<T, N> can be constructed from a size, elements are value initialized
@@ -121,7 +125,9 @@ __host__ __device__ constexpr void test_size()
     inplace_vector vec(size);
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
     static_assert(!noexcept(inplace_vector(3)), "");
+#endif // !TEST_COMPILER_GCC < 10
   }
 }
 
@@ -131,14 +137,18 @@ __host__ __device__ constexpr void test_size_value()
   { // inplace_vector<T, 0> can be constructed from a size and a const T&
     cuda::std::inplace_vector<T, 0> vec(0, T(42));
     assert(vec.empty());
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
     static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))), "");
+#endif // !TEST_COMPILER_GCC < 10
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from a size and a const T&, is empty if zero
     inplace_vector vec(0, T(42));
     assert(vec.empty());
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
     static_assert(!noexcept(inplace_vector(0, T(42))), "");
+#endif // !TEST_COMPILER_GCC < 10
   }
 
   { // inplace_vector<T, N> can be constructed from a size and a const T&, elements are copied
@@ -146,7 +156,9 @@ __host__ __device__ constexpr void test_size_value()
     inplace_vector vec(size, T(42));
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
     static_assert(!noexcept(inplace_vector(3, T(42))), "");
+#endif // !TEST_COMPILER_GCC < 10
   }
 }
 
@@ -243,9 +255,11 @@ __host__ __device__ constexpr void test_range()
 template <class T>
 __host__ __device__ constexpr void test_range()
 {
+#  if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 8
   test_range<T, input_range>();
   test_range<T, uncommon_range>();
   test_range<T, sized_uncommon_range>();
+#  endif // !TEST_COMPILER_GCC < 8
   test_range<T, cuda::std::array>();
 }
 #endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
