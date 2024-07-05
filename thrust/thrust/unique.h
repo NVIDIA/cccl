@@ -582,7 +582,7 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
  *
  *  thrust::pair<int*,int*> new_end;
  *  thrust::equal_to<int> binary_pred;
- *  new_end = thrust::unique_by_key(thrust::host, keys, keys + N, values, binary_pred);
+ *  new_end = thrust::unique_by_key(thrust::host, A, A + N, B, binary_pred);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
  *  // The first four values in B are now {9, 8, 5, 3} and new_end.second - B is 4.
@@ -638,7 +638,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
  *
  *  thrust::pair<int*,int*> new_end;
  *  thrust::equal_to<int> binary_pred;
- *  new_end = thrust::unique_by_key(keys, keys + N, values, binary_pred);
+ *  new_end = thrust::unique_by_key(A, A + N, B, binary_pred);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
  *  // The first four values in B are now {9, 8, 5, 3} and new_end.second - B is 4.
