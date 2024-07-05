@@ -286,7 +286,7 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   // [containers.sequences.inplace.vector.members] size/capacity
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
   {
-    this->__size_ += __count;
+    this->__size_ += static_cast<__size_type>(__count);
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
@@ -497,7 +497,7 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
   // [containers.sequences.inplace.vector.members] size/capacity
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
   {
-    __size_ += __count;
+    __size_ += static_cast<__size_type>(__count);
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
@@ -1771,8 +1771,8 @@ public:
 
   // [containers.sequences.inplace.vector.erasure]
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type
-  erase(inplace_vector& __cont, const _Up& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase(inplace_vector& __cont, const _Up& __value) noexcept(
+    _CCCL_TRAIT(is_nothrow_move_assignable, typename inplace_vector::value_type)) // MSVC2017 cannot handle _Tp here
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
@@ -1785,8 +1785,8 @@ public:
   }
 
   template <class _Pred>
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type
-  erase_if(inplace_vector& __cont, _Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase_if(inplace_vector& __cont, _Pred __pred) noexcept(
+    _CCCL_TRAIT(is_nothrow_move_assignable, typename inplace_vector::value_type)) // MSVC2017 cannot handle _Tp here
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
