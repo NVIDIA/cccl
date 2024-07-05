@@ -33,35 +33,36 @@ template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_ranges()
 {
   { // inplace_vector<T, 0>::assign_range with an empty input
-    cuda::std::inplace_vector<T, 0> inplace_vector{};
-    inplace_vector.assign_range(Range<T, 0>{});
-    assert(inplace_vector.empty());
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.assign_range(Range<T, 0>{});
+    assert(vec.empty());
   }
 
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N>::assign_range with an empty input
-    cuda::std::inplace_vector<T, 42> inplace_vector{};
-    inplace_vector.assign_range(Range<T, 0>{});
-    assert(inplace_vector.empty());
+    inplace_vector vec{};
+    vec.assign_range(Range<T, 0>{});
+    assert(vec.empty());
   }
 
   { // inplace_vector<T, N>::assign_range with an empty input, shrinking
-    cuda::std::inplace_vector<T, 42> inplace_vector{T(1), T(42), T(1337), T(0)};
-    inplace_vector.assign_range(Range<T, 0>{});
-    assert(inplace_vector.empty());
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign_range(Range<T, 0>{});
+    assert(vec.empty());
   }
 
   { // inplace_vector<T, N>::assign_range with a non-empty input, shrinking
-    cuda::std::inplace_vector<T, 42> inplace_vector{T(1), T(42), T(1337), T(0)};
-    inplace_vector.assign_range(Range<T, 2>{T(42), T(42)});
-    assert(!inplace_vector.empty());
-    assert(equal_range(inplace_vector, cuda::std::array<T, 2>{T(42), T(42)}));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign_range(Range<T, 2>{T(42), T(42)});
+    assert(!vec.empty());
+    assert(equal_range(vec, cuda::std::array<T, 2>{T(42), T(42)}));
   }
 
   { // inplace_vector<T, N>::assign_range with a non-empty input, growing
-    cuda::std::inplace_vector<T, 42> inplace_vector{T(1), T(42), T(1337), T(0)};
-    inplace_vector.assign_range(Range<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)});
-    assert(!inplace_vector.empty());
-    assert(equal_range(inplace_vector, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign_range(Range<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)});
+    assert(!vec.empty());
+    assert(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
   }
 }
 #endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
@@ -69,154 +70,155 @@ __host__ __device__ constexpr void test_ranges()
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  {
-    cuda::std::inplace_vector<T, 0> no_capacity_size_value{};
-    no_capacity_size_value.assign(0, T(42));
-    assert(no_capacity_size_value.empty());
+  { // inplace_vector<T, 0>::assign(count, const T&)
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.assign(0, T(42));
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, 0>::assign(iter, iter), with input iterators
     using iter = cpp17_input_iterator<const T*>;
     const cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 0> no_capacity_input_iter_iter{};
-    no_capacity_input_iter_iter.assign(iter{input.begin()}, iter{input.end()});
-    assert(no_capacity_input_iter_iter.empty());
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.assign(iter{input.begin()}, iter{input.end()});
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, 0>::assign(iter, iter), with forward iterators
     const cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 0> no_capacity_iter_iter{};
-    no_capacity_iter_iter.assign(input.begin(), input.end());
-    assert(no_capacity_iter_iter.empty());
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.assign(input.begin(), input.end());
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, 0>::assign(initializer_list)
     const cuda::std::initializer_list<T> input{};
-    cuda::std::inplace_vector<T, 0> no_capacity_init_list{};
-    no_capacity_init_list.assign(input);
-    assert(no_capacity_init_list.empty());
+    cuda::std::inplace_vector<T, 0> vec{};
+    vec.assign(input);
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> size_value_empty{};
-    size_value_empty.assign(0, T(42));
-    assert(size_value_empty.empty());
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  { // inplace_vector<T, N>::assign(count, const T&), zero count from empty
+    inplace_vector vec{};
+    vec.assign(0, T(42));
+    assert(vec.empty());
   }
 
-  {
-    cuda::std::inplace_vector<T, 42> size_value_shrink_empty{T(1), T(42), T(1337), T(0)};
-    size_value_shrink_empty.assign(0, T(42));
-    assert(size_value_shrink_empty.empty());
+  { // inplace_vector<T, N>::assign(count, const T&), shrinking to empty
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(0, T(42));
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(count, const T&), shrinking
     const cuda::std::array<T, 2> expected = {T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> size_value_shrink{T(1), T(42), T(1337), T(0)};
-    size_value_shrink.assign(2, T(42));
-    assert(!size_value_shrink.empty());
-    assert(equal_range(size_value_shrink, expected));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(2, T(42));
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
+  { // inplace_vector<T, N>::assign(count, const T&), growing
     const cuda::std::array<T, 6> expected = {T(42), T(42), T(42), T(42), T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> size_value_grow{T(1), T(42), T(1337), T(0)};
-    size_value_grow.assign(6, T(42));
-    assert(!size_value_grow.empty());
-    assert(equal_range(size_value_grow, expected));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(6, T(42));
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with input iterators empty range
     using iter                            = cpp17_input_iterator<const T*>;
     const cuda::std::array<T, 0> expected = {};
-    cuda::std::inplace_vector<T, 42> input_iter_iter_empty{};
-    input_iter_iter_empty.assign(iter{expected.begin()}, iter{expected.end()});
-    assert(input_iter_iter_empty.empty());
+    inplace_vector vec{};
+    vec.assign(iter{expected.begin()}, iter{expected.end()});
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with input iterators shrink to empty range
     using iter                            = cpp17_input_iterator<const T*>;
     const cuda::std::array<T, 0> expected = {};
-    cuda::std::inplace_vector<T, 42> input_iter_iter_shrink_empty{T(1), T(42), T(1337), T(0)};
-    input_iter_iter_shrink_empty.assign(iter{expected.begin()}, iter{expected.end()});
-    assert(input_iter_iter_shrink_empty.empty());
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(iter{expected.begin()}, iter{expected.end()});
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with input iterators shrinking
     using iter                            = cpp17_input_iterator<const T*>;
     const cuda::std::array<T, 2> expected = {T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> input_iter_iter_shrink{T(1), T(42), T(1337), T(0)};
-    input_iter_iter_shrink.assign(iter{expected.begin()}, iter{expected.end()});
-    assert(!input_iter_iter_shrink.empty());
-    assert(equal_range(input_iter_iter_shrink, expected));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(iter{expected.begin()}, iter{expected.end()});
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with input iterators growing
     using iter                            = cpp17_input_iterator<const T*>;
-    const cuda::std::array<T, 6> expected = {T(42), T(42), T(42), T(42), T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> input_iter_iter_grow{T(1), T(42), T(1337), T(0)};
-    input_iter_iter_grow.assign(iter{expected.begin()}, iter{expected.end()});
-    assert(!input_iter_iter_grow.empty());
-    assert(equal_range(input_iter_iter_grow, expected));
+    const cuda::std::array<T, 6> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(iter{expected.begin()}, iter{expected.end()});
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with forward iterators empty range
     const cuda::std::array<T, 0> expected = {};
-    cuda::std::inplace_vector<T, 42> iter_iter_empty{};
-    iter_iter_empty.assign(expected.begin(), expected.end());
-    assert(iter_iter_empty.empty());
+    inplace_vector vec{};
+    vec.assign(expected.begin(), expected.end());
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with forward iterators shrinking to empty
     const cuda::std::array<T, 0> expected = {};
-    cuda::std::inplace_vector<T, 42> iter_iter_shrink_empty{T(1), T(42), T(1337), T(0)};
-    iter_iter_shrink_empty.assign(expected.begin(), expected.end());
-    assert(iter_iter_shrink_empty.empty());
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(expected.begin(), expected.end());
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(iter, iter), with forward iterators shrinking
     const cuda::std::array<T, 2> expected = {T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> iter_iter_shrink{T(1), T(42), T(1337), T(0)};
-    iter_iter_shrink.assign(expected.begin(), expected.end());
-    assert(!iter_iter_shrink.empty());
-    assert(equal_range(iter_iter_shrink, expected));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(expected.begin(), expected.end());
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
-    const cuda::std::array<T, 6> expected = {T(42), T(42), T(42), T(42), T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> iter_iter_grow{T(1), T(42), T(1337), T(0)};
-    iter_iter_grow.assign(expected.begin(), expected.end());
-    assert(!iter_iter_grow.empty());
-    assert(equal_range(iter_iter_grow, expected));
+  { // inplace_vector<T, N>::assign(iter, iter), with forward iterators growing
+    const cuda::std::array<T, 6> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(expected.begin(), expected.end());
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
+  { // inplace_vector<T, N>::assign(initializer_list), empty range
     const cuda::std::initializer_list<T> expected = {};
-    cuda::std::inplace_vector<T, 42> init_list_empty{};
-    init_list_empty.assign(expected);
-    assert(init_list_empty.empty());
+    inplace_vector vec{};
+    vec.assign(expected);
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(initializer_list), shrinking to empty
     const cuda::std::initializer_list<T> expected = {};
-    cuda::std::inplace_vector<T, 42> init_list_shrink_empty{T(1), T(42), T(1337), T(0)};
-    init_list_shrink_empty.assign(expected);
-    assert(init_list_shrink_empty.empty());
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(expected);
+    assert(vec.empty());
   }
 
-  {
+  { // inplace_vector<T, N>::assign(initializer_list), shrinking
     const cuda::std::initializer_list<T> expected = {T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> init_list_shrink{T(1), T(42), T(1337), T(0)};
-    init_list_shrink.assign(expected);
-    assert(!init_list_shrink.empty());
-    assert(equal_range(init_list_shrink, expected));
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(expected);
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
-  {
-    const cuda::std::initializer_list<T> expected = {T(42), T(42), T(42), T(42), T(42), T(42)};
-    cuda::std::inplace_vector<T, 42> init_list_grow{T(1), T(42), T(1337), T(0)};
-    init_list_grow.assign(expected);
-    assert(!init_list_grow.empty());
-    assert(equal_range(init_list_grow, expected));
+  { // inplace_vector<T, N>::assign(initializer_list), growing
+    const cuda::std::initializer_list<T> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
+    vec.assign(expected);
+    assert(!vec.empty());
+    assert(equal_range(vec, expected));
   }
 
 #if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
@@ -243,6 +245,7 @@ __host__ __device__ constexpr bool test()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
+#  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 template <template <class, size_t> class Range>
 void test_exceptions()
 { // assign_range throws std::bad_alloc
@@ -251,7 +254,7 @@ void test_exceptions()
   inplace_vector too_small{};
   try
   {
-    too_small.assign_range(Range<int, 2 + capacity>{0, 1, 2, 3, 4, 5, 6});
+    too_small.assign_range(Range<int, 2 + capacity>{0, 1, 2, 3, 4, 5});
   }
   catch (const std::bad_alloc&)
   {}
@@ -260,24 +263,14 @@ void test_exceptions()
     assert(false);
   }
 }
+#  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 
 void test_exceptions()
 { // assign throws std::bad_alloc
   constexpr size_t capacity = 4;
   using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
   inplace_vector too_small{};
-  cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-
-  try
-  {
-    too_small.assign(2 * capacity);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    assert(false);
-  }
+  const cuda::std::array<int, 7> input{0, 1, 2, 3, 4, 5, 6};
 
   try
   {
@@ -315,8 +308,7 @@ void test_exceptions()
 
   try
   {
-    inplace_vector too_small{};
-    too_small.assign(input);
+    too_small.assign(cuda::std::initializer_list<int>{0, 1, 2, 3, 4, 5, 6});
   }
   catch (const std::bad_alloc&)
   {}
