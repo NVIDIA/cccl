@@ -466,6 +466,11 @@ extern "C++" {
 #    define _LIBCUDACXX_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #  endif // __check_builtin(builtin_launder)
 
+// Seems that launder is broken with old clang-9 and nvcc-11.1
+#  if (defined(_CCCL_COMPILER_CLANG) && __clang_major__ < 10) && defined(_CCCL_CUDACC_BELOW_11_3)
+#    undef _LIBCUDACXX_LAUNDER
+#  endif // nvcc < 11.3 && clang-9
+
 // Disabled due to libstdc++ conflict
 #  if 0 // __check_builtin(decay)
 #    define _LIBCUDACXX_DECAY(...) __decay(__VA_ARGS__)
