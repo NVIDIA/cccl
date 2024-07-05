@@ -201,6 +201,7 @@ template <class _Tp,
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _LIBCUDACXX_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
+  (void) __loc;
 }
 
 #if _CCCL_STD_VER >= 2020
