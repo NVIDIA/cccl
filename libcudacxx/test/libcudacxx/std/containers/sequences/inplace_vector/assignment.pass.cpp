@@ -157,34 +157,34 @@ __host__ __device__ constexpr void test_init_list()
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   const cuda::std::initializer_list<T> empty_input{};
   { // inplace_vector<T, N> can be assigned an empty initializer_list
-    cuda::std::inplace_vector<T, 42> vec{};
+    inplace_vector vec{};
     vec = empty_input;
     assert(vec.empty());
   }
 
   { // inplace_vector<T, N> can be assigned an empty initializer_list, shrinking
-    cuda::std::inplace_vector<T, 42> vec{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec{T(1), T(42), T(1337), T(0)};
     vec = empty_input;
     assert(vec.empty());
   }
 
   const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, from empty
-    cuda::std::inplace_vector<T, 42> vec{};
+    inplace_vector vec{};
     vec = input;
     assert(!vec.empty());
     assert(equal_range(vec, input));
   }
 
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, shrinking
-    cuda::std::inplace_vector<T, 42> vec{T(0), T(42), T(1337), T(42), T(5)};
+    inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
     vec = input;
     assert(!vec.empty());
     assert(equal_range(vec, input));
   }
 
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, growing from non empty
-    cuda::std::inplace_vector<T, 42> vec{T(0), T(42)};
+    inplace_vector vec{T(0), T(42)};
     vec = input;
     assert(!vec.empty());
     assert(equal_range(vec, input));
