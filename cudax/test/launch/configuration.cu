@@ -15,8 +15,6 @@
 #include <cuda/experimental/launch.cuh>
 #undef cudaLaunchKernelEx
 
-#include <sstream>
-
 #include "../hierarchy/testing_common.cuh"
 
 static cudaLaunchConfig_t expectedConfig;
