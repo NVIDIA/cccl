@@ -174,7 +174,7 @@ struct dispatch<thrust::detail::false_type, thrust::less<KeyOrVoid>>
       d_temp_storage,
       temp_storage_bytes,
       keys_buffer,
-      static_cast<int>(count),
+      count,
       0,
       static_cast<int>(sizeof(Key) * 8),
       stream);
@@ -198,7 +198,7 @@ struct dispatch<thrust::detail::false_type, thrust::greater<KeyOrVoid>>
       d_temp_storage,
       temp_storage_bytes,
       keys_buffer,
-      static_cast<int>(count),
+      count,
       0,
       static_cast<int>(sizeof(Key) * 8),
       stream);
@@ -223,7 +223,7 @@ struct dispatch<thrust::detail::true_type, thrust::less<KeyOrVoid>>
       temp_storage_bytes,
       keys_buffer,
       items_buffer,
-      static_cast<int>(count),
+      count,
       0,
       static_cast<int>(sizeof(Key) * 8),
       stream);
@@ -248,7 +248,7 @@ struct dispatch<thrust::detail::true_type, thrust::greater<KeyOrVoid>>
       temp_storage_bytes,
       keys_buffer,
       items_buffer,
-      static_cast<int>(count),
+      count,
       0,
       static_cast<int>(sizeof(Key) * 8),
       stream);
