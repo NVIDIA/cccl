@@ -179,7 +179,6 @@ template <typename AgentSelectIfPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          typename ScanTileStateT,
           bool KEEP_REJECTS,
           bool MayAlias>
 struct AgentSelectIf
@@ -187,6 +186,8 @@ struct AgentSelectIf
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
+  using ScanTileStateT = ScanTileState<OffsetT>;
+
   // Indicates whether the BlockLoad algorithm uses shared memory to load or exchange the data
   static constexpr bool loads_via_smem =
     !(AgentSelectIfPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_DIRECT

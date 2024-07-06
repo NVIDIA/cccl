@@ -79,8 +79,7 @@ struct agent_select_if_wrapper_t
             typename SelectedOutputIteratorT,
             typename SelectOpT,
             typename EqualityOpT,
-            typename OffsetT,
-            typename ScanTileStateT>
+            typename OffsetT>
   struct agent_t
       : public AgentSelectIf<AgentSelectIfPolicyT,
                              InputIteratorT,
@@ -89,7 +88,6 @@ struct agent_select_if_wrapper_t
                              SelectOpT,
                              EqualityOpT,
                              OffsetT,
-                             ScanTileStateT,
                              KeepRejects,
                              MayAlias>
   {
@@ -100,7 +98,6 @@ struct agent_select_if_wrapper_t
                         SelectOpT,
                         EqualityOpT,
                         OffsetT,
-                        ScanTileStateT,
                         KeepRejects,
                         MayAlias>::AgentSelectIf;
   };
@@ -198,8 +195,7 @@ __launch_bounds__(int(
     SelectedOutputIteratorT,
     SelectOpT,
     EqualityOpT,
-    OffsetT,
-    ScanTileStateT>::agent_policy_t::BLOCK_THREADS))
+    OffsetT>::agent_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
     InputIteratorT d_in,
     FlagsInputIteratorT d_flags,
@@ -220,8 +216,7 @@ __launch_bounds__(int(
     SelectedOutputIteratorT,
     SelectOpT,
     EqualityOpT,
-    OffsetT,
-    ScanTileStateT>;
+    OffsetT>;
 
   using AgentSelectIfPolicyT = typename VsmemHelperT::agent_policy_t;
 
@@ -413,8 +408,7 @@ struct DispatchSelectIf : SelectedPolicy
       SelectedOutputIteratorT,
       SelectOpT,
       EqualityOpT,
-      OffsetT,
-      ScanTileStateT>;
+      OffsetT>;
 
     cudaError error = cudaSuccess;
 
