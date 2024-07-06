@@ -39,6 +39,7 @@ template <typename Dimensions, typename... Options>
 cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
+// Might need to go to the main namespace?
 enum class launch_option_kind
 {
   cooperative_launch,
