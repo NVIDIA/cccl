@@ -509,7 +509,7 @@ template <typename ScanTileStateT, MemoryOrder Order>
 struct tile_state_with_memory_order
 {
   ScanTileStateT& tile_state;
-  using T          = typename ScanTileStateT::ValueT;
+  using T          = typename ScanTileStateT::StatusValueT;
   using StatusWord = typename ScanTileStateT::StatusWord;
 
   /**
@@ -558,7 +558,7 @@ struct ScanTileState;
 template <typename T>
 struct ScanTileState<T, true>
 {
-  using ValueT = T;
+  using StatusValueT = T;
 
   // Status word type
   using StatusWord = ::cuda::std::_If<
@@ -768,6 +768,8 @@ public:
 template <typename T>
 struct ScanTileState<T, false>
 {
+  using StatusValueT = T;
+
   // Status word type
   using StatusWord = unsigned int;
 
