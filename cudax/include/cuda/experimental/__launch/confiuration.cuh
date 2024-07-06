@@ -38,6 +38,52 @@ protected:
 template <typename Dimensions, typename... Options>
 cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
+
+enum class launch_option_kind
+{
+  cooperative_launch,
+  dynamic_shared_memory,
+  launch_priority
+};
+
+struct option_not_found
+{};
+
+template <detail::launch_option_kind Kind>
+struct find_option_in_tuple_impl
+{
+  template <typename Option, typename... Options>
+  _CCCL_DEVICE auto& operator()(const Option& opt, const Options&... rest)
+  {
+    if constexpr (Option::kind == Kind)
+    {
+      return opt;
+    }
+    else
+    {
+      return (*this)(rest...);
+    }
+  }
+
+  _CCCL_DEVICE auto operator()()
+  {
+    return option_not_found();
+  }
+};
+
+template <detail::launch_option_kind Kind, typename... Options>
+_CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
+{
+  return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
+}
+
+template <typename...>
+inline constexpr bool no_duplicate_options = true;
+
+template <typename Option, typename... Rest>
+inline constexpr bool no_duplicate_options<Option, Rest...> =
+  ((Option::kind != Rest::kind) && ...) && no_duplicate_options<Rest...>;
+
 } // namespace detail
 
 /**
@@ -71,8 +117,9 @@ cudaError_t apply_kernel_config(
  */
 struct cooperative_launch : public detail::launch_option
 {
-  static constexpr bool needs_attribute_space = true;
-  static constexpr bool is_relevant_on_device = true;
+  static constexpr bool needs_attribute_space      = true;
+  static constexpr bool is_relevant_on_device      = true;
+  static constexpr detail::launch_option_kind kind = detail::launch_option_kind::cooperative_launch;
 
   constexpr cooperative_launch() = default;
 
@@ -145,8 +192,11 @@ private:
 template <typename Content, std::size_t Extent = 1, bool NonPortableSize = false>
 struct dynamic_shared_memory_option : public detail::launch_option
 {
+  using content_type                               = Content;
+  static constexpr std::size_t extent              = Extent;
+  static constexpr bool is_relevant_on_device      = true;
+  static constexpr detail::launch_option_kind kind = detail::launch_option_kind::dynamic_shared_memory;
   const std::size_t size;
-  static constexpr bool is_relevant_on_device = true;
 
   constexpr dynamic_shared_memory_option(std::size_t set_size) noexcept
       : size(set_size)
@@ -194,7 +244,7 @@ private:
  *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
  */
 template <typename Content, std::size_t Extent = 1, bool NonPortableSize = false>
-constexpr dynamic_shared_memory_option<Content, Extent> dynamic_shared_memory() noexcept
+constexpr dynamic_shared_memory_option<Content, Extent, NonPortableSize> dynamic_shared_memory() noexcept
 {
   static_assert(Extent != ::cuda::std::dynamic_extent, "Size needs to be provided when dynamic_extent is specified");
 
@@ -216,7 +266,7 @@ constexpr dynamic_shared_memory_option<Content, Extent> dynamic_shared_memory() 
  *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
  */
 template <typename Content, bool NonPortableSize = false>
-constexpr dynamic_shared_memory_option<Content, ::cuda::std::dynamic_extent>
+constexpr dynamic_shared_memory_option<Content, ::cuda::std::dynamic_extent, NonPortableSize>
 dynamic_shared_memory(std::size_t count) noexcept
 {
   return dynamic_shared_memory_option<Content, ::cuda::std::dynamic_extent, NonPortableSize>(count);
@@ -231,8 +281,9 @@ dynamic_shared_memory(std::size_t count) noexcept
  */
 struct launch_priority : public detail::launch_option
 {
-  static constexpr bool needs_attribute_space = true;
-  static constexpr bool is_relevant_on_device = false;
+  static constexpr bool needs_attribute_space      = true;
+  static constexpr bool is_relevant_on_dpevice     = false;
+  static constexpr detail::launch_option_kind kind = detail::launch_option_kind::launch_priority;
   unsigned int priority;
 
   launch_priority(unsigned int p) noexcept
@@ -269,15 +320,20 @@ private:
  * Types of options that were added to this configuration object
  */
 template <typename Dimensions, typename... Options>
-struct kernel_config : public Options...
+struct kernel_config
 {
   Dimensions dims;
+  ::cuda::std::tuple<Options...> options;
 
   static_assert(::cuda::std::_Or<std::true_type, ::cuda::std::is_base_of<detail::launch_option, Options>...>::value);
+  static_assert(detail::no_duplicate_options<Options...>);
 
-  constexpr kernel_config(const Dimensions& dims, const Options&... opts) noexcept
-      : Options(opts)...
-      , dims(dims){};
+  constexpr kernel_config(const Dimensions& dims, const Options&... opts)
+      : dims(dims)
+      , options(opts...){};
+  constexpr kernel_config(const Dimensions& dims, const ::cuda::std::tuple<Options...>& opts)
+      : dims(dims)
+      , options(opts){};
 
   /**
    * @brief Add a new option to this configuration
@@ -288,10 +344,11 @@ struct kernel_config : public Options...
    * @param new_option
    * Option to be added to the configuration
    */
-  template <typename Option>
-  _CCCL_NODISCARD auto add(const Option& new_option)
+  template <typename... NewOptions>
+  _CCCL_NODISCARD auto add(const NewOptions&... new_options) const
   {
-    return kernel_config(dims, static_cast<Options>(*this)..., new_option);
+    return kernel_config<Dimensions, Options..., NewOptions...>(
+      dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
   }
 };
 
@@ -348,15 +405,21 @@ _CCCL_NODISCARD cudaError_t apply_kernel_config(
 {
   cudaError_t status = cudaSuccess;
 
-  // Use short-cutting && to skip the rest on error, is this too convoluted?
-  (void) (... && [&](cudaError_t call_status) {
-    status = call_status;
-    return call_status == cudaSuccess;
-  }(static_cast<Options>(config).apply(cuda_config, kernel)));
+  ::cuda::std::apply(
+    [&](auto&... config_options) {
+      // Use short-cutting && to skip the rest on error, is this too convoluted?
+      (void) (... && [&](cudaError_t call_status) {
+        status = call_status;
+        return call_status == cudaSuccess;
+      }(config_options.apply(cuda_config, kernel)));
+    },
+    config.options);
 
   return status;
 }
 
+// Needs to be a char casted to the apropriate type, if it would be a template
+//  different instantiations would clash the extern symbol
 _CCCL_DEVICE _CCCL_NODISCARD static char* get_smem_ptr() noexcept
 {
   extern __shared__ char dynamic_smem[];
@@ -370,14 +433,19 @@ _CCCL_DEVICE _CCCL_NODISCARD static char* get_smem_ptr() noexcept
  * @brief Returns a reference to shared memory variable in dynamic shared memory
  *
  * This function returns a reference to a variable placed in dynamic shared memory.
- * It accepts a dynamic_shared_memory_option or kernel_config containing such option.
+ * It accepts a kernel_config containing a dynamic_shared_memory_option.
  * Its only usable when dynamic shared memory option is holding a single object.
  */
-template <typename Content, bool NonPortableSize>
-_CCCL_DEVICE _CCCL_NODISCARD Content&
-dynamic_smem_ref(const dynamic_shared_memory_option<Content, 1, NonPortableSize>&) noexcept
+template <typename Dimensions, typename... Options>
+_CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  return *reinterpret_cast<Content*>(detail::get_smem_ptr());
+  auto& option      = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
+  static_assert(!::cuda::std::is_same_v<option_type, detail::option_not_found>,
+                "Dynamic shared memory option not found in the kernel configuration");
+  static_assert(option_type::extent == 1, "Usable only on dynamic shared memory with a single element");
+
+  return *reinterpret_cast<option_type::content_type*>(detail::get_smem_ptr());
 }
 
 /**
@@ -385,14 +453,19 @@ dynamic_smem_ref(const dynamic_shared_memory_option<Content, 1, NonPortableSize>
  *
  * This function returns a std::std::span object refering to the dynamic shared memory region
  * configured when launching the kernel.
- * It accepts a dynamic_shared_memory_option or kernel_config containing such option.
+ * It accepts a kernel_config containing a dynamic_shared_memory_option.
  * It is typed and sized according to the launch option provided as input.
  */
-template <typename Content, std::size_t Extent, bool NonPortableSize>
-_CCCL_DEVICE _CCCL_NODISCARD ::cuda::std::span<Content, Extent>
-dynamic_smem_span(const dynamic_shared_memory_option<Content, Extent, NonPortableSize>& option) noexcept
+template <typename Dimensions, typename... Options>
+_CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  return cuda::std::span<Content, Extent>(reinterpret_cast<Content*>(detail::get_smem_ptr()), option.size);
+  auto& option      = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
+  static_assert(!::cuda::std::is_same_v<option_type, detail::option_not_found>,
+                "Dynamic shared memory option not found in the kernel configuration");
+
+  return cuda::std::span<typename option_type::content_type, option_type::extent>(
+    reinterpret_cast<option_type::content_type*>(detail::get_smem_ptr()), option.size);
 }
 
 } // namespace cuda::experimental
