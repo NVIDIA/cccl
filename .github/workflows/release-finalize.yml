@@ -13,22 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: "Release: 3. Tag Final Release"
+name: "Release: 3. Create Final Release"
 
 on:
   workflow_dispatch:
-    inputs:
-      new_version:
-        type: string
-        description: "Semantic version string (eg. '2.3.0')"
-        required: true
 
 defaults:
   run:
     shell: bash --noprofile --norc -euo pipefail {0}
 
 jobs:
-  tag-release:
+  create-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -45,51 +40,77 @@ jobs:
         run: |
           log_and_export_vars() {
             for var in "$@"; do
-              var_name=${var^^}
-              printf "%-15s %s\n" "$var_name:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
-              echo "${var_name}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+              printf "%-15s %s\n" "$var:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
             done
           }
 
-          full_version=${{ inputs.new_version }}
-          major_version=$(echo ${full_version} | cut -d. -f1)
-          minor_version=$(echo ${full_version} | cut -d. -f2)
-          patch_version=$(echo ${full_version} | cut -d. -f3)
+          # The ref must match a release candidate tag. Parse version info:
+          tag_regex="^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)-rc([0-9]+)$"
+          if [[ "${GITHUB_REF}" =~ ${tag_regex} ]]; then
+            major_version=${BASH_REMATCH[1]}
+            minor_version=${BASH_REMATCH[2]}
+            patch_version=${BASH_REMATCH[3]}
+            rc=${BASH_REMATCH[4]}
+          else
+            echo "::error::Invalid ref: ${GITHUB_REF}. Must be a release candidate tag (vX.Y.Z-rcN)."
+            exit 1
+          fi
+          full_version="${major_version}.${minor_version}.${patch_version}"
           release_tag="v${full_version}"
-          release_tag_escaped=$(echo "${release_tag}" | sed 's/\./\\./g')
+          rc_tag="${release_tag}-rc${rc}"
 
-          log_and_export_vars full_version major_version minor_version patch_version release_tag
+          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag
 
           # Ensure that there is no final release tag (vX.Y.Z) for the requested version.
+          release_tag_escaped=$(echo "${release_tag}" | sed 's/\./\\./g')
           if git ls-remote --tags origin | grep -q "refs/tags/${release_tag_escaped}$"; then
             echo "::error::Tag ${release_tag} already exists."
             exit 1
             fi
           fi
 
-          # Look for previous release candidates:
-          declare -i last_rc=
-          for tag in $(git ls-remote --tags origin; do
-              if [[ $tag =~ v${full_version}-rc([0-9]+)$ ]]; then
-                rc=${BASH_REMATCH[1]}
-                if (( rc > last_rc )); then
-                  last_rc=rc
-                fi
-              fi
-          done
+      - name: Generate archives
+        id: archive
+        run: |
+          filebase=cccl-install-${release_tag}
+          prefix=${filebase}
 
-          if [[ -z $last_rc ]]; then
-            echo "::error::No release candidates found for version ${full_version}."
-          fi
+          echo "::group::Configuring install"
+          cmake --preset install -DCMAKE_INSTALL_PREFIX=${prefix}
+          echo "::endgroup::"
 
-          # Determine tag name
-          rc_tag="v${full_version}-rc${last_rc}"
+          echo "::group::Installing"
+          pushd build/install
+          cmake --install .
+          popd
+          echo "::endgroup::"
 
-          log_and_export_vars last_rc rc_tag
+          mkdir archives
+          tarball=${PWD}/archives/${filebase}.tar.gz
+          zipfile=${PWD}archives/${filebase}.zip
+
+          echo "::group::Archiving: ${tarball}"
+          tar -cvzf ${tarball} -C ${prefix} .
+          echo "::endgroup::"
+
+          echo "::group::Archiving: ${zipfile}"
+          pushd ${prefix}
+          zip -rv9 ${zipfile} .
+          popd
+          echo "::endgroup::"
 
       - name: Tag
         run: |
-          git tag ${{ steps.prepare.outputs.release_tag }} ${{ steps.prepare.outputs.rc_tag }}
-          git push origin ${{ steps.prepare.outputs.release_tag }}
-          echo "Tagged release ${release_tag}."
-          # TODO Notify team of results.
+          git tag ${release_tag} ${rc_tag}
+          git push origin ${release_tag}
+          echo "Tagged release ${release_tag} from ${rc_tag}." | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Draft Github Release
+        run: |
+          gh release create ${release_tag} \
+            --draft \
+            --generate-notes \
+            --title "${release_tag}" \
+            "archives/cccl-install-${release_tag}.zip#Install Tree (zip)" \
+            "archives/cccl-install-${release_tag}.tar.gz#Install Tree (tar.gz)"
