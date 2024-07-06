@@ -14,8 +14,6 @@
 #include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__cccl/execution_space.h"
-
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -125,7 +123,7 @@ struct level_dimensions
   _CCCL_HOST_DEVICE constexpr level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  _CCCL_HOST_DEVICE level_dimensions(){};
+  _CCCL_HOST_DEVICE constexpr level_dimensions(){};
 };
 
 /**
