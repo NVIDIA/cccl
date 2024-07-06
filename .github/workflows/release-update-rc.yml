@@ -17,11 +17,6 @@ name: "Release: 2. Test and Tag New RC"
 
 on:
   workflow_dispatch:
-    inputs:
-      new_version:
-        type: string
-        description: "Semantic version string (eg. '2.3.0')"
-        required: true
 
 defaults:
   run:
@@ -31,7 +26,7 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.prepare.outputs.TAG_NAME }}
+      tag_name: ${{ steps.prepare.outputs.tag_name }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -48,38 +43,40 @@ jobs:
           }
           export_vars() {
             for var in "$@"; do
-              var_name=${var^^}
-              echo "${var_name}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
             done
           }
 
-          full_version=${{ inputs.new_version }}
-          major_version=$(echo ${full_version} | cut -d. -f1)
-          minor_version=$(echo ${full_version} | cut -d. -f2)
-          patch_version=$(echo ${full_version} | cut -d. -f3)
+          # Parse repo version info:
+          full_version=$(jq -r  .full  cccl-version.json)
+          major_version=$(jq -r .major cccl-version.json)
+          minor_version=$(jq -r .minor cccl-version.json)
+          patch_version=$(jq -r .patch cccl-version.json)
           branch_name="branch/${major_version}.${minor_version}.x"
 
           log_vars full_version major_version minor_version patch_version branch_name GITHUB_REF GITHUB_SHA
           export_vars full_version major_version minor_version patch_version branch_name
 
-          # Check that GITHUB_REF matches the expected branch name:
+      - name: Validate versions and tags
+        run: |
+          # The workflow must be started on a release branch:
           if [[ "${GITHUB_REF}" != "refs/heads/${branch_name}" ]]; then
             echo "::error::GITHUB_REF (${GITHUB_REF}) does not match expected branch name (${branch_name})."
             exit 1
           fi
 
-          # Ensure that there is no final release tag (vX.Y.Z) for the requested version.
+          # The release tag must not exist:
           full_version_escaped=$(echo "${full_version}" | sed 's/\./\\./g')
-          if git ls-remote --tags origin | grep -q "^v${full_version_escaped}$"; then
-            echo "::error::Tag v${full_version} already exists."
+          if git ls-remote --tags origin | grep -q "refs/tags/v${full_version_escaped}\$"; then
+            echo "::error::Tag v${full_version} already exists. Was the automated version-bump PR merged?"
             exit 1
-            fi
           fi
 
           # Look for previous release candidates:
-          declare -i last_rc=
-          for tag in $(git ls-remote --tags origin; do
-              if [[ $tag =~ v${full_version_escaped}-rc([0-9]+)$ ]]; then
+          declare -i last_rc=-1
+          for tag in $(git ls-remote --tags origin); do
+              if [[ $tag =~ refs/tags/v${full_version_escaped}-rc([0-9]+)$ ]]; then
+                echo "Found prior release candidate: ${tag}"
                 rc=${BASH_REMATCH[1]}
                 if (( rc > last_rc )); then
                   last_rc=rc
@@ -87,17 +84,10 @@ jobs:
               fi
           done
 
-          log_vars last_rc
-
-          # Determine tag name
-          if [[ -z $last_rc ]]; then
-            next_rc=0
-          else
-            next_rc=$((last_rc + 1))
-          fi
+          next_rc=$((last_rc + 1))
           tag_name="v${full_version}-rc${next_rc}"
 
-          log_vars next_rc tag_name
+          log_vars last_rc next_rc tag_name
           export_vars tag_name
 
   build-workflow:
