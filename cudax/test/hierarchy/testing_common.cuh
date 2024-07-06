@@ -15,6 +15,7 @@
 
 #include <exception>
 #include <iostream>
+#include <sstream>
 
 #include <catch2/catch.hpp>
 
