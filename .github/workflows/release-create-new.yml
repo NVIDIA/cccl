@@ -67,18 +67,18 @@ jobs:
         run: |
           # Create the release branch if it doesn't already exist:
           if git ls-remote --exit-code origin $branch_name; then
-            echo "Branch $branch_name already exists." | tee -a $GITHUB_STEP_SUMMARY
+            echo "Branch $branch_name already exists:" | tee -a $GITHUB_STEP_SUMMARY
           else
-            git checkout ${{inputs.branch_point}}
-            git checkout -b $branch_name
-            git push origin $branch_name:$branch_name
-            echo "Created branch $branch_name at:\n$(git show HEAD)" | tee -a $GITHUB_STEP_SUMMARY
+            git push origin ${{inputs.branch_point}}:$branch_name
+            echo "Created branch $branch_name at:" | tee -a $GITHUB_STEP_SUMMARY
           fi
+
+          git show --oneline --no-patch HEAD | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Update version numbers
         run: |
           git checkout main
-          git checkout -b bump_version_${major_version}.${minor_version}.${patch_version}
+          git checkout -b bump_version_${full_version}
 
           echo "::group::Running update-version.sh"
           ./ci/update-version.sh ${major_version} ${minor_version} ${patch_version}
