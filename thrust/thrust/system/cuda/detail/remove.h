@@ -53,7 +53,7 @@ remove_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Stenci
   THRUST_CDP_DISPATCH(
     (return cuda_cub::detail::copy_if<cuda_cub::detail::InputMayAliasOutput::yes>(
               policy, first, last, stencil, first, thrust::not_fn(predicate));),
-    (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, first, predicate);));
+    (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, predicate);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -63,7 +63,7 @@ InputIt _CCCL_HOST_DEVICE remove_if(execution_policy<Derived>& policy, InputIt f
   THRUST_CDP_DISPATCH(
     (return cuda_cub::detail::copy_if<cuda_cub::detail::InputMayAliasOutput::yes>(
               policy, first, last, static_cast<cub::NullType*>(nullptr), first, thrust::not_fn(predicate));),
-    (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, first, predicate);));
+    (return thrust::remove_if(cvt_to_seq(derived_cast(policy)), first, last, predicate);));
 }
 
 template <class Derived, class InputIt, class T>
