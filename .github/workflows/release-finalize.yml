@@ -78,11 +78,27 @@ jobs:
       - name: Generate archives
         id: archive
         run: |
-          filebase=cccl-install-${release_tag}
-          prefix=${filebase}
+          source_base=cccl-src-${release_tag}
+          package_base=cccl-${release_tag}
+
+          echo "::group::Preparing source"
+          declare -a source_exclude=(
+            .aws
+            .cache
+            .config
+            .local
+            .git
+            .vscode
+            build
+            archives
+            ${package_base}
+          )
+          mkdir ${source_base}
+          rsync -av ${source_exclude[*]/#/--exclude=} . ${source_base}
+          echo "::endgroup::"
 
           echo "::group::Configuring install"
-          cmake --preset install -DCMAKE_INSTALL_PREFIX=${prefix}
+          cmake --preset install -DCMAKE_INSTALL_PREFIX=${package-base}
           echo "::endgroup::"
 
           echo "::group::Installing"
@@ -92,17 +108,31 @@ jobs:
           echo "::endgroup::"
 
           mkdir archives
-          tarball=${PWD}/archives/${filebase}.tar.gz
-          zipfile=${PWD}archives/${filebase}.zip
 
-          echo "::group::Archiving: ${tarball}"
-          tar -cvzf ${tarball} -C ${prefix} .
+          source_tarball=${PWD}/archives/${source_base}.tar.gz
+          source_zipfile=${PWD}/archives/${source_base}.zip
+          package_tarball=${PWD}/archives/${package_base}.tar.gz
+          package_zipfile=${PWD}archives/${package_base}.zip
+
+          echo "source_tarball=${source_tarball}" >> $GITHUB_ENV
+          echo "source_zipfile=${source_zipfile}" >> $GITHUB_ENV
+          echo "package_tarball=${package_tarball}" >> $GITHUB_ENV
+          echo "package_zipfile=${package_zipfile}" >> $GITHUB_ENV
+
+          echo "::group::Archiving: ${source_tarball}"
+          tar -cvzf ${source_tarball} ${source_base}
           echo "::endgroup::"
 
-          echo "::group::Archiving: ${zipfile}"
-          pushd ${prefix}
-          zip -rv9 ${zipfile} .
-          popd
+          echo "::group::Archiving: ${source_zipfile}"
+          zip -rv9 ${source_zipfile} ${source_base}
+          echo "::endgroup::"
+
+          echo "::group::Archiving: ${package_tarball}"
+          tar -cvzf ${package_tarball} ${package_base}
+          echo "::endgroup::"
+
+          echo "::group::Archiving: ${package_zipfile}"
+          zip -rv9 ${package_zipfile} ${package_base}
           echo "::endgroup::"
 
       - name: Tag
@@ -117,5 +147,7 @@ jobs:
             --draft \
             --generate-notes \
             --title "${release_tag}" \
-            "archives/cccl-install-${release_tag}.zip#Install Tree (zip)" \
-            "archives/cccl-install-${release_tag}.tar.gz#Install Tree (tar.gz)"
+            "${source_zipfile}#Source Archive (zip)" \
+            "${source_tarball}#Source Archive (tar.gz)" \
+            "${package_zipfile}#Installation Archive (zip)" \
+            "${package_tarball}#Installation Archive (tar.gz)"
