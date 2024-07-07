@@ -59,15 +59,20 @@ jobs:
           full_version="${major_version}.${minor_version}.${patch_version}"
           release_tag="v${full_version}"
           rc_tag="${release_tag}-rc${rc}"
+          repo_version=$(jq -r .full cccl-version.json)
 
-          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag
+          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version
+
+          if [[ "${repo_version}" != "${full_version}" ]]; then
+            echo "::error::cccl-version.json (${repo_version}) does not match release candidate tag (${rc_tag})."
+            exit 1
+          fi
 
           # Ensure that there is no final release tag (vX.Y.Z) for the requested version.
           release_tag_escaped=$(echo "${release_tag}" | sed 's/\./\\./g')
           if git ls-remote --tags origin | grep -q "refs/tags/${release_tag_escaped}$"; then
-            echo "::error::Tag ${release_tag} already exists."
+            echo "::error::Final release tag ${release_tag} already exists."
             exit 1
-            fi
           fi
 
       - name: Generate archives
