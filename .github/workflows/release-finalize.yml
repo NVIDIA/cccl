@@ -138,6 +138,15 @@ jobs:
           zip -rv9 ${package_zipfile} ${package_base}
           echo "::endgroup::"
 
+          echo "::group::Archive vs Source Sizes"
+          echo "Sources:" | tee -a $GITHUB_STEP_SUMMARY
+          du -sh ${source_base} ${source_tarball} ${source_zipfile} | tee -a $GITHUB_STEP_SUMMARY
+          echo "Installation Packages:" | tee -a $GITHUB_STEP_SUMMARY
+          du -sh ${package_base} ${package_tarball} ${package_zipfile} | tee -a $GITHUB_STEP_SUMMARY
+          echo "::endgroup::"
+
+          rm -rf ${source_base} ${package_base}
+
       - name: Tag
         run: |
           git tag ${release_tag} ${rc_tag}
