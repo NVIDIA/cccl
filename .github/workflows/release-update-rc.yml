@@ -15,6 +15,9 @@
 
 name: "Release: 2. Test and Tag New RC"
 
+# This workflow must be started on the "branch/{major}.{minor}.x" release branch
+# after the release-create-new workflow runs.
+
 on:
   workflow_dispatch:
 

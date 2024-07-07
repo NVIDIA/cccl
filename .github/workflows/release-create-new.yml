@@ -15,6 +15,10 @@
 
 name: "Release: 1. Begin Release Cycle"
 
+# The branch or tag selected when starting the workflow should be:
+# 1. "branch/{major}.{minor}.x" if it exists, or
+# 2. The ref to use when branching the release branch.
+
 on:
   workflow_dispatch:
     inputs:
