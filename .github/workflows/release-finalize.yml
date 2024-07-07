@@ -93,6 +93,7 @@ jobs:
             .vscode
             build
             archives
+            ${source_base}
             ${package_base}
           )
           mkdir ${source_base}
@@ -100,7 +101,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Configuring install"
-          cmake --preset install -DCMAKE_INSTALL_PREFIX=${package-base}
+          cmake --preset install -DCMAKE_INSTALL_PREFIX=${package_base}
           echo "::endgroup::"
 
           echo "::group::Installing"
@@ -114,7 +115,7 @@ jobs:
           source_tarball=${PWD}/archives/${source_base}.tar.gz
           source_zipfile=${PWD}/archives/${source_base}.zip
           package_tarball=${PWD}/archives/${package_base}.tar.gz
-          package_zipfile=${PWD}archives/${package_base}.zip
+          package_zipfile=${PWD}/archives/${package_base}.zip
 
           echo "source_tarball=${source_tarball}" >> $GITHUB_ENV
           echo "source_zipfile=${source_zipfile}" >> $GITHUB_ENV
