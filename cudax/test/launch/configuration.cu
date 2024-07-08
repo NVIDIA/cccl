@@ -149,28 +149,28 @@ auto configuration_test(
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
     cudax::launch(stream, config, empty_kernel, 0);
-
-    SECTION("Large dynamic smem")
-    {
-      // Exceed the default 48kB of shared to check if its properly handled
-      // TODO move to launch option (available since CUDA 12.4)
-      struct S
-      {
-        int arr[13 * 1024];
-      };
-      cudaLaunchAttribute attrs[1];
-      auto config                     = cudax::make_config(dims, cudax::dynamic_shared_memory<S, 1, true>());
-      expectedConfig.dynamicSmemBytes = sizeof(S);
-      expectedConfig.numAttrs         = HasCluster;
-      expectedConfig.attrs            = &attrs[0];
-      if constexpr (HasCluster)
-      {
-        add_cluster(cluster_dims, expectedConfig.attrs[0]);
-      }
-      cudax::launch(stream, config, empty_kernel, 0);
-    }
-    stream.wait();
   }
+
+  SECTION("Large dynamic smem")
+  {
+    // Exceed the default 48kB of shared to check if its properly handled
+    // TODO move to launch option (available since CUDA 12.4)
+    struct S
+    {
+      int arr[13 * 1024];
+    };
+    cudaLaunchAttribute attrs[1];
+    auto config                     = cudax::make_config(dims, cudax::dynamic_shared_memory<S, 1, true>());
+    expectedConfig.dynamicSmemBytes = sizeof(S);
+    expectedConfig.numAttrs         = HasCluster;
+    expectedConfig.attrs            = &attrs[0];
+    if constexpr (HasCluster)
+    {
+      add_cluster(cluster_dims, expectedConfig.attrs[0]);
+    }
+    cudax::launch(stream, config, empty_kernel, 0);
+  }
+  stream.wait();
 }
 
 TEST_CASE("Launch configuration", "[launch]")

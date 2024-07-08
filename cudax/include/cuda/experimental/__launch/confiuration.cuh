@@ -29,7 +29,7 @@ struct launch_option
   static constexpr bool is_relevant_on_device = false;
 
 protected:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t&, void*) const noexcept
   {
     return cudaSuccess;
   }
@@ -129,7 +129,7 @@ struct cooperative_launch : public detail::launch_option
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id              = cudaLaunchAttributeCooperative;
@@ -211,10 +211,10 @@ private:
   _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaFuncAttributes attrs;
-    std::size_t size_needed = size * sizeof(Content);
-    cudaError_t status      = cudaFuncGetAttributes(&attrs, kernel);
+    int size_needed    = static_cast<int>(size * sizeof(Content));
+    cudaError_t status = cudaFuncGetAttributes(&attrs, kernel);
 
-    if (NonPortableSize && size_needed > static_cast<std::size_t>(attrs.maxDynamicSharedSizeBytes))
+    if (NonPortableSize && size_needed > attrs.maxDynamicSharedSizeBytes)
     {
       // TODO since 12.6 there is a per launch option available, we should switch once compatibility is not an issue
       // TODO should we validate the max amount with device props or just pass it through and rely on driver error?
@@ -296,7 +296,7 @@ struct launch_priority : public detail::launch_option
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id           = cudaLaunchAttributePriority;
