@@ -62,7 +62,7 @@ struct DeviceMerge
   //! @param[in] num_keys1 Number of keys in the first input sequence.
   //! @param[in] keys_in2 Iterator to the beginning of the second sorted input sequence.
   //! @param[in] num_keys2 Number of keys in the second input sequence.
-  //! @param[in] keys_out Iterator to the beginning of the output sequence.
+  //! @param[out] keys_out Iterator to the beginning of the output sequence.
   //! @param[in] compare_op Comparison function object, returning true if the first argument is ordered before the
   //! second. Must establish a [strict weak ordering].
   //! @param[in] stream **[optional]** CUDA stream to launch kernels into. Default is stream<sub>0</sub>.
