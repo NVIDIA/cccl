@@ -634,7 +634,12 @@ struct AgentMerge
     }
 
     // if items are provided, merge them
+#ifdef _CCCL_CUDACC_BELOW_11_8
+    if (!KEYS_ONLY) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
+                    // nvcc versions between may work
+#else
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
+#endif
     {
       CTA_SYNC();
 
