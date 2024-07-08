@@ -142,7 +142,7 @@ struct DeviceMerge
   //! @param[in] keys_in2 Iterator to the beginning of the keys of the second sorted input sequence.
   //! @param[in] values_in2 Iterator to the beginning of the values of the second sorted input sequence.
   //! @param[in] num_pairs2 Number of key-value pairs in the second input sequence.
-  //! @param[in] keys_out Iterator to the beginning of the keys of the output sequence.
+  //! @param[out] keys_out Iterator to the beginning of the keys of the output sequence.
   //! @param[in] values_out Iterator to the beginning of the values of the output sequence.
   //! @param[in] compare_op Comparison function object, returning true if the first argument is ordered before the
   //! second. Must establish a [strict weak ordering].
