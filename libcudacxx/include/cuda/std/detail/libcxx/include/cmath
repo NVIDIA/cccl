@@ -763,7 +763,11 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_fmax(float __x, float __y) noexcept
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#    if defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+  if (false)
+#    else // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+#    endif // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (__constexpr_isnan(__x))
     {
@@ -783,7 +787,11 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_fmax(double __x, double __y) noexcept
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#    if defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+  if (false)
+#    else // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+#    endif // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (__constexpr_isnan(__x))
     {
@@ -803,7 +811,11 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_fmax(long double __x, long double __y) noexcept
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#    if defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+  if (false)
+#    else // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+#    endif // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (__constexpr_isnan(__x))
     {
