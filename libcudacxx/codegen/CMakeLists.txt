@@ -14,9 +14,8 @@ add_executable(
 )
 
 target_link_libraries(codegen fmt)
-target_compile_features(
-    codegen PRIVATE cxx_std_17
-)
+
+set_property(TARGET codegen PROPERTY CXX_STANDARD 17)
 
 set(atomic_generated_output "${libcudacxx_BINARY_DIR}/codegen/cuda_ptx_generated.h")
 set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/__atomic/functions")
