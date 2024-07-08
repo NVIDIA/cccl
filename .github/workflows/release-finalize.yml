@@ -149,7 +149,7 @@ jobs:
 
       - name: Tag
         run: |
-          git tag ${release_tag} ${rc_tag}
+          git tag -a -m "CCCL Release ${release_tag}" ${release_tag} ${rc_tag}
           git push origin ${release_tag}
           echo "Tagged release ${release_tag} from ${rc_tag}." | tee -a $GITHUB_STEP_SUMMARY
 
