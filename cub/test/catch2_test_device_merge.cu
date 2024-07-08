@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
@@ -114,7 +114,8 @@ DECLARE_LAUNCH_WRAPPER(detail::merge_pairs_custom_offset_type, merge_pairs_custo
 
 using types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
-using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+// gevtushenko: there is no code path in CUB and Thrust that leads to unsigned offsets, so let's safe some compile time
+using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 template <typename Key,
           typename Offset,

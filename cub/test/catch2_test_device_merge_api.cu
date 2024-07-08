@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
@@ -42,8 +42,9 @@ CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
     static_cast<int>(keys2.size()),
     result.begin());
 
-  CHECK(result == thrust::host_vector<int>{0, 0, 2, 3, 3, 4, 5});
+  thrust::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys
+  CHECK(result == expected);
 }
 
 CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
