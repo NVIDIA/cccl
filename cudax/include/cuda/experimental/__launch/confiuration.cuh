@@ -446,7 +446,7 @@ _CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>&
                 "Dynamic shared memory option not found in the kernel configuration");
   static_assert(option_type::extent == 1, "Usable only on dynamic shared memory with a single element");
 
-  return *reinterpret_cast<option_type::content_type*>(detail::get_smem_ptr());
+  return *reinterpret_cast<typename option_type::content_type*>(detail::get_smem_ptr());
 }
 
 /**
@@ -466,7 +466,7 @@ _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>&
                 "Dynamic shared memory option not found in the kernel configuration");
 
   return cuda::std::span<typename option_type::content_type, option_type::extent>(
-    reinterpret_cast<option_type::content_type*>(detail::get_smem_ptr()), option.size);
+    reinterpret_cast<typename option_type::content_type*>(detail::get_smem_ptr()), option.size);
 }
 
 } // namespace cuda::experimental
