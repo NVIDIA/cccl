@@ -108,7 +108,8 @@ struct dynamic_smem_span
   }
 };
 
-TEST_CASE("Smoke", "[launch]")
+// Needs a separe function for Windows extended lambda
+void launch_smoke_test()
 {
   // Use raw stream to make sure it can be implicitly converted on call to launch
   cudaStream_t stream;
@@ -236,4 +237,9 @@ TEST_CASE("Smoke", "[launch]")
 
   CUDART(cudaStreamSynchronize(stream));
   CUDART(cudaStreamDestroy(stream));
+}
+
+TEST_CASE("Smoke", "[launch]")
+{
+  launch_smoke_test();
 }

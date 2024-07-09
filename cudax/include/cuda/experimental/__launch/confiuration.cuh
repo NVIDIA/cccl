@@ -394,8 +394,7 @@ namespace detail
 {
 
 template <typename Dimensions, typename... Options>
-inline unsigned int constexpr kernel_config_count_attr_space(
-  const kernel_config<Dimensions, Options...>& config) noexcept
+inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config<Dimensions, Options...>&) noexcept
 {
   return (0 + ... + Options::needs_attribute_space);
 }
