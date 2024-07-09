@@ -214,7 +214,7 @@ private:
     int size_needed    = static_cast<int>(size * sizeof(Content));
     cudaError_t status = cudaFuncGetAttributes(&attrs, kernel);
 
-    if (NonPortableSize && size_needed > attrs.maxDynamicSharedSizeBytes)
+    if ((size_needed > attrs.maxDynamicSharedSizeBytes) && NonPortableSize)
     {
       // TODO since 12.6 there is a per launch option available, we should switch once compatibility is not an issue
       // TODO should we validate the max amount with device props or just pass it through and rely on driver error?
