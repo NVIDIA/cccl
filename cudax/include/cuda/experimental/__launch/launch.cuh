@@ -86,7 +86,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  * #include <cuda/experimental/launch.cuh>
  *
  * struct kernel {
- *     template <typename Congifuration>
+ *     template <typename Configuration>
  *     __device__ void operator()(Configuration conf, unsigned int thread_to_print) {
  *         if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
  *             printf("Hello from the GPU\n");
