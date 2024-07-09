@@ -110,6 +110,8 @@ jobs:
         uses: ./.github/actions/workflow-build
         with:
           workflows: pull_request #TODO could add more or create a new release_candidate approval workflow.
+          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          slack_log: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -192,6 +194,9 @@ jobs:
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
+        with:
+          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          slack_log: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
 
   tag:
     needs:
@@ -212,4 +217,39 @@ jobs:
           git tag -a -m "CCCL Release Candidate ${rc_tag}" ${rc_tag} ${GITHUB_SHA}
           git push origin ${rc_tag}
           echo "Tagged release candidate ${rc_tag}."
-          # TODO Notify team of results.
+
+  notify-success:
+    needs:
+      - tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          RC_TAG: ${{ needs.prepare.outputs.tag_name }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            A new release candidate `${{ env.RC_TAG }}` has been tagged.
+
+            Workflow summary: ${{ env.SUMMARY_URL }}
+
+  notify-failure:
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify Slack (failure)
+      if: ${{ failure() }}
+      uses: slackapi/slack-github-action@v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+        SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        RC_TAG: ${{ needs.prepare.outputs.tag_name }}
+      with:
+        channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+        slack-message: |
+          An error has occurred while creating release candidate `${{ env.RC_TAG }}`.
+
+          Details: ${{ env.SUMMARY_URL }}
