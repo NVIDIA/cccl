@@ -219,8 +219,8 @@ jobs:
           echo "Tagged release candidate ${rc_tag}."
 
   notify-success:
-    needs:
-      - tag
+    if: ${{ success() }}
+    needs: tag
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
@@ -238,6 +238,7 @@ jobs:
 
   notify-failure:
     if: ${{ failure() }}
+    needs: tag
     runs-on: ubuntu-latest
     steps:
     - name: Notify Slack (failure)

@@ -165,6 +165,7 @@ jobs:
             "${package_tarball}#Installation Archive (tar.gz)"
 
       - name: Notify Slack
+        if: ${{ success() }}
         uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
@@ -177,8 +178,7 @@ jobs:
           slack-message: |
             Release `${{ env.RELEASE_TAG }}` has been created from `${{ env.RC_TAG }}`.
 
-            A draft Github release has been prepared with source archives, install archives,
-            and auto-generated release notes at ${{ env.RELEASE_URL }}.
+            A draft Github release has been prepared at ${{ env.RELEASE_URL }}.
 
             Workflow summary: ${{ env.SUMMARY_URL }}
 
