@@ -43,7 +43,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
@@ -58,6 +57,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cstdint>
 #  include <iterator>
 
 THRUST_NAMESPACE_BEGIN
@@ -87,7 +87,7 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
 
   // Allocate temporary storage.
 
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
 
   // Run reduction.
 

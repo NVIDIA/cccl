@@ -44,7 +44,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
@@ -58,6 +57,8 @@
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -771,7 +772,7 @@ reduce(execution_policy<Derived>& policy, InputIt first, Size num_items, T init,
   cuda_cub::throw_on_error(status, "reduce failed on 1st alias_storage");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
   status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
@@ -814,7 +815,7 @@ reduce_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, 
 
   // Allocate temporary storage.
 
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
 
   // Run reduction.
 

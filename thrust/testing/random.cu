@@ -213,7 +213,7 @@ struct ValidateDistributionUnqual
   Distribution d0, d1;
 };
 
-template <typename Engine, thrust::detail::uint64_t value_10000>
+template <typename Engine, std::uint64_t value_10000>
 void TestEngineValidation()
 {
   // test host

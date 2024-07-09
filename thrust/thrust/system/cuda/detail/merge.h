@@ -38,7 +38,6 @@ j * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -51,6 +50,8 @@ j * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -727,7 +728,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ItemsOutputIt> merge(
   cuda_cub::throw_on_error(status, "merge: failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
   status = doit_step<MERGE_ITEMS>(

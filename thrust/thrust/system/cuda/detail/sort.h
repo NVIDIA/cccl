@@ -43,7 +43,6 @@
 #  include <cub/device/device_radix_sort.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/integer_math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/trivial_sequence.h>
@@ -58,6 +57,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -140,7 +141,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
   cuda_cub::throw_on_error(status, "merge_sort: failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
   status = doit_step<SORT_ITEMS, STABLE>(ptr, storage_size, keys_first, items_first, count, compare_op, stream);
@@ -287,7 +288,7 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
   size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
 
   keys_buffer.d_buffers[1]  = thrust::detail::aligned_reinterpret_cast<Key*>(tmp.data().get());
   items_buffer.d_buffers[1] = thrust::detail::aligned_reinterpret_cast<Item*>(tmp.data().get() + keys_temp_storage);

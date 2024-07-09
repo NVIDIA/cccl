@@ -47,7 +47,6 @@
 
 #  include <thrust/advance.h>
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -56,6 +55,8 @@
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
@@ -220,12 +221,10 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   size_t temp_storage_bytes = 0;
 
   // 32-bit offset-type dispatch
-  using dispatch32_t =
-    DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, thrust::detail::int32_t>;
+  using dispatch32_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int32_t>;
 
   // 64-bit offset-type dispatch
-  using dispatch64_t =
-    DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, thrust::detail::int64_t>;
+  using dispatch64_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
 
   // Query temporary storage requirements
   THRUST_INDEX_TYPE_DISPATCH2(
@@ -237,7 +236,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, temp_storage_bytes);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
