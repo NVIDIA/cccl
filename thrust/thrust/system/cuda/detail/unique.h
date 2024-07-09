@@ -45,7 +45,6 @@
 
 #  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>
@@ -54,6 +53,8 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -584,7 +585,7 @@ THRUST_RUNTIME_FUNCTION ItemsOutputIt unique(
   cuda_cub::throw_on_error(status, "unique: failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
   status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);

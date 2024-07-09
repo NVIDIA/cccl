@@ -34,7 +34,8 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
-#include <thrust/detail/cstdint.h>
+
+#include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

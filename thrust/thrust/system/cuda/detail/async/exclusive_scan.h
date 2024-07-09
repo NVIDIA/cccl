@@ -76,10 +76,8 @@ unique_eager_event async_exclusive_scan_n(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, InitialValueType init, BinaryOp op)
 {
   using InputValueT = cub::detail::InputValue<InitialValueType>;
-  using Dispatch32 =
-    cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, thrust::detail::int32_t, InitialValueType>;
-  using Dispatch64 =
-    cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, thrust::detail::int64_t, InitialValueType>;
+  using Dispatch32  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int32_t, InitialValueType>;
+  using Dispatch64  = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, InputValueT, std::int64_t, InitialValueType>;
 
   InputValueT init_value(init);
 
@@ -103,7 +101,7 @@ unique_eager_event async_exclusive_scan_n(
   }
 
   // Allocate temporary storage.
-  auto content        = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content        = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
   void* const tmp_ptr = raw_pointer_cast(content.get());
 
   // Set up stream with dependencies.

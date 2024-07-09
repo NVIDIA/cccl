@@ -31,9 +31,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cstdint>
 #include <iostream>
 
 THRUST_NAMESPACE_BEGIN

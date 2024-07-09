@@ -43,7 +43,6 @@
 #  include <cub/device/device_adjacent_difference.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
@@ -54,6 +53,8 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/remove_cvref.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -89,10 +90,8 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   constexpr bool may_alias = MayAlias;
   constexpr bool read_left = true;
 
-  using Dispatch32 =
-    cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, thrust::detail::int32_t, may_alias, read_left>;
-  using Dispatch64 =
-    cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, thrust::detail::int64_t, may_alias, read_left>;
+  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, may_alias, read_left>;
+  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, may_alias, read_left>;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH2(
@@ -171,7 +170,7 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
 
   status = doit_step(
     static_cast<void*>(tmp.data().get()),

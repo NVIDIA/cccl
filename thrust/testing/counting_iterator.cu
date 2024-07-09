@@ -1,11 +1,12 @@
 #include <thrust/binary_search.h>
-#include <thrust/detail/cstdint.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <cstdint>
 
 #include <unittest/unittest.h>
 
@@ -232,10 +233,10 @@ DECLARE_UNITTEST(TestCountingIteratorLowerBound);
 
 void TestCountingIteratorDifference()
 {
-  using Iterator   = thrust::counting_iterator<thrust::detail::uint64_t>;
+  using Iterator   = thrust::counting_iterator<std::uint64_t>;
   using Difference = thrust::iterator_difference<Iterator>::type;
 
-  Difference diff = std::numeric_limits<thrust::detail::uint32_t>::max() + 1;
+  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1;
 
   Iterator first(0);
   Iterator last = first + diff;
