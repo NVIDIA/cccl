@@ -58,17 +58,8 @@ inline L divide_ri(const L x, const R y)
   return (x + (y - 1)) / y;
 }
 
-template <typename InputIterator, typename BinaryFunction, typename OutputIterator = void>
-struct partial_sum_type
-    : thrust::detail::eval_if<thrust::detail::has_result_type<BinaryFunction>::value,
-                              thrust::detail::result_type<BinaryFunction>,
-                              thrust::detail::eval_if<thrust::detail::is_output_iterator<OutputIterator>::value,
-                                                      thrust::iterator_value<InputIterator>,
-                                                      thrust::iterator_value<OutputIterator>>>
-{};
-
 template <typename InputIterator, typename BinaryFunction>
-struct partial_sum_type<InputIterator, BinaryFunction, void>
+struct partial_sum_type
     : thrust::detail::eval_if<thrust::detail::has_result_type<BinaryFunction>::value,
                               thrust::detail::result_type<BinaryFunction>,
                               thrust::iterator_value<InputIterator>>
