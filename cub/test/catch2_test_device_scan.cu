@@ -47,12 +47,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t inclusive_scan_init_wrapper(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   ScanOpT scan_op,
-  int num_items,
   InitT init,
+  int num_items,
   cudaStream_t stream = 0)
 {
   return cub::DeviceScan::InclusiveScanInit(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, stream, init);
+    d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, stream);
 }
 
 DECLARE_LAUNCH_WRAPPER(inclusive_scan_init_wrapper, device_inclusive_scan_with_init);
@@ -247,7 +247,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     compute_inclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), scan_op, init_value);
 
-    device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, num_items, init_value);
+    device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -255,7 +255,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test in-place
     _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
     {
-      device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, num_items, init_value);
+      device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
       // Verify result
       REQUIRE(expected_result == in_items);

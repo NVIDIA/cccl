@@ -1224,14 +1224,14 @@ struct DeviceScan
   //! @param[in] scan_op
   //!   Binary scan functor
   //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within.
-  //!
-  //! @param[in] init_value
-  //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
@@ -1239,11 +1239,11 @@ struct DeviceScan
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
+    InitValueT init_value,
     int num_items,
-    cudaStream_t stream,
-    InitValueT init_value)
+    cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
     // Signed integer type for global offsets
     using OffsetT = int;

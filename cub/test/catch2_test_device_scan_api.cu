@@ -47,14 +47,7 @@ CUB_TEST("Device inclusive scan works", "[scan][device]")
   int init = 1;
 
   cub::DeviceScan::InclusiveScanInit(
-    d_temp_storage,
-    temp_storage_bytes,
-    input.begin(),
-    out.begin(),
-    cub::Max{},
-    static_cast<int>(input.size()),
-    stream,
-    init);
+    d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
   // Allocate temporary storage for inclusive scan
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
@@ -62,14 +55,7 @@ CUB_TEST("Device inclusive scan works", "[scan][device]")
 
   // Run inclusive prefix sum
   cub::DeviceScan::InclusiveScanInit(
-    d_temp_storage,
-    temp_storage_bytes,
-    input.begin(),
-    out.begin(),
-    cub::Max{},
-    static_cast<int>(input.size()),
-    stream,
-    init);
+    d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
   thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
   // example-end device-inclusive-scan
