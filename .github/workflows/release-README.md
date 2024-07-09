@@ -43,7 +43,6 @@ None. The version number is obtained from inspecting the repository state.
 - Runs the `pull_request` workflow to validate the release candidate.
   This can be modified in the future to run a special rc acceptance workflow (sanitizers, benchmarks?).
 - Tags the release candidate only if the CI workflow passes.
-- TODO Notify slack channel of CI/tagging results.
 
 ## `release-finalize`
 

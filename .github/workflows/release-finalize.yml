@@ -163,3 +163,34 @@ jobs:
             "${source_tarball}#Source Archive (tar.gz)" \
             "${package_zipfile}#Installation Archive (zip)" \
             "${package_tarball}#Installation Archive (tar.gz)"
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          RC_TAG: ${{ steps.prepare.outputs.rc_tag }}
+          RELEASE_TAG: ${{ steps.prepare.outputs.release_tag }}
+          RELEASE_URL: https://github.com/${{github.repository}}/releases/tag/${{ steps.prepare.outputs.release_tag }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            Release `${{ env.RELEASE_TAG }}` has been created from `${{ env.RC_TAG }}`.
+
+            A draft Github release has been prepared with source archives, install archives,
+            and auto-generated release notes at ${{ env.RELEASE_URL }}.
+
+            Workflow summary: ${{ env.SUMMARY_URL }}
+
+      - name: Notify Slack (failure)
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            An error has occurred while creating a release from ${{ github.ref }}.
+
+            Details: ${{ env.SUMMARY_URL }}
