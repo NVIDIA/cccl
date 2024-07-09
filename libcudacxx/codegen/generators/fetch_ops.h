@@ -102,15 +102,30 @@ struct __cuda_atomic_bind_fetch_{0} {{
   }}
 }};
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_fetch_{0}_cuda(_Type* __ptr, _Type& __dst, _Type __op, int __memorder, _Sco)
+static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
 {{
   using __proxy_t        = typename __atomic_cuda_deduce_{1}<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_{1}<_Type>::__tag;
+  _Type __dst{{}};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
   __cuda_atomic_bind_fetch_{0}<__proxy_t, __proxy_tag, _Sco> __bound_{0}{{__ptr_proxy, __dst_proxy, __op_proxy}};
   __cuda_atomic_fetch_memory_order_dispatch(__bound_{0}, __memorder, _Sco{{}});
+  return __dst;
+}}
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+{{
+  using __proxy_t        = typename __atomic_cuda_deduce_{1}<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_{1}<_Type>::__tag;
+  _Type __dst{{}};
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  __cuda_atomic_bind_fetch_{0}<__proxy_t, __proxy_tag, _Sco> __bound_{0}{{__ptr_proxy, __dst_proxy, __op_proxy}};
+  __cuda_atomic_fetch_memory_order_dispatch(__bound_{0}, __memorder, _Sco{{}});
+  return __dst;
 }}
 )XXX";
 
@@ -165,6 +180,19 @@ static inline _CCCL_DEVICE void __atomic_fetch_{0}_cuda(_Type* __ptr, _Type& __d
     }
     out << "\n" << fmt::format(fetch_bind_invoke, op_name, deduction);
   }
+
+  out << R"XXX(
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+{
+  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
+}
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+{
+  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
+}
+)XXX";
 }
 
 #endif // FETCH_OPS_H

@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -91,6 +93,12 @@ struct __atomic_cuda_operand_deduction
   using __tag  = _OpTag;
 };
 
+struct __atomic_longlong2
+{
+  uint64_t __x;
+  uint64_t __y;
+};
+
 template <class _Type>
 using __atomic_cuda_deduce_bitwise =
   _If<sizeof(_Type) == 2,
@@ -99,7 +107,7 @@ using __atomic_cuda_deduce_bitwise =
           __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
           _If<sizeof(_Type) == 8,
               __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>,
-              __atomic_cuda_operand_deduction<longlong2, __atomic_cuda_operand_b128>>>>;
+              __atomic_cuda_operand_deduction<__atomic_longlong2, __atomic_cuda_operand_b128>>>>;
 
 template <class _Type>
 using __atomic_cuda_deduce_arithmetic =

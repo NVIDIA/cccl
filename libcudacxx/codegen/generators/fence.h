@@ -86,7 +86,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_CONSUME: _CCCL_FALLTHROUGH();
         case __ATOMIC_ACQUIRE: _CCCL_FALLTHROUGH();
         case __ATOMIC_ACQ_REL: _CCCL_FALLTHROUGH();
-        case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __atomic_cuda_release{}); break;
+        case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
       }

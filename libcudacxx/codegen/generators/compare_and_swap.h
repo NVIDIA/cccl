@@ -70,7 +70,7 @@ mov.b128 {{%0, %1}}, _d;
 mov.b128 {{%4, %5}}, _v;
 atom.cas{3}{5}.b128 _d,[%2],_d,_v;
 mov.b128 _d, {{%0, %1}};
-)YYY" : "=l"(__dst.x),"=l"(__dst.y) : "l"(__ptr), "l"(__cmp.x),"l"(__cmp.y), "l"(__op.x),"l"(__op.y) : "memory"); return __dst.x == __cmp.x && __dst.y == __cmp.y; }})XXX";
+)YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.x == __cmp.x && __dst.y == __cmp.y; }})XXX";
 
   const std::string asm_intrinsic_format = R"XXX(
 template <class _Type>
@@ -148,15 +148,26 @@ struct __cuda_atomic_bind_compare_exchange {
   }
 };
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type* __ptr, _Type& __exp, _Type __des, int __success_memorder, int __failure_memorder, _Sco)
+static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type* __ptr, _Type* __exp, _Type __des, bool, int __success_memorder, int __failure_memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
-  __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(&__exp);
+  __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(__exp);
   __proxy_t* __des_proxy  = reinterpret_cast<__proxy_t*>(&__des);
   __cuda_atomic_bind_compare_exchange<__proxy_t, __proxy_tag, _Sco> __bound_compare_swap{__ptr_proxy, __exp_proxy, __des_proxy};
-  __cuda_atomic_compare_swap_memory_order_dispatch(__bound_compare_swap, __success_memorder, __failure_memorder, _Sco{});
+  return __cuda_atomic_compare_swap_memory_order_dispatch(__bound_compare_swap, __success_memorder, __failure_memorder, _Sco{});
+}
+template <class _Type, class _Sco>
+static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(_Type volatile* __ptr, _Type* __exp, _Type __des, bool, int __success_memorder, int __failure_memorder, _Sco)
+{
+  using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
+  __proxy_t* __exp_proxy = reinterpret_cast<__proxy_t*>(__exp);
+  __proxy_t* __des_proxy  = reinterpret_cast<__proxy_t*>(&__des);
+  __cuda_atomic_bind_compare_exchange<__proxy_t, __proxy_tag, _Sco> __bound_compare_swap{__ptr_proxy, __exp_proxy, __des_proxy};
+  return __cuda_atomic_compare_swap_memory_order_dispatch(__bound_compare_swap, __success_memorder, __failure_memorder, _Sco{});
 }
 )XXX";
 }

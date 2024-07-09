@@ -33,28 +33,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_CUDA_COMPILER)
 
-template <typename _Tp, typename _Sco>
-_CCCL_DEVICE bool __atomic_compare_exchange_cuda(
-  _Tp volatile* __ptr,
-  _Tp* __expected,
-  const _Tp __desired,
-  bool __weak,
-  int __success_memorder,
-  int __failure_memorder,
-  _Sco)
-{
-  using __proxy_t  = _If<sizeof(_Tp) == 4, uint32_t, uint64_t>;
-  using __op_tag_t = __atomic_operand_tag<__atomic_operand_type::_b, sizeof(__proxy_t) * 8>;
-
-  volatile __proxy_t* __atom = reinterpret_cast<volatile __proxy_t*>(__ptr);
-  __proxy_t* __old           = reinterpret_cast<__proxy_t*>(__expected);
-  __proxy_t __new            = *reinterpret_cast<__proxy_t*>(&__desired);
-
-  bool __result = __cuda_atomic_compare_exchange(
-    __atom, *__old, *__old, __new, __weak, __success_memorder, __failure_memorder, _Sco{});
-  return __result;
-}
-
 template <typename _Tp,
           typename _Sco,
           __enable_if_t<!is_scalar<_Tp>::value && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8), int> = 0>
@@ -277,7 +255,14 @@ template <typename _Tp, typename _Sco>
 _CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
 {
   _Tp __ret;
-  __atomic_exchange_cuda(__ptr, &__val, &__ret, __memorder, _Sco{});
+  __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
+  return __ret;
+}
+template <typename _Tp, typename _Sco>
+_CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp* __ptr, _Tp __val, int __memorder, _Sco)
+{
+  _Tp __ret;
+  __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
   return __ret;
 }
 
