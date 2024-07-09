@@ -77,7 +77,7 @@ struct iterator_system_impl
 {};
 
 template <typename Iterator>
-struct iterator_system_impl<Iterator, typename voider<typename iterator_traits<Iterator>::iterator_category>::type>
+struct iterator_system_impl<Iterator, void_t<typename iterator_traits<Iterator>::iterator_category>>
     : detail::iterator_category_to_system<typename iterator_traits<Iterator>::iterator_category>
 {};
 
