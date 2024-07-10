@@ -244,6 +244,8 @@ Unless otherwise specified, CCCL supports all the same host compilers as the CUD
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
+In the spirit of "You only support what you test",  see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+
 ### C++ Dialects
 - C++11 (Deprecated in Thrust/CUB, to be removed in next major version)
 - C++14 (Deprecated in Thrust/CUB, to be removed in next major version)
