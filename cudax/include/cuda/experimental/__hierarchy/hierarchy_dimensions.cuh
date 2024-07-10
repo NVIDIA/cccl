@@ -465,6 +465,8 @@ public:
   _CCCL_HOST_DEVICE constexpr auto extents(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return detail::convert_to_query_result(::cuda::std::apply(detail::hierarchy_extents_helper<Unit>{}, selected));
   }
 
@@ -599,6 +601,8 @@ public:
   _CCCL_DEVICE constexpr auto index(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return detail::convert_to_query_result(::cuda::std::apply(detail::index_helper<Unit>{}, selected));
   }
 
@@ -642,6 +646,8 @@ public:
   _CCCL_DEVICE constexpr auto rank(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return ::cuda::std::apply(detail::rank_helper<Unit>{}, selected);
   }
 

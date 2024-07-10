@@ -249,6 +249,8 @@ TEST_CASE("Meta dimensions", "[launch]")
   auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
   // dims.count();
 
+  dims.count(cudax::thread, cudax::block);
+
   auto dims_transformed = cudax::hierarchy_transform(dims);
 
   CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);

@@ -12,7 +12,7 @@
 #define _CUDAX__LAUNCH_TRANSFORM
 
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
-#include <cuda/experimental/__launch/confiuration.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -20,11 +20,13 @@ namespace cuda::experimental
 
 // Kind of a hack to fit with rest of the code (for now? ;)
 template <typename Unit>
-struct at_least : dimensions<unsigned int, ::cuda::std::dynamic_extent, 1, 1>
+struct at_least // : dimensions<unsigned int, ::cuda::std::dynamic_extent, 1, 1>
 {
+  size_t cnt;
   using unit = Unit;
   _CCCL_HOST_DEVICE constexpr at_least(size_t count, const Unit& level = Unit())
-      : dimensions<unsigned int, ::cuda::std::dynamic_extent, 1, 1>(count)
+      : cnt(count)
+  //: dimensions<unsigned int, ::cuda::std::dynamic_extent, 1, 1>(count)
   {}
 };
 
@@ -54,6 +56,23 @@ auto ceil_div(What what, ByWhat by_what)
   return (what + by_what - 1) / by_what;
 }
 
+// Assumes all meta dims are transformed into 1-d dynamic extent (seems like a safe assumption at least for now)
+template <typename Level>
+using transformed_level = ::cuda::std::conditional_t<
+  detail::usable_for_queries<typename Level::dimensions_type>,
+  decltype(::cuda::std::declval<Level>().transform(
+    ::cuda::std::declval<dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>>())),
+  Level>;
+
+template <typename Hierarchy>
+struct transformed_hierarchy;
+
+template <typename... Levels>
+struct transformed_hierarchy<hierarchy_dimensions<Levels...>>
+{
+  using type = hierarchy_dimensions<transformed_level<Levels>...>;
+};
+
 /*
 template <typename Level, typename RestTransformed>
 _CCCL_NODISCARD constexpr auto level_transform(const Level& level, const RestTransformed& rest)
@@ -79,7 +98,7 @@ _CCCL_NODISCARD constexpr auto hierarchy_transform_impl(const L1& level, const R
     auto tmp_hierarchy         = hierarchy_dimensions(rest_transformed);
     auto count_of_below_levels = tmp_hierarchy.template count<typename dims_type::unit>();
     auto new_dims              = dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(
-      ceil_div(level.dims.extent(0), count_of_below_levels));
+      ceil_div(level.dims.cnt, count_of_below_levels));
 
     return ::cuda::std::tuple_cat(::cuda::std::make_tuple(level.transform(new_dims)), rest_transformed);
   }

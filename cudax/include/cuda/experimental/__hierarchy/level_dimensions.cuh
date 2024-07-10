@@ -80,6 +80,10 @@ inline constexpr bool usable_for_queries = false;
 template <typename T, size_t... Extents>
 inline constexpr bool usable_for_queries<dimensions<T, Extents...>> = true;
 
+template <typename... LevelDims>
+inline constexpr bool usable_for_queries<::cuda::std::tuple<LevelDims...>> =
+  (... && usable_for_queries<::cuda::std::decay_t<decltype(::cuda::std::declval<LevelDims>().dims)>>);
+
 } // namespace detail
 
 /**
@@ -119,7 +123,8 @@ template <typename Level, typename Dimensions>
 struct level_dimensions
 {
   static_assert(::cuda::std::is_base_of_v<hierarchy_level, Level>);
-  using level_type = Level;
+  using level_type      = Level;
+  using dimensions_type = Dimensions;
 
   // Needs alignas to work around an issue with tuple
   alignas(16) const Dimensions dims; // Unit for dimensions is implicit
