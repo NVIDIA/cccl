@@ -121,6 +121,7 @@ struct DispatchUniqueByKey
       values_out,
       static_cast<OffsetT*>(nullptr),
       num_items,
+      binary_pred,
       stream);
     CUDA_CUB_RET_IF_FAIL(status);
 
