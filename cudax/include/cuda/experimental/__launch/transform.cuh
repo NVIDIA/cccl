@@ -8,10 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_TRANSFORM
-#define _CUDAX__HIERARCHY_TRANSFORM
+#ifndef _CUDAX__LAUNCH_TRANSFORM
+#define _CUDAX__LAUNCH_TRANSFORM
 
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
+#include <cuda/experimental/__launch/confiuration.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
