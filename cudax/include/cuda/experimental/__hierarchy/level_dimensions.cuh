@@ -73,6 +73,13 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
     return dimensions<dimensions_index_type, size_t(d), 1, 1>();
   }
 };
+
+template <typename Dims>
+inline constexpr bool usable_for_queries = false;
+
+template <typename T, size_t... Extents>
+inline constexpr bool usable_for_queries<dimensions<T, Extents...>> = true;
+
 } // namespace detail
 
 /**
@@ -116,6 +123,20 @@ struct level_dimensions
 
   // Needs alignas to work around an issue with tuple
   alignas(16) const Dimensions dims; // Unit for dimensions is implicit
+
+  template <typename T = void>
+  _CCCL_HOST_DEVICE constexpr const Dimensions& dims_for_query() const
+  {
+    static_assert(detail::usable_for_queries<Dimensions>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
+    return dims;
+  }
+
+  template <typename NewDims>
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE level_dimensions<Level, NewDims> transform(const NewDims& new_dims) const
+  {
+    return level_dimensions<Level, NewDims>(new_dims);
+  }
 
   _CCCL_HOST_DEVICE constexpr level_dimensions(const Dimensions& d)
       : dims(d)

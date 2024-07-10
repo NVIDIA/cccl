@@ -512,3 +512,13 @@ TEST_CASE("Trivially constructable", "[hierarchy]")
   // static_assert(std::is_trivially_copyable_v<decltype(cudax::std::make_tuple(cudax::block_dims<256>(),
   // cudax::grid_dims<256>()))>);
 }
+
+TEST_CASE("Meta dimensions", "[hierarchy]")
+{
+  auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
+  // dims.count();
+
+  auto dims_transformed = cudax::hierarchy_transform(dims);
+
+  CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);
+}

@@ -12,5 +12,6 @@
 #define __CUDAX_HIERARCHY___
 
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
+#include <cuda/experimental/__hierarchy/transform.cuh>
 
 #endif
