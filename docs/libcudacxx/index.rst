@@ -96,11 +96,13 @@ Summary: ``std::``, ``cuda::`` and ``cuda::std::``
    can use the ``--expt-relaxed-constexpr`` flag to use any ``constexpr`` functions in ``__device__`` code.
    libcu++ does not replace or interfere with host compiler's Standard Library.
 -  ``cuda::std::`` / ``<cuda/std/*>``: Conforming implementations of facilities from the Standard Library that work in
-   ``__host__ __device__`` code.
--  ``cuda::`` / ``<cuda/*>``: Conforming extensions to the Standard Library that work in ``__host__ __device__`` code.
+   ``__host__`` and  ``__device__`` code.
+-  ``cuda::`` / ``<cuda/*>``: Conforming extensions to the Standard Library that work in ``__host__`` and ``__device__`` code.
 -  ``cuda::device`` / ``<cuda/device/*>``: Conforming extensions to the Standard Library that work only in
    ``__device__`` code.
--  ``cuda::ptx``: C++ convenience wrappers for inline PTX (only usable in ``__device__`` code).
+-  ``cuda::ptx``: C++ convenience wrappers for inline PTX that work only in ``__device__`` code.
+
+Any libcu++ feature that works in ``__host__`` code also works when being compiled by a non-CUDA compiler (e.g., GCC).
 
 .. code:: cuda
 
