@@ -244,6 +244,8 @@ TEST_CASE("Smoke", "[launch]")
   launch_smoke_test();
 }
 
+__global__ void empty_kernel() {};
+
 TEST_CASE("Meta dimensions", "[launch]")
 {
   auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
@@ -251,7 +253,15 @@ TEST_CASE("Meta dimensions", "[launch]")
 
   dims.count(cudax::thread, cudax::block);
 
-  auto dims_transformed = cudax::hierarchy_transform(dims);
+  auto dims_transformed = cudax::finalize(dims, empty_kernel);
 
   CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);
+
+  auto dims2 = cudax::make_hierarchy(
+    cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(4420, cudax::thread)));
+
+  auto dims2_transformed = cudax::finalize(dims2, empty_kernel);
+
+  std::cout << dims2_transformed.count() << " block: " << dims2_transformed.count(cudax::thread, cudax::block)
+            << " grid: " << dims2_transformed.count(cudax::block) << std::endl;
 }

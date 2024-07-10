@@ -74,6 +74,7 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
   }
 };
 
+// needs_transformation or similar might be a better name
 template <typename Dims>
 inline constexpr bool usable_for_queries = false;
 
