@@ -23,9 +23,10 @@
 
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
-#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -132,6 +133,21 @@ using __atomic_cuda_deduce_minmax =
       _If<sizeof(_Type) == 4,
           __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
           __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>;
+
+template <class _Type>
+using __atomic_enable_if_native_bitwise = bool;
+
+template <class _Type>
+using __atomic_enable_if_native_arithmetic = typename enable_if<_CCCL_TRAIT(is_scalar, _Type), bool>::type;
+
+template <class _Type>
+using __atomic_enable_if_not_native_arithmetic = typename enable_if<!_CCCL_TRAIT(is_scalar, _Type), bool>::type;
+
+template <class _Type>
+using __atomic_enable_if_native_minmax = typename enable_if<_CCCL_TRAIT(is_integral, _Type), bool>::type;
+
+template <class _Type>
+using __atomic_enable_if_not_native_minmax = typename enable_if<!_CCCL_TRAIT(is_integral, _Type), bool>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

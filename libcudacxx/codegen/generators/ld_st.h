@@ -77,12 +77,12 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
   const std::string asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
+  const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{ asm volatile("ld{8}{4}{6}.v2.b64 {{%0,%1}},[%2];" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr) : "memory"); }})XXX";
   const std::string asm_intrinsic_format     = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
-  _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
+  const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
 {{ asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
 
   constexpr size_t supported_sizes[] = {
@@ -159,7 +159,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
       << R"XXX(
 template <typename _Type, typename _Tag, typename _Sco, typename _Mmio>
 struct __cuda_atomic_bind_load {
-  _Type* __ptr;
+  const _Type* __ptr;
   _Type* __dst;
 
   template <typename _Atomic_Memorder>
@@ -172,7 +172,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
-  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
+  const __proxy_t* __ptr_proxy = reinterpret_cast<const __proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   __cuda_atomic_bind_load<__proxy_t, __proxy_tag, _Sco, __atomic_cuda_mmio_disable> __bound_load{__ptr_proxy, __dst_proxy};
   __cuda_atomic_load_memory_order_dispatch(__bound_load, __memorder, _Sco{});
@@ -182,7 +182,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, 
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
-  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
+  const __proxy_t* __ptr_proxy = reinterpret_cast<const __proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   __cuda_atomic_bind_load<__proxy_t, __proxy_tag, _Sco, __atomic_cuda_mmio_disable> __bound_load{__ptr_proxy, __dst_proxy};
   __cuda_atomic_load_memory_order_dispatch(__bound_load, __memorder, _Sco{});

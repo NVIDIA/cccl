@@ -101,7 +101,7 @@ struct __cuda_atomic_bind_fetch_{0} {{
     __cuda_atomic_fetch_{0}(__ptr, *__dst, *__op, _Atomic_Memorder{{}}, _Tag{{}}, _Sco{{}});
   }}
 }};
-template <class _Type, class _Sco>
+template <class _Type, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
 {{
   using __proxy_t        = typename __atomic_cuda_deduce_{1}<_Type>::__type;
@@ -114,7 +114,7 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_{0}, __memorder, _Sco{{}});
   return __dst;
 }}
-template <class _Type, class _Sco>
+template <class _Type, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
 {{
   using __proxy_t        = typename __atomic_cuda_deduce_{1}<_Type>::__type;

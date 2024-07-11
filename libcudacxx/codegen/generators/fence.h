@@ -56,14 +56,14 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
 static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
 {{ asm volatile("fence{1}{3};" ::: "memory"); }})XXX";
 
-  const std::array fence_scopes{
+  const Scope fence_scopes[] = {
     Scope::CTA,
     Scope::Cluster,
     Scope::GPU,
     Scope::System,
   };
 
-  const std::array fence_semantics{
+  const Semantic fence_semantics[] = {
     Semantic::Acq_Rel,
     Semantic::Seq_Cst,
   };
