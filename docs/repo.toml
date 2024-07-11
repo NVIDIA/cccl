@@ -25,13 +25,14 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cub", "thrust", "cccl" ]
+project_build_order = [ "libcudacxx", "cub", "thrust", "cccl", "pycuda" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
+    [ "pycuda", "_build/docs/pycuda/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -278,3 +279,26 @@ doxygen_conf_extra = """
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../thrust
 """
+
+[repo_docs.projects.pycuda]
+name = "pycuda"
+docs_root = "pycuda"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+autodoc.mock_imports = [
+    "numba",
+    "pynvjitlink",
+    "cuda.nvrtc",
+    "llvmlite"
+]
+
+enhanced_search_enabled = true
+python_paths = [
+    "${root}/../python/cuda"
+]
