@@ -171,13 +171,7 @@ struct dispatch<thrust::detail::false_type, thrust::less<KeyOrVoid>>
        cudaStream_t stream)
   {
     return cub::DeviceRadixSort::SortKeys(
-      d_temp_storage,
-      temp_storage_bytes,
-      keys_buffer,
-      count,
-      0,
-      static_cast<int>(sizeof(Key) * 8),
-      stream);
+      d_temp_storage, temp_storage_bytes, keys_buffer, count, 0, static_cast<int>(sizeof(Key) * 8), stream);
   }
 }; // struct dispatch -- sort keys in ascending order;
 
@@ -195,13 +189,7 @@ struct dispatch<thrust::detail::false_type, thrust::greater<KeyOrVoid>>
        cudaStream_t stream)
   {
     return cub::DeviceRadixSort::SortKeysDescending(
-      d_temp_storage,
-      temp_storage_bytes,
-      keys_buffer,
-      count,
-      0,
-      static_cast<int>(sizeof(Key) * 8),
-      stream);
+      d_temp_storage, temp_storage_bytes, keys_buffer, count, 0, static_cast<int>(sizeof(Key) * 8), stream);
   }
 }; // struct dispatch -- sort keys in descending order;
 
@@ -219,14 +207,7 @@ struct dispatch<thrust::detail::true_type, thrust::less<KeyOrVoid>>
        cudaStream_t stream)
   {
     return cub::DeviceRadixSort::SortPairs(
-      d_temp_storage,
-      temp_storage_bytes,
-      keys_buffer,
-      items_buffer,
-      count,
-      0,
-      static_cast<int>(sizeof(Key) * 8),
-      stream);
+      d_temp_storage, temp_storage_bytes, keys_buffer, items_buffer, count, 0, static_cast<int>(sizeof(Key) * 8), stream);
   }
 }; // struct dispatch -- sort pairs in ascending order;
 
@@ -244,14 +225,7 @@ struct dispatch<thrust::detail::true_type, thrust::greater<KeyOrVoid>>
        cudaStream_t stream)
   {
     return cub::DeviceRadixSort::SortPairsDescending(
-      d_temp_storage,
-      temp_storage_bytes,
-      keys_buffer,
-      items_buffer,
-      count,
-      0,
-      static_cast<int>(sizeof(Key) * 8),
-      stream);
+      d_temp_storage, temp_storage_bytes, keys_buffer, items_buffer, count, 0, static_cast<int>(sizeof(Key) * 8), stream);
   }
 }; // struct dispatch -- sort pairs in descending order;
 
