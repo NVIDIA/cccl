@@ -47,7 +47,6 @@
 
 #  include <thrust/advance.h>
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -56,6 +55,8 @@
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
@@ -87,7 +88,22 @@ namespace cuda_cub
 namespace detail
 {
 
-template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate, typename OffsetT>
+/**
+ * Enum class to indicate whether the memory of input and output iterators potentially alias one another.
+ */
+enum class InputMayAliasOutput
+{
+  no,
+  yes
+};
+
+template <InputMayAliasOutput MayAlias,
+          typename Derived,
+          typename InputIt,
+          typename StencilIt,
+          typename OutputIt,
+          typename Predicate,
+          typename OffsetT>
 struct DispatchCopyIf
 {
   static cudaError_t THRUST_RUNTIME_FUNCTION dispatch(
@@ -111,7 +127,7 @@ struct DispatchCopyIf
 
     // drop rejected items (i.e., this is not a partition, but a selection)
     constexpr bool keep_rejects = false;
-    constexpr bool may_alias    = false;
+    constexpr bool may_alias    = (MayAlias == InputMayAliasOutput::yes);
 
     // Query algorithm memory requirements
     status = cub::DispatchSelectIf<
@@ -184,7 +200,12 @@ struct DispatchCopyIf
   }
 };
 
-template <typename Derived, typename InputIt, typename StencilIt, typename OutputIt, typename Predicate>
+template <InputMayAliasOutput MayAlias,
+          typename Derived,
+          typename InputIt,
+          typename StencilIt,
+          typename OutputIt,
+          typename Predicate>
 THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   execution_policy<Derived>& policy,
   InputIt first,
@@ -200,10 +221,10 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   size_t temp_storage_bytes = 0;
 
   // 32-bit offset-type dispatch
-  using dispatch32_t = DispatchCopyIf<Derived, InputIt, StencilIt, OutputIt, Predicate, thrust::detail::int32_t>;
+  using dispatch32_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int32_t>;
 
   // 64-bit offset-type dispatch
-  using dispatch64_t = DispatchCopyIf<Derived, InputIt, StencilIt, OutputIt, Predicate, thrust::detail::int64_t>;
+  using dispatch64_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
 
   // Query temporary storage requirements
   THRUST_INDEX_TYPE_DISPATCH2(
@@ -215,7 +236,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, temp_storage_bytes);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
@@ -240,9 +261,9 @@ template <class Derived, class InputIterator, class OutputIterator, class Predic
 OutputIterator _CCCL_HOST_DEVICE copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
-  THRUST_CDP_DISPATCH(
-    (return detail::copy_if(policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
-    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
+  THRUST_CDP_DISPATCH((return detail::copy_if<detail::InputMayAliasOutput::no>(
+                                policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
+                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -255,8 +276,9 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if(policy, first, last, stencil, result, pred);),
-                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
+  THRUST_CDP_DISPATCH(
+    (return detail::copy_if<detail::InputMayAliasOutput::no>(policy, first, last, stencil, result, pred);),
+    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
 
 } // namespace cuda_cub

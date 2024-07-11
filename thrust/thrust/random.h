@@ -29,7 +29,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cstdint.h>
+#include <cstdint>
 
 // RNGs
 #include <thrust/random/discard_block_engine.h>
@@ -88,11 +88,11 @@ using ranlux48 = discard_block_engine<ranlux48_base, 389, 11>;
  *        shall produce the value \c 3535848941 .
  */
 using taus88 =
-  xor_combine_engine<linear_feedback_shift_engine<thrust::detail::uint32_t, 32U, 31U, 13U, 12U>,
+  xor_combine_engine<linear_feedback_shift_engine<std::uint32_t, 32U, 31U, 13U, 12U>,
                      0,
-                     xor_combine_engine<linear_feedback_shift_engine<thrust::detail::uint32_t, 32U, 29U, 2U, 4U>,
+                     xor_combine_engine<linear_feedback_shift_engine<std::uint32_t, 32U, 29U, 2U, 4U>,
                                         0,
-                                        linear_feedback_shift_engine<thrust::detail::uint32_t, 32U, 28U, 3U, 17U>,
+                                        linear_feedback_shift_engine<std::uint32_t, 32U, 28U, 3U, 17U>,
                                         0>,
                      0>;
 

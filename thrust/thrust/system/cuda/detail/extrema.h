@@ -42,13 +42,14 @@
 
 #  include <cub/util_math.cuh>
 
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/extrema.h>
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -332,7 +333,7 @@ extrema(execution_policy<Derived>& policy, InputIt first, Size num_items, Binary
   cuda_cub::throw_on_error(status, "extrema failed on 1st alias storage");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
   status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);

@@ -470,3 +470,60 @@ struct TestUniqueCopyByKeyLargeOutCount
 SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;
 
 #endif // non-OpenMP backend
+
+// This test fails only on GCC 6
+#if !defined(__GNUC__) || __GNUC__ != 6
+
+// Based on GitHub issue: https://github.com/NVIDIA/cccl/issues/1956
+namespace
+{
+struct CompareFirst
+{
+  template <typename T>
+  _CCCL_HOST_DEVICE bool operator()(T const& lhs, T const& rhs) const
+  {
+    return lhs.first == rhs.first;
+  }
+};
+struct Entry
+{
+  std::int32_t a;
+  float b;
+};
+} // namespace
+
+void TestKeysWithoutEqualityOperator()
+{
+  using Key = thrust::pair<std::int32_t, Entry>;
+
+  const auto k1 = Key{1, {}};
+  const auto k2 = Key{2, {}};
+  const thrust::device_vector<Key> keys{k1, k1, k1, k2, k2};
+  thrust::device_vector<Entry> data{{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}};
+
+  thrust::device_vector<Key> unique_keys(5);
+  thrust::device_vector<Entry> unique_data(5);
+
+  const auto result = thrust::unique_by_key_copy(
+    thrust::device, keys.cbegin(), keys.cend(), data.begin(), unique_keys.begin(), unique_data.begin(), CompareFirst{});
+
+  unique_keys.erase(result.first, unique_keys.end());
+  unique_data.erase(result.second, unique_data.end());
+
+  auto unique_keys_h = thrust::host_vector<Key>(unique_keys);
+  auto unique_data_h = thrust::host_vector<Entry>(unique_data);
+
+  ASSERT_EQUAL(unique_keys_h[0].first, k1.first);
+  ASSERT_EQUAL(unique_keys_h[0].second.a, k1.second.a);
+  ASSERT_EQUAL(unique_keys_h[0].second.b, k1.second.b);
+  ASSERT_EQUAL(unique_keys_h[1].first, k2.first);
+  ASSERT_EQUAL(unique_keys_h[1].second.a, k2.second.a);
+  ASSERT_EQUAL(unique_keys_h[1].second.b, k2.second.b);
+
+  ASSERT_EQUAL(unique_data_h[0].a, 0);
+  ASSERT_EQUAL(unique_data_h[0].b, 0);
+  ASSERT_EQUAL(unique_data_h[1].a, 3);
+  ASSERT_EQUAL(unique_data_h[1].b, 3);
+}
+DECLARE_UNITTEST(TestKeysWithoutEqualityOperator);
+#endif // !defined(__GNUC__) || __GNUC__ != 6

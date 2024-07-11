@@ -29,6 +29,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
 using complex = cuda::std::complex<float>;
 
 NVBENCH_DECLARE_TYPE_STRINGS(complex, "C64", "complex");
+NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
+NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
 
 namespace detail
 {

@@ -46,7 +46,6 @@
 
 #    include <thrust/system/cuda/config.h>
 
-#    include <thrust/detail/cstdint.h>
 #    include <thrust/detail/execute_with_allocator.h>
 #    include <thrust/detail/type_deduction.h>
 #    include <thrust/mr/allocator.h>
@@ -55,6 +54,8 @@
 #    include <thrust/mr/sync_pool.h>
 #    include <thrust/per_device_resource.h>
 #    include <thrust/system/cuda/memory_resource.h>
+
+#    include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -69,7 +70,7 @@ using default_async_host_resource = thrust::mr::synchronized_pool_resource<thrus
 
 template <typename DerivedPolicy>
 auto get_async_host_allocator(thrust::detail::execution_policy_base<DerivedPolicy>&)
-  THRUST_RETURNS(thrust::mr::stateless_resource_allocator<thrust::detail::uint8_t, default_async_host_resource>{})
+  THRUST_RETURNS(thrust::mr::stateless_resource_allocator<std::uint8_t, default_async_host_resource>{})
 
   ///////////////////////////////////////////////////////////////////////////////
 
@@ -79,7 +80,7 @@ auto get_async_host_allocator(thrust::detail::execution_policy_base<DerivedPolic
 
 template <typename DerivedPolicy>
 auto get_async_device_allocator(thrust::detail::execution_policy_base<DerivedPolicy>&)
-  THRUST_RETURNS(thrust::per_device_allocator<thrust::detail::uint8_t, default_async_device_resource, par_t>{})
+  THRUST_RETURNS(thrust::per_device_allocator<std::uint8_t, default_async_device_resource, par_t>{})
 
     template <typename Allocator, template <typename> class BaseSystem>
     auto get_async_device_allocator(thrust::detail::execute_with_allocator<Allocator, BaseSystem>& exec)
@@ -96,8 +97,8 @@ auto get_async_device_allocator(thrust::detail::execution_policy_base<DerivedPol
     thrust::mr::synchronized_pool_resource<thrust::system::cuda::universal_host_pinned_memory_resource>;
 
 template <typename DerivedPolicy>
-auto get_async_universal_host_pinned_allocator(thrust::detail::execution_policy_base<DerivedPolicy>&) THRUST_RETURNS(
-  thrust::mr::stateless_resource_allocator<thrust::detail::uint8_t, default_async_universal_host_pinned_resource>{})
+auto get_async_universal_host_pinned_allocator(thrust::detail::execution_policy_base<DerivedPolicy>&)
+  THRUST_RETURNS(thrust::mr::stateless_resource_allocator<std::uint8_t, default_async_universal_host_pinned_resource>{})
 
 } // namespace detail
 } // namespace cuda

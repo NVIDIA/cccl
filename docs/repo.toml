@@ -177,6 +177,8 @@ doxygen_conf_extra = """
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "CUB_DETAIL*"
   AUTOLINK_SUPPORT       = YES
+  FULL_PATH_NAMES        = YES
+  STRIP_FROM_PATH        = ../../cub
 """
 
 [repo_docs.projects.thrust]
@@ -273,4 +275,6 @@ doxygen_conf_extra = """
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "__*" "THRUST_NS_QUALIFIER" "optional"
   AUTOLINK_SUPPORT       = YES
+  FULL_PATH_NAMES        = YES
+  STRIP_FROM_PATH        = ../../thrust
 """

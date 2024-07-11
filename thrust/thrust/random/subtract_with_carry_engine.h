@@ -31,10 +31,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/random_core_access.h>
 
 #include <cstddef> // for size_t
+#include <cstdint>
 #include <iostream>
 
 THRUST_NAMESPACE_BEGIN
@@ -219,7 +219,7 @@ operator>>(std::basic_istream<CharT, Traits>& is, subtract_with_carry_engine<UIn
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p ranlux24_base
  *        shall produce the value \c 7937952 .
  */
-using ranlux24_base = subtract_with_carry_engine<thrust::detail::uint32_t, 24, 10, 24>;
+using ranlux24_base = subtract_with_carry_engine<std::uint32_t, 24, 10, 24>;
 
 // XXX N2111 uses uint_fast64_t here
 
@@ -229,7 +229,7 @@ using ranlux24_base = subtract_with_carry_engine<thrust::detail::uint32_t, 24, 1
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p ranlux48_base
  *        shall produce the value \c 192113843633948 .
  */
-using ranlux48_base = subtract_with_carry_engine<thrust::detail::uint64_t, 48, 5, 12>;
+using ranlux48_base = subtract_with_carry_engine<std::uint64_t, 48, 5, 12>;
 
 /*! \} // end predefined_random
  */

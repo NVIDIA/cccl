@@ -90,7 +90,7 @@ async_reduce_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n,
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, sizeof(U) + tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, sizeof(U) + tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
@@ -176,7 +176,7 @@ unique_eager_event async_reduce_into_n(
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`

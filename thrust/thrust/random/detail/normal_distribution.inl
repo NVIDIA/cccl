@@ -26,10 +26,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/detail/integer_traits.h>
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
+
+#include <cstdint>
 
 // for floating point infinity
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
@@ -105,7 +106,7 @@ THRUST_PREVENT_MACRO_SUBSTITUTION() const
   // complain that it is a __host__ function
   union
   {
-    thrust::detail::uint32_t inf_as_int;
+    std::uint32_t inf_as_int;
     float result;
   } hack;
 

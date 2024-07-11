@@ -36,7 +36,7 @@ jobs:
         sudo chmod +x /usr/local/bin/yq
     - name: Run the script to generate devcontainer files
       run: |
-        ./.devcontainer/make_devcontainers.sh --verbose
+        ./.devcontainer/make_devcontainers.sh --verbose --clean
     - name: Check for changes
       run: |
         if [[ $(git diff --stat) != '' || $(git status --porcelain | grep '^??') != '' ]]; then
