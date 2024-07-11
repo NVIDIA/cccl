@@ -9,5 +9,5 @@ Pair
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*typedef_group__pair*
+   ${repo_docs_api_path}/*struct*pair*
    ${repo_docs_api_path}/*function_group__pair*
