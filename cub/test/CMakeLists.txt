@@ -219,7 +219,13 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_link_libraries(${test_target} PRIVATE ${catch2_main_objects})
       add_dependencies(${config_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+      add_test(NAME ${test_target} COMMAND
+        "${CMAKE_COMMAND}"
+        "-DTEST=$<TARGET_FILE:${test_target}>"
+        "-DTYPE=Catch2"
+        -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+      )
+      set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
     else() # Not CUB_SEPARATE_CATCH2
       # Per config catch2 runner
       set(config_c2run_target ${config_prefix}.catch2_test.lid_${launcher_id})
@@ -244,8 +250,11 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
           thrust_fix_clang_nvcc_build_for(${config_c2run_target})
         endif()
 
-        add_test(NAME ${config_c2run_target}
-          COMMAND "$<TARGET_FILE:${config_c2run_target}>"
+        add_test(NAME ${config_c2run_target} COMMAND
+          "${CMAKE_COMMAND}"
+          "-DTEST=$<TARGET_FILE:${config_c2run_target}>"
+          "-DTYPE=Catch2"
+          -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
         )
       endif() # per config catch2 runner
 
@@ -338,7 +347,12 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       endif()
       add_dependencies(${test_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+      add_test(NAME ${test_target} COMMAND
+        "${CMAKE_COMMAND}"
+        "-DTEST=$<TARGET_FILE:${test_target}>"
+        -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+      )
+      set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
     endif()
   endif() # Not catch2 test
 endfunction()
