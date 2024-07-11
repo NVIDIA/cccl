@@ -35,7 +35,8 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
-#include <thrust/type_traits/void_t.h>
+
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cassert>
 #include <thread>
@@ -66,7 +67,7 @@ struct partial_sum_type
 };
 
 template <typename InputIterator, typename BinaryFunction>
-struct partial_sum_type<InputIterator, BinaryFunction, void_t<typename BinaryFunction::result_type>>
+struct partial_sum_type<InputIterator, BinaryFunction, ::cuda::std::void_t<typename BinaryFunction::result_type>>
 {
   using type = typename BinaryFunction::result_type;
 };

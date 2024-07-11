@@ -52,7 +52,7 @@ struct __cccl_type_is_defined : _CUDA_VSTD::false_type
 {};
 
 template <class _Tp>
-struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::__void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
+struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
 {};
 
 // detect whether the used STL has contiguous_iterator_tag defined
@@ -206,11 +206,11 @@ private:
   _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY static true_type
-  __test(__void_t<typename _Up::iterator_category>* = nullptr,
-         __void_t<typename _Up::difference_type>*   = nullptr,
-         __void_t<typename _Up::value_type>*        = nullptr,
-         __void_t<typename _Up::reference>*         = nullptr,
-         __void_t<typename _Up::pointer>*           = nullptr);
+  __test(void_t<typename _Up::iterator_category>* = nullptr,
+         void_t<typename _Up::difference_type>*   = nullptr,
+         void_t<typename _Up::value_type>*        = nullptr,
+         void_t<typename _Up::reference>*         = nullptr,
+         void_t<typename _Up::pointer>*           = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(0, 0, 0, 0, 0))::value;

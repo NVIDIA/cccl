@@ -29,7 +29,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
 #include <thrust/iterator/iterator_categories.h>
-#include <thrust/type_traits/void_t.h>
+
+#include <cuda/std/__type_traits/void_t.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -77,7 +78,7 @@ struct iterator_system_impl
 {};
 
 template <typename Iterator>
-struct iterator_system_impl<Iterator, void_t<typename iterator_traits<Iterator>::iterator_category>>
+struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_traits<Iterator>::iterator_category>>
     : detail::iterator_category_to_system<typename iterator_traits<Iterator>::iterator_category>
 {};
 
