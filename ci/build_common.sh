@@ -167,7 +167,9 @@ function print_test_time_summary()
         if [ -n "${GITHUB_ACTIONS:-}" ]; then
             cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake
         else
-            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15
+            # `|| :` to avoid `set -o pipefail` from triggering when `head` closes the pipe before `cmake` finishes.
+            # Otherwise the script will exit early with status 141 (SIGPIPE).
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15 || :
         fi
         end_group "⏱️ Longest Test Steps"
     fi
