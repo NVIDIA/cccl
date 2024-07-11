@@ -34,23 +34,12 @@
 
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_generated_helper.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_CUDA_COMPILER)
-
-enum class __atomic_operand_type
-{
-  _f,
-  _s,
-  _u,
-  _b,
-};
-
-template <__atomic_operand_type, size_t>
-struct __atomic_operand_tag
-{};
 
 static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
@@ -2581,86 +2570,6 @@ template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
   _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s32, __thread_scope_system_tag)
 { asm volatile("atom.add.sys.s32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr), "r"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_block_tag)
-{ asm volatile("atom.add.acquire.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_block_tag)
-{ asm volatile("atom.add.relaxed.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_block_tag)
-{ asm volatile("atom.add.release.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_block_tag)
-{ asm volatile("atom.add.acq_rel.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_block_tag)
-{ asm volatile("atom.add.cta.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
-{ asm volatile("atom.add.acquire.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
-{ asm volatile("atom.add.relaxed.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
-{ asm volatile("atom.add.release.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
-{ asm volatile("atom.add.acq_rel.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_cluster_tag)
-{ asm volatile("atom.add.cluster.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_device_tag)
-{ asm volatile("atom.add.acquire.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_device_tag)
-{ asm volatile("atom.add.relaxed.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_device_tag)
-{ asm volatile("atom.add.release.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_device_tag)
-{ asm volatile("atom.add.acq_rel.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_device_tag)
-{ asm volatile("atom.add.gpu.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acquire, __atomic_cuda_operand_s64, __thread_scope_system_tag)
-{ asm volatile("atom.add.acquire.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_relaxed, __atomic_cuda_operand_s64, __thread_scope_system_tag)
-{ asm volatile("atom.add.relaxed.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_release, __atomic_cuda_operand_s64, __thread_scope_system_tag)
-{ asm volatile("atom.add.release.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_acq_rel, __atomic_cuda_operand_s64, __thread_scope_system_tag)
-{ asm volatile("atom.add.acq_rel.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
-template <class _Type>
-static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(
-  _Type* __ptr, _Type& __dst, _Type __op, __atomic_cuda_volatile, __atomic_cuda_operand_s64, __thread_scope_system_tag)
-{ asm volatile("atom.add.sys.s64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr), "l"(__op) : "memory"); }
 
 template <typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_fetch_add {
@@ -2673,9 +2582,11 @@ struct __cuda_atomic_bind_fetch_add {
     __cuda_atomic_fetch_add(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco, __atomic_enable_if_native_arithmetic<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_arithmetic<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = __atomic_ptr_skip_t<_Type>::__skip;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_arithmetic<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_arithmetic<_Type>::__tag;
   _Type __dst{};
@@ -2686,9 +2597,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_add, __memorder, _Sco{});
   return __dst;
 }
-template <class _Type, class _Sco, __atomic_enable_if_native_arithmetic<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_arithmetic<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = __atomic_ptr_skip_t<_Type>::__skip;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_arithmetic<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_arithmetic<_Type>::__tag;
   _Type __dst{};
@@ -2872,9 +2785,11 @@ struct __cuda_atomic_bind_fetch_and {
     __cuda_atomic_fetch_and(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
@@ -2885,9 +2800,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_and, __memorder, _Sco{});
   return __dst;
 }
-template <class _Type, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
@@ -3231,9 +3148,11 @@ struct __cuda_atomic_bind_fetch_max {
     __cuda_atomic_fetch_max(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_minmax<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
@@ -3244,9 +3163,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_max, __memorder, _Sco{});
   return __dst;
 }
-template <class _Type, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_minmax<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
@@ -3590,9 +3511,11 @@ struct __cuda_atomic_bind_fetch_min {
     __cuda_atomic_fetch_min(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_minmax<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
@@ -3603,9 +3526,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_min, __memorder, _Sco{});
   return __dst;
 }
-template <class _Type, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_minmax<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
@@ -3789,9 +3714,11 @@ struct __cuda_atomic_bind_fetch_or {
     __cuda_atomic_fetch_or(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
@@ -3802,9 +3729,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type* __ptr, _Type __op
   __cuda_atomic_fetch_memory_order_dispatch(__bound_or, __memorder, _Sco{});
   return __dst;
 }
-template <class _Type, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
@@ -3988,9 +3917,11 @@ struct __cuda_atomic_bind_fetch_xor {
     __cuda_atomic_fetch_xor(__ptr, *__dst, *__op, _Atomic_Memorder{}, _Tag{}, _Sco{});
   }
 };
-template <class _Type, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
@@ -4001,9 +3932,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_xor, __memorder, _Sco{});
   return __dst;
 }
-template <class _Type, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
+  constexpr auto __skip_v = 1;
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
@@ -4015,15 +3948,15 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, 
   return __dst;
 }
 
-template <class _Type, class _Sco>
-static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
-template <class _Type, class _Sco>
-static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
 
 #endif // defined(_CCCL_CUDA_COMPILER)

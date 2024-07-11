@@ -17,6 +17,15 @@
 #include "definitions.h"
 #include <fmt/format.h>
 
+static std::string fetch_op_skip_v(std::string fetch_op)
+{
+  if (fetch_op == "add")
+  {
+    return "constexpr auto __skip_v = __atomic_ptr_skip_t<_Type>::__skip;";
+  }
+  return "constexpr auto __skip_v = 1;";
+}
+
 static void FormatFetchOps(std::ostream& out)
 {
   const std::vector arithmetic_types = {
@@ -89,6 +98,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
 
   // 0 - Atomic Operation
   // 1 - Operand type constraint
+  // 2 - Pointer op skip_v
   const std::string fetch_bind_invoke = R"XXX(
 template <typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_fetch_{0} {{
@@ -101,9 +111,11 @@ struct __cuda_atomic_bind_fetch_{0} {{
     __cuda_atomic_fetch_{0}(__ptr, *__dst, *__op, _Atomic_Memorder{{}}, _Tag{{}}, _Sco{{}});
   }}
 }};
-template <class _Type, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {{
+  {2}
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_{1}<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_{1}<_Type>::__tag;
   _Type __dst{{}};
@@ -114,9 +126,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type* __ptr, _Type __o
   __cuda_atomic_fetch_memory_order_dispatch(__bound_{0}, __memorder, _Sco{{}});
   return __dst;
 }}
-template <class _Type, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
-static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Type> = 0>
+static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {{
+  {2}
+  __op = __op * __skip_v;
   using __proxy_t        = typename __atomic_cuda_deduce_{1}<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_{1}<_Type>::__tag;
   _Type __dst{{}};
@@ -183,19 +197,19 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, 
         }
       }
     }
-    out << "\n" << fmt::format(fetch_bind_invoke, op_name, deduction);
+    out << "\n" << fmt::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
   }
 
   out << R"XXX(
-template <class _Type, class _Sco>
-static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
-template <class _Type, class _Sco>
-static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
+template <class _Type, class _Up, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
 )XXX";
 }

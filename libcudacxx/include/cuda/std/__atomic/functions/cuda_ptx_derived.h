@@ -85,31 +85,18 @@ _CCCL_DEVICE void __atomic_store_n_cuda(_Tp volatile* __ptr, _Tp __val, int __me
 }
 
 template <typename _Tp, typename _Sco>
-_CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
-{
-  _Tp __ret;
-  __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
-  return __ret;
-}
-template <typename _Tp, typename _Sco>
 _CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp* __ptr, _Tp __val, int __memorder, _Sco)
 {
   _Tp __ret;
   __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
   return __ret;
 }
-
-template <typename _Tp, typename _Up, typename _Sco>
-_CCCL_DEVICE float __atomic_fetch_add_cuda(_Tp** __ptr, ptrdiff_t __val, int __memorder, _Sco)
+template <typename _Tp, typename _Sco>
+_CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __memorder, _Sco)
 {
-  ptrdiff_t* __temp = reinterpret_cast<ptrdiff_t*>(__ptr);
-  return __atomic_fetch_add_cuda(__temp, __val, __memorder, _Sco{});
-}
-template <typename _Tp, typename _Up, typename _Sco>
-_CCCL_DEVICE float __atomic_fetch_add_cuda(volatile _Tp** __ptr, ptrdiff_t __val, int __memorder, _Sco)
-{
-  ptrdiff_t* __temp = reinterpret_cast<ptrdiff_t*>(const_cast<_Tp**>(__ptr));
-  return __atomic_fetch_add_cuda(__temp, __val, __memorder, _Sco{});
+  _Tp __ret;
+  __atomic_exchange_cuda(__ptr, __ret, __val, __memorder, _Sco{});
+  return __ret;
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
