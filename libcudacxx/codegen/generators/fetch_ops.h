@@ -164,6 +164,11 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, 
         {
           for (auto sem : supported_semantics)
           {
+            // There is no atom.add.s64
+            if (op_name == "add" && type == Operand::Signed && size == 64)
+            {
+              continue;
+            }
             out << fmt::format(
               asm_intrinsic_format,
               /* 0 */ op_name,
@@ -185,12 +190,12 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, 
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
 }
 )XXX";
 }

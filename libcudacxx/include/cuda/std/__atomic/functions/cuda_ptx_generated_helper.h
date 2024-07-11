@@ -119,7 +119,7 @@ using __atomic_cuda_deduce_arithmetic =
       _If<_CCCL_TRAIT(is_signed, _Type),
           _If<sizeof(_Type) == 4,
               __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
-              __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>,
+              __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_u64>>, // There is no atom.add.s64
           _If<sizeof(_Type) == 4,
               __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
               __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>;

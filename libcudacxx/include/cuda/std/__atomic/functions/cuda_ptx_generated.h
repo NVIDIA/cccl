@@ -4018,12 +4018,12 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, 
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type* __ptr, _Type __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, _Type __op, int __memorder, _Sco)
 {
-  return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
+  return __atomic_fetch_add_cuda(__ptr, static_cast<_Type>(-__op), __memorder, _Sco{});
 }
 
 #endif // defined(_CCCL_CUDA_COMPILER)
