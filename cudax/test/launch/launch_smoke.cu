@@ -248,20 +248,28 @@ __global__ void empty_kernel() {};
 
 TEST_CASE("Meta dimensions", "[launch]")
 {
-  auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
-  // dims.count();
+  cudaStream_t stream;
+  CUDART(cudaStreamCreate(&stream));
+  {
+    auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
+    // dims.count();
 
-  dims.count(cudax::thread, cudax::block);
+    dims.count(cudax::thread, cudax::block);
 
-  auto dims_transformed = cudax::finalize(dims, empty_kernel);
+    auto dims_transformed = cudax::finalize(dims, empty_kernel);
 
-  CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);
+    CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);
+  }
+  {
+    auto dims = cudax::make_hierarchy(
+      cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(4420, cudax::thread)));
 
-  auto dims2 = cudax::make_hierarchy(
-    cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(4420, cudax::thread)));
+    auto dims_finalized = cudax::finalize(dims, empty_kernel);
 
-  auto dims2_transformed = cudax::finalize(dims2, empty_kernel);
+    std::cout << dims_finalized.count() << " block: " << dims_finalized.count(cudax::thread, cudax::block)
+              << " grid: " << dims_finalized.count(cudax::block) << std::endl;
 
-  std::cout << dims2_transformed.count() << " block: " << dims2_transformed.count(cudax::thread, cudax::block)
-            << " grid: " << dims2_transformed.count(cudax::block) << std::endl;
+    cudax::launch(stream, dims_finalized, empty_kernel);
+  }
+  CUDART(cudaStreamDestroy(stream));
 }
