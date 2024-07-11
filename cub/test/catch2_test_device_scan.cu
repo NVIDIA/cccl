@@ -38,24 +38,7 @@
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
-// Circumvate DECLARE_LAUNCH_WRAPPER appending stream as the last argument
-// by default since init_value needs to be the last argument.
-template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitT>
-CUB_RUNTIME_FUNCTION static cudaError_t inclusive_scan_init_wrapper(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  ScanOpT scan_op,
-  InitT init,
-  int num_items,
-  cudaStream_t stream = 0)
-{
-  return cub::DeviceScan::InclusiveScanInit(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, stream);
-}
-
-DECLARE_LAUNCH_WRAPPER(inclusive_scan_init_wrapper, device_inclusive_scan_with_init);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);

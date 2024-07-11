@@ -34,28 +34,28 @@
 
 CUB_TEST("Device inclusive scan works", "[scan][device]")
 {
-  // Determine temporary device storage requirements for inclusive scan
-  cudaStream_t stream{};
-  REQUIRE(cudaSuccess == cudaStreamCreate(&stream));
   // example-begin device-inclusive-scan
   thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
   thrust::device_vector<int> out(input.size());
 
-  void* d_temp_storage{};
+  int init = 1;
   size_t temp_storage_bytes{};
 
-  int init = 1;
-
   cub::DeviceScan::InclusiveScanInit(
-    d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
+    nullptr, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
 
   // Allocate temporary storage for inclusive scan
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run inclusive prefix sum
   cub::DeviceScan::InclusiveScanInit(
-    d_temp_storage, temp_storage_bytes, input.begin(), out.begin(), cub::Max{}, init, static_cast<int>(input.size()));
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    input.begin(),
+    out.begin(),
+    cub::Max{},
+    init,
+    static_cast<int>(input.size()));
 
   thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
   // example-end device-inclusive-scan
