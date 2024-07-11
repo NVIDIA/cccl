@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cstddef>
+
 #include "cuda_ptx_generated.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -97,34 +99,63 @@ _CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp* __ptr, _Tp __val, int __memorder,
   return __ret;
 }
 
+template <typename _Tp, typename _Up, typename _Sco>
+_CCCL_DEVICE float __atomic_fetch_add_cuda(_Tp** __ptr, ptrdiff_t __val, int __memorder, _Sco)
+{
+  ptrdiff_t* __temp = reinterpret_cast<ptrdiff_t*>(__ptr);
+  return __atomic_fetch_add_cuda(__temp, __val, __memorder, _Sco{});
+}
+template <typename _Tp, typename _Up, typename _Sco>
+_CCCL_DEVICE float __atomic_fetch_add_cuda(volatile _Tp** __ptr, ptrdiff_t __val, int __memorder, _Sco)
+{
+  ptrdiff_t* __temp = reinterpret_cast<ptrdiff_t*>(const_cast<_Tp**>(__ptr));
+  return __atomic_fetch_add_cuda(__temp, __val, __memorder, _Sco{});
+}
+
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
 _CCCL_DEVICE float __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, [__val](_Tp __old){
-    return __old < __val ? __old : __val;
-  }, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(
+    __ptr,
+    [__val](_Tp __old) {
+      return __old < __val ? __old : __val;
+    },
+    __memorder,
+    _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
 _CCCL_DEVICE float __atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, [__val](_Tp __old){
-    return __old < __val ? __old : __val;
-  }, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(
+    __ptr,
+    [__val](_Tp __old) {
+      return __old < __val ? __old : __val;
+    },
+    __memorder,
+    _Sco{});
 }
 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
 _CCCL_DEVICE double __atomic_fetch_max_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, [__val](_Tp __old){
-    return __old > __val ? __old : __val;
-  }, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(
+    __ptr,
+    [__val](_Tp __old) {
+      return __old > __val ? __old : __val;
+    },
+    __memorder,
+    _Sco{});
 }
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
 _CCCL_DEVICE double __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  return __atomic_fetch_update_cuda(__ptr, [__val](_Tp __old){
-    return __old > __val ? __old : __val;
-  }, __memorder, _Sco{});
+  return __atomic_fetch_update_cuda(
+    __ptr,
+    [__val](_Tp __old) {
+      return __old > __val ? __old : __val;
+    },
+    __memorder,
+    _Sco{});
 }
 
 // template <typename _Tp,
@@ -153,7 +184,8 @@ _CCCL_DEVICE double __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int 
 //           typename _Sco,
 //           __enable_if_t<!is_scalar<_Tp>::value && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8), int> = 0>
 // _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
-//   void* __ptr, _Tp* __expected, const _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder, _Sco)
+//   void* __ptr, _Tp* __expected, const _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder,
+//   _Sco)
 // {
 //   using __proxy_t = _If<sizeof(_Tp) == 4, uint32_t, uint64_t>;
 //   __proxy_t __old = 0;
@@ -192,7 +224,8 @@ _CCCL_DEVICE double __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int 
 
 // template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
 // _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
-//   _Tp volatile* __ptr, _Tp* __expected, const _Tp __desired, bool, int __success_memorder, int __failure_memorder, _Sco)
+//   _Tp volatile* __ptr, _Tp* __expected, const _Tp __desired, bool, int __success_memorder, int __failure_memorder,
+//   _Sco)
 // {
 //   auto const __aligned = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
 //   auto const __offset  = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * 8;
@@ -359,7 +392,8 @@ _CCCL_DEVICE double __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int 
 
 // template <typename _Tp, typename _Sco>
 // _CCCL_DEVICE bool __atomic_compare_exchange_n_cuda(
-//   _Tp volatile* __ptr, _Tp* __expected, _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder, _Sco)
+//   _Tp volatile* __ptr, _Tp* __expected, _Tp __desired, bool __weak, int __success_memorder, int __failure_memorder,
+//   _Sco)
 // {
 //   return __atomic_compare_exchange_cuda(
 //     __ptr, __expected, __desired, __weak, __success_memorder, __failure_memorder, _Sco{});
