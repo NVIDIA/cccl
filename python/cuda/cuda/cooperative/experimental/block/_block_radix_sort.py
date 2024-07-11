@@ -9,7 +9,7 @@ from cuda.cooperative.experimental._common import make_binary_tempfile
 
 def radix_sort_keys(dtype, threads_in_block, items_per_thread):
     """Performs an ascending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
-  
+
     Example:
         The code snippet below illustrates a sort of 512 integer keys that
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
@@ -20,9 +20,9 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
-        
+
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
-        
+
         .. literalinclude:: ../../python/cuda/tests/test_block_radix_sort_api.py
             :language: python
             :dedent:
@@ -62,7 +62,7 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
 
 def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
     """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
-  
+
     Example:
         The code snippet below illustrates a sort of 512 integer keys that
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
@@ -73,9 +73,9 @@ def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
-        
+
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
-        
+
         .. literalinclude:: ../../python/cuda/tests/test_block_radix_sort_api.py
             :language: python
             :dedent:

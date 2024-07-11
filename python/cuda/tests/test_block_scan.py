@@ -121,7 +121,7 @@ def test_block_exclusive_sum_prefix(threads_in_block, items_per_thread):
     num_segments = 128
     num_elements = segment_size * num_segments
 
-    prefix_op = cudax.StatefulFunction(BlockPrefixCallbackOp, 
+    prefix_op = cudax.StatefulFunction(BlockPrefixCallbackOp,
                                       block_prefix_callback_op_type)
     block_exclusive_sum = cudax.block.exclusive_sum(dtype=numba.types.int32,
                                                     threads_in_block=threads_in_block,

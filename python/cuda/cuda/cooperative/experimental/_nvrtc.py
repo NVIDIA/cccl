@@ -62,7 +62,7 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
 
     if code == 'lto':
         opts += [b"-dlto"]
-    
+
     # Some strange linking issues
     opts += [b"-DCCCL_DISABLE_BF16_SUPPORT"]
 
@@ -77,7 +77,7 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     if code == 'lto':
         err, ltoSize = nvrtc.nvrtcGetLTOIRSize(prog)
         CHECK_NVRTC(err, prog)
-        
+
         lto = b" " * ltoSize
         err, = nvrtc.nvrtcGetLTOIR(prog, lto)
         CHECK_NVRTC(err, prog)
@@ -86,11 +86,11 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
         CHECK_NVRTC(err, prog)
 
         return lto
-    
+
     elif code == 'ptx':
         err, ptxSize = nvrtc.nvrtcGetPTXSize(prog)
         CHECK_NVRTC(err, prog)
-        
+
         ptx = b" " * ptxSize
         err, = nvrtc.nvrtcGetPTX(prog, ptx)
         CHECK_NVRTC(err, prog)

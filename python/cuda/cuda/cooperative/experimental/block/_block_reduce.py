@@ -9,7 +9,7 @@ from cuda.cooperative.experimental._common import make_binary_tempfile
 def reduce(dtype, threads_in_block, binary_op, methods=None):
     """Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
     Each thread contributes one input element.
-    
+
     Warning:
         The return value is undefined in threads other than thread\ :sub:`0`.
 
@@ -22,9 +22,9 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
-        
+
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
-        
+
         .. literalinclude:: ../../python/cuda/tests/test_block_reduce_api.py
             :language: python
             :dedent:
@@ -49,9 +49,9 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
                          ['cub/block/block_reduce.cuh'],
                          [TemplateParameter('T'),
                           TemplateParameter('BLOCK_DIM_X')],
-                         [[Pointer(numba.uint8), 
-                           DependentReference(Dependency('T')), 
-                           DependentOperator(Dependency('T'), [Dependency('T'), Dependency('T')], Dependency('Op')), 
+                         [[Pointer(numba.uint8),
+                           DependentReference(Dependency('T')),
+                           DependentOperator(Dependency('T'), [Dependency('T'), Dependency('T')], Dependency('Op')),
                            DependentReference(Dependency('T'), True)]],
                          type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
     specialization = template.specialize({'T': dtype,
@@ -66,7 +66,7 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
 def sum(dtype, threads_in_block):
     """Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
     Each thread contributes one input element.
-    
+
     Warning:
         The return value is undefined in threads other than thread\ :sub:`0`.
 
@@ -79,9 +79,9 @@ def sum(dtype, threads_in_block):
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
-        
+
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
-        
+
         .. literalinclude:: ../../python/cuda/tests/test_block_reduce_api.py
             :language: python
             :dedent:

@@ -133,4 +133,3 @@ def test_block_merge_sort_user_defined_type():
     reference = sorted(input, reverse=True, key=lambda x: x.real)
     for i in range(items_per_tile):
         assert output[i] == reference[i]
-

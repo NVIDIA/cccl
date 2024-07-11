@@ -19,15 +19,15 @@ def make_binary_tempfile(content, suffix):
 def check_in(name, arg, set):
     if arg not in set:
         raise ValueError(f"{name} must be in {set} ; got {name} = {arg}")
-    
+
 def check_not_in(name, arg, set):
     if arg in set:
         raise ValueError(f"{name} must not be any of those value {set} ; got {name} = {arg}")
-    
+
 def check_contains(set, key):
     if key not in set:
         raise ValueError(f"{key} must be in {set}")
-    
+
 def check_dim3(name, arg):
     if len(arg) != 3:
         raise ValueError(f"{name} should be a length-3 tuple ; got {name} = {arg}")

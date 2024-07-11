@@ -10,18 +10,18 @@ from cuda.cooperative.experimental._common import make_binary_tempfile
 def exclusive_sum(dtype, threads_in_warp=32):
     """Computes an exclusive warp-wide prefix sum using addition (+) as the scan operator.
     The value of 0 is applied as the initial value, and is assigned to the output in *lane*\ :sub:`0`.
-  
+
     Example:
-        The code snippet below illustrates an exclusive prefix sum of 32 integer items: 
+        The code snippet below illustrates an exclusive prefix sum of 32 integer items:
 
         .. literalinclude:: ../../python/cuda/tests/test_warp_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
-        
+
         Below is the code snippet that demonstrates the usage of the ``exclusive_sum`` API:
-        
+
         .. literalinclude:: ../../python/cuda/tests/test_warp_scan_api.py
             :language: python
             :dedent:
@@ -46,8 +46,8 @@ def exclusive_sum(dtype, threads_in_warp=32):
                          ['cub/warp/warp_scan.cuh'],
                          [TemplateParameter('T'),
                           TemplateParameter('VIRTUAL_WARP_THREADS')],
-                         [[Pointer(numba.uint8), 
-                           DependentReference(Dependency('T')), 
+                         [[Pointer(numba.uint8),
+                           DependentReference(Dependency('T')),
                            DependentReference(Dependency('T'), True)]],
                          fake_return=True)
     specialization = template.specialize({'T': dtype,

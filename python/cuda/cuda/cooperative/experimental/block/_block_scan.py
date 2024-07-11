@@ -11,7 +11,7 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
     """Computes an exclusive block-wide prefix sum using addition (+) as the scan operator.
     Each thread contributes an array of consecutive input elements.
     The value of 0 is applied as the initial value, and is assigned to first output element in *thread*\ :sub:`0`.
-  
+
     Example:
         The code snippet below illustrates an exclusive prefix sum of 512 integer items that
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
@@ -22,9 +22,9 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
-        
+
         Below is the code snippet that demonstrates the usage of the ``exclusive_sum`` API:
-        
+
         .. literalinclude:: ../../python/cuda/tests/test_block_scan_api.py
             :language: python
             :dedent:
@@ -50,12 +50,12 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
                          ['cub/block/block_scan.cuh'],
                          [TemplateParameter('T'),
                           TemplateParameter('BLOCK_DIM_X')],
-                         [[Pointer(numba.uint8), 
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')), 
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')), 
+                         [[Pointer(numba.uint8),
+                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
+                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
                            DependentOperator(Dependency('T'), [Dependency('T')], Dependency('PrefixOp'))],
-                          [Pointer(numba.uint8), 
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')), 
+                          [Pointer(numba.uint8),
+                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
                            DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD'))]])
     specialization = template.specialize({'T': dtype,
                                           'BLOCK_DIM_X': threads_in_block,

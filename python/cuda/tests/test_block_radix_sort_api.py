@@ -41,7 +41,7 @@ def test_block_radix_sort():
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
     # example-end radix-sort
-    
+
     tile_size = threads_per_block * items_per_thread
 
     h_keys = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
@@ -79,7 +79,7 @@ def test_block_radix_sort_descending():
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
     # example-end radix-sort-descending
-    
+
     tile_size = threads_per_block * items_per_thread
 
     h_keys = np.arange(0, tile_size, dtype=np.int32)
@@ -88,4 +88,3 @@ def test_block_radix_sort_descending():
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
         assert h_keys[i] == tile_size - 1 - i
-

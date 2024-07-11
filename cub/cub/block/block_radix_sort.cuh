@@ -168,7 +168,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //!            ...
 //!
-//!    .. code-block:: python 
+//!    .. code-block:: python
 //!
 //!        import cuda.cooperative.experimental as cudax
 //!        from pynvjitlink import patch

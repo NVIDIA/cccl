@@ -44,7 +44,7 @@ def test_warp_merge_sort():
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
     # example-end merge-sort
-    
+
     tile_size = 32 * items_per_thread
 
     h_keys = np.arange(0, tile_size, dtype=np.int32)
@@ -53,4 +53,3 @@ def test_warp_merge_sort():
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
         assert h_keys[i] == tile_size - 1 - i
-

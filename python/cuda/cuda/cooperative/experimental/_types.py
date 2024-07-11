@@ -72,22 +72,22 @@ class TypeWrapper:
         {% if assign %}
         extern "C" __device__ void {{ assign }}(void *dst, const void *src);
         {% endif %}
-      
-        struct __align__({{ alignment }}) storage_t 
+
+        struct __align__({{ alignment }}) storage_t
         {
             {% if construct %}
             __device__ storage_t() {
                 {{ construt }}(data);
             }
             {% endif %}
-      
+
             {% if assign %}
             __device__ storage_t& operator=(const storage_t &rhs) {
                 {{ assign }}(data, rhs.data);
                 return *this;
             }
             {% endif %}
-      
+
             char data[{{ size }}];
         };
         """)
@@ -116,7 +116,7 @@ class Parameter:
 
     def specialize(self, _):
         return self
-    
+
     def is_provided_by_user(self):
         return not self.is_output
 
@@ -131,10 +131,10 @@ class Value(Parameter):
 
     def dtype(self):
         return self.value_type
-    
+
     def cpp_decl(self, name):
         return numba_type_to_cpp(self.value_type) + ' ' + name
-    
+
     def mangled_name(self):
         return f'{self.value_type}'
 
@@ -152,7 +152,7 @@ class Pointer(Parameter):
 
     def dtype(self):
         return numba.types.Array(self.value_dtype, 1, 'C')
-    
+
     def mangled_name(self):
         return f'P{self.value_dtype}'
 
@@ -170,7 +170,7 @@ class Reference(Parameter):
 
     def dtype(self):
         return self.value_dtype
-    
+
     def mangled_name(self):
         return f'R{self.value_dtype}'
 
@@ -200,7 +200,7 @@ class Array(Pointer):
 
     def dtype(self):
         return numba.types.Array(self.value_dtype, 1, 'C')
-    
+
     def mangled_name(self):
         return f'P{self.value_dtype}'
 
@@ -214,7 +214,7 @@ class SubstitutionFailure(Exception):
 class Dependency:
     def __init__(self, dep):
         self.dep = dep
-    
+
     def resolve(self, template_arguments):
         if self.dep not in template_arguments:
             raise SubstitutionFailure(f'Template argument {self.dep} not provided')
@@ -226,7 +226,7 @@ class Dependency:
 class Constant:
     def __init__(self, val):
         self.val = val
-    
+
     def resolve(self, _):
         return self.val
 
@@ -235,7 +235,7 @@ class DependentFunction:
     def __init__(self, dep, op):
         self.dep = dep
         self.op = op
-    
+
     def resolve(self, template_arguments):
         return template_arguments[self.dep]
 
@@ -254,10 +254,10 @@ class StatefulOperator:
         self.ret_cpp_type = ret_cpp_type
         self.arg_cpp_types = arg_cpp_types
         self.is_output = False
-    
+
     def mangled_name(self):
         return f'{self.name}'
-    
+
     def forward_decl(self):
         arg_decls = ['char *state']
         if self.ret_cpp_type == 'storage_t':
@@ -271,10 +271,10 @@ class StatefulOperator:
 
     def cpp_decl(self, name):
         return f'char* {name}_state'
-    
+
     def dtype(self):
         return numba.types.Array(self.op_type, 1, 'C')
-    
+
     def wrap_decl(self, name):
         param_decls = []
         param_refs = []
@@ -295,8 +295,8 @@ class StatefulOperator:
               {% endif %}
             };
         """)
-        return template.render(name=name, 
-                               ret_cpp_type=self.ret_cpp_type, 
+        return template.render(name=name,
+                               ret_cpp_type=self.ret_cpp_type,
                                param_decls=', '.join(param_decls),
                                param_refs=', '.join(param_refs),
                                mangled_name=self.mangled_name())
@@ -311,10 +311,10 @@ class StatelessOperator:
         self.ltoir = ltoir
         self.ret_cpp_type = ret_cpp_type
         self.arg_cpp_types = arg_cpp_types
-    
+
     def mangled_name(self):
         return f'{self.name}'
-    
+
     def forward_decl(self):
         arg_decls = []
         if self.ret_cpp_type == 'storage_t':
@@ -325,7 +325,7 @@ class StatelessOperator:
         for arg in self.arg_cpp_types:
             arg_decls.append('const void*' if arg == 'storage_t' else arg)
         return f'extern "C" __device__ {ret_decl} {self.mangled_name()}({", ".join(arg_decls)});'
-    
+
     def wrap_decl(self, name):
         param_decls = []
         param_refs = []
@@ -346,8 +346,8 @@ class StatelessOperator:
               {% endif %}
             };
         """)
-        return template.render(name=name, 
-                               ret_cpp_type=self.ret_cpp_type, 
+        return template.render(name=name,
+                               ret_cpp_type=self.ret_cpp_type,
                                param_decls=', '.join(param_decls),
                                param_refs=', '.join(param_refs),
                                mangled_name=self.mangled_name())
@@ -361,12 +361,12 @@ class DependentOperator:
         self.ret_dtype = ret_dtype
         self.arg_dtypes = arg_dtypes
         self.op = op
-    
+
     def specialize(self, template_arguments):
         op = self.op.resolve(template_arguments)
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
-        ret_numba_type = types.CPointer(ret_dtype) if ret_cpp_type == 'storage_t' else ret_dtype 
+        ret_numba_type = types.CPointer(ret_dtype) if ret_cpp_type == 'storage_t' else ret_dtype
         arg_cpp_types = []
         arg_dtypes = []
         arg_numba_types = []
@@ -409,7 +409,7 @@ class DependentArray(Parameter):
         return f'DependentArray(dep={self.value_dtype}, is_output={self.is_output})'
 
     def specialize(self, template_arguments):
-        return Array(self.value_dtype.resolve(template_arguments), 
+        return Array(self.value_dtype.resolve(template_arguments),
                      self.size.resolve(template_arguments),
                      self.is_output)
 
@@ -464,7 +464,7 @@ class Algorithm:
 
     def __repr__(self) -> str:
         return f'{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}'
-    
+
     def mangled_name(self, parameters):
         return mangle_symbol(self.c_name, parameters)
 
@@ -485,11 +485,11 @@ class Algorithm:
         specialized_parameters = []
         for method in self.parameters:
             specialized_signature = []
-            try: 
+            try:
                 for parameter in method:
                     specialized_signature.append(parameter.specialize(template_arguments))
                 specialized_parameters.append(specialized_signature)
-            except SubstitutionFailure as e: 
+            except SubstitutionFailure as e:
                 pass # Substitution failure is not an error
 
         specialized_name = f'{self.struct_name}<{template_list}>'
@@ -517,7 +517,7 @@ class Algorithm:
             __device__ constexpr unsigned temp_storage_bytes = sizeof(temp_storage_t);
             """)
         src = template.render(algorithm_name=self.struct_name,
-                              includes=self.includes, 
+                              includes=self.includes,
                               type_definitions=self.type_definitions)
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
@@ -562,9 +562,9 @@ class Algorithm:
             using algorithm_t = cub::{{ algorithm_name }};
             using temp_storage_t = typename algorithm_t::TempStorage;
             """)
-        src = template.render(algorithm_name=self.struct_name, 
+        src = template.render(algorithm_name=self.struct_name,
                               includes=self.includes,
-                              udf_declarations=udf_declarations, 
+                              udf_declarations=udf_declarations,
                               type_definitions=self.type_definitions)
 
         for method in self.parameters:
@@ -600,7 +600,7 @@ class Algorithm:
                   {% endfor %}
 
                   {% if out_param %}
-                  {{ out_param }} = 
+                  {{ out_param }} =
                   {% endif %}
 
                    algorithm_t(*temp_storage).{{ method_name }}({{ param_args }});
@@ -619,7 +619,7 @@ class Algorithm:
         _, lto_fn = compile(cpp=src, cc=cc, rdc=True, code='lto')
         lto_irs.append(lto_fn)
         return lto_irs
-        
+
 
     def codegen(self, func_to_overload):
         if len(self.template_parameters):
@@ -676,7 +676,7 @@ class Algorithm:
                             data_type = context.get_value_type(dtype)
                             types.append(data_type)
                             arguments.append(arg)
-                        
+
                         if not param.is_output:
                             arg_id += 1
 
