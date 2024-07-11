@@ -12,7 +12,7 @@
 #define _CUDAX__LAUNCH_LAUNCH
 #include <cuda_runtime.h>
 
-#include <cuda/experimental/__launch/confiuration.cuh>
+#include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/stream_ref>
 
