@@ -57,16 +57,16 @@ The process of initializing a tensor map in global memory proceeds as follows.
 
 3. Modify the tensor map in shared memory using :ref:`tensormap.replace
    <libcudacxx-ptx-instructions-tensormap-replace>`. This instruction can be
-   used to modify any field of the tensor map, including the base address, size,
-   stride, etc.
+   used to modify many fields of the tensor map, including the base address,
+   size, stride, etc.
 
 4. Copy the tensor map from shared memory to global memory using the
    :ref:`tensormap.cp_fenceproxy
    <libcudacxx-ptx-instructions-tensormap-cp_fenceproxy>` instruction.
 
 The code below contains a kernel that follows these steps. For completeness, it
-modifies all the fields of the tensor map. Typically, a kernel will modify just
-a few fields.
+updates all modifiable fields of the tensor map. Typically, a kernel will update
+just a few fields.
 
 In this kernel, the tensor map template is passed as a kernel parameter. This is
 the preferred way of moving the template from the host to device. If the kernel
