@@ -8,3 +8,4 @@ Examples
    :maxdepth: 1
 
    examples/st.async
+   examples/device_tensormap_initialization
