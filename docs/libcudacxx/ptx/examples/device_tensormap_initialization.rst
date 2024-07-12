@@ -46,7 +46,7 @@ reading the examples in the sections below.
 Device-side initialization and modification of a tensor map
 -----------------------------------------------------------
 
-The process of initializing a tensormap in global memory proceeds as follows.
+The process of initializing a tensor map in global memory proceeds as follows.
 
 1. Pass an existing tensor map, the template, to the kernel. In contrast to
    kernels that ***use** the tensor map in a ``cp.async.bulk.tensor`` instruction,
@@ -57,7 +57,7 @@ The process of initializing a tensormap in global memory proceeds as follows.
 
 3. Modify the tensor map in shared memory using :ref:`tensormap.replace
    <libcudacxx-ptx-instructions-tensormap-replace>`. This instruction can be
-   used to modify any field of the tensor map, including the base addres, size,
+   used to modify any field of the tensor map, including the base address, size,
    stride, etc.
 
 4. Copy the tensor map from shared memory to global memory using the
@@ -98,9 +98,9 @@ accomplished using the :ref:`tensormap.cp_fenceproxy
 The acquire part is accomplished using the :ref:`fence.proxy.tensormap::generic
 <libcudacxx-ptx-instructions-fence>` instruction. If the two threads are on the
 same device, the scope ``.gpu`` suffices. If threads are on different devices, the
-``.sys`` scope must be used. Once a tensormap has been acquired, it can be used by
+``.sys`` scope must be used. Once a tensor map has been acquired, it can be used by
 threads in the block, after sufficient synchronization, e.g., using
-``__syncthreads()``. The thread that uses the tensormap and the thread that
+``__syncthreads()``. The thread that uses the tensor map and the thread that
 performs the fence must be in the same block. The fence **cannot be delegated**
 to a thread in another block or kernel launch. If there are not intermediate
 modifications, the fence does not have be repeated before each
