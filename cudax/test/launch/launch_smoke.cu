@@ -16,6 +16,7 @@
 #include <type_traits>
 
 #include "../hierarchy/testing_common.cuh"
+#include <cooperative_groups.h>
 
 __managed__ bool kernel_run_proof = false;
 
@@ -246,30 +247,76 @@ TEST_CASE("Smoke", "[launch]")
 
 __global__ void empty_kernel() {};
 
+__global__ void grid_sync_kernel()
+{
+  auto grid = cooperative_groups::this_grid();
+  grid.sync();
+};
+
+template <typename Dims>
+inline void print_dims(const Dims& in)
+{
+  std::cout << in.count() << " block: " << in.count(cudax::thread, cudax::block) << " grid: " << in.count(cudax::block)
+            << std::endl;
+}
+
 TEST_CASE("Meta dimensions", "[launch]")
 {
   cudaStream_t stream;
   CUDART(cudaStreamCreate(&stream));
+  SECTION("Just at least")
   {
     auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
+
+    // Won't work until finalized
     // dims.count();
 
+    // Does not touch a meta dims, so works
     dims.count(cudax::thread, cudax::block);
 
     auto dims_transformed = cudax::finalize(dims, empty_kernel);
 
     CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);
   }
+  SECTION("At least + best occupancy")
   {
     auto dims = cudax::make_hierarchy(
       cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(4420, cudax::thread)));
 
     auto dims_finalized = cudax::finalize(dims, empty_kernel);
 
-    std::cout << dims_finalized.count() << " block: " << dims_finalized.count(cudax::thread, cudax::block)
-              << " grid: " << dims_finalized.count(cudax::block) << std::endl;
+    print_dims(dims_finalized);
 
     cudax::launch(stream, dims_finalized, empty_kernel);
   }
+  {
+    // auto dims = cudax::make_hierarchy(cudax::grid_dims(cudax::best_occupancy()), cudax::block_dims<256>());
+  }
+
+  SECTION("max_coresident + best occupancy")
+  {
+    auto dims =
+      cudax::make_hierarchy(cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::max_coresident()));
+
+    auto config = cudax::make_config(dims, cudax::cooperative_launch());
+
+    auto config_finalized = cudax::finalize(config, grid_sync_kernel);
+
+    print_dims(config_finalized.dims);
+
+    cudax::launch(stream, config_finalized, grid_sync_kernel);
+
+    auto lambda = [] __device__(auto dims, int dummy) {
+      auto grid = cooperative_groups::this_grid();
+      grid.sync();
+    };
+
+    auto finalized_for_lambda = cudax::finalize(config, lambda, 1);
+
+    print_dims(finalized_for_lambda.dims);
+
+    cudax::launch(stream, finalized_for_lambda, lambda, 1);
+  }
+  CUDART(cudaStreamSynchronize(stream));
   CUDART(cudaStreamDestroy(stream));
 }

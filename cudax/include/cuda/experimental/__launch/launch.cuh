@@ -119,7 +119,8 @@ void launch(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
-  if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, Args...>)
+  if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, Args...>
+                || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
     auto launcher = detail::kernel_launcher<kernel_config<Dimensions, Config...>, Kernel, Args...>;
     status        = detail::launch_impl(stream, conf, launcher, conf, kernel, args...);
@@ -181,7 +182,8 @@ template <typename... Args, typename... Levels, typename Kernel>
 void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
-  if constexpr (::cuda::std::is_invocable_v<Kernel, hierarchy_dimensions<Levels...>, Args...>)
+  if constexpr (::cuda::std::is_invocable_v<Kernel, hierarchy_dimensions<Levels...>, Args...>
+                || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
     auto launcher = detail::kernel_launcher<hierarchy_dimensions<Levels...>, Kernel, Args...>;
     status        = detail::launch_impl(stream, kernel_config(dims), launcher, dims, kernel, args...);
