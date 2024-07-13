@@ -93,6 +93,7 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 __constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
 {
+  _LIBCUDACXX_UNUSED_VAR(__last);
 #if __has_builtin(__builtin_constant_p) || defined(_CCCL_COMPILER_GCC)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return __builtin_constant_p(__first < __needle) && __first < __needle;),
