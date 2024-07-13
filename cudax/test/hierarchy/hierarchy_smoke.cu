@@ -501,6 +501,38 @@ TEST_CASE("Examples", "[hierarchy]")
   }
 }
 
+template <typename Hierarchy>
+__global__ void empty_queries_kernel(Hierarchy hierarchy)
+{
+  using namespace cuda::experimental;
+
+  static_assert(hierarchy.rank(thread, thread) == 1);
+  static_assert(hierarchy.rank(block, block) == 1);
+  static_assert(hierarchy.rank(grid, grid) == 1);
+
+  static_assert(hierarchy.index(thread, thread) == dim3(1, 1, 1));
+  static_assert(hierarchy.index(block, block) == dim3(1, 1, 1));
+  static_assert(hierarchy.index(grid, grid) == dim3(1, 1, 1));
+}
+
+TEST_CASE("Empty queries", "[hierarchy]")
+{
+  using namespace cuda::experimental;
+
+  auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(), block_dims<8, 8, 8>());
+  static_assert(hierarchy.count(thread, thread) == 1);
+  static_assert(hierarchy.count(block, block) == 1);
+  static_assert(hierarchy.count(cluster, cluster) == 1);
+  static_assert(hierarchy.count(grid, grid) == 1);
+
+  static_assert(hierarchy.extents(thread, thread) == dim3(1, 1, 1));
+  static_assert(hierarchy.extents(block, block) == dim3(1, 1, 1));
+  static_assert(hierarchy.extents(cluster, cluster) == dim3(1, 1, 1));
+  static_assert(hierarchy.extents(grid, grid) == dim3(1, 1, 1));
+
+  (void) empty_queries_kernel<decltype(make_hierarchy(grid_dims(1), block_dims<8, 8, 8>()))>;
+}
+
 TEST_CASE("Trivially constructable", "[hierarchy]")
 {
   // static_assert(std::is_trivial_v<decltype(cudax::block_dims(256))>);

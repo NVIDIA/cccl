@@ -260,6 +260,9 @@ inline void print_dims(const Dims& in)
             << std::endl;
 }
 
+template <typename T1, typename T2>
+struct check;
+
 TEST_CASE("Meta dimensions", "[launch]")
 {
   cudaStream_t stream;
@@ -274,9 +277,12 @@ TEST_CASE("Meta dimensions", "[launch]")
     // Does not touch a meta dims, so works
     dims.count(cudax::thread, cudax::block);
 
-    auto dims_transformed = cudax::finalize(dims, empty_kernel);
+    auto dims_finalized = cudax::finalize(dims, empty_kernel);
+    static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
-    CUDAX_REQUIRE(dims_transformed.count(cudax::block, cudax::grid) == 4);
+    print_dims(dims_finalized);
+
+    CUDAX_REQUIRE(dims_finalized.count(cudax::block, cudax::grid) == 4);
   }
   SECTION("At least + best occupancy")
   {
@@ -284,13 +290,11 @@ TEST_CASE("Meta dimensions", "[launch]")
       cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(4420, cudax::thread)));
 
     auto dims_finalized = cudax::finalize(dims, empty_kernel);
+    static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
     print_dims(dims_finalized);
 
     cudax::launch(stream, dims_finalized, empty_kernel);
-  }
-  {
-    // auto dims = cudax::make_hierarchy(cudax::grid_dims(cudax::best_occupancy()), cudax::block_dims<256>());
   }
 
   SECTION("max_coresident + best occupancy")
@@ -301,6 +305,7 @@ TEST_CASE("Meta dimensions", "[launch]")
     auto config = cudax::make_config(dims, cudax::cooperative_launch());
 
     auto config_finalized = cudax::finalize(config, grid_sync_kernel);
+    static_assert(::cuda::std::is_same_v<::cudax::transformed_config_t<decltype(config)>, decltype(config_finalized)>);
 
     print_dims(config_finalized.dims);
 
@@ -312,6 +317,8 @@ TEST_CASE("Meta dimensions", "[launch]")
     };
 
     auto finalized_for_lambda = cudax::finalize(config, lambda, 1);
+    static_assert(
+      ::cuda::std::is_same_v<::cudax::transformed_config_t<decltype(config)>, decltype(finalized_for_lambda)>);
 
     print_dims(finalized_for_lambda.dims);
 

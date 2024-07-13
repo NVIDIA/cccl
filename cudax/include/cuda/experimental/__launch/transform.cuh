@@ -77,22 +77,6 @@ struct dimensions_handler<max_coresident> : meta_dimensions_handler<max_coreside
 
 using meta_dims_transformed = dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>;
 
-// Assumes all meta dims are transformed into 1-d dynamic extent (seems like a safe assumption at least for now)
-template <typename Level>
-using transformed_level = ::cuda::std::conditional_t<
-  detail::usable_for_queries<typename Level::dimensions_type>,
-  decltype(::cuda::std::declval<Level>().transform(::cuda::std::declval<meta_dims_transformed>())),
-  Level>;
-
-template <typename Hierarchy>
-struct transformed_hierarchy;
-
-template <typename... Levels>
-struct transformed_hierarchy<hierarchy_dimensions<Levels...>>
-{
-  using type = hierarchy_dimensions<transformed_level<Levels>...>;
-};
-
 template <typename Dimensions>
 struct level_transformer;
 
@@ -142,6 +126,10 @@ struct level_transformer<max_coresident>
     auto tmp_hierarchy = hierarchy_dimensions_fragment(thread, rest);
     auto block_size    = tmp_hierarchy.template count(thread, block);
 
+    // We might have cluster or other levels below the grid, needs to count them to properly divide this levels count
+    // TODO: there might be some consideration of clusters fitting on the device?
+    auto blocks_multiplier = tmp_hierarchy.template count(block);
+
     cudaError_t status = cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, dims.device_id);
     if (status != cudaSuccess)
     {
@@ -155,7 +143,7 @@ struct level_transformer<max_coresident>
     }
 
     // TODO: should we throw when this is 0?
-    return meta_dims_transformed(num_sms * num_blocks_per_sm);
+    return meta_dims_transformed(num_sms * num_blocks_per_sm / blocks_multiplier);
   }
 };
 
@@ -198,6 +186,37 @@ finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensi
       hierarchy.levels));
 }
 } // namespace detail
+
+// Assumes all meta dims are transformed into 1-d dynamic extent (seems like a safe assumption at least for now)
+template <typename Level>
+using transformed_level = ::cuda::std::conditional_t<
+  detail::usable_for_queries<typename Level::dimensions_type>,
+  Level,
+  decltype(::cuda::std::declval<Level>().transform(::cuda::std::declval<detail::meta_dims_transformed>()))>;
+
+template <typename>
+struct transformed_hierarchy;
+
+template <typename... Levels>
+struct transformed_hierarchy<hierarchy_dimensions<Levels...>>
+{
+  using type = hierarchy_dimensions<transformed_level<Levels>...>;
+};
+
+template <typename Dimensions>
+using transformed_hierarchy_t = typename transformed_hierarchy<Dimensions>::type;
+
+template <typename...>
+struct transformed_config;
+
+template <typename Dimensions, typename... Options>
+struct transformed_config<kernel_config<Dimensions, Options...>>
+{
+  using type = kernel_config<transformed_hierarchy_t<Dimensions>, Options...>;
+};
+
+template <typename Dimensions, typename... Options>
+using transformed_config_t = typename transformed_config<Dimensions, Options...>::type;
 
 // Might consider making the fn optional depending on how many metadims can work without it, right now its only at_least
 // TODO not sure if we need hierarchy taking overload

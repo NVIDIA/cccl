@@ -253,6 +253,11 @@ struct hierarchy_extents_helper
         replace_with_intrinsics_or_constexpr<Unit, TopLevel>(ltop.dims_for_query()), (*this)(levels...));
     }
   }
+
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto operator()() noexcept
+  {
+    return hierarchy_query_result<dimensions_index_type, 1, 1, 1>();
+  }
 };
 
 template <typename T, size_t... Extents>
@@ -282,6 +287,11 @@ struct index_helper
         index_helper<BottomUnit>()(levels...));
     }
   }
+
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr auto operator()() noexcept
+  {
+    return hierarchy_query_result<dimensions_index_type, 1, 1, 1>();
+  }
 };
 
 template <typename BottomUnit>
@@ -304,6 +314,11 @@ struct rank_helper
       return level_rank * dims_to_count(hierarchy_extents_helper<BottomUnit>()(levels...))
            + rank_helper<BottomUnit>()(levels...);
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr dimensions_index_type operator()() noexcept
+  {
+    return 1;
   }
 };
 } // namespace detail
@@ -365,10 +380,17 @@ private:
   template <typename Unit, typename Level>
   _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto levels_range_static(const decltype(levels)& levels) noexcept
   {
-    static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
+    static_assert(has_level_or_unit<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
     static_assert(has_level_or_unit<Unit, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
-    static_assert(detail::legal_unit_for_level<Unit, Level>);
-    return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+    if constexpr (::cuda::std::is_same_v<Unit, Level>)
+    {
+      return ::cuda::std::make_tuple();
+    }
+    else
+    {
+      static_assert(detail::legal_unit_for_level<Unit, Level>);
+      return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+    }
   }
 
   // TODO is this useful enough to expose?
