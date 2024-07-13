@@ -39,7 +39,7 @@ struct make_unsigned_special;
 template <>
 struct make_unsigned_special<int>
 {
-  typedef unsigned int type;
+  using type = unsigned int;
 };
 
 // this is special, because CUDA's atomicAdd doesn't have an overload
@@ -47,13 +47,13 @@ struct make_unsigned_special<int>
 template <>
 struct make_unsigned_special<long>
 {
-  typedef unsigned long long type;
+  using type = unsigned long long;
 };
 
 template <>
 struct make_unsigned_special<long long>
 {
-  typedef unsigned long long type;
+  using type = unsigned long long;
 };
 
 } // namespace detail

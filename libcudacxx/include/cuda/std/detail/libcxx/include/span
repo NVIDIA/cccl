@@ -285,14 +285,12 @@ concept __integral_constant_like =
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __integral_constant_like_,
-  requires()( //
-    requires(_CCCL_TRAIT(is_integral, decltype(_Tp::value))),
-    requires(!_CCCL_TRAIT(is_same, bool, remove_const_t<decltype(_Tp::value)>)),
-    requires(convertible_to<_Tp, decltype(_Tp::value)>),
-    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
-    (integral_constant<bool, _Tp() == _Tp::value>::value),
-    (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value) //
-    ));
+  requires()(requires(_CCCL_TRAIT(is_integral, decltype(_Tp::value))),
+             requires(!_CCCL_TRAIT(is_same, bool, remove_const_t<decltype(_Tp::value)>)),
+             requires(convertible_to<_Tp, decltype(_Tp::value)>),
+             requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
+             (integral_constant<bool, _Tp() == _Tp::value>::value),
+             (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value)));
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __integral_constant_like = _LIBCUDACXX_FRAGMENT(__integral_constant_like_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017

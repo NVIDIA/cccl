@@ -54,6 +54,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -63,7 +65,7 @@ CUB_NAMESPACE_BEGIN
  *****************************************************************************/
 
 /**
- * @brief Scan kernel entry point (multi-block)
+ * @brief Scan by key kernel entry point (multi-block)
  *
  * @tparam ChainedPolicyT
  *   Chained tuning policy
@@ -228,8 +230,7 @@ template <
   typename OffsetT,
   typename AccumT = detail::accumulator_t<
     ScanOpT,
-    cub::detail::
-      conditional_t<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>,
+    ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>,
     cub::detail::value_t<ValuesInputIteratorT>>,
   typename SelectedPolicy =
     DeviceScanByKeyPolicy<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>

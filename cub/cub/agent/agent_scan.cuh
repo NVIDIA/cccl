@@ -50,6 +50,8 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -133,6 +135,8 @@ struct AgentScanPolicy : ScalingType
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
  */
 template <typename AgentScanPolicyT,
           typename InputIteratorT,
@@ -157,9 +161,9 @@ struct AgentScan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                     InputIteratorT>;
 
   // Constants
   enum
@@ -172,21 +176,21 @@ struct AgentScan
   };
 
   // Parameterized BlockLoad type
-  typedef BlockLoad<AccumT,
-                    AgentScanPolicyT::BLOCK_THREADS,
-                    AgentScanPolicyT::ITEMS_PER_THREAD,
-                    AgentScanPolicyT::LOAD_ALGORITHM>
-    BlockLoadT;
+  using BlockLoadT =
+    BlockLoad<AccumT,
+              AgentScanPolicyT::BLOCK_THREADS,
+              AgentScanPolicyT::ITEMS_PER_THREAD,
+              AgentScanPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockStore type
-  typedef BlockStore<AccumT,
-                     AgentScanPolicyT::BLOCK_THREADS,
-                     AgentScanPolicyT::ITEMS_PER_THREAD,
-                     AgentScanPolicyT::STORE_ALGORITHM>
-    BlockStoreT;
+  using BlockStoreT =
+    BlockStore<AccumT,
+               AgentScanPolicyT::BLOCK_THREADS,
+               AgentScanPolicyT::ITEMS_PER_THREAD,
+               AgentScanPolicyT::STORE_ALGORITHM>;
 
   // Parameterized BlockScan type
-  typedef BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM> BlockScanT;
+  using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
@@ -194,7 +198,7 @@ struct AgentScan
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
-  typedef BlockScanRunningPrefixOp<AccumT, ScanOpT> RunningPrefixCallbackOp;
+  using RunningPrefixCallbackOp = BlockScanRunningPrefixOp<AccumT, ScanOpT>;
 
   // Shared memory type for this thread block
   union _TempStorage

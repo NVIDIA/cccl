@@ -38,7 +38,6 @@ j * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -52,6 +51,8 @@ j * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cstdint>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -63,8 +64,8 @@ template <class KeysIt1, class KeysIt2, class Size, class BinaryPred>
 Size THRUST_DEVICE_FUNCTION
 merge_path(KeysIt1 keys1, KeysIt2 keys2, Size keys1_count, Size keys2_count, Size diag, BinaryPred binary_pred)
 {
-  typedef typename iterator_traits<KeysIt1>::value_type key1_type;
-  typedef typename iterator_traits<KeysIt2>::value_type key2_type;
+  using key1_type = typename iterator_traits<KeysIt1>::value_type;
+  using key2_type = typename iterator_traits<KeysIt2>::value_type;
 
   Size keys1_begin = thrust::max<Size>(0, diag - keys2_count);
   Size keys1_end   = thrust::min<Size>(diag, keys1_count);
@@ -101,7 +102,7 @@ THRUST_DEVICE_FUNCTION void serial_merge(
   int keys1_end = keys1_beg + keys1_count;
   int keys2_end = keys2_beg + keys2_count;
 
-  typedef typename iterator_value<It>::type key_type;
+  using key_type = typename iterator_value<It>::type;
 
   key_type key1 = keys_shared[keys1_beg];
   key_type key2 = keys_shared[keys2_beg];
@@ -151,7 +152,7 @@ struct PartitionAgent
   struct PtxPlan : PtxPolicy<256>
   {};
 
-  typedef core::specialize_plan<PtxPlan> ptx_plan;
+  using ptx_plan = core::specialize_plan<PtxPlan>;
 
   THRUST_AGENT_ENTRY(
     KeysIt1 keys1,
@@ -202,8 +203,8 @@ struct Tuning<sm30, TSize>
     ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, INPUT_SIZE>::value
   };
 
-  typedef PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE>
-    type;
+  using type =
+    PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE>;
 }; // Tuning sm300
 
 template <class TSize>
@@ -215,8 +216,8 @@ struct Tuning<sm60, TSize> : Tuning<sm30, TSize>
     ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, Tuning::INPUT_SIZE>::value
   };
 
-  typedef PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE>
-    type;
+  using type =
+    PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE>;
 }; // Tuning sm52
 
 template <class TSize>
@@ -228,8 +229,8 @@ struct Tuning<sm52, TSize> : Tuning<sm30, TSize>
     ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, Tuning::INPUT_SIZE>::value
   };
 
-  typedef PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_STORE_WARP_TRANSPOSE>
-    type;
+  using type =
+    PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_STORE_WARP_TRANSPOSE>;
 }; // Tuning sm52
 
 template <class TSize>
@@ -242,8 +243,8 @@ struct Tuning<sm35, TSize> : Tuning<sm30, TSize>
     ITEMS_PER_THREAD            = items_per_thread<NOMINAL_4B_ITEMS_PER_THREAD, Tuning::INPUT_SIZE>::value
   };
 
-  typedef PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_STORE_WARP_TRANSPOSE>
-    type;
+  using type =
+    PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_STORE_WARP_TRANSPOSE>;
 }; // Tuning sm350
 
 template <size_t VALUE>
@@ -261,36 +262,36 @@ template <class KeysIt1,
           class MERGE_ITEMS>
 struct MergeAgent
 {
-  typedef typename iterator_traits<KeysIt1>::value_type key1_type;
-  typedef typename iterator_traits<KeysIt2>::value_type key2_type;
-  typedef typename iterator_traits<ItemsIt1>::value_type item1_type;
-  typedef typename iterator_traits<ItemsIt2>::value_type item2_type;
+  using key1_type  = typename iterator_traits<KeysIt1>::value_type;
+  using key2_type  = typename iterator_traits<KeysIt2>::value_type;
+  using item1_type = typename iterator_traits<ItemsIt1>::value_type;
+  using item2_type = typename iterator_traits<ItemsIt2>::value_type;
 
-  typedef key1_type key_type;
-  typedef item1_type item_type;
+  using key_type  = key1_type;
+  using item_type = item1_type;
 
-  typedef ::cuda::std::__conditional_t<MERGE_ITEMS::value,
-                                       integer_constant<sizeof(key_type) + sizeof(item_type)>,
-                                       integer_constant<sizeof(key_type)>>
-    tuning_type;
+  using tuning_type =
+    ::cuda::std::__conditional_t<MERGE_ITEMS::value,
+                                 integer_constant<sizeof(key_type) + sizeof(item_type)>,
+                                 integer_constant<sizeof(key_type)>>;
 
   template <class Arch>
   struct PtxPlan : Tuning<Arch, tuning_type>::type
   {
-    typedef Tuning<Arch, tuning_type> tuning;
+    using tuning = Tuning<Arch, tuning_type>;
 
-    typedef typename core::LoadIterator<PtxPlan, KeysIt1>::type KeysLoadIt1;
-    typedef typename core::LoadIterator<PtxPlan, KeysIt2>::type KeysLoadIt2;
-    typedef typename core::LoadIterator<PtxPlan, ItemsIt1>::type ItemsLoadIt1;
-    typedef typename core::LoadIterator<PtxPlan, ItemsIt2>::type ItemsLoadIt2;
+    using KeysLoadIt1  = typename core::LoadIterator<PtxPlan, KeysIt1>::type;
+    using KeysLoadIt2  = typename core::LoadIterator<PtxPlan, KeysIt2>::type;
+    using ItemsLoadIt1 = typename core::LoadIterator<PtxPlan, ItemsIt1>::type;
+    using ItemsLoadIt2 = typename core::LoadIterator<PtxPlan, ItemsIt2>::type;
 
-    typedef typename core::BlockLoad<PtxPlan, KeysLoadIt1>::type BlockLoadKeys1;
-    typedef typename core::BlockLoad<PtxPlan, KeysLoadIt2>::type BlockLoadKeys2;
-    typedef typename core::BlockLoad<PtxPlan, ItemsLoadIt1>::type BlockLoadItems1;
-    typedef typename core::BlockLoad<PtxPlan, ItemsLoadIt2>::type BlockLoadItems2;
+    using BlockLoadKeys1  = typename core::BlockLoad<PtxPlan, KeysLoadIt1>::type;
+    using BlockLoadKeys2  = typename core::BlockLoad<PtxPlan, KeysLoadIt2>::type;
+    using BlockLoadItems1 = typename core::BlockLoad<PtxPlan, ItemsLoadIt1>::type;
+    using BlockLoadItems2 = typename core::BlockLoad<PtxPlan, ItemsLoadIt2>::type;
 
-    typedef typename core::BlockStore<PtxPlan, KeysOutputIt, key_type>::type BlockStoreKeys;
-    typedef typename core::BlockStore<PtxPlan, ItemsOutputIt, item_type>::type BlockStoreItems;
+    using BlockStoreKeys  = typename core::BlockStore<PtxPlan, KeysOutputIt, key_type>::type;
+    using BlockStoreItems = typename core::BlockStore<PtxPlan, ItemsOutputIt, item_type>::type;
 
     // gather required temporary storage in a union
     //
@@ -308,19 +309,19 @@ struct MergeAgent
     }; // union TempStorage
   }; // struct PtxPlan
 
-  typedef typename core::specialize_plan_msvc10_war<PtxPlan>::type::type ptx_plan;
+  using ptx_plan = typename core::specialize_plan_msvc10_war<PtxPlan>::type::type;
 
-  typedef typename ptx_plan::KeysLoadIt1 KeysLoadIt1;
-  typedef typename ptx_plan::KeysLoadIt2 KeysLoadIt2;
-  typedef typename ptx_plan::ItemsLoadIt1 ItemsLoadIt1;
-  typedef typename ptx_plan::ItemsLoadIt2 ItemsLoadIt2;
-  typedef typename ptx_plan::BlockLoadKeys1 BlockLoadKeys1;
-  typedef typename ptx_plan::BlockLoadKeys2 BlockLoadKeys2;
-  typedef typename ptx_plan::BlockLoadItems1 BlockLoadItems1;
-  typedef typename ptx_plan::BlockLoadItems2 BlockLoadItems2;
-  typedef typename ptx_plan::BlockStoreKeys BlockStoreKeys;
-  typedef typename ptx_plan::BlockStoreItems BlockStoreItems;
-  typedef typename ptx_plan::TempStorage TempStorage;
+  using KeysLoadIt1     = typename ptx_plan::KeysLoadIt1;
+  using KeysLoadIt2     = typename ptx_plan::KeysLoadIt2;
+  using ItemsLoadIt1    = typename ptx_plan::ItemsLoadIt1;
+  using ItemsLoadIt2    = typename ptx_plan::ItemsLoadIt2;
+  using BlockLoadKeys1  = typename ptx_plan::BlockLoadKeys1;
+  using BlockLoadKeys2  = typename ptx_plan::BlockLoadKeys2;
+  using BlockLoadItems1 = typename ptx_plan::BlockLoadItems1;
+  using BlockLoadItems2 = typename ptx_plan::BlockLoadItems2;
+  using BlockStoreKeys  = typename ptx_plan::BlockStoreKeys;
+  using BlockStoreItems = typename ptx_plan::BlockStoreItems;
+  using TempStorage     = typename ptx_plan::TempStorage;
 
   enum
   {
@@ -627,11 +628,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   using core::AgentPlan;
   using core::get_agent_plan;
-  typedef core::AgentLauncher<
-    MergeAgent<KeysIt1, KeysIt2, ItemsIt1, ItemsIt2, Size, KeysOutputIt, ItemsOutputIt, CompareOp, MERGE_ITEMS>>
-    merge_agent;
+  using merge_agent = core::AgentLauncher<
+    MergeAgent<KeysIt1, KeysIt2, ItemsIt1, ItemsIt2, Size, KeysOutputIt, ItemsOutputIt, CompareOp, MERGE_ITEMS>>;
 
-  typedef core::AgentLauncher<PartitionAgent<KeysIt1, KeysIt2, Size, CompareOp>> partition_agent;
+  using partition_agent = core::AgentLauncher<PartitionAgent<KeysIt1, KeysIt2, Size, CompareOp>>;
 
   cudaError_t status = cudaSuccess;
 
@@ -696,7 +696,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ItemsOutputIt> merge(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  typedef typename iterator_traits<KeysIt1>::difference_type size_type;
+  using size_type = typename iterator_traits<KeysIt1>::difference_type;
 
   size_type num_keys1 = static_cast<size_type>(thrust::distance(keys1_first, keys1_last));
   size_type num_keys2 = static_cast<size_type>(thrust::distance(keys2_first, keys2_last));
@@ -728,7 +728,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ItemsOutputIt> merge(
   cuda_cub::throw_on_error(status, "merge: failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
   void* ptr = static_cast<void*>(tmp.data().get());
 
   status = doit_step<MERGE_ITEMS>(
@@ -788,7 +788,7 @@ merge(execution_policy<Derived>& policy,
       KeysIt2 keys2_last,
       ResultIt result)
 {
-  typedef typename thrust::iterator_value<KeysIt1>::type keys_type;
+  using keys_type = typename thrust::iterator_value<KeysIt1>::type;
   return cuda_cub::merge(policy, keys1_first, keys1_last, keys2_first, keys2_last, result, less<keys_type>());
 }
 
@@ -852,7 +852,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  typedef typename thrust::iterator_value<KeysIt1>::type keys_type;
+  using keys_type = typename thrust::iterator_value<KeysIt1>::type;
   return cuda_cub::merge_by_key(
     policy,
     keys1_first,

@@ -192,16 +192,16 @@ template <typename T>
 class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
 {
 private:
-  typedef thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>> super_t;
+  using super_t = thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>;
 
 public:
   /*! The type of the value referenced by this type of \p device_reference.
    */
-  typedef typename super_t::value_type value_type;
+  using value_type = typename super_t::value_type;
 
   /*! The type of the expression <tt>&ref</tt>, where <tt>ref</tt> is a \p device_reference.
    */
-  typedef typename super_t::pointer pointer;
+  using pointer = typename super_t::pointer;
 
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,

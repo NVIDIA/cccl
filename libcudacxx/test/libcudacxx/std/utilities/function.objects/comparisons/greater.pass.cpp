@@ -53,7 +53,7 @@ int main(int, char**)
                  // test total ordering of int* for greater<int*> and
                  // greater<void>.
                  do_pointer_comparison_test<int, cuda::std::greater>();))
-#if TEST_STD_VER > 2011
+
   typedef cuda::std::greater<> F2;
   const F2 f2 = F2();
   assert(!f2(36, 36));
@@ -63,7 +63,7 @@ int main(int, char**)
   assert(f2(36.0, 6));
   assert(!f2(6, 36.0));
   assert(!f2(6.0, 36));
-
+#if TEST_STD_VER > 2011
   constexpr bool foo = cuda::std::greater<int>()(36, 36);
   static_assert(!foo, "");
 

@@ -50,7 +50,7 @@ int main(int, char**)
   assert(!f(36, 0));
   assert(!f(0, 36));
   assert(!f(0, 0));
-#if TEST_STD_VER > 2011
+
   typedef cuda::std::logical_and<> F2;
   const F2 f2 = F2();
   assert(f2(36, 36));
@@ -64,7 +64,7 @@ int main(int, char**)
   assert(f2(36L, 36));
   assert(!f2(36L, 0));
   assert(!f2(0L, 36));
-
+#if TEST_STD_VER > 2011
   constexpr bool foo = cuda::std::logical_and<int>()(36, 36);
   static_assert(foo, "");
 

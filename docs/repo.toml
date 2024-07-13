@@ -25,13 +25,14 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cub", "thrust", "cccl" ]
+project_build_order = [ "libcudacxx", "cub", "thrust", "cccl", "pycuda" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
+    [ "pycuda", "_build/docs/pycuda/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -138,12 +139,15 @@ doxygen_aliases = [
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
+    "_CCCL_ALIAS_ATTRIBUTE(x)=",
     "_CCCL_HOST",
     "_CCCL_DEVICE",
     "_CCCL_HOST_DEVICE",
     "_CCCL_FORCEINLINE",
     "_CCCL_STD_VER",
     "_CCCL_VISIBILITY_HIDDEN",
+    "_CCCL_SUPPRESS_DEPRECATED_PUSH",
+    "_CCCL_SUPPRESS_DEPRECATED_POP",
     "DOXYGEN_SHOULD_SKIP_THIS",
     "DOXYGEN_ACTIVE",
     "__device__",
@@ -174,6 +178,8 @@ doxygen_conf_extra = """
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "CUB_DETAIL*"
   AUTOLINK_SUPPORT       = YES
+  FULL_PATH_NAMES        = YES
+  STRIP_FROM_PATH        = ../../cub
 """
 
 [repo_docs.projects.thrust]
@@ -232,6 +238,7 @@ doxygen_aliases = []
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
+  "_CCCL_ALIAS_ATTRIBUTE(x)=",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
@@ -239,6 +246,8 @@ doxygen_predefined = [
   "_CCCL_HOST_DEVICE=",
   "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_STD_VER",
+  "_CCCL_SUPPRESS_DEPRECATED_PUSH",
+  "_CCCL_SUPPRESS_DEPRECATED_POP",
   "DOXYGEN_SHOULD_SKIP_THIS",
   "DOXYGEN_ACTIVE",
   "THRUST_DISABLE_NAMESPACE_MAGIC",
@@ -247,11 +256,12 @@ doxygen_predefined = [
   "THRUST_NAMESPACE_END=}",
   "THRUST_INLINE_CONSTANT",
   "THRUST_PREVENT_MACRO_SUBSTITUTION",
-  "THRUST_TRAILING_RETURN(x)= -> x",
   "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(x,y)=",
   "THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
   "THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(x, y)=",
   "THRUST_FWD(x)=x",
+  "THRUST_DEPRECATED_BECAUSE(x)=",
+  "THRUST_DEPRECATED="
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -266,4 +276,29 @@ doxygen_conf_extra = """
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "__*" "THRUST_NS_QUALIFIER" "optional"
   AUTOLINK_SUPPORT       = YES
+  FULL_PATH_NAMES        = YES
+  STRIP_FROM_PATH        = ../../thrust
 """
+
+[repo_docs.projects.pycuda]
+name = "pycuda"
+docs_root = "pycuda"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+autodoc.mock_imports = [
+    "numba",
+    "pynvjitlink",
+    "cuda.nvrtc",
+    "llvmlite"
+]
+
+enhanced_search_enabled = true
+python_paths = [
+    "${root}/../python/cuda"
+]

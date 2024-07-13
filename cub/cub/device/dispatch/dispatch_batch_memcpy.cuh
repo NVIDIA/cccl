@@ -48,6 +48,7 @@
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
@@ -454,11 +455,11 @@ struct DispatchBatchMemcpy : SelectedPolicy
     // The number of thread blocks (or tiles) required to process all of the given buffers
     BlockOffsetT num_tiles = DivideAndRoundUp(num_buffers, TILE_SIZE);
 
-    using BlevBufferSrcsOutT    = cub::detail::conditional_t<IsMemcpy, void*, cub::detail::value_t<InputBufferIt>>;
-    using BlevBufferDstOutT     = cub::detail::conditional_t<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
-    using BlevBufferSrcsOutItT  = BlevBufferSrcsOutT*;
-    using BlevBufferDstsOutItT  = BlevBufferDstOutT*;
-    using BlevBufferSizesOutItT = BufferSizeT*;
+    using BlevBufferSrcsOutT          = ::cuda::std::_If<IsMemcpy, void*, cub::detail::value_t<InputBufferIt>>;
+    using BlevBufferDstOutT           = ::cuda::std::_If<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
+    using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
+    using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
+    using BlevBufferSizesOutItT       = BufferSizeT*;
     using BlevBufferTileOffsetsOutItT = BlockOffsetT*;
 
     temporary_storage::layout<MEM_NUM_ALLOCATIONS> temporary_storage_layout;

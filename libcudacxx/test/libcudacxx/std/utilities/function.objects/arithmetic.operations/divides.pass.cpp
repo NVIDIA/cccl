@@ -47,13 +47,13 @@ int main(int, char**)
   static_assert((cuda::std::is_same<int, F::result_type>::value), "");
 #endif
   assert(f(36, 4) == 9);
-#if TEST_STD_VER > 2011
+
   typedef cuda::std::divides<> F2;
   const F2 f2 = F2();
   assert(f2(36, 4) == 9);
   assert(f2(36.0, 4) == 9);
   assert(f2(18, 4.0) == 4.5); // exact in binary
-
+#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::divides<int>()(3, 2);
   static_assert(foo == 1, "");
 

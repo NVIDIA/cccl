@@ -50,7 +50,7 @@ void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 

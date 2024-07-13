@@ -331,11 +331,11 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  typedef ::cuda::std::__remove_const_t<Value> value_type;
+  using value_type = ::cuda::std::__remove_const_t<Value>;
 
   /*! The return type of \p iterator_facade::operator*().
    */
-  typedef Reference reference;
+  using reference = Reference;
 
   /*! The return type of \p iterator_facade's non-existent \c operator->()
    *  member function. Unlike \c boost::iterator_facade, \p iterator_facade
@@ -344,17 +344,17 @@ public:
    *  that these expressions are not allowed. This limitation may be relaxed in a
    *  future version of Thrust.
    */
-  typedef void pointer;
+  using pointer = void;
 
   /*! The type of expressions of the form <tt>x - y</tt> where <tt>x</tt> and <tt>y</tt>
    *  are of type \p iterator_facade.
    */
-  typedef Difference difference_type;
+  using difference_type = Difference;
 
   /*! The type of iterator category of \p iterator_facade.
    */
-  typedef
-    typename thrust::detail::iterator_facade_category<System, Traversal, Value, Reference>::type iterator_category;
+  using iterator_category =
+    typename thrust::detail::iterator_facade_category<System, Traversal, Value, Reference>::type;
 
   /*! \p operator*() dereferences this \p iterator_facade.
    *  \return A reference to the element pointed to by this \p iterator_facade.

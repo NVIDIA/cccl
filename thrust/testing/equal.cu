@@ -9,7 +9,7 @@
 template <class Vector>
 void TestEqualSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(5);
   Vector v2(5);

@@ -72,6 +72,38 @@ struct NonTrivialCopy
   }
 };
 
+struct NonTrivialDestructor
+{
+  int data = 0;
+
+  NonTrivialDestructor() = default;
+
+  NonTrivialDestructor(NonTrivialDestructor&&) noexcept                 = default;
+  NonTrivialDestructor(const NonTrivialDestructor&) noexcept            = default;
+  NonTrivialDestructor& operator=(NonTrivialDestructor&&) noexcept      = default;
+  NonTrivialDestructor& operator=(const NonTrivialDestructor&) noexcept = default;
+  __host__ __device__ TEST_CONSTEXPR_CXX20 ~NonTrivialDestructor() noexcept {}
+
+  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor(const int val) noexcept
+      : data(val)
+  {}
+  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor& operator=(const int val) noexcept
+  {
+    data = val;
+    return *this;
+  }
+
+  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
+  operator==(const NonTrivialDestructor& lhs, const NonTrivialDestructor& rhs) noexcept
+  {
+    return lhs.data == rhs.data;
+  }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
+  {
+    return data == other;
+  }
+};
+
 template <class InIter, class OutIter>
 TEST_CONSTEXPR_CXX20 __host__ __device__ void test()
 {
@@ -149,6 +181,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
   test<const int*, int*>();
 
   test<const NonTrivialCopy*, NonTrivialCopy*>();
+  test<const NonTrivialDestructor*, NonTrivialDestructor*>();
 
   return true;
 }

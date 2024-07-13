@@ -31,9 +31,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cstdint>
 #include <iostream>
 
 THRUST_NAMESPACE_BEGIN
@@ -88,12 +88,12 @@ public:
   /*! \typedef base_type
    *  \brief The type of the adapted base random number engine.
    */
-  typedef Engine base_type;
+  using base_type = Engine;
 
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
    */
-  typedef typename base_type::result_type result_type;
+  using result_type = typename base_type::result_type;
 
   // engine characteristics
 

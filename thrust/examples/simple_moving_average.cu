@@ -24,7 +24,7 @@
 // compute the difference of two positions in the cumumulative sum and
 // divide by the SMA window size w.
 template <typename T>
-struct minus_and_divide : public thrust::binary_function<T, T, T>
+struct minus_and_divide
 {
   T w;
 
@@ -41,7 +41,7 @@ struct minus_and_divide : public thrust::binary_function<T, T, T>
 template <typename InputVector, typename OutputVector>
 void simple_moving_average(const InputVector& data, size_t w, OutputVector& output)
 {
-  typedef typename InputVector::value_type T;
+  using T = typename InputVector::value_type;
 
   if (data.size() < w)
   {

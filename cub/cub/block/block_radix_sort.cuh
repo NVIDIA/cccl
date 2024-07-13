@@ -145,26 +145,51 @@ CUB_NAMESPACE_BEGIN
 //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!     #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+//!    .. code-block:: c++
 //!
-//!     __global__ void ExampleKernel(...)
-//!     {
-//!         // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
-//!         typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
 //!
-//!         // Allocate shared memory for BlockRadixSort
-//!         __shared__ typename BlockRadixSort::TempStorage temp_storage;
+//!        __global__ void kernel(...)
+//!        {
+//!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
+//!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
 //!
-//!         // Obtain a segment of consecutive items that are blocked across threads
-//!         int thread_keys[4];
-//!         ...
+//!            // Allocate shared memory for BlockRadixSort
+//!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
 //!
-//!         // Collectively sort the keys
-//!         BlockRadixSort(temp_storage).Sort(thread_keys);
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_keys[4];
+//!            ...
 //!
-//!         ...
+//!            // Collectively sort the keys
+//!            BlockRadixSort(temp_storage).Sort(thread_keys);
+//!
+//!            ...
+//!
+//!    .. code-block:: python
+//!
+//!        import cuda.cooperative.experimental as cudax
+//!        from pynvjitlink import patch
+//!        patch.patch_numba_linker(lto=True)
+//!
+//!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
+//!        block_radix_sort = cudax.block.radix_sort_keys(numba.int32, 128, 4)
+//!        temp_storage_bytes = block_radix_sort.temp_storage_bytes
+//!
+//!        @cuda.jit(link=block_radix_sort.files)
+//!        def kernel():
+//!            Allocate shared memory for radix sort
+//!            temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+//!
+//!            # Obtain a segment of consecutive items that are blocked across threads
+//!            thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+//!            # ...
+//!
+//!            // Collectively sort the keys
+//!            block_radix_sort(temp_storage, thread_keys)
+//!            # ...
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
 //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -250,35 +275,35 @@ private:
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   /// Ascending BlockRadixRank utility type
-  typedef BlockRadixRank<BLOCK_DIM_X,
-                         RADIX_BITS,
-                         false,
-                         MEMOIZE_OUTER_SCAN,
-                         INNER_SCAN_ALGORITHM,
-                         SMEM_CONFIG,
-                         BLOCK_DIM_Y,
-                         BLOCK_DIM_Z>
-    AscendingBlockRadixRank;
+  using AscendingBlockRadixRank =
+    BlockRadixRank<BLOCK_DIM_X,
+                   RADIX_BITS,
+                   false,
+                   MEMOIZE_OUTER_SCAN,
+                   INNER_SCAN_ALGORITHM,
+                   SMEM_CONFIG,
+                   BLOCK_DIM_Y,
+                   BLOCK_DIM_Z>;
 
   /// Descending BlockRadixRank utility type
-  typedef BlockRadixRank<BLOCK_DIM_X,
-                         RADIX_BITS,
-                         true,
-                         MEMOIZE_OUTER_SCAN,
-                         INNER_SCAN_ALGORITHM,
-                         SMEM_CONFIG,
-                         BLOCK_DIM_Y,
-                         BLOCK_DIM_Z>
-    DescendingBlockRadixRank;
+  using DescendingBlockRadixRank =
+    BlockRadixRank<BLOCK_DIM_X,
+                   RADIX_BITS,
+                   true,
+                   MEMOIZE_OUTER_SCAN,
+                   INNER_SCAN_ALGORITHM,
+                   SMEM_CONFIG,
+                   BLOCK_DIM_Y,
+                   BLOCK_DIM_Z>;
 
   /// Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
 
   /// BlockExchange utility type for keys
-  typedef BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchangeKeys;
+  using BlockExchangeKeys = BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// BlockExchange utility type for values
-  typedef BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchangeValues;
+  using BlockExchangeValues = BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   /// Shared memory storage layout type
@@ -582,7 +607,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -766,7 +791,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -971,7 +996,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1164,8 +1189,8 @@ public:
   //!
   //!    __global__ void ExampleKernel(...)
   //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and
-  //!    values each typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1379,7 +1404,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1575,7 +1600,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1777,7 +1802,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1973,7 +1998,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;

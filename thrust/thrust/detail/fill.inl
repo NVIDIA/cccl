@@ -60,7 +60,7 @@ _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& v
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<OutputIterator>::type System;
+  using System = typename thrust::iterator_system<OutputIterator>::type;
 
   System system;
 

@@ -95,9 +95,7 @@ template <class _Tp>
 using __with_reference = _Tp&;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_reference_,
-                             requires() //
-                             (typename(__with_reference<_Tp>)));
+_LIBCUDACXX_CONCEPT_FRAGMENT(__can_reference_, requires()(typename(__with_reference<_Tp>)));
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __can_reference = _LIBCUDACXX_FRAGMENT(__can_reference_, _Tp);
@@ -528,11 +526,10 @@ namespace __iterator_traits_detail
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_iterator_,
-  requires(_Ip __i)( //
-    requires(__can_reference<decltype(*__i)>),
-    requires(same_as<_Ip&, decltype(++__i)>),
-    requires(__can_reference<decltype(*__i++)>),
-    requires(copyable<_Ip>)));
+  requires(_Ip __i)(requires(__can_reference<decltype(*__i)>),
+                    requires(same_as<_Ip&, decltype(++__i)>),
+                    requires(__can_reference<decltype(*__i++)>),
+                    requires(copyable<_Ip>)));
 
 template <class _Ip>
 _LIBCUDACXX_CONCEPT __cpp17_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_iterator_, _Ip);
@@ -580,7 +577,7 @@ _LIBCUDACXX_CONCEPT __cpp17_bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__cpp1
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_random_access_iterator_,
-  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)( //
+  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)(
     requires(same_as<_Ip&, decltype(__i += __n)>),
     requires(same_as<_Ip&, decltype(__i -= __n)>),
     requires(same_as<_Ip, decltype(__i + __n)>),
@@ -655,9 +652,7 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
 };
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__has_operator_arrow_,
-                             requires(_Ip& __i) //
-                             (__i.operator->()));
+_LIBCUDACXX_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__i.operator->()));
 
 template <class _Ip>
 _LIBCUDACXX_CONCEPT __has_operator_arrow = _LIBCUDACXX_FRAGMENT(__has_operator_arrow_, _Ip);

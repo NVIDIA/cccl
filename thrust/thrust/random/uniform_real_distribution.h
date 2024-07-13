@@ -98,12 +98,12 @@ public:
   /*! \typedef result_type
    *  \brief The type of the floating point number produced by this \p uniform_real_distribution.
    */
-  typedef RealType result_type;
+  using result_type = RealType;
 
   /*! \typedef param_type
    *  \brief The type of the object encapsulating this \p uniform_real_distribution's parameters.
    */
-  typedef thrust::pair<RealType, RealType> param_type;
+  using param_type = thrust::pair<RealType, RealType>;
 
   // constructors and reset functions
 

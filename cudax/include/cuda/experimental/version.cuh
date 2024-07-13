@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_HIERARCHY_DIMENSIONS___
-#define __CUDAX_HIERARCHY_DIMENSIONS___
+#ifndef __CUDAX_VERSION__
+#define __CUDAX_VERSION__
 
 #include <cuda/std/version>
 

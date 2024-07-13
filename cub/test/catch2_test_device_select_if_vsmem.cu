@@ -30,13 +30,11 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <algorithm>
 
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/vector.cuh>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -76,11 +74,11 @@ CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]",
   less_than_t<type> le{in[num_items / 2]};
 
   // Run test
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   select_if(in.begin(), out.begin(), num_selected_out.begin(), num_items, le);
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   std::stable_partition(reference.begin(), reference.end(), le);
 
   out.resize(num_selected_out[0]);

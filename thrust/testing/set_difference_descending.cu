@@ -7,8 +7,8 @@
 template <typename Vector>
 void TestSetDifferenceDescendingSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector a(4), b(5);
 

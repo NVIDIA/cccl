@@ -60,11 +60,6 @@ option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 option(THRUST_INCLUDE_CUB_CMAKE "Build CUB tests and examples. (Requires CUDA)." "OFF")
 
-# Mark this option as advanced for now. We'll revisit this later once the new
-# benchmarks are ready. For now, we just need to expose a way to compile
-# bench.cu from CMake for NVIDIA's internal builds.
-mark_as_advanced(THRUST_ENABLE_BENCHMARKS)
-
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
 # need the install rules. See GH issue NVIDIA/thrust#1211.
@@ -135,7 +130,6 @@ endif()
 
 if (THRUST_ENABLE_BENCHMARKS)
   add_subdirectory(benchmarks)
-  add_subdirectory(internal/benchmark)
 endif()
 
 if (THRUST_INCLUDE_CUB_CMAKE AND THRUST_CUDA_FOUND)

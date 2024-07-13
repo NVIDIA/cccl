@@ -9,7 +9,7 @@ struct TestPairManipulation
 {
   void operator()(void)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     // test null constructor
     P p1;
@@ -78,7 +78,7 @@ struct TestPairComparison
 {
   void operator()(void)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     P x, y;
 
@@ -293,7 +293,7 @@ void TestPairSwap()
   ASSERT_EQUAL(x, b.first);
   ASSERT_EQUAL(y, b.second);
 
-  typedef thrust::pair<user_swappable, user_swappable> swappable_pair;
+  using swappable_pair = thrust::pair<user_swappable, user_swappable>;
 
   thrust::host_vector<swappable_pair> h_v1(1), h_v2(1);
   thrust::device_vector<swappable_pair> d_v1(1), d_v2(1);

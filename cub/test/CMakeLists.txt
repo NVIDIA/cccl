@@ -269,6 +269,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       thrust_fix_clang_nvcc_build_for(${test_target})
     endif()
 
+    if ("${test_target}" MATCHES "test.iterator")
+      target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
+    endif()
+
     target_link_libraries(${test_target} PRIVATE
       ${cub_target}
       ${config_c2h_target}

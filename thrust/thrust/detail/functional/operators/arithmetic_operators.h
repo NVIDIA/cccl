@@ -51,7 +51,7 @@ struct unary_plus
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(+THRUST_FWD(t1)))
-    THRUST_TRAILING_RETURN(decltype(+THRUST_FWD(t1)))
+    -> decltype(+THRUST_FWD(t1))
   {
     return +THRUST_FWD(t1);
   }
@@ -182,7 +182,7 @@ struct prefix_increment
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(++THRUST_FWD(t1)))
-    THRUST_TRAILING_RETURN(decltype(++THRUST_FWD(t1)))
+    -> decltype(++THRUST_FWD(t1))
   {
     return ++THRUST_FWD(t1);
   }
@@ -203,7 +203,7 @@ struct postfix_increment
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)++))
-    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)++))
+    -> decltype(THRUST_FWD(t1)++)
   {
     return THRUST_FWD(t1)++;
   }
@@ -224,7 +224,7 @@ struct prefix_decrement
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(--THRUST_FWD(t1)))
-    THRUST_TRAILING_RETURN(decltype(--THRUST_FWD(t1)))
+    -> decltype(--THRUST_FWD(t1))
   {
     return --THRUST_FWD(t1);
   }
@@ -245,7 +245,7 @@ struct postfix_decrement
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
   _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)--))
-    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)--))
+    -> decltype(THRUST_FWD(t1)--)
   {
     return THRUST_FWD(t1)--;
   }

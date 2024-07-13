@@ -261,8 +261,8 @@ DECLARE_UNITTEST(TestReplaceCopyIfStencilDeviceDevice);
 
 void TestReplaceCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector data(5);
   data[0] = 1;

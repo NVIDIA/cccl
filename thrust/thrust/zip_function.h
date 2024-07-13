@@ -16,7 +16,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/modern_gcc_required.h>
 #if !defined(THRUST_LEGACY_GCC)
 
@@ -163,7 +162,7 @@ public:
   template <typename Tuple>
   _CCCL_HOST_DEVICE auto operator()(Tuple&& args) const
     noexcept(noexcept(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args))))
-      THRUST_TRAILING_RETURN(decltype(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args))))
+      -> decltype(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args)))
   {
     return detail::zip_detail::apply(func, THRUST_FWD(args));
   }

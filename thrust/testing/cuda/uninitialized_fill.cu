@@ -13,8 +13,8 @@ __global__ void uninitialized_fill_kernel(ExecutionPolicy exec, Iterator first, 
 template <typename ExecutionPolicy>
 void TestUninitializedFillDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -95,8 +95,8 @@ DECLARE_UNITTEST(TestUninitializedFillDeviceDevice);
 
 void TestUninitializedFillCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -133,8 +133,8 @@ __global__ void uninitialized_fill_n_kernel(ExecutionPolicy exec, Iterator1 firs
 template <typename ExecutionPolicy>
 void TestUninitializedFillNDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -229,8 +229,8 @@ DECLARE_UNITTEST(TestUninitializedFillNDeviceDevice);
 
 void TestUninitializedFillNCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(5);
   v[0] = 0;

@@ -12,7 +12,7 @@ THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 template <class Vector>
 void TestFillSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -123,7 +123,7 @@ DECLARE_VARIABLE_UNITTEST(TestFill);
 template <class Vector>
 void TestFillNSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -248,7 +248,7 @@ DECLARE_VARIABLE_UNITTEST(TestFillN);
 template <typename Vector>
 void TestFillZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3, T(0));
   Vector v2(3, T(0));
@@ -272,8 +272,8 @@ DECLARE_VECTOR_UNITTEST(TestFillZipIterator);
 
 void TestFillTuple()
 {
-  typedef int T;
-  typedef thrust::tuple<T, T> Tuple;
+  using T     = int;
+  using Tuple = thrust::tuple<T, T>;
 
   thrust::host_vector<Tuple> h(3, Tuple(0, 0));
   thrust::device_vector<Tuple> d(3, Tuple(0, 0));
@@ -292,7 +292,7 @@ struct TypeWithTrivialAssigment
 
 void TestFillWithTrivialAssignment()
 {
-  typedef TypeWithTrivialAssigment T;
+  using T = TypeWithTrivialAssigment;
 
   thrust::host_vector<T> h(1);
   thrust::device_vector<T> d(1);
@@ -349,7 +349,7 @@ struct TypeWithNonTrivialAssigment
 
 void TestFillWithNonTrivialAssignment()
 {
-  typedef TypeWithNonTrivialAssigment T;
+  using T = TypeWithNonTrivialAssigment;
 
   thrust::host_vector<T> h(1);
   thrust::device_vector<T> d(1);

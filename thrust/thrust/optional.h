@@ -23,7 +23,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/addressof.h>
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
 
@@ -155,7 +154,7 @@ template <
   int      = 0>
 _CCCL_HOST_DEVICE constexpr auto
 invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
-  THRUST_TRAILING_RETURN(decltype(std::mem_fn(f)(std::forward<Args>(args)...)))
+  -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
 {
   return std::mem_fn(f)(std::forward<Args>(args)...);
 }
@@ -164,7 +163,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename Fn, typename... Args, typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
 _CCCL_HOST_DEVICE constexpr auto
 invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
-  THRUST_TRAILING_RETURN(decltype(std::forward<Fn>(f)(std::forward<Args>(args)...)))
+  -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
 {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }

@@ -6,8 +6,8 @@
 template <typename Vector>
 void TestIsSortedUntilSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector v(4);
   v[0] = 0;
@@ -83,7 +83,7 @@ DECLARE_VECTOR_UNITTEST(TestIsSortedUntilRepeatedElements);
 template <class Vector>
 void TestIsSortedUntil()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   const size_t n = (1 << 16) + 13;
 

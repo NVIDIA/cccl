@@ -1986,55 +1986,60 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void sort(__wrap_iter<_Tp*> __first, __wrap
   _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, char*>(char*, char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, signed*>(signed*, signed*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, char*>(char*, char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, signed*>(signed*, signed*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, short*>(short*, short*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, short*>(short*, short*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, int*>(int*, int*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned*>(unsigned*, unsigned*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, long*>(long*, long*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, int*>(int*, int*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, long*>(long*, long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, long long*>(long long*, long long*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned long long*>(unsigned long long*, unsigned long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, float*>(float*, float*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, double*>(double*, double*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, long double*>(long double*, long double*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, long long*>(long long*, long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, unsigned long long*>(
+  unsigned long long*, unsigned long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, float*>(float*, float*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, double*>(double*, double*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(
+  _LIBCUDACXX_INLINE_VISIBILITY void __sort<__less&, long double*>(long double*, long double*, __less&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, char*>(char*, char*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, char*>(char*, char*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, signed char*>(signed char*, signed char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned char*>(
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, signed char*>(
+  signed char*, signed char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, unsigned char*>(
   unsigned char*, unsigned char*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, short*>(short*, short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned short*>(
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, short*>(short*, short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, unsigned short*>(
   unsigned short*, unsigned short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, int*>(int*, int*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned*>(unsigned*, unsigned*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long*>(long*, long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned long*>(
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, int*>(int*, int*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, long*>(long*, long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, unsigned long*>(
   unsigned long*, unsigned long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long long*>(long long*, long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned long long*>(
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, long long*>(long long*, long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, unsigned long long*>(
   unsigned long long*, unsigned long long*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, float*>(float*, float*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, float*>(float*, float*, __less&))
 _LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, double*>(double*, double*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long double*>(long double*, long double*, __less&))
+  _LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, double*>(double*, double*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY bool __insertion_sort_incomplete<__less&, long double*>(
+  long double*, long double*, __less&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less&, long double*>(
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_INLINE_VISIBILITY unsigned __sort5<__less&, long double*>(
   long double*, long double*, long double*, long double*, long double*, __less&))
 
 // inplace_merge

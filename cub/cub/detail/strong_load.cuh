@@ -193,6 +193,58 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char c
   return (unsigned char) retval;
 }
 
+static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_acquire(ulonglong2 const* ptr)
+{
+  ulonglong2 retval;
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("ld.acquire.gpu.v2.u64 {%0, %1}, [%2];"
+                  : "=l"(retval.x), "=l"(retval.y)
+                  : _CUB_ASM_PTR_(ptr)
+                  : "memory");),
+    (asm volatile("ld.cg.v2.u64 {%0, %1}, [%2];"
+                  : "=l"(retval.x), "=l"(retval.y)
+                  : _CUB_ASM_PTR_(ptr)
+                  : "memory");
+     __threadfence();));
+  return retval;
+}
+
+static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_acquire(uint2 const* ptr)
+{
+  uint2 retval;
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("ld.acquire.gpu.v2.u32 {%0, %1}, [%2];"
+                  : "=r"(retval.x), "=r"(retval.y)
+                  : _CUB_ASM_PTR_(ptr)
+                  : "memory");),
+    (asm volatile("ld.cg.v2.u32 {%0, %1}, [%2];"
+                  : "=r"(retval.x), "=r"(retval.y)
+                  : _CUB_ASM_PTR_(ptr)
+                  : "memory");
+     __threadfence();));
+  return retval;
+}
+
+static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_acquire(unsigned int const* ptr)
+{
+  unsigned int retval;
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("ld.acquire.gpu.u32 %0, [%1];"
+                  : "=r"(retval)
+                  : _CUB_ASM_PTR_(ptr)
+                  : "memory");),
+    (asm volatile("ld.cg.u32 %0, [%1];"
+                  : "=r"(retval)
+                  : _CUB_ASM_PTR_(ptr)
+                  : "memory");
+     __threadfence();));
+
+  return retval;
+}
+
 } // namespace detail
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS

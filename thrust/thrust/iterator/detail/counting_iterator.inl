@@ -45,40 +45,38 @@ namespace detail
 template <typename Incrementable, typename System, typename Traversal, typename Difference>
 struct counting_iterator_base
 {
-  typedef typename thrust::detail::eval_if<
-    // use any_system_tag if we are given use_default
-    ::cuda::std::is_same<System, use_default>::value,
-    thrust::detail::identity_<thrust::any_system_tag>,
-    thrust::detail::identity_<System>>::type system;
+  using system = typename thrust::detail::eval_if<::cuda::std::is_same<System, use_default>::value,
+                                                  thrust::detail::identity_<thrust::any_system_tag>,
+                                                  thrust::detail::identity_<System>>::type;
 
-  typedef typename thrust::detail::ia_dflt_help<
+  using traversal = typename thrust::detail::ia_dflt_help<
     Traversal,
     thrust::detail::eval_if<thrust::detail::is_numeric<Incrementable>::value,
                             thrust::detail::identity_<random_access_traversal_tag>,
-                            thrust::iterator_traversal<Incrementable>>>::type traversal;
+                            thrust::iterator_traversal<Incrementable>>>::type;
 
   // unlike Boost, we explicitly use std::ptrdiff_t as the difference type
   // for floating point counting_iterators
-  typedef typename thrust::detail::ia_dflt_help<
+  using difference = typename thrust::detail::ia_dflt_help<
     Difference,
     thrust::detail::eval_if<thrust::detail::is_numeric<Incrementable>::value,
                             thrust::detail::eval_if<::cuda::std::is_integral<Incrementable>::value,
                                                     thrust::detail::numeric_difference<Incrementable>,
                                                     thrust::detail::identity_<std::ptrdiff_t>>,
-                            thrust::iterator_difference<Incrementable>>>::type difference;
+                            thrust::iterator_difference<Incrementable>>>::type;
 
   // our implementation departs from Boost's in that counting_iterator::dereference
   // returns a copy of its counter, rather than a reference to it. returning a reference
   // to the internal state of an iterator causes subtle bugs (consider the temporary
   // iterator created in the expression *(iter + i)) and has no compelling use case
-  typedef thrust::iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference>, // self
-                                   Incrementable, // Base
-                                   Incrementable, // XXX we may need to pass const here as Boost does
-                                   system,
-                                   traversal,
-                                   Incrementable,
-                                   difference>
-    type;
+  using type =
+    thrust::iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference>,
+                             Incrementable,
+                             Incrementable,
+                             system,
+                             traversal,
+                             Incrementable,
+                             difference>;
 }; // end counting_iterator_base
 
 template <typename Difference, typename Incrementable1, typename Incrementable2>
@@ -118,7 +116,7 @@ struct counting_iterator_equal<Difference,
 {
   _CCCL_HOST_DEVICE static bool equal(Incrementable1 x, Incrementable2 y)
   {
-    typedef number_distance<Difference, Incrementable1, Incrementable2> d;
+    using d = number_distance<Difference, Incrementable1, Incrementable2>;
     return d::distance(x, y) == 0;
   }
 };

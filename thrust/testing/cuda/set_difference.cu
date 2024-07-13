@@ -20,8 +20,8 @@ __global__ void set_difference_kernel(
 template <typename ExecutionPolicy>
 void TestSetDifferenceDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = typename Vector::iterator;
 
   Vector a(4), b(5);
 
@@ -63,8 +63,8 @@ DECLARE_UNITTEST(TestSetDifferenceDeviceDevice);
 
 void TestSetDifferenceCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   Vector a(4), b(5);
 

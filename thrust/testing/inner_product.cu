@@ -10,7 +10,7 @@
 template <class Vector>
 void TestInnerProductSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3);
   Vector v2(3);
@@ -65,7 +65,7 @@ DECLARE_UNITTEST(TestInnerProductDispatchImplicit);
 template <class Vector>
 void TestInnerProductWithOperator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3);
   Vector v2(3);

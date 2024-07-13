@@ -144,7 +144,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
       nullptr,
       tmp_size,
       first,
-      static_cast<thrust::detail::uint8_t*>(nullptr) // Items.
+      static_cast<std::uint8_t*>(nullptr) // Items.
       ,
       n,
       comp,
@@ -154,7 +154,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
@@ -188,7 +188,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
       tmp_ptr,
       tmp_size,
       first,
-      static_cast<thrust::detail::uint8_t*>(nullptr) // Items.
+      static_cast<std::uint8_t*>(nullptr) // Items.
       ,
       n,
       comp,
@@ -250,7 +250,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
 
   size_t keys_temp_storage = thrust::detail::aligned_storage_size(sizeof(T) * n, 128);
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, keys_temp_storage + tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, keys_temp_storage + tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`

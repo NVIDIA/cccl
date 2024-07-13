@@ -81,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  *  // alias for a tuple of these iterators
  *  using IteratorTuple = thrust::tuple<IntIterator, FloatIterator, CharIterator>;
  *
- *  // typedef the zip_iterator of this tuple
+ *  // alias the zip_iterator of this tuple
  *  using ZipIterator = thrust::zip_iterator<IteratorTuple>;
  *
  *  // finally, create the zip_iterator
@@ -175,7 +175,7 @@ public:
    */
 
 private:
-  typedef typename detail::zip_iterator_base<IteratorTuple>::type super_t;
+  using super_t = typename detail::zip_iterator_base<IteratorTuple>::type;
 
   friend class thrust::iterator_core_access;
 

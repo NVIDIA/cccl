@@ -90,7 +90,7 @@ async_reduce_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n,
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, sizeof(U) + tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, sizeof(U) + tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
@@ -141,7 +141,7 @@ namespace cuda_cub
 // ADL entry point.
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
 auto async_reduce(execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, T init, BinaryOp op)
-  THRUST_RETURNS(thrust::system::cuda::detail::async_reduce_n(policy, first, distance(first, last), init, op))
+  THRUST_RETURNS(thrust::system::cuda::detail::async_reduce_n(policy, first, thrust::distance(first, last), init, op))
 
 } // namespace cuda_cub
 
@@ -176,7 +176,7 @@ unique_eager_event async_reduce_into_n(
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
@@ -222,7 +222,7 @@ template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typenam
 auto async_reduce_into(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, OutputIt output, T init, BinaryOp op)
   THRUST_RETURNS(
-    thrust::system::cuda::detail::async_reduce_into_n(policy, first, distance(first, last), output, init, op))
+    thrust::system::cuda::detail::async_reduce_into_n(policy, first, thrust::distance(first, last), output, init, op))
 
 } // namespace cuda_cub
 

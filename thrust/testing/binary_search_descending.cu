@@ -12,7 +12,7 @@
 template <class Vector>
 void TestScalarLowerBoundDescendingSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector vec(5);
 
@@ -38,7 +38,7 @@ DECLARE_VECTOR_UNITTEST(TestScalarLowerBoundDescendingSimple);
 template <class Vector>
 void TestScalarUpperBoundDescendingSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector vec(5);
 
@@ -64,7 +64,7 @@ DECLARE_VECTOR_UNITTEST(TestScalarUpperBoundDescendingSimple);
 template <class Vector>
 void TestScalarBinarySearchDescendingSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector vec(5);
 
@@ -90,7 +90,7 @@ DECLARE_VECTOR_UNITTEST(TestScalarBinarySearchDescendingSimple);
 template <class Vector>
 void TestScalarEqualRangeDescendingSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector vec(5);
 

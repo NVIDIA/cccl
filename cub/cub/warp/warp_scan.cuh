@@ -49,6 +49,8 @@
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -99,7 +101,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize WarpScan for type int
-//!        typedef cub::WarpScan<int> WarpScan;
+//!        using WarpScan = cub::WarpScan<int>;
 //!
 //!        // Allocate WarpScan shared memory for 4 warps
 //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -125,7 +127,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize WarpScan for type int
-//!        typedef cub::WarpScan<int> WarpScan;
+//!        using WarpScan = cub::WarpScan<int>;
 //!
 //!        // Allocate WarpScan shared memory for one warp
 //!        __shared__ typename WarpScan::TempStorage temp_storage;
@@ -177,8 +179,8 @@ private:
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpScan = cub::detail::
-    conditional_t<IS_POW_OF_TWO, WarpScanShfl<T, LOGICAL_WARP_THREADS>, WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpScan =
+    ::cuda::std::_If<IS_POW_OF_TWO, WarpScanShfl<T, LOGICAL_WARP_THREADS>, WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -235,7 +237,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -281,7 +283,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -339,7 +341,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -388,7 +390,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -447,7 +449,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -503,7 +505,7 @@ public:
   //!
   //! Suppose the set of input ``thread_data`` in the first warp is
   //! ``{0, 1, 2, 3, ..., 31}``, in the second warp is ``{1, 2, 3, 4, ..., 32}`` etc.
-  //!  The corresponding output ``thread_data`` for a max operation in the first
+  //! The corresponding output ``thread_data`` for a max operation in the first
   //! warp would be ``{3, 3, 3, 3, ..., 31}``, the output for the second warp would be
   //! ``{3, 3, 3, 4, ..., 32}``, etc.
   //! @endrst
@@ -554,7 +556,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -578,6 +580,7 @@ public:
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan operator type having member
   //!   `T operator()(const T &a, const T &b)`
+  //!
   //! @param[in] input
   //!   Calling thread's input item
   //!
@@ -625,6 +628,7 @@ public:
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan operator type having member
   //!   `T operator()(const T &a, const T &b)`
+  //!
   //! @param[in] input
   //!   Calling thread's input item
   //!
@@ -679,7 +683,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -740,7 +744,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -808,7 +812,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -878,7 +882,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -958,7 +962,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -1026,7 +1030,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
@@ -1102,7 +1106,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpScan for type int
-  //!        typedef cub::WarpScan<int> WarpScan;
+  //!        using WarpScan = cub::WarpScan<int>;
   //!
   //!        // Allocate WarpScan shared memory for 4 warps
   //!        __shared__ typename WarpScan::TempStorage temp_storage[4];

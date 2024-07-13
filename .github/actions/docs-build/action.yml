@@ -1,0 +1,51 @@
+name: "CCCL Docs Build/Upload"
+description: "Builds the docs and uploads them as workflow and pages artifacts."
+
+inputs:
+  upload_workflow_artifact:
+    description: "Uploads the built docs as a workflow artifact (actions/upload-artifact)."
+    required: false
+    default: "true"
+  upload_pages_artifact:
+    description: "Uploads the built docs as a workflow artifact (actions/upload-pages-artifact). Required for docs-deploy action."
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+
+    # Build all docs
+    - name: Build all docs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: ./docs/gen_docs.bash
+
+    # Copy all docs to the right folder
+    - name: Move docs to right folder
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        mkdir _site
+        cp -rf ./docs/_build/docs/cccl/latest/* _site
+        mkdir _site/cub
+        cp -rf ./docs/_build/docs/cub/latest/* _site/cub
+        mkdir _site/libcudacxx
+        cp -rf ./docs/_build/docs/libcudacxx/latest/* _site/libcudacxx
+        mkdir _site/thrust
+        cp -rf ./docs/_build/docs/thrust/latest/* _site/thrust
+        ./docs/scrape_docs.bash ./_site
+
+    # Update docs as workflow artifact:
+    - name: Upload artifact
+      if: ${{ inputs.upload_workflow_artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: docs
+        path: _site/
+        compression-level: 0
+
+    # Upload docs as pages artifacts
+    - name: Upload artifact
+      if: ${{ inputs.upload_pages_artifact == 'true' }}
+      uses: actions/upload-pages-artifact@v2

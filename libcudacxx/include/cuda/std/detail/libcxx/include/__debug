@@ -205,11 +205,11 @@ private:
   _LIBCUDACXX_HIDDEN __i_node* __insert_iterator(void* __i);
   _LIBCUDACXX_HIDDEN __i_node* __find_iterator(const void* __i) const;
 
-  friend _LIBCUDACXX_FUNC_VIS __libcpp_db* __get_db();
+  friend _LIBCUDACXX_INLINE_VISIBILITY __libcpp_db* __get_db();
 };
 
-_LIBCUDACXX_FUNC_VIS __libcpp_db* __get_db();
-_LIBCUDACXX_FUNC_VIS const __libcpp_db* __get_const_db();
+_LIBCUDACXX_INLINE_VISIBILITY __libcpp_db* __get_db();
+_LIBCUDACXX_INLINE_VISIBILITY const __libcpp_db* __get_const_db();
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

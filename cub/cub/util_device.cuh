@@ -319,7 +319,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  typedef void (*EmptyKernelPtr)();
+  using EmptyKernelPtr        = void (*)();
   EmptyKernelPtr empty_kernel = EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
@@ -669,20 +669,19 @@ struct KernelConfig
 };
 
 /// Helper for dispatching into a policy chain
-template <int PTX_VERSION, typename PolicyT, typename PrevPolicyT>
+template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
 struct ChainedPolicy
 {
   /// The policy for the active compiler pass
-  using ActivePolicy =
-    cub::detail::conditional_t<(CUB_PTX_ARCH < PTX_VERSION), typename PrevPolicyT::ActivePolicy, PolicyT>;
+  using ActivePolicy = ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
-    if (ptx_version < PTX_VERSION)
+    if (device_ptx_version < PolicyPtxVersion)
     {
-      return PrevPolicyT::Invoke(ptx_version, op);
+      return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
   }
@@ -693,7 +692,7 @@ template <int PTX_VERSION, typename PolicyT>
 struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
 {
   /// The policy for the active compiler pass
-  typedef PolicyT ActivePolicy;
+  using ActivePolicy = PolicyT;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>

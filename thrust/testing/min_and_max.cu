@@ -18,7 +18,7 @@ struct TestMin
     ASSERT_EQUAL(three, thrust::min THRUST_PREVENT_MACRO_SUBSTITUTION(two, three, thrust::greater<T>()));
     ASSERT_EQUAL(three, thrust::min THRUST_PREVENT_MACRO_SUBSTITUTION(three, two, thrust::greater<T>()));
 
-    typedef key_value<T, T> KV;
+    using KV = key_value<T, T>;
     KV two_and_two(two, two);
     KV two_and_three(two, three);
 
@@ -55,7 +55,7 @@ struct TestMax
     ASSERT_EQUAL(two, thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION(two, three, thrust::greater<T>()));
     ASSERT_EQUAL(two, thrust::max THRUST_PREVENT_MACRO_SUBSTITUTION(three, two, thrust::greater<T>()));
 
-    typedef key_value<T, T> KV;
+    using KV = key_value<T, T>;
     KV two_and_two(two, two);
     KV two_and_three(two, three);
 

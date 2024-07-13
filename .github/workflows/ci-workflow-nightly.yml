@@ -36,7 +36,6 @@ jobs:
       contents: read
     outputs:
       workflow: ${{ steps.build-workflow.outputs.workflow }}
-      workflow_keys: ${{ steps.build-workflow.outputs.workflow_keys }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -48,8 +47,9 @@ jobs:
         with:
           workflows: nightly
 
-  run-workflow:
+  dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -57,20 +57,65 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow_keys) }}
-    uses: ./.github/workflows/workflow-dispatch.yml
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
-      name: ${{ matrix.name }}
-      jobs: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)[matrix.name]) }}
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
 
-  # This job acts as a sentry and will fail if any leaf job in the workflow tree fails, as
-  # run-workflow always succeeds. Use this job when checking for successful matrix workflow job completion.
+  dispatch-groups-windows-two-stage:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-linux-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+
   verify-workflow:
     name: Verify and summarize workflow results
     if: ${{ always() && !cancelled() }}
     needs:
       - build-workflow
-      - run-workflow
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-windows-two-stage
+      - dispatch-groups-linux-standalone
+      - dispatch-groups-windows-standalone
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -83,6 +128,17 @@ jobs:
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
+
+  build-rapids:
+    name: Build RAPIDS
+    secrets: inherit
+    permissions:
+      actions: read
+      packages: read
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/build-rapids.yml
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:

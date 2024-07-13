@@ -76,6 +76,38 @@ struct NonTrivialMove
   }
 };
 
+struct NonTrivialDestructor
+{
+  int data = 0;
+
+  NonTrivialDestructor() = default;
+
+  NonTrivialDestructor(NonTrivialDestructor&&) noexcept                 = default;
+  NonTrivialDestructor(const NonTrivialDestructor&) noexcept            = default;
+  NonTrivialDestructor& operator=(NonTrivialDestructor&&) noexcept      = default;
+  NonTrivialDestructor& operator=(const NonTrivialDestructor&) noexcept = default;
+  __host__ __device__ TEST_CONSTEXPR_CXX20 ~NonTrivialDestructor() noexcept {}
+
+  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor(const int val) noexcept
+      : data(val)
+  {}
+  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialDestructor& operator=(const int val) noexcept
+  {
+    data = val;
+    return *this;
+  }
+
+  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
+  operator==(const NonTrivialDestructor& lhs, const NonTrivialDestructor& rhs) noexcept
+  {
+    return lhs.data == rhs.data;
+  }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 bool operator==(const int& other) const noexcept
+  {
+    return data == other;
+  }
+};
+
 template <class InIter, class OutIter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
@@ -175,6 +207,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test<int*, int*>();
 
   test<NonTrivialMove*, NonTrivialMove*>();
+  test<NonTrivialDestructor*, NonTrivialDestructor*>();
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, cpp17_output_iterator<cuda::std::unique_ptr<int>*>>();

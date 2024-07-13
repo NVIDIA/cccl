@@ -25,10 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/internal_functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/mismatch.h>
 #include <thrust/system/detail/generic/equal.h>
+
+#include <cuda/std/functional>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -42,9 +43,7 @@ template <typename DerivedPolicy, typename InputIterator1, typename InputIterato
 _CCCL_HOST_DEVICE bool
 equal(thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
-  typedef typename thrust::iterator_traits<InputIterator1>::value_type InputType1;
-
-  return thrust::equal(exec, first1, last1, first2, thrust::detail::equal_to<InputType1>());
+  return thrust::equal(exec, first1, last1, first2, ::cuda::std::equal_to<>());
 }
 
 // the == below could be a __host__ function in the case of std::vector::iterator::operator==
