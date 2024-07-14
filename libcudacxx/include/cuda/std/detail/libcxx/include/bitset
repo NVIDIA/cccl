@@ -169,7 +169,7 @@ struct __promotion_killer
 {
   using __base = __conditional_t<(sizeof(_Int) >= sizeof(int)),
                                  _Int,
-                                 conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
+                                 __conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
 
   constexpr __promotion_killer() = default;
 
@@ -573,7 +573,7 @@ class __bitset<1, _Size>
 public:
   typedef ptrdiff_t difference_type;
   typedef size_t size_type;
-  typedef __promotion_killer<__conditional_t<_Size <= 8, uint8_t, conditional_t<_Size <= 16, uint16_t, uint32_t>>>
+  typedef __promotion_killer<__conditional_t<_Size <= 8, uint8_t, __conditional_t<_Size <= 16, uint16_t, uint32_t>>>
     __storage_type;
 
 protected:
