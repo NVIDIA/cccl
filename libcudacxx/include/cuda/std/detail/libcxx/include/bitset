@@ -167,13 +167,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Int>
 struct __promotion_killer
 {
-  using __base =
-    conditional_t<(sizeof(_Int) >= sizeof(int)), _Int, conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
+  using __base = __conditional_t<(sizeof(_Int) >= sizeof(int)),
+                                 _Int,
+                                 conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
 
   constexpr __promotion_killer() = default;
 
-  _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer(_Int __i)
-      : __data(__i)
+  template <class _Tp>
+  _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer(_Tp __i)
+      : __data(static_cast<_Int>(__i))
   {}
 
   constexpr __promotion_killer(const __promotion_killer&)            = default;
@@ -571,7 +573,7 @@ class __bitset<1, _Size>
 public:
   typedef ptrdiff_t difference_type;
   typedef size_t size_type;
-  typedef __promotion_killer<conditional_t<_Size <= 8, uint8_t, conditional_t<_Size <= 16, uint16_t, uint32_t>>>
+  typedef __promotion_killer<__conditional_t<_Size <= 8, uint8_t, conditional_t<_Size <= 16, uint16_t, uint32_t>>>
     __storage_type;
 
 protected:
@@ -649,6 +651,7 @@ protected:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void operator<<=(size_t __rhs) noexcept
   {
     __first_ <<= __rhs;
+    __first_ &= ~__storage_type(0) >> (__bits_per_word - _Size);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void operator>>=(size_t __rhs) noexcept
