@@ -178,9 +178,6 @@ struct __promotion_killer
       : __data(static_cast<_Int>(__i))
   {}
 
-  constexpr __promotion_killer(const __promotion_killer&)            = default;
-  constexpr __promotion_killer& operator=(const __promotion_killer&) = default;
-
   _CCCL_HOST _CCCL_DEVICE constexpr explicit operator bool() const
   {
     return static_cast<bool>(__data);
@@ -220,19 +217,19 @@ struct __promotion_killer
   _DEFINE_SHIFT(>>)
 #undef _DEFINE_SHIFT
 
-#define _DEFINE_SHIFT_ASSIGNMENT(__op)                                                       \
-  template <class _Tp>                                                                       \
-  _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer& operator __op##=(_Tp __n)            \
-  {                                                                                          \
-    if (__n >= sizeof(_Int) * CHAR_BIT)                                                      \
-    {                                                                                        \
-      __data = 0;                                                                            \
-    }                                                                                        \
-    else                                                                                     \
-    {                                                                                        \
-      __data = static_cast<_Int>(static_cast<__base>(__data) __op static_cast<__base>(__n)); \
-    }                                                                                        \
-    return *this;                                                                            \
+#define _DEFINE_SHIFT_ASSIGNMENT(__op)                                                        \
+  template <class _Tp>                                                                        \
+  _CCCL_HOST _CCCL_DEVICE _CCCL_CONSTEXPR_CXX14 __promotion_killer& operator __op##=(_Tp __n) \
+  {                                                                                           \
+    if (__n >= sizeof(_Int) * CHAR_BIT)                                                       \
+    {                                                                                         \
+      __data = 0;                                                                             \
+    }                                                                                         \
+    else                                                                                      \
+    {                                                                                         \
+      __data = static_cast<_Int>(static_cast<__base>(__data) __op static_cast<__base>(__n));  \
+    }                                                                                         \
+    return *this;                                                                             \
   }
 
   _DEFINE_SHIFT_ASSIGNMENT(<<)
@@ -257,11 +254,11 @@ struct __promotion_killer
   _DEFINE_BINARY(^)
 #undef _DEFINE_BINARY
 
-#define _DEFINE_ASSIGNMENT(__op)                                                                    \
-  _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer& operator __op##=(__promotion_killer __rhs)  \
-  {                                                                                                 \
-    __data = static_cast<_Int>(static_cast<__base>(__data) __op static_cast<__base>(__rhs.__data)); \
-    return *this;                                                                                   \
+#define _DEFINE_ASSIGNMENT(__op)                                                                               \
+  _CCCL_HOST _CCCL_DEVICE _CCCL_CONSTEXPR_CXX14 __promotion_killer& operator __op##=(__promotion_killer __rhs) \
+  {                                                                                                            \
+    __data = static_cast<_Int>(static_cast<__base>(__data) __op static_cast<__base>(__rhs.__data));            \
+    return *this;                                                                                              \
   }
 
   _DEFINE_ASSIGNMENT(+)
