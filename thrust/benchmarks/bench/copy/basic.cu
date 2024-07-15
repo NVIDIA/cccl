@@ -37,7 +37,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
-  thrust::device_vector<T> input(elements, 1);
+  thrust::device_vector<T> input(elements, T{1});
   thrust::device_vector<T> output(elements);
 
   state.add_element_count(elements);
@@ -52,7 +52,40 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   });
 }
 
-using types = nvbench::type_list<nvbench::uint8_t, nvbench::uint16_t, nvbench::uint32_t, nvbench::uint64_t>;
+// Non-trivially-copyable/relocatable type which cannot be copied using std::memcpy or cudaMemcpy
+struct NonTrivial
+{
+  int a;
+  int b;
+
+  _CCCL_HOST_DEVICE NonTrivial()
+  {
+    a = 42;
+    b = 1337;
+  }
+
+  _CCCL_HOST_DEVICE explicit NonTrivial(int i)
+      : a(i)
+      , b(i)
+  {}
+
+  _CCCL_HOST_DEVICE NonTrivial(const NonTrivial& nt)
+      : a(nt.a)
+      , b(nt.b)
+  {}
+
+  _CCCL_HOST_DEVICE auto operator=(const NonTrivial& nt) -> NonTrivial&
+  {
+    a = nt.a;
+    b = nt.b;
+    return *this;
+  }
+};
+
+static_assert(!::cuda::std::is_trivially_copyable<NonTrivial>::value, ""); // as required by the standard
+static_assert(!thrust::is_trivially_relocatable<NonTrivial>::value, ""); // thrust uses this check internally
+
+using types = nvbench::type_list<nvbench::uint8_t, nvbench::uint16_t, nvbench::uint32_t, nvbench::uint64_t, NonTrivial>;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")
