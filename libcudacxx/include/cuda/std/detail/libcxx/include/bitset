@@ -173,6 +173,8 @@ struct __promotion_killer
 
   constexpr __promotion_killer() = default;
 
+  _CCCL_HOST _CCCL_DEVICE __promotion_killer(bool) = delete;
+
   template <class _Tp>
   _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer(_Tp __i)
       : __data(static_cast<_Int>(__i))
@@ -196,7 +198,10 @@ struct __promotion_killer
   }
 
   _DEFINE_UNARY(~)
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to an unsigned type
   _DEFINE_UNARY(-)
+  _CCCL_DIAG_POP
 #undef _DEFINE_UNARY
 
 #define _DEFINE_SHIFT(__op)                                                                                            \

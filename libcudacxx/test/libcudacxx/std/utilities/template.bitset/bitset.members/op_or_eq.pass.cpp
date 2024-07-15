@@ -19,11 +19,15 @@
 
 _CCCL_NV_DIAG_SUPPRESS(186)
 
-template <cuda::std::size_t N>
+template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
 __host__ __device__ BITSET_TEST_CONSTEXPR bool test_op_or_eq()
 {
   span_stub<const char*> const cases = get_test_cases<N>();
-  for (cuda::std::size_t c1 = 0; c1 != cases.size(); ++c1)
+  if (Start != 0)
+  {
+    assert(End >= cases.size());
+  }
+  for (cuda::std::size_t c1 = Start; c1 != cases.size() && c1 != End; ++c1)
   {
     for (cuda::std::size_t c2 = 0; c2 != cases.size(); ++c2)
     {

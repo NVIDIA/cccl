@@ -65,8 +65,10 @@ int main(int, char**)
   static_assert(test_op_xor_eq<31>(), "");
   static_assert(test_op_xor_eq<32>(), "");
   static_assert(test_op_xor_eq<33>(), "");
-  static_assert(test_op_xor_eq<63>(), "");
-  static_assert(test_op_xor_eq<64>(), "");
+  static_assert(test_op_xor_eq<63, 0, 6>(), "");
+  static_assert(test_op_xor_eq<63, 6>(), "");
+  static_assert(test_op_xor_eq<64, 0, 6>(), "");
+  static_assert(test_op_xor_eq<64, 6>(), "");
   static_assert(test_op_xor_eq<65, 0, 6>(), "");
   static_assert(test_op_xor_eq<65, 6>(), "");
 #endif

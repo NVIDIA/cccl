@@ -31,7 +31,7 @@ __host__ __device__ void test_char_pointer_ctor_throw()
     NV_IS_HOST, try {
       cuda::std::bitset<N> v("xxx1010101010xxxx");
       assert(false);
-    } catch (cuda::std::invalid_argument&){})
+    } catch (std::invalid_argument&){})
 #endif
 }
 
