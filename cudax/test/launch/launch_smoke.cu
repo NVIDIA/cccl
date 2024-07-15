@@ -245,6 +245,26 @@ TEST_CASE("Smoke", "[launch]")
   launch_smoke_test();
 }
 
+__global__ void check_expected_counts(unsigned int num_threads_in_block, unsigned int num_blocks_in_grid)
+{
+  CUDAX_REQUIRE(cudax::block.count(cudax::thread) == num_threads_in_block);
+  CUDAX_REQUIRE(cudax::grid.count(cudax::block) == num_blocks_in_grid);
+};
+
+template <unsigned int Count = 0>
+__global__ void shared_memory_expected_counts(unsigned int num_threads_in_block, unsigned int num_blocks_in_grid)
+{
+  CUDAX_REQUIRE(cudax::block.count(cudax::thread) == num_threads_in_block);
+  CUDAX_REQUIRE(cudax::grid.count(cudax::block) == num_blocks_in_grid);
+
+  if constexpr (Count != 0)
+  {
+    __shared__ int smem[Count];
+    smem[threadIdx.x] = 1;
+    CUDAX_REQUIRE(smem[threadIdx.x] == 1);
+  }
+}
+
 __global__ void empty_kernel() {};
 
 __global__ void grid_sync_kernel(int i)
@@ -260,13 +280,11 @@ inline void print_dims(const Dims& in)
             << std::endl;
 }
 
-template <typename T1, typename T2>
-struct check;
-
-TEST_CASE("Meta dimensions", "[launch]")
+void meta_dims_test()
 {
   cudaStream_t stream;
   CUDART(cudaStreamCreate(&stream));
+
   SECTION("Just at least")
   {
     auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
@@ -275,23 +293,30 @@ TEST_CASE("Meta dimensions", "[launch]")
     // dims.count();
 
     // Does not touch a meta dims, so works
-    dims.count(cudax::thread, cudax::block);
+    static_assert(dims.count(cudax::thread, cudax::block) == 256);
 
-    auto dims_finalized = cudax::finalize(dims, empty_kernel);
+    auto dims_finalized = cudax::finalize(dims, check_expected_counts);
     static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
     print_dims(dims_finalized);
 
     CUDAX_REQUIRE(dims_finalized.count(cudax::block, cudax::grid) == 4);
+
+    cudax::launch(stream, dims_finalized, check_expected_counts, 256, 4);
+
+    cudax::launch(stream, dims, check_expected_counts, 256, 4);
   }
+
   SECTION("At least + best occupancy")
   {
-    auto dims = cudax::make_hierarchy(
-      cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(4420, cudax::thread)));
+    unsigned int target_count = 4420;
+    auto dims                 = cudax::make_hierarchy(
+      cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(target_count, cudax::thread)));
 
     auto dims_finalized = cudax::finalize(dims, empty_kernel);
     static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
+    CUDAX_REQUIRE(dims_finalized.count(cudax::thread) >= target_count);
     print_dims(dims_finalized);
 
     cudax::launch(stream, dims_finalized, empty_kernel);
@@ -335,6 +360,56 @@ TEST_CASE("Meta dimensions", "[launch]")
 
     cudax::launch(stream, config, lambda, 1);
   }
+
+  SECTION("Dyn smem and max coresident")
+  {
+    constexpr unsigned int large_smem = 7 * 1024;
+    auto dims = cudax::make_hierarchy(cudax::block_dims(128), cudax::grid_dims(cudax::max_coresident()));
+
+    auto dims_transformed = cudax::finalize(dims, shared_memory_expected_counts<>);
+    print_dims(dims_transformed);
+
+    auto dims_with_smem = cudax::finalize(dims, shared_memory_expected_counts<large_smem>);
+    print_dims(dims_with_smem);
+
+    auto config = cudax::make_config(dims, cudax::dynamic_shared_memory<int>(large_smem));
+
+    auto config_transformed = cudax::finalize(config, shared_memory_expected_counts<>);
+    print_dims(config_transformed.dims);
+
+    CUDAX_REQUIRE(dims_transformed.count(cudax::thread, cudax::block)
+                  == config_transformed.dims.count(cudax::thread, cudax::block));
+    CUDAX_REQUIRE(
+      dims_transformed.count(cudax::thread, cudax::block) == dims_with_smem.count(cudax::thread, cudax::block));
+
+    // Confirm adding large dynamic shared reduced the number of blocks that can execute at the same time
+    CUDAX_REQUIRE(dims_transformed.count(cudax::block) > config_transformed.dims.count(cudax::block));
+    // But the number is the same no matter if smem is static or dynamic
+    CUDAX_REQUIRE(dims_with_smem.count(cudax::block) == config_transformed.dims.count(cudax::block));
+
+    cudax::launch(stream,
+                  dims,
+                  shared_memory_expected_counts<>,
+                  dims_transformed.count(cudax::thread, cudax::block),
+                  dims_transformed.count(cudax::block));
+
+    cudax::launch(stream,
+                  dims,
+                  shared_memory_expected_counts<large_smem>,
+                  dims_with_smem.count(cudax::thread, cudax::block),
+                  dims_with_smem.count(cudax::block));
+
+    cudax::launch(stream,
+                  config,
+                  shared_memory_expected_counts<>,
+                  config_transformed.dims.count(cudax::thread, cudax::block),
+                  config_transformed.dims.count(cudax::block));
+  }
   CUDART(cudaStreamSynchronize(stream));
   CUDART(cudaStreamDestroy(stream));
+}
+
+TEST_CASE("Meta dimensions", "[launch]")
+{
+  meta_dims_test();
 }
