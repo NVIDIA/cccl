@@ -21,7 +21,10 @@ static void benchmark(nvbench::state& state, nvbench::type_list<T>)
   thrust::fill(policy(alloc), b.begin() + different_elems, b.end(), T{2});
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<T>(2 * elements);
+  state.add_global_memory_reads<T>(std::max(2 * different_elems, std::size_t(1))); // using `different_elements` instead
+                                                                                   // of `elements` corresponds to the
+                                                                                   // actual elements read in an early
+                                                                                   // exit
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
     do_not_optimize(thrust::equal(policy(alloc), a.begin(), a.end(), b.begin()));
   });
