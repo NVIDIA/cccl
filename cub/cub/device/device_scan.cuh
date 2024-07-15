@@ -1177,8 +1177,6 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
-  //! - Note that because initial value is the last argument the cudaStream_t
-  //!   argument also needs be passed explicitly.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1204,8 +1202,7 @@ struct DeviceScan
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage.
@@ -1213,7 +1210,7 @@ struct DeviceScan
   //!   `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to the size in bytes of the `d_temp_storage` allocation
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1225,7 +1222,8 @@ struct DeviceScan
   //!   Binary scan functor
   //!
   //! @param[in] init_value
-  //!   Initial value to seed the inclusive scan (and is assigned to `*d_out`)
+  //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
+  //!   is assigned to `*d_out`)
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
