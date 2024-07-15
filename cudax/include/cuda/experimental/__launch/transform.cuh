@@ -14,7 +14,7 @@
 #include <cuda/cmath>
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
-#include <cuda/experimental/__launch/launch.cuh>
+#include <cuda/experimental/__launch/kernel_launchers.cuh>
 #include <cuda/std/__exception/cuda_error.h>
 
 #if _CCCL_STD_VER >= 2017
@@ -176,7 +176,7 @@ template <typename... Levels>
 _CCCL_NODISCARD constexpr auto
 finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensions<Levels...>& hierarchy)
 {
-  // Needs to be fragment for c++17, since hierarchy_dimensions is an alias and CTAD is not supported
+  // Needs to be a fragment for c++17, since hierarchy_dimensions is an alias and CTAD is not supported
   return hierarchy_dimensions_fragment(
     thread,
     ::cuda::std::apply(
@@ -220,6 +220,7 @@ using transformed_config_t = typename transformed_config<Dimensions, Options...>
 
 // Might consider making the fn optional depending on how many metadims can work without it, right now its only at_least
 // TODO not sure if we need hierarchy taking overload
+// TODO should finalize test if transformation is needed and be just identitiy if not?
 template <typename... Args, typename... Levels>
 _CCCL_NODISCARD constexpr auto finalize(const hierarchy_dimensions<Levels...>& hierarchy, void (*fn)(Args...))
 {
@@ -229,12 +230,22 @@ _CCCL_NODISCARD constexpr auto finalize(const hierarchy_dimensions<Levels...>& h
 template <typename... Args, typename Dimensions, typename... Options>
 _CCCL_NODISCARD constexpr auto finalize(const kernel_config<Dimensions, Options...>& config, void (*fn)(Args...))
 {
-  auto finalized_hierarchy = detail::finalize_impl(reinterpret_cast<void*>(fn), 0, config.dims);
+  size_t smem_size = 0;
+  auto dyn_smem    = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  if constexpr (!::cuda::std::is_same_v<decltype(dyn_smem), detail::option_not_found>)
+  {
+    smem_size = dyn_smem.size_bytes();
+  }
+
+  auto finalized_hierarchy = detail::finalize_impl(reinterpret_cast<void*>(fn), smem_size, config.dims);
   return kernel_config(finalized_hierarchy, config.options);
 }
 
 // Functor overload needs the arguments types to correctly instantiate the launcher
-template <typename... Args, typename Kernel, typename ConfOrDims>
+template <typename... Args,
+          typename Kernel,
+          typename ConfOrDims,
+          typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
 _CCCL_NODISCARD constexpr auto finalize(const ConfOrDims& conf_or_dims, const Kernel& kernel)
 {
   if constexpr (::cuda::std::is_invocable_v<Kernel, ConfOrDims, Args...>

@@ -13,6 +13,8 @@
 #include <cuda_runtime.h>
 
 #include <cuda/experimental/__launch/configuration.cuh>
+#include <cuda/experimental/__launch/kernel_launchers.cuh>
+#include <cuda/experimental/__launch/transform.cuh>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/stream_ref>
 
@@ -22,18 +24,6 @@ namespace cuda::experimental
 
 namespace detail
 {
-template <typename Config, typename Kernel, class... Args>
-__global__ void kernel_launcher(const Config conf, Kernel kernel_fn, Args... args)
-{
-  kernel_fn(conf, args...);
-}
-
-template <typename Kernel, class... Args>
-__global__ void kernel_launcher_no_config(Kernel kernel_fn, Args... args)
-{
-  kernel_fn(args...);
-}
-
 template <typename Config, typename Kernel, typename... Args>
 _CCCL_NODISCARD cudaError_t
 launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, const Args&... args)
@@ -114,22 +104,27 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  * @param args
  * arguments to be passed into the kernel functor
  */
-template <typename... Args, typename... Config, typename Dimensions, typename Kernel>
+template <typename... Args,
+          typename... Config,
+          typename Dimensions,
+          typename Kernel,
+          typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
 void launch(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
-  if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, Args...>
+  auto finalized = finalize(conf, kernel, args...);
+  if constexpr (::cuda::std::is_invocable_v<Kernel, decltype(finalized), Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    auto launcher = detail::kernel_launcher<kernel_config<Dimensions, Config...>, Kernel, Args...>;
-    status        = detail::launch_impl(stream, conf, launcher, conf, kernel, args...);
+    auto launcher = detail::kernel_launcher<decltype(finalized), Kernel, Args...>;
+    status        = detail::launch_impl(stream, finalized, launcher, finalized, kernel, args...);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, Args...>);
     auto launcher = detail::kernel_launcher_no_config<Kernel, Args...>;
-    status        = detail::launch_impl(stream, conf, launcher, kernel, args...);
+    status        = detail::launch_impl(stream, finalized, launcher, kernel, args...);
   }
   if (status != cudaSuccess)
   {
@@ -178,21 +173,25 @@ void launch(
  * @param args
  * arguments to be passed into the kernel functor
  */
-template <typename... Args, typename... Levels, typename Kernel>
+template <typename... Args,
+          typename... Levels,
+          typename Kernel,
+          typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
 void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
-  if constexpr (::cuda::std::is_invocable_v<Kernel, hierarchy_dimensions<Levels...>, Args...>
+  auto finalized = finalize(dims, kernel, args...);
+  if constexpr (::cuda::std::is_invocable_v<Kernel, decltype(finalized), Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    auto launcher = detail::kernel_launcher<hierarchy_dimensions<Levels...>, Kernel, Args...>;
-    status        = detail::launch_impl(stream, kernel_config(dims), launcher, dims, kernel, args...);
+    auto launcher = detail::kernel_launcher<decltype(finalized), Kernel, Args...>;
+    status        = detail::launch_impl(stream, kernel_config(finalized), launcher, finalized, kernel, args...);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, Args...>);
     auto launcher = detail::kernel_launcher_no_config<Kernel, Args...>;
-    status        = detail::launch_impl(stream, kernel_config(dims), launcher, kernel, args...);
+    status        = detail::launch_impl(stream, kernel_config(finalized), launcher, kernel, args...);
   }
   if (status != cudaSuccess)
   {
@@ -240,14 +239,19 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
  * @param args
  * arguments to be passed into the kernel function
  */
-template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
+template <typename... ExpArgs,
+          typename... ActArgs,
+          typename... Config,
+          typename Dimensions,
+          typename = ::cuda::std::enable_if_t<sizeof...(ExpArgs) == sizeof...(ActArgs)>>
 void launch(::cuda::stream_ref stream,
             const kernel_config<Dimensions, Config...>& conf,
-            void (*kernel)(kernel_config<Dimensions, Config...>, ExpArgs...),
+            void (*kernel)(transformed_config_t<kernel_config<Dimensions, Config...>>, ExpArgs...),
             ActArgs&&... args)
 {
+  auto finalized     = finalize(conf, kernel);
   cudaError_t status = [&](ExpArgs... args) {
-    return detail::launch_impl(stream, conf, kernel, conf, args...);
+    return detail::launch_impl(stream, finalized, kernel, finalized, args...);
   }(std::forward<ActArgs>(args)...);
   if (status != cudaSuccess)
   {
@@ -294,14 +298,18 @@ void launch(::cuda::stream_ref stream,
  * @param args
  * arguments to be passed into the kernel function
  */
-template <typename... ExpArgs, typename... ActArgs, typename... Levels>
+template <typename... ExpArgs,
+          typename... ActArgs,
+          typename... Levels,
+          typename = ::cuda::std::enable_if_t<sizeof...(ExpArgs) == sizeof...(ActArgs)>>
 void launch(::cuda::stream_ref stream,
             const hierarchy_dimensions<Levels...>& dims,
-            void (*kernel)(hierarchy_dimensions<Levels...>, ExpArgs...),
+            void (*kernel)(transformed_hierarchy_t<hierarchy_dimensions<Levels...>>, ExpArgs...),
             ActArgs&&... args)
 {
+  auto finalized     = finalize(dims, kernel);
   cudaError_t status = [&](ExpArgs... args) {
-    return detail::launch_impl(stream, kernel_config(dims), kernel, dims, args...);
+    return detail::launch_impl(stream, kernel_config(finalized), kernel, finalized, args...);
   }(std::forward<ActArgs>(args)...);
   if (status != cudaSuccess)
   {
@@ -349,14 +357,19 @@ void launch(::cuda::stream_ref stream,
  * @param args
  * arguments to be passed into the kernel function
  */
-template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
+template <typename... ExpArgs,
+          typename... ActArgs,
+          typename... Config,
+          typename Dimensions,
+          typename = ::cuda::std::enable_if_t<sizeof...(ExpArgs) == sizeof...(ActArgs)>>
 void launch(::cuda::stream_ref stream,
             const kernel_config<Dimensions, Config...>& conf,
             void (*kernel)(ExpArgs...),
             ActArgs&&... args)
 {
+  auto finalized     = finalize(conf, kernel);
   cudaError_t status = [&](ExpArgs... args) {
-    return detail::launch_impl(stream, conf, kernel, args...);
+    return detail::launch_impl(stream, finalized, kernel, args...);
   }(std::forward<ActArgs>(args)...);
   if (status != cudaSuccess)
   {
@@ -403,12 +416,16 @@ void launch(::cuda::stream_ref stream,
  * @param args
  * arguments to be passed into the kernel function
  */
-template <typename... ExpArgs, typename... ActArgs, typename... Levels>
+template <typename... ExpArgs,
+          typename... ActArgs,
+          typename... Levels,
+          typename = ::cuda::std::enable_if_t<sizeof...(ExpArgs) == sizeof...(ActArgs)>>
 void launch(
   ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs...), ActArgs&&... args)
 {
+  auto finalized     = finalize(dims, kernel);
   cudaError_t status = [&](ExpArgs... args) {
-    return detail::launch_impl(stream, kernel_config(dims), kernel, args...);
+    return detail::launch_impl(stream, kernel_config(finalized), kernel, args...);
   }(std::forward<ActArgs>(args)...);
   if (status != cudaSuccess)
   {

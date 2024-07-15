@@ -247,7 +247,7 @@ TEST_CASE("Smoke", "[launch]")
 
 __global__ void empty_kernel() {};
 
-__global__ void grid_sync_kernel()
+__global__ void grid_sync_kernel(int i)
 {
   auto grid = cooperative_groups::this_grid();
   grid.sync();
@@ -295,6 +295,8 @@ TEST_CASE("Meta dimensions", "[launch]")
     print_dims(dims_finalized);
 
     cudax::launch(stream, dims_finalized, empty_kernel);
+
+    cudax::launch(stream, dims, empty_kernel);
   }
 
   SECTION("max_coresident + best occupancy")
@@ -309,7 +311,14 @@ TEST_CASE("Meta dimensions", "[launch]")
 
     print_dims(config_finalized.dims);
 
-    cudax::launch(stream, config_finalized, grid_sync_kernel);
+    cudax::launch(stream, config_finalized, grid_sync_kernel, 1);
+
+    auto config_finalized_with_arguments = cudax::finalize(config, grid_sync_kernel, 1);
+    static_assert(::cuda::std::is_same_v<decltype(config_finalized_with_arguments), decltype(config_finalized)>);
+
+    cudax::launch(stream, config_finalized_with_arguments, grid_sync_kernel, 1);
+
+    cudax::launch(stream, config, grid_sync_kernel, 1);
 
     auto lambda = [] __device__(auto dims, int dummy) {
       auto grid = cooperative_groups::this_grid();
@@ -323,6 +332,8 @@ TEST_CASE("Meta dimensions", "[launch]")
     print_dims(finalized_for_lambda.dims);
 
     cudax::launch(stream, finalized_for_lambda, lambda, 1);
+
+    cudax::launch(stream, config, lambda, 1);
   }
   CUDART(cudaStreamSynchronize(stream));
   CUDART(cudaStreamDestroy(stream));
