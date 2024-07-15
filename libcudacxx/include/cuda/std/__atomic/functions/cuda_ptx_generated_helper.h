@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_scalar.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
