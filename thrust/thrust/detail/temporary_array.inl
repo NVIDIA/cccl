@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<avoid_initialization<T>::value> con
 template <typename T, typename TemporaryArray, typename Size>
 _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!avoid_initialization<T>::value> construct_values(TemporaryArray& a, Size n)
 {
-  a.default_construct_n(a.begin(), n);
+  a.value_initialize_n(a.begin(), n);
 } // end construct_values()
 
 } // namespace temporary_array_detail

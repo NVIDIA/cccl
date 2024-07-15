@@ -272,7 +272,7 @@ public:
   {}
 
 // declare these members for the purpose of Doxygenating them
-// they actually exist in a derived-from class
+// they actually exist in a base class
 #if 0
     /*! \brief Resizes this vector to the specified number of elements.
      *  \param new_size Number of elements this vector should contain.
