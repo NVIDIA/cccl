@@ -45,6 +45,11 @@
 
 THRUST_NAMESPACE_BEGIN
 
+struct default_init_t
+{};
+
+constexpr default_init_t default_init;
+
 namespace detail
 {
 
@@ -84,6 +89,11 @@ public:
    *  \param n The number of elements to create.
    */
   explicit vector_base(size_type n);
+
+  /*! This constructor creates a vector_base with default-initialized elements.
+   *  \param n The number of elements to create.
+   */
+  explicit vector_base(size_type n, default_init_t);
 
   /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
@@ -208,7 +218,7 @@ public:
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
-   *  \throw std::length_error If n exceeds max_size9).
+   *  \throw std::length_error If n exceeds max_size().
    *
    *  This method will resize this vector_base to the specified number of
    *  elements. If the number is smaller than this vector_base's current
@@ -216,6 +226,17 @@ public:
    *  extended and new elements are value initialized.
    */
   void resize(size_type new_size);
+
+  /*! \brief Resizes this vector_base to the specified number of elements, performing default-initialization instead of
+   *         value-initialization.
+   * \param new_size Number of elements this vector_base should contain.
+   * \throw std::length_error If n exceeds max_size().
+   *
+   * This method will resize this vector_base to the specified number of elements. If the number is smaller than this
+   * vector_base's current size this vector_base is truncated, otherwise this vector_base is extended and new elements
+   * are default-initialized instead of value-initialized.
+   */
+  void resize(size_type new_size, default_init_t);
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
@@ -515,6 +536,7 @@ private:
   void insert_dispatch(iterator position, InputIteratorOrIntegralType n, InputIteratorOrIntegralType x, true_type);
 
   // this method appends n value-initialized elements at the end
+  template <bool OnlyDefaultInit = false>
   void append(size_type n);
 
   // this method performs insertion from a fill value

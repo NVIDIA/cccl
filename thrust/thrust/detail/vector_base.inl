@@ -72,6 +72,23 @@ vector_base<T, Alloc>::vector_base(size_type n)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
+vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+
+    if constexpr (!::cuda::std::is_trivially_constructible_v<T>)
+    {
+      value_init(n);
+    }
+  }
+}
+
+template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
@@ -307,6 +324,21 @@ void vector_base<T, Alloc>::resize(size_type new_size)
   else
   {
     append(new_size - size());
+  } // end else
+} // end vector_base::resize()
+
+template <typename T, typename Alloc>
+void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
+{
+  if (new_size < size())
+  {
+    iterator new_end = begin();
+    thrust::advance(new_end, new_size);
+    erase(new_end, end());
+  } // end if
+  else
+  {
+    append</* OnlyDefaultInit */ true>(new_size - size());
   } // end else
 } // end vector_base::resize()
 
@@ -777,6 +809,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
 } // end vector_base::copy_insert()
 
 template <typename T, typename Alloc>
+template <bool OnlyDefaultInit>
 void vector_base<T, Alloc>::append(size_type n)
 {
   if (n != 0)
@@ -785,8 +818,11 @@ void vector_base<T, Alloc>::append(size_type n)
     {
       // we've got room for all of them
 
-      // default construct new elements at the end of the vector
-      m_storage.value_initialize_n(end(), n);
+      if constexpr (OnlyDefaultInit && !::cuda::std::is_trivially_constructible_v<T>)
+      {
+        // default construct new elements at the end of the vector
+        m_storage.value_initialize_n(end(), n);
+      }
 
       // extend the size
       m_size += n;
@@ -815,8 +851,12 @@ void vector_base<T, Alloc>::append(size_type n)
         // construct copy all elements into the newly allocated storage
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
-        // construct new elements to insert
-        new_storage.value_initialize_n(new_end, n);
+        if constexpr (OnlyDefaultInit && !::cuda::std::is_trivially_constructible_v<T>)
+        {
+          // construct new elements to insert
+          new_storage.value_initialize_n(new_end, n);
+        }
+
         new_end += n;
       } // end try
       catch (...)
