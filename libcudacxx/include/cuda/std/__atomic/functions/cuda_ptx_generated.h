@@ -2010,9 +2010,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acquire.cta.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acquire.cta.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2023,9 +2022,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acquire.cluster.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acquire.cluster.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2036,9 +2034,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acquire.gpu.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acquire.gpu.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2049,9 +2046,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acquire.sys.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acquire.sys.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2062,9 +2058,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.relaxed.cta.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.relaxed.cta.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2075,9 +2070,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.relaxed.cluster.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.relaxed.cluster.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2088,9 +2082,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.relaxed.gpu.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.relaxed.gpu.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2101,9 +2094,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.relaxed.sys.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.relaxed.sys.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2114,9 +2106,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.release.cta.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.release.cta.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2127,9 +2118,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.release.cluster.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.release.cluster.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2140,9 +2130,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.release.gpu.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.release.gpu.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2153,9 +2142,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.release.sys.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.release.sys.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2166,9 +2154,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acq_rel.cta.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acq_rel.cta.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2179,9 +2166,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acq_rel.cluster.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acq_rel.cluster.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2192,9 +2178,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acq_rel.gpu.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acq_rel.gpu.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2205,9 +2190,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.acq_rel.sys.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.acq_rel.sys.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2218,9 +2202,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.cta.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.cta.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2231,9 +2214,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.cluster.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.cluster.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2244,9 +2226,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.gpu.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.gpu.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
@@ -2257,9 +2238,8 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   asm volatile(R"YYY(
     .reg .b128 _d;
     .reg .b128 _v;
-    mov.b128 {%0, %1}, _d;
-    mov.b128 {%4, %5}, _v;
-    atom.exch.sys.b128 _d,[%2],_d,_v;
+    mov.b128 {%3, %4}, _v;
+    atom.exch.sys.b128 _d,[%2],_v;
     mov.b128 _d, {%0, %1};
 )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }
