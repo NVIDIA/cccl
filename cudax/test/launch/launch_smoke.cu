@@ -287,24 +287,26 @@ void meta_dims_test()
 
   SECTION("Just at least")
   {
-    auto dims = cudax::make_hierarchy(cudax::block_dims<256>(), cudax::grid_dims(cudax::at_least(1024, cudax::thread)));
+    constexpr unsigned int block_size = 256, grid_size = 4;
+    auto dims = cudax::make_hierarchy(
+      cudax::block_dims<block_size>(), cudax::grid_dims(cudax::at_least(block_size * grid_size, cudax::thread)));
 
     // Won't work until finalized
     // dims.count();
 
     // Does not touch a meta dims, so works
-    static_assert(dims.count(cudax::thread, cudax::block) == 256);
+    static_assert(dims.count(cudax::thread, cudax::block) == block_size);
 
     auto dims_finalized = cudax::finalize(dims, check_expected_counts);
     static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
     print_dims(dims_finalized);
 
-    CUDAX_REQUIRE(dims_finalized.count(cudax::block, cudax::grid) == 4);
+    CUDAX_REQUIRE(dims_finalized.count(cudax::block, cudax::grid) == grid_size);
 
-    cudax::launch(stream, dims_finalized, check_expected_counts, 256, 4);
+    cudax::launch(stream, dims_finalized, check_expected_counts, block_size, grid_size);
 
-    cudax::launch(stream, dims, check_expected_counts, 256, 4);
+    cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
   }
 
   SECTION("At least + best occupancy")
