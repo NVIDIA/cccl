@@ -10,23 +10,22 @@
 template <typename T>
 static void benchmark(nvbench::state& state, nvbench::type_list<T>)
 {
-  const auto& name    = state.get_benchmark().get_name();
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> a(elements, T{1});
   thrust::device_vector<T> b(elements, T{1});
 
-  const auto common_prefix   = state.get_float64("CommonPrefixRatio");
-  const auto different_elems = std::min(static_cast<std::size_t>(elements * common_prefix), elements);
+  const auto common_prefix = state.get_float64("CommonPrefixRatio");
+  const auto same_elements = std::min(static_cast<std::size_t>(elements * common_prefix), elements);
   caching_allocator_t alloc;
-  thrust::fill(policy(alloc), b.begin() + different_elems, b.end(), T{2});
+  thrust::fill(policy(alloc), b.begin() + same_elements, b.end(), T{2});
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<T>(std::max(2 * different_elems, std::size_t(1))); // using `different_elements` instead
-                                                                                   // of `elements` corresponds to the
-                                                                                   // actual elements read in an early
-                                                                                   // exit
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    do_not_optimize(thrust::equal(policy(alloc), a.begin(), a.end(), b.begin()));
+  state.add_global_memory_reads<T>(2 * std::max(same_elements, std::size_t(1))); // using `same_elements` instead
+                                                                                 // of `elements` corresponds to the
+                                                                                 // actual elements read in an early
+                                                                                 // exit
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    do_not_optimize(thrust::equal(policy(alloc, launch), a.begin(), a.end(), b.begin()));
   });
 }
 
