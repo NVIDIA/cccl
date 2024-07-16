@@ -675,7 +675,7 @@ protected:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long to_ulong() const
   {
 #ifdef _CCCL_COMPILER_MSVC
-    if (static_cast<unsigned long>(__first.__data) != __first.__data)
+    if (static_cast<unsigned long>(__first_.__data) != __first_.__data)
     {
       __throw_overflow_error("bitset to_ulong overflow error");
     }
