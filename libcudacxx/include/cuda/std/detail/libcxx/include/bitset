@@ -679,7 +679,7 @@ protected:
     {
       __throw_overflow_error("bitset to_ulong overflow error");
     }
-    return static_cast<unsigned long>(__first.__data);
+    return static_cast<unsigned long>(__first_.__data);
 #else // ^^ MSVC ^^ | vv !MSVC vv
     return __first_.__data;
 #endif // !MSVC
