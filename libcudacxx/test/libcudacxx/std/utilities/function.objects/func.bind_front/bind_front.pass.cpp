@@ -49,8 +49,8 @@ template <class... Args>
 struct is_bind_frontable
 {
   template <class... LocalArgs>
-  __host__ __device__ static auto test(int)
-    -> decltype((void) cuda::std::bind_front(cuda::std::declval<LocalArgs>()...), cuda::std::true_type());
+  __host__ __device__ static auto
+  test(int) -> decltype((void) cuda::std::bind_front(cuda::std::declval<LocalArgs>()...), cuda::std::true_type());
 
   template <class...>
   __host__ __device__ static cuda::std::false_type test(...);

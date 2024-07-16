@@ -29,8 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr auto size(const _Cont& __c) noexcept(noexcept(__c.size()))
-  -> decltype(__c.size())
+_LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+size(const _Cont& __c) noexcept(noexcept(__c.size())) -> decltype(__c.size())
 {
   return __c.size();
 }

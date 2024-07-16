@@ -675,8 +675,8 @@ public:
   {}
 
   _CCCL_HOST
-    // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
-    explicit unique_eager_event(new_stream_t const&)
+  // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
+  explicit unique_eager_event(new_stream_t const&)
       : device_(0)
       , async_signal_(new detail::async_signal(detail::unique_stream{}))
   {
@@ -779,8 +779,8 @@ public:
   unique_eager_future& operator=(unique_eager_future const&) = delete;
 
   _CCCL_HOST
-    // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
-    explicit unique_eager_future(new_stream_t const&)
+  // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
+  explicit unique_eager_future(new_stream_t const&)
       : device_(0)
       , async_signal_(new detail::async_value<value_type>(detail::unique_stream{}))
   {

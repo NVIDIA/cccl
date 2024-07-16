@@ -91,8 +91,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE head_flags_with_init(RandomAccessIterator first, RandomAccessIterator last, init_type init)
       : m_begin(thrust::make_transform_iterator(
-        thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
-        head_flag_functor(init, last - first)))
+          thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
+          head_flag_functor(init, last - first)))
       , m_end(m_begin + (last - first))
   {}
 
@@ -100,8 +100,8 @@ public:
   _CCCL_HOST_DEVICE head_flags_with_init(
     RandomAccessIterator first, RandomAccessIterator last, init_type init, BinaryPredicate binary_pred)
       : m_begin(thrust::make_transform_iterator(
-        thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
-        head_flag_functor(init, last - first, binary_pred)))
+          thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
+          head_flag_functor(init, last - first, binary_pred)))
       , m_end(m_begin + (last - first))
   {}
 
@@ -174,15 +174,15 @@ public:
 
   _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last)
       : m_begin(thrust::make_transform_iterator(
-        thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
-        head_flag_functor(last - first)))
+          thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
+          head_flag_functor(last - first)))
       , m_end(m_begin + (last - first))
   {}
 
   _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
       : m_begin(thrust::make_transform_iterator(
-        thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
-        head_flag_functor(last - first, binary_pred)))
+          thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
+          head_flag_functor(last - first, binary_pred)))
       , m_end(m_begin + (last - first))
   {}
 

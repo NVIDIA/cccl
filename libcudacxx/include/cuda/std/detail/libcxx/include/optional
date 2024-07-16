@@ -761,7 +761,7 @@ private:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(
     __optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
       : __base(
-        __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
+          __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
 public:
