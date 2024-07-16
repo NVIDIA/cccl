@@ -173,12 +173,6 @@ struct __promotion_killer
 
   constexpr __promotion_killer() = default;
 
-  _CCCL_HOST _CCCL_DEVICE __promotion_killer(bool) = delete;
-  template <class _Tp>
-  _CCCL_HOST _CCCL_DEVICE __promotion_killer(__bit_reference<_Tp>) = delete;
-  template <class _Tp>
-  _CCCL_HOST _CCCL_DEVICE __promotion_killer(__bit_const_reference<_Tp>) = delete;
-
   template <class _Tp>
   _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer(_Tp __i)
       : __data(static_cast<_Int>(__i))
@@ -300,15 +294,6 @@ struct __promotion_killer
 static_assert(sizeof(__promotion_killer<uint_least8_t>) == sizeof(uint_least8_t), "");
 static_assert(sizeof(__promotion_killer<uint_least16_t>) == sizeof(uint_least16_t), "");
 static_assert(sizeof(__promotion_killer<uint_least32_t>) == sizeof(uint_least32_t), "");
-
-template <size_t _N_words, size_t _Size>
-class __bitset;
-
-template <size_t _N_words, size_t _Size>
-struct __has_storage_type<__bitset<_N_words, _Size>>
-{
-  static const bool value = true;
-};
 
 template <size_t _N_words, size_t _Size>
 class __bitset
