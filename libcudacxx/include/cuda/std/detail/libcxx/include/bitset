@@ -173,13 +173,7 @@ struct __promotion_killer
 
   constexpr __promotion_killer() = default;
 
-  _CCCL_HOST _CCCL_DEVICE __promotion_killer(bool) = delete;
-  template <class _Tp>
-  _CCCL_HOST _CCCL_DEVICE __promotion_killer(__bit_reference<_Tp>) = delete;
-  template <class _Tp>
-  _CCCL_HOST _CCCL_DEVICE __promotion_killer(__bit_const_reference<_Tp>) = delete;
-
-  template <class _Tp>
+  template <class _Tp, typename = __enable_if_t<_CCCL_TRAIT(is_integral, _Tp)>>
   _CCCL_HOST _CCCL_DEVICE constexpr __promotion_killer(_Tp __i)
       : __data(static_cast<_Int>(__i))
   {}
