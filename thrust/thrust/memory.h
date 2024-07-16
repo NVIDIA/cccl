@@ -267,9 +267,9 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  */
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE
-  thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
-  get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
-                       typename thrust::pointer<T, DerivedPolicy>::difference_type n);
+thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
+                     typename thrust::pointer<T, DerivedPolicy>::difference_type n);
 
 /*! \p free deallocates the storage previously allocated by \p thrust::malloc.
  *

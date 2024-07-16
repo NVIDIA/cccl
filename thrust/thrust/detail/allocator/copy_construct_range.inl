@@ -178,13 +178,13 @@ uninitialized_copy_with_allocator_n(
 
 template <typename FromSystem, typename Allocator, typename InputIterator, typename Pointer>
 _CCCL_HOST_DEVICE
-  typename disable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
-                      Pointer>::type
-  copy_construct_range(thrust::execution_policy<FromSystem>& from_system,
-                       Allocator& a,
-                       InputIterator first,
-                       InputIterator last,
-                       Pointer result)
+typename disable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
+                    Pointer>::type
+copy_construct_range(thrust::execution_policy<FromSystem>& from_system,
+                     Allocator& a,
+                     InputIterator first,
+                     InputIterator last,
+                     Pointer result)
 {
   // just call two_system_copy
   return thrust::detail::two_system_copy(from_system, allocator_system<Allocator>::get(a), first, last, result);
@@ -192,10 +192,10 @@ _CCCL_HOST_DEVICE
 
 template <typename FromSystem, typename Allocator, typename InputIterator, typename Size, typename Pointer>
 _CCCL_HOST_DEVICE
-  typename disable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
-                      Pointer>::type
-  copy_construct_range_n(
-    thrust::execution_policy<FromSystem>& from_system, Allocator& a, InputIterator first, Size n, Pointer result)
+typename disable_if<needs_copy_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value,
+                    Pointer>::type
+copy_construct_range_n(
+  thrust::execution_policy<FromSystem>& from_system, Allocator& a, InputIterator first, Size n, Pointer result)
 {
   // just call two_system_copy_n
   return thrust::detail::two_system_copy_n(from_system, allocator_system<Allocator>::get(a), first, n, result);

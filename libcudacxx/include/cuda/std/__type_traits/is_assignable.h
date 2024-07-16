@@ -47,8 +47,8 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_assignable_v = _LIBCUDACXX_IS_ASSIGNABL
 
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VISIBILITY
-  typename __select_2nd<decltype((_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())), true_type>::type
-  __is_assignable_test(int);
+typename __select_2nd<decltype((_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())), true_type>::type
+__is_assignable_test(int);
 
 template <class, class>
 _LIBCUDACXX_INLINE_VISIBILITY false_type __is_assignable_test(...);

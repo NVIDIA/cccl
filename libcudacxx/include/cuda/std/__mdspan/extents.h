@@ -270,9 +270,9 @@ public:
         __storage_t
         {
 #  endif
-        __other.__storage().__enable_psa_conversion()
+          __other.__storage().__enable_psa_conversion()
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -314,12 +314,12 @@ public:
         typename __base_t::__stored_type
         {
 #  endif
-        _CUDA_VSTD::conditional_t<sizeof...(_Integral) == rank_dynamic(),
-                                  __detail::__construct_psa_from_dynamic_exts_values_tag_t,
-                                  __detail::__construct_psa_from_all_exts_values_tag_t>(),
-        static_cast<index_type>(__exts)...
+          _CUDA_VSTD::conditional_t<sizeof...(_Integral) == rank_dynamic(),
+                                    __detail::__construct_psa_from_dynamic_exts_values_tag_t,
+                                    __detail::__construct_psa_from_all_exts_values_tag_t>(),
+          static_cast<index_type>(__exts)...
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -363,12 +363,12 @@ public:
         typename __base_t::__stored_type
         {
 #  endif
-        _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
-                                  __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
-                                  __detail::__construct_psa_from_all_exts_array_tag_t>(),
-        _CUDA_VSTD::array<_IndexType, _Np>{__exts}
+          _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
+                                    __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
+                                    __detail::__construct_psa_from_all_exts_array_tag_t>(),
+          _CUDA_VSTD::array<_IndexType, _Np>{__exts}
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -412,12 +412,12 @@ public:
         typename __base_t::__stored_type
         {
 #  endif
-        _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
-                                  __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
-                                  __detail::__construct_psa_from_all_exts_array_tag_t>(),
-        __exts
+          _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
+                                    __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
+                                    __detail::__construct_psa_from_all_exts_array_tag_t>(),
+          __exts
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -440,9 +440,9 @@ public:
 #  else
       : __base_t(__base_t {
 #  endif
-        __sto
+          __sto
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
       })
 #  endif
@@ -554,7 +554,7 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...)
   // Workaround for nvcc
   //-> extents<size_t, __detail::__make_dynamic_extent<_IndexTypes>()...>;
   // Adding "(void)" so that clang doesn't complain this is unused
-  ->extents<size_t, size_t(((void) _IndexTypes(), -1))...>;
+  -> extents<size_t, size_t(((void) _IndexTypes(), -1))...>;
 #  endif
 
 namespace __detail

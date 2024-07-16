@@ -291,8 +291,8 @@ __to_raw_pointer(_Pointer __p) noexcept
 }
 #else // ^^^ C++17 ^^^ / vvv C++20 vvv
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY auto __to_raw_pointer(const _Pointer& __p) noexcept
-  -> decltype(pointer_traits<_Pointer>::to_address(__p))
+inline _LIBCUDACXX_INLINE_VISIBILITY auto
+__to_raw_pointer(const _Pointer& __p) noexcept -> decltype(pointer_traits<_Pointer>::to_address(__p))
 {
   return pointer_traits<_Pointer>::to_address(__p);
 }

@@ -57,8 +57,8 @@ struct __allocation_guard
   using _Size    = typename allocator_traits<_Alloc>::size_type;
 
   template <class _AllocT> // we perform the allocator conversion inside the constructor
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(
-    _AllocT __alloc, _Size __n)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(_AllocT __alloc, _Size __n)
       : __alloc_(_CUDA_VSTD::move(__alloc))
       , __n_(__n)
       , __ptr_(allocator_traits<_Alloc>::allocate(__alloc_, __n_)) // initialization order is important

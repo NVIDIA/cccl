@@ -108,9 +108,9 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
@@ -125,9 +125,9 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
@@ -143,9 +143,9 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  __construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+__construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
@@ -160,9 +160,9 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  __construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+__construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
