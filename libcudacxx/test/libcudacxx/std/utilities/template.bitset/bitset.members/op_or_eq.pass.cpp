@@ -70,7 +70,8 @@ int main(int, char**)
   static_assert(test_op_or_eq<33>(), "");
   static_assert(test_op_or_eq<63>(), "");
   static_assert(test_op_or_eq<64>(), "");
-  static_assert(test_op_or_eq<65>(), "");
+  static_assert(test_op_or_eq<65, 0, 6>(), "");
+  static_assert(test_op_or_eq<65, 6>(), "");
 #endif
 
   return 0;
