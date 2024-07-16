@@ -1958,17 +1958,17 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      */
     constexpr event_attributes() noexcept
         : attributes_{
-          NVTX_VERSION, // version
-          sizeof(nvtxEventAttributes_t), // size
-          0, // category
-          NVTX_COLOR_UNKNOWN, // color type
-          0, // color value
-          NVTX_PAYLOAD_UNKNOWN, // payload type
-          0, // reserved 4B
-          {0}, // payload value (union) // NOTE(bgruber): added braces
-          NVTX_MESSAGE_UNKNOWN, // message type
-          {0} // message value (union) // NOTE(bgruber): added braces
-        }
+            NVTX_VERSION, // version
+            sizeof(nvtxEventAttributes_t), // size
+            0, // category
+            NVTX_COLOR_UNKNOWN, // color type
+            0, // color value
+            NVTX_PAYLOAD_UNKNOWN, // payload type
+            0, // reserved 4B
+            {0}, // payload value (union) // NOTE(bgruber): added braces
+            NVTX_MESSAGE_UNKNOWN, // message type
+            {0} // message value (union) // NOTE(bgruber): added braces
+          }
     {}
 
     /**

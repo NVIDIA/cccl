@@ -658,8 +658,8 @@ template <class _Alloc,
           class _Iter2,
           class _Type = typename iterator_traits<_Iter1>::value_type,
           class       = __enable_if_t<_CCCL_TRAIT(is_trivially_move_constructible, _Type)
-                                && _CCCL_TRAIT(is_trivially_move_assignable, _Type)
-                                && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
+                                      && _CCCL_TRAIT(is_trivially_move_assignable, _Type)
+                                      && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {

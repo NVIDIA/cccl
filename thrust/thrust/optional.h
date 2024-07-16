@@ -152,18 +152,16 @@ template <
 #  endif
   typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>,
   int      = 0>
-_CCCL_HOST_DEVICE constexpr auto
-invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
-  -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(
+  noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
 {
   return std::mem_fn(f)(std::forward<Args>(args)...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Fn, typename... Args, typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
-_CCCL_HOST_DEVICE constexpr auto
-invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
-  -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(noexcept(
+  std::forward<Fn>(f)(std::forward<Args>(args)...))) -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
 {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
@@ -959,8 +957,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-    map(F&& f) &
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  map(F&& f) &
   {
     return optional_map_impl(*this, std::forward<F>(f));
   }
@@ -970,8 +968,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-    map(F&& f) &&
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  map(F&& f) &&
   {
     return optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -2250,8 +2248,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-    map(F&& f) &
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  map(F&& f) &
   {
     return detail::optional_map_impl(*this, std::forward<F>(f));
   }
@@ -2261,8 +2259,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-    map(F&& f) &&
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  map(F&& f) &&
   {
     return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
   }

@@ -168,7 +168,7 @@ struct tuple : public _CUDA_VSTD::tuple<Ts...>
             _CUDA_VSTD::__enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(Ts)), int>     = 0>
   _CCCL_HOST_DEVICE tuple(_TupleOfIteratorReferences&& tup)
       : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(tup).template __to_tuple<Ts...>(
-        _CUDA_VSTD::__make_tuple_indices_t<sizeof...(Ts)>()))
+          _CUDA_VSTD::__make_tuple_indices_t<sizeof...(Ts)>()))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -210,8 +210,8 @@ _CCCL_HOST_DEVICE tuple(pair<T1, T2>) -> tuple<T1, T2>;
 #endif // _CCCL_STD_VER >= 2017
 
 template <class... Ts>
-inline _CCCL_HOST_DEVICE
-  _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__all<_CUDA_VSTD::__is_swappable<Ts>::value...>::value, void>
+inline
+  _CCCL_HOST_DEVICE _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::__all<_CUDA_VSTD::__is_swappable<Ts>::value...>::value, void>
   swap(tuple<Ts...>& __x,
        tuple<Ts...>& __y) noexcept((_CUDA_VSTD::__all<_CUDA_VSTD::__is_nothrow_swappable<Ts>::value...>::value))
 {

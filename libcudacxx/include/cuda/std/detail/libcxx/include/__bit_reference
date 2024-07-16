@@ -124,8 +124,8 @@ public:
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit __bit_reference(
-    __storage_pointer __s, __storage_type __m) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 explicit __bit_reference(__storage_pointer __s, __storage_type __m) noexcept
       : __seg_(__s)
       , __mask_(__m)
   {}
@@ -839,7 +839,8 @@ struct __bit_array
   {
     return static_cast<difference_type>(_Np * __bits_per_word);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit __bit_array(difference_type __s)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
     if (__libcpp_is_constant_evaluated())
@@ -1275,8 +1276,8 @@ public:
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit __bit_iterator(
-    __storage_pointer __s, unsigned __ctz) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 explicit __bit_iterator(__storage_pointer __s, unsigned __ctz) noexcept
       : __seg_(__s)
       , __ctz_(__ctz)
   {}

@@ -112,8 +112,8 @@ struct Sum
 {
   /// Binary sum operator, returns `t + u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T&& t, U&& u) const
-    -> decltype(::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u))
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
+  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u);
   }
@@ -124,8 +124,8 @@ struct Difference
 {
   /// Binary difference operator, returns `t - u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T&& t, U&& u) const
-    -> decltype(::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u))
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
+  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u);
   }
@@ -136,8 +136,8 @@ struct Division
 {
   /// Binary division operator, returns `t / u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T&& t, U&& u) const
-    -> decltype(::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u))
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
+  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u);
   }
@@ -400,8 +400,8 @@ struct BinaryFlip
   {}
 
   template <typename T, typename U>
-  _CCCL_DEVICE auto operator()(T&& t, U&& u)
-    -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
+  _CCCL_DEVICE auto
+  operator()(T&& t, U&& u) -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
   {
     return binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }

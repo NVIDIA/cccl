@@ -74,7 +74,8 @@ _LIBCUDACXX_CONCEPT async_resource_with =
 
 template <class _Resource, class _OtherResource>
 _LIBCUDACXX_CONCEPT __different_resource =
-  (!_CUDA_VSTD::same_as<_CUDA_VSTD::decay_t<_Resource>, _CUDA_VSTD::decay_t<_OtherResource>>) &&resource<_OtherResource>;
+  (!_CUDA_VSTD::same_as<_CUDA_VSTD::decay_t<_Resource>, _CUDA_VSTD::decay_t<_OtherResource>>)
+  && resource<_OtherResource>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

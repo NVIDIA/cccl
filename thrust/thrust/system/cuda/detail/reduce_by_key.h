@@ -152,10 +152,10 @@ struct Tuning<sm35, Key, Value> : Tuning<sm30, Key, Value>
       (MAX_INPUT_BYTES <= 8)
         ? 6
         : mpl::min<
-          int,
-          NOMINAL_4B_ITEMS_PER_THREAD,
-          mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
-            value>::value,
+            int,
+            NOMINAL_4B_ITEMS_PER_THREAD,
+            mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
+              value>::value,
   };
 
   using type =
@@ -176,10 +176,10 @@ struct Tuning<sm52, Key, Value> : Tuning<sm30, Key, Value>
       (MAX_INPUT_BYTES <= 8)
         ? 9
         : mpl::min<
-          int,
-          NOMINAL_4B_ITEMS_PER_THREAD,
-          mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
-            value>::value,
+            int,
+            NOMINAL_4B_ITEMS_PER_THREAD,
+            mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
+              value>::value,
   };
 
   using type =

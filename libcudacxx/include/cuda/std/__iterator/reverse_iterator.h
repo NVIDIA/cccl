@@ -61,7 +61,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_move = false;
 template <class _Iter>
 _LIBCUDACXX_INLINE_VAR constexpr bool
   __noexcept_rev_iter_iter_move<_Iter, void_t<decltype(--_CUDA_VSTD::declval<_Iter&>())>> =
-    is_nothrow_copy_constructible_v<_Iter>&& noexcept(_CUDA_VRANGES::iter_move(--_CUDA_VSTD::declval<_Iter&>()));
+    is_nothrow_copy_constructible_v<_Iter> && noexcept(_CUDA_VRANGES::iter_move(--_CUDA_VSTD::declval<_Iter&>()));
 
 template <class _Iter, class _Iter2, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_swap = false;
@@ -69,9 +69,8 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_swap = false;
 template <class _Iter, class _Iter2>
 _LIBCUDACXX_INLINE_VAR constexpr bool
   __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
-    is_nothrow_copy_constructible_v<_Iter>
-    && is_nothrow_copy_constructible_v<_Iter2>&& noexcept(
-      _CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
+    is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
+    && noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
 #endif // _CCCL_STD_VER >= 2017
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -301,9 +300,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 operator==(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 #if _CCCL_STD_VER > 2017
   requires requires {
-    {
-      __x.base() == __y.base()
-    } -> convertible_to<bool>;
+    { __x.base() == __y.base() } -> convertible_to<bool>;
   }
 #endif // _CCCL_STD_VER > 2017
 {
@@ -315,9 +312,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 operator<(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 #if _CCCL_STD_VER > 2017
   requires requires {
-    {
-      __x.base() > __y.base()
-    } -> convertible_to<bool>;
+    { __x.base() > __y.base() } -> convertible_to<bool>;
   }
 #endif // _CCCL_STD_VER > 2017
 {
@@ -329,9 +324,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 operator!=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 #if _CCCL_STD_VER > 2017
   requires requires {
-    {
-      __x.base() != __y.base()
-    } -> convertible_to<bool>;
+    { __x.base() != __y.base() } -> convertible_to<bool>;
   }
 #endif // _CCCL_STD_VER > 2017
 {
@@ -343,9 +336,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 operator>(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 #if _CCCL_STD_VER > 2017
   requires requires {
-    {
-      __x.base() < __y.base()
-    } -> convertible_to<bool>;
+    { __x.base() < __y.base() } -> convertible_to<bool>;
   }
 #endif // _CCCL_STD_VER > 2017
 {
@@ -357,9 +348,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 operator>=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 #if _CCCL_STD_VER > 2017
   requires requires {
-    {
-      __x.base() <= __y.base()
-    } -> convertible_to<bool>;
+    { __x.base() <= __y.base() } -> convertible_to<bool>;
   }
 #endif // _CCCL_STD_VER > 2017
 {
@@ -371,9 +360,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 operator<=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
 #if _CCCL_STD_VER > 2017
   requires requires {
-    {
-      __x.base() >= __y.base()
-    } -> convertible_to<bool>;
+    { __x.base() >= __y.base() } -> convertible_to<bool>;
   }
 #endif // _CCCL_STD_VER > 2017
 {
@@ -463,8 +450,8 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __unconstrained_reverse_iterator() = default;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __unconstrained_reverse_iterator(const __unconstrained_reverse_iterator&) =
     default;
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __unconstrained_reverse_iterator(
-    _Iter __iter)
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __unconstrained_reverse_iterator(_Iter __iter)
       : __iter_(__iter)
   {}
 
@@ -492,7 +479,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr iter_rvalue_reference_t<_Iter>
   iter_move(const __unconstrained_reverse_iterator& __i) noexcept(
-    is_nothrow_copy_constructible_v<_Iter>&& noexcept(_CUDA_VRANGES::iter_move(--declval<_Iter&>())))
+    is_nothrow_copy_constructible_v<_Iter> && noexcept(_CUDA_VRANGES::iter_move(--declval<_Iter&>())))
   {
     auto __tmp = __i.base();
     return _CUDA_VRANGES::iter_move(--__tmp);
@@ -629,9 +616,10 @@ struct __unwrap_reverse_iter_impl
 #ifdef _LIBCUDACXX_HAS_RANGES
 #  if _CCCL_STD_VER > 2014
 template <_CUDA_VRANGES::bidirectional_range _Range>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::
-  subrange<reverse_iterator<_CUDA_VRANGES::iterator_t<_Range>>, reverse_iterator<_CUDA_VRANGES::iterator_t<_Range>>>
-  __reverse_range(_Range&& __range)
+_LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::subrange<reverse_iterator<_CUDA_VRANGES::iterator_t<_Range>>,
+                                                                reverse_iterator<_CUDA_VRANGES::iterator_t<_Range>>>
+__reverse_range(_Range&& __range)
 {
   auto __first = _CUDA_VRANGES::begin(__range);
   return {_CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::next(__first, _CUDA_VRANGES::end(__range))),

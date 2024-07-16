@@ -77,9 +77,7 @@ concept __can_reference = requires { typename __with_reference<_Tp>; };
 
 template <class _Tp>
 concept __dereferenceable = requires(_Tp& __t) {
-  {
-    *__t
-  } -> __can_reference; // not required to be equality-preserving
+  { *__t } -> __can_reference; // not required to be equality-preserving
 };
 
 // [iterator.traits]
@@ -253,15 +251,9 @@ namespace __iterator_traits_detail
 {
 template <class _Ip>
 concept __cpp17_iterator = requires(_Ip __i) {
-  {
-    *__i
-  } -> __can_reference;
-  {
-    ++__i
-  } -> same_as<_Ip&>;
-  {
-    *__i++
-  } -> __can_reference;
+  { *__i } -> __can_reference;
+  { ++__i } -> same_as<_Ip&>;
+  { *__i++ } -> __can_reference;
 } && copyable<_Ip>;
 
 template <class _Ip>
@@ -278,52 +270,28 @@ concept __cpp17_forward_iterator =
   __cpp17_input_iterator<_Ip> && constructible_from<_Ip> && is_lvalue_reference_v<iter_reference_t<_Ip>>
   && same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>
   && requires(_Ip __i) {
-       {
-         __i++
-       } -> convertible_to<_Ip const&>;
-       {
-         *__i++
-       } -> same_as<iter_reference_t<_Ip>>;
+       { __i++ } -> convertible_to<_Ip const&>;
+       { *__i++ } -> same_as<iter_reference_t<_Ip>>;
      };
 
 template <class _Ip>
 concept __cpp17_bidirectional_iterator = __cpp17_forward_iterator<_Ip> && requires(_Ip __i) {
-  {
-    --__i
-  } -> same_as<_Ip&>;
-  {
-    __i--
-  } -> convertible_to<_Ip const&>;
-  {
-    *__i--
-  } -> same_as<iter_reference_t<_Ip>>;
+  { --__i } -> same_as<_Ip&>;
+  { __i-- } -> convertible_to<_Ip const&>;
+  { *__i-- } -> same_as<iter_reference_t<_Ip>>;
 };
 
 template <class _Ip>
 concept __cpp17_random_access_iterator =
   __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip>
   && requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n) {
-       {
-         __i += __n
-       } -> same_as<_Ip&>;
-       {
-         __i -= __n
-       } -> same_as<_Ip&>;
-       {
-         __i + __n
-       } -> same_as<_Ip>;
-       {
-         __n + __i
-       } -> same_as<_Ip>;
-       {
-         __i - __n
-       } -> same_as<_Ip>;
-       {
-         __i - __i
-       } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
-       {
-         __i[__n]
-       } -> convertible_to<iter_reference_t<_Ip>>;
+       { __i += __n } -> same_as<_Ip&>;
+       { __i -= __n } -> same_as<_Ip&>;
+       { __i + __n } -> same_as<_Ip>;
+       { __n + __i } -> same_as<_Ip>;
+       { __i - __n } -> same_as<_Ip>;
+       { __i - __i } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
+       { __i[__n] } -> convertible_to<iter_reference_t<_Ip>>;
      };
 } // namespace __iterator_traits_detail
 

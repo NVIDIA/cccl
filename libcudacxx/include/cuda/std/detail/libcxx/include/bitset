@@ -346,7 +346,7 @@ protected:
                  _Size >= 2 * __bits_per_word
                    ? static_cast<__storage_type>(__v >> __bits_per_word)
                    : static_cast<__storage_type>(
-                     (__v >> __bits_per_word) & (__storage_type(1) << (_Size - __bits_per_word)) - 1)}
+                       (__v >> __bits_per_word) & (__storage_type(1) << (_Size - __bits_per_word)) - 1)}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
@@ -990,7 +990,8 @@ public:
 
 #if defined(_LIBCUDACXX_HAS_STRING)
   template <class _CharT, class _Traits, class _Allocator>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 basic_string<_CharT, _Traits, _Allocator>
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 basic_string<_CharT, _Traits, _Allocator>
   to_string(_CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) const
   {
     basic_string<_CharT, _Traits, _Allocator> __r(_Size, __zero);
@@ -1005,24 +1006,24 @@ public:
   }
 
   template <class _CharT, class _Traits>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-    basic_string<_CharT, _Traits, allocator<_CharT>>
-    to_string(_CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) const
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 basic_string<_CharT, _Traits, allocator<_CharT>>
+  to_string(_CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) const
   {
     return to_string<_CharT, _Traits, allocator<_CharT>>(__zero, __one);
   }
 
   template <class _CharT>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-    basic_string<_CharT, char_traits<_CharT>, allocator<_CharT>>
-    to_string(_CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) const
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 basic_string<_CharT, char_traits<_CharT>, allocator<_CharT>>
+  to_string(_CharT __zero = _CharT('0'), _CharT __one = _CharT('1')) const
   {
     return to_string<_CharT, char_traits<_CharT>, allocator<_CharT>>(__zero, __one);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-    basic_string<char, char_traits<char>, allocator<char>>
-    to_string(char __zero = '0', char __one = '1') const
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 basic_string<char, char_traits<char>, allocator<char>>
+  to_string(char __zero = '0', char __one = '1') const
   {
     return to_string<char, char_traits<char>, allocator<char>>(__zero, __one);
   }
