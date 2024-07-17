@@ -28,6 +28,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/function_traits.h>
 
+#include <cuda/std/__type_traits/void_t.h>
+
 #include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -54,7 +56,7 @@ public:
 
 // specialization for invocations which define result_type
 template <typename Functor, typename... ArgTypes>
-struct result_of_adaptable_function<Functor(ArgTypes...), ::cuda::std::__void_t<typename Functor::result_type>>
+struct result_of_adaptable_function<Functor(ArgTypes...), ::cuda::std::void_t<typename Functor::result_type>>
 {
   using type = typename Functor::result_type;
 };

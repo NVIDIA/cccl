@@ -825,16 +825,16 @@ struct DoubleBuffer
  * \brief Defines a structure \p detector_name that is templated on type \p T.  The \p detector_name struct exposes a
  * constant member \p value indicating whether or not parameter \p T exposes a nested type \p nested_type_name
  */
-#  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name)                                  \
-    template <typename T, typename = void>                                                                \
-    struct detector_name : ::cuda::std::false_type                                                        \
-    {                                                                                                     \
-      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;                  \
-    };                                                                                                    \
-    template <typename T>                                                                                 \
-    struct detector_name<T, ::cuda::std::__void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
-    {                                                                                                     \
-      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                   \
+#  define CUB_DEFINE_DETECT_NESTED_TYPE(detector_name, nested_type_name)                                \
+    template <typename T, typename = void>                                                              \
+    struct detector_name : ::cuda::std::false_type                                                      \
+    {                                                                                                   \
+      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;                \
+    };                                                                                                  \
+    template <typename T>                                                                               \
+    struct detector_name<T, ::cuda::std::void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
+    {                                                                                                   \
+      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                 \
     };
 
 /******************************************************************************
@@ -854,7 +854,7 @@ struct BinaryOpHasIdxParam : ::cuda::std::false_type
 template <typename T, typename BinaryOp>
 struct BinaryOpHasIdxParam<T,
                            BinaryOp,
-                           ::cuda::std::__void_t<decltype(::cuda::std::declval<BinaryOp>()(
+                           ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
                              ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
 {
   CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;

@@ -46,9 +46,8 @@ struct THRUST_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") voider
   using type = void;
 };
 
-// TODO(bgruber): deprecate and replace by cuda::std::void_t eventually
 template <typename... Ts>
-using void_t = void;
+using void_t THRUST_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") = void;
 
 /*! \} // type traits
  */

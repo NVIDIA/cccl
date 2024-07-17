@@ -85,7 +85,7 @@ struct __is_narrowing_impl<_To, _From> : true_type
 // This is a bit hacky, but we rely on the fact that arithmetic types cannot have more than one argument to their
 // constructor
 template <class _To, class _From>
-struct __is_narrowing_impl<_To, _From, __void_t<decltype(_To{_CUDA_VSTD::declval<_From>()})>> : false_type
+struct __is_narrowing_impl<_To, _From, void_t<decltype(_To{_CUDA_VSTD::declval<_From>()})>> : false_type
 {};
 
 template <class _Tp, class... _Args>

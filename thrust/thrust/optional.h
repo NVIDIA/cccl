@@ -26,6 +26,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
 
+#include <cuda/std/__type_traits/void_t.h>
+
 #define THRUST_OPTIONAL_VERSION_MAJOR 0
 #define THRUST_OPTIONAL_VERSION_MINOR 2
 
@@ -167,15 +169,6 @@ _CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(noexcep
 }
 #endif
 
-// std::void_t from C++17
-template <class...>
-struct voider
-{
-  using type = void;
-};
-template <class... Ts>
-using void_t = typename voider<Ts...>::type;
-
 // Trait for checking if a type is a thrust::optional
 template <class T>
 struct is_optional_impl : std::false_type
@@ -197,7 +190,8 @@ using get_map_return = optional<fixup_void<invoke_result_t<F, U>>>;
 template <class F, class = void, class... U>
 struct returns_void_impl;
 template <class F, class... U>
-struct returns_void_impl<F, void_t<invoke_result_t<F, U...>>, U...> : std::is_void<invoke_result_t<F, U...>>
+struct returns_void_impl<F, ::cuda::std::void_t<invoke_result_t<F, U...>>, U...>
+    : std::is_void<invoke_result_t<F, U...>>
 {};
 template <class F, class... U>
 using returns_void = returns_void_impl<F, void, U...>;

@@ -199,10 +199,6 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 
 namespace radix
 {
-
-template <class...>
-using void_t = void;
-
 template <class T, class = void>
 struct is_fundamental_type
 {
@@ -210,7 +206,7 @@ struct is_fundamental_type
 };
 
 template <class T>
-struct is_fundamental_type<T, void_t<typename Traits<T>::UnsignedBits>>
+struct is_fundamental_type<T, ::cuda::std::void_t<typename Traits<T>::UnsignedBits>>
 {
   static constexpr bool value = true;
 };
