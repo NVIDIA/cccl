@@ -134,6 +134,7 @@ struct level_dimensions
   // Needs alignas to work around an issue with tuple
   alignas(16) const Dimensions dims; // Unit for dimensions is implicit
 
+  // TODO might be deleted one we are confident rest of the code properly check usabe_for_queries
   template <typename T = void>
   _CCCL_HOST_DEVICE constexpr const Dimensions& dims_for_query() const
   {

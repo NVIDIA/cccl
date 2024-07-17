@@ -62,6 +62,8 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
 }
 } // namespace detail
 
+// TODO launch docs should be updated to mention the need of using finalized_t on the input,
+// but the question is should it be all usage or just when using meta dimensions
 /**
  * @brief Launch a kernel functor with specified configuration and arguments
  *
