@@ -16,6 +16,7 @@
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/kernel_launchers.cuh>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/stream_ref>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -215,6 +216,24 @@ struct transformed_config<kernel_config<Dimensions, Options...>>
   using type = kernel_config<transformed_hierarchy_t<Dimensions>, Options...>;
 };
 
+template <typename>
+struct finalized;
+
+template <typename... Levels>
+struct finalized<hierarchy_dimensions<Levels...>>
+{
+  using type = typename transformed_hierarchy<hierarchy_dimensions<Levels...>>::type;
+};
+
+template <typename Dimensions, typename... Options>
+struct finalized<kernel_config<Dimensions, Options...>>
+{
+  using type = typename transformed_config<kernel_config<Dimensions, Options...>>::type;
+};
+
+template <typename T>
+using finalized_t = typename finalized<T>::type;
+
 template <typename Dimensions, typename... Options>
 using transformed_config_t = typename transformed_config<Dimensions, Options...>::type;
 
@@ -222,13 +241,15 @@ using transformed_config_t = typename transformed_config<Dimensions, Options...>
 // TODO not sure if we need hierarchy taking overload
 // TODO should finalize test if transformation is needed and be just identitiy if not?
 template <typename... Args, typename... Levels>
-_CCCL_NODISCARD constexpr auto finalize(const hierarchy_dimensions<Levels...>& hierarchy, void (*fn)(Args...))
+_CCCL_NODISCARD constexpr auto
+finalize(::cuda::stream_ref, const hierarchy_dimensions<Levels...>& hierarchy, void (*fn)(Args...))
 {
   return detail::finalize_impl(reinterpret_cast<void*>(fn), 0, hierarchy);
 }
 
 template <typename... Args, typename Dimensions, typename... Options>
-_CCCL_NODISCARD constexpr auto finalize(const kernel_config<Dimensions, Options...>& config, void (*fn)(Args...))
+_CCCL_NODISCARD constexpr auto
+finalize(::cuda::stream_ref, const kernel_config<Dimensions, Options...>& config, void (*fn)(Args...))
 {
   size_t smem_size = 0;
   auto dyn_smem    = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
@@ -246,26 +267,27 @@ template <typename... Args,
           typename Kernel,
           typename ConfOrDims,
           typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
-_CCCL_NODISCARD constexpr auto finalize(const ConfOrDims& conf_or_dims, const Kernel& kernel)
+_CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel& kernel)
 {
-  if constexpr (::cuda::std::is_invocable_v<Kernel, ConfOrDims, Args...>
+  if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_t<ConfOrDims>, Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    auto launcher = detail::kernel_launcher<ConfOrDims, Kernel, Args...>;
-    return finalize(conf_or_dims, launcher);
+    auto launcher = detail::kernel_launcher<finalized_t<ConfOrDims>, Kernel, Args...>;
+    return finalize(stream, conf_or_dims, launcher);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, Args...>);
     auto launcher = detail::kernel_launcher_no_config<Kernel, Args...>;
-    return finalize(conf_or_dims, launcher);
+    return finalize(stream, conf_or_dims, launcher);
   }
 }
 
 template <typename... Args, typename Kernel, typename ConfOrDims>
-_CCCL_NODISCARD constexpr auto finalize(const ConfOrDims& conf_or_dims, const Kernel& kernel, const Args&...)
+_CCCL_NODISCARD constexpr auto
+finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel& kernel, const Args&...)
 {
-  return finalize<Args...>(conf_or_dims, kernel);
+  return finalize<Args...>(stream, conf_or_dims, kernel);
 }
 
 } // namespace cuda::experimental

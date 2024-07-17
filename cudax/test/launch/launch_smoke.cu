@@ -297,7 +297,7 @@ void meta_dims_test()
     // Does not touch a meta dims, so works
     static_assert(dims.count(cudax::thread, cudax::block) == block_size);
 
-    auto dims_finalized = cudax::finalize(dims, check_expected_counts);
+    auto dims_finalized = cudax::finalize(stream, dims, check_expected_counts);
     static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
     print_dims(dims_finalized);
@@ -315,7 +315,7 @@ void meta_dims_test()
     auto dims                 = cudax::make_hierarchy(
       cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(target_count, cudax::thread)));
 
-    auto dims_finalized = cudax::finalize(dims, empty_kernel);
+    auto dims_finalized = cudax::finalize(stream, dims, empty_kernel);
     static_assert(::cuda::std::is_same_v<::cudax::transformed_hierarchy_t<decltype(dims)>, decltype(dims_finalized)>);
 
     CUDAX_REQUIRE(dims_finalized.count(cudax::thread) >= target_count);
@@ -333,26 +333,27 @@ void meta_dims_test()
 
     auto config = cudax::make_config(dims, cudax::cooperative_launch());
 
-    auto config_finalized = cudax::finalize(config, grid_sync_kernel);
+    auto config_finalized = cudax::finalize(stream, config, grid_sync_kernel);
     static_assert(::cuda::std::is_same_v<::cudax::transformed_config_t<decltype(config)>, decltype(config_finalized)>);
 
     print_dims(config_finalized.dims);
 
     cudax::launch(stream, config_finalized, grid_sync_kernel, 1);
 
-    auto config_finalized_with_arguments = cudax::finalize(config, grid_sync_kernel, 1);
+    auto config_finalized_with_arguments = cudax::finalize(stream, config, grid_sync_kernel, 1);
     static_assert(::cuda::std::is_same_v<decltype(config_finalized_with_arguments), decltype(config_finalized)>);
 
     cudax::launch(stream, config_finalized_with_arguments, grid_sync_kernel, 1);
 
     cudax::launch(stream, config, grid_sync_kernel, 1);
 
-    auto lambda = [] __device__(auto dims, int dummy) {
+    auto lambda = [] __device__(auto conf, int dummy) {
       auto grid = cooperative_groups::this_grid();
       grid.sync();
+      conf.dims.count();
     };
 
-    auto finalized_for_lambda = cudax::finalize(config, lambda, 1);
+    auto finalized_for_lambda = cudax::finalize(stream, config, lambda, 1);
     static_assert(
       ::cuda::std::is_same_v<::cudax::transformed_config_t<decltype(config)>, decltype(finalized_for_lambda)>);
 
@@ -368,15 +369,15 @@ void meta_dims_test()
     constexpr unsigned int large_smem = 7 * 1024;
     auto dims = cudax::make_hierarchy(cudax::block_dims(128), cudax::grid_dims(cudax::max_coresident()));
 
-    auto dims_transformed = cudax::finalize(dims, shared_memory_expected_counts<>);
+    auto dims_transformed = cudax::finalize(stream, dims, shared_memory_expected_counts<>);
     print_dims(dims_transformed);
 
-    auto dims_with_smem = cudax::finalize(dims, shared_memory_expected_counts<large_smem>);
+    auto dims_with_smem = cudax::finalize(stream, dims, shared_memory_expected_counts<large_smem>);
     print_dims(dims_with_smem);
 
     auto config = cudax::make_config(dims, cudax::dynamic_shared_memory<int>(large_smem));
 
-    auto config_transformed = cudax::finalize(config, shared_memory_expected_counts<>);
+    auto config_transformed = cudax::finalize(stream, config, shared_memory_expected_counts<>);
     print_dims(config_transformed.dims);
 
     CUDAX_REQUIRE(dims_transformed.count(cudax::thread, cudax::block)

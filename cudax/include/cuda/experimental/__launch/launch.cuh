@@ -113,7 +113,7 @@ void launch(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
-  auto finalized = finalize(conf, kernel, args...);
+  auto finalized = finalize(stream, conf, kernel, args...);
   if constexpr (::cuda::std::is_invocable_v<Kernel, decltype(finalized), Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
@@ -180,7 +180,7 @@ template <typename... Args,
 void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
-  auto finalized = finalize(dims, kernel, args...);
+  auto finalized = finalize(stream, dims, kernel, args...);
   if constexpr (::cuda::std::is_invocable_v<Kernel, decltype(finalized), Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
@@ -249,7 +249,7 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(transformed_config_t<kernel_config<Dimensions, Config...>>, ExpArgs...),
             ActArgs&&... args)
 {
-  auto finalized     = finalize(conf, kernel);
+  auto finalized     = finalize(stream, conf, kernel);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, finalized, kernel, finalized, args...);
   }(std::forward<ActArgs>(args)...);
@@ -307,7 +307,7 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(transformed_hierarchy_t<hierarchy_dimensions<Levels...>>, ExpArgs...),
             ActArgs&&... args)
 {
-  auto finalized     = finalize(dims, kernel);
+  auto finalized     = finalize(stream, dims, kernel);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, kernel_config(finalized), kernel, finalized, args...);
   }(std::forward<ActArgs>(args)...);
@@ -367,7 +367,7 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(ExpArgs...),
             ActArgs&&... args)
 {
-  auto finalized     = finalize(conf, kernel);
+  auto finalized     = finalize(stream, conf, kernel);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, finalized, kernel, args...);
   }(std::forward<ActArgs>(args)...);
@@ -423,7 +423,7 @@ template <typename... ExpArgs,
 void launch(
   ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs...), ActArgs&&... args)
 {
-  auto finalized     = finalize(dims, kernel);
+  auto finalized     = finalize(stream, dims, kernel);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, kernel_config(finalized), kernel, args...);
   }(std::forward<ActArgs>(args)...);
