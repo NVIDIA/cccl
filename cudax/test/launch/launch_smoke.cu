@@ -265,8 +265,6 @@ __global__ void shared_memory_expected_counts(unsigned int num_threads_in_block,
   }
 }
 
-__global__ void empty_kernel() {};
-
 __global__ void grid_sync_kernel(int i)
 {
   auto grid = cooperative_groups::this_grid();
@@ -328,9 +326,9 @@ void meta_dims_test()
 
     CUDAX_REQUIRE(dims_finalized.count(cudax::thread) >= target_count);
 
-    cudax::launch(stream, dims_finalized, empty_kernel);
+    cudax::launch(stream, dims_finalized, empty_kernel, 1);
 
-    cudax::launch(stream, dims, empty_kernel);
+    cudax::launch(stream, dims, empty_kernel, 1);
   }
 
   SECTION("max_coresident + best occupancy")

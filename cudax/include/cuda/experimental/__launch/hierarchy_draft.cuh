@@ -181,11 +181,11 @@ struct level_finalizer<max_coresident>
 
     // Needs to be fragment for c++17, since hierarchy_dimensions is an alias and CTAD is not supported
     auto tmp_hierarchy = hierarchy_dimensions_fragment(thread, rest);
-    auto block_size    = tmp_hierarchy.template count(thread, block);
+    auto block_size    = tmp_hierarchy.count(thread, block);
 
     // We might have cluster or other levels below the grid, needs to count them to properly divide this levels count
     // TODO: there might be some consideration of clusters fitting on the device?
-    auto blocks_multiplier = tmp_hierarchy.template count(block);
+    auto blocks_multiplier = tmp_hierarchy.count(block);
 
     cudaError_t status = cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, dims.device_id);
     if (status != cudaSuccess)

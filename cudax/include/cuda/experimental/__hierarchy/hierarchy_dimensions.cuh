@@ -367,11 +367,11 @@ struct hierarchy_dimensions_fragment
   {}
 
   _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(
-    const BottomUnit& unit, const ::cuda::std::tuple<Levels...>& ls) noexcept
+    const BottomUnit&, const ::cuda::std::tuple<Levels...>& ls) noexcept
       : levels(ls)
   {}
   _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(
-    const BottomUnit& unit, ::cuda::std::tuple<Levels...>&& ls) noexcept
+    const BottomUnit&, ::cuda::std::tuple<Levels...>&& ls) noexcept
       : levels(::cuda::std::forward<::cuda::std::tuple<Levels...>>(ls))
   {}
 
