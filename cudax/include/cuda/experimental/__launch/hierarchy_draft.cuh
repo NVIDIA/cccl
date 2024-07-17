@@ -143,9 +143,8 @@ struct level_finalizer<at_least<Unit>>
   _CCCL_NODISCARD meta_dims_finalized
   operator()(void* fn, unsigned int dynamic_smem_bytes, const at_least<Unit>& dims, const HierarchyBelow& rest)
   {
-    // Same us creating a hierarchy from rest and calling .count on it
-    auto count_of_below_levels =
-      detail::dims_to_count(::cuda::std::apply(detail::hierarchy_extents_helper<Unit>{}, rest));
+    auto tmp_hierarchy         = hierarchy_dimensions_fragment(thread, rest);
+    auto count_of_below_levels = tmp_hierarchy.count(Unit());
     return meta_dims_finalized(::cuda::ceil_div<const size_t>(dims.cnt, count_of_below_levels));
   }
 };

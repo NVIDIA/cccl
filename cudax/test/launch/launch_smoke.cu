@@ -307,20 +307,16 @@ void meta_dims_test()
     cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
   }
 
-  /*
-    SECTION("At least with adjacent level")
-    {
-      constexpr unsigned int block_size = 256, grid_size = 4;
-      auto dims =
-        cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(cudax::at_least(grid_size,
-    cudax::grid)));
+  SECTION("At least with adjacent level")
+  {
+    // Not the best usage, but should work too
+    constexpr unsigned int block_size = 256, grid_size = 4;
+    auto dims = cudax::make_hierarchy(
+      cudax::block_dims<block_size>(), cudax::grid_dims(cudax::at_least(grid_size, cudax::block)));
 
-      auto fin = cudax::finalize(stream, dims, check_expected_counts);
+    cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
+  }
 
-      print_dims(fin);
-      // cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
-    }
-  */
   SECTION("At least + best occupancy")
   {
     unsigned int target_count = 4420;
