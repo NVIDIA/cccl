@@ -280,6 +280,8 @@ using finalized_t = typename finalized<T>::type;
 // at_least
 // TODO not sure if we need hierarchy taking overload
 // TODO should finalize test if finalization is needed and be just identitiy if not?
+// TODO figure out how to add checks that if a hierarchy was finalized and later launched, then the same function was
+// used in both places
 /**
  * @brief Returns a hierarchy updated to replace meta dimensions with concrete dimensions
  *
