@@ -78,7 +78,7 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>> : public ba
   }
 };
 
-// needs_transformation or similar might be a better name
+// needs_finalizeation or similar might be a better name
 template <typename Dims>
 inline constexpr bool usable_for_queries = false;
 
@@ -143,7 +143,7 @@ struct level_dimensions
   }
 
   template <typename NewDims>
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE level_dimensions<Level, NewDims> transform(const NewDims& new_dims) const
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE level_dimensions<Level, NewDims> finalize(const NewDims& new_dims) const
   {
     return level_dimensions<Level, NewDims>(new_dims);
   }

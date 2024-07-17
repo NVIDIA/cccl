@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_TRANSFORM
-#define _CUDAX__LAUNCH_TRANSFORM
+#ifndef _CUDAX__LAUNCH_HIERARCHY_DRAFT
+#define _CUDAX__LAUNCH_HIERARCHY_DRAFT
 
 #include <cuda/cmath>
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
@@ -76,30 +76,30 @@ template <>
 struct dimensions_handler<max_coresident> : meta_dimensions_handler<max_coresident, grid_level>
 {};
 
-using meta_dims_transformed = dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>;
+using meta_dims_finalized = dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>;
 
 template <typename Dimensions>
-struct level_transformer;
+struct level_finalizer;
 
 template <typename Unit>
-struct level_transformer<at_least<Unit>>
+struct level_finalizer<at_least<Unit>>
 {
   template <typename HierarchyBelow>
-  _CCCL_NODISCARD meta_dims_transformed
+  _CCCL_NODISCARD meta_dims_finalized
   operator()(void* fn, unsigned int dynamic_smem_bytes, const at_least<Unit>& dims, const HierarchyBelow& rest)
   {
     // Same us creating a hierarchy from rest and calling .count on it
     auto count_of_below_levels =
       detail::dims_to_count(::cuda::std::apply(detail::hierarchy_extents_helper<Unit>{}, rest));
-    return meta_dims_transformed(::cuda::ceil_div<const size_t>(dims.cnt, count_of_below_levels));
+    return meta_dims_finalized(::cuda::ceil_div<const size_t>(dims.cnt, count_of_below_levels));
   }
 };
 
 template <>
-struct level_transformer<best_occupancy>
+struct level_finalizer<best_occupancy>
 {
   template <typename HierarchyBelow>
-  _CCCL_NODISCARD meta_dims_transformed
+  _CCCL_NODISCARD meta_dims_finalized
   operator()(void* fn, unsigned int dynamic_smem_bytes, const best_occupancy& dims, const HierarchyBelow& rest)
   {
     int block_size, dummy;
@@ -109,16 +109,16 @@ struct level_transformer<best_occupancy>
     {
       ::cuda::__throw_cuda_error(status, "Failed to query optimal block size");
     }
-    return meta_dims_transformed(block_size);
+    return meta_dims_finalized(block_size);
   }
 };
 
 // TODO take green context into account
 template <>
-struct level_transformer<max_coresident>
+struct level_finalizer<max_coresident>
 {
   template <typename HierarchyBelow>
-  _CCCL_NODISCARD meta_dims_transformed
+  _CCCL_NODISCARD meta_dims_finalized
   operator()(void* fn, unsigned int dynamic_smem_bytes, const max_coresident& dims, const HierarchyBelow& rest)
   {
     int num_sms = 0, num_blocks_per_sm = 0;
@@ -144,32 +144,32 @@ struct level_transformer<max_coresident>
     }
 
     // TODO: should we throw when this is 0?
-    return meta_dims_transformed(num_sms * num_blocks_per_sm / blocks_multiplier);
+    return meta_dims_finalized(num_sms * num_blocks_per_sm / blocks_multiplier);
   }
 };
 
-_CCCL_NODISCARD constexpr auto hierarchy_transform_impl(void* fn, unsigned int dynamic_smem_bytes)
+_CCCL_NODISCARD constexpr auto hierarchy_finalize_impl(void* fn, unsigned int dynamic_smem_bytes)
 {
   return ::cuda::std::make_tuple();
 }
 
 template <typename L1, typename... Rest>
 _CCCL_NODISCARD constexpr auto
-hierarchy_transform_impl(void* fn, unsigned int dynamic_smem_bytes, const L1& level, const Rest&... rest)
+hierarchy_finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const L1& level, const Rest&... rest)
 {
-  auto rest_transformed = hierarchy_transform_impl(fn, dynamic_smem_bytes, rest...);
+  auto rest_finalized = hierarchy_finalize_impl(fn, dynamic_smem_bytes, rest...);
 
   using dims_type = ::cuda::std::decay_t<decltype(level.dims)>;
 
   if constexpr (!detail::usable_for_queries<dims_type>)
   {
-    auto transformer = level_transformer<dims_type>();
-    auto new_dims    = transformer(fn, dynamic_smem_bytes, level.dims, rest_transformed);
-    return ::cuda::std::tuple_cat(::cuda::std::make_tuple(level.transform(new_dims)), rest_transformed);
+    auto finalizer = level_finalizer<dims_type>();
+    auto new_dims  = finalizer(fn, dynamic_smem_bytes, level.dims, rest_finalized);
+    return ::cuda::std::tuple_cat(::cuda::std::make_tuple(level.finalize(new_dims)), rest_finalized);
   }
   else
   {
-    return ::cuda::std::tuple_cat(::cuda::std::make_tuple(level), rest_transformed);
+    return ::cuda::std::tuple_cat(::cuda::std::make_tuple(level), rest_finalized);
   }
 }
 
@@ -182,39 +182,40 @@ finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensi
     thread,
     ::cuda::std::apply(
       [&](auto&... levels) {
-        return detail::hierarchy_transform_impl(fn, dynamic_smem_bytes, levels...);
+        return detail::hierarchy_finalize_impl(fn, dynamic_smem_bytes, levels...);
       },
       hierarchy.levels));
 }
-} // namespace detail
 
-// Assumes all meta dims are transformed into 1-d dynamic extent (seems like a safe assumption at least for now)
+// Assumes all meta dims are finalized into 1-d dynamic extent (seems like a safe assumption at least for now)
 template <typename Level>
-using transformed_level = ::cuda::std::conditional_t<
+using finalized_level = ::cuda::std::conditional_t<
   detail::usable_for_queries<typename Level::dimensions_type>,
   Level,
-  decltype(::cuda::std::declval<Level>().transform(::cuda::std::declval<detail::meta_dims_transformed>()))>;
+  decltype(::cuda::std::declval<Level>().finalize(::cuda::std::declval<detail::meta_dims_finalized>()))>;
 
 template <typename>
-struct transformed_hierarchy;
+struct finalized_hierarchy;
 
 template <typename... Levels>
-struct transformed_hierarchy<hierarchy_dimensions<Levels...>>
+struct finalized_hierarchy<hierarchy_dimensions<Levels...>>
 {
-  using type = hierarchy_dimensions<transformed_level<Levels>...>;
+  using type = hierarchy_dimensions<finalized_level<Levels>...>;
 };
 
 template <typename Dimensions>
-using transformed_hierarchy_t = typename transformed_hierarchy<Dimensions>::type;
+using finalized_hierarchy_t = typename finalized_hierarchy<Dimensions>::type;
 
 template <typename...>
-struct transformed_config;
+struct finalized_config;
 
 template <typename Dimensions, typename... Options>
-struct transformed_config<kernel_config<Dimensions, Options...>>
+struct finalized_config<kernel_config<Dimensions, Options...>>
 {
-  using type = kernel_config<transformed_hierarchy_t<Dimensions>, Options...>;
+  using type = kernel_config<finalized_hierarchy_t<Dimensions>, Options...>;
 };
+
+} // namespace detail
 
 template <typename>
 struct finalized;
@@ -222,24 +223,24 @@ struct finalized;
 template <typename... Levels>
 struct finalized<hierarchy_dimensions<Levels...>>
 {
-  using type = typename transformed_hierarchy<hierarchy_dimensions<Levels...>>::type;
+  using type = typename detail::finalized_hierarchy<hierarchy_dimensions<Levels...>>::type;
 };
 
 template <typename Dimensions, typename... Options>
 struct finalized<kernel_config<Dimensions, Options...>>
 {
-  using type = typename transformed_config<kernel_config<Dimensions, Options...>>::type;
+  using type = typename detail::finalized_config<kernel_config<Dimensions, Options...>>::type;
 };
 
 template <typename T>
 using finalized_t = typename finalized<T>::type;
 
 template <typename Dimensions, typename... Options>
-using transformed_config_t = typename transformed_config<Dimensions, Options...>::type;
+using finalized_config_t = typename detail::finalized_config<Dimensions, Options...>::type;
 
 // Might consider making the fn optional depending on how many metadims can work without it, right now its only at_least
 // TODO not sure if we need hierarchy taking overload
-// TODO should finalize test if transformation is needed and be just identitiy if not?
+// TODO should finalize test if finalizeation is needed and be just identitiy if not?
 template <typename... Args, typename... Levels>
 _CCCL_NODISCARD constexpr auto
 finalize(::cuda::stream_ref, const hierarchy_dimensions<Levels...>& hierarchy, void (*fn)(Args...))
