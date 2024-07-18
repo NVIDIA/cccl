@@ -49,7 +49,6 @@ _CCCL_HOST_DEVICE complex<T>::complex(const complex<U>& z)
     : data{T(z.real()), T(z.imag())}
 {}
 
-
 template <typename T>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<T>& z)
     // Initialize the storage in the member initializer list using C++ unicorn
