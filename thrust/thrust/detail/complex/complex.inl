@@ -26,18 +26,8 @@ THRUST_NAMESPACE_BEGIN
 
 /* --- Constructors --- */
 
-#if THRUST_CPP_DIALECT < 2011
-template <typename T>
-_CCCL_HOST_DEVICE complex<T>::complex()
-{
-  real(T());
-  imag(T());
-}
-#endif
-
 template <typename T>
 _CCCL_HOST_DEVICE complex<T>::complex(const T& re)
-#if THRUST_CPP_DIALECT >= 2011
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     : data{re, T()}
@@ -45,31 +35,14 @@ _CCCL_HOST_DEVICE complex<T>::complex(const T& re)
 
 template <typename T>
 _CCCL_HOST_DEVICE complex<T>::complex(const T& re, const T& im)
-#if THRUST_CPP_DIALECT >= 2011
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     : data{re, im}
 {}
-#else
-{
-  real(re);
-  imag(im);
-}
-#endif
-
-#if THRUST_CPP_DIALECT < 2011
-template <typename T>
-_CCCL_HOST_DEVICE complex<T>::complex(const complex<T>& z)
-{
-  real(z.real());
-  imag(z.imag());
-}
-#endif
 
 template <typename T>
 template <typename U>
 _CCCL_HOST_DEVICE complex<T>::complex(const complex<U>& z)
-#if THRUST_CPP_DIALECT >= 2011
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     // We do a functional-style cast here to suppress conversion warnings.
@@ -79,7 +52,6 @@ _CCCL_HOST_DEVICE complex<T>::complex(const complex<U>& z)
 
 template <typename T>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<T>& z)
-#if THRUST_CPP_DIALECT >= 2011
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     : data{THRUST_STD_COMPLEX_REAL(z), THRUST_STD_COMPLEX_IMAG(z)}
@@ -88,7 +60,6 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<T>& 
 template <typename T>
 template <typename U>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<U>& z)
-#if THRUST_CPP_DIALECT >= 2011
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     // We do a functional-style cast here to suppress conversion warnings.
@@ -104,16 +75,6 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const T& re)
   imag(T());
   return *this;
 }
-
-#if THRUST_CPP_DIALECT < 2011
-template <typename T>
-_CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const complex<T>& z)
-{
-  real(z.real());
-  imag(z.imag());
-  return *this;
-}
-#endif
 
 template <typename T>
 template <typename U>
