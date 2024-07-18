@@ -204,7 +204,7 @@ struct level_finalizer<max_coresident>
   }
 };
 
-_CCCL_NODISCARD constexpr auto hierarchy_finalize_impl(void* fn, unsigned int dynamic_smem_bytes)
+_CCCL_NODISCARD constexpr auto hierarchy_finalize_impl(void*, unsigned int)
 {
   return ::cuda::std::make_tuple();
 }

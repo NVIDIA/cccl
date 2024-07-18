@@ -110,7 +110,7 @@ template <typename... Args,
           typename... Config,
           typename Dimensions,
           typename Kernel,
-          typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
+          typename = ::cuda::std::enable_if_t<!::cuda::std::is_function_v<::cuda::std::remove_pointer_t<Kernel>>>>
 void launch(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
 {
@@ -178,7 +178,7 @@ void launch(
 template <typename... Args,
           typename... Levels,
           typename Kernel,
-          typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
+          typename = ::cuda::std::enable_if_t<!::cuda::std::is_function_v<std::remove_pointer_t<Kernel>>>>
 void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
 {
   cudaError_t status;
