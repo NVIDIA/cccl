@@ -25,6 +25,7 @@ jobs:
         run: |
           [[ '${{ github.event_name }}' == 'push' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
           [[ '${{ github.event_name }}' == 'schedule' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'workflow_dispatch' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
           [[ '${{ github.event_name }}' == 'pull_request' && '${{ github.repository }}' != 'NVIDIA/cccl' ]] \
           && echo "ok=true"  | tee -a $GITHUB_OUTPUT \
           || echo "ok=false" | tee -a $GITHUB_OUTPUT;
