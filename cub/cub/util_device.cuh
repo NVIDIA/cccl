@@ -383,10 +383,9 @@ struct SmVersionCacheTag
 {};
 
 /**
- * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
+ * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10).
  *
  * \note This function may cache the result internally.
- *
  * \note This function is thread safe.
  */
 _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
@@ -408,10 +407,9 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 }
 
 /**
- * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
+ * \brief Retrieves the PTX virtual architecture that will be used on the current device (major * 100 + minor * 10).
  *
  * \note This function may cache the result internally.
- *
  * \note This function is thread safe.
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
@@ -438,7 +436,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 }
 
 /**
- * \brief Retrieves the SM version of \p device (major * 100 + minor * 10)
+ * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int device = CurrentDevice())
 {
@@ -464,10 +462,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
 }
 
 /**
- * \brief Retrieves the SM version of \p device (major * 100 + minor * 10)
+ * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10).
  *
  * \note This function may cache the result internally.
- *
  * \note This function is thread safe.
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
