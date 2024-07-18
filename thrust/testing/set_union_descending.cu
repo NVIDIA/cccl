@@ -5,10 +5,10 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetUnionDescendingSimple(void)
+void TestSetUnionDescendingSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector a(3), b(4);
 

@@ -66,6 +66,8 @@ function run_command() {
     local status
 
     begin_group "$group_name"
+    echo "Working directory: $(pwd)"
+    echo "Running command: ${command[*]}"
     set +e
     local start_time=$(date +%s)
     "${command[@]}"

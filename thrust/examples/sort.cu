@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // Helper routines
 
 void initialize(thrust::device_vector<int>& v)
@@ -108,7 +110,7 @@ struct evens_before_odds
   }
 };
 
-int main(void)
+int main()
 {
   size_t N = 16;
 

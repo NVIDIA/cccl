@@ -43,7 +43,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
@@ -58,6 +57,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cstdint>
 #  include <iterator>
 
 THRUST_NAMESPACE_BEGIN
@@ -82,12 +82,12 @@ THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
     status,
     cub::DeviceReduce::TransformReduce,
     num_items,
-    (NULL, tmp_size, first, reinterpret_cast<T*>(NULL), num_items_fixed, binary_op, unary_op, init, stream));
+    (nullptr, tmp_size, first, static_cast<T*>(nullptr), num_items_fixed, binary_op, unary_op, init, stream));
   cuda_cub::throw_on_error(status, "after reduction step 1");
 
   // Allocate temporary storage.
 
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(T) + tmp_size);
 
   // Run reduction.
 
@@ -131,7 +131,7 @@ template <class Derived, class InputIt, class TransformOp, class T, class Reduce
 T _CCCL_HOST_DEVICE transform_reduce(
   execution_policy<Derived>& policy, InputIt first, InputIt last, TransformOp transform_op, T init, ReduceOp reduce_op)
 {
-  typedef typename iterator_traits<InputIt>::difference_type size_type;
+  using size_type           = typename iterator_traits<InputIt>::difference_type;
   const size_type num_items = static_cast<size_type>(thrust::distance(first, last));
 
   THRUST_CDP_DISPATCH(

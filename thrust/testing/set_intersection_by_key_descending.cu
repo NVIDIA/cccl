@@ -5,10 +5,10 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetIntersectionByKeyDescendingSimple(void)
+void TestSetIntersectionByKeyDescendingSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   // clang-format off
   Vector a_key(3), b_key(4);

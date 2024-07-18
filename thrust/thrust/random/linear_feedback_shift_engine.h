@@ -75,7 +75,7 @@ public:
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p linear_feedback_shift_engine.
    */
-  typedef UIntType result_type;
+  using result_type = UIntType;
 
   // engine characteristics
 

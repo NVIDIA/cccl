@@ -10,6 +10,8 @@
 #  include <thrust/zip_function.h>
 #endif // >= C++11
 
+#include "include/host_device.h"
+
 // This example shows how to implement an arbitrary transformation of
 // the form output[i] = F(first[i], second[i], third[i], ... ).
 // In this example, we use a function with 3 inputs and 1 output.
@@ -63,7 +65,7 @@ struct arbitrary_functor2
 };
 #endif // >= C++11
 
-int main(void)
+int main()
 {
   // allocate storage
   thrust::device_vector<float> A(5);

@@ -4,10 +4,10 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestIsSortedUntilSimple(void)
+void TestIsSortedUntilSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector v(4);
   v[0] = 0;
@@ -61,7 +61,7 @@ void TestIsSortedUntilSimple(void)
 DECLARE_VECTOR_UNITTEST(TestIsSortedUntilSimple);
 
 template <typename Vector>
-void TestIsSortedUntilRepeatedElements(void)
+void TestIsSortedUntilRepeatedElements()
 {
   Vector v(10);
 
@@ -81,9 +81,9 @@ void TestIsSortedUntilRepeatedElements(void)
 DECLARE_VECTOR_UNITTEST(TestIsSortedUntilRepeatedElements);
 
 template <class Vector>
-void TestIsSortedUntil(void)
+void TestIsSortedUntil()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   const size_t n = (1 << 16) + 13;
 

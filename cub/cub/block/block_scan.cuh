@@ -46,6 +46,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -100,13 +102,13 @@ enum BlockScanAlgorithm
   //! ++++++++++++++++++++++++++
   //!
   //! A quick "tiled warpscans" prefix scan algorithm. Execution is comprised of four phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
-  //!    Each thread then places the partial reduction of its item(s) into shared memory.
-  //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style scan within each warp.
-  //! #. A propagation phase where the warp scan outputs in each warp are updated with the aggregate
-  //!    from each preceding warp.
-  //! #. Downsweep sequential scan in registers (if threads contribute more than one input),
-  //!    seeded with the raking scan output.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Each thread then places the partial reduction of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style scan within each warp.
+  //!   #. A propagation phase where the warp scan outputs in each warp are updated with the aggregate
+  //!      from each preceding warp.
+  //!   #. Downsweep sequential scan in registers (if threads contribute more than one input),
+  //!      seeded with the raking scan output.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -175,7 +177,7 @@ enum BlockScanAlgorithm
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-//!        typedef cub::BlockScan<int, 128> BlockScan;
+//!        using BlockScan = cub::BlockScan<int, 128>;
 //!
 //!        // Allocate shared memory for BlockScan
 //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -247,15 +249,15 @@ private:
       ? BLOCK_SCAN_RAKING
       : ALGORITHM;
 
-  typedef BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> WarpScans;
-  typedef BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>
-    Raking;
+  using WarpScans = BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using Raking =
+    BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
 
   /// Define the delegate type for the desired algorithm
-  using InternalBlockScan = cub::detail::conditional_t<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
+  using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
 
   /// Shared memory storage layout type for BlockScan
-  typedef typename InternalBlockScan::TempStorage _TempStorage;
+  using _TempStorage = typename InternalBlockScan::TempStorage;
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -321,7 +323,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -373,7 +375,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -457,7 +459,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -534,7 +536,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -594,7 +596,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -691,9 +693,9 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
-  //!        typedef cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
-  //!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE>  BlockStore;
-  //!        typedef cub::BlockScan<int, 128>                             BlockScan;
+  //!        using BlockLoad  = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE>;
+  //!        using BlockScan  = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   //!        __shared__ union {
@@ -780,7 +782,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -841,7 +843,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -936,7 +938,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1019,7 +1021,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1096,7 +1098,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1205,9 +1207,9 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
-  //!        typedef cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
-  //!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE>  BlockStore;
-  //!        typedef cub::BlockScan<int, 128>                             BlockScan;
+  //!        using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
+  //!        using BlockScan = cub::BlockScan<int, 128>                            ;
   //!
   //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   //!        __shared__ union {
@@ -1465,7 +1467,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1513,7 +1515,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1596,7 +1598,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1671,7 +1673,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1741,7 +1743,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -1852,9 +1854,9 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
-  //!        typedef cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
-  //!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE>  BlockStore;
-  //!        typedef cub::BlockScan<int, 128>                             BlockScan;
+  //!        using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
+  //!        using BlockScan = cub::BlockScan<int, 128>                            ;
   //!
   //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   //!        __shared__ union {
@@ -1955,7 +1957,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -2012,7 +2014,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -2104,7 +2106,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -2188,7 +2190,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -2244,6 +2246,62 @@ public:
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-array-init-value
+  //!     :end-before: example-end inclusive-scan-array-init-value
+  //!
+  //!
+  //! @endrst
+  //!
+  //! @tparam ITEMS_PER_THREAD
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across block)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  template <int ITEMS_PER_THREAD, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
+  {
+    // Reduce consecutive thread items in registers
+    T thread_prefix = internal::ThreadReduce(input, scan_op);
+
+    // Exclusive thread block-scan
+    ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
+
+    // Exclusive scan in registers with prefix as seed
+    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
   //!
@@ -2266,7 +2324,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockScan<int, 128> BlockScan;
+  //!        using BlockScan = cub::BlockScan<int, 128>;
   //!
   //!        // Allocate shared memory for BlockScan
   //!        __shared__ typename BlockScan::TempStorage temp_storage;
@@ -2327,6 +2385,68 @@ public:
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
+  //! Each thread contributes an array of consecutive input elements. Also provides every thread
+  //! with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - @blocked
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
+  //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 64 threads
+  //! where each thread owns 2 consecutive items.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-array-aggregate-init-value
+  //!     :end-before: example-end inclusive-scan-array-aggregate-init-value
+  //!
+  //! The value ``126`` will be stored in ``block_aggregate`` for all threads.
+  //!
+  //! @endrst
+  //!
+  //! @tparam ITEMS_PER_THREAD
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input items
+  //!
+  //! @param[out] output
+  //!   Calling thread's output items (may be aliased to `input`)
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across block). It is not taken
+  //!   into account for block_aggregate.
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[out] block_aggregate
+  //!   Block-wide aggregate reduction of input items
+  template <int ITEMS_PER_THREAD, typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(
+    T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
+  {
+    // Reduce consecutive thread items in registers
+    T thread_prefix = internal::ThreadReduce(input, scan_op);
+
+    // Exclusive thread block-scan
+    ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
+
+    // Exclusive scan in registers with prefix as seed
+    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+  }
+
+  //! @rst
+  //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block,
   //! and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the
@@ -2376,9 +2496,9 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!    {
   //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
-  //!        typedef cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
-  //!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE>  BlockStore;
-  //!        typedef cub::BlockScan<int, 128>                             BlockScan;
+  //!        using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
+  //!        using BlockScan = cub::BlockScan<int, 128>                            ;
   //!
   //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   //!        __shared__ union {

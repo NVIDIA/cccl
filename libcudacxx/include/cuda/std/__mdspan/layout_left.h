@@ -121,9 +121,8 @@ public:
       : __extents(__exts)
   {}
 
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _OtherExtents,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)))
+  __MDSPAN_TEMPLATE_REQUIRES(class _OtherExtents,
+                             /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)))
   __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
                                                                                                    // to comma
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
@@ -136,10 +135,9 @@ public:
      */
   }
 
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _OtherExtents,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
-                    && (extents_type::rank() <= 1)))
+  __MDSPAN_TEMPLATE_REQUIRES(class _OtherExtents,
+                             /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
+                                             && (extents_type::rank() <= 1)))
   __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
                                                                                                    // to comma
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
@@ -152,9 +150,8 @@ public:
      */
   }
 
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _OtherExtents,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)))
+  __MDSPAN_TEMPLATE_REQUIRES(class _OtherExtents,
+                             /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)))
   __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
     layout_stride::mapping<_OtherExtents> const& __other) // NOLINT(google-explicit-constructor)
@@ -195,10 +192,9 @@ public:
 
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _Indices,
-    /* requires */ (
-      (sizeof...(_Indices) == extents_type::rank())
-      && __MDSPAN_FOLD_AND((_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type)
-                            && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices)))))
+    /* requires */ ((sizeof...(_Indices) == extents_type::rank())
+                    && __MDSPAN_FOLD_AND((_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type)
+                                          && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices)))))
   _CCCL_HOST_DEVICE constexpr index_type operator()(_Indices... __idxs) const noexcept
   {
     // Immediately cast incoming indices to `index_type`

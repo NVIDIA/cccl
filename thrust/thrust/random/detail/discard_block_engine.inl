@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE discard_block_engine<Engine, p, r>::discard_block_engine(const
 {}
 
 template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed(void)
+_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed()
 {
   m_e.seed();
   m_n = 0;
@@ -94,7 +94,7 @@ _CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::discard(unsigned long
 
 template <typename Engine, size_t p, size_t r>
 _CCCL_HOST_DEVICE const typename discard_block_engine<Engine, p, r>::base_type&
-discard_block_engine<Engine, p, r>::base(void) const
+discard_block_engine<Engine, p, r>::base() const
 {
   return m_e;
 }
@@ -104,8 +104,8 @@ template <typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
 discard_block_engine<Engine, p, r>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
-  typedef std::basic_ostream<CharT, Traits> ostream_type;
-  typedef typename ostream_type::ios_base ios_base;
+  using ostream_type = std::basic_ostream<CharT, Traits>;
+  using ios_base     = typename ostream_type::ios_base;
 
   // save old flags & fill character
   const typename ios_base::fmtflags flags = os.flags();
@@ -129,8 +129,8 @@ template <typename Engine, size_t p, size_t r>
 template <typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>& discard_block_engine<Engine, p, r>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
-  typedef std::basic_istream<CharT, Traits> istream_type;
-  typedef typename istream_type::ios_base ios_base;
+  using istream_type = std::basic_istream<CharT, Traits>;
+  using ios_base     = typename istream_type::ios_base;
 
   // save old flags
   const typename ios_base::fmtflags flags = is.flags();

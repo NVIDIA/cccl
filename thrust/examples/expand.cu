@@ -20,7 +20,7 @@
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator output)
 {
-  typedef typename thrust::iterator_difference<InputIterator1>::type difference_type;
+  using difference_type = typename thrust::iterator_difference<InputIterator1>::type;
 
   difference_type input_size  = thrust::distance(first1, last1);
   difference_type output_size = thrust::reduce(first1, last1);
@@ -53,14 +53,14 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
 template <typename Vector>
 void print(const std::string& s, const Vector& v)
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   std::cout << s;
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
   std::cout << std::endl;
 }
 
-int main(void)
+int main()
 {
   int counts[] = {3, 5, 2, 0, 1, 3, 4, 2, 4};
   int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};

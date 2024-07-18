@@ -38,13 +38,15 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/detail/integer_traits.h>
+
+#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -92,7 +94,7 @@ CUB_NAMESPACE_BEGIN
 //!    //...
 //!
 //!    // Determine temporary device storage requirements
-//!    void     *d_temp_storage = NULL;
+//!    void     *d_temp_storage = nullptr;
 //!    size_t   temp_storage_bytes = 0;
 //!
 //!    cub::DeviceAdjacentDifference::SubtractLeft(
@@ -177,7 +179,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!
   //!    cub::DeviceAdjacentDifference::SubtractLeftCopy(
@@ -256,6 +258,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
+
     constexpr bool may_alias = false;
     constexpr bool read_left = true;
 
@@ -317,7 +321,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractLeft(
   //!      d_temp_storage, temp_storage_bytes,
@@ -381,6 +385,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
+
     constexpr bool may_alias = true;
     constexpr bool read_left = true;
 
@@ -524,6 +530,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
+
     constexpr bool may_alias = false;
     constexpr bool read_left = false;
 
@@ -576,7 +584,7 @@ public:
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void *d_temp_storage = NULL;
+  //!    void *d_temp_storage = nullptr;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceAdjacentDifference::SubtractRight(
   //!      d_temp_storage, temp_storage_bytes, d_data, num_items);
@@ -638,6 +646,8 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
+
     constexpr bool may_alias = true;
     constexpr bool read_left = false;
 

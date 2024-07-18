@@ -48,7 +48,7 @@ struct TestDependencyAttachment
   static void assert_correct(T)
   {
     ASSERT_EQUAL(
-      (thrust::detail::is_same<
+      (::cuda::std::is_same<
         T,
         typename PolicyInfo::template apply_base_first<thrust::detail::execute_with_dependencies, Expected...>>::value),
       true);
@@ -58,7 +58,7 @@ struct TestDependencyAttachment
   static void assert_correct_with_allocator(T)
   {
     ASSERT_EQUAL(
-      (thrust::detail::is_same<
+      (::cuda::std::is_same<
         T,
         typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator_and_dependencies,
                                                         Allocator,
@@ -92,13 +92,13 @@ struct TestDependencyAttachment
   }
 };
 
-typedef policy_info<thrust::detail::seq_t, thrust::system::detail::sequential::execution_policy> sequential_info;
-typedef policy_info<thrust::system::cpp::detail::par_t, thrust::system::cpp::detail::execution_policy> cpp_par_info;
-typedef policy_info<thrust::system::omp::detail::par_t, thrust::system::omp::detail::execution_policy> omp_par_info;
-typedef policy_info<thrust::system::tbb::detail::par_t, thrust::system::tbb::detail::execution_policy> tbb_par_info;
+using sequential_info = policy_info<thrust::detail::seq_t, thrust::system::detail::sequential::execution_policy>;
+using cpp_par_info    = policy_info<thrust::system::cpp::detail::par_t, thrust::system::cpp::detail::execution_policy>;
+using omp_par_info    = policy_info<thrust::system::omp::detail::par_t, thrust::system::omp::detail::execution_policy>;
+using tbb_par_info    = policy_info<thrust::system::tbb::detail::par_t, thrust::system::tbb::detail::execution_policy>;
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-typedef policy_info<thrust::system::cuda::detail::par_t, thrust::cuda_cub::execute_on_stream_base> cuda_par_info;
+using cuda_par_info = policy_info<thrust::system::cuda::detail::par_t, thrust::cuda_cub::execute_on_stream_base>;
 #endif
 
 SimpleUnitTest<TestDependencyAttachment,

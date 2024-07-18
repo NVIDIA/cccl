@@ -4,9 +4,9 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestMinElementSimple(void)
+void TestMinElementSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(6);
   data[0] = 3;
@@ -25,9 +25,9 @@ void TestMinElementSimple(void)
 DECLARE_VECTOR_UNITTEST(TestMinElementSimple);
 
 template <class Vector>
-void TestMinElementWithTransform(void)
+void TestMinElementWithTransform()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(6);
   data[0] = 3;

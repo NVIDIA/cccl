@@ -1,0 +1,36 @@
+name: "Workflow/Dispatch/StandaloneGroup/Windows"
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      job-array:
+        description: "The dispatch.json's windows_standalone.jobs.<name> array of dispatch jobs."
+        type: string
+        required: true
+
+jobs:
+  run-jobs:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.job-array) }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run job
+        uses: ./.github/actions/workflow-run-job-windows
+        with:
+          id:      ${{ matrix.id }}
+          command: ${{ matrix.command }}
+          image:   ${{ matrix.image }}

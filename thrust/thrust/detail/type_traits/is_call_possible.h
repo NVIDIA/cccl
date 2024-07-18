@@ -51,13 +51,13 @@ U& operator,(U&, void_exp_result<T>);
 template <typename src_type, typename dest_type>
 struct clone_constness
 {
-  typedef dest_type type;
+  using type = dest_type;
 };
 
 template <typename src_type, typename dest_type>
 struct clone_constness<const src_type, dest_type>
 {
-  typedef const dest_type type;
+  using type = const dest_type;
 };
 
 } // namespace is_call_possible_detail
@@ -83,7 +83,7 @@ THRUST_NAMESPACE_END
       no member_function_name(...) const;                                                                              \
     };                                                                                                                 \
                                                                                                                        \
-    typedef typename thrust::detail::is_call_possible_detail::clone_constness<T, derived>::type derived_type;          \
+    using derived_type = typename thrust::detail::is_call_possible_detail::clone_constness<T, derived>::type;          \
                                                                                                                        \
     template <typename U, typename Result>                                                                             \
     struct return_value_check                                                                                          \
@@ -110,8 +110,8 @@ THRUST_NAMESPACE_END
     template <typename Result, typename Arg>                                                                           \
     struct impl<true, Result(Arg)>                                                                                     \
     {                                                                                                                  \
-      static typename add_reference<derived_type>::type test_me;                                                       \
-      static typename add_reference<Arg>::type arg;                                                                    \
+      static ::cuda::std::__add_lvalue_reference_t<derived_type> test_me;                                              \
+      static ::cuda::std::__add_lvalue_reference_t<Arg> arg;                                                           \
                                                                                                                        \
       static const bool value =                                                                                        \
         sizeof(return_value_check<T, Result>::deduce(                                                                  \
@@ -122,9 +122,9 @@ THRUST_NAMESPACE_END
     template <typename Result, typename Arg1, typename Arg2>                                                           \
     struct impl<true, Result(Arg1, Arg2)>                                                                              \
     {                                                                                                                  \
-      static typename add_reference<derived_type>::type test_me;                                                       \
-      static typename add_reference<Arg1>::type arg1;                                                                  \
-      static typename add_reference<Arg2>::type arg2;                                                                  \
+      static ::cuda::std::__add_lvalue_reference_t<derived_type> test_me;                                              \
+      static ::cuda::std::__add_lvalue_reference_t<Arg1> arg1;                                                         \
+      static ::cuda::std::__add_lvalue_reference_t<Arg2> arg2;                                                         \
                                                                                                                        \
       static const bool value =                                                                                        \
         sizeof(return_value_check<T, Result>::deduce(                                                                  \
@@ -135,10 +135,10 @@ THRUST_NAMESPACE_END
     template <typename Result, typename Arg1, typename Arg2, typename Arg3>                                            \
     struct impl<true, Result(Arg1, Arg2, Arg3)>                                                                        \
     {                                                                                                                  \
-      static typename add_reference<derived_type>::type test_me;                                                       \
-      static typename add_reference<Arg1>::type arg1;                                                                  \
-      static typename add_reference<Arg2>::type arg2;                                                                  \
-      static typename add_reference<Arg3>::type arg3;                                                                  \
+      static ::cuda::std::__add_lvalue_reference_t<derived_type> test_me;                                              \
+      static ::cuda::std::__add_lvalue_reference_t<Arg1> arg1;                                                         \
+      static ::cuda::std::__add_lvalue_reference_t<Arg2> arg2;                                                         \
+      static ::cuda::std::__add_lvalue_reference_t<Arg3> arg3;                                                         \
                                                                                                                        \
       static const bool value =                                                                                        \
         sizeof(return_value_check<T, Result>::deduce((test_me.member_function_name(arg1, arg2, arg3),                  \
@@ -149,11 +149,11 @@ THRUST_NAMESPACE_END
     template <typename Result, typename Arg1, typename Arg2, typename Arg3, typename Arg4>                             \
     struct impl<true, Result(Arg1, Arg2, Arg3, Arg4)>                                                                  \
     {                                                                                                                  \
-      static typename add_reference<derived_type>::type test_me;                                                       \
-      static typename add_reference<Arg1>::type arg1;                                                                  \
-      static typename add_reference<Arg2>::type arg2;                                                                  \
-      static typename add_reference<Arg3>::type arg3;                                                                  \
-      static typename add_reference<Arg4>::type arg4;                                                                  \
+      static ::cuda::std::__add_lvalue_reference_t<derived_type> test_me;                                              \
+      static ::cuda::std::__add_lvalue_reference_t<Arg1> arg1;                                                         \
+      static ::cuda::std::__add_lvalue_reference_t<Arg2> arg2;                                                         \
+      static ::cuda::std::__add_lvalue_reference_t<Arg3> arg3;                                                         \
+      static ::cuda::std::__add_lvalue_reference_t<Arg4> arg4;                                                         \
                                                                                                                        \
       static const bool value =                                                                                        \
         sizeof(return_value_check<T, Result>::deduce((test_me.member_function_name(arg1, arg2, arg3, arg4),            \
@@ -163,5 +163,5 @@ THRUST_NAMESPACE_END
                                                                                                                        \
   public:                                                                                                              \
     static const bool value = impl<trait_name##_has_member<T, Signature>::value, Signature>::value;                    \
-    typedef thrust::detail::integral_constant<bool, value> type;                                                       \
+    using type              = thrust::detail::integral_constant<bool, value>;                                          \
   };

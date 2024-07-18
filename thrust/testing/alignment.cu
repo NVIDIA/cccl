@@ -125,7 +125,7 @@ DECLARE_UNITTEST(test_alignment_of);
 template <std::size_t Align>
 void test_aligned_type_instantiation()
 {
-  typedef typename thrust::detail::aligned_type<Align>::type type;
+  using type = typename thrust::detail::aligned_type<Align>::type;
   ASSERT_GEQUAL(sizeof(type), 1lu);
   ASSERT_EQUAL(alignof(type), Align);
   ASSERT_EQUAL(thrust::detail::alignment_of<type>::value, Align);

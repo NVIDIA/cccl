@@ -51,6 +51,7 @@
 //
 // typedef atomic<bool> atomic_bool;
 
+#include <cuda/atomic>
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 

@@ -55,9 +55,8 @@ void swap(_Tp&, _Tp&) = delete;
 #  if _CCCL_STD_VER > 2017
 template <class _Tp, class _Up>
 concept __unqualified_swappable_with =
-  (__class_or_enum<remove_cvref_t<_Tp>> || __class_or_enum<remove_cvref_t<_Up>>) &&requires(_Tp&& __t, _Up&& __u) {
-    swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
-  };
+  (__class_or_enum<remove_cvref_t<_Tp>> || __class_or_enum<remove_cvref_t<_Up>>)
+  && requires(_Tp&& __t, _Up&& __u) { swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u)); };
 
 template <class _Tp>
 concept __exchangeable =
@@ -131,8 +130,7 @@ struct __fn
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__exchangeable<_Tp>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp& __x, _Tp& __y) const
-    noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
-             && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp))
+    noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
     __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));
   }
@@ -144,7 +142,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
   __swappable_arrays_,
   requires(_Tp (&__t)[_Size::value], _Up (&__u)[_Size::value], const __fn& __swap)(
     requires(!__unqualified_swappable_with<_Tp (&)[_Size::value], _Up (&)[_Size::value]>),
-    requires(_LIBCUDACXX_TRAIT(extent, _Tp) == _LIBCUDACXX_TRAIT(extent, _Up)),
+    requires(_CCCL_TRAIT(extent, _Tp) == _CCCL_TRAIT(extent, _Up)),
     (__swap(__t[0], __u[0]))));
 
 template <class _Tp, class _Up, size_t _Size>

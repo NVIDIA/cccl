@@ -78,6 +78,9 @@
 
 cmake_minimum_required(VERSION 3.15)
 
+cmake_policy(PUSH)
+cmake_policy(SET CMP0074 NEW)
+
 # Minimum supported libcudacxx version:
 set(thrust_libcudacxx_version "${Thrust_VERSION}")
 
@@ -573,34 +576,30 @@ endmacro()
 macro(_thrust_find_TBB required)
   if(NOT TARGET Thrust::TBB)
     thrust_debug("Searching for TBB ${required}" internal)
-    # Swap in a temporary module path to make sure we use our FindTBB.cmake
-    set(_THRUST_STASH_MODULE_PATH "${CMAKE_MODULE_PATH}")
-    set(CMAKE_MODULE_PATH "${_THRUST_CMAKE_DIR}")
 
-    # Push policy CMP0074 to silence warnings about TBB_ROOT being set. This
-    # var is used unconventionally in this FindTBB.cmake module.
-    # Someday we'll have a suitable TBB cmake configuration and can avoid this.
-    cmake_policy(PUSH)
-    cmake_policy(SET CMP0074 OLD)
-    set(THRUST_TBB_ROOT "" CACHE PATH "Path to the root of the TBB installation.")
-    if (TBB_ROOT AND NOT THRUST_TBB_ROOT)
-      message(
-        "Warning: TBB_ROOT is set. "
-        "Thrust uses THRUST_TBB_ROOT to avoid issues with CMake Policy CMP0074. "
-        "Please set this variable instead when using Thrust with TBB."
-      )
+    # Try to find the CMake package that newer versions of TBB install themselves:
+    if (NOT TARGET TBB::tbb)
+      find_package(TBB CONFIG ${_THRUST_QUIET_FLAG})
     endif()
-    set(TBB_ROOT "${THRUST_TBB_ROOT}")
-    set(_THRUST_STASH_TBB_ROOT "${TBB_ROOT}")
 
-    find_package(TBB
-      ${_THRUST_QUIET_FLAG}
-      ${required}
-    )
+    # If that fails, fall back to the Path of Sadness: FindTBB.cmake
+    if (NOT TARGET TBB::tbb)
+      # Swap in a temporary module path to make sure we use our FindTBB.cmake
+      set(_THRUST_STASH_MODULE_PATH "${CMAKE_MODULE_PATH}")
+      set(CMAKE_MODULE_PATH "${_THRUST_CMAKE_DIR}")
 
-    cmake_policy(POP)
-    set(TBB_ROOT "${_THRUST_STASH_TBB_ROOT}")
-    set(CMAKE_MODULE_PATH "${_THRUST_STASH_MODULE_PATH}")
+      # Legacy support for a removed THRUST_TBB_ROOT option:
+      if (THRUST_TBB_ROOT AND NOT TBB_ROOT)
+        set(TBB_ROOT "${THRUST_TBB_ROOT}")
+      endif()
+
+      find_package(TBB
+        ${_THRUST_QUIET_FLAG}
+        ${required}
+      )
+
+      set(CMAKE_MODULE_PATH "${_THRUST_STASH_MODULE_PATH}")
+    endif()
 
     if (TARGET TBB::tbb)
       thrust_set_TBB_target(TBB::tbb)
@@ -748,3 +747,5 @@ if (NOT Thrust_CONFIG)
   set(Thrust_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
 endif()
 find_package_handle_standard_args(Thrust CONFIG_MODE)
+
+cmake_policy(POP)

@@ -44,16 +44,16 @@ struct tuple_meta_transform_WAR_NVCC;
 template <typename Tuple, template <typename> class UnaryMetaFunction, size_t... Is>
 struct tuple_meta_transform_WAR_NVCC<Tuple, UnaryMetaFunction, thrust::index_sequence<Is...>>
 {
-  typedef thrust::tuple<typename UnaryMetaFunction<typename thrust::tuple_element<Is, Tuple>::type>::type...> type;
+  using type = thrust::tuple<typename UnaryMetaFunction<typename thrust::tuple_element<Is, Tuple>::type>::type...>;
 };
 
 template <typename Tuple, template <typename> class UnaryMetaFunction>
 struct tuple_meta_transform
 {
-  typedef
+  using type =
     typename tuple_meta_transform_WAR_NVCC<Tuple,
                                            UnaryMetaFunction,
-                                           thrust::make_index_sequence<thrust::tuple_size<Tuple>::value>>::type type;
+                                           thrust::make_index_sequence<thrust::tuple_size<Tuple>::value>>::type;
 };
 
 } // namespace detail

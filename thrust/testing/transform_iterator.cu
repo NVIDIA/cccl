@@ -10,12 +10,12 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestTransformIterator(void)
+void TestTransformIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
-  typedef thrust::negate<T> UnaryFunction;
-  typedef typename Vector::iterator Iterator;
+  using UnaryFunction = thrust::negate<T>;
+  using Iterator      = typename Vector::iterator;
 
   Vector input(4);
   Vector output(4);
@@ -36,12 +36,12 @@ void TestTransformIterator(void)
 DECLARE_VECTOR_UNITTEST(TestTransformIterator);
 
 template <class Vector>
-void TestMakeTransformIterator(void)
+void TestMakeTransformIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
-  typedef thrust::negate<T> UnaryFunction;
-  typedef typename Vector::iterator Iterator;
+  using UnaryFunction = thrust::negate<T>;
+  using Iterator      = typename Vector::iterator;
 
   Vector input(4);
   Vector output(4);

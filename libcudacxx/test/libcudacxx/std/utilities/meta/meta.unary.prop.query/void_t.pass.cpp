@@ -10,7 +10,7 @@
 
 // void_t
 
-// UNSUPPORTED: c++98, c++03, c++11
+// UNSUPPORTED: c++98, c++03
 
 // XFAIL: gcc-5.1, gcc-5.2
 

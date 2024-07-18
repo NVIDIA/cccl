@@ -34,30 +34,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Up>
 concept __partially_ordered_with = requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u) {
-  {
-    __t < __u
-  } -> __boolean_testable;
-  {
-    __t > __u
-  } -> __boolean_testable;
-  {
-    __t <= __u
-  } -> __boolean_testable;
-  {
-    __t >= __u
-  } -> __boolean_testable;
-  {
-    __u < __t
-  } -> __boolean_testable;
-  {
-    __u > __t
-  } -> __boolean_testable;
-  {
-    __u <= __t
-  } -> __boolean_testable;
-  {
-    __u >= __t
-  } -> __boolean_testable;
+  { __t < __u } -> __boolean_testable;
+  { __t > __u } -> __boolean_testable;
+  { __t <= __u } -> __boolean_testable;
+  { __t >= __u } -> __boolean_testable;
+  { __u < __t } -> __boolean_testable;
+  { __u > __t } -> __boolean_testable;
+  { __u <= __t } -> __boolean_testable;
+  { __u >= __t } -> __boolean_testable;
 };
 
 template <class _Tp>

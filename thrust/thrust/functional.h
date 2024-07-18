@@ -38,11 +38,13 @@ THRUST_NAMESPACE_BEGIN
 /*! \addtogroup function_objects Function Objects
  */
 
+//! deprecated [Since 2.6]
 template <typename Operation>
-struct unary_traits;
+struct THRUST_DEPRECATED unary_traits;
 
+//! deprecated [Since 2.6]
 template <typename Operation>
-struct binary_traits;
+struct THRUST_DEPRECATED binary_traits;
 
 /*! \addtogroup function_object_adaptors Function Object Adaptors
  *  \ingroup function_objects
@@ -53,8 +55,10 @@ struct binary_traits;
  *  or member variables, but only type information. The only reason it exists
  *  is to make it more convenient to define types that are models of the
  *  concept Adaptable Unary Function. Specifically, any model of Adaptable
- *  Unary Function must define nested \c typedefs. Those \c typedefs are
+ *  Unary Function must define nested aliases. Those are
  *  provided by the base class \p unary_function.
+ *
+ *  deprecated [Since 2.6]
  *
  *  The following code snippet demonstrates how to construct an
  *  Adaptable Unary Function using \p unary_function.
@@ -75,25 +79,27 @@ struct binary_traits;
  *  \see binary_function
  */
 template <typename Argument, typename Result>
-struct unary_function
+struct THRUST_DEPRECATED unary_function
 {
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
    */
-  typedef Argument argument_type;
+  using argument_type = Argument;
 
   /*! \typedef result_type;
    *  \brief The type of the function object's result.
    */
-  typedef Result result_type;
+  using result_type = Result;
 }; // end unary_function
 
 /*! \p binary_function is an empty base class: it contains no member functions
  *  or member variables, but only type information. The only reason it exists
  *  is to make it more convenient to define types that are models of the
  *  concept Adaptable Binary Function. Specifically, any model of Adaptable
- *  Binary Function must define nested \c typedefs. Those \c typedefs are
+ *  Binary Function must define nested aliases. Those are
  *  provided by the base class \p binary_function.
+ *
+ *  deprecated [Since 2.6]
  *
  *  The following code snippet demonstrates how to construct an
  *  Adaptable Binary Function using \p binary_function.
@@ -114,22 +120,22 @@ struct unary_function
  *  \see unary_function
  */
 template <typename Argument1, typename Argument2, typename Result>
-struct binary_function
+struct THRUST_DEPRECATED binary_function
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef Argument1 first_argument_type;
+  using first_argument_type = Argument1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef Argument2 second_argument_type;
+  using second_argument_type = Argument2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef Result result_type;
+  using result_type = Result;
 }; // end binary_function
 
 /*! \}
@@ -144,32 +150,30 @@ struct binary_function
  *  \{
  */
 
-#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                          \
-  template <>                                                                         \
-  struct func<void>                                                                   \
-  {                                                                                   \
-    using is_transparent = void;                                                      \
-    _CCCL_EXEC_CHECK_DISABLE                                                          \
-    template <typename T>                                                             \
-    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) \
-      THRUST_TRAILING_RETURN(decltype(impl))                                          \
-    {                                                                                 \
-      return impl;                                                                    \
-    }                                                                                 \
+#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                            \
+  template <>                                                                                           \
+  struct func<void>                                                                                     \
+  {                                                                                                     \
+    using is_transparent = void;                                                                        \
+    _CCCL_EXEC_CHECK_DISABLE                                                                            \
+    template <typename T>                                                                               \
+    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) -> decltype(impl) \
+    {                                                                                                   \
+      return impl;                                                                                      \
+    }                                                                                                   \
   }
 
-#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                    \
-  template <>                                                                                    \
-  struct func<void>                                                                              \
-  {                                                                                              \
-    using is_transparent = void;                                                                 \
-    _CCCL_EXEC_CHECK_DISABLE                                                                     \
-    template <typename T1, typename T2>                                                          \
-    _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const noexcept(noexcept(impl)) \
-      THRUST_TRAILING_RETURN(decltype(impl))                                                     \
-    {                                                                                            \
-      return impl;                                                                               \
-    }                                                                                            \
+#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                                      \
+  template <>                                                                                                      \
+  struct func<void>                                                                                                \
+  {                                                                                                                \
+    using is_transparent = void;                                                                                   \
+    _CCCL_EXEC_CHECK_DISABLE                                                                                       \
+    template <typename T1, typename T2>                                                                            \
+    _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const noexcept(noexcept(impl)) -> decltype(impl) \
+    {                                                                                                              \
+      return impl;                                                                                                 \
+    }                                                                                                              \
   }
 
 #define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(func, op) \
@@ -215,17 +219,17 @@ struct plus
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs + rhs</tt>.
    */
@@ -278,17 +282,17 @@ struct minus
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs - rhs</tt>.
    */
@@ -341,17 +345,17 @@ struct multiplies
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs * rhs</tt>.
    */
@@ -404,17 +408,17 @@ struct divides
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs / rhs</tt>.
    */
@@ -467,17 +471,17 @@ struct modulus
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs % rhs</tt>.
    */
@@ -527,12 +531,12 @@ struct negate
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
    */
-  typedef T argument_type;
+  using argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>-x</tt>.
    */
@@ -581,12 +585,12 @@ struct square
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
    */
-  typedef T argument_type;
+  using argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>x*x</tt>.
    */
@@ -625,17 +629,17 @@ struct equal_to
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs == rhs</tt>.
    */
@@ -666,17 +670,17 @@ struct not_equal_to
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs != rhs</tt>.
    */
@@ -707,17 +711,17 @@ struct greater
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs > rhs</tt>.
    */
@@ -748,17 +752,17 @@ struct less
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs < rhs</tt>.
    */
@@ -789,17 +793,17 @@ struct greater_equal
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs >= rhs</tt>.
    */
@@ -830,17 +834,17 @@ struct less_equal
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs <= rhs</tt>.
    */
@@ -878,17 +882,17 @@ struct logical_and
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs && rhs</tt>.
    */
@@ -918,17 +922,17 @@ struct logical_or
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>lhs || rhs</tt>.
    */
@@ -972,17 +976,17 @@ struct logical_not
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef bool result_type;
+  using result_type = bool;
 
   /*! Function call operator. The return value is <tt>!x</tt>.
    */
@@ -1042,17 +1046,17 @@ struct bit_and
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs & rhs</tt>.
    */
@@ -1104,17 +1108,17 @@ struct bit_or
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs | rhs</tt>.
    */
@@ -1166,17 +1170,17 @@ struct bit_xor
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T first_argument_type;
+  using first_argument_type = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    */
-  typedef T second_argument_type;
+  using second_argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>lhs ^ rhs</tt>.
    */
@@ -1223,12 +1227,12 @@ struct identity
   /*! \typedef argument_type
    *  \brief The type of the function object's first argument.
    */
-  typedef T argument_type;
+  using argument_type = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef T result_type;
+  using result_type = T;
 
   /*! Function call operator. The return value is <tt>x</tt>.
    */
@@ -1271,18 +1275,21 @@ struct maximum
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T first_argument_type;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T second_argument_type;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  typedef T result_type;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
    */
@@ -1325,18 +1332,21 @@ struct minimum
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T first_argument_type;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T second_argument_type;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  typedef T result_type;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
 
   /*! Function call operator. The return value is <tt>lhs < rhs ? lhs : rhs</tt>.
    */
@@ -1372,18 +1382,21 @@ struct project1st
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T1 first_argument_type;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T2 second_argument_type;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  typedef T1 result_type;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
@@ -1399,8 +1412,8 @@ struct project1st<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
-    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const
+    noexcept(noexcept(THRUST_FWD(t1))) -> decltype(THRUST_FWD(t1))
   {
     return THRUST_FWD(t1);
   }
@@ -1429,18 +1442,21 @@ struct project2nd
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T1 first_argument_type;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
+   *  deprecated [Since 2.6]
    */
-  typedef T2 second_argument_type;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
+   *  deprecated [Since 2.6]
    */
-  typedef T2 result_type;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
@@ -1456,8 +1472,8 @@ struct project2nd<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
-    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t2))) -> decltype(THRUST_FWD(t2))
   {
     return THRUST_FWD(t2);
   }
@@ -1480,12 +1496,17 @@ struct project2nd<void, void>
  *  There is rarely any reason to construct a <tt>unary_negate</tt> directly;
  *  it is almost always easier to use the helper function not1.
  *
+ *  deprecated [Since 2.6]
+ *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_negate
  *  \see not1
  */
 template <typename Predicate>
-struct unary_negate : public thrust::unary_function<typename Predicate::argument_type, bool>
+struct THRUST_DEPRECATED unary_negate
 {
+  using argument_type = typename Predicate::argument_type;
+  using result_type   = bool;
+
   /*! Constructor takes a \p Predicate object to negate.
    *  \param p The \p Predicate object to negate.
    */
@@ -1508,6 +1529,7 @@ struct unary_negate : public thrust::unary_function<typename Predicate::argument
    */
 }; // end unary_negate
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 /*! \p not1 is a helper function to simplify the creation of Adaptable Predicates:
  *  it takes an Adaptable Predicate \p pred as an argument and returns a new Adaptable
  *  Predicate that represents the negation of \p pred. That is: if \c pred is an object
@@ -1515,18 +1537,20 @@ struct unary_negate : public thrust::unary_function<typename Predicate::argument
  *  \c npred of <tt>not1(pred)</tt> is also a model of Adaptable Predicate and
  *  <tt>npred(x)</tt> always returns the same value as <tt>!pred(x)</tt>.
  *
+ *  deprecated [Since 2.6]
+ *
  *  \param pred The Adaptable Predicate to negate.
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x)</tt> always returns
  *          the same value as <tt>!pred(x)</tt>.
- *
  *  \tparam Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/unary_negate">Adaptable Predicate</a>.
- *
  *  \see unary_negate
  *  \see not2
  */
 template <typename Predicate>
-_CCCL_HOST_DEVICE unary_negate<Predicate> not1(const Predicate& pred);
+_CCCL_HOST_DEVICE
+THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate> not1(const Predicate& pred);
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 /*! \p binary_negate is a function object adaptor: it is an Adaptable Binary
  *  Predicate that represents the logical negation of some other Adaptable
@@ -1536,13 +1560,17 @@ _CCCL_HOST_DEVICE unary_negate<Predicate> not1(const Predicate& pred);
  *  There is rarely any reason to construct a <tt>binary_negate</tt> directly;
  *  it is almost always easier to use the helper function not2.
  *
+ *  deprecated [Since 2.6]
+ *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_negate
  */
 template <typename Predicate>
-struct binary_negate
-    : public thrust::
-        binary_function<typename Predicate::first_argument_type, typename Predicate::second_argument_type, bool>
+struct THRUST_DEPRECATED binary_negate
 {
+  using first_argument_type  = typename Predicate::first_argument_type;
+  using second_argument_type = typename Predicate::second_argument_type;
+  using result_type          = bool;
+
   /*! Constructor takes a \p Predicate object to negate.
    *  \param p The \p Predicate object to negate.
    */
@@ -1553,8 +1581,7 @@ struct binary_negate
   /*! Function call operator. The return value is <tt>!pred(x,y)</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool operator()(const typename Predicate::first_argument_type& x,
-                                    const typename Predicate::second_argument_type& y)
+  _CCCL_HOST_DEVICE bool operator()(const first_argument_type& x, const second_argument_type& y)
   {
     return !pred(x, y);
   }
@@ -1566,6 +1593,7 @@ struct binary_negate
    */
 }; // end binary_negate
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 /*! \p not2 is a helper function to simplify the creation of Adaptable Binary Predicates:
  *  it takes an Adaptable Binary Predicate \p pred as an argument and returns a new Adaptable
  *  Binary Predicate that represents the negation of \p pred. That is: if \c pred is an object
@@ -1573,18 +1601,52 @@ struct binary_negate
  *  \c npred of <tt>not2(pred)</tt> is also a model of Adaptable Binary Predicate and
  *  <tt>npred(x,y)</tt> always returns the same value as <tt>!pred(x,y)</tt>.
  *
+ *  deprecated [Since 2.6]
+ *
  *  \param pred The Adaptable Binary Predicate to negate.
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x,y)</tt> always returns
  *          the same value as <tt>!pred(x,y)</tt>.
- *
  *  \tparam Binary Predicate is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/AdaptableBinaryPredicate">Adaptable Binary Predicate</a>.
- *
  *  \see binary_negate
  *  \see not1
  */
 template <typename BinaryPredicate>
-_CCCL_HOST_DEVICE binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
+_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead")
+  binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+namespace detail
+{
+template <typename F>
+struct not_fun_t
+{
+  F f;
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto
+  operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...))) -> decltype(!f(std::forward<Ts>(args)...))
+  {
+    return !f(std::forward<Ts>(args)...);
+  }
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const
+    noexcept(noexcept(!f(std::forward<Ts>(args)...))) -> decltype(!f(std::forward<Ts>(args)...))
+  {
+    return !f(std::forward<Ts>(args)...);
+  }
+};
+} // namespace detail
+
+//! Takes a predicate (a callable returning bool) and returns a new predicate that returns the negated result.
+//! \see https://en.cppreference.com/w/cpp/utility/functional/not_fn
+// TODO(bgruber): alias to ::cuda::std::not_fn in C++17
+template <class F>
+_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::__decay_t<F>>
+{
+  return detail::not_fun_t<::cuda::std::__decay_t<F>>{std::forward<F>(f)};
+}
 
 /*! \}
  */

@@ -25,6 +25,9 @@
  *
  ******************************************************************************/
 
+#include "insert_nested_NVTX_range_guard.h"
+// above header needs to be included first
+
 #include <cub/device/device_merge_sort.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>

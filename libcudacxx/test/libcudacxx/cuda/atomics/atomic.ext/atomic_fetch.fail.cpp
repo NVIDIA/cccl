@@ -9,9 +9,9 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 
-// <cuda/std/atomic>
+// <cuda/atomic>
 
-#include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

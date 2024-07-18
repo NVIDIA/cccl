@@ -10,15 +10,16 @@
 // 6. A `thrust::system::system_error` exception is thrown.
 // 7. Because we've already got an active exception, `terminate` is called.
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/device_vector.h>
+
+#include <cstdint>
 
 #include <unittest/unittest.h>
 
 struct non_trivial
 {
-  __host__ __device__ non_trivial() {}
-  __host__ __device__ ~non_trivial() {}
+  _CCCL_HOST_DEVICE non_trivial() {}
+  _CCCL_HOST_DEVICE ~non_trivial() {}
 };
 
 void test_out_of_memory_recovery()
@@ -27,7 +28,7 @@ void test_out_of_memory_recovery()
   {
     thrust::device_vector<non_trivial> x(1);
 
-    thrust::device_vector<thrust::detail::uint32_t> y(0x00ffffffffffffff);
+    thrust::device_vector<std::uint32_t> y(0x00ffffffffffffff);
   }
   catch (...)
   {}

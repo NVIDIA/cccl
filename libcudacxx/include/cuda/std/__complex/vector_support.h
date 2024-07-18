@@ -43,13 +43,13 @@ template <class _Tp>
 struct __is_complex_float
 {
   static constexpr auto value =
-    _LIBCUDACXX_TRAIT(is_floating_point, _Tp) || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
+    _CCCL_TRAIT(is_floating_point, _Tp) || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
 };
 
 template <class _Tp>
 struct __is_complex_arithmetic
 {
-  static constexpr auto value = _LIBCUDACXX_TRAIT(is_arithmetic, _Tp) || __is_complex_float<_Tp>::value;
+  static constexpr auto value = _CCCL_TRAIT(is_arithmetic, _Tp) || __is_complex_float<_Tp>::value;
 };
 
 template <class _Tp>
@@ -67,7 +67,7 @@ struct __complex_can_implicitly_construct : false_type
 {};
 
 template <class _Dest, class _Source>
-struct __complex_can_implicitly_construct<_Dest, _Source, __void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
+struct __complex_can_implicitly_construct<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
     : true_type
 {};
 
@@ -82,7 +82,7 @@ struct __has_vector_type : false_type
 {};
 
 template <class _Tp>
-struct __has_vector_type<_Tp, __void_t<__type_to_vector_t<_Tp>>> : true_type
+struct __has_vector_type<_Tp, void_t<__type_to_vector_t<_Tp>>> : true_type
 {};
 
 template <class _Tp>

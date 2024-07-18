@@ -5,10 +5,10 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestSetDifferenceByKeyDescendingSimple(void)
+void TestSetDifferenceByKeyDescendingSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector a_key(4), a_val(4);
   Vector b_key(5), b_val(5);

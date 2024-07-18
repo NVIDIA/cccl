@@ -157,7 +157,7 @@ struct preserve_layout_right_analysis : integral_constant<bool, _Result>
 {
   using layout_type_if_preserved = layout_right;
   using encounter_pair           = preserve_layout_right_analysis<
-    // if we encounter a pair, the layout remains a layout right only if it was one before
+              // if we encounter a pair, the layout remains a layout right only if it was one before
     // and that only scalars were encountered until now
     _Result && _EncounteredOnlyScalar,
     // if we encounter a pair, we didn't encounter scalars only
@@ -182,7 +182,7 @@ struct preserve_layout_left_analysis : integral_constant<bool, _Result>
 {
   using layout_type_if_preserved = layout_left;
   using encounter_pair           = preserve_layout_left_analysis<
-    // if we encounter a pair, the layout remains a layout left only if it was one before
+              // if we encounter a pair, the layout remains a layout left only if it was one before
     // and that only all were encountered until now
     _Result && _EncounteredOnlyAll,
     // if we encounter a pair, we didn't encounter all only
@@ -285,7 +285,8 @@ struct __assign_op_slice_handler<
   template <size_t _OldStaticExtent, size_t _OldStaticStride>
   __MDSPAN_FORCE_INLINE_FUNCTION // NOLINT (misc-unconventional-assign-operator)
     constexpr auto
-    operator=(__slice_wrap<_OldStaticExtent, _OldStaticStride, size_t>&& __slice) noexcept -> __assign_op_slice_handler<
+    operator=(__slice_wrap<_OldStaticExtent, _OldStaticStride, size_t>&& __slice) noexcept
+    -> __assign_op_slice_handler<
       _IndexT,
       typename _PreserveLayoutAnalysis::encounter_scalar,
       __partially_static_sizes<_IndexT, size_t, _Offsets..., dynamic_extent>,
@@ -527,11 +528,11 @@ __MDSPAN_TEMPLATE_REQUIRES(
   class _AP,
   class... _SliceSpecs,
   /* requires */
-  ((_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left)
-    || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right) || __detail::_is_layout_stride<_LP>::value)
-   && __MDSPAN_FOLD_AND((_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
-                         || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
-                         || _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
+  ((_CCCL_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left) || _CCCL_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right)
+    || __detail::_is_layout_stride<_LP>::value)
+   && __MDSPAN_FOLD_AND((_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
+                         || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
+                         || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
    && sizeof...(_SliceSpecs) == _EXT::rank()))
 __MDSPAN_INLINE_FUNCTION
 __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(

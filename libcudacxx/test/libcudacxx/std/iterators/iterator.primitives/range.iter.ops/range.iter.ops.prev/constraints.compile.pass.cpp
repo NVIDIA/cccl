@@ -22,9 +22,7 @@
 #if TEST_STD_VER > 2017
 template <class... Args>
 concept has_ranges_prev = requires(Args&&... args) {
-  {
-    cuda::std::ranges::prev(cuda::std::forward<Args>(args)...)
-  };
+  { cuda::std::ranges::prev(cuda::std::forward<Args>(args)...) };
 };
 #else
 template <class... Args>

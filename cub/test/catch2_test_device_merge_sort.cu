@@ -25,6 +25,9 @@
  *
  ******************************************************************************/
 
+#include "insert_nested_NVTX_range_guard.h"
+// above header needs to be included first
+
 #include <cub/device/device_merge_sort.cuh>
 
 #include <thrust/copy.h>
@@ -137,6 +140,8 @@ struct index_to_key_value_op
     static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =
     static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+  static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
+                "Calculation of num_distinct_key_values would overflow");
   static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
 
   __device__ __host__ UnsignedIntegralKeyT operator()(std::size_t index)
@@ -163,6 +168,8 @@ private:
     static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =
     static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+  static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
+                "Calculation of num_distinct_key_values would overflow");
   static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
 
   // item_count / num_distinct_key_values
@@ -403,7 +410,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
 {
   using testing_types_tuple = c2h::get<0, TestType>;
   using key_t               = typename testing_types_tuple::key_t;
-  using offset_t            = typename c2h::get<0, TestType>::offset_t;
+  using offset_t            = typename testing_types_tuple::offset_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   auto num_items_ull =

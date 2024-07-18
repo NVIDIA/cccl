@@ -11,9 +11,9 @@
     void operator()(const size_t)                                                                              \
     {                                                                                                          \
       const size_t num_samples = 10000;                                                                        \
-      typedef typename Vector::value_type T;                                                                   \
-      Vector lhs = unittest::random_samples<T>(num_samples);                                                   \
-      Vector rhs = unittest::random_samples<T>(num_samples);                                                   \
+      using T                  = typename Vector::value_type;                                                  \
+      Vector lhs               = unittest::random_samples<T>(num_samples);                                     \
+      Vector rhs               = unittest::random_samples<T>(num_samples);                                     \
       thrust::replace(rhs.begin(), rhs.end(), T(0), T(1));                                                     \
                                                                                                                \
       Vector lhs_reference = lhs;                                                                              \
@@ -46,7 +46,7 @@
 template <typename T>
 struct plus_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs += rhs;
   }
@@ -55,7 +55,7 @@ struct plus_equal_reference
 template <typename T>
 struct minus_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs -= rhs;
   }
@@ -64,7 +64,7 @@ struct minus_equal_reference
 template <typename T>
 struct multiplies_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs *= rhs;
   }
@@ -73,7 +73,7 @@ struct multiplies_equal_reference
 template <typename T>
 struct divides_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs /= rhs;
   }
@@ -82,7 +82,7 @@ struct divides_equal_reference
 template <typename T>
 struct modulus_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs %= rhs;
   }
@@ -97,7 +97,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(ModulusEqual, %=, modulus_equal_reference, S
 template <typename T>
 struct bit_and_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs &= rhs;
   }
@@ -106,7 +106,7 @@ struct bit_and_equal_reference
 template <typename T>
 struct bit_or_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs |= rhs;
   }
@@ -115,7 +115,7 @@ struct bit_or_equal_reference
 template <typename T>
 struct bit_xor_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs ^= rhs;
   }
@@ -124,7 +124,7 @@ struct bit_xor_equal_reference
 template <typename T>
 struct bit_lshift_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs <<= rhs;
   }
@@ -133,7 +133,7 @@ struct bit_lshift_equal_reference
 template <typename T>
 struct bit_rshift_equal_reference
 {
-  __host__ __device__ T& operator()(T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE T& operator()(T& lhs, const T& rhs) const
   {
     return lhs >>= rhs;
   }
@@ -144,12 +144,12 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitOrEqual, |=, bit_or_equal_reference, Smal
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitXorEqual, ^=, bit_xor_equal_reference, SmallIntegralTypes);
 
 // XXX ptxas produces an error
-void TestFunctionalPlaceholdersBitLshiftEqualDevice(void)
+void TestFunctionalPlaceholdersBitLshiftEqualDevice()
 {
   KNOWN_FAILURE;
 }
 // XXX KNOWN_FAILURE this until the above works
-void TestFunctionalPlaceholdersBitLshiftEqualHost(void)
+void TestFunctionalPlaceholdersBitLshiftEqualHost()
 {
   KNOWN_FAILURE;
 }
@@ -160,7 +160,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitRshiftEqual, >>=, bit_rshift_equal_refere
 template <typename T>
 struct prefix_increment_reference
 {
-  __host__ __device__ T& operator()(T& x) const
+  _CCCL_HOST_DEVICE T& operator()(T& x) const
   {
     return ++x;
   }
@@ -169,7 +169,7 @@ struct prefix_increment_reference
 template <typename T>
 struct suffix_increment_reference
 {
-  __host__ __device__ T operator()(T& x) const
+  _CCCL_HOST_DEVICE T operator()(T& x) const
   {
     return x++;
   }
@@ -178,7 +178,7 @@ struct suffix_increment_reference
 template <typename T>
 struct prefix_decrement_reference
 {
-  __host__ __device__ T& operator()(T& x) const
+  _CCCL_HOST_DEVICE T& operator()(T& x) const
   {
     return --x;
   }
@@ -187,7 +187,7 @@ struct prefix_decrement_reference
 template <typename T>
 struct suffix_decrement_reference
 {
-  __host__ __device__ T operator()(T& x) const
+  _CCCL_HOST_DEVICE T operator()(T& x) const
   {
     return x--;
   }
@@ -195,11 +195,11 @@ struct suffix_decrement_reference
 
 #define PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)                                \
   template <typename Vector>                                                                                  \
-  void TestFunctionalPlaceholdersPrefix##name(void)                                                           \
+  void TestFunctionalPlaceholdersPrefix##name()                                                               \
   {                                                                                                           \
     const size_t num_samples = 10000;                                                                         \
-    typedef typename Vector::value_type T;                                                                    \
-    Vector input = unittest::random_samples<T>(num_samples);                                                  \
+    using T                  = typename Vector::value_type;                                                   \
+    Vector input             = unittest::random_samples<T>(num_samples);                                      \
                                                                                                               \
     Vector input_reference = input;                                                                           \
     Vector reference(input.size());                                                                           \
@@ -219,11 +219,11 @@ PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, prefix_decrement_reference);
 
 #define SUFFIX_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)                                \
   template <typename Vector>                                                                                  \
-  void TestFunctionalPlaceholdersSuffix##name(void)                                                           \
+  void TestFunctionalPlaceholdersSuffix##name()                                                               \
   {                                                                                                           \
     const size_t num_samples = 10000;                                                                         \
-    typedef typename Vector::value_type T;                                                                    \
-    Vector input = unittest::random_samples<T>(num_samples);                                                  \
+    using T                  = typename Vector::value_type;                                                   \
+    Vector input             = unittest::random_samples<T>(num_samples);                                      \
                                                                                                               \
     Vector input_reference = input;                                                                           \
     Vector reference(input.size());                                                                           \

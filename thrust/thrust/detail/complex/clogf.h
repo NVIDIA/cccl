@@ -59,7 +59,7 @@ namespace complex
 using thrust::complex;
 
 /* round down to 8 = 24/3 bits */
-__host__ __device__ inline float trim(float x)
+_CCCL_HOST_DEVICE inline float trim(float x)
 {
   uint32_t hx;
   get_float_word(hx, x);
@@ -69,7 +69,7 @@ __host__ __device__ inline float trim(float x)
   return ret;
 }
 
-__host__ __device__ inline complex<float> clogf(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 {
   // Adapted from FreeBSDs msun
   float x, y;
@@ -202,7 +202,7 @@ __host__ __device__ inline complex<float> clogf(const complex<float>& z)
 } // namespace detail
 
 template <>
-__host__ __device__ inline complex<float> log(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> log(const complex<float>& z)
 {
   return detail::complex::clogf(z);
 }

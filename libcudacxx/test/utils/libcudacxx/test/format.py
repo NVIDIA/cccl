@@ -74,6 +74,10 @@ class LibcxxTestFormat(object):
                     yield lit.Test.Test(testSuite, path_in_suite + (filename,),
                                         localConfig)
 
+    def getTestsForPath(self, testSuite, path_in_suite,
+                            litConfig, localConfig):
+        yield lit.Test.Test(testSuite, path_in_suite, localConfig)
+
     def execute(self, test, lit_config):
         while True:
             try:

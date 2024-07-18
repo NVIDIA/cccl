@@ -16,7 +16,7 @@
 #include <thread>
 #include <vector>
 
-#include <stdlib.h>
+#include "meta.h"
 
 #define DEFINE_ASYNC_TRAIT(...)                                             \
   template <typename T, typename = cuda::std::true_type>                    \
@@ -39,6 +39,28 @@ DEFINE_ASYNC_TRAIT(_initialize)
 DEFINE_ASYNC_TRAIT(_validate)
 
 #undef DEFINE_ASYNC_TRAIT
+
+template <typename T, typename = int>
+struct has_threadcount : std::false_type
+{};
+template <typename T>
+struct has_threadcount<T, decltype((void) T::threadcount, (int) 0)> : std::true_type
+{};
+
+template <typename T, bool = has_threadcount<T>::value>
+struct threadcount_trait_impl
+{
+  static constexpr size_t value = 1;
+};
+
+template <typename T>
+struct threadcount_trait_impl<T, true>
+{
+  static constexpr size_t value = T::threadcount;
+};
+
+template <typename T>
+using threadcount_trait = threadcount_trait_impl<T>;
 
 #define HETEROGENEOUS_SAFE_CALL(...)                                                  \
   do                                                                                  \
@@ -66,27 +88,25 @@ __host__ inline void sync_host_threads()
   host_threads().clear();
 }
 
-__host__ inline std::vector<cudaStream_t>& device_streams()
+__host__ inline std::vector<std::thread>& device_threads()
 {
-  static std::vector<cudaStream_t> streams;
-  return streams;
+  static std::vector<std::thread> threads;
+  return threads;
 }
 
-__host__ inline void sync_device_streams()
+__host__ inline void sync_device_threads()
 {
-  for (auto&& stream : device_streams())
+  for (auto&& thread : device_threads())
   {
-    HETEROGENEOUS_SAFE_CALL(cudaStreamSynchronize(stream));
-    HETEROGENEOUS_SAFE_CALL(cudaStreamDestroy(stream));
+    thread.join();
   }
-
-  device_streams().clear();
+  device_threads().clear();
 }
 
 __host__ void sync_all()
 {
   sync_host_threads();
-  sync_device_streams();
+  sync_device_threads();
 }
 
 struct async_tester_fence
@@ -105,20 +125,7 @@ struct async_tester_fence
 };
 
 template <typename... Testers>
-struct tester_list
-{};
-
-template <typename TesterList, typename... Testers>
-struct extend_tester_list_t;
-
-template <typename... Original, typename... Additional>
-struct extend_tester_list_t<tester_list<Original...>, Additional...>
-{
-  using type = tester_list<Original..., Additional...>;
-};
-
-template <typename TesterList, typename... Testers>
-using extend_tester_list = typename extend_tester_list_t<TesterList, Testers...>::type;
+using tester_list = type_list<Testers...>;
 
 template <typename Tester, typename T>
 __host__ __device__ void initialize(T& object)
@@ -182,20 +189,40 @@ void device_destroy(T* object)
   HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
   HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
 }
+template <typename Fn>
+void device_launch_async(Fn& launcher)
+{
+  auto streamManager = [launcher]() {
+    cudaStream_t stream;
+    HETEROGENEOUS_SAFE_CALL(cudaStreamCreate(&stream));
+    launcher(stream);
+    HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
+
+    HETEROGENEOUS_SAFE_CALL(cudaStreamSynchronize(stream));
+    HETEROGENEOUS_SAFE_CALL(cudaStreamDestroy(stream));
+  };
+
+  device_threads().push_back(std::thread(streamManager));
+}
 
 template <typename Tester, typename T>
 void device_initialize(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
-  cudaStream_t s;
-  HETEROGENEOUS_SAFE_CALL(cudaStreamCreate(&s));
-  initialization_kernel<Tester><<<1, 1, 0, s>>>(object);
-  HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
-  device_streams().push_back(s);
+  auto kernel_launcher = [&object](cudaStream_t stream) {
+    constexpr auto tc = threadcount_trait<Tester>::value;
+#ifdef DEBUG_TESTERS
+    printf("      %i device init threads launched\r\n", (int) tc);
+    fflush(stdout);
+#endif
+    initialization_kernel<Tester><<<1, tc, 0, stream>>>(object);
+  };
+
+  device_launch_async(kernel_launcher);
 
   if (!async_initialize_trait<Tester>::value)
   {
@@ -208,15 +235,20 @@ template <typename Tester, typename T>
 void device_validate(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
-  cudaStream_t s;
-  HETEROGENEOUS_SAFE_CALL(cudaStreamCreate(&s));
-  validation_kernel<Tester><<<1, 1, 0, s>>>(object);
-  HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
-  device_streams().push_back(s);
+  auto kernel_launcher = [&object](cudaStream_t stream) {
+    constexpr auto tc = threadcount_trait<Tester>::value;
+#ifdef DEBUG_TESTERS
+    printf("     %i device validate threads launched\r\n", (int) tc);
+    fflush(stdout);
+#endif
+    validation_kernel<Tester><<<1, tc, 0, stream>>>(object);
+  };
+
+  device_launch_async(kernel_launcher);
 
   if (!async_validate_trait<Tester>::value)
   {
@@ -229,20 +261,26 @@ template <typename Tester, typename T>
 void host_initialize(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
-  if (async_initialize_trait<Tester>::value)
+  constexpr auto tc = threadcount_trait<Tester>::value;
+#ifdef DEBUG_TESTERS
+  printf("      %i host init threads launched\r\n", (int) tc);
+  fflush(stdout);
+#endif
+
+  for (size_t i = 0; i < tc; i++)
   {
     host_threads().emplace_back([&] {
       initialize<Tester>(object);
     });
   }
 
-  else
+  if (!async_initialize_trait<Tester>::value)
   {
-    initialize<Tester>(object);
+    HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
     sync_all();
   }
 }
@@ -251,26 +289,29 @@ template <typename Tester, typename T>
 void host_validate(T& object)
 {
 #ifdef DEBUG_TESTERS
-  printf("%s\n", __PRETTY_FUNCTION__);
+  printf("    %s\n", __PRETTY_FUNCTION__);
   fflush(stdout);
 #endif
 
-  if (async_validate_trait<Tester>::value)
+  constexpr auto tc = threadcount_trait<Tester>::value;
+#ifdef DEBUG_TESTERS
+  printf("      %i host validate threads launched\r\n", (int) tc);
+  fflush(stdout);
+#endif
+
+  for (size_t i = 0; i < tc; i++)
   {
     host_threads().emplace_back([&] {
       validate<Tester>(object);
     });
   }
 
-  else
+  if (!async_initialize_trait<Tester>::value)
   {
-    validate<Tester>(object);
+    HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
     sync_all();
   }
 }
-
-template <typename T, typename... Args>
-using creator = T& (*) (Args...);
 
 template <typename T>
 using performer = void (*)(T&);
@@ -282,32 +323,111 @@ struct initializer_validator
   performer<T> validator;
 };
 
-template <typename T, typename... Testers, typename... Args>
-void validate_device_dynamic(tester_list<Testers...>, Args... args)
+template <typename T>
+struct host_launcher
 {
-  void* pointer;
-  HETEROGENEOUS_SAFE_CALL(cudaMalloc(&pointer, sizeof(T)));
+  template <typename Tester>
+  static initializer_validator<T> get_exec()
+  {
+    return initializer_validator<T>{host_initialize<Tester>, host_validate<Tester>};
+  }
+};
 
-  T& object = *device_construct<T>(pointer, args...);
+template <typename T>
+struct device_launcher
+{
+  template <typename Tester>
+  static initializer_validator<T> get_exec()
+  {
+    return initializer_validator<T>{device_initialize<Tester>, device_validate<Tester>};
+  }
+};
 
-  initializer_validator<T> performers[] = {{device_initialize<Testers>, device_validate<Testers>}...};
+template <typename T, typename... Testers, typename... Launchers>
+void do_heterogeneous_test(T* test_input, type_list<Testers...>, type_list<Launchers...>)
+{
+  initializer_validator<T> performers[] = {{Launchers::template get_exec<Testers>()}...};
 
   for (auto&& performer : performers)
   {
-    performer.initializer(object);
-    performer.validator(object);
+    performer.initializer(*test_input);
+    performer.validator(*test_input);
   }
 
   HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
   HETEROGENEOUS_SAFE_CALL(cudaDeviceSynchronize());
 
   sync_all();
-
-  device_destroy(&object);
-  HETEROGENEOUS_SAFE_CALL(cudaFree(pointer));
 }
 
-#if __cplusplus >= 201402L
+template <size_t Idx>
+using enable_if_permutations_remain = typename std::enable_if<Idx != 0, int>::type;
+template <size_t Idx>
+using enable_if_no_permutations_remain = typename std::enable_if<Idx == 0, int>::type;
+
+template <size_t Idx, typename Fn, typename Launchers, enable_if_permutations_remain<Idx> = 0>
+void permute_tests(const Fn& fn, Launchers launchers)
+{
+#ifdef DEBUG_TESTERS
+  printf("  Testing permutation %zd (%s)\r\n", Idx, __PRETTY_FUNCTION__);
+  fflush(stdout);
+#endif
+  fn(launchers);
+  permute_tests<Idx - 1>(fn, rotl<Launchers>{});
+}
+
+template <size_t Idx, typename Fn, typename Launchers, enable_if_no_permutations_remain<Idx> = 0>
+void permute_tests(const Fn&, Launchers)
+{}
+
+template <typename Fn, typename... Launchers>
+void permute_tests(const Fn& fn, type_list<Launchers...> launchers)
+{
+  permute_tests<sizeof...(Launchers)>(fn, launchers);
+}
+
+template <typename Testers, typename InputCreator, typename InputDestructor>
+struct test_wrapper
+{
+  InputCreator creator;
+  InputDestructor destructor;
+
+  template <typename Launchers>
+  void operator()(Launchers) const
+  {
+    auto input = creator();
+    do_heterogeneous_test(input, Testers{}, Launchers{});
+    destructor(input);
+  }
+};
+
+template <typename T, typename... Testers, typename... Args>
+void validate_device_dynamic(tester_list<Testers...> testers, Args... args)
+{
+  auto test_input_creator = [args...]() -> T* {
+    void* pointer = nullptr;
+    HETEROGENEOUS_SAFE_CALL(cudaMallocHost(&pointer, sizeof(T)));
+    return device_construct<T>(pointer, args...);
+  };
+
+  auto test_input_destructor = [](T* test_input) {
+    device_destroy(test_input);
+    HETEROGENEOUS_SAFE_CALL(cudaFreeHost(test_input));
+  };
+
+  test_wrapper<tester_list<Testers...>, decltype(test_input_creator), decltype(test_input_destructor)> test_harness{
+    test_input_creator, test_input_destructor};
+
+  // ex: type_list<device_launcher, host_launcher, host_launcher>
+  using initial_launcher_list = append_n<sizeof...(Testers) - 1, type_list<device_launcher<T>>, host_launcher<T>>;
+#ifdef DEBUG_TESTERS
+  printf("Launching %zd permutations\r\n", sizeof...(Testers));
+  fflush(stdout);
+#endif
+  permute_tests(test_harness, initial_launcher_list{});
+}
+
+#if _CCCL_STD_VER >= 2014
 template <typename T>
 struct manual_object
 {
@@ -351,16 +471,15 @@ template <typename T>
 __managed__ manual_object<T> managed_variable{};
 #endif
 
-template <typename T, std::size_t N, typename... Args>
-void validate_in_managed_memory_helper(
-  creator<T, Args...> creator_, performer<T> destroyer, initializer_validator<T> (&performers)[N], Args... args)
+template <typename Creator, typename Destroyer, typename Validator, std::size_t N>
+void validate_in_managed_memory_helper(const Creator& creator, const Destroyer& destroyer, Validator (&performers)[N])
 {
-  T& object = creator_(args...);
+  auto object = creator();
 
   for (auto&& performer : performers)
   {
-    performer.initializer(object);
-    performer.validator(object);
+    performer.initializer(*object);
+    performer.validator(*object);
   }
 
   HETEROGENEOUS_SAFE_CALL(cudaGetLastError());
@@ -378,74 +497,66 @@ void validate_managed(tester_list<Testers...>, Args... args)
 
   initializer_validator<T> device_init_host_check[] = {{device_initialize<Testers>, host_validate<Testers>}...};
 
-  creator<T, Args...> host_constructor = [](Args... args) -> T& {
+  auto host_constructor = [args...]() -> T* {
     void* pointer;
     HETEROGENEOUS_SAFE_CALL(cudaMallocManaged(&pointer, sizeof(T)));
-    return *new (pointer) T(args...);
+    return new (pointer) T(args...);
   };
 
-  creator<T, Args...> device_constructor = [](Args... args) -> T& {
+  auto device_constructor = [args...]() -> T* {
     void* pointer;
     HETEROGENEOUS_SAFE_CALL(cudaMallocManaged(&pointer, sizeof(T)));
-    return *device_construct<T>(pointer, args...);
+    return device_construct<T>(pointer, args...);
   };
 
-  performer<T> host_destructor = [](T& object) {
-    object.~T();
-    HETEROGENEOUS_SAFE_CALL(cudaFree(&object));
+  auto host_destructor = [](T* object) {
+    object->~T();
+    HETEROGENEOUS_SAFE_CALL(cudaFree(object));
   };
 
-  performer<T> device_destructor = [](T& object) {
-    device_destroy(&object);
-    HETEROGENEOUS_SAFE_CALL(cudaFree(&object));
+  auto device_destructor = [](T* object) {
+    device_destroy(object);
+    HETEROGENEOUS_SAFE_CALL(cudaFree(object));
   };
 
-  validate_in_managed_memory_helper<T>(host_constructor, host_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(host_constructor, host_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(host_constructor, device_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(host_constructor, device_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, host_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, host_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, device_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(device_constructor, device_destructor, device_init_host_check, args...);
+  validate_in_managed_memory_helper(host_constructor, host_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_constructor, host_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(host_constructor, device_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_constructor, device_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_constructor, host_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_constructor, host_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_constructor, device_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_constructor, device_destructor, device_init_host_check);
 
-#if __cplusplus >= 201402L && !defined(__clang__)
+#if _CCCL_STD_VER >= 2014 && !defined(__clang__)
   // The managed variable template part of this test is disabled under clang, pending nvbug 2790305 being fixed.
 
-  creator<T, Args...> host_variable_constructor = [](Args... args) -> T& {
+  auto host_variable_constructor = [args...]() -> T* {
     managed_variable<T>.construct(args...);
-    return managed_variable<T>.get();
+    return &managed_variable<T>.get();
   };
 
-  creator<T, Args...> device_variable_constructor = [](Args... args) -> T& {
+  auto device_variable_constructor = [args...]() -> T* {
     managed_variable<T>.device_construct(args...);
-    return managed_variable<T>.get();
+    return &managed_variable<T>.get();
   };
 
-  performer<T> host_variable_destructor = [](T&) {
+  auto host_variable_destructor = [](T*) {
     managed_variable<T>.destroy();
   };
 
-  performer<T> device_variable_destructor = [](T&) {
+  auto device_variable_destructor = [](T*) {
     managed_variable<T>.device_destroy();
   };
 
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, host_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, host_variable_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, device_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    host_variable_constructor, device_variable_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, host_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, host_variable_destructor, device_init_host_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, device_variable_destructor, host_init_device_check, args...);
-  validate_in_managed_memory_helper<T>(
-    device_variable_constructor, device_variable_destructor, device_init_host_check, args...);
+  validate_in_managed_memory_helper(host_variable_constructor, host_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_variable_constructor, host_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(host_variable_constructor, device_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(host_variable_constructor, device_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_variable_constructor, host_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_variable_constructor, host_variable_destructor, device_init_host_check);
+  validate_in_managed_memory_helper(device_variable_constructor, device_variable_destructor, host_init_device_check);
+  validate_in_managed_memory_helper(device_variable_constructor, device_variable_destructor, device_init_host_check);
 #endif
 }
 
@@ -505,14 +616,22 @@ struct is_tester_list_async<tester_list<Testers...>>
 {};
 
 template <typename T, typename TesterList, typename... Args>
-void validate_not_movable(Args... args)
+void validate_pinned(Args... args)
 {
   using list_t = typename validate_list<false, TesterList>::type;
   list_t list0;
+#ifdef DEBUG_TESTERS
+  printf("%s\n", "Launching permuted H/D tests");
+  fflush(stdout);
+#endif
   validate_device_dynamic<T>(list0, args...);
 
   if (check_managed_memory_support(is_tester_list_async<list_t>::value))
   {
+#ifdef DEBUG_TESTERS
+    printf("%s\n", "Launching mixed H/D tests");
+    fflush(stdout);
+#endif
     typename validate_list<true, TesterList>::type list1;
     validate_managed<T>(list1, args...);
   }
@@ -533,6 +652,8 @@ struct performer_adapter<Performer, performer_side::initialize>
   using async_initialize = async_trait<Performer>;
   using async_validate   = async_trait<Performer>;
 
+  static constexpr auto threadcount = threadcount_trait<Performer>::value;
+
   template <typename T>
   __host__ __device__ static void initialize(T& t)
   {
@@ -545,6 +666,8 @@ struct performer_adapter<Performer, performer_side::validate>
 {
   using async_initialize = async_trait<Performer>;
   using async_validate   = async_trait<Performer>;
+
+  static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
   __host__ __device__ static void initialize(T&)
@@ -561,24 +684,6 @@ template <typename... Ts>
 struct performer_list
 {};
 
-template <typename... Lists>
-struct cat_tester_lists_t;
-
-template <typename... Only>
-struct cat_tester_lists_t<tester_list<Only...>>
-{
-  using type = tester_list<Only...>;
-};
-
-template <typename... First, typename... Second, typename... Tail>
-struct cat_tester_lists_t<tester_list<First...>, tester_list<Second...>, Tail...>
-{
-  using type = typename cat_tester_lists_t<tester_list<First..., Second...>, Tail...>::type;
-};
-
-template <typename... Lists>
-using cat_tester_lists = typename cat_tester_lists_t<Lists...>::type;
-
 template <typename Front, typename... Performers>
 struct generate_variants_t;
 
@@ -591,11 +696,11 @@ struct generate_variants_t<tester_list<Fronts...>>
 template <typename... Fronts, typename First, typename... Performers>
 struct generate_variants_t<tester_list<Fronts...>, First, Performers...>
 {
-  using type = cat_tester_lists<
-    typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::initialize>>,
-                                 Performers...>::type,
-    typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::validate>>,
-                                 Performers...>::type>;
+  using type =
+    append<typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::initialize>>,
+                                        Performers...>::type,
+           typename generate_variants_t<tester_list<Fronts..., performer_adapter<First, performer_side::validate>>,
+                                        Performers...>::type>;
 };
 
 template <typename Front, typename... Performers>

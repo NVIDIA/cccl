@@ -13,7 +13,7 @@
 struct basic_arithmetic_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x, const thrust::complex<T>& y)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x, const thrust::complex<T>& y)
   {
     // exercise unary and binary arithmetic operators
     // Should return approximately 1
@@ -24,7 +24,7 @@ struct basic_arithmetic_functor
 struct complex_plane_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     // Should return a proximately 1
     return thrust::proj((thrust::polar(abs(x), arg(x)) * conj(x)) / norm(x));
@@ -34,7 +34,7 @@ struct complex_plane_functor
 struct pow_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x, const thrust::complex<T>& y)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x, const thrust::complex<T>& y)
   {
     // exercise power functions
     return pow(x, y);
@@ -44,7 +44,7 @@ struct pow_functor
 struct sqrt_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     // exercise power functions
     return sqrt(x);
@@ -54,7 +54,7 @@ struct sqrt_functor
 struct log_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return log(x);
   } // end operator()()
@@ -63,7 +63,7 @@ struct log_functor
 struct exp_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return exp(x);
   } // end operator()()
@@ -72,7 +72,7 @@ struct exp_functor
 struct log10_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return log10(x);
   } // end operator()()
@@ -81,7 +81,7 @@ struct log10_functor
 struct cos_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return cos(x);
   }
@@ -90,7 +90,7 @@ struct cos_functor
 struct sin_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return sin(x);
   }
@@ -99,7 +99,7 @@ struct sin_functor
 struct tan_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return tan(x);
   }
@@ -108,7 +108,7 @@ struct tan_functor
 struct cosh_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return cosh(x);
   }
@@ -117,7 +117,7 @@ struct cosh_functor
 struct sinh_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return sinh(x);
   }
@@ -126,7 +126,7 @@ struct sinh_functor
 struct tanh_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return tanh(x);
   }
@@ -135,7 +135,7 @@ struct tanh_functor
 struct acos_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return acos(x);
   }
@@ -144,7 +144,7 @@ struct acos_functor
 struct asin_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return asin(x);
   }
@@ -153,7 +153,7 @@ struct asin_functor
 struct atan_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return atan(x);
   }
@@ -162,7 +162,7 @@ struct atan_functor
 struct acosh_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return acosh(x);
   }
@@ -171,7 +171,7 @@ struct acosh_functor
 struct asinh_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return asinh(x);
   }
@@ -180,7 +180,7 @@ struct asinh_functor
 struct atanh_functor
 {
   template <typename T>
-  __host__ __device__ thrust::complex<T> operator()(const thrust::complex<T>& x)
+  _CCCL_HOST_DEVICE thrust::complex<T> operator()(const thrust::complex<T>& x)
   {
     return atanh(x);
   }
@@ -204,7 +204,7 @@ struct TestComplexArithmeticTransform
 {
   void operator()(const size_t n)
   {
-    typedef thrust::complex<T> type;
+    using type                     = thrust::complex<T>;
     thrust::host_vector<type> h_p1 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_p2 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_result(n);
@@ -225,7 +225,7 @@ struct TestComplexPlaneTransform
 {
   void operator()(const size_t n)
   {
-    typedef thrust::complex<T> type;
+    using type                     = thrust::complex<T>;
     thrust::host_vector<type> h_p1 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_result(n);
 
@@ -244,7 +244,7 @@ struct TestComplexPowerTransform
 {
   void operator()(const size_t n)
   {
-    typedef thrust::complex<T> type;
+    using type                     = thrust::complex<T>;
     thrust::host_vector<type> h_p1 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_p2 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_result(n);
@@ -271,7 +271,7 @@ struct TestComplexExponentialTransform
 {
   void operator()(const size_t n)
   {
-    typedef thrust::complex<T> type;
+    using type                     = thrust::complex<T>;
     thrust::host_vector<type> h_p1 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_result(n);
 
@@ -298,7 +298,7 @@ struct TestComplexTrigonometricTransform
 {
   void operator()(const size_t n)
   {
-    typedef thrust::complex<T> type;
+    using type                     = thrust::complex<T>;
     thrust::host_vector<type> h_p1 = random_complex_samples<T>(n);
     thrust::host_vector<type> h_result(n);
 

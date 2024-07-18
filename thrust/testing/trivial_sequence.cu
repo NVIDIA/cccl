@@ -7,10 +7,10 @@
 template <typename Iterator>
 void test(Iterator first, Iterator last)
 {
-  typedef typename thrust::iterator_system<Iterator>::type System;
+  using System = typename thrust::iterator_system<Iterator>::type;
   System system;
   thrust::detail::trivial_sequence<Iterator, System> ts(system, first, last);
-  typedef typename thrust::iterator_traits<Iterator>::value_type ValueType;
+  using ValueType = typename thrust::iterator_traits<Iterator>::value_type;
 
   ASSERT_EQUAL_QUIET((ValueType) ts.begin()[0], ValueType(0, 11));
   ASSERT_EQUAL_QUIET((ValueType) ts.begin()[1], ValueType(2, 11));
@@ -24,14 +24,14 @@ void test(Iterator first, Iterator last)
   ts.begin()[3] = ValueType(0, 0);
   ts.begin()[4] = ValueType(0, 0);
 
-  typedef typename thrust::detail::trivial_sequence<Iterator, System>::iterator_type TrivialIterator;
+  using TrivialIterator = typename thrust::detail::trivial_sequence<Iterator, System>::iterator_type;
 
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<Iterator>::value, false);
   ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TrivialIterator>::value, true);
 }
 
 template <class Vector>
-void TestTrivialSequence(void)
+void TestTrivialSequence()
 {
   Vector A(5);
   A[0] = 0;

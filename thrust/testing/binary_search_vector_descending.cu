@@ -14,16 +14,16 @@
 template <class ExampleVector, typename NewType>
 struct vector_like
 {
-  typedef typename ExampleVector::allocator_type alloc;
-  typedef typename thrust::detail::allocator_traits<alloc> alloc_traits;
-  typedef typename alloc_traits::template rebind_alloc<NewType> new_alloc;
-  typedef thrust::detail::vector_base<NewType, new_alloc> type;
+  using alloc        = typename ExampleVector::allocator_type;
+  using alloc_traits = typename thrust::detail::allocator_traits<alloc>;
+  using new_alloc    = typename alloc_traits::template rebind_alloc<NewType>;
+  using type         = thrust::detail::vector_base<NewType, new_alloc>;
 };
 
 template <class Vector>
-void TestVectorLowerBoundDescendingSimple(void)
+void TestVectorLowerBoundDescendingSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector vec(5);
 
@@ -36,8 +36,8 @@ void TestVectorLowerBoundDescendingSimple(void)
   Vector input(10);
   thrust::sequence(input.begin(), input.end());
 
-  typedef typename Vector::difference_type int_type;
-  typedef typename vector_like<Vector, int_type>::type IntVector;
+  using int_type  = typename Vector::difference_type;
+  using IntVector = typename vector_like<Vector, int_type>::type;
 
   // test with integral output type
   IntVector integral_output(10);
@@ -60,7 +60,7 @@ void TestVectorLowerBoundDescendingSimple(void)
 DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
 
 template <class Vector>
-void TestVectorUpperBoundDescendingSimple(void)
+void TestVectorUpperBoundDescendingSimple()
 {
   Vector vec(5);
 
@@ -73,9 +73,9 @@ void TestVectorUpperBoundDescendingSimple(void)
   Vector input(10);
   thrust::sequence(input.begin(), input.end());
 
-  typedef typename Vector::difference_type int_type;
-  typedef typename Vector::value_type T;
-  typedef typename vector_like<Vector, int_type>::type IntVector;
+  using int_type  = typename Vector::difference_type;
+  using T         = typename Vector::value_type;
+  using IntVector = typename vector_like<Vector, int_type>::type;
 
   // test with integral output type
   IntVector integral_output(10);
@@ -98,7 +98,7 @@ void TestVectorUpperBoundDescendingSimple(void)
 DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
 
 template <class Vector>
-void TestVectorBinarySearchDescendingSimple(void)
+void TestVectorBinarySearchDescendingSimple()
 {
   Vector vec(5);
 
@@ -111,10 +111,10 @@ void TestVectorBinarySearchDescendingSimple(void)
   Vector input(10);
   thrust::sequence(input.begin(), input.end());
 
-  typedef typename vector_like<Vector, bool>::type BoolVector;
-  typedef typename Vector::difference_type int_type;
-  typedef typename Vector::value_type T;
-  typedef typename vector_like<Vector, int_type>::type IntVector;
+  using BoolVector = typename vector_like<Vector, bool>::type;
+  using int_type   = typename Vector::difference_type;
+  using T          = typename Vector::value_type;
+  using IntVector  = typename vector_like<Vector, int_type>::type;
 
   // test with boolean output type
   BoolVector bool_output(10);
@@ -166,7 +166,7 @@ struct TestVectorLowerBoundDescending
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    typedef typename thrust::host_vector<T>::difference_type int_type;
+    using int_type = typename thrust::host_vector<T>::difference_type;
     thrust::host_vector<int_type> h_output(2 * n);
     thrust::device_vector<int_type> d_output(2 * n);
 
@@ -192,7 +192,7 @@ struct TestVectorUpperBoundDescending
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    typedef typename thrust::host_vector<T>::difference_type int_type;
+    using int_type = typename thrust::host_vector<T>::difference_type;
     thrust::host_vector<int_type> h_output(2 * n);
     thrust::device_vector<int_type> d_output(2 * n);
 
@@ -218,7 +218,7 @@ struct TestVectorBinarySearchDescending
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    typedef typename thrust::host_vector<T>::difference_type int_type;
+    using int_type = typename thrust::host_vector<T>::difference_type;
     thrust::host_vector<int_type> h_output(2 * n);
     thrust::device_vector<int_type> d_output(2 * n);
 

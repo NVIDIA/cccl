@@ -73,12 +73,12 @@ system_error ::system_error(int ev, const error_category& ecat)
   ;
 } // end system_error::system_error()
 
-const error_code& system_error ::code(void) const noexcept
+const error_code& system_error ::code() const noexcept
 {
   return m_error_code;
 } // end system_error::code()
 
-const char* system_error ::what(void) const noexcept
+const char* system_error ::what() const noexcept
 {
   if (m_what.empty())
   {

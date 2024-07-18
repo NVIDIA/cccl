@@ -10,27 +10,27 @@
 #include <unittest/unittest.h>
 
 template <typename T>
-struct is_even : thrust::unary_function<T, bool>
+struct is_even
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return (static_cast<unsigned int>(x) & 1) == 0;
   }
 };
 
 template <typename T>
-struct is_true : thrust::unary_function<T, bool>
+struct is_true
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return x ? true : false;
   }
 };
 
 template <typename Vector>
-void TestRemoveSimple(void)
+void TestRemoveSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -85,9 +85,9 @@ void TestRemoveDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopySimple(void)
+void TestRemoveCopySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -145,9 +145,9 @@ void TestRemoveCopyDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveCopyDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveIfSimple(void)
+void TestRemoveIfSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -202,9 +202,9 @@ void TestRemoveIfDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveIfDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveIfStencilSimple(void)
+void TestRemoveIfStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -267,9 +267,9 @@ void TestRemoveIfStencilDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveIfStencilDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopyIfSimple(void)
+void TestRemoveCopyIfSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -327,9 +327,9 @@ void TestRemoveCopyIfDispatchImplicit()
 DECLARE_UNITTEST(TestRemoveCopyIfDispatchImplicit);
 
 template <typename Vector>
-void TestRemoveCopyIfStencilSimple(void)
+void TestRemoveCopyIfStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -511,11 +511,11 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
   size_t num_zeros    = thrust::count(h_data.begin(), h_data.end(), T(0));
   size_t num_nonzeros = h_data.size() - num_zeros;
 
-  typedef thrust::tuple<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>> Tuple1;
-  typedef thrust::tuple<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>> Tuple2;
+  using Tuple1 = thrust::tuple<typename thrust::host_vector<T>::iterator, thrust::discard_iterator<>>;
+  using Tuple2 = thrust::tuple<typename thrust::device_vector<T>::iterator, thrust::discard_iterator<>>;
 
-  typedef thrust::zip_iterator<Tuple1> ZipIterator1;
-  typedef thrust::zip_iterator<Tuple2> ZipIterator2;
+  using ZipIterator1 = thrust::zip_iterator<Tuple1>;
+  using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
   ZipIterator1 h_result = thrust::remove_copy(
     thrust::make_zip_iterator(thrust::make_tuple(h_data.begin(), h_data.begin())),
@@ -566,7 +566,7 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  size_t num_false = thrust::count_if(h_data.begin(), h_data.end(), thrust::not1(is_true<T>()));
+  size_t num_false = thrust::count_if(h_data.begin(), h_data.end(), thrust::not_fn(is_true<T>()));
 
   thrust::discard_iterator<> h_result =
     thrust::remove_copy_if(h_data.begin(), h_data.end(), thrust::make_discard_iterator(), is_true<T>());
@@ -618,7 +618,7 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
   thrust::host_vector<bool> h_stencil   = unittest::random_integers<bool>(n);
   thrust::device_vector<bool> d_stencil = h_stencil;
 
-  size_t num_false = thrust::count_if(h_stencil.begin(), h_stencil.end(), thrust::not1(is_true<T>()));
+  size_t num_false = thrust::count_if(h_stencil.begin(), h_stencil.end(), thrust::not_fn(is_true<T>()));
 
   thrust::discard_iterator<> h_result = thrust::remove_copy_if(
     h_data.begin(), h_data.end(), h_stencil.begin(), thrust::make_discard_iterator(), is_true<T>());

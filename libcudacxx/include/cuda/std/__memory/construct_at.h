@@ -42,7 +42,7 @@
 #  include <new>
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
-#if defined(__cuda_std__) && _CCCL_STD_VER > 2017 // need to backfill ::std::construct_at
+#if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
 #  ifndef _CCCL_COMPILER_NVRTC
 #    include <memory>
 #  endif // _CCCL_COMPILER_NVRTC
@@ -64,7 +64,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* construct_at(_Tp* __location, _Args
 }
 } // namespace std
 #  endif // __cpp_lib_constexpr_dynamic_alloc
-#endif // __cuda_std__ && _CCCL_STD_VER > 2017
+#endif // _CCCL_STD_VER >= 2020
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -85,42 +85,39 @@ struct __is_narrowing_impl<_To, _From> : true_type
 // This is a bit hacky, but we rely on the fact that arithmetic types cannot have more than one argument to their
 // constructor
 template <class _To, class _From>
-struct __is_narrowing_impl<_To, _From, __void_t<decltype(_To{_CUDA_VSTD::declval<_From>()})>> : false_type
+struct __is_narrowing_impl<_To, _From, void_t<decltype(_To{_CUDA_VSTD::declval<_From>()})>> : false_type
 {};
 
 template <class _Tp, class... _Args>
-using __is_narrowing = _If<_LIBCUDACXX_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
+using __is_narrowing = _If<_CCCL_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
 
 // The destination type must be trivially constructible from the arguments and also trivially assignable, because we
 // technically move assign in the optimization
 template <class _Tp, class... _Args>
 struct __can_optimize_construct_at
     : integral_constant<bool,
-                        _LIBCUDACXX_TRAIT(is_trivially_constructible, _Tp, _Args...)
-                          && _LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Tp)
-                          && !__is_narrowing<_Tp, _Args...>::value>
+                        _CCCL_TRAIT(is_trivially_constructible, _Tp, _Args...)
+                          && _CCCL_TRAIT(is_trivially_move_assignable, _Tp) && !__is_narrowing<_Tp, _Args...>::value>
 {};
 } // namespace __detail
 
 // construct_at
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
-#  if defined(__cuda_std__)
   // Need to go through `std::construct_at` as that is the explicitly blessed function
   if (__libcpp_is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
-#  endif // __cuda_std__
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
@@ -128,12 +125,11 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
-#  if defined(__cuda_std__)
   // Need to go through `std::construct_at` as that is the explicitly blessed function
   if (__libcpp_is_constant_evaluated())
   {
@@ -141,46 +137,41 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   }
   *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
   return __location;
-#  else // ^^^ __cuda_std__ ^^^ / vvv !__cuda_std__ vvv
-  // NVCC always considers construction + move assignment, other compilers are smarter using copy construction
-  // So rather than adding all kinds of workarounds simply fall back to the correct implementation for libcxx mode
-  return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
-#  endif // !__cuda_std__
 }
 
-#endif // _CCCL_STD_VER > 2017
+#endif // _CCCL_STD_VER >= 2020
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  __construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+__construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
-#if defined(__cuda_std__) && _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
   if (__libcpp_is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
-#endif // __cuda_std__ && _CCCL_STD_VER > 2017
+#endif // _CCCL_STD_VER >= 2020
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
-  __construct_at(_Tp* __location, _Args&&... __args)
+_LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+__construct_at(_Tp* __location, _Args&&... __args)
 {
   _LIBCUDACXX_ASSERT(__location != nullptr, "null pointer given to construct_at");
-#if defined(__cuda_std__) && _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
   if (__libcpp_is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
-#endif // __cuda_std__ && _CCCL_STD_VER > 2017
+#endif // _CCCL_STD_VER >= 2020
   *__location = _Tp{_CUDA_VSTD::forward<_Args>(__args)...};
   return __location;
 }
@@ -199,7 +190,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __destroy_at(_Tp* __loc
   __loc->~_Tp();
 }
 
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
 template <class _Tp, __enable_if_t<is_array<_Tp>::value, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __destroy_at(_Tp* __loc)
 {
@@ -240,13 +231,13 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
   __loc->~_Tp();
 }
 
-#  if _CCCL_STD_VER > 2017
+#  if _CCCL_STD_VER >= 2020
 template <class _Tp, enable_if_t<is_array_v<_Tp>, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
   _CUDA_VSTD::__destroy_at(__loc);
 }
-#  endif // _CCCL_STD_VER > 2017
+#  endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last)

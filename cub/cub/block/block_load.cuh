@@ -192,8 +192,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void
 InternalLoadDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_THREAD])
 {
   // Biggest memory access word that T is a whole multiple of
-  typedef typename UnitWord<T>::DeviceWord DeviceWord;
+  using DeviceWord = typename UnitWord<T>::DeviceWord;
 
+  _CCCL_DIAG_PUSH
+#  if defined(CUB_CLANG_VERSION) && CUB_CLANG_VERSION >= 100000
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wsizeof-array-div")
+#  endif // defined(CUB_CLANG_VERSION) && CUB_CLANG_VERSION >= 100000
   enum
   {
     TOTAL_WORDS = sizeof(items) / sizeof(DeviceWord),
@@ -204,9 +208,10 @@ InternalLoadDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITE
 
     VECTORS_PER_THREAD = TOTAL_WORDS / VECTOR_SIZE,
   };
+  _CCCL_DIAG_POP
 
   // Vector type
-  typedef typename CubVector<DeviceWord, VECTOR_SIZE>::Type Vector;
+  using Vector = typename CubVector<DeviceWord, VECTOR_SIZE>::Type;
 
   // Vector items
   Vector vec_items[VECTORS_PER_THREAD];
@@ -754,7 +759,7 @@ enum BlockLoadAlgorithm
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-//!        typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+//!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
 //!
 //!        // Allocate shared memory for BlockLoad
 //!        __shared__ typename BlockLoad::TempStorage temp_storage;
@@ -829,7 +834,7 @@ private:
   struct LoadInternal<BLOCK_LOAD_DIRECT, DUMMY>
   {
     /// Shared memory storage layout type
-    typedef NullType TempStorage;
+    using TempStorage = NullType;
 
     /// Linear thread-id
     int linear_tid;
@@ -904,7 +909,7 @@ private:
   struct LoadInternal<BLOCK_LOAD_STRIPED, DUMMY>
   {
     /// Shared memory storage layout type
-    typedef NullType TempStorage;
+    using TempStorage = NullType;
 
     /// Linear thread-id
     int linear_tid;
@@ -979,7 +984,7 @@ private:
   struct LoadInternal<BLOCK_LOAD_VECTORIZE, DUMMY>
   {
     /// Shared memory storage layout type
-    typedef NullType TempStorage;
+    using TempStorage = NullType;
 
     /// Linear thread-id
     int linear_tid;
@@ -1104,7 +1109,7 @@ private:
   struct LoadInternal<BLOCK_LOAD_TRANSPOSE, DUMMY>
   {
     // BlockExchange utility type for keys
-    typedef BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
+    using BlockExchange = BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -1199,11 +1204,10 @@ private:
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    CUB_STATIC_ASSERT((int(BLOCK_THREADS) % int(WARP_THREADS) == 0),
-                      "BLOCK_THREADS must be a multiple of WARP_THREADS");
+    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
-    typedef BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
+    using BlockExchange = BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -1298,11 +1302,10 @@ private:
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    CUB_STATIC_ASSERT((int(BLOCK_THREADS) % int(WARP_THREADS) == 0),
-                      "BLOCK_THREADS must be a multiple of WARP_THREADS");
+    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
-    typedef BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
+    using BlockExchange = BlockExchange<InputT, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -1386,10 +1389,10 @@ private:
   };
 
   /// Internal load implementation to use
-  typedef LoadInternal<ALGORITHM, 0> InternalLoad;
+  using InternalLoad = LoadInternal<ALGORITHM, 0>;
 
   /// Shared memory storage layout type
-  typedef typename InternalLoad::TempStorage _TempStorage;
+  using _TempStorage = typename InternalLoad::TempStorage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -1458,7 +1461,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+  //!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
   //!
   //!        // Allocate shared memory for BlockLoad
   //!        __shared__ typename BlockLoad::TempStorage temp_storage;
@@ -1507,7 +1510,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+  //!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
   //!
   //!        // Allocate shared memory for BlockLoad
   //!        __shared__ typename BlockLoad::TempStorage temp_storage;
@@ -1560,7 +1563,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+  //!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
   //!
   //!        // Allocate shared memory for BlockLoad
   //!        __shared__ typename BlockLoad::TempStorage temp_storage;

@@ -42,9 +42,12 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/integer_math.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -129,10 +132,10 @@ private:
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
 public:
-  using policy_t = cub::detail::conditional_t<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
+  using policy_t = ::cuda::std::_If<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
   using block_sort_agent_t =
-    cub::detail::conditional_t<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
-  using merge_agent_t = cub::detail::conditional_t<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
+    ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
+  using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
 } // namespace detail
 
@@ -387,7 +390,7 @@ struct DispatchMergeSort : SelectedPolicy
 
   // Problem state
 
-  /// Device-accessible allocation of temporary storage. When NULL, the required
+  /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.
   void* d_temp_storage;
 

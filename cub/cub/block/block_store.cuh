@@ -184,7 +184,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   };
 
   // Vector type
-  typedef typename CubVector<T, VEC_SIZE>::Type Vector;
+  using Vector = typename CubVector<T, VEC_SIZE>::Type;
 
   // Alias global pointer
   Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
@@ -464,6 +464,7 @@ enum BlockStoreAlgorithm
   //!   access stride between threads (i.e., the number items per thread) exceeds the
   //!   maximum vector store width (typically 4 items or 64B, whichever is lower).
   //! - The following conditions will prevent vectorization and writing will fall back to cub::BLOCK_STORE_DIRECT:
+  //!
   //!   - ``ITEMS_PER_THREAD`` is odd
   //!   - The ``OutputIteratorT`` is not a simple pointer type
   //!   - The block output offset is not quadword-aligned
@@ -494,6 +495,7 @@ enum BlockStoreAlgorithm
   //! @rst
   //! Overview
   //! ++++++++++++++++++++++++++
+  //!
   //! A :ref:`blocked arrangement <flexible-data-arrangement>` is locally
   //! transposed and then efficiently written to memory as a
   //! :ref:`warp-striped arrangement <flexible-data-arrangement>`.
@@ -561,10 +563,10 @@ enum BlockStoreAlgorithm
 //!   #. :cpp:enumerator:`cub::BLOCK_STORE_VECTORIZE`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` of data is written directly to memory
 //!      using CUDA's built-in vectorized stores as a coalescing optimization.
-//!   #. :cpp:enumerator:`cub::BLOCK_STORE_TRANSPOSE`
+//!   #. :cpp:enumerator:`cub::BLOCK_STORE_TRANSPOSE`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` is locally transposed into
 //!      a :ref:`striped arrangement <flexible-data-arrangement>` which is then written to memory.
-//!   #. :cpp:enumerator:`cub::BLOCK_STORE_WARP_TRANSPOSE:
+//!   #. :cpp:enumerator:`cub::BLOCK_STORE_WARP_TRANSPOSE`:
 //!      A :ref:`blocked arrangement <flexible-data-arrangement>` is locally transposed into
 //!      a :ref:`warp-striped arrangement <flexible-data-arrangement>` which is then written to memory.
 //!   #. :cpp:enumerator:`cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED`:
@@ -593,7 +595,7 @@ enum BlockStoreAlgorithm
 //!    __global__ void ExampleKernel(int *d_data, ...)
 //!    {
 //!        // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
-//!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE> BlockStore;
+//!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
 //!
 //!        // Allocate shared memory for BlockStore
 //!        __shared__ typename BlockStore::TempStorage temp_storage;
@@ -662,7 +664,7 @@ private:
   struct StoreInternal<BLOCK_STORE_DIRECT, DUMMY>
   {
     /// Shared memory storage layout type
-    typedef NullType TempStorage;
+    using TempStorage = NullType;
 
     /// Linear thread-id
     int linear_tid;
@@ -713,7 +715,7 @@ private:
   struct StoreInternal<BLOCK_STORE_STRIPED, DUMMY>
   {
     /// Shared memory storage layout type
-    typedef NullType TempStorage;
+    using TempStorage = NullType;
 
     /// Linear thread-id
     int linear_tid;
@@ -764,7 +766,7 @@ private:
   struct StoreInternal<BLOCK_STORE_VECTORIZE, DUMMY>
   {
     /// Shared memory storage layout type
-    typedef NullType TempStorage;
+    using TempStorage = NullType;
 
     /// Linear thread-id
     int linear_tid;
@@ -831,7 +833,7 @@ private:
   struct StoreInternal<BLOCK_STORE_TRANSPOSE, DUMMY>
   {
     // BlockExchange utility type for keys
-    typedef BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
+    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -911,11 +913,10 @@ private:
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    CUB_STATIC_ASSERT((int(BLOCK_THREADS) % int(WARP_THREADS) == 0),
-                      "BLOCK_THREADS must be a multiple of WARP_THREADS");
+    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
-    typedef BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
+    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -995,11 +996,10 @@ private:
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    CUB_STATIC_ASSERT((int(BLOCK_THREADS) % int(WARP_THREADS) == 0),
-                      "BLOCK_THREADS must be a multiple of WARP_THREADS");
+    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     // BlockExchange utility type for keys
-    typedef BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchange;
+    using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
     /// Shared memory storage layout type
     struct _TempStorage : BlockExchange::TempStorage
@@ -1068,10 +1068,10 @@ private:
   };
 
   /// Internal load implementation to use
-  typedef StoreInternal<ALGORITHM, 0> InternalStore;
+  using InternalStore = StoreInternal<ALGORITHM, 0>;
 
   /// Shared memory storage layout type
-  typedef typename InternalStore::TempStorage _TempStorage;
+  using _TempStorage = typename InternalStore::TempStorage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -1139,7 +1139,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, ...)
   //!    {
   //!        // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE> BlockStore;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
   //!
   //!        // Allocate shared memory for BlockStore
   //!        __shared__ typename BlockStore::TempStorage temp_storage;
@@ -1191,7 +1191,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
   //!    {
   //!        // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
-  //!        typedef cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE> BlockStore;
+  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
   //!
   //!        // Allocate shared memory for BlockStore
   //!        __shared__ typename BlockStore::TempStorage temp_storage;

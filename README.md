@@ -1,7 +1,7 @@
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NVIDIA/cccl?quickstart=1&devcontainer_path=.devcontainer%2Fdevcontainer.json)
 
-|[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[libcudacxx Docs](https://nvidia.github.io/cccl/libcudacxx/)|[Thrust Docs](https://nvidia.github.io/cccl/thrust/)|[CUB Docs](https://nvidia.github.io/cccl/cub/)|
-|-|-|-|-|-|-|-|-|
+|[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[Documentation](https://nvidia.github.io/cccl)|
+|-|-|-|-|-|-|
 
 # CUDA C++ Core Libraries (CCCL)
 
@@ -243,6 +243,8 @@ Unless otherwise specified, CCCL supports all the same operating systems as the 
 Unless otherwise specified, CCCL supports all the same host compilers as the CUDA Toolkit, which are documented here:
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
+
+In the spirit of "You only support what you test",  see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
 ### C++ Dialects
 - C++11 (Deprecated in Thrust/CUB, to be removed in next major version)

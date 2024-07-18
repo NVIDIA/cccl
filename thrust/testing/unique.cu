@@ -114,16 +114,16 @@ DECLARE_UNITTEST(TestUniqueCountDispatchImplicit);
 template <typename T>
 struct is_equal_div_10_unique
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }
 };
 
 template <typename Vector>
-void TestUniqueSimple(void)
+void TestUniqueSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(10);
   data[0] = 11;
@@ -184,9 +184,9 @@ struct TestUnique
 VariableUnitTest<TestUnique, IntegralTypes> TestUniqueInstance;
 
 template <typename Vector>
-void TestUniqueCopySimple(void)
+void TestUniqueCopySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(10);
   data[0] = 11;
@@ -280,9 +280,9 @@ struct TestUniqueCopyToDiscardIterator
 VariableUnitTest<TestUniqueCopyToDiscardIterator, IntegralTypes> TestUniqueCopyToDiscardIteratorInstance;
 
 template <typename Vector>
-void TestUniqueCountSimple(void)
+void TestUniqueCountSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(10);
   data[0] = 11;

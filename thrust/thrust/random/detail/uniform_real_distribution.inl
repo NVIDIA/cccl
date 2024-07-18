@@ -44,7 +44,7 @@ _CCCL_HOST_DEVICE uniform_real_distribution<RealType>::uniform_real_distribution
 {} // end uniform_real_distribution::uniform_real_distribution()
 
 template <typename RealType>
-_CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::reset(void)
+_CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::reset()
 {} // end uniform_real_distribution::reset()
 
 template <typename RealType>
@@ -76,21 +76,21 @@ uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& ur
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
-uniform_real_distribution<RealType>::a(void) const
+uniform_real_distribution<RealType>::a() const
 {
   return m_param.first;
 } // end uniform_real::a()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
-uniform_real_distribution<RealType>::b(void) const
+uniform_real_distribution<RealType>::b() const
 {
   return m_param.second;
 } // end uniform_real_distribution::b()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::param_type
-uniform_real_distribution<RealType>::param(void) const
+uniform_real_distribution<RealType>::param() const
 {
   return m_param;
   ;
@@ -104,14 +104,14 @@ _CCCL_HOST_DEVICE void uniform_real_distribution<RealType>::param(const param_ty
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::min
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return a();
 } // end uniform_real_distribution::min()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type uniform_real_distribution<RealType>::max
-THRUST_PREVENT_MACRO_SUBSTITUTION(void) const
+THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
   return b();
 } // end uniform_real_distribution::max()
@@ -127,8 +127,8 @@ template <typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
 uniform_real_distribution<RealType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
-  typedef std::basic_ostream<CharT, Traits> ostream_type;
-  typedef typename ostream_type::ios_base ios_base;
+  using ostream_type = std::basic_ostream<CharT, Traits>;
+  using ios_base     = typename ostream_type::ios_base;
 
   // save old flags and fill character
   const typename ios_base::fmtflags flags = os.flags();
@@ -150,8 +150,8 @@ template <typename RealType>
 template <typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>& uniform_real_distribution<RealType>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
-  typedef std::basic_istream<CharT, Traits> istream_type;
-  typedef typename istream_type::ios_base ios_base;
+  using istream_type = std::basic_istream<CharT, Traits>;
+  using ios_base     = typename istream_type::ios_base;
 
   // save old flags
   const typename ios_base::fmtflags flags = is.flags();

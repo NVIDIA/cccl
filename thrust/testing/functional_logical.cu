@@ -9,10 +9,10 @@
 const size_t NUM_SAMPLES = 10000;
 
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
-void TestBinaryFunctional(void)
+void TestBinaryFunctional()
 {
-  typedef typename InputVector::value_type InputType;
-  typedef typename OutputVector::value_type OutputType;
+  using InputType  = typename InputVector::value_type;
+  using OutputType = typename OutputVector::value_type;
 
   thrust::host_vector<InputType> std_input1 = unittest::random_samples<InputType>(NUM_SAMPLES);
   thrust::host_vector<InputType> std_input2 = unittest::random_samples<InputType>(NUM_SAMPLES);
@@ -58,12 +58,12 @@ Macro(vector_type, operator_name, unittest::uint64_t)
 
 // op(T,T) -> bool
 #define DECLARE_BINARY_LOGICAL_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
-  void Test##OperatorName##FunctionalHost(void)                                                      \
+  void Test##OperatorName##FunctionalHost()                                                          \
   {                                                                                                  \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST, host_vector, operator_name);   \
   }                                                                                                  \
   DECLARE_UNITTEST(Test##OperatorName##FunctionalHost);                                              \
-  void Test##OperatorName##FunctionalDevice(void)                                                    \
+  void Test##OperatorName##FunctionalDevice()                                                        \
   {                                                                                                  \
     INSTANTIATE_ALL_TYPES(INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST, device_vector, operator_name); \
   }                                                                                                  \

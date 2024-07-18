@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/transform.h>
 
+#include "include/host_device.h"
+
 // This example shows how thrust::zip_iterator can be used to create a
 // 'virtual' array of structures.  In this case the structure is a 3d
 // vector type (Float3) whose (x,y,z) components will be stored in
@@ -12,10 +14,10 @@
 // into a single virtual Float3 array.
 
 // We'll use a 3-tuple to store our 3d vector type
-typedef thrust::tuple<float, float, float> Float3;
+using Float3 = thrust::tuple<float, float, float>;
 
 // This functor implements the dot product between 3d vectors
-struct DotProduct : public thrust::binary_function<Float3, Float3, float>
+struct DotProduct
 {
   __host__ __device__ float operator()(const Float3& a, const Float3& b) const
   {
@@ -38,7 +40,7 @@ thrust::host_vector<float> random_vector(const size_t N, unsigned int seed = thr
   return temp;
 }
 
-int main(void)
+int main()
 {
   // number of vectors
   const size_t N = 1000;
@@ -72,9 +74,9 @@ int main(void)
 
   // METHOD #1
   // Defining a zip_iterator type can be a little cumbersome ...
-  typedef thrust::device_vector<float>::iterator FloatIterator;
-  typedef thrust::tuple<FloatIterator, FloatIterator, FloatIterator> FloatIteratorTuple;
-  typedef thrust::zip_iterator<FloatIteratorTuple> Float3Iterator;
+  using FloatIterator      = thrust::device_vector<float>::iterator;
+  using FloatIteratorTuple = thrust::tuple<FloatIterator, FloatIterator, FloatIterator>;
+  using Float3Iterator     = thrust::zip_iterator<FloatIteratorTuple>;
 
   // Now we'll create some zip_iterators for A and B
   Float3Iterator A_first = thrust::make_zip_iterator(thrust::make_tuple(A0.begin(), A1.begin(), A2.begin()));

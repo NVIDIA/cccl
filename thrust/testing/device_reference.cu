@@ -3,9 +3,9 @@
 
 #include <unittest/unittest.h>
 
-void TestDeviceReferenceConstructorFromDeviceReference(void)
+void TestDeviceReferenceConstructorFromDeviceReference()
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> v(1, 0);
   thrust::device_reference<T> ref = v[0];
@@ -28,9 +28,9 @@ void TestDeviceReferenceConstructorFromDeviceReference(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceConstructorFromDeviceReference);
 
-void TestDeviceReferenceConstructorFromDevicePointer(void)
+void TestDeviceReferenceConstructorFromDevicePointer()
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> v(1, 0);
   thrust::device_ptr<T> ptr = &v[0];
@@ -54,10 +54,10 @@ void TestDeviceReferenceConstructorFromDevicePointer(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceConstructorFromDevicePointer);
 
-void TestDeviceReferenceAssignmentFromDeviceReference(void)
+void TestDeviceReferenceAssignmentFromDeviceReference()
 {
   // test same types
-  typedef int T0;
+  using T0 = int;
   thrust::device_vector<T0> v0(2, 0);
   thrust::device_reference<T0> ref0 = v0[0];
   thrust::device_reference<T0> ref1 = v0[1];
@@ -71,7 +71,7 @@ void TestDeviceReferenceAssignmentFromDeviceReference(void)
   ASSERT_EQUAL(ref0, ref1);
 
   // test different types
-  typedef float T1;
+  using T1 = float;
   thrust::device_vector<T1> v1(1, 0.0f);
   thrust::device_reference<T1> ref2 = v1[0];
 
@@ -84,9 +84,9 @@ void TestDeviceReferenceAssignmentFromDeviceReference(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceAssignmentFromDeviceReference);
 
-void TestDeviceReferenceManipulation(void)
+void TestDeviceReferenceManipulation()
 {
-  typedef int T1;
+  using T1 = int;
 
   thrust::device_vector<T1> v(1, 0);
   thrust::device_ptr<T1> ptr = &v[0];
@@ -207,9 +207,9 @@ void TestDeviceReferenceManipulation(void)
 }
 DECLARE_UNITTEST(TestDeviceReferenceManipulation);
 
-void TestDeviceReferenceSwap(void)
+void TestDeviceReferenceSwap()
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> v(2);
   thrust::device_reference<T> ref1 = v.front();

@@ -195,7 +195,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::uninitialized_copy(d_out + blockIdx.x, block_aggregate);
+    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
   }
 }
 
@@ -660,7 +660,7 @@ struct DispatchReduce : SelectedPolicy
     {
       // Return if the caller is simply requesting the size of the storage
       // allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         temp_storage_bytes = 1;
         break;
@@ -773,7 +773,7 @@ struct DispatchReduce : SelectedPolicy
         break;
       }
 
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         // Return if the caller is simply requesting the size of the storage
         // allocation
@@ -862,8 +862,8 @@ struct DispatchReduce : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    typedef typename ActivePolicyT::SingleTilePolicy SingleTilePolicyT;
-    typedef typename DispatchReduce::MaxPolicy MaxPolicyT;
+    using SingleTilePolicyT = typename ActivePolicyT::SingleTilePolicy;
+    using MaxPolicyT        = typename DispatchReduce::MaxPolicy;
 
     // Force kernel code-generation in all compiler passes
     if (num_items <= (SingleTilePolicyT::BLOCK_THREADS * SingleTilePolicyT::ITEMS_PER_THREAD))
@@ -940,7 +940,7 @@ struct DispatchReduce : SelectedPolicy
     cudaStream_t stream,
     TransformOpT transform_op = {})
   {
-    typedef typename DispatchReduce::MaxPolicy MaxPolicyT;
+    using MaxPolicyT = typename DispatchReduce::MaxPolicy;
 
     cudaError error = cudaSuccess;
     do
@@ -1207,7 +1207,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
     {
       // Return if the caller is simply requesting the size of the storage
       // allocation
-      if (d_temp_storage == NULL)
+      if (d_temp_storage == nullptr)
       {
         temp_storage_bytes = 1;
         return cudaSuccess;
@@ -1260,7 +1260,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    typedef typename DispatchSegmentedReduce::MaxPolicy MaxPolicyT;
+    using MaxPolicyT = typename DispatchSegmentedReduce::MaxPolicy;
 
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
@@ -1335,7 +1335,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
     InitT init,
     cudaStream_t stream)
   {
-    typedef typename DispatchSegmentedReduce::MaxPolicy MaxPolicyT;
+    using MaxPolicyT = typename DispatchSegmentedReduce::MaxPolicy;
 
     if (num_segments <= 0)
     {

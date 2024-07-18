@@ -11,16 +11,29 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v17.0.6
+    rev: v18.1.8
     hooks:
       - id: clang-format
-        types_or: [c, c++, cuda]
+        types_or: [file]
+        files: |
+          (?x)^(
+            ^.*\.c$|
+            ^.*\.cpp$|
+            ^.*\.cu$|
+            ^.*\.cuh$|
+            ^.*\.cxx$|
+            ^.*\.h$|
+            ^.*\.hpp$|
+            ^.*\.inl$|
+            ^.*\.mm$|
+            ^libcudacxx/include/.*/[^.]*$
+          )
         args: ["-fallback-style=none", "-style=file", "-i"]
 
 default_language_version:

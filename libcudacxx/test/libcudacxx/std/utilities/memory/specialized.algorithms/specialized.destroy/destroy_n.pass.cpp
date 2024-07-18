@@ -104,7 +104,7 @@ int main(int, char**)
   tests();
 #if TEST_STD_VER > 2017
   test_arrays();
-#  if !defined(__CUDACC_RTC__)
+#  if !defined(TEST_COMPILER_NVRTC)
 #    if (defined(TEST_COMPILER_CLANG) && __clang_major__ > 10) || (defined(TEST_COMPILER_GCC) && __GNUC__ > 9) \
       || defined(TEST_COMPILER_MSVC_2022) || defined(TEST_COMPILER_NVHPC)
   static_assert(tests());
@@ -112,7 +112,7 @@ int main(int, char**)
   //       in a constexpr context (see https://reviews.llvm.org/D114903).
   // static_assert(test_arrays());
 #    endif
-#  endif // __CUDACC_RTC__
+#  endif // TEST_COMPILER_NVRTC
 #endif // TEST_STD_VER > 2017
   return 0;
 }

@@ -11,7 +11,7 @@
 
 namespace unittest
 {
-__host__ __device__ void assert_static(bool condition, const char* filename, int lineno);
+_CCCL_HOST_DEVICE void assert_static(bool condition, const char* filename, int lineno);
 }
 
 #include <thrust/device_delete.h>
@@ -23,8 +23,8 @@ __host__ __device__ void assert_static(bool condition, const char* filename, int
 
 #  define ASSERT_STATIC_ASSERT(X)                                                              \
     {                                                                                          \
-      bool triggered = false;                                                                  \
-      typedef unittest::static_assert_exception ex_t;                                          \
+      bool triggered                      = false;                                             \
+      using ex_t                          = unittest::static_assert_exception;                 \
       thrust::device_ptr<ex_t> device_ptr = thrust::device_new<ex_t>();                        \
       ex_t* raw_ptr                       = thrust::raw_pointer_cast(device_ptr);              \
       ::cudaMemcpyToSymbol(unittest::detail::device_exception, &raw_ptr, sizeof(ex_t*));       \
@@ -41,7 +41,7 @@ __host__ __device__ void assert_static(bool condition, const char* filename, int
         triggered = static_cast<ex_t>(*device_ptr).triggered;                                  \
       }                                                                                        \
       thrust::device_free(device_ptr);                                                         \
-      raw_ptr = NULL;                                                                          \
+      raw_ptr = nullptr;                                                                       \
       ::cudaMemcpyToSymbol(unittest::detail::device_exception, &raw_ptr, sizeof(ex_t*));       \
       if (!triggered)                                                                          \
       {                                                                                        \
@@ -56,7 +56,7 @@ __host__ __device__ void assert_static(bool condition, const char* filename, int
 #  define ASSERT_STATIC_ASSERT(X)                                                              \
     {                                                                                          \
       bool triggered = false;                                                                  \
-      typedef unittest::static_assert_exception ex_t;                                          \
+      using ex_t     = unittest::static_assert_exception;                                      \
       try                                                                                      \
       {                                                                                        \
         X;                                                                                     \
@@ -80,11 +80,11 @@ namespace unittest
 class static_assert_exception
 {
 public:
-  __host__ __device__ static_assert_exception()
+  _CCCL_HOST_DEVICE static_assert_exception()
       : triggered(false)
   {}
 
-  __host__ __device__ static_assert_exception(const char* filename, int lineno)
+  _CCCL_HOST_DEVICE static_assert_exception(const char* filename, int lineno)
       : triggered(true)
       , filename(filename)
       , lineno(lineno)
@@ -100,10 +100,10 @@ namespace detail
 #if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
 __attribute__((used))
 #endif
-__device__ static static_assert_exception* device_exception = NULL;
+_CCCL_DEVICE static static_assert_exception* device_exception = nullptr;
 } // namespace detail
 
-__host__ __device__ void assert_static(bool condition, const char* filename, int lineno)
+_CCCL_HOST_DEVICE void assert_static(bool condition, const char* filename, int lineno)
 {
   if (!condition)
   {

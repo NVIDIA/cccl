@@ -166,7 +166,7 @@ __host__ __device__
       assert(c.begin() == cuda::std::begin(c));
       assert(c.cbegin() == cuda::std::cbegin(c));
 #  if TEST_STD_VER < 2017
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_STD_VER < 2017
       {
         assert(c.rbegin() == cuda::std::rbegin(c));
@@ -175,7 +175,7 @@ __host__ __device__
       assert(c.end() == cuda::std::end(c));
       assert(c.cend() == cuda::std::cend(c));
 #  if TEST_STD_VER < 2017
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_STD_VER < 2017
       {
         assert(c.rend() == cuda::std::rend(c));
@@ -185,7 +185,7 @@ __host__ __device__
       assert(cuda::std::begin(c) != cuda::std::end(c));
       assert(cuda::std::cbegin(c) != cuda::std::cend(c));
 #  if TEST_STD_VER < 2017
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_STD_VER < 2017
       {
         assert(cuda::std::rbegin(c) != cuda::std::rend(c));
@@ -212,7 +212,7 @@ __host__ __device__
       assert(cii == nullptr);
 #  endif // TEST_COMPILER_CUDACC_BELOW_11_3
          // This breaks NVCCs constexpr evaluator
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
       {
         assert(!(ii1 < cii));
         assert(!(cii < ii1));
@@ -231,7 +231,7 @@ __host__ __device__
       assert(c.begin() == cuda::std::begin(c));
       assert(c.cbegin() == cuda::std::cbegin(c));
 #  if TEST_STD_VER < 2017
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_STD_VER < 2017
       {
         assert(c.rbegin() == cuda::std::rbegin(c));
@@ -240,7 +240,7 @@ __host__ __device__
       assert(c.end() == cuda::std::end(c));
       assert(c.cend() == cuda::std::cend(c));
 #  if TEST_STD_VER < 2017
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_STD_VER < 2017
       {
         assert(c.rend() == cuda::std::rend(c));
@@ -250,7 +250,7 @@ __host__ __device__
       assert(cuda::std::begin(c) == cuda::std::end(c));
       assert(cuda::std::cbegin(c) == cuda::std::cend(c));
 #  if TEST_STD_VER < 2017
-      if (!cuda::std::__libcpp_is_constant_evaluated())
+      if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_STD_VER < 2017
       {
         assert(cuda::std::rbegin(c) == cuda::std::rend(c));

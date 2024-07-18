@@ -68,7 +68,7 @@ static void load_and_run_gpu_code(const std::string inputFile, const RunConfig& 
   CUDA_SAFE_CALL(cuCtxCreate(&context, 0, cuDevice));
   CUDA_SAFE_CALL(cuModuleLoadDataEx(&module, code.data(), 0, 0, 0));
   CUDA_SAFE_CALL(cuModuleGetFunction(&kernel, module, "main_kernel"));
-  CUDA_SAFE_CALL(cuLaunchKernel(kernel, 1, 1, 1, rc.threadCount, 1, 1, rc.shmemSize, NULL, NULL, 0));
+  CUDA_SAFE_CALL(cuLaunchKernel(kernel, 1, 1, 1, rc.threadCount, 1, 1, rc.shmemSize, nullptr, nullptr, 0));
 
   CUDA_API_CALL(cudaGetLastError());
   CUDA_API_CALL(cudaDeviceSynchronize());

@@ -38,7 +38,7 @@ template <typename Allocator, template <typename> class BaseSystem>
 struct execute_with_allocator : BaseSystem<execute_with_allocator<Allocator, BaseSystem>>
 {
 private:
-  typedef BaseSystem<execute_with_allocator<Allocator, BaseSystem>> super_t;
+  using super_t = BaseSystem<execute_with_allocator<Allocator, BaseSystem>>;
 
   Allocator alloc;
 
@@ -53,7 +53,7 @@ public:
       : alloc(alloc_)
   {}
 
-  typename remove_reference<Allocator>::type& get_allocator()
+  ::cuda::std::__libcpp_remove_reference_t<Allocator>& get_allocator()
   {
     return alloc;
   }

@@ -168,10 +168,9 @@ public:
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan()
     requires(
               // Directly using rank_dynamic()>0 here doesn't work for nvcc
-              (extents_type::rank_dynamic() > 0)
-              && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, data_handle_type)
-              && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, mapping_type)
-              && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type))
+              (extents_type::rank_dynamic() > 0) && _CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, data_handle_type)
+              && _CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, mapping_type)
+              && _CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type))
   = default;
 #  endif
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan(const mdspan&) = default;
@@ -180,29 +179,29 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _SizeTypes,
     /* requires */ (
-      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
+      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
+      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
       && ((sizeof...(_SizeTypes) == rank()) || (sizeof...(_SizeTypes) == rank_dynamic()))
-      && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)
-      && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
+      && _CCCL_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)
+      && _CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
   __MDSPAN_INLINE_FUNCTION
   explicit constexpr mdspan(data_handle_type __p, _SizeTypes... __dynamic_extents)
       // TODO @proposal-bug shouldn't I be allowed to do `move(__p)` here?
       : __members(
-        _CUDA_VSTD::move(__p),
-        __map_acc_pair_t(mapping_type(extents_type(static_cast<index_type>(_CUDA_VSTD::move(__dynamic_extents))...)),
-                         accessor_type()))
+          _CUDA_VSTD::move(__p),
+          __map_acc_pair_t(mapping_type(extents_type(static_cast<index_type>(_CUDA_VSTD::move(__dynamic_extents))...)),
+                           accessor_type()))
   {}
 
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
     size_t _Np,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
+    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
      && ((_Np == rank()) || (_Np == rank_dynamic()))
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
+     && _CCCL_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   __MDSPAN_INLINE_FUNCTION
   constexpr mdspan(data_handle_type __p, const _CUDA_VSTD::array<_SizeType, _Np>& __dynamic_extents)
@@ -214,17 +213,16 @@ public:
     class _SizeType,
     size_t _Np,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
+    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)
      && ((_Np == rank()) || (_Np == rank_dynamic()))
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
+     && _CCCL_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   __MDSPAN_INLINE_FUNCTION
   constexpr mdspan(data_handle_type __p, _CUDA_VSTD::span<_SizeType, _Np> __dynamic_extents)
-      : __members(
-        _CUDA_VSTD::move(__p),
-        __map_acc_pair_t(mapping_type(extents_type(_CUDA_VSTD::as_const(__dynamic_extents))), accessor_type()))
+      : __members(_CUDA_VSTD::move(__p),
+                  __map_acc_pair_t(mapping_type(extents_type(_CUDA_VSTD::as_const(__dynamic_extents))), accessor_type()))
   {}
 
   __MDSPAN_FUNCTION_REQUIRES(
@@ -233,8 +231,8 @@ public:
     (data_handle_type __p, const extents_type& __exts),
     ,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)))
+    (_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_constructible, mapping_type, extents_type)))
       : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(mapping_type(__exts), accessor_type()))
   {}
 
@@ -243,7 +241,7 @@ public:
     mdspan,
     (data_handle_type __p, const mapping_type& __m),
     ,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
+    /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_default_constructible, accessor_type)))
       : __members(_CUDA_VSTD::move(__p), __map_acc_pair_t(__m, accessor_type()))
   {}
 
@@ -258,17 +256,17 @@ public:
     class _OtherLayoutPolicy,
     class _OtherAccessor,
     /* requires */
-    (_LIBCUDACXX_TRAIT(
+    (_CCCL_TRAIT(
        _CUDA_VSTD::is_constructible, mapping_type, typename _OtherLayoutPolicy::template mapping<_OtherExtents>)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, accessor_type, _OtherAccessor)))
+     && _CCCL_TRAIT(_CUDA_VSTD::is_constructible, accessor_type, _OtherAccessor)))
   __MDSPAN_INLINE_FUNCTION
   constexpr mdspan(const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
       : __members(__other.__ptr_ref(), __map_acc_pair_t(__other.__mapping_ref(), __other.__accessor_ref()))
   {
     static_assert(
-      _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, data_handle_type, typename _OtherAccessor::data_handle_type),
+      _CCCL_TRAIT(_CUDA_VSTD::is_constructible, data_handle_type, typename _OtherAccessor::data_handle_type),
       "Incompatible data_handle_type for mdspan construction");
-    static_assert(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents),
+    static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents),
                   "Incompatible extents for mdspan construction");
     /*
      * TODO: Check precondition
@@ -292,8 +290,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _SizeTypes,
     /* requires */ (
-      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
+      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
+      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
       && (rank() == sizeof...(_SizeTypes))))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator[](_SizeTypes... __indices) const
@@ -304,8 +302,8 @@ public:
 
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
-                    && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
+    /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
+                    && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator[](const _CUDA_VSTD::array<_SizeType, rank()>& __indices) const
   {
@@ -314,8 +312,8 @@ public:
 
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
-                    && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
+    /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
+                    && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator[](_CUDA_VSTD::span<_SizeType, rank()> __indices) const
   {
@@ -323,11 +321,10 @@ public:
   }
 
 #  if !__MDSPAN_USE_BRACKET_OPERATOR
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _Index,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Index, index_type)
-                    && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Index)
-                    && extents_type::rank() == 1))
+  __MDSPAN_TEMPLATE_REQUIRES(class _Index,
+                             /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Index, index_type)
+                                             && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Index)
+                                             && extents_type::rank() == 1))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator[](_Index __idx) const
   {
@@ -339,8 +336,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _SizeTypes,
     /* requires */ (
-      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
+      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
+      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
       && extents_type::rank() == sizeof...(_SizeTypes)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator()(_SizeTypes... __indices) const
@@ -350,8 +347,8 @@ public:
 
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
-                    && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
+    /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
+                    && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator()(const _CUDA_VSTD::array<_SizeType, rank()>& __indices) const
   {
@@ -360,8 +357,8 @@ public:
 
   __MDSPAN_TEMPLATE_REQUIRES(
     class _SizeType,
-    /* requires */ (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
-                    && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
+    /* requires */ (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeType, index_type)
+                    && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeType)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator()(_CUDA_VSTD::span<_SizeType, rank()> __indices) const
   {
@@ -473,27 +470,26 @@ private:
 };
 
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
-__MDSPAN_TEMPLATE_REQUIRES(class _ElementType,
-                           class... _SizeTypes,
-                           /* requires */ __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(is_integral, _SizeTypes) /* && ... */)
-                             && (sizeof...(_SizeTypes) > 0))
-_CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _SizeTypes...)
-  -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
+__MDSPAN_TEMPLATE_REQUIRES(
+  class _ElementType,
+  class... _SizeTypes,
+  /* requires */ __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_integral, _SizeTypes) /* && ... */) && (sizeof...(_SizeTypes) > 0))
+_CCCL_HOST_DEVICE explicit mdspan(_ElementType*,
+                                  _SizeTypes...) -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
 
-__MDSPAN_TEMPLATE_REQUIRES(class _Pointer, (_LIBCUDACXX_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>)))
-_CCCL_HOST_DEVICE mdspan(_Pointer&&)
-  -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
-__MDSPAN_TEMPLATE_REQUIRES(class _CArray, (_LIBCUDACXX_TRAIT(is_array, _CArray) && (rank_v<_CArray> == 1)))
+__MDSPAN_TEMPLATE_REQUIRES(class _Pointer, (_CCCL_TRAIT(is_pointer, _CUDA_VSTD::remove_reference_t<_Pointer>)))
+_CCCL_HOST_DEVICE
+mdspan(_Pointer&&) -> mdspan<_CUDA_VSTD::remove_pointer_t<_CUDA_VSTD::remove_reference_t<_Pointer>>, extents<size_t>>;
+__MDSPAN_TEMPLATE_REQUIRES(class _CArray, (_CCCL_TRAIT(is_array, _CArray) && (rank_v<_CArray> == 1)))
 _CCCL_HOST_DEVICE mdspan(_CArray&)
   -> mdspan<_CUDA_VSTD::remove_all_extents_t<_CArray>, extents<size_t, _CUDA_VSTD::extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const _CUDA_VSTD::array<_SizeType, _Np>&)
-  -> mdspan<_ElementType, dextents<size_t, _Np>>;
+_CCCL_HOST_DEVICE mdspan(_ElementType*,
+                         const _CUDA_VSTD::array<_SizeType, _Np>&) -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 template <class _ElementType, class _SizeType, size_t _Np>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>)
-  -> mdspan<_ElementType, dextents<size_t, _Np>>;
+_CCCL_HOST_DEVICE mdspan(_ElementType*, _CUDA_VSTD::span<_SizeType, _Np>) -> mdspan<_ElementType, dextents<size_t, _Np>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which

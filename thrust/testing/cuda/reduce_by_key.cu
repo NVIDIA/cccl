@@ -74,7 +74,7 @@ __global__ void reduce_by_key_kernel(
 template <typename T>
 struct is_equal_div_10_reduce
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }
@@ -114,14 +114,13 @@ void initialize_values(Vector& values)
 template <typename ExecutionPolicy>
 void TestReduceByKeyDevice(ExecutionPolicy exec)
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> keys;
   thrust::device_vector<T> values;
 
-  typedef
-    typename thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>
-      iterator_pair;
+  using iterator_pair =
+    typename thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>;
 
   thrust::device_vector<iterator_pair> new_last_vec(1);
   iterator_pair new_last;
@@ -244,8 +243,8 @@ DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector keys;
   Vector values;
@@ -348,32 +347,32 @@ void TestReduceByKeyCudaStreamsNoSync()
 DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
-class div_op : public thrust::unary_function<std::int64_t, std::int64_t>
+class div_op
 {
   std::int64_t m_divisor;
 
 public:
-  __host__ div_op(std::int64_t divisor)
+  _CCCL_HOST div_op(std::int64_t divisor)
       : m_divisor(divisor)
   {}
 
-  __host__ __device__ std::int64_t operator()(std::int64_t x) const
+  _CCCL_HOST_DEVICE std::int64_t operator()(std::int64_t x) const
   {
     return x / m_divisor;
   }
 };
 
 // Produces unique sequence for key
-class mod_op : public thrust::unary_function<std::int64_t, std::int64_t>
+class mod_op
 {
   std::int64_t m_divisor;
 
 public:
-  __host__ mod_op(std::int64_t divisor)
+  _CCCL_HOST mod_op(std::int64_t divisor)
       : m_divisor(divisor)
   {}
 
-  __host__ __device__ std::int64_t operator()(std::int64_t x) const
+  _CCCL_HOST_DEVICE std::int64_t operator()(std::int64_t x) const
   {
     // div: 2
     // idx: 0 1   2 3   4 5

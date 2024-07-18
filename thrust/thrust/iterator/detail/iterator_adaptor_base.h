@@ -52,7 +52,7 @@ namespace detail
 template <class T, class DefaultNullaryFn>
 struct ia_dflt_help
     : thrust::detail::
-        eval_if<thrust::detail::is_same<T, thrust::use_default>::value, DefaultNullaryFn, thrust::detail::identity_<T>>
+        eval_if<::cuda::std::is_same<T, thrust::use_default>::value, DefaultNullaryFn, thrust::detail::identity_<T>>
 {}; // end ia_dflt_help
 
 // A metafunction which computes an iterator_adaptor's base class,
@@ -66,20 +66,21 @@ template <typename Derived,
           typename Difference>
 struct iterator_adaptor_base
 {
-  typedef typename ia_dflt_help<Value, iterator_value<Base>>::type value;
+  using value = typename ia_dflt_help<Value, iterator_value<Base>>::type;
 
-  typedef typename ia_dflt_help<System, thrust::iterator_system<Base>>::type system;
+  using system = typename ia_dflt_help<System, thrust::iterator_system<Base>>::type;
 
-  typedef typename ia_dflt_help<Traversal, thrust::iterator_traversal<Base>>::type traversal;
+  using traversal = typename ia_dflt_help<Traversal, thrust::iterator_traversal<Base>>::type;
 
-  typedef typename ia_dflt_help<Reference,
-                                thrust::detail::eval_if<thrust::detail::is_same<Value, use_default>::value,
-                                                        thrust::iterator_reference<Base>,
-                                                        thrust::detail::add_reference<Value>>>::type reference;
+  using reference =
+    typename ia_dflt_help<Reference,
+                          thrust::detail::eval_if<::cuda::std::is_same<Value, use_default>::value,
+                                                  thrust::iterator_reference<Base>,
+                                                  ::cuda::std::add_lvalue_reference<Value>>>::type;
 
-  typedef typename ia_dflt_help<Difference, iterator_difference<Base>>::type difference;
+  using difference = typename ia_dflt_help<Difference, iterator_difference<Base>>::type;
 
-  typedef thrust::iterator_facade<Derived, value, system, traversal, reference, difference> type;
+  using type = thrust::iterator_facade<Derived, value, system, traversal, reference, difference>;
 }; // end iterator_adaptor_base
 
 } // namespace detail

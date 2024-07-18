@@ -50,7 +50,7 @@ _LIBCUDACXX_CONCEPT __test_conversion = _LIBCUDACXX_FRAGMENT(__test_conversion_,
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __convertible_to_,
-  requires()(requires(_LIBCUDACXX_TRAIT(is_convertible, _From, _To)), requires(__test_conversion<_From, _To>)));
+  requires()(requires(_CCCL_TRAIT(is_convertible, _From, _To)), requires(__test_conversion<_From, _To>)));
 
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT convertible_to = _LIBCUDACXX_FRAGMENT(__convertible_to_, _From, _To);

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017)
+#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #    include <cuda_runtime_api.h>
@@ -67,7 +67,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_bad_alloc();
+      _CUDA_VSTD::__throw_bad_alloc();
     }
 
     void* __ptr{nullptr};
@@ -158,10 +158,6 @@ public:
 #    endif // _CCCL_STD_VER <= 2017
 
   /**
-   * @brief Enables the `managed_memory` property
-   */
-  friend constexpr void get_property(cuda_managed_memory_resource const&, managed_memory) noexcept {}
-  /**
    * @brief Enables the `device_accessible` property
    */
   friend constexpr void get_property(cuda_managed_memory_resource const&, device_accessible) noexcept {}
@@ -178,7 +174,6 @@ public:
     return __alignment <= default_cuda_malloc_alignment && (default_cuda_malloc_alignment % __alignment == 0);
   }
 };
-static_assert(resource_with<cuda_managed_memory_resource, managed_memory>, "");
 static_assert(resource_with<cuda_managed_memory_resource, device_accessible>, "");
 static_assert(resource_with<cuda_managed_memory_resource, host_accessible>, "");
 
@@ -186,6 +181,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_MANAGED_MEMORY_RESOURCE_H

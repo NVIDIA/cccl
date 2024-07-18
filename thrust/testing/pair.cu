@@ -9,7 +9,7 @@ struct TestPairManipulation
 {
   void operator()(void)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     // test null constructor
     P p1;
@@ -78,7 +78,7 @@ struct TestPairComparison
 {
   void operator()(void)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     P x, y;
 
@@ -251,7 +251,7 @@ struct TestPairTupleSize
 };
 SimpleUnitTest<TestPairTupleSize, PairConstVolatileTypes> TestPairTupleSizeInstance;
 
-void TestPairTupleElement(void)
+void TestPairTupleElement()
 {
   using type0 = thrust::tuple_element<0, thrust::pair<int, float>>::type;
   using type1 = thrust::tuple_element<1, thrust::pair<int, float>>::type;
@@ -275,7 +275,7 @@ void TestPairTupleElement(void)
 };
 DECLARE_UNITTEST(TestPairTupleElement);
 
-void TestPairSwap(void)
+void TestPairSwap()
 {
   int x = 7;
   int y = 13;
@@ -293,7 +293,7 @@ void TestPairSwap(void)
   ASSERT_EQUAL(x, b.first);
   ASSERT_EQUAL(y, b.second);
 
-  typedef thrust::pair<user_swappable, user_swappable> swappable_pair;
+  using swappable_pair = thrust::pair<user_swappable, user_swappable>;
 
   thrust::host_vector<swappable_pair> h_v1(1), h_v2(1);
   thrust::device_vector<swappable_pair> d_v1(1), d_v2(1);
@@ -311,7 +311,7 @@ void TestPairSwap(void)
 DECLARE_UNITTEST(TestPairSwap);
 
 #if _CCCL_STD_VER >= 2017
-void TestPairStructuredBindings(void)
+void TestPairStructuredBindings()
 {
   const int a = 42;
   const int b = 1337;
@@ -322,4 +322,16 @@ void TestPairStructuredBindings(void)
   ASSERT_EQUAL(b, b2);
 }
 DECLARE_UNITTEST(TestPairStructuredBindings);
-#endif
+
+void TestPairCTAD(void)
+{
+  const int a = 42;
+  const int b = 1337;
+  thrust::pair p(a, b);
+
+  auto [a2, b2] = p;
+  ASSERT_EQUAL(a, a2);
+  ASSERT_EQUAL(b, b2);
+}
+DECLARE_UNITTEST(TestPairCTAD);
+#endif // _CCCL_STD_VER >= 2017

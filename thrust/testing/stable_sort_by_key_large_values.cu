@@ -6,7 +6,7 @@
 template <typename T>
 struct greater_div_10
 {
-  __host__ __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE bool operator()(const T& lhs, const T& rhs) const
   {
     return ((int) lhs) / 10 > ((int) rhs) / 10;
   }

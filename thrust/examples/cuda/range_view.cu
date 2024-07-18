@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "../include/host_device.h"
+
 // This example demonstrates the use of a view: a non-owning wrapper for an
 // iterator range which presents a container-like interface to the user.
 //
@@ -17,11 +19,11 @@ template <class Iterator>
 class range_view
 {
 public:
-  typedef Iterator iterator;
-  typedef typename thrust::iterator_traits<iterator>::value_type value_type;
-  typedef typename thrust::iterator_traits<iterator>::pointer pointer;
-  typedef typename thrust::iterator_traits<iterator>::difference_type difference_type;
-  typedef typename thrust::iterator_traits<iterator>::reference reference;
+  using iterator        = Iterator;
+  using value_type      = typename thrust::iterator_traits<iterator>::value_type;
+  using pointer         = typename thrust::iterator_traits<iterator>::pointer;
+  using difference_type = typename thrust::iterator_traits<iterator>::difference_type;
+  using reference       = typename thrust::iterator_traits<iterator>::reference;
 
 private:
   const iterator first;
@@ -130,7 +132,7 @@ range_view<typename Vector::iterator> __host__ make_range_view(Vector& v)
 // This saxpy functor stores view of X, Y, Z array, and accesses them in
 // vector-like way
 template <class View1, class View2, class View3>
-struct saxpy_functor : public thrust::unary_function<int, void>
+struct saxpy_functor
 {
   const float a;
   View1 x;
@@ -163,7 +165,7 @@ __host__ __device__ void saxpy(float A, View1 X, View2 Y, View3 Z)
                    saxpy_functor<View1, View2, View3>(A, X, Y, Z));
 }
 
-struct f1 : public thrust::unary_function<float, float>
+struct f1
 {
   __host__ __device__ float operator()(float x) const
   {

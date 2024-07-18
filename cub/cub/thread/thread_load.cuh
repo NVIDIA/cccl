@@ -113,10 +113,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<InputIteratorT> ThreadLoad(I
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /// Helper structure for templated load iteration (inductive case)
+/// \deprecated [Since 2.6.0] Use UnrolledThreadLoad() or UnrolledCopy() instead.
 template <int COUNT, int MAX>
 struct IterateThreadLoad
 {
   template <CacheLoadModifier MODIFIER, typename T>
+  CUB_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead")
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* ptr, T* vals)
   {
     vals[COUNT] = ThreadLoad<MODIFIER>(ptr + COUNT);
@@ -124,6 +126,7 @@ struct IterateThreadLoad
   }
 
   template <typename InputIteratorT, typename T>
+  CUB_DEPRECATED_BECAUSE("Use UnrolledCopy() instead")
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(InputIteratorT itr, T* vals)
   {
     vals[COUNT] = itr[COUNT];
@@ -143,6 +146,39 @@ struct IterateThreadLoad<MAX, MAX>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(InputIteratorT /*itr*/, T* /*vals*/)
   {}
 };
+
+namespace detail
+{
+template <CacheLoadModifier MODIFIER, typename T, int... Is>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+UnrolledThreadLoadImpl(T const* src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
+{
+  // TODO(bgruber): replace by fold over comma in C++17
+  int dummy[] = {(dst[Is] = ThreadLoad<MODIFIER>(src + Is), 0)...};
+  (void) dummy;
+}
+
+template <typename RandomAccessIterator, typename T, int... Is>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
+{
+  // TODO(bgruber): replace by fold over comma in C++17
+  int dummy[] = {(dst[Is] = src[Is], 0)...};
+  (void) dummy;
+}
+} // namespace detail
+
+template <int Count, CacheLoadModifier MODIFIER, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledThreadLoad(T const* src, T* dst)
+{
+  detail::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+}
+
+template <int Count, typename RandomAccessIterator, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* dst)
+{
+  detail::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+}
 
 /**
  * Define a uint4 (16B) ThreadLoad specialization for the given Cache load modifier
@@ -306,13 +342,13 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(T* ptr, Int2Type<false> /*is_primitive*/)
 {
   // Word type for memcopying
-  typedef typename UnitWord<T>::VolatileWord VolatileWord;
+  using VolatileWord = typename UnitWord<T>::VolatileWord;
 
   constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
   T retval;
   VolatileWord* words = reinterpret_cast<VolatileWord*>(&retval);
-  IterateThreadLoad<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  UnrolledCopy<VOLATILE_MULTIPLE>(reinterpret_cast<volatile VolatileWord*>(ptr), words);
   return retval;
 }
 
@@ -332,13 +368,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T* ptr, Int2Type<LOAD_VOLATILE> /*mo
 template <typename T, int MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T const* ptr, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_pointer*/)
 {
-  typedef typename UnitWord<T>::DeviceWord DeviceWord;
+  using DeviceWord = typename UnitWord<T>::DeviceWord;
 
   constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
 
   DeviceWord words[DEVICE_MULTIPLE];
-
-  IterateThreadLoad<0, DEVICE_MULTIPLE>::template Load<CacheLoadModifier(MODIFIER)>(
+  UnrolledThreadLoad<DEVICE_MULTIPLE, CacheLoadModifier(MODIFIER)>(
     reinterpret_cast<DeviceWord*>(const_cast<T*>(ptr)), words);
 
   return *reinterpret_cast<T*>(words);

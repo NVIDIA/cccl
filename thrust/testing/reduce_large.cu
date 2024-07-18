@@ -3,7 +3,7 @@
 #include <unittest/unittest.h>
 
 template <typename T, unsigned int N>
-void _TestReduceWithLargeTypes(void)
+void _TestReduceWithLargeTypes()
 {
   size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -22,7 +22,7 @@ void _TestReduceWithLargeTypes(void)
   ASSERT_EQUAL_QUIET(h_result, d_result);
 }
 
-void TestReduceWithLargeTypes(void)
+void TestReduceWithLargeTypes()
 {
   _TestReduceWithLargeTypes<int, 4>();
   _TestReduceWithLargeTypes<int, 8>();

@@ -42,16 +42,16 @@ namespace detail
 template <typename ElementIterator, typename IndexIterator>
 struct permutation_iterator_base
 {
-  typedef typename thrust::iterator_system<ElementIterator>::type System1;
-  typedef typename thrust::iterator_system<IndexIterator>::type System2;
+  using System1 = typename thrust::iterator_system<ElementIterator>::type;
+  using System2 = typename thrust::iterator_system<IndexIterator>::type;
 
-  typedef thrust::iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
-                                   IndexIterator,
-                                   typename thrust::iterator_value<ElementIterator>::type,
-                                   typename detail::minimum_system<System1, System2>::type,
-                                   thrust::use_default,
-                                   typename thrust::iterator_reference<ElementIterator>::type>
-    type;
+  using type =
+    thrust::iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
+                             IndexIterator,
+                             typename thrust::iterator_value<ElementIterator>::type,
+                             typename detail::minimum_system<System1, System2>::type,
+                             thrust::use_default,
+                             typename thrust::iterator_reference<ElementIterator>::type>;
 }; // end permutation_iterator_base
 
 } // namespace detail

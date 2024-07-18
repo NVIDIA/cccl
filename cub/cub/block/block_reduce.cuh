@@ -48,6 +48,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -66,12 +68,12 @@ enum BlockReduceAlgorithm
   //! reduction operators (true for most operations, e.g., addition).
   //!
   //! Execution is comprised of three phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more
-  //!    than one input each). Threads in warps other than the first warp place
-  //!    their partial reductions into shared memory.
-  //! #. Upsweep sequential reduction in shared memory. Threads within the first
-  //!    warp continue to accumulate by raking across segments of shared partial reductions
-  //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Threads in warps other than the first warp place
+  //!      their partial reductions into shared memory.
+  //!   #. Upsweep sequential reduction in shared memory. Threads within the first
+  //!      warp continue to accumulate by raking across segments of shared partial reductions
+  //!   #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -95,12 +97,12 @@ enum BlockReduceAlgorithm
   //! operators. @blocked.
   //!
   //! Execution is comprised of three phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more
-  //!    than one input each). Each thread then places the partial reduction
-  //!    of its item(s) into shared memory.
-  //! #. Upsweep sequential reduction in shared memory. Threads within a
-  //!    single warp rake across segments of shared partial reductions.
-  //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Each thread then places the partial reduction
+  //!      of its item(s) into shared memory.
+  //!   #. Upsweep sequential reduction in shared memory. Threads within a
+  //!      single warp rake across segments of shared partial reductions.
+  //!   #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -124,13 +126,13 @@ enum BlockReduceAlgorithm
   //! operators.
   //!
   //! Execution is comprised of four phases:
-  //! #. Upsweep sequential reduction in registers (if threads contribute more
-  //!    than one input each). Each thread then places the partial reduction
-  //!    of its item(s) into shared memory.
-  //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
-  //!    reduction within each warp.
-  //! #. A propagation phase where the warp reduction outputs in each warp are
-  //!    updated with the aggregate from each preceding warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more
+  //!      than one input each). Each thread then places the partial reduction
+  //!      of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
+  //!      reduction within each warp.
+  //!   #. A propagation phase where the warp reduction outputs in each warp are
+  //!      updated with the aggregate from each preceding warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
@@ -193,7 +195,7 @@ enum BlockReduceAlgorithm
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-//!        typedef cub::BlockReduce<int, 128> BlockReduce;
+//!        using BlockReduce = cub::BlockReduce<int, 128>;
 //!
 //!        // Allocate shared memory for BlockReduce
 //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -247,20 +249,20 @@ private:
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
   };
 
-  typedef BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> WarpReductions;
-  typedef BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> RakingCommutativeOnly;
-  typedef BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> Raking;
+  using WarpReductions        = BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using RakingCommutativeOnly = BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using Raking                = BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Internal specialization type
   using InternalBlockReduce =
-    cub::detail::conditional_t<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
-                               WarpReductions,
-                               cub::detail::conditional_t<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                                                          RakingCommutativeOnly,
-                                                          Raking>>; // BlockReduceRaking
+    ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
+                     WarpReductions,
+                     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                      RakingCommutativeOnly,
+                                      Raking>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
-  typedef typename InternalBlockReduce::TempStorage _TempStorage;
+  using _TempStorage = typename InternalBlockReduce::TempStorage;
 
   /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
@@ -325,7 +327,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -375,7 +377,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -429,7 +431,7 @@ public:
   //!    __global__ void ExampleKernel(int num_valid, ...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -493,7 +495,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -536,7 +538,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;
@@ -584,7 +586,7 @@ public:
   //!    __global__ void ExampleKernel(int num_valid, ...)
   //!    {
   //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!        using BlockReduce = cub::BlockReduce<int, 128>;
   //!
   //!        // Allocate shared memory for BlockReduce
   //!        __shared__ typename BlockReduce::TempStorage temp_storage;

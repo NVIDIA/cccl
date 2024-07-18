@@ -53,7 +53,7 @@ int main(int, char**)
     assert(f(0x58D3, 0) == 0x58D3);
     assert(f(0xFFFF, 0x58D3) == 0xA72C);
   }
-#if TEST_STD_VER > 2011
+
   {
     typedef cuda::std::bit_xor<> F2;
     const F2 f = F2();
@@ -76,14 +76,14 @@ int main(int, char**)
     assert(f(0xFFFF, 0x58D3) == 0xA72C);
     assert(f(0xFFFFL, 0x58D3) == 0xA72C);
     assert(f(0xFFFF, 0x58D3L) == 0xA72C);
-
+#if TEST_STD_VER > 2011
     constexpr int foo = cuda::std::bit_xor<int>()(0x58D3, 0xEA95);
     static_assert(foo == 0xB246, "");
 
     constexpr int bar = cuda::std::bit_xor<>()(0x58D3L, 0xEA95);
     static_assert(bar == 0xB246, "");
-  }
 #endif
+  }
 
   return 0;
 }

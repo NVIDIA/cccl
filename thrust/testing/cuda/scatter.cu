@@ -76,7 +76,7 @@ __global__ void scatter_if_kernel(
 template <typename T>
 struct is_even_scatter_if
 {
-  __host__ __device__ bool operator()(const T i) const
+  _CCCL_HOST_DEVICE bool operator()(const T i) const
   {
     return (i % 2) == 0;
   }
@@ -135,7 +135,7 @@ DECLARE_UNITTEST(TestScatterIfDeviceDevice);
 
 void TestScatterCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector map(5); // scatter indices
   Vector src(5); // source vector
@@ -169,7 +169,7 @@ DECLARE_UNITTEST(TestScatterCudaStreams);
 
 void TestScatterIfCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector flg(5); // predicate array
   Vector map(5); // scatter indices

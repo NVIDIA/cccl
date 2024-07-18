@@ -7,7 +7,7 @@
 template <typename T>
 struct less_div_10
 {
-  __host__ __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE bool operator()(const T& lhs, const T& rhs) const
   {
     return ((int) lhs) / 10 < ((int) rhs) / 10;
   }
@@ -89,11 +89,11 @@ void InitializeSimpleStableKeySortTest(Vector& unsorted_keys, Vector& sorted_key
   sorted_keys[8] = 36;
 }
 
-void TestMergeSortKeySimple(void)
+void TestMergeSortKeySimple()
 {
 #if 0
-    typedef thrust::device_vector<int> Vector;
-    typedef Vector::value_type T;
+    using Vector = thrust::device_vector<int>;
+    using T = Vector::value_type;
 
     Vector unsorted_keys;
     Vector   sorted_keys;
@@ -110,11 +110,11 @@ void TestMergeSortKeySimple(void)
 }
 DECLARE_UNITTEST(TestMergeSortKeySimple);
 
-void TestMergeSortKeyValueSimple(void)
+void TestMergeSortKeyValueSimple()
 {
 #if 0
-    typedef thrust::device_vector<int> Vector;
-    typedef Vector::value_type T;
+    using Vector = thrust::device_vector<int>;
+    using T = Vector::value_type;
 
     Vector unsorted_keys, unsorted_values;
     Vector   sorted_keys,   sorted_values;
@@ -132,11 +132,11 @@ void TestMergeSortKeyValueSimple(void)
 }
 DECLARE_UNITTEST(TestMergeSortKeyValueSimple);
 
-void TestMergeSortStableKeySimple(void)
+void TestMergeSortStableKeySimple()
 {
 #if 0
-    typedef thrust::device_vector<int> Vector;
-    typedef Vector::value_type T;
+    using Vector = thrust::device_vector<int>;
+    using T = Vector::value_type;
 
     Vector unsorted_keys;
     Vector   sorted_keys;
@@ -153,7 +153,7 @@ void TestMergeSortStableKeySimple(void)
 }
 DECLARE_UNITTEST(TestMergeSortStableKeySimple);
 
-void TestMergeSortDescendingKey(void)
+void TestMergeSortDescendingKey()
 {
 #if 0
     const size_t n = 10027;
@@ -197,7 +197,7 @@ void TestMergeSortAscendingKeyValue(const size_t n)
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeSortAscendingKeyValue);
 
-void TestMergeSortDescendingKeyValue(void)
+void TestMergeSortDescendingKeyValue()
 {
 #if 0
     const size_t n = 10027;
@@ -225,7 +225,7 @@ template <typename U>
 void TestMergeSortKeyValue(size_t n)
 {
 #if 0
-  typedef key_value<U,U> T;
+  using T = key_value<U,U>;
 
   thrust::host_vector<U> h_keys   = unittest::random_integers<U>(n);
   thrust::host_vector<U> h_values = unittest::random_integers<U>(n);

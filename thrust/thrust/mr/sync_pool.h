@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/mr/pool.h>
 
 #include <mutex>
@@ -50,10 +49,10 @@ namespace mr
 template <typename Upstream>
 struct synchronized_pool_resource : public memory_resource<typename Upstream::pointer>
 {
-  typedef unsynchronized_pool_resource<Upstream> unsync_pool;
-  typedef std::lock_guard<std::mutex> lock_t;
+  using unsync_pool = unsynchronized_pool_resource<Upstream>;
+  using lock_t      = std::lock_guard<std::mutex>;
 
-  typedef typename Upstream::pointer void_ptr;
+  using void_ptr = typename Upstream::pointer;
 
 public:
   /*! Get the default options for a pool. These are meant to be a sensible set of values for many use cases,

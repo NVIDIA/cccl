@@ -107,12 +107,12 @@ struct range
     result += thrust::distance(r.first1, mid1) + thrust::distance(r.first2, mid2);
   }
 
-  bool empty(void) const
+  bool empty() const
   {
     return (first1 == last1) && (first2 == last2);
   }
 
-  bool is_divisible(void) const
+  bool is_divisible() const
   {
     return static_cast<size_t>(thrust::distance(first1, last1) + thrust::distance(first2, last2)) > grain_size;
   }
@@ -216,12 +216,12 @@ struct range
     values_result += thrust::distance(r.keys_first1, mid1) + thrust::distance(r.keys_first2, mid2);
   }
 
-  bool empty(void) const
+  bool empty() const
   {
     return (keys_first1 == keys_last1) && (keys_first2 == keys_last2);
   }
 
-  bool is_divisible(void) const
+  bool is_divisible() const
   {
     return static_cast<size_t>(thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2))
          > grain_size;
@@ -263,8 +263,8 @@ merge(execution_policy<DerivedPolicy>&,
       OutputIterator result,
       StrictWeakOrdering comp)
 {
-  typedef typename merge_detail::range<InputIterator1, InputIterator2, OutputIterator, StrictWeakOrdering> Range;
-  typedef merge_detail::body Body;
+  using Range = typename merge_detail::range<InputIterator1, InputIterator2, OutputIterator, StrictWeakOrdering>;
+  using Body  = merge_detail::body;
   Range range(first1, last1, first2, last2, result, comp);
   Body body;
 
@@ -295,10 +295,15 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
-  typedef typename merge_by_key_detail::
-    range<InputIterator1, InputIterator2, InputIterator3, InputIterator4, OutputIterator1, OutputIterator2, StrictWeakOrdering>
-      Range;
-  typedef merge_by_key_detail::body Body;
+  using Range = typename merge_by_key_detail::range<
+    InputIterator1,
+    InputIterator2,
+    InputIterator3,
+    InputIterator4,
+    OutputIterator1,
+    OutputIterator2,
+    StrictWeakOrdering>;
+  using Body = merge_by_key_detail::body;
 
   Range range(
     keys_first1, keys_last1, keys_first2, keys_last2, values_first3, values_first4, keys_result, values_result, comp);

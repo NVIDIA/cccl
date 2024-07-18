@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017)
+#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/std/__concepts/all_of.h>
@@ -74,12 +74,13 @@ _LIBCUDACXX_CONCEPT async_resource_with =
 
 template <class _Resource, class _OtherResource>
 _LIBCUDACXX_CONCEPT __different_resource =
-  (!_CUDA_VSTD::same_as<_CUDA_VSTD::decay_t<_Resource>, _CUDA_VSTD::decay_t<_OtherResource>>) &&resource<_OtherResource>;
+  (!_CUDA_VSTD::same_as<_CUDA_VSTD::decay_t<_Resource>, _CUDA_VSTD::decay_t<_OtherResource>>)
+  && resource<_OtherResource>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_H

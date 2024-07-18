@@ -43,20 +43,20 @@ template <typename T, typename Alloc>
 class contiguous_storage
 {
 private:
-  typedef thrust::detail::allocator_traits<Alloc> alloc_traits;
+  using alloc_traits = thrust::detail::allocator_traits<Alloc>;
 
 public:
-  typedef Alloc allocator_type;
-  typedef T value_type;
-  typedef typename alloc_traits::pointer pointer;
-  typedef typename alloc_traits::const_pointer const_pointer;
-  typedef typename alloc_traits::size_type size_type;
-  typedef typename alloc_traits::difference_type difference_type;
-  typedef typename alloc_traits::reference reference;
-  typedef typename alloc_traits::const_reference const_reference;
+  using allocator_type  = Alloc;
+  using value_type      = T;
+  using pointer         = typename alloc_traits::pointer;
+  using const_pointer   = typename alloc_traits::const_pointer;
+  using size_type       = typename alloc_traits::size_type;
+  using difference_type = typename alloc_traits::difference_type;
+  using reference       = typename alloc_traits::reference;
+  using const_reference = typename alloc_traits::const_reference;
 
-  typedef thrust::detail::normal_iterator<pointer> iterator;
-  typedef thrust::detail::normal_iterator<const_pointer> const_iterator;
+  using iterator       = thrust::detail::normal_iterator<pointer>;
+  using const_iterator = thrust::detail::normal_iterator<const_pointer>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE explicit contiguous_storage(const allocator_type& alloc = allocator_type());
@@ -139,6 +139,8 @@ public:
   // allow move assignment for a sane implementation of allocator propagation
   // on move assignment
   _CCCL_HOST_DEVICE contiguous_storage& operator=(contiguous_storage&& other);
+
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(contiguous_storage, const_iterator);
 
 private:
   // XXX we could inherit from this to take advantage of empty base class optimization

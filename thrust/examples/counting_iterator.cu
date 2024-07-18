@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iterator>
 
-int main(void)
+int main()
 {
   // this example computes indices for all the nonzero values in a sequence
 
@@ -29,7 +29,7 @@ int main(void)
   thrust::counting_iterator<int> last = first + 8;
 
   // compute indices of nonzero elements
-  typedef thrust::device_vector<int>::iterator IndexIterator;
+  using IndexIterator = thrust::device_vector<int>::iterator;
 
   IndexIterator indices_end = thrust::copy_if(first, last, stencil.begin(), indices.begin(), thrust::identity<int>());
   // indices now contains [1,2,5,7]

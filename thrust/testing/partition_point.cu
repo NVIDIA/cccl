@@ -7,17 +7,17 @@
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
+  _CCCL_HOST_DEVICE bool operator()(T x) const
   {
     return ((int) x % 2) == 0;
   }
 };
 
 template <typename Vector>
-void TestPartitionPointSimple(void)
+void TestPartitionPointSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector v(4);
   v[0] = 1;
@@ -38,10 +38,10 @@ void TestPartitionPointSimple(void)
 DECLARE_VECTOR_UNITTEST(TestPartitionPointSimple);
 
 template <class Vector>
-void TestPartitionPoint(void)
+void TestPartitionPoint()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   const size_t n = (1 << 16) + 13;
 
@@ -92,7 +92,7 @@ struct test_less_than
 {
   long long expected;
 
-  __device__ bool operator()(long long y)
+  _CCCL_DEVICE bool operator()(long long y)
   {
     return y < expected;
   }

@@ -14,19 +14,19 @@
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
+  _CCCL_HOST_DEVICE bool operator()(T x) const
   {
     return ((int) x % 2) == 0;
   }
 };
 
-typedef unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t> PartitionTypes;
+using PartitionTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
-void TestPartitionSimple(void)
+void TestPartitionSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   // GCC 11 miscompiles and segfaults for certain versions of this test.
   // It's not reproducible on other compilers, and the test passes when
@@ -61,10 +61,10 @@ void TestPartitionSimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionSimple);
 
 template <typename Vector>
-void TestPartitionStencilSimple(void)
+void TestPartitionStencilSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector data(5);
   data[0] = 0;
@@ -95,9 +95,9 @@ void TestPartitionStencilSimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionStencilSimple);
 
 template <typename Vector>
-void TestPartitionCopySimple(void)
+void TestPartitionCopySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -129,9 +129,9 @@ void TestPartitionCopySimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopySimple);
 
 template <typename Vector>
-void TestPartitionCopyStencilSimple(void)
+void TestPartitionCopyStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 0;
@@ -170,10 +170,10 @@ void TestPartitionCopyStencilSimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPartitionCopyStencilSimple);
 
 template <typename Vector>
-void TestStablePartitionSimple(void)
+void TestStablePartitionSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector data(5);
   data[0] = 1;
@@ -197,10 +197,10 @@ void TestStablePartitionSimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionSimple);
 
 template <typename Vector>
-void TestStablePartitionStencilSimple(void)
+void TestStablePartitionStencilSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector data(5);
   data[0] = 1;
@@ -231,9 +231,9 @@ void TestStablePartitionStencilSimple(void)
 DECLARE_VECTOR_UNITTEST(TestStablePartitionStencilSimple);
 
 template <typename Vector>
-void TestStablePartitionCopySimple(void)
+void TestStablePartitionCopySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -265,9 +265,9 @@ void TestStablePartitionCopySimple(void)
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStablePartitionCopySimple);
 
 template <typename Vector>
-void TestStablePartitionCopyStencilSimple(void)
+void TestStablePartitionCopyStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(5);
   data[0] = 1;
@@ -928,14 +928,14 @@ VariableUnitTest<TestStablePartitionCopyStencilToDiscardIterator, PartitionTypes
 struct is_ordered
 {
   template <typename Tuple>
-  __host__ __device__ bool operator()(const Tuple& t) const
+  _CCCL_HOST_DEVICE bool operator()(const Tuple& t) const
   {
     return thrust::get<0>(t) <= thrust::get<1>(t);
   }
 };
 
 template <typename Vector>
-void TestPartitionZipIterator(void)
+void TestPartitionZipIterator()
 {
   Vector data1(5);
   Vector data2(5);
@@ -951,9 +951,9 @@ void TestPartitionZipIterator(void)
   data1[4] = 2;
   data2[4] = 1;
 
-  typedef typename Vector::iterator Iterator;
-  typedef thrust::tuple<Iterator, Iterator> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using Iterator      = typename Vector::iterator;
+  using IteratorTuple = thrust::tuple<Iterator, Iterator>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(data1.begin(), data2.begin()));
   ZipIterator end   = thrust::make_zip_iterator(thrust::make_tuple(data1.end(), data2.end()));
@@ -981,7 +981,7 @@ void TestPartitionZipIterator(void)
 DECLARE_VECTOR_UNITTEST(TestPartitionZipIterator);
 
 template <typename Vector>
-void TestPartitionStencilZipIterator(void)
+void TestPartitionStencilZipIterator()
 {
   Vector data(5);
   data[0] = 1;
@@ -1004,9 +1004,9 @@ void TestPartitionStencilZipIterator(void)
   stencil1[4] = 2;
   stencil2[4] = 1;
 
-  typedef typename Vector::iterator Iterator;
-  typedef thrust::tuple<Iterator, Iterator> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using Iterator      = typename Vector::iterator;
+  using IteratorTuple = thrust::tuple<Iterator, Iterator>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator stencil_begin = thrust::make_zip_iterator(thrust::make_tuple(stencil1.begin(), stencil2.begin()));
 
@@ -1026,7 +1026,7 @@ void TestPartitionStencilZipIterator(void)
 DECLARE_VECTOR_UNITTEST(TestPartitionStencilZipIterator);
 
 template <typename Vector>
-void TestStablePartitionZipIterator(void)
+void TestStablePartitionZipIterator()
 {
   Vector data1(5);
   Vector data2(5);
@@ -1042,9 +1042,9 @@ void TestStablePartitionZipIterator(void)
   data1[4] = 2;
   data2[4] = 1;
 
-  typedef typename Vector::iterator Iterator;
-  typedef thrust::tuple<Iterator, Iterator> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using Iterator      = typename Vector::iterator;
+  using IteratorTuple = thrust::tuple<Iterator, Iterator>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(data1.begin(), data2.begin()));
   ZipIterator end   = thrust::make_zip_iterator(thrust::make_tuple(data1.end(), data2.end()));
@@ -1072,7 +1072,7 @@ void TestStablePartitionZipIterator(void)
 DECLARE_VECTOR_UNITTEST(TestStablePartitionZipIterator);
 
 template <typename Vector>
-void TestStablePartitionStencilZipIterator(void)
+void TestStablePartitionStencilZipIterator()
 {
   Vector data(5);
   data[0] = 1;
@@ -1095,9 +1095,9 @@ void TestStablePartitionStencilZipIterator(void)
   stencil1[4] = 2;
   stencil2[4] = 1;
 
-  typedef typename Vector::iterator Iterator;
-  typedef thrust::tuple<Iterator, Iterator> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using Iterator      = typename Vector::iterator;
+  using IteratorTuple = thrust::tuple<Iterator, Iterator>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator stencil_begin = thrust::make_zip_iterator(thrust::make_tuple(stencil1.begin(), stencil2.begin()));
 

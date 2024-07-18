@@ -39,7 +39,7 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_NVRTC) && defined(__cuda_std__)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  if defined(_CCCL_COMPILER_MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
@@ -52,7 +52,7 @@ struct __cccl_type_is_defined : _CUDA_VSTD::false_type
 {};
 
 template <class _Tp>
-struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::__void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
+struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
 {};
 
 // detect whether the used STL has contiguous_iterator_tag defined
@@ -77,9 +77,7 @@ concept __can_reference = requires { typename __with_reference<_Tp>; };
 
 template <class _Tp>
 concept __dereferenceable = requires(_Tp& __t) {
-  {
-    *__t
-  } -> __can_reference; // not required to be equality-preserving
+  { *__t } -> __can_reference; // not required to be equality-preserving
 };
 
 // [iterator.traits]
@@ -95,9 +93,7 @@ template <class _Tp>
 using __with_reference = _Tp&;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_reference_,
-                             requires() //
-                             (typename(__with_reference<_Tp>)));
+_LIBCUDACXX_CONCEPT_FRAGMENT(__can_reference_, requires()(typename(__with_reference<_Tp>)));
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __can_reference = _LIBCUDACXX_FRAGMENT(__can_reference_, _Tp);
@@ -122,7 +118,7 @@ template <class>
 struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
 
-#if defined(_CCCL_COMPILER_NVRTC) || !defined(__cuda_std__)
+#if defined(_CCCL_COMPILER_NVRTC)
 
 struct _LIBCUDACXX_TEMPLATE_VIS input_iterator_tag
 {};
@@ -210,11 +206,11 @@ private:
   _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY static true_type
-  __test(__void_t<typename _Up::iterator_category>* = nullptr,
-         __void_t<typename _Up::difference_type>*   = nullptr,
-         __void_t<typename _Up::value_type>*        = nullptr,
-         __void_t<typename _Up::reference>*         = nullptr,
-         __void_t<typename _Up::pointer>*           = nullptr);
+  __test(void_t<typename _Up::iterator_category>* = nullptr,
+         void_t<typename _Up::difference_type>*   = nullptr,
+         void_t<typename _Up::value_type>*        = nullptr,
+         void_t<typename _Up::reference>*         = nullptr,
+         void_t<typename _Up::pointer>*           = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(0, 0, 0, 0, 0))::value;
@@ -255,15 +251,9 @@ namespace __iterator_traits_detail
 {
 template <class _Ip>
 concept __cpp17_iterator = requires(_Ip __i) {
-  {
-    *__i
-  } -> __can_reference;
-  {
-    ++__i
-  } -> same_as<_Ip&>;
-  {
-    *__i++
-  } -> __can_reference;
+  { *__i } -> __can_reference;
+  { ++__i } -> same_as<_Ip&>;
+  { *__i++ } -> __can_reference;
 } && copyable<_Ip>;
 
 template <class _Ip>
@@ -280,52 +270,28 @@ concept __cpp17_forward_iterator =
   __cpp17_input_iterator<_Ip> && constructible_from<_Ip> && is_lvalue_reference_v<iter_reference_t<_Ip>>
   && same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>
   && requires(_Ip __i) {
-       {
-         __i++
-       } -> convertible_to<_Ip const&>;
-       {
-         *__i++
-       } -> same_as<iter_reference_t<_Ip>>;
+       { __i++ } -> convertible_to<_Ip const&>;
+       { *__i++ } -> same_as<iter_reference_t<_Ip>>;
      };
 
 template <class _Ip>
 concept __cpp17_bidirectional_iterator = __cpp17_forward_iterator<_Ip> && requires(_Ip __i) {
-  {
-    --__i
-  } -> same_as<_Ip&>;
-  {
-    __i--
-  } -> convertible_to<_Ip const&>;
-  {
-    *__i--
-  } -> same_as<iter_reference_t<_Ip>>;
+  { --__i } -> same_as<_Ip&>;
+  { __i-- } -> convertible_to<_Ip const&>;
+  { *__i-- } -> same_as<iter_reference_t<_Ip>>;
 };
 
 template <class _Ip>
 concept __cpp17_random_access_iterator =
   __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip>
   && requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n) {
-       {
-         __i += __n
-       } -> same_as<_Ip&>;
-       {
-         __i -= __n
-       } -> same_as<_Ip&>;
-       {
-         __i + __n
-       } -> same_as<_Ip>;
-       {
-         __n + __i
-       } -> same_as<_Ip>;
-       {
-         __i - __n
-       } -> same_as<_Ip>;
-       {
-         __i - __i
-       } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
-       {
-         __i[__n]
-       } -> convertible_to<iter_reference_t<_Ip>>;
+       { __i += __n } -> same_as<_Ip&>;
+       { __i -= __n } -> same_as<_Ip&>;
+       { __i + __n } -> same_as<_Ip>;
+       { __n + __i } -> same_as<_Ip>;
+       { __i - __n } -> same_as<_Ip>;
+       { __i - __i } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
+       { __i[__n] } -> convertible_to<iter_reference_t<_Ip>>;
      };
 } // namespace __iterator_traits_detail
 
@@ -528,11 +494,10 @@ namespace __iterator_traits_detail
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_iterator_,
-  requires(_Ip __i)( //
-    requires(__can_reference<decltype(*__i)>),
-    requires(same_as<_Ip&, decltype(++__i)>),
-    requires(__can_reference<decltype(*__i++)>),
-    requires(copyable<_Ip>)));
+  requires(_Ip __i)(requires(__can_reference<decltype(*__i)>),
+                    requires(same_as<_Ip&, decltype(++__i)>),
+                    requires(__can_reference<decltype(*__i++)>),
+                    requires(copyable<_Ip>)));
 
 template <class _Ip>
 _LIBCUDACXX_CONCEPT __cpp17_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_iterator_, _Ip);
@@ -560,7 +525,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(convertible_to<decltype(__i++), _Ip const&>),
     requires(same_as<iter_reference_t<_Ip>, decltype(*__i++)>),
     requires(constructible_from<_Ip>),
-    requires(_LIBCUDACXX_TRAIT(is_lvalue_reference, iter_reference_t<_Ip>)),
+    requires(_CCCL_TRAIT(is_lvalue_reference, iter_reference_t<_Ip>)),
     requires(same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>)));
 
 template <class _Ip>
@@ -580,7 +545,7 @@ _LIBCUDACXX_CONCEPT __cpp17_bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__cpp1
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __cpp17_random_access_iterator_,
-  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)( //
+  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)(
     requires(same_as<_Ip&, decltype(__i += __n)>),
     requires(same_as<_Ip&, decltype(__i -= __n)>),
     requires(same_as<_Ip, decltype(__i + __n)>),
@@ -655,9 +620,7 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
 };
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__has_operator_arrow_,
-                             requires(_Ip& __i) //
-                             (__i.operator->()));
+_LIBCUDACXX_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__i.operator->()));
 
 template <class _Ip>
 _LIBCUDACXX_CONCEPT __has_operator_arrow = _LIBCUDACXX_FRAGMENT(__has_operator_arrow_, _Ip);

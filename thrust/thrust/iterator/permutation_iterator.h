@@ -97,8 +97,8 @@ THRUST_NAMESPACE_BEGIN
  *  indices[2] = 1;
  *  indices[3] = 3;
  *
- *  typedef thrust::device_vector<float>::iterator ElementIterator;
- *  typedef thrust::device_vector<int>::iterator   IndexIterator;
+ *  using ElementIterator = thrust::device_vector<float>::iterator;
+ *  using IndexIterator = thrust::device_vector<int>::iterator  ;
  *
  *  thrust::permutation_iterator<ElementIterator,IndexIterator> iter(values.begin(), indices.begin());
  *
@@ -128,7 +128,7 @@ class permutation_iterator : public thrust::detail::permutation_iterator_base<El
    */
 
 private:
-  typedef typename detail::permutation_iterator_base<ElementIterator, IndexIterator>::type super_t;
+  using super_t = typename detail::permutation_iterator_base<ElementIterator, IndexIterator>::type;
 
   friend class thrust::iterator_core_access;
   /*! \endcond

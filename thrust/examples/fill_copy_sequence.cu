@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-int main(void)
+int main()
 {
   // initialize all ten integers of a device_vector to 1
   thrust::device_vector<int> D(10, 1);

@@ -49,8 +49,8 @@ template <class... Args>
 struct is_bind_frontable
 {
   template <class... LocalArgs>
-  __host__ __device__ static auto test(int)
-    -> decltype((void) cuda::std::bind_front(cuda::std::declval<LocalArgs>()...), cuda::std::true_type());
+  __host__ __device__ static auto
+  test(int) -> decltype((void) cuda::std::bind_front(cuda::std::declval<LocalArgs>()...), cuda::std::true_type());
 
   template <class...>
   __host__ __device__ static cuda::std::false_type test(...);
@@ -207,7 +207,7 @@ __host__ __device__ constexpr bool test()
   // Make sure we don't treat cuda::std::reference_wrapper specially.
 #if TEST_STD_VER > 2017
 #  if defined(TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!TEST_IS_CONSTANT_EVALUATED())
 #  endif // TEST_COMPILER_NVRTC
   {
     auto add = [](cuda::std::reference_wrapper<int> a, cuda::std::reference_wrapper<int> b) {

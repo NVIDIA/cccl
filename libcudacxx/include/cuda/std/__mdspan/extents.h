@@ -70,10 +70,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
-#if defined(_LIBCUDACXX_PUSH_MACROS)
-_LIBCUDACXX_PUSH_MACROS
-#endif
-#include <cuda/std/detail/libcxx/include/__undef_macros>
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -273,9 +270,9 @@ public:
         __storage_t
         {
 #  endif
-        __other.__storage().__enable_psa_conversion()
+          __other.__storage().__enable_psa_conversion()
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -295,9 +292,8 @@ public:
     /* requires */ (
       // TODO: check whether the other version works with newest NVCC, doesn't with 11.4
       // NVCC seems to pick up rank_dynamic from the wrong extents type???
-      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
-      &&
+      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
+      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) &&
       // NVCC chokes on the fold thingy here so wrote the workaround
       ((sizeof...(_Integral) == __detail::__count_dynamic_extents<_Extents...>::val)
        || (sizeof...(_Integral) == sizeof...(_Extents)))))
@@ -305,8 +301,8 @@ public:
   __MDSPAN_TEMPLATE_REQUIRES(
     class... _Integral,
     /* requires */ (
-      __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
+      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
+      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
       && ((sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank()))))
 #  endif
   __MDSPAN_INLINE_FUNCTION
@@ -318,12 +314,12 @@ public:
         typename __base_t::__stored_type
         {
 #  endif
-        _CUDA_VSTD::conditional_t<sizeof...(_Integral) == rank_dynamic(),
-                                  __detail::__construct_psa_from_dynamic_exts_values_tag_t,
-                                  __detail::__construct_psa_from_all_exts_values_tag_t>(),
-        static_cast<index_type>(__exts)...
+          _CUDA_VSTD::conditional_t<sizeof...(_Integral) == rank_dynamic(),
+                                    __detail::__construct_psa_from_dynamic_exts_values_tag_t,
+                                    __detail::__construct_psa_from_all_exts_values_tag_t>(),
+          static_cast<index_type>(__exts)...
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -345,16 +341,16 @@ public:
     class _IndexType,
     size_t _Np,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
      && ((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents)))))
 #  else
   __MDSPAN_TEMPLATE_REQUIRES(
     class _IndexType,
     size_t _Np,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
      && (_Np == rank() || _Np == rank_dynamic())))
 #  endif
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
@@ -367,12 +363,12 @@ public:
         typename __base_t::__stored_type
         {
 #  endif
-        _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
-                                  __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
-                                  __detail::__construct_psa_from_all_exts_array_tag_t>(),
-        _CUDA_VSTD::array<_IndexType, _Np>{__exts}
+          _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
+                                    __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
+                                    __detail::__construct_psa_from_all_exts_array_tag_t>(),
+          _CUDA_VSTD::array<_IndexType, _Np>{__exts}
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -394,16 +390,16 @@ public:
     class _IndexType,
     size_t _Np,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
      && ((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents)))))
 #  else
   __MDSPAN_TEMPLATE_REQUIRES(
     class _IndexType,
     size_t _Np,
     /* requires */
-    (_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
      && (_Np == rank() || _Np == rank_dynamic())))
 #  endif
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
@@ -416,12 +412,12 @@ public:
         typename __base_t::__stored_type
         {
 #  endif
-        _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
-                                  __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
-                                  __detail::__construct_psa_from_all_exts_array_tag_t>(),
-        __exts
+          _CUDA_VSTD::conditional_t<_Np == rank_dynamic(),
+                                    __detail::__construct_psa_from_dynamic_exts_array_tag_t<0>,
+                                    __detail::__construct_psa_from_all_exts_array_tag_t>(),
+          __exts
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
         }
       })
@@ -444,9 +440,9 @@ public:
 #  else
       : __base_t(__base_t {
 #  endif
-        __sto
+          __sto
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #  else
       })
 #  endif
@@ -558,7 +554,7 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...)
   // Workaround for nvcc
   //-> extents<size_t, __detail::__make_dynamic_extent<_IndexTypes>()...>;
   // Adding "(void)" so that clang doesn't complain this is unused
-  ->extents<size_t, size_t(((void) _IndexTypes(), -1))...>;
+  -> extents<size_t, size_t(((void) _IndexTypes(), -1))...>;
 #  endif
 
 namespace __detail
@@ -595,8 +591,6 @@ using __extents_to_partially_static_sizes_t = typename __extents_to_partially_st
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_POP_MACROS)
-_LIBCUDACXX_POP_MACROS
-#endif
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___MDSPAN_EXTENTS_HPP

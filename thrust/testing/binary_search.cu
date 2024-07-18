@@ -12,7 +12,7 @@ THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 //////////////////////
 
 template <class Vector>
-void TestScalarLowerBoundSimple(void)
+void TestScalarLowerBoundSimple()
 {
   Vector vec(5);
 
@@ -72,7 +72,7 @@ void TestScalarLowerBoundDispatchImplicit()
 DECLARE_UNITTEST(TestScalarLowerBoundDispatchImplicit);
 
 template <class Vector>
-void TestScalarUpperBoundSimple(void)
+void TestScalarUpperBoundSimple()
 {
   Vector vec(5);
 
@@ -132,7 +132,7 @@ void TestScalarUpperBoundDispatchImplicit()
 DECLARE_UNITTEST(TestScalarUpperBoundDispatchImplicit);
 
 template <class Vector>
-void TestScalarBinarySearchSimple(void)
+void TestScalarBinarySearchSimple()
 {
   Vector vec(5);
 
@@ -192,7 +192,7 @@ void TestScalarBinarySearchDispatchImplicit()
 DECLARE_UNITTEST(TestScalarBinarySearchDispatchImplicit);
 
 template <class Vector>
-void TestScalarEqualRangeSimple(void)
+void TestScalarEqualRangeSimple()
 {
   Vector vec(5);
 

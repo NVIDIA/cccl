@@ -49,6 +49,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 /** \brief cub::RadixSortStoreAlgorithm enumerates different algorithms to write
@@ -131,7 +133,7 @@ struct AgentRadixSortOnesweep
   using fundamental_digit_extractor_t = ShiftDigitExtractor<KeyT>;
   using digit_extractor_t = typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;
 
-  typedef PortionOffsetT AtomicOffsetT;
+  using AtomicOffsetT = PortionOffsetT;
 
   static constexpr RadixRankAlgorithm RANK_ALGORITHM = AgentRadixSortOnesweepPolicy::RANK_ALGORITHM;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = AgentRadixSortOnesweepPolicy::SCAN_ALGORITHM;
@@ -140,16 +142,16 @@ struct AgentRadixSortOnesweep
       ? AgentRadixSortOnesweepPolicy::STORE_ALGORITHM
       : RADIX_SORT_STORE_DIRECT;
 
-  typedef RadixSortTwiddle<IS_DESCENDING, KeyT> Twiddle;
+  using Twiddle = RadixSortTwiddle<IS_DESCENDING, KeyT>;
 
   static_assert(RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
                 "for onesweep agent, the ranking algorithm must warp-strided key arrangement");
 
-  using BlockRadixRankT = cub::detail::conditional_t<
+  using BlockRadixRankT = ::cuda::std::_If<
     RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
     BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ATOMIC_OR, RANK_NUM_PARTS>,
-    cub::detail::conditional_t<
+    ::cuda::std::_If<
       RANK_ALGORITHM == RADIX_RANK_MATCH,
       BlockRadixRankMatch<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM>,
       BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ANY, RANK_NUM_PARTS>>>;
@@ -229,14 +231,8 @@ struct AgentRadixSortOnesweep
 
   struct CountsCallback
   {
-    typedef AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy,
-                                   IS_DESCENDING,
-                                   KeyT,
-                                   ValueT,
-                                   OffsetT,
-                                   PortionOffsetT,
-                                   DecomposerT>
-      AgentT;
+    using AgentT =
+      AgentRadixSortOnesweep<AgentRadixSortOnesweepPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
     AgentT& agent;
     int (&bins)[BINS_PER_THREAD];
     bit_ordered_type (&keys)[ITEMS_PER_THREAD];
@@ -459,7 +455,7 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void UpdateBinsGlobal(int (&bins)[BINS_PER_THREAD], int (&offsets)[BINS_PER_THREAD])
   {
     bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
-    if (d_bins_out != NULL && last_block)
+    if (d_bins_out != nullptr && last_block)
     {
 #pragma unroll
       for (int u = 0; u < BINS_PER_THREAD; ++u)

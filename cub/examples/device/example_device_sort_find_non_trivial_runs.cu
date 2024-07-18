@@ -51,7 +51,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
@@ -186,8 +186,8 @@ int Solve(Key* h_keys, Value* h_values, int num_items, int* h_offsets_reference,
  */
 int main(int argc, char** argv)
 {
-  typedef unsigned int Key;
-  typedef int Value;
+  using Key   = unsigned int;
+  using Value = int;
 
   int timing_iterations = 0;
   int num_items         = 40;
@@ -259,7 +259,7 @@ int main(int argc, char** argv)
 
     // Allocate temporary storage for sorting
     size_t temp_storage_bytes = 0;
-    void* d_temp_storage      = NULL;
+    void* d_temp_storage      = nullptr;
     CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
     CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
@@ -284,15 +284,15 @@ int main(int argc, char** argv)
     gpu_rle_timer.Start();
 
     // Allocate device arrays for enumerating non-trivial runs
-    int* d_offests_out = NULL;
-    int* d_lengths_out = NULL;
-    int* d_num_runs    = NULL;
+    int* d_offests_out = nullptr;
+    int* d_lengths_out = nullptr;
+    int* d_num_runs    = nullptr;
     CubDebugExit(g_allocator.DeviceAllocate((void**) &d_offests_out, sizeof(int) * num_items));
     CubDebugExit(g_allocator.DeviceAllocate((void**) &d_lengths_out, sizeof(int) * num_items));
     CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_runs, sizeof(int) * 1));
 
     // Allocate temporary storage for isolating non-trivial runs
-    d_temp_storage = NULL;
+    d_temp_storage = nullptr;
     CubDebugExit(DeviceRunLengthEncode::NonTrivialRuns(
       d_temp_storage,
       temp_storage_bytes,

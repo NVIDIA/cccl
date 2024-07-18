@@ -7,7 +7,7 @@
 
 #include <unittest/unittest.h>
 
-void TestConstantIteratorConstructFromConvertibleSystem(void)
+void TestConstantIteratorConstructFromConvertibleSystem()
 {
   using namespace thrust;
 
@@ -21,7 +21,7 @@ void TestConstantIteratorConstructFromConvertibleSystem(void)
 }
 DECLARE_UNITTEST(TestConstantIteratorConstructFromConvertibleSystem);
 
-void TestConstantIteratorIncrement(void)
+void TestConstantIteratorIncrement()
 {
   using namespace thrust;
 
@@ -51,7 +51,7 @@ DECLARE_UNITTEST(TestConstantIteratorIncrement);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value, "");
 static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value, "");
 
-void TestConstantIteratorIncrementBig(void)
+void TestConstantIteratorIncrementBig()
 {
   long long int n = 10000000000ULL;
 
@@ -62,7 +62,7 @@ void TestConstantIteratorIncrementBig(void)
 }
 DECLARE_UNITTEST(TestConstantIteratorIncrementBig);
 
-void TestConstantIteratorComparison(void)
+void TestConstantIteratorComparison()
 {
   using namespace thrust;
 
@@ -90,7 +90,7 @@ void TestConstantIteratorComparison(void)
 }
 DECLARE_UNITTEST(TestConstantIteratorComparison);
 
-void TestMakeConstantIterator(void)
+void TestMakeConstantIterator()
 {
   using namespace thrust;
 
@@ -108,7 +108,7 @@ void TestMakeConstantIterator(void)
 DECLARE_UNITTEST(TestMakeConstantIterator);
 
 template <typename Vector>
-void TestConstantIteratorCopy(void)
+void TestConstantIteratorCopy()
 {
   using namespace thrust;
 
@@ -129,12 +129,12 @@ void TestConstantIteratorCopy(void)
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorCopy);
 
 template <typename Vector>
-void TestConstantIteratorTransform(void)
+void TestConstantIteratorTransform()
 {
   using namespace thrust;
 
-  typedef typename Vector::value_type T;
-  typedef constant_iterator<T> ConstIter;
+  using T         = typename Vector::value_type;
+  using ConstIter = constant_iterator<T>;
 
   Vector result(4);
 
@@ -158,12 +158,12 @@ void TestConstantIteratorTransform(void)
 };
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorTransform);
 
-void TestConstantIteratorReduce(void)
+void TestConstantIteratorReduce()
 {
   using namespace thrust;
 
-  typedef int T;
-  typedef constant_iterator<T> ConstIter;
+  using T         = int;
+  using ConstIter = constant_iterator<T>;
 
   ConstIter first = make_constant_iterator<T>(7);
   ConstIter last  = first + 4;

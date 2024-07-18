@@ -43,7 +43,6 @@
 #  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #  include <cub/util_type.cuh>
 
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
@@ -55,6 +54,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -85,14 +86,14 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::detail::try_unwrap_contiguous_iterator_return_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesOutIt>;
+  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
+  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
+  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
   using AccumT            = typename thrust::iterator_traits<ValuesInUnwrapIt>::value_type;
 
-  auto keys_unwrap   = thrust::detail::try_unwrap_contiguous_iterator(keys);
-  auto values_unwrap = thrust::detail::try_unwrap_contiguous_iterator(values);
-  auto result_unwrap = thrust::detail::try_unwrap_contiguous_iterator(result);
+  auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
+  auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
+  auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
   using Dispatch32 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -101,7 +102,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    thrust::detail::int32_t,
+    std::int32_t,
     AccumT>;
   using Dispatch64 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -110,7 +111,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    thrust::detail::int64_t,
+    std::int64_t,
     AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -143,7 +144,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   // Run scan:
   {
     // Allocate temporary storage:
-    thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp{policy, tmp_size};
+    thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
     THRUST_INDEX_TYPE_DISPATCH2(
       status,
@@ -195,13 +196,13 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   }
 
   // Convert to raw pointers if possible:
-  using KeysInUnwrapIt    = thrust::detail::try_unwrap_contiguous_iterator_return_t<KeysInIt>;
-  using ValuesInUnwrapIt  = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesInIt>;
-  using ValuesOutUnwrapIt = thrust::detail::try_unwrap_contiguous_iterator_return_t<ValuesOutIt>;
+  using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
+  using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
+  using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
 
-  auto keys_unwrap   = thrust::detail::try_unwrap_contiguous_iterator(keys);
-  auto values_unwrap = thrust::detail::try_unwrap_contiguous_iterator(values);
-  auto result_unwrap = thrust::detail::try_unwrap_contiguous_iterator(result);
+  auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
+  auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
+  auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
   using Dispatch32 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -210,7 +211,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    thrust::detail::int32_t,
+    std::int32_t,
     InitValueT>;
   using Dispatch64 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -219,7 +220,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    thrust::detail::int64_t,
+    std::int64_t,
     InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -252,7 +253,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   // Run scan:
   {
     // Allocate temporary storage:
-    thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp{policy, tmp_size};
+    thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
     THRUST_INDEX_TYPE_DISPATCH2(
       status,

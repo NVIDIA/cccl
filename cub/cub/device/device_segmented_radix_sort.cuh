@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 #include <cub/util_deprecated.cuh>
 
@@ -83,6 +84,14 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSegmentedRadixSort
 {
+private:
+  // Name reported for NVTX ranges
+  _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
+  {
+    return "cub::DeviceSegmentedRadixSort";
+  }
+
+public:
   //! @name Key-value pairs
   //! @{
 
@@ -130,7 +139,7 @@ struct DeviceSegmentedRadixSort
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes,
@@ -232,6 +241,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -346,7 +357,7 @@ struct DeviceSegmentedRadixSort
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
@@ -442,6 +453,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -536,7 +549,7 @@ struct DeviceSegmentedRadixSort
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes,
@@ -642,6 +655,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -758,7 +773,7 @@ struct DeviceSegmentedRadixSort
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
@@ -856,6 +871,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -952,7 +969,7 @@ struct DeviceSegmentedRadixSort
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
@@ -1042,6 +1059,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1148,7 +1167,7 @@ struct DeviceSegmentedRadixSort
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
@@ -1238,6 +1257,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1334,7 +1355,7 @@ struct DeviceSegmentedRadixSort
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
@@ -1422,6 +1443,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1527,7 +1550,7 @@ struct DeviceSegmentedRadixSort
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedRadixSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
@@ -1615,6 +1638,8 @@ struct DeviceSegmentedRadixSort
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+
     // Signed integer type for global offsets
     using OffsetT = int;
 

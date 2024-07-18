@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,11 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Arithmetic operations
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS plus : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -45,7 +41,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
 {
@@ -59,13 +54,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS minus : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -77,7 +67,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS minus : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minus);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
 {
@@ -91,13 +80,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -109,7 +93,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
 {
@@ -123,13 +106,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS divides : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -141,7 +119,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS divides : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(divides);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS divides<void>
 {
@@ -155,13 +132,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS divides<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS modulus : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -173,7 +145,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS modulus : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(modulus);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
 {
@@ -187,13 +158,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS negate : __unary_function<_Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -205,7 +171,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate : __unary_function<_Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
 {
@@ -218,15 +183,10 @@ struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 // Bitwise operations
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS bit_and : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -238,7 +198,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_and : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_and);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_and<void>
 {
@@ -252,9 +211,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_and<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_not : __unary_function<_Tp, _Tp>
 {
@@ -278,13 +235,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_not<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -296,7 +248,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_or : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_or);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_or<void>
 {
@@ -310,13 +261,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_or<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS bit_xor : __binary_function<_Tp, _Tp, _Tp>
 {
   typedef _Tp __result_type; // used by valarray
@@ -328,7 +274,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_xor : __binary_function<_Tp, _Tp, _Tp>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
 {
@@ -342,15 +287,10 @@ struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 // Comparison operations
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS equal_to : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -362,7 +302,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS equal_to : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(equal_to);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS equal_to<void>
 {
@@ -376,13 +315,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS equal_to<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -394,7 +328,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to<void>
 {
@@ -408,13 +341,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS less : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -426,7 +354,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS less : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less<void>
 {
@@ -440,13 +367,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS less<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS less_equal : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -458,7 +380,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS less_equal : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less_equal);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less_equal<void>
 {
@@ -472,13 +393,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS less_equal<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS greater_equal : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -490,7 +406,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater_equal : __binary_function<_Tp, _Tp, bool
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater_equal<void>
 {
@@ -504,13 +419,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater_equal<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS greater : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -522,7 +432,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater<void>
 {
@@ -536,15 +445,10 @@ struct _LIBCUDACXX_TEMPLATE_VIS greater<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 // Logical operations
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS logical_and : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -556,7 +460,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_and : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_and);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_and<void>
 {
@@ -570,13 +473,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_and<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS logical_not : __unary_function<_Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -588,7 +486,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_not : __unary_function<_Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_not);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_not<void>
 {
@@ -601,13 +498,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_not<void>
   }
   typedef void is_transparent;
 };
-#endif
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-#else
-template <class _Tp>
-#endif
 struct _LIBCUDACXX_TEMPLATE_VIS logical_or : __binary_function<_Tp, _Tp, bool>
 {
   typedef bool __result_type; // used by valarray
@@ -619,7 +511,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_or : __binary_function<_Tp, _Tp, bool>
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_or);
 
-#if _CCCL_STD_VER > 2011
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_or<void>
 {
@@ -633,7 +524,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS logical_or<void>
   }
   typedef void is_transparent;
 };
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

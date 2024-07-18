@@ -5,9 +5,9 @@
 // TODO expand this with other iterator types (forward, bidirectional, etc.)
 
 template <typename Vector>
-void TestDistance(void)
+void TestDistance()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector v(100);
 

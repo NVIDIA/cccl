@@ -57,32 +57,16 @@ __host__ __device__ constexpr bool test()
 #ifndef TEST_HAS_NO_EXCEPTIONS
 void test_exceptions()
 {
-  // int
+  // Test const& overload
+  try
   {
     const cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
-    try
-    {
-      e.value();
-      assert(false);
-    }
-    catch (const cuda::std::bad_expected_access<int>& ex)
-    {
-      assert(ex.error() == 5);
-    }
+    e.value();
+    assert(false);
   }
-
-  // MoveOnly
+  catch (const cuda::std::bad_expected_access<int>& ex)
   {
-    cuda::std::expected<void, MoveOnly> e(cuda::std::unexpect, 5);
-    try
-    {
-      cuda::std::move(e).value();
-      assert(false);
-    }
-    catch (const cuda::std::bad_expected_access<MoveOnly>& ex)
-    {
-      assert(ex.error() == 5);
-    }
+    assert(ex.error() == 5);
   }
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS

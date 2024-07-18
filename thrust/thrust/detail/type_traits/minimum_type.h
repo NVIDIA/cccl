@@ -47,27 +47,25 @@ struct minimum_type_impl
 template <typename T1, typename T2>
 struct minimum_type_impl<T1, T2, true, false>
 {
-  typedef T2 type;
+  using type = T2;
 }; // end minimum_type_impl
 
 template <typename T1, typename T2>
 struct minimum_type_impl<T1, T2, false, true>
 {
-  typedef T1 type;
+  using type = T1;
 }; // end minimum_type_impl
 
 template <typename T1, typename T2>
 struct minimum_type_impl<T1, T2, true, true>
 {
-  typedef T1 type;
+  using type = T1;
 }; // end minimum_type_impl
 
 template <typename T1, typename T2>
 struct primitive_minimum_type
-    : minimum_type_detail::minimum_type_impl<T1,
-                                             T2,
-                                             THRUST_NS_QUALIFIER::detail::is_convertible<T1, T2>::value,
-                                             THRUST_NS_QUALIFIER::detail::is_convertible<T2, T1>::value>
+    : minimum_type_detail::
+        minimum_type_impl<T1, T2, ::cuda::std::is_convertible<T1, T2>::value, ::cuda::std::is_convertible<T2, T1>::value>
 {}; // end primitive_minimum_type
 
 // because some types are not convertible (even to themselves)
@@ -75,14 +73,14 @@ struct primitive_minimum_type
 template <typename T>
 struct primitive_minimum_type<T, T>
 {
-  typedef T type;
+  using type = T;
 }; // end primitive_minimum_type
 
 // XXX this belongs somewhere more general
 struct any_conversion
 {
   template <typename T>
-  operator T(void);
+  operator T();
 };
 
 } // namespace minimum_type_detail

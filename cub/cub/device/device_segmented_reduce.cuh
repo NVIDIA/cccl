@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
@@ -164,7 +165,7 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce
@@ -249,6 +250,8 @@ public:
     T initial_value,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
+
     // Integer type for global offsets
     using OffsetT               = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
@@ -324,7 +327,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum
@@ -391,6 +394,8 @@ public:
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
+
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -453,13 +458,13 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-custommin
   //!     :end-before: example-end segmented-reduce-custommin
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min
@@ -525,6 +530,8 @@ public:
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
+
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -597,7 +604,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmin
@@ -666,6 +673,8 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
+
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
@@ -756,7 +765,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-max
@@ -822,6 +831,8 @@ public:
       EndOffsetIteratorT d_end_offsets,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
+
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -895,7 +906,7 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmax
@@ -966,6 +977,8 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
+
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615

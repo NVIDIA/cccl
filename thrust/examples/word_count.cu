@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example computes the number of words in a text sample
 // with a single call to thrust::inner_product.  The algorithm
 // counts the number of characters which start a new word, i.e.
@@ -18,7 +20,7 @@ __host__ __device__ bool is_alpha(const char c)
 }
 
 // determines whether the right character begins a new word
-struct is_word_start : public thrust::binary_function<const char&, const char&, bool>
+struct is_word_start
 {
   __host__ __device__ bool operator()(const char& left, const char& right) const
   {
@@ -52,7 +54,7 @@ int word_count(const thrust::device_vector<char>& input)
   return wc;
 }
 
-int main(void)
+int main()
 {
   // Paragraph from 'The Raven' by Edgar Allan Poe
   // http://en.wikipedia.org/wiki/The_Raven

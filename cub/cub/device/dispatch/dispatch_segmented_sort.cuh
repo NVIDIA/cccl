@@ -58,6 +58,8 @@
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/type_traits>
+
 #include <type_traits>
 
 #include <nv/target>
@@ -694,7 +696,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 template <typename KeyT, typename ValueT>
 struct DeviceSegmentedSortPolicy
 {
-  using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   static constexpr int KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
@@ -1231,7 +1233,7 @@ struct DispatchSegmentedSort : SelectedPolicy
         auto medium_indices_iterator =
           THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get());
 
-        cub::DevicePartition::If(
+        cub::DevicePartition::IfNoNVTX(
           nullptr,
           three_way_partition_temp_storage_bytes,
           THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),
@@ -1511,7 +1513,7 @@ private:
     auto medium_indices_iterator =
       THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + num_segments);
 
-    error = CubDebug(cub::DevicePartition::If(
+    error = CubDebug(cub::DevicePartition::IfNoNVTX(
       device_partition_temp_storage.get(),
       three_way_partition_temp_storage_bytes,
       THRUST_NS_QUALIFIER::counting_iterator<OffsetT>(0),

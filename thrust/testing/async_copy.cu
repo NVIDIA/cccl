@@ -10,16 +10,16 @@
 #  include <unittest/unittest.h>
 #  include <unittest/util_async.h>
 
-#  define DEFINE_ASYNC_COPY_CALLABLE(name, ...)                                             \
-    struct THRUST_PP_CAT2(name, _fn)                                                        \
-    {                                                                                       \
-      template <typename ForwardIt, typename Sentinel, typename OutputIt>                   \
-      __host__ auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output) const \
-        THRUST_RETURNS(::thrust::async::copy(                                               \
-          __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first),   \
-          THRUST_FWD(last),                                                                 \
-          THRUST_FWD(output)))                                                              \
-    };                                                                                      \
+#  define DEFINE_ASYNC_COPY_CALLABLE(name, ...)                                               \
+    struct THRUST_PP_CAT2(name, _fn)                                                          \
+    {                                                                                         \
+      template <typename ForwardIt, typename Sentinel, typename OutputIt>                     \
+      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output) const \
+        THRUST_RETURNS(::thrust::async::copy(                                                 \
+          __VA_ARGS__ THRUST_PP_COMMA_IF(THRUST_PP_ARITY(__VA_ARGS__)) THRUST_FWD(first),     \
+          THRUST_FWD(last),                                                                   \
+          THRUST_FWD(output)))                                                                \
+    };                                                                                        \
     /**/
 
 DEFINE_ASYNC_COPY_CALLABLE(invoke_async_copy);
@@ -42,7 +42,7 @@ struct test_async_copy_host_to_device
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::host_vector<T> h0(unittest::random_integers<T>(n));
       thrust::device_vector<T> d0(n);
@@ -72,7 +72,7 @@ struct test_async_copy_device_to_host
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::host_vector<T> h0(unittest::random_integers<T>(n));
       thrust::host_vector<T> h1(n);
@@ -108,7 +108,7 @@ struct test_async_copy_device_to_device
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::host_vector<T> h0(unittest::random_integers<T>(n));
       thrust::device_vector<T> d0(n);
@@ -147,7 +147,7 @@ struct test_async_copy_counting_iterator_input_to_device_vector
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::counting_iterator<T> first(0);
       thrust::counting_iterator<T> last(unittest::truncate_to_max_representable<T>(n));
@@ -192,7 +192,7 @@ struct test_async_copy_counting_iterator_input_to_host_vector
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::counting_iterator<T> first(0);
       thrust::counting_iterator<T> last(unittest::truncate_to_max_representable<T>(n));
@@ -229,7 +229,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 template <typename T>
 struct test_async_copy_roundtrip
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0(unittest::random_integers<T>(n));
     thrust::device_vector<T> d0(n);
@@ -251,7 +251,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES_AND_NAME(
 template <typename T>
 struct test_async_copy_after
 {
-  __host__ void operator()(std::size_t n)
+  _CCCL_HOST void operator()(std::size_t n)
   {
     thrust::host_vector<T> h0(unittest::random_integers<T>(n));
     thrust::host_vector<T> h1(n);

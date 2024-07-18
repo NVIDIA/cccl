@@ -10,9 +10,9 @@
 THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 
 template <class Vector>
-void TestFillSimple(void)
+void TestFillSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -55,7 +55,7 @@ void TestFillSimple(void)
 }
 DECLARE_VECTOR_UNITTEST(TestFillSimple);
 
-void TestFillDiscardIterator(void)
+void TestFillDiscardIterator()
 {
   // there's no result to check because fill returns void
   thrust::fill(
@@ -67,7 +67,7 @@ void TestFillDiscardIterator(void)
 DECLARE_UNITTEST(TestFillDiscardIterator);
 
 template <class Vector>
-void TestFillMixedTypes(void)
+void TestFillMixedTypes()
 {
   Vector v(4);
 
@@ -121,9 +121,9 @@ void TestFill(size_t n)
 DECLARE_VARIABLE_UNITTEST(TestFill);
 
 template <class Vector>
-void TestFillNSimple(void)
+void TestFillNSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -170,7 +170,7 @@ void TestFillNSimple(void)
 }
 DECLARE_VECTOR_UNITTEST(TestFillNSimple);
 
-void TestFillNDiscardIterator(void)
+void TestFillNDiscardIterator()
 {
   thrust::discard_iterator<thrust::host_system_tag> h_result =
     thrust::fill_n(thrust::discard_iterator<thrust::host_system_tag>(), 10, 13);
@@ -186,7 +186,7 @@ void TestFillNDiscardIterator(void)
 DECLARE_UNITTEST(TestFillNDiscardIterator);
 
 template <class Vector>
-void TestFillNMixedTypes(void)
+void TestFillNMixedTypes()
 {
   Vector v(4);
 
@@ -246,9 +246,9 @@ void TestFillN(size_t n)
 DECLARE_VARIABLE_UNITTEST(TestFillN);
 
 template <typename Vector>
-void TestFillZipIterator(void)
+void TestFillZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3, T(0));
   Vector v2(3, T(0));
@@ -270,10 +270,10 @@ void TestFillZipIterator(void)
 };
 DECLARE_VECTOR_UNITTEST(TestFillZipIterator);
 
-void TestFillTuple(void)
+void TestFillTuple()
 {
-  typedef int T;
-  typedef thrust::tuple<T, T> Tuple;
+  using T     = int;
+  using Tuple = thrust::tuple<T, T>;
 
   thrust::host_vector<Tuple> h(3, Tuple(0, 0));
   thrust::device_vector<Tuple> d(3, Tuple(0, 0));
@@ -290,9 +290,9 @@ struct TypeWithTrivialAssigment
   int x, y, z;
 };
 
-void TestFillWithTrivialAssignment(void)
+void TestFillWithTrivialAssignment()
 {
-  typedef TypeWithTrivialAssigment T;
+  using T = TypeWithTrivialAssigment;
 
   thrust::host_vector<T> h(1);
   thrust::device_vector<T> d(1);
@@ -325,7 +325,7 @@ struct TypeWithNonTrivialAssigment
 {
   int x, y, z;
 
-  __host__ __device__ TypeWithNonTrivialAssigment()
+  _CCCL_HOST_DEVICE TypeWithNonTrivialAssigment()
       : x(0)
       , y(0)
       , z(0)
@@ -333,7 +333,7 @@ struct TypeWithNonTrivialAssigment
 
   TypeWithNonTrivialAssigment(const TypeWithNonTrivialAssigment&) = default;
 
-  __host__ __device__ TypeWithNonTrivialAssigment& operator=(const TypeWithNonTrivialAssigment& t)
+  _CCCL_HOST_DEVICE TypeWithNonTrivialAssigment& operator=(const TypeWithNonTrivialAssigment& t)
   {
     x = t.x;
     y = t.y;
@@ -341,15 +341,15 @@ struct TypeWithNonTrivialAssigment
     return *this;
   }
 
-  __host__ __device__ bool operator==(const TypeWithNonTrivialAssigment& t) const
+  _CCCL_HOST_DEVICE bool operator==(const TypeWithNonTrivialAssigment& t) const
   {
     return x == t.x && y == t.y && z == t.z;
   }
 };
 
-void TestFillWithNonTrivialAssignment(void)
+void TestFillWithNonTrivialAssignment()
 {
-  typedef TypeWithNonTrivialAssigment T;
+  using T = TypeWithNonTrivialAssigment;
 
   thrust::host_vector<T> h(1);
   thrust::device_vector<T> d(1);

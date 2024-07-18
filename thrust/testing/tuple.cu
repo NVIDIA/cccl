@@ -330,7 +330,7 @@ SimpleUnitTest<TestTupleComparison, NumericTypes> TestTupleComparisonInstance;
 template <typename T>
 struct TestTupleTieFunctor
 {
-  __host__ __device__ void clear(T* data) const
+  _CCCL_HOST_DEVICE void clear(T* data) const
   {
     for (int i = 0; i < 10; ++i)
     {
@@ -338,7 +338,7 @@ struct TestTupleTieFunctor
     }
   }
 
-  __host__ __device__ bool operator()() const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     using namespace thrust;
 
@@ -458,7 +458,7 @@ struct TestTupleTie
 };
 SimpleUnitTest<TestTupleTie, NumericTypes> TestTupleTieInstance;
 
-void TestTupleSwap(void)
+void TestTupleSwap()
 {
   int a = 7;
   int b = 13;
@@ -480,7 +480,7 @@ void TestTupleSwap(void)
   ASSERT_EQUAL(b, thrust::get<1>(t2));
   ASSERT_EQUAL(c, thrust::get<2>(t2));
 
-  typedef thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable> swappable_tuple;
+  using swappable_tuple = thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable>;
 
   thrust::host_vector<swappable_tuple> h_v1(1), h_v2(1);
   thrust::device_vector<swappable_tuple> d_v1(1), d_v2(1);
@@ -498,7 +498,7 @@ void TestTupleSwap(void)
 DECLARE_UNITTEST(TestTupleSwap);
 
 #if _CCCL_STD_VER >= 2017
-void TestTupleStructuredBindings(void)
+void TestTupleStructuredBindings()
 {
   const int a = 0;
   const int b = 42;
@@ -511,7 +511,21 @@ void TestTupleStructuredBindings(void)
   ASSERT_EQUAL(c, c2);
 }
 DECLARE_UNITTEST(TestTupleStructuredBindings);
-#endif
+
+void TestTupleCTAD(void)
+{
+  const int a   = 0;
+  const char b  = 42;
+  const short c = 1337;
+  thrust::tuple t(a, b, c);
+
+  auto [a2, b2, c2] = t;
+  ASSERT_EQUAL(a, a2);
+  ASSERT_EQUAL(b, b2);
+  ASSERT_EQUAL(c, c2);
+}
+DECLARE_UNITTEST(TestTupleCTAD);
+#endif // _CCCL_STD_VER >= 2017
 
 // Ensure that we are backwards compatible with the old thrust::tuple implementation
 static_assert(

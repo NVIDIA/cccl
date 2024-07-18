@@ -1,0 +1,242 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the main workflow that runs on every PR and push to main
+name: pull_request
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-workflow:
+    name: Build workflow from matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
+      pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
+      workflow: ${{ steps.build-workflow.outputs.workflow }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Lookup PR info
+        id: get-pr-info
+        uses: nv-gha-runners/get-pr-info@main
+      - name: Export PR info
+        id: export-pr-info
+        run: |
+          echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
+          echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
+      - name: Build workflow
+        if: ${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}
+        id: build-workflow
+        uses: ./.github/actions/workflow-build
+        env:
+          pr_worflow: ${{ !contains(github.event.head_commit.message, '[workflow:!pull_request]') && 'pull_request' || '' }}
+          nightly_workflow: ${{ contains(github.event.head_commit.message, '[workflow:nightly]') && 'nightly' || '' }}
+        with:
+          allow_override: "true"
+          inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
+          inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
+          workflows: >-
+            ${{ env.pr_worflow }}
+            ${{ env.nightly_workflow }}
+
+  dispatch-groups-linux-two-stage:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-two-stage:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-linux-standalone:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-standalone:
+    name: ${{ matrix.name }}
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
+          toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+
+  verify-workflow:
+    name: Verify and summarize workflow results
+    if: ${{ always() && !cancelled() && !contains(github.event.head_commit.message, '[skip-matrix]') }}
+    needs:
+      - build-workflow
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-windows-two-stage
+      - dispatch-groups-linux-standalone
+      - dispatch-groups-windows-standalone
+    permissions:
+      contents: read
+      pull-requests: write # Posts a comment back to the PR.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check workflow success
+        id: check-workflow
+        uses: ./.github/actions/workflow-results
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ needs.build-workflow.outputs.pr_number }}
+
+  verify-devcontainers:
+    name: Verify Dev Containers
+    if: ${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/verify-devcontainers.yml
+    with:
+      base_sha: ${{ needs.build-workflow.outputs.base_sha }}
+
+  verify-docs:
+    name: Build and Verify Docs
+    if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and upload docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "true"
+          upload_pages_artifact: "false"
+
+  build-rapids:
+    name: Build RAPIDS
+    if: ${{ !contains(github.event.head_commit.message, '[skip-rapids]') }}
+    secrets: inherit
+    permissions:
+      actions: read
+      packages: read
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/build-rapids.yml
+
+  # Check all other job statuses. This job gates branch protection checks.
+  ci:
+    name: CI
+    # !! Important: This job is used for branch protection checks.
+    # !! Need to use always() instead of !cancelled() because skipped jobs count as success
+    # !! for Github branch protection checks. Yes, really: by default, branch protections
+    # !! can be bypassed by cancelling CI. See NVIDIA/cccl#605.
+    if: ${{ always() }}
+    needs:
+      - verify-workflow
+      - verify-devcontainers
+      - verify-docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          status="success"
+
+          check_result() {
+            name=$1
+            expected=$2
+            result=$3
+
+            echo "Checking if $name job result ('$result') is '$expected'..."
+            if [[ "$result" != "$expected" ]]; then
+              echo "$name job failed"
+
+              status="failed"
+            fi
+          }
+
+          check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
+          check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
+          check_result "verify-docs"          "success" "${{needs.verify-docs.result}}"
+
+          if [[ "$status" != "success" ]]; then
+            exit 1
+          fi

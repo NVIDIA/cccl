@@ -93,7 +93,7 @@ struct accumulator_pack_base_t
 };
 
 template <class OffsetT>
-struct accumulator_pack_base_t<OffsetT, typename cuda::std::enable_if<sizeof(OffsetT) == 4>::type>
+struct accumulator_pack_base_t<OffsetT, typename ::cuda::std::enable_if<sizeof(OffsetT) == 4>::type>
 {
   using pack_t = std::uint64_t;
 
@@ -197,9 +197,9 @@ struct AgentThreeWayPartition
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
-                               cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+                     cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                     InputIteratorT>;
 
   // Parameterized BlockLoad type for input data
   using BlockLoadT = cub::BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM>;

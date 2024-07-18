@@ -106,7 +106,7 @@ __global__ void gather_if_kernel(
 template <typename T>
 struct is_even_gather_if
 {
-  __host__ __device__ bool operator()(const T i) const
+  _CCCL_HOST_DEVICE bool operator()(const T i) const
   {
     return (i % 2) == 0;
   }
@@ -184,7 +184,7 @@ void TestGatherIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherIfDeviceDevice);
 #endif
 
-void TestGatherIfCudaStreams(void)
+void TestGatherIfCudaStreams()
 {
   thrust::device_vector<int> flg(5); // predicate array
   thrust::device_vector<int> map(5); // gather indices

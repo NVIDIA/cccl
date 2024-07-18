@@ -69,7 +69,7 @@ namespace complex
  * These values and the return value were taken from n1124.pdf.
  */
 
-__host__ __device__ inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
 {
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023
   double x, y, h;
@@ -192,7 +192,7 @@ __host__ __device__ inline thrust::complex<double> ccosh(const thrust::complex<d
   return (thrust::complex<double>((x * x) * (y - y), (x + x) * (y - y)));
 }
 
-__host__ __device__ inline thrust::complex<double> ccos(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<double>& z)
 {
   /* ccos(z) = ccosh(I * z) */
   return (ccosh(thrust::complex<double>(-z.imag(), z.real())));
@@ -203,7 +203,7 @@ __host__ __device__ inline thrust::complex<double> ccos(const thrust::complex<do
 } // namespace detail
 
 template <typename ValueType>
-__host__ __device__ inline complex<ValueType> cos(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE inline complex<ValueType> cos(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -211,7 +211,7 @@ __host__ __device__ inline complex<ValueType> cos(const complex<ValueType>& z)
 }
 
 template <typename ValueType>
-__host__ __device__ inline complex<ValueType> cosh(const complex<ValueType>& z)
+_CCCL_HOST_DEVICE inline complex<ValueType> cosh(const complex<ValueType>& z)
 {
   const ValueType re = z.real();
   const ValueType im = z.imag();
@@ -219,13 +219,13 @@ __host__ __device__ inline complex<ValueType> cosh(const complex<ValueType>& z)
 }
 
 template <>
-__host__ __device__ inline thrust::complex<double> cos(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE inline thrust::complex<double> cos(const thrust::complex<double>& z)
 {
   return detail::complex::ccos(z);
 }
 
 template <>
-__host__ __device__ inline thrust::complex<double> cosh(const thrust::complex<double>& z)
+_CCCL_HOST_DEVICE inline thrust::complex<double> cosh(const thrust::complex<double>& z)
 {
   return detail::complex::ccosh(z);
 }

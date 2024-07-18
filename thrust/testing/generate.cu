@@ -11,21 +11,21 @@ struct return_value
 {
   T val;
 
-  return_value(void) {}
+  return_value() {}
   return_value(T v)
       : val(v)
   {}
 
-  __host__ __device__ T operator()(void)
+  _CCCL_HOST_DEVICE T operator()(void)
   {
     return val;
   }
 };
 
 template <class Vector>
-void TestGenerateSimple(void)
+void TestGenerateSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector result(5);
 
@@ -109,9 +109,9 @@ void TestGenerateToDiscardIterator(const size_t)
 DECLARE_VARIABLE_UNITTEST(TestGenerateToDiscardIterator);
 
 template <class Vector>
-void TestGenerateNSimple(void)
+void TestGenerateNSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector result(5);
 
@@ -184,9 +184,9 @@ void TestGenerateNToDiscardIterator(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGenerateNToDiscardIterator);
 
 template <typename Vector>
-void TestGenerateZipIterator(void)
+void TestGenerateZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3, T(0));
   Vector v2(3, T(0));
@@ -204,10 +204,10 @@ void TestGenerateZipIterator(void)
 };
 DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 
-void TestGenerateTuple(void)
+void TestGenerateTuple()
 {
-  typedef int T;
-  typedef thrust::tuple<T, T> Tuple;
+  using T     = int;
+  using Tuple = thrust::tuple<T, T>;
 
   thrust::host_vector<Tuple> h(3, Tuple(0, 0));
   thrust::device_vector<Tuple> d(3, Tuple(0, 0));

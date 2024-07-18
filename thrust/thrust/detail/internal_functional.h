@@ -42,57 +42,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
-// unary_negate does not need to know argument_type
-template <typename Predicate>
-struct unary_negate
-{
-  typedef bool result_type;
-
-  Predicate pred;
-
-  _CCCL_HOST_DEVICE explicit unary_negate(const Predicate& pred)
-      : pred(pred)
-  {}
-
-  template <typename T>
-  _CCCL_HOST_DEVICE bool operator()(const T& x)
-  {
-    return !bool(pred(x));
-  }
-};
-
-// binary_negate does not need to know first_argument_type or second_argument_type
-template <typename Predicate>
-struct binary_negate
-{
-  typedef bool result_type;
-
-  Predicate pred;
-
-  _CCCL_HOST_DEVICE explicit binary_negate(const Predicate& pred)
-      : pred(pred)
-  {}
-
-  template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE bool operator()(const T1& x, const T2& y)
-  {
-    return !bool(pred(x, y));
-  }
-};
-
-template <typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::unary_negate<Predicate> not1(const Predicate& pred)
-{
-  return thrust::detail::unary_negate<Predicate>(pred);
-}
-
-template <typename Predicate>
-_CCCL_HOST_DEVICE thrust::detail::binary_negate<Predicate> not2(const Predicate& pred)
-{
-  return thrust::detail::binary_negate<Predicate>(pred);
-}
-
 // convert a predicate to a 0 or 1 integral value
 template <typename Predicate, typename IntegralType>
 struct predicate_to_integral
@@ -107,19 +56,6 @@ struct predicate_to_integral
   _CCCL_HOST_DEVICE IntegralType operator()(const T& x)
   {
     return pred(x) ? IntegralType(1) : IntegralType(0);
-  }
-};
-
-// note that detail::equal_to does not force conversion from T2 -> T1 as equal_to does
-template <typename T1>
-struct equal_to
-{
-  typedef bool result_type;
-
-  template <typename T2>
-  _CCCL_HOST_DEVICE bool operator()(const T1& lhs, const T2& rhs) const
-  {
-    return lhs == rhs;
   }
 };
 
@@ -143,7 +79,7 @@ struct equal_to_value
 template <typename Predicate>
 struct tuple_binary_predicate
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   _CCCL_HOST_DEVICE tuple_binary_predicate(const Predicate& p)
       : pred(p)
@@ -161,7 +97,7 @@ struct tuple_binary_predicate
 template <typename Predicate>
 struct tuple_not_binary_predicate
 {
-  typedef bool result_type;
+  using result_type = bool;
 
   _CCCL_HOST_DEVICE tuple_not_binary_predicate(const Predicate& p)
       : pred(p)
@@ -179,7 +115,7 @@ struct tuple_not_binary_predicate
 template <typename Generator>
 struct host_generate_functor
 {
-  typedef void result_type;
+  using result_type = void;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE host_generate_functor(Generator g)
@@ -212,7 +148,7 @@ struct host_generate_functor
 template <typename Generator>
 struct device_generate_functor
 {
-  typedef void result_type;
+  using result_type = void;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE device_generate_functor(Generator g)
@@ -244,33 +180,15 @@ struct device_generate_functor
 
 template <typename System, typename Generator>
 struct generate_functor
-    : thrust::detail::eval_if<thrust::detail::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
                               thrust::detail::identity_<host_generate_functor<Generator>>,
                               thrust::detail::identity_<device_generate_functor<Generator>>>
 {};
 
-template <typename ResultType, typename BinaryFunction>
-struct zipped_binary_op
-{
-  typedef ResultType result_type;
-
-  _CCCL_HOST_DEVICE zipped_binary_op(BinaryFunction binary_op)
-      : m_binary_op(binary_op)
-  {}
-
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE inline result_type operator()(Tuple t)
-  {
-    return m_binary_op(thrust::get<0>(t), thrust::get<1>(t));
-  }
-
-  BinaryFunction m_binary_op;
-};
-
 template <typename T>
 struct is_non_const_reference
-    : thrust::detail::and_<thrust::detail::not_<thrust::detail::is_const<T>>,
-                           thrust::detail::or_<thrust::detail::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
+    : ::cuda::std::_And<thrust::detail::not_<::cuda::std::is_const<T>>,
+                        ::cuda::std::disjunction<::cuda::std::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
 {};
 
 template <typename T>
@@ -285,13 +203,13 @@ struct is_tuple_of_iterator_references<thrust::detail::tuple_of_iterator_referen
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 struct enable_if_non_const_reference_or_tuple_of_iterator_references
-    : thrust::detail::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
+    : ::cuda::std::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
 {};
 
 template <typename UnaryFunction>
 struct unary_transform_functor
 {
-  typedef void result_type;
+  using result_type = void;
 
   UnaryFunction f;
 
@@ -421,7 +339,7 @@ struct device_destroy_functor
 
 template <typename System, typename T>
 struct destroy_functor
-    : thrust::detail::eval_if<thrust::detail::is_convertible<System, thrust::host_system_tag>::value,
+    : thrust::detail::eval_if<::cuda::std::is_convertible<System, thrust::host_system_tag>::value,
                               thrust::detail::identity_<host_destroy_functor<T>>,
                               thrust::detail::identity_<device_destroy_functor<T>>>
 {};

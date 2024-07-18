@@ -61,3 +61,20 @@ CUB_TEST("Tests non_void_value_t", "[util][type]")
   STATIC_REQUIRE(::cuda::std::is_same<int, //
                                       cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>::value);
 }
+
+CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);
+
+struct HasCat
+{
+  using cat = int;
+};
+struct HasDog
+{
+  using dog = int;
+};
+
+CUB_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
+{
+  STATIC_REQUIRE(cat_detect<HasCat>::value);
+  STATIC_REQUIRE(!cat_detect<HasDog>::value);
+}

@@ -12,9 +12,9 @@
     {                                                                                                             \
       static const size_t num_samples = 10000;                                                                    \
       const size_t zero               = 0;                                                                        \
-      typedef typename Vector::value_type T;                                                                      \
-      Vector lhs = unittest::random_samples<T>(num_samples);                                                      \
-      Vector rhs = unittest::random_samples<T>(num_samples);                                                      \
+      using T                         = typename Vector::value_type;                                              \
+      Vector lhs                      = unittest::random_samples<T>(num_samples);                                 \
+      Vector rhs                      = unittest::random_samples<T>(num_samples);                                 \
       thrust::replace(rhs.begin(), rhs.end(), T(0), T(1));                                                        \
                                                                                                                   \
       Vector reference(lhs.size());                                                                               \
@@ -53,11 +53,11 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, thrust::modulus, SmallIntegralTy
 
 #define UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, reference_operator, functor)             \
   template <typename Vector>                                                              \
-  void TestFunctionalPlaceholders##name(void)                                             \
+  void TestFunctionalPlaceholders##name()                                                 \
   {                                                                                       \
     static const size_t num_samples = 10000;                                              \
-    typedef typename Vector::value_type T;                                                \
-    Vector input = unittest::random_samples<T>(num_samples);                              \
+    using T                         = typename Vector::value_type;                        \
+    Vector input                    = unittest::random_samples<T>(num_samples);           \
                                                                                           \
     Vector reference(input.size());                                                       \
     thrust::transform(input.begin(), input.end(), reference.begin(), functor<T>());       \
@@ -73,7 +73,7 @@ BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Modulus, %, thrust::modulus, SmallIntegralTy
 template <typename T>
 struct unary_plus_reference
 {
-  __host__ __device__ T operator()(const T& x) const
+  _CCCL_HOST_DEVICE T operator()(const T& x) const
   { // Static cast to undo integral promotion
     return static_cast<T>(+x);
   }

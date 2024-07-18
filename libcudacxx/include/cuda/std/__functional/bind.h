@@ -76,16 +76,16 @@ struct __ph
 {};
 
 #  if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_LIBCUDACXX_FUNC_VIS extern const __ph<1> _1;
-_LIBCUDACXX_FUNC_VIS extern const __ph<2> _2;
-_LIBCUDACXX_FUNC_VIS extern const __ph<3> _3;
-_LIBCUDACXX_FUNC_VIS extern const __ph<4> _4;
-_LIBCUDACXX_FUNC_VIS extern const __ph<5> _5;
-_LIBCUDACXX_FUNC_VIS extern const __ph<6> _6;
-_LIBCUDACXX_FUNC_VIS extern const __ph<7> _7;
-_LIBCUDACXX_FUNC_VIS extern const __ph<8> _8;
-_LIBCUDACXX_FUNC_VIS extern const __ph<9> _9;
-_LIBCUDACXX_FUNC_VIS extern const __ph<10> _10;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<1> _1;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<2> _2;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<3> _3;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<4> _4;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<5> _5;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<6> _6;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<7> _7;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<8> _8;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<9> _9;
+_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<10> _10;
 #  else
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<1> _1{};
 /* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<2> _2{};
@@ -138,17 +138,17 @@ struct __mu_return2<true, _Ti, _Uj>
 
 template <class _Ti, class _Uj>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<0 < is_placeholder<_Ti>::value, typename __mu_return2<0 < is_placeholder<_Ti>::value, _Ti, _Uj>::type>
-  __mu(_Ti&, _Uj& __uj)
+__enable_if_t<0 < is_placeholder<_Ti>::value, typename __mu_return2<0 < is_placeholder<_Ti>::value, _Ti, _Uj>::type>
+__mu(_Ti&, _Uj& __uj)
 {
   const size_t _Indx = is_placeholder<_Ti>::value - 1;
   return _CUDA_VSTD::forward<__tuple_element_t<_Indx, _Uj>>(_CUDA_VSTD::get<_Indx>(__uj));
 }
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<
-  !is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__is_reference_wrapper<_Ti>::value,
-  _Ti&>
+inline _LIBCUDACXX_INLINE_VISIBILITY
+__enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__is_reference_wrapper<_Ti>::value,
+              _Ti&>
 __mu(_Ti& __ti, _Uj&)
 {
   return __ti;
@@ -308,9 +308,9 @@ public:
   {}
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __enable_if_t<
-    is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>, result_type>::value || is_void<_Rp>::value,
-    result_type>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>, result_type>::value || is_void<_Rp>::value,
+                result_type>
   operator()(_Args&&... __args)
   {
     typedef __invoke_void_return_wrapper<_Rp> _Invoker;

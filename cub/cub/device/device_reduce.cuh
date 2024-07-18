@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
@@ -58,7 +59,7 @@ CUB_NAMESPACE_BEGIN
 //! a reduction across a sequence of data items residing within
 //! device-accessible memory.
 //!
-//! .. image:: ../img/reduce_logo.png
+//! .. image:: ../../img/reduce_logo.png
 //!     :align: center
 //!
 //! Overview
@@ -124,7 +125,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Reduce(
   //!      d_temp_storage, temp_storage_bytes,
@@ -195,6 +196,8 @@ struct DeviceReduce
     T init,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
+
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -251,7 +254,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Sum(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
@@ -304,6 +307,8 @@ struct DeviceReduce
       NumItemsT num_items,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
+
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -369,7 +374,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Min(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
@@ -423,6 +428,8 @@ struct DeviceReduce
       NumItemsT num_items,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
+
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -496,7 +503,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_argmin, num_items);
   //!
@@ -547,6 +554,8 @@ struct DeviceReduce
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -621,7 +630,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_max, num_items);
   //!
@@ -673,6 +682,8 @@ struct DeviceReduce
       NumItemsT num_items,
       cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
+
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -750,7 +761,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMax(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_argmax, num_items);
@@ -802,6 +813,8 @@ struct DeviceReduce
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -968,6 +981,8 @@ struct DeviceReduce
     T init,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
+
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchTransformReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, TransformOpT, T>::Dispatch(
@@ -1038,7 +1053,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ReduceByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1135,6 +1150,8 @@ struct DeviceReduce
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
+
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -1143,7 +1160,7 @@ struct DeviceReduce
     // Selection op (not used)
 
     // Default == operator
-    typedef Equality EqualityOp;
+    using EqualityOp = Equality;
 
     return DispatchReduceByKey<
       KeysInputIteratorT,

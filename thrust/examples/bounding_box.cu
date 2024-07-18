@@ -4,6 +4,8 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include "include/host_device.h"
+
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
 
@@ -52,7 +54,7 @@ struct bbox
 };
 
 // reduce a pair of bounding boxes (a,b) to a bounding box containing a and b
-struct bbox_reduction : public thrust::binary_function<bbox, bbox, bbox>
+struct bbox_reduction
 {
   __host__ __device__ bbox operator()(bbox a, bbox b)
   {
@@ -66,7 +68,7 @@ struct bbox_reduction : public thrust::binary_function<bbox, bbox, bbox>
   }
 };
 
-int main(void)
+int main()
 {
   const size_t N = 40;
   thrust::default_random_engine rng;

@@ -6,11 +6,11 @@
 template <typename T>
 struct saxpy_reference
 {
-  __host__ __device__ saxpy_reference(const T& aa)
+  _CCCL_HOST_DEVICE saxpy_reference(const T& aa)
       : a(aa)
   {}
 
-  __host__ __device__ T operator()(const T& x, const T& y) const
+  _CCCL_HOST_DEVICE T operator()(const T& x, const T& y) const
   {
     return a * x + y;
   }
@@ -24,7 +24,7 @@ struct TestFunctionalPlaceholdersValue
   void operator()(const size_t)
   {
     const size_t n = 10000;
-    typedef typename Vector::value_type T;
+    using T        = typename Vector::value_type;
 
     T a(13);
 
@@ -51,7 +51,7 @@ struct TestFunctionalPlaceholdersTransformIterator
   void operator()(const size_t)
   {
     const size_t n = 10000;
-    typedef typename Vector::value_type T;
+    using T        = typename Vector::value_type;
 
     T a(13);
 

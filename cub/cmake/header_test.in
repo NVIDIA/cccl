@@ -46,13 +46,27 @@
 //#define min(...) CUB_MACRO_CHECK('min', windows.h)
 //#define max(...) CUB_MACRO_CHECK('max', windows.h)
 
+#ifdef _WIN32
+// On Windows, make sure any include of Windows.h (e.g. via NVTX) does not define the checked macros
+#  define WIN32_LEAN_AND_MEAN
+#endif // _WIN32
+
 // termios.h conflicts (NVIDIA/thrust#1547)
 #define B0 CUB_MACRO_CHECK("B0", termios.h)
 
 #include <cub/${header}>
 
-#if defined(CUB_DISABLE_BF16_SUPPORT)
+#if defined(CCCL_DISABLE_BF16_SUPPORT)
 #if defined(__CUDA_BF16_TYPES_EXIST__)
 #error CUB should not include cuda_bf16.h when BF16 support is disabled
-#endif
-#endif
+#endif // __CUDA_BF16_TYPES_EXIST__
+#endif // CCCL_DISABLE_BF16_SUPPORT
+
+#if defined(CCCL_DISABLE_FP16_SUPPORT)
+#if defined(__CUDA_FP16_TYPES_EXIST__)
+#error CUB should not include cuda_fp16.h when half support is disabled
+#endif // __CUDA_FP16_TYPES_EXIST__
+#if defined(__CUDA_BF16_TYPES_EXIST__)
+#error CUB should not include cuda_bf16.h when half support is disabled
+#endif // __CUDA_BF16_TYPES_EXIST__
+#endif // CCCL_DISABLE_FP16_SUPPORT

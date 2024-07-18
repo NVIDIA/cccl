@@ -7,9 +7,9 @@
 
 #include <unittest/unittest.h>
 
-void TestNvccIndependenceTransform(void)
+void TestNvccIndependenceTransform()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
@@ -25,9 +25,9 @@ void TestNvccIndependenceTransform(void)
 }
 DECLARE_UNITTEST(TestNvccIndependenceTransform);
 
-void TestNvccIndependenceReduce(void)
+void TestNvccIndependenceReduce()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
@@ -42,9 +42,9 @@ void TestNvccIndependenceReduce(void)
 }
 DECLARE_UNITTEST(TestNvccIndependenceReduce);
 
-void TestNvccIndependenceExclusiveScan(void)
+void TestNvccIndependenceExclusiveScan()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
@@ -59,9 +59,9 @@ void TestNvccIndependenceExclusiveScan(void)
 }
 DECLARE_UNITTEST(TestNvccIndependenceExclusiveScan);
 
-void TestNvccIndependenceSort(void)
+void TestNvccIndependenceSort()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);

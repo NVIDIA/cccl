@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -127,7 +128,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
@@ -180,6 +181,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
+
     // Signed integer type for global offsets
     using OffsetT = int;
     using InitT   = cub::detail::value_t<InputIteratorT>;
@@ -235,7 +238,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveSum(
   //!      d_temp_storage, temp_storage_bytes,
@@ -339,7 +342,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -407,6 +410,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -481,7 +486,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -611,7 +616,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -683,6 +688,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -764,7 +771,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScan(
   //!      d_temp_storage, temp_storage_bytes,
@@ -933,6 +940,8 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1146,11 +1155,115 @@ struct DeviceScan
     int num_items,
     cudaStream_t stream = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), num_items, stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
+  //! is assigned to ``*d_out``.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
+  //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the inclusive max-scan of an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin device-inclusive-scan
+  //!     :end-before: example-end device-inclusive-scan
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage.
+  //!   When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to the size in bytes of the `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
+  //!   is assigned to `*d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within.
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    int num_items,
+    cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
+
+    // Signed integer type for global offsets
+    using OffsetT = int;
+    using AccumT  = cub::detail::accumulator_t<ScanOpT, InitValueT, cub::detail::value_t<InputIteratorT>>;
+    constexpr bool ForceInclusive = true;
+
+    return DispatchScan<
+      InputIteratorT,
+      OutputIteratorT,
+      ScanOpT,
+      detail::InputValue<InitValueT>,
+      OffsetT,
+      AccumT,
+      DeviceScanPolicy<AccumT, ScanOpT>,
+      ForceInclusive>::Dispatch(d_temp_storage,
+                                temp_storage_bytes,
+                                d_in,
+                                d_out,
+                                scan_op,
+                                detail::InputValue<InitValueT>(init_value),
+                                num_items,
+                                stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
@@ -1389,6 +1502,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
     using InitT   = cub::detail::value_t<ValuesInputIteratorT>;
@@ -1497,7 +1612,7 @@ struct DeviceScan
   //!
   //!    // Determine temporary device storage requirements for exclusive
   //!    // prefix scan
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::ExclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1590,6 +1705,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1685,7 +1802,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements for inclusive prefix sum
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceScan::InclusiveSumByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1757,6 +1874,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 
@@ -1858,7 +1977,7 @@ struct DeviceScan
   //!    ...
   //!
   //!    // Determine temporary device storage requirements for inclusive prefix scan
-  //!    void *d_temp_storage = NULL;
+  //!    void *d_temp_storage = nullptr;
   //!    size_t temp_storage_bytes = 0;
   //!    cub::DeviceScan::InclusiveScanByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1938,6 +2057,8 @@ struct DeviceScan
     EqualityOpT equality_op = EqualityOpT(),
     cudaStream_t stream     = 0)
   {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
+
     // Signed integer type for global offsets
     using OffsetT = int;
 

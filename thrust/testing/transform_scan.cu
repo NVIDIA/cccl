@@ -84,9 +84,9 @@ void TestTransformExclusiveScanDispatchImplicit()
 DECLARE_UNITTEST(TestTransformExclusiveScanDispatchImplicit);
 
 template <class Vector>
-void TestTransformScanSimple(void)
+void TestTransformScanSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -190,7 +190,7 @@ struct Record
 
 struct negate
 {
-  __host__ __device__ int operator()(Record const& record) const
+  _CCCL_HOST_DEVICE int operator()(Record const& record) const
   {
     return -record.number;
   }
@@ -280,10 +280,10 @@ struct TestTransformScan
 VariableUnitTest<TestTransformScan, IntegralTypes> TestTransformScanInstance;
 
 template <class Vector>
-void TestTransformScanCountingIterator(void)
+void TestTransformScanCountingIterator()
 {
-  typedef typename Vector::value_type T;
-  typedef typename thrust::iterator_system<typename Vector::iterator>::type space;
+  using T     = typename Vector::value_type;
+  using space = typename thrust::iterator_system<typename Vector::iterator>::type;
 
   thrust::counting_iterator<T, space> first(1);
 

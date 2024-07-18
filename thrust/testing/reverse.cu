@@ -4,10 +4,10 @@
 
 #include <unittest/unittest.h>
 
-typedef unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t> ReverseTypes;
+using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
-void TestReverseSimple(void)
+void TestReverseSimple()
 {
   Vector data(5);
   data[0] = 1;
@@ -63,7 +63,7 @@ void TestReverseDispatchImplicit()
 DECLARE_UNITTEST(TestReverseDispatchImplicit);
 
 template <typename Vector>
-void TestReverseCopySimple(void)
+void TestReverseCopySimple()
 {
 #if defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 80000 && THRUST_GCC_VERSION < 100000
 
@@ -73,7 +73,7 @@ void TestReverseCopySimple(void)
   }
 #endif // _CCCL_COMPILER_GCC
 
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector input(5);
   input[0] = 1;

@@ -16,16 +16,16 @@ class mark_present_for_each
 {
 public:
   T* ptr;
-  __host__ __device__ void operator()(T x)
+  _CCCL_HOST_DEVICE void operator()(T x)
   {
     ptr[(int) x] = 1;
   }
 };
 
 template <class Vector>
-void TestForEachSimple(void)
+void TestForEachSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input(5);
   Vector output(7, (T) 0);
@@ -88,9 +88,9 @@ void TestForEachDispatchImplicit()
 DECLARE_UNITTEST(TestForEachDispatchImplicit);
 
 template <class Vector>
-void TestForEachNSimple(void)
+void TestForEachNSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input(5);
   Vector output(7, (T) 0);
@@ -152,7 +152,7 @@ void TestForEachNDispatchImplicit()
 }
 DECLARE_UNITTEST(TestForEachNDispatchImplicit);
 
-void TestForEachSimpleAnySystem(void)
+void TestForEachSimpleAnySystem()
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -173,7 +173,7 @@ void TestForEachSimpleAnySystem(void)
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
 
-void TestForEachNSimpleAnySystem(void)
+void TestForEachNSimpleAnySystem()
 {
   thrust::device_vector<int> output(7, 0);
 
@@ -266,14 +266,14 @@ struct SetFixedVectorToConstant
       : exemplar(scalar)
   {}
 
-  __host__ __device__ void operator()(FixedVector<T, N>& t)
+  _CCCL_HOST_DEVICE void operator()(FixedVector<T, N>& t)
   {
     t = exemplar;
   }
 };
 
 template <typename T, unsigned int N>
-void _TestForEachWithLargeTypes(void)
+void _TestForEachWithLargeTypes()
 {
   size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -294,7 +294,7 @@ void _TestForEachWithLargeTypes(void)
   ASSERT_EQUAL_QUIET(h_data, d_data);
 }
 
-void TestForEachWithLargeTypes(void)
+void TestForEachWithLargeTypes()
 {
   _TestForEachWithLargeTypes<int, 1>();
   _TestForEachWithLargeTypes<int, 2>();
@@ -314,7 +314,7 @@ void TestForEachWithLargeTypes(void)
 DECLARE_UNITTEST(TestForEachWithLargeTypes);
 
 template <typename T, unsigned int N>
-void _TestForEachNWithLargeTypes(void)
+void _TestForEachNWithLargeTypes()
 {
   size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -335,7 +335,7 @@ void _TestForEachNWithLargeTypes(void)
   ASSERT_EQUAL_QUIET(h_data, d_data);
 }
 
-void TestForEachNWithLargeTypes(void)
+void TestForEachNWithLargeTypes()
 {
   _TestForEachNWithLargeTypes<int, 1>();
   _TestForEachNWithLargeTypes<int, 2>();
@@ -361,7 +361,7 @@ struct only_set_when_expected
   unsigned long long expected;
   bool* flag;
 
-  __device__ void operator()(unsigned long long x)
+  _CCCL_DEVICE void operator()(unsigned long long x)
   {
     if (x == expected)
     {

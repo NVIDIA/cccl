@@ -64,7 +64,7 @@ namespace random
  *  #include <thrust/random/xor_combine_engine.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    // create an xor_combine_engine from minstd_rand and minstd_rand0
  *    // use a shift of 0 for each
@@ -86,20 +86,20 @@ public:
   /*! \typedef base1_type
    *  \brief The type of the first adapted base random number engine.
    */
-  typedef Engine1 base1_type;
+  using base1_type = Engine1;
 
   /*! \typedef base2_type
    *  \brief The type of the second adapted base random number engine.
    */
-  typedef Engine2 base2_type;
+  using base2_type = Engine2;
 
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p xor_combine_engine.
    */
-  typedef typename thrust::detail::eval_if<
+  using result_type = typename thrust::detail::eval_if<
     (sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
     thrust::detail::identity_<typename base2_type::result_type>,
-    thrust::detail::identity_<typename base1_type::result_type>>::type result_type;
+    thrust::detail::identity_<typename base1_type::result_type>>::type;
 
   /*! The size of the first shift used in the generation algorithm.
    */
@@ -122,7 +122,7 @@ public:
   /*! This constructor constructs a new \p xor_combine_engine and constructs
    *  its adapted engines using their null constructors.
    */
-  _CCCL_HOST_DEVICE xor_combine_engine(void);
+  _CCCL_HOST_DEVICE xor_combine_engine();
 
   /*! This constructor constructs a new \p xor_combine_engine using
    *  given \p base1_type and \p base2_type engines to initialize its adapted base engines.
@@ -143,7 +143,7 @@ public:
   /*! This method initializes the state of this \p xor_combine_engine's adapted base engines
    *  by using their \p default_seed values.
    */
-  _CCCL_HOST_DEVICE void seed(void);
+  _CCCL_HOST_DEVICE void seed();
 
   /*! This method initializes the state of this \p xor_combine_engine's adapted base engines
    *  by using the given seed.
@@ -174,14 +174,14 @@ public:
    *
    *  \return A const reference to the first base engine this \p xor_combine_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base1_type& base1(void) const;
+  _CCCL_HOST_DEVICE const base1_type& base1() const;
 
   /*! This member function returns a const reference to this \p xor_combine_engine's
    *  second adapted base engine.
    *
    *  \return A const reference to the second base engine this \p xor_combine_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base2_type& base2(void) const;
+  _CCCL_HOST_DEVICE const base2_type& base2() const;
 
   /*! \cond
    */

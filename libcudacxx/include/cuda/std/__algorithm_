@@ -13,10 +13,18 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/detail/__pragma_push>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+_CCCL_PUSH_MACROS
 
 #include <cuda/std/detail/libcxx/include/algorithm>
 
-#include <cuda/std/detail/__pragma_pop>
+_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_ALGORITHM

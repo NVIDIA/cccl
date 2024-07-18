@@ -8,6 +8,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // Efficiently computes the simple moving average (SMA) [1] of a data series
 // using a parallel prefix-sum or "scan" operation.
 //
@@ -22,7 +24,7 @@
 // compute the difference of two positions in the cumumulative sum and
 // divide by the SMA window size w.
 template <typename T>
-struct minus_and_divide : public thrust::binary_function<T, T, T>
+struct minus_and_divide
 {
   T w;
 
@@ -39,7 +41,7 @@ struct minus_and_divide : public thrust::binary_function<T, T, T>
 template <typename InputVector, typename OutputVector>
 void simple_moving_average(const InputVector& data, size_t w, OutputVector& output)
 {
-  typedef typename InputVector::value_type T;
+  using T = typename InputVector::value_type;
 
   if (data.size() < w)
   {
@@ -57,7 +59,7 @@ void simple_moving_average(const InputVector& data, size_t w, OutputVector& outp
   thrust::transform(temp.begin() + w, temp.end(), temp.begin(), output.begin(), minus_and_divide<T>(T(w)));
 }
 
-int main(void)
+int main()
 {
   // length of data series
   size_t n = 30;

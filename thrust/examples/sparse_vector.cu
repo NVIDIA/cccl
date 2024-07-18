@@ -33,8 +33,8 @@ void sum_sparse_vectors(
   IndexVector3& C_index,
   ValueVector3& C_value)
 {
-  typedef typename IndexVector3::value_type IndexType;
-  typedef typename ValueVector3::value_type ValueType;
+  using IndexType = typename IndexVector3::value_type;
+  using ValueType = typename ValueVector3::value_type;
 
   assert(A_index.size() == A_value.size());
   assert(B_index.size() == B_value.size());
@@ -83,7 +83,7 @@ void sum_sparse_vectors(
     thrust::plus<ValueType>());
 }
 
-int main(void)
+int main()
 {
   // initialize sparse vector A with 4 elements
   thrust::device_vector<int> A_index(4);

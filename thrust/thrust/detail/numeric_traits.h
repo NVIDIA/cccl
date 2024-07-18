@@ -27,6 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_traits.h>
 
+#include <cuda/std/type_traits>
+
 #include <limits>
 
 // #include <stdint.h> // for intmax_t (not provided on MSVS 2005)
@@ -37,7 +39,7 @@ namespace detail
 {
 
 // XXX good enough for the platforms we care about
-typedef long long intmax_t;
+using intmax_t = long long;
 
 template <typename Number>
 struct is_signed : integral_constant<bool, std::numeric_limits<Number>::is_signed>
@@ -84,27 +86,27 @@ private:
   };
 
 public:
-  typedef
+  using type =
     typename eval_if<and_<std::numeric_limits<Integer>::is_signed,
-                          // digits is the number of no-sign bits
                           (!std::numeric_limits<Integer>::is_bounded
                            || (int(std::numeric_limits<Integer>::digits) + 1 >= num_digits<intmax_t>::value))>::value,
                      identity_<Integer>,
-                     eval_if<int(std::numeric_limits<Integer>::digits) + 1 < num_digits<signed int>::value,
-                             identity_<signed int>,
-                             eval_if<int(std::numeric_limits<Integer>::digits) + 1 < num_digits<signed long>::value,
-                                     identity_<signed long>,
-                                     identity_<intmax_t>>>>::type type;
+                     eval_if<int(std::numeric_limits<Integer>::digits) + 1 < num_digits<int>::value,
+                             identity_<int>,
+                             eval_if<int(std::numeric_limits<Integer>::digits) + 1 < num_digits<long>::value,
+                                     identity_<long>,
+                                     identity_<intmax_t>>>>::type;
 }; // end integer_difference
 
 template <typename Number>
-struct numeric_difference : eval_if<is_integral<Number>::value, integer_difference<Number>, identity_<Number>>
+struct numeric_difference
+    : eval_if<::cuda::std::is_integral<Number>::value, integer_difference<Number>, identity_<Number>>
 {}; // end numeric_difference
 
 template <typename Number>
 _CCCL_HOST_DEVICE typename numeric_difference<Number>::type numeric_distance(Number x, Number y)
 {
-  typedef typename numeric_difference<Number>::type difference_type;
+  using difference_type = typename numeric_difference<Number>::type;
   return difference_type(y) - difference_type(x);
 } // end numeric_distance
 

@@ -37,9 +37,7 @@ template <class _Lhs, class _Rhs>
 concept assignable_from =
   is_lvalue_reference_v<_Lhs> && common_reference_with<__make_const_lvalue_ref<_Lhs>, __make_const_lvalue_ref<_Rhs>>
   && requires(_Lhs __lhs, _Rhs&& __rhs) {
-       {
-         __lhs = _CUDA_VSTD::forward<_Rhs>(__rhs)
-       } -> same_as<_Lhs>;
+       { __lhs = _CUDA_VSTD::forward<_Rhs>(__rhs) } -> same_as<_Lhs>;
      };
 
 #elif _CCCL_STD_VER > 2011
@@ -48,7 +46,7 @@ template <class _Lhs, class _Rhs>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __assignable_from_,
   requires(_Lhs __lhs,
-           _Rhs&& __rhs)(requires(_LIBCUDACXX_TRAIT(is_lvalue_reference, _Lhs)),
+           _Rhs&& __rhs)(requires(_CCCL_TRAIT(is_lvalue_reference, _Lhs)),
                          requires(common_reference_with<__make_const_lvalue_ref<_Lhs>, __make_const_lvalue_ref<_Rhs>>),
                          requires(same_as<_Lhs, decltype(__lhs = _CUDA_VSTD::forward<_Rhs>(__rhs))>)));
 

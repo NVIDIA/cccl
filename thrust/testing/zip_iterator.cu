@@ -14,7 +14,7 @@ template <typename T>
 struct TestZipIteratorManipulation
 {
   template <typename Vector>
-  void test(void)
+  void test()
   {
     using namespace thrust;
 
@@ -27,14 +27,15 @@ struct TestZipIteratorManipulation
     sequence(v1.begin(), v1.end());
     sequence(v2.begin(), v2.end());
 
-    typedef tuple<typename Vector::iterator, typename Vector::iterator> IteratorTuple;
+    using IteratorTuple = tuple<typename Vector::iterator, typename Vector::iterator>;
 
     IteratorTuple t = make_tuple(v0.begin(), v1.begin());
 
-    typedef zip_iterator<IteratorTuple> ZipIterator;
+    using ZipIterator = zip_iterator<IteratorTuple>;
 
     // test construction
     ZipIterator iter0 = make_zip_iterator(t);
+    ASSERT_EQUAL(true, iter0 == ZipIterator{t});
 
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
@@ -103,16 +104,16 @@ struct TestZipIteratorReference
     using namespace thrust;
 
     // test host types
-    typedef typename host_vector<T>::iterator Iterator1;
-    typedef typename host_vector<T>::const_iterator Iterator2;
-    typedef tuple<Iterator1, Iterator2> IteratorTuple1;
-    typedef zip_iterator<IteratorTuple1> ZipIterator1;
+    using Iterator1      = typename host_vector<T>::iterator;
+    using Iterator2      = typename host_vector<T>::const_iterator;
+    using IteratorTuple1 = tuple<Iterator1, Iterator2>;
+    using ZipIterator1   = zip_iterator<IteratorTuple1>;
 
-    typedef typename iterator_reference<ZipIterator1>::type zip_iterator_reference_type1;
+    using zip_iterator_reference_type1 = typename iterator_reference<ZipIterator1>::type;
 
     host_vector<T> h_variable(1);
 
-    typedef tuple<T&, const T&> reference_type1;
+    using reference_type1 = tuple<T&, const T&>;
 
     reference_type1 ref1(*h_variable.begin(), *h_variable.cbegin());
     zip_iterator_reference_type1 test1(*h_variable.begin(), *h_variable.cbegin());
@@ -122,16 +123,16 @@ struct TestZipIteratorReference
     ASSERT_EQUAL(get<1>(ref1), get<1>(test1));
 
     // test device types
-    typedef typename device_vector<T>::iterator Iterator3;
-    typedef typename device_vector<T>::const_iterator Iterator4;
-    typedef tuple<Iterator3, Iterator4> IteratorTuple2;
-    typedef zip_iterator<IteratorTuple2> ZipIterator2;
+    using Iterator3      = typename device_vector<T>::iterator;
+    using Iterator4      = typename device_vector<T>::const_iterator;
+    using IteratorTuple2 = tuple<Iterator3, Iterator4>;
+    using ZipIterator2   = zip_iterator<IteratorTuple2>;
 
-    typedef typename iterator_reference<ZipIterator2>::type zip_iterator_reference_type2;
+    using zip_iterator_reference_type2 = typename iterator_reference<ZipIterator2>::type;
 
     device_vector<T> d_variable(1);
 
-    typedef tuple<device_reference<T>, device_reference<const T>> reference_type2;
+    using reference_type2 = tuple<device_reference<T>, device_reference<const T>>;
 
     reference_type2 ref2(*d_variable.begin(), *d_variable.cbegin());
     zip_iterator_reference_type2 test2(*d_variable.begin(), *d_variable.cbegin());
@@ -152,27 +153,28 @@ struct TestZipIteratorTraversal
 
 #if 0
     // test host types
-    typedef typename host_vector<T>::iterator          Iterator1;
-    typedef typename host_vector<T>::const_iterator    Iterator2;
-    typedef tuple<Iterator1,Iterator2>                 IteratorTuple1;
-    typedef zip_iterator<IteratorTuple1> ZipIterator1;
+    using Iterator1 = typename host_vector<T>::iterator         ;
+    using Iterator2 = typename host_vector<T>::const_iterator   ;
+    using IteratorTuple1 = tuple<Iterator1,Iterator2>                ;
+    using ZipIterator1 = zip_iterator<IteratorTuple1>;
 
-    typedef typename iterator_traversal<ZipIterator1>::type zip_iterator_traversal_type1;
+    using zip_iterator_traversal_type1 = typename iterator_traversal<ZipIterator1>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_traversal_type1, random_access_traversal_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type1,
+    // random_access_traversal_tag>::value) );
 
 #if 0
     // test device types
-    typedef typename device_vector<T>::iterator        Iterator3;
-    typedef typename device_vector<T>::const_iterator  Iterator4;
-    typedef tuple<Iterator3,Iterator4>                 IteratorTuple2;
-    typedef zip_iterator<IteratorTuple2> ZipIterator2;
+    using Iterator3 = typename device_vector<T>::iterator       ;
+    using Iterator4 = typename device_vector<T>::const_iterator ;
+    using IteratorTuple2 = tuple<Iterator3,Iterator4>                ;
+    using ZipIterator2 = zip_iterator<IteratorTuple2>;
 
-    typedef typename iterator_traversal<ZipIterator2>::type zip_iterator_traversal_type2;
+    using zip_iterator_traversal_type2 = typename iterator_traversal<ZipIterator2>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_traversal_type2,
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type2,
     // thrust::random_access_traversal_tag>::value) );
   } // end operator()()
 };
@@ -189,86 +191,88 @@ struct TestZipIteratorSystem
 
 #if 0
     // test host types
-    typedef typename host_vector<T>::iterator          Iterator1;
-    typedef typename host_vector<T>::const_iterator    Iterator2;
-    typedef tuple<Iterator1,Iterator2>                 IteratorTuple1;
-    typedef zip_iterator<IteratorTuple1> ZipIterator1;
+    using Iterator1 = typename host_vector<T>::iterator         ;
+    using Iterator2 = typename host_vector<T>::const_iterator   ;
+    using IteratorTuple1 = tuple<Iterator1,Iterator2>                ;
+    using ZipIterator1 = zip_iterator<IteratorTuple1>;
 
-    typedef typename iterator_system<ZipIterator1>::type zip_iterator_system_type1;
+    using zip_iterator_system_type1 = typename iterator_system<ZipIterator1>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
 
 #if 0
     // test device types
-    typedef typename device_vector<T>::iterator        Iterator3;
-    typedef typename device_vector<T>::const_iterator  Iterator4;
-    typedef tuple<Iterator3,Iterator4>                 IteratorTuple2;
-    typedef zip_iterator<IteratorTuple1> ZipIterator2;
+    using Iterator3 = typename device_vector<T>::iterator       ;
+    using Iterator4 = typename device_vector<T>::const_iterator ;
+    using IteratorTuple2 = tuple<Iterator3,Iterator4>                ;
+    using ZipIterator2 = zip_iterator<IteratorTuple1>;
 
-    typedef typename iterator_system<ZipIterator2>::type zip_iterator_system_type2;
+    using zip_iterator_system_type2 = typename iterator_system<ZipIterator2>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type2, experimental::space::device>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type2, experimental::space::device>::value)
+    // );
 
 #if 0
     // test any
-    typedef counting_iterator<T>         Iterator5;
-    typedef counting_iterator<const T>   Iterator6;
-    typedef tuple<Iterator5, Iterator6>                IteratorTuple3;
-    typedef zip_iterator<IteratorTuple3> ZipIterator3;
+    using Iterator5 = counting_iterator<T>        ;
+    using Iterator6 = counting_iterator<const T>  ;
+    using IteratorTuple3 = tuple<Iterator5, Iterator6>               ;
+    using ZipIterator3 = zip_iterator<IteratorTuple3>;
 
-    typedef typename iterator_system<ZipIterator3>::type zip_iterator_system_type3;
+    using zip_iterator_system_type3 = typename iterator_system<ZipIterator3>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type3, thrust::experimental::space::any>::value)
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type3,
+    // thrust::experimental::space::any>::value)
     // );
 
 #if 0
     // test host/any
-    typedef tuple<Iterator1, Iterator5>                IteratorTuple4;
-    typedef zip_iterator<IteratorTuple4> ZipIterator4;
+    using IteratorTuple4 = tuple<Iterator1, Iterator5>               ;
+    using ZipIterator4 = zip_iterator<IteratorTuple4>;
 
-    typedef typename iterator_system<ZipIterator4>::type zip_iterator_system_type4;
+    using zip_iterator_system_type4 = typename iterator_system<ZipIterator4>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
 
 #if 0
     // test any/host
-    typedef tuple<Iterator5, Iterator1>                IteratorTuple5;
-    typedef zip_iterator<IteratorTuple5> ZipIterator5;
+    using IteratorTuple5 = tuple<Iterator5, Iterator1>               ;
+    using ZipIterator5 = zip_iterator<IteratorTuple5>;
 
-    typedef typename iterator_system<ZipIterator5>::type zip_iterator_system_type5;
+    using zip_iterator_system_type5 = typename iterator_system<ZipIterator5>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
 
 #if 0
     // test device/any
-    typedef tuple<Iterator3, Iterator5>                IteratorTuple6;
-    typedef zip_iterator<IteratorTuple6> ZipIterator6;
+    using IteratorTuple6 = tuple<Iterator3, Iterator5>               ;
+    using ZipIterator6 = zip_iterator<IteratorTuple6>;
 
-    typedef typename iterator_system<ZipIterator6>::type zip_iterator_system_type6;
+    using zip_iterator_system_type6 = typename iterator_system<ZipIterator6>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
 
 #if 0
     // test any/device
-    typedef tuple<Iterator5, Iterator3>                IteratorTuple7;
-    typedef zip_iterator<IteratorTuple7> ZipIterator7;
+    using IteratorTuple7 = tuple<Iterator5, Iterator3>               ;
+    using ZipIterator7 = zip_iterator<IteratorTuple7>;
 
-    typedef typename iterator_system<ZipIterator7>::type zip_iterator_system_type7;
+    using zip_iterator_system_type7 = typename iterator_system<ZipIterator7>::type;
 #endif
 
-    // ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
+    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
   } // end operator()()
 };
 SimpleUnitTest<TestZipIteratorSystem, NumericTypes> TestZipIteratorSystemInstance;
 
 template <typename Vector>
-void TestZipIteratorCopy(void)
+void TestZipIteratorCopy()
 {
   using namespace thrust;
   using T = typename Vector::value_type;
@@ -292,7 +296,7 @@ DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
 struct SumTwoTuple
 {
   template <typename Tuple>
-  __host__ __device__ typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x);
@@ -302,7 +306,7 @@ struct SumTwoTuple
 struct SumThreeTuple
 {
   template <typename Tuple>
-  __host__ __device__ typename thrust::detail::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
+  _CCCL_HOST_DEVICE typename ::cuda::std::remove_reference<typename thrust::tuple_element<0, Tuple>::type>::type
   operator()(Tuple x) const
   {
     return thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x);
@@ -352,19 +356,19 @@ struct TestZipIteratorTransform
 };
 VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
 
-void TestZipIteratorCopyAoSToSoA(void)
+void TestZipIteratorCopyAoSToSoA()
 {
   using namespace thrust;
 
   const size_t n = 1;
 
-  typedef tuple<int, int> structure;
-  typedef host_vector<structure> host_array_of_structures;
-  typedef device_vector<structure> device_array_of_structures;
+  using structure                  = tuple<int, int>;
+  using host_array_of_structures   = host_vector<structure>;
+  using device_array_of_structures = device_vector<structure>;
 
-  typedef zip_iterator<tuple<host_vector<int>::iterator, host_vector<int>::iterator>> host_structure_of_arrays;
+  using host_structure_of_arrays = zip_iterator<tuple<host_vector<int>::iterator, host_vector<int>::iterator>>;
 
-  typedef zip_iterator<tuple<device_vector<int>::iterator, device_vector<int>::iterator>> device_structure_of_arrays;
+  using device_structure_of_arrays = zip_iterator<tuple<device_vector<int>::iterator, device_vector<int>::iterator>>;
 
   host_array_of_structures h_aos(n, make_tuple(7, 13));
   device_array_of_structures d_aos(n, make_tuple(7, 13));
@@ -399,19 +403,19 @@ void TestZipIteratorCopyAoSToSoA(void)
 };
 DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
-void TestZipIteratorCopySoAToAoS(void)
+void TestZipIteratorCopySoAToAoS()
 {
   using namespace thrust;
 
   const size_t n = 1;
 
-  typedef tuple<int, int> structure;
-  typedef host_vector<structure> host_array_of_structures;
-  typedef device_vector<structure> device_array_of_structures;
+  using structure                  = tuple<int, int>;
+  using host_array_of_structures   = host_vector<structure>;
+  using device_array_of_structures = device_vector<structure>;
 
-  typedef zip_iterator<tuple<host_vector<int>::iterator, host_vector<int>::iterator>> host_structure_of_arrays;
+  using host_structure_of_arrays = zip_iterator<tuple<host_vector<int>::iterator, host_vector<int>::iterator>>;
 
-  typedef zip_iterator<tuple<device_vector<int>::iterator, device_vector<int>::iterator>> device_structure_of_arrays;
+  using device_structure_of_arrays = zip_iterator<tuple<device_vector<int>::iterator, device_vector<int>::iterator>>;
 
   host_vector<int> h_field0(n, 7), h_field1(n, 13);
   device_vector<int> d_field0(n, 7), d_field1(n, 13);

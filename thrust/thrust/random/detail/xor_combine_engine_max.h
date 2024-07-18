@@ -99,7 +99,7 @@ struct xor_combine_engine_max_aux;
 template <typename result_type, result_type a, result_type b, int d>
 struct xor_combine_engine_max_aux_case4
 {
-  typedef xor_combine_engine_max_aux_constants<result_type, a, b, d> constants;
+  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
 
   static const result_type k_plus_1_times_two_to_the_p =
     lshift<result_type, math::plus<result_type, constants::k, 1>::value, constants::p>::value;
@@ -118,7 +118,7 @@ struct xor_combine_engine_max_aux_case4
 template <typename result_type, result_type a, result_type b, int d>
 struct xor_combine_engine_max_aux_case3
 {
-  typedef xor_combine_engine_max_aux_constants<result_type, a, b, d> constants;
+  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
 
   static const result_type k_plus_1_times_two_to_the_p =
     lshift<result_type, math::plus<result_type, constants::k, 1>::value, constants::p>::value;
@@ -137,7 +137,7 @@ struct xor_combine_engine_max_aux_case3
 template <typename result_type, result_type a, result_type b, int d>
 struct xor_combine_engine_max_aux_case2
 {
-  typedef xor_combine_engine_max_aux_constants<result_type, a, b, d> constants;
+  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
 
   static const result_type k_plus_1_times_two_to_the_p =
     lshift<result_type, math::plus<result_type, constants::k, 1>::value, constants::p>::value;
@@ -156,7 +156,7 @@ struct xor_combine_engine_max_aux_case1
 template <typename result_type, result_type a, result_type b, int d>
 struct xor_combine_engine_max_aux_2
 {
-  typedef xor_combine_engine_max_aux_constants<result_type, a, b, d> constants;
+  using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
 
   static const result_type value = thrust::detail::eval_if<
     // if k is odd...

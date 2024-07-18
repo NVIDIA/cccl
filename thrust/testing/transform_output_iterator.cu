@@ -10,12 +10,12 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestTransformOutputIterator(void)
+void TestTransformOutputIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
-  typedef thrust::square<T> UnaryFunction;
-  typedef typename Vector::iterator Iterator;
+  using UnaryFunction = thrust::square<T>;
+  using Iterator      = typename Vector::iterator;
 
   Vector input(4);
   Vector output(4);
@@ -39,11 +39,11 @@ void TestTransformOutputIterator(void)
 DECLARE_VECTOR_UNITTEST(TestTransformOutputIterator);
 
 template <class Vector>
-void TestMakeTransformOutputIterator(void)
+void TestMakeTransformOutputIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
-  typedef thrust::square<T> UnaryFunction;
+  using UnaryFunction = thrust::square<T>;
 
   Vector input(4);
   Vector output(4);

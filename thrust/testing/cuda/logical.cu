@@ -14,7 +14,7 @@ __global__ void all_of_kernel(ExecutionPolicy exec, Iterator first, Iterator las
 template <typename ExecutionPolicy>
 void TestAllOfDevice(ExecutionPolicy exec)
 {
-  typedef int T;
+  using T = int;
   thrust::device_vector<T> v(3, 1);
   thrust::device_vector<bool> result(1);
 
@@ -84,8 +84,8 @@ DECLARE_UNITTEST(TestAllOfDeviceDevice);
 
 void TestAllOfCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(3, 1);
 
@@ -117,7 +117,7 @@ __global__ void any_of_kernel(ExecutionPolicy exec, Iterator first, Iterator las
 template <typename ExecutionPolicy>
 void TestAnyOfDevice(ExecutionPolicy exec)
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> v(3, 1);
   thrust::device_vector<bool> result(1);
@@ -188,8 +188,8 @@ DECLARE_UNITTEST(TestAnyOfDeviceDevice);
 
 void TestAnyOfCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(3, 1);
 
@@ -221,7 +221,7 @@ __global__ void none_of_kernel(ExecutionPolicy exec, Iterator first, Iterator la
 template <typename ExecutionPolicy>
 void TestNoneOfDevice(ExecutionPolicy exec)
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> v(3, 1);
   thrust::device_vector<bool> result(1);
@@ -292,8 +292,8 @@ DECLARE_UNITTEST(TestNoneOfDeviceDevice);
 
 void TestNoneOfCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector v(3, 1);
 

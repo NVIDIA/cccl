@@ -9,6 +9,7 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: libcpp-no-exceptions
+// UNSUPPORTED: nvrtc
 
 // E& error() & noexcept;
 // const E& error() const & noexcept;
@@ -33,7 +34,7 @@ static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int> const&>, "");
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int>&&>, "");
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int> const&&>, "");
 
-__host__ __device__ void test()
+void test()
 {
   // &
   {
@@ -70,6 +71,6 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
-  test();
+  NV_IF_TARGET(NV_IS_HOST, (test();))
   return 0;
 }

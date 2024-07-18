@@ -3,7 +3,7 @@
 
 #include <unittest/unittest.h>
 
-void TestDevicePointerManipulation(void)
+void TestDevicePointerManipulation()
 {
   thrust::device_vector<int> data(5);
 
@@ -49,9 +49,9 @@ void TestDevicePointerManipulation(void)
 }
 DECLARE_UNITTEST(TestDevicePointerManipulation);
 
-void TestMakeDevicePointer(void)
+void TestMakeDevicePointer()
 {
-  typedef int T;
+  using T = int;
 
   T* raw_ptr = 0;
 
@@ -66,9 +66,9 @@ void TestMakeDevicePointer(void)
 DECLARE_UNITTEST(TestMakeDevicePointer);
 
 template <typename Vector>
-void TestRawPointerCast(void)
+void TestRawPointerCast()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector vec(3);
 

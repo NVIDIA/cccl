@@ -125,7 +125,7 @@ struct Vector
   Vector() = default;
   // Explicitly disable construction from size_t
   Vector(std::size_t) = delete;
-  __host__ __device__ Vector(int x_, int y_)
+  _CCCL_HOST_DEVICE Vector(int x_, int y_)
       : x{x_}
       , y{y_}
   {}
@@ -136,18 +136,18 @@ struct Vector
 };
 
 // Vector-Vector addition
-__host__ __device__ Vector operator+(const Vector a, const Vector b)
+_CCCL_HOST_DEVICE Vector operator+(const Vector a, const Vector b)
 {
   return Vector{a.x + b.x, a.y + b.y};
 }
 
 // Vector-Scalar Multiplication
 // Multiplication by std::size_t is required by thrust::sequence.
-__host__ __device__ Vector operator*(const std::size_t a, const Vector b)
+_CCCL_HOST_DEVICE Vector operator*(const std::size_t a, const Vector b)
 {
   return Vector{static_cast<int>(a) * b.x, static_cast<int>(a) * b.y};
 }
-__host__ __device__ Vector operator*(const Vector b, const std::size_t a)
+_CCCL_HOST_DEVICE Vector operator*(const Vector b, const std::size_t a)
 {
   return Vector{static_cast<int>(a) * b.x, static_cast<int>(a) * b.y};
 }

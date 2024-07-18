@@ -60,7 +60,7 @@ namespace detail
 namespace complex
 {
 
-__host__ __device__ inline float frexp_expf(float x, int* expt)
+_CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
 {
   const uint32_t k = 235; /* constant for reduction */
   const float kln2 = 162.88958740F; /* k * ln2 */
@@ -76,7 +76,7 @@ __host__ __device__ inline float frexp_expf(float x, int* expt)
   return (exp_x);
 }
 
-__host__ __device__ inline complex<float> ldexp_cexpf(complex<float> z, int expt)
+_CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
 {
   float x, y, exp_x, scale1, scale2;
   int ex_expt, half_expt;
@@ -94,7 +94,7 @@ __host__ __device__ inline complex<float> ldexp_cexpf(complex<float> z, int expt
   return (complex<float>(std::cos(y) * exp_x * scale1 * scale2, std::sin(y) * exp_x * scale1 * scale2));
 }
 
-__host__ __device__ inline complex<float> cexpf(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
 {
   float x, y, exp_x;
   uint32_t hx, hy;
@@ -165,7 +165,7 @@ __host__ __device__ inline complex<float> cexpf(const complex<float>& z)
 } // namespace detail
 
 template <>
-__host__ __device__ inline complex<float> exp(const complex<float>& z)
+_CCCL_HOST_DEVICE inline complex<float> exp(const complex<float>& z)
 {
   return detail::complex::cexpf(z);
 }

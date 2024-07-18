@@ -6,6 +6,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // The technique demonstrated in the example monte_carlo.cu
 // assigns an independently seeded random number generator to each
 // of 30K threads, and uses a hashing scheme based on thread index to
@@ -21,7 +23,7 @@
 // past n states of the RNG. This function is accelerated and executes
 // in O(lg n) time.
 
-struct estimate_pi : public thrust::unary_function<unsigned int, float>
+struct estimate_pi
 {
   __host__ __device__ float operator()(unsigned int thread_id)
   {
@@ -67,7 +69,7 @@ struct estimate_pi : public thrust::unary_function<unsigned int, float>
   }
 };
 
-int main(void)
+int main()
 {
   // use 30K subsequences of random numbers
   int M = 30000;

@@ -49,6 +49,7 @@
 //     T operator=(T) noexcept;
 // };
 
+#include <cuda/atomic>
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 

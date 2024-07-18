@@ -36,7 +36,7 @@ namespace detail
 // it's legal to access IteratorFacade2::difference_type
 template <typename IteratorFacade1, typename IteratorFacade2>
 struct distance_from_result
-    : eval_if<is_convertible<IteratorFacade2, IteratorFacade1>::value,
+    : eval_if<::cuda::std::is_convertible<IteratorFacade2, IteratorFacade1>::value,
               identity_<typename IteratorFacade1::difference_type>,
               identity_<typename IteratorFacade2::difference_type>>
 {};

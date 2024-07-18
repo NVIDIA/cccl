@@ -52,7 +52,7 @@ THRUST_NAMESPACE_BEGIN
  *  \code
  *  #include <thrust/device_vector.h>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
@@ -73,7 +73,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/device_vector.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
@@ -95,7 +95,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/device_vector.h>
  *  #include <iostream>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
@@ -125,7 +125,7 @@ THRUST_NAMESPACE_BEGIN
  *    int x;
  *  };
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<foo> foo_vec(1);
  *
@@ -147,7 +147,7 @@ THRUST_NAMESPACE_BEGIN
  *    int x;
  *  };
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<foo> foo_vec(1);
  *
@@ -174,7 +174,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <stdio.h>
  *  #include <thrust/device_vector.h>
  *
- *  int main(void)
+ *  int main()
  *  {
  *    thrust::device_vector<int> vec(1,13);
  *
@@ -192,16 +192,16 @@ template <typename T>
 class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
 {
 private:
-  typedef thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>> super_t;
+  using super_t = thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>;
 
 public:
   /*! The type of the value referenced by this type of \p device_reference.
    */
-  typedef typename super_t::value_type value_type;
+  using value_type = typename super_t::value_type;
 
   /*! The type of the expression <tt>&ref</tt>, where <tt>ref</tt> is a \p device_reference.
    */
-  typedef typename super_t::pointer pointer;
+  using pointer = typename super_t::pointer;
 
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,
@@ -234,9 +234,9 @@ public:
    *  <tt>device_reference<const T></tt> from <tt>device_reference<T></tt>.
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE device_reference(
-    const device_reference<OtherT>& other,
-    typename thrust::detail::enable_if_convertible<typename device_reference<OtherT>::pointer, pointer>::type* = 0)
+  _CCCL_HOST_DEVICE
+  device_reference(const device_reference<OtherT>& other,
+                   thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
       : super_t(other)
   {}
 

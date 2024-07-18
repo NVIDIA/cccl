@@ -13,7 +13,7 @@ struct alloc_id
   std::size_t alignment;
   std::size_t offset;
 
-  __host__ __device__ bool operator==(const alloc_id& other) const
+  _CCCL_HOST_DEVICE bool operator==(const alloc_id& other) const
   {
     return id == other.id && size == other.size && alignment == other.alignment;
   }
@@ -38,7 +38,7 @@ struct pointer_traits<alloc_id>
   template <typename>
   struct rebind
   {
-    typedef alloc_id other;
+    using other = alloc_id;
   };
 
   // implemented for the purposes of alignment test in disjoint pool's do_deallocate
@@ -102,7 +102,7 @@ void TestDisjointPool()
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
 
-  typedef PoolTemplate<dummy_resource, thrust::mr::new_delete_resource> Pool;
+  using Pool = PoolTemplate<dummy_resource, thrust::mr::new_delete_resource>;
 
   thrust::mr::pool_options opts = Pool::get_default_options();
   opts.cache_oversized          = false;
@@ -191,7 +191,7 @@ void TestDisjointPoolCachingOversized()
   dummy_resource upstream;
   thrust::mr::new_delete_resource bookkeeper;
 
-  typedef PoolTemplate<dummy_resource, thrust::mr::new_delete_resource> Pool;
+  using Pool = PoolTemplate<dummy_resource, thrust::mr::new_delete_resource>;
 
   thrust::mr::pool_options opts = Pool::get_default_options();
   opts.cache_oversized          = true;
@@ -266,9 +266,9 @@ DECLARE_UNITTEST(TestDisjointSynchronizedPoolCachingOversized);
 template <template <typename, typename> class PoolTemplate>
 void TestDisjointGlobalPool()
 {
-  typedef PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource> Pool;
+  using Pool = PoolTemplate<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource>;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != NULL, true);
+  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }
 
 void TestUnsynchronizedDisjointGlobalPool()

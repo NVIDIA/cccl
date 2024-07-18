@@ -51,9 +51,9 @@
 #include <catch2_test_launch_helper.h>
 #include <nv/target>
 
-#define TEST_HALF_T !_NVHPC_CUDA
+#define TEST_HALF_T _CCCL_HAS_NVFP16
 
-#define TEST_BF_T !_NVHPC_CUDA
+#define TEST_BF_T _CCCL_HAS_NVBF16
 
 #if TEST_HALF_T
 #  include <cuda_fp16.h>
@@ -646,7 +646,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   const int* offset_begin_it                  = d_begin_offsets;
   thrust::device_ptr<const int> offset_end_it = thrust::device_pointer_cast(d_end_offsets);
 
-  cudaError_t status = cudaErrorNotYetImplemented;
+  cudaError_t status = cudaErrorInvalidValue;
 
   if (stable_sort)
   {
