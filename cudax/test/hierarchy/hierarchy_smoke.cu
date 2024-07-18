@@ -530,7 +530,7 @@ TEST_CASE("Empty queries", "[hierarchy]")
   static_assert(hierarchy.extents(cluster, cluster) == dim3(1, 1, 1));
   static_assert(hierarchy.extents(grid, grid) == dim3(1, 1, 1));
 
-  (void) empty_queries_kernel<decltype(make_hierarchy(grid_dims(1), block_dims<8, 8, 8>()))>;
+  [[maybe_unused]] auto fn = empty_queries_kernel<decltype(make_hierarchy(grid_dims(1), block_dims<8, 8, 8>()))>;
 }
 
 TEST_CASE("Trivially constructable", "[hierarchy]")
