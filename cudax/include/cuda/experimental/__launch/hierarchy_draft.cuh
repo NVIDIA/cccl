@@ -366,10 +366,14 @@ finalize([[maybe_unused]] ::cuda::stream_ref stream,
  * @param kernel
  * Kernel functor that the configuration are intended for
  */
+#  ifdef _MSC_VER
+#    pragma warning(push)
+#    pragma warning(disable : 4180) // qualifier applied to function type has no meaning; ignored
+#  endif
 template <typename... Args,
           typename Kernel,
           typename ConfOrDims,
-          typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
+          typename = ::cuda::std::enable_if_t<!::cuda::std::is_function_v<std::remove_pointer_t<Kernel>>>>
 _CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel&)
 {
   if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_t<ConfOrDims>, Args...>
@@ -385,6 +389,9 @@ _CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrD
     return finalize(stream, conf_or_dims, launcher);
   }
 }
+#  ifdef _MSC_VER
+#    pragma warning(pop)
+#  endif
 
 /**
  * @brief Returns a hierarchy or a configuration with the hierarchy updated to replace meta dimsnions with concrete
