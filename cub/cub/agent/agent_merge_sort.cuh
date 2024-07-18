@@ -347,19 +347,18 @@ struct AgentPartition
 
       OffsetT partition_diag =
         ping
-          ? MergePath(
-              keys_ping + keys1_beg,
-              keys_ping + keys2_beg,
-              keys1_end - keys1_beg,
-              keys2_end - keys2_beg,
-              partition_at,
-              compare_op)
+          ? MergePath(keys_ping + keys1_beg,
+                      keys_ping + keys2_beg,
+                      keys1_end - keys1_beg,
+                      keys2_end - keys2_beg,
+                      partition_at,
+                      compare_op)
           : MergePath(keys_pong + keys1_beg,
-                         keys_pong + keys2_beg,
-                         keys1_end - keys1_beg,
-                         keys2_end - keys2_beg,
-                         partition_at,
-                         compare_op);
+                      keys_pong + keys2_beg,
+                      keys1_end - keys1_beg,
+                      keys2_end - keys2_beg,
+                      partition_at,
+                      compare_op);
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }

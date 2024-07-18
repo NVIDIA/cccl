@@ -156,9 +156,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
      const auto num_keys1    = static_cast<size_type>(distance(keys1_begin, keys1_end));
      const auto num_keys2    = static_cast<size_type>(distance(keys2_begin, keys2_end));
      const auto num_keys_out = num_keys1 + num_keys2;
-     if (num_keys_out == 0) {
-       return {keys_out_begin, items_out_begin};
-     }
+     if (num_keys_out == 0) { return {keys_out_begin, items_out_begin}; }
 
      using dispatch32_t = cub::detail::merge::
        dispatch_t<KeysIt1, ItemsIt1, KeysIt2, ItemsIt2, KeysOutputIt, ItemsOutputIt, std::int32_t, CompareOp>;
