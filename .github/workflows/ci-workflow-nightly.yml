@@ -149,5 +149,4 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
     with:
-      slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-      slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+      enable_slack_alerts: true
