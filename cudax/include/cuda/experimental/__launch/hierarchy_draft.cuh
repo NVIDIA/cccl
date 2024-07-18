@@ -337,7 +337,8 @@ finalize([[maybe_unused]] ::cuda::stream_ref stream,
     smem_size = dyn_smem.size_bytes();
   }
 
-  auto finalized_hierarchy = detail::finalize_impl(reinterpret_cast<void*>(kernel), smem_size, config.dims);
+  auto finalized_hierarchy =
+    detail::finalize_impl(reinterpret_cast<void*>(kernel), static_cast<unsigned int>(smem_size), config.dims);
   return kernel_config(finalized_hierarchy, config.options);
 }
 
@@ -369,7 +370,7 @@ template <typename... Args,
           typename Kernel,
           typename ConfOrDims,
           typename = ::cuda::std::enable_if_t<!::cuda::std::is_pointer_v<Kernel>>>
-_CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel& kernel)
+_CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel&)
 {
   if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_t<ConfOrDims>, Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
