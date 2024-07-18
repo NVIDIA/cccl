@@ -46,6 +46,9 @@ jobs:
         uses: ./.github/actions/workflow-build
         with:
           workflows: nightly
+          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
+          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -128,6 +131,11 @@ jobs:
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
+        with:
+          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
+          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+
 
   build-rapids:
     name: Build RAPIDS
@@ -139,38 +147,6 @@ jobs:
       contents: read
       pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
-
-  # Check all other job statuses. This job gates branch protection checks.
-  ci:
-    name: CI
-    # !! Important: This job is used for branch protection checks.
-    # !! Need to use always() instead of !cancelled() because skipped jobs count as success
-    # !! for Github branch protection checks. Yes, really: by default, branch protections
-    # !! can be bypassed by cancelling CI. See NVIDIA/cccl#605.
-    if: ${{ always() }}
-    needs:
-      - verify-workflow
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check results
-        run: |
-          status="success"
-
-          check_result() {
-            name=$1
-            expected=$2
-            result=$3
-
-            echo "Checking if $name job result ('$result') is '$expected'..."
-            if [[ "$result" != "$expected" ]]; then
-              echo "$name job failed"
-
-              status="failed"
-            fi
-          }
-
-          check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
-
-          if [[ "$status" != "success" ]]; then
-            exit 1
-          fi
+    with:
+      slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+      slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
