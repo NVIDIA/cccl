@@ -106,7 +106,7 @@ function(add_bench_dir bench_dir)
       add_bench(bench_target ${tuning_name} "${bench_src}")
       # for convenience, make tuning variant buildable by default
       file(WRITE "${tuning_path}" "#pragma once\n#define TUNE_BASE 1\n")
-      target_compile_options(${bench_target} PRIVATE "--extended-lambda -include${tuning_path}")
+      target_compile_options(${bench_target} PRIVATE "--extended-lambda" "-include${tuning_path}")
     else()
       # benchmarking
       register_cccl_benchmark("${bench_name}" "")
