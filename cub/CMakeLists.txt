@@ -63,6 +63,8 @@ endif()
 # need the install rules. See GH issue NVIDIA/thrust#1211.
 if (NOT (CUB_ENABLE_HEADER_TESTING OR
          CUB_ENABLE_TESTING OR
+         CUB_ENABLE_BENCHMARKS OR
+         CUB_ENABLE_TUNING OR
          CUB_ENABLE_EXAMPLES))
   return()
 endif()
@@ -95,8 +97,8 @@ if (CUB_ENABLE_HEADER_TESTING)
   include(cmake/CubHeaderTesting.cmake)
 endif()
 
-# Both testing and examples use ctest
-if (CUB_ENABLE_TESTING OR CUB_ENABLE_EXAMPLES)
+if (CUB_ENABLE_TESTING OR CUB_ENABLE_EXAMPLES OR CUB_ENABLE_BENCHMARKS OR CUB_ENABLE_TUNING)
+  include(cmake/CPM.cmake)
   include(CTest)
   enable_testing()
 endif()

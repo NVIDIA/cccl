@@ -75,6 +75,37 @@
       }
     },
     {
+      "name": "benchmark",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_CUB": true,
+        "CCCL_ENABLE_THRUST": true,
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CUB_ENABLE_HEADER_TESTING": false,
+        "CUB_ENABLE_TESTING": false,
+        "CUB_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_BENCHMARKS": true,
+        "CUB_ENABLE_DIALECT_CPP11": false,
+        "CUB_ENABLE_DIALECT_CPP14": false,
+        "CUB_ENABLE_DIALECT_CPP17": true,
+        "CUB_ENABLE_DIALECT_CPP20": false,
+        "THRUST_ENABLE_HEADER_TESTING": false,
+        "THRUST_ENABLE_TESTING": false,
+        "THRUST_ENABLE_EXAMPLES": false,
+        "THRUST_ENABLE_BENCHMARKS": true,
+        "THRUST_ENABLE_MULTICONFIG": true,
+        "THRUST_MULTICONFIG_WORKLOAD": "SMALL",
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": false,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": false,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true,
+        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": false,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": false,
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": false
+      }
+    },
+    {
       "name": "libcudacxx-codegen",
       "displayName": "libcu++: codegen",
       "inherits": "base",
@@ -331,6 +362,10 @@
     {
       "name": "all-dev-debug",
       "configurePreset": "all-dev-debug"
+    },
+    {
+      "name": "benchmark",
+      "configurePreset": "benchmark"
     },
     {
       "name": "libcudacxx-codegen",
