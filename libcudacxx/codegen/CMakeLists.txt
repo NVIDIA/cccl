@@ -13,7 +13,7 @@ add_executable(
     codegen.cpp
 )
 
-target_link_libraries(codegen fmt)
+target_link_libraries(codegen PRIVATE fmt)
 
 set_property(TARGET codegen PROPERTY CXX_STANDARD 17)
 
