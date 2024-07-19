@@ -145,7 +145,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
             {
               continue;
             }
-            out << fmt::format(
+            fmt::format(out,
               (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
               /* 0 */ operand(type),
               /* 1 */ size,
@@ -299,7 +299,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
             {
               continue;
             }
-            out << fmt::format(
+            fmt::format(out,
               (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
               /* 0 */ operand(type),
               /* 1 */ size,
