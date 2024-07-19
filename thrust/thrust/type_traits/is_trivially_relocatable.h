@@ -36,6 +36,10 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/std/__fwd/pair.h>
+#include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__type_traits/conjunction.h>
+
 #include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -284,6 +288,18 @@ THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double2)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double3)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(double4)
 #endif
+
+THRUST_NAMESPACE_BEGIN
+template <typename T, typename U>
+struct proclaim_trivially_relocatable<::cuda::std::pair<T, U>>
+    : ::cuda::std::conjunction<is_trivially_relocatable<T>, is_trivially_relocatable<U>>
+{};
+
+template <typename... Ts>
+struct proclaim_trivially_relocatable<::cuda::std::tuple<Ts...>>
+    : ::cuda::std::conjunction<is_trivially_relocatable<Ts>...>
+{};
+THRUST_NAMESPACE_END
 
 /*! \endcond
  */

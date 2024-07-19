@@ -30,6 +30,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/type_traits/is_trivially_relocatable.h>
+
+#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
@@ -116,6 +119,11 @@ make_pair(T1&& t1, T2&& t2)
 }
 
 using _CUDA_VSTD::get;
+
+template <typename T, typename U>
+struct proclaim_trivially_relocatable<pair<T, U>>
+    : ::cuda::std::conjunction<is_trivially_relocatable<T>, is_trivially_relocatable<U>>
+{};
 
 /*! \endcond
  */
