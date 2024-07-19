@@ -44,7 +44,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
 
   for (const auto& sco : membar_scopes)
   {
-    fmt::format(out,intrinsic_membar, scope_tag(sco.first), sco.second);
+    out << fmt::format(intrinsic_membar, scope_tag(sco.first), sco.second);
   }
 
   // Argument ID Reference
@@ -72,7 +72,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
   {
     for (const auto& sem : fence_semantics)
     {
-      fmt::format(out,intrinsic_fence, scope_tag(sco), scope(sco), semantic_tag(sem), semantic(sem));
+      out << fmt::format(intrinsic_fence, scope_tag(sco), scope(sco), semantic_tag(sem), semantic(sem));
     }
   }
   out << "\n"

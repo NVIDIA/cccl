@@ -120,7 +120,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
           {
             continue;
           }
-          fmt::format(out,
+          out << fmt::format(
             (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
             operand(type),
             size,

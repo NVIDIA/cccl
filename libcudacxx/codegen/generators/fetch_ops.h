@@ -183,7 +183,7 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, 
             {
               continue;
             }
-            fmt::format(out,
+            out << fmt::format(
               asm_intrinsic_format,
               /* 0 */ op_name,
               /* 1 */ operand(type),
@@ -197,7 +197,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_{0}_cuda(_Type volatile* __ptr, 
         }
       }
     }
-    out << "\n" << fmt::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
+    out << "\n"
+        << fmt::format( fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
   }
 
   out << R"XXX(
