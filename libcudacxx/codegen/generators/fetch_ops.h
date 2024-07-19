@@ -17,7 +17,7 @@
 #include "definitions.h"
 #include <fmt/format.h>
 
-static std::string fetch_op_skip_v(std::string fetch_op)
+inline std::string fetch_op_skip_v(std::string fetch_op)
 {
   if (fetch_op == "add")
   {
@@ -26,7 +26,7 @@ static std::string fetch_op_skip_v(std::string fetch_op)
   return "constexpr auto __skip_v = 1;";
 }
 
-static void FormatFetchOps(std::ostream& out)
+inline void FormatFetchOps(std::ostream& out)
 {
   const std::vector arithmetic_types = {
     Operand::Floating,

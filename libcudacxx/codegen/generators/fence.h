@@ -16,7 +16,7 @@
 #include "definitions.h"
 #include <fmt/format.h>
 
-static std::string membar_scope(Scope sco)
+inline std::string membar_scope(Scope sco)
 {
   static std::map scope_map{
     std::pair{Scope::GPU, ".gl"},
@@ -27,7 +27,7 @@ static std::string membar_scope(Scope sco)
   return scope_map[sco];
 }
 
-static void FormatFence(std::ostream& out)
+inline void FormatFence(std::ostream& out)
 {
   // Argument ID Reference
   // 0 - Membar scope tag
@@ -75,7 +75,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
       out << fmt::format(intrinsic_fence, scope_tag(sco), scope(sco), semantic_tag(sem), semantic(sem));
     }
   }
-  out << std::endl
+  out << "\n"
       << R"XXX(
 template <typename _Sco>
 static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco) {

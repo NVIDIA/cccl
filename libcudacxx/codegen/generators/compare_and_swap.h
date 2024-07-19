@@ -16,7 +16,7 @@
 #include "definitions.h"
 #include <fmt/format.h>
 
-static void FormatCompareAndSwap(std::ostream& out)
+inline void FormatCompareAndSwap(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
@@ -134,7 +134,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     }
   }
 
-  out << std::endl
+  out << "\n"
       << R"XXX(
 template <typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_compare_exchange {

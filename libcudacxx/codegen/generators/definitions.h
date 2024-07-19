@@ -17,28 +17,30 @@
 
 #include <fmt/format.h>
 
+#include <type_traits>
+
 enum class Mmio
 {
   Disabled,
   Enabled,
 };
 
-static std::string mmio(Mmio m)
+inline std::string mmio(Mmio m)
 {
   static const char* mmio_map[]{
     "",
     ".mmio",
   };
-  return mmio_map[std::to_underlying(m)];
+  return mmio_map[std::underlying_type_t<Mmio>(m)];
 }
 
-static std::string mmio_tag(Mmio m)
+inline std::string mmio_tag(Mmio m)
 {
-  static std::map mmio_map{
-    std::pair{Mmio::Disabled, "__atomic_cuda_mmio_disable"},
-    std::pair{Mmio::Enabled, "__atomic_cuda_mmio_enable"},
+  static const char* mmio_map[]{
+    "__atomic_cuda_mmio_disable",
+    "__atomic_cuda_mmio_enable",
   };
-  return mmio_map[m];
+  return mmio_map[std::underlying_type_t<Mmio>(m)];
 }
 
 enum class Operand
@@ -49,7 +51,7 @@ enum class Operand
   Bit,
 };
 
-static std::string operand(Operand op)
+inline std::string operand(Operand op)
 {
   static std::map op_map = {
     std::pair{Operand::Floating, "f"},
@@ -60,7 +62,7 @@ static std::string operand(Operand op)
   return op_map[op];
 }
 
-static std::string operand_proxy_type(Operand op, size_t sz)
+inline std::string operand_proxy_type(Operand op, size_t sz)
 {
   if (op == Operand::Floating)
   {
@@ -81,7 +83,7 @@ static std::string operand_proxy_type(Operand op, size_t sz)
   return fmt::format("uint{}_t", sz);
 }
 
-static std::string constraints(Operand op, size_t sz)
+inline std::string constraints(Operand op, size_t sz)
 {
   static std::map constraint_map = {
     std::pair{32,
@@ -127,7 +129,7 @@ enum class Semantic
   Volatile,
 };
 
-static std::string semantic(Semantic sem)
+inline std::string semantic(Semantic sem)
 {
   static std::map sem_map = {
     std::pair{Semantic::Relaxed, ".relaxed"},
@@ -140,7 +142,7 @@ static std::string semantic(Semantic sem)
   return sem_map[sem];
 }
 
-static std::string semantic_tag(Semantic sem)
+inline std::string semantic_tag(Semantic sem)
 {
   static std::map sem_map = {
     std::pair{Semantic::Relaxed, "__atomic_cuda_relaxed"},
@@ -163,7 +165,7 @@ enum class Scope
   System,
 };
 
-static std::string scope(Scope sco)
+inline std::string scope(Scope sco)
 {
   static std::map sco_map = {
     std::pair{Scope::Thread, ""},
@@ -176,7 +178,7 @@ static std::string scope(Scope sco)
   return sco_map[sco];
 }
 
-static std::string scope_tag(Scope sco)
+inline std::string scope_tag(Scope sco)
 {
   static std::map sco_map = {
     std::pair{Scope::Thread, "__thread_scope_thread_tag"},

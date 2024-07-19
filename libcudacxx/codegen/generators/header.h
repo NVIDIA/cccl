@@ -13,7 +13,7 @@
 
 #include <string>
 
-static void FormatHeader(std::ostream& out)
+inline void FormatHeader(std::ostream& out)
 {
   std::string header = R"XXX(
 //===----------------------------------------------------------------------===//
@@ -62,7 +62,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   out << header;
 }
 
-static void FormatTail(std::ostream& out)
+inline void FormatTail(std::ostream& out)
 {
   std::string tail = R"XXX(
 #endif // defined(_CCCL_CUDA_COMPILER)

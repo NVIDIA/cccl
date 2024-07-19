@@ -16,7 +16,7 @@
 #include "definitions.h"
 #include <fmt/format.h>
 
-static std::string semantic_ld_st(Semantic sem)
+inline std::string semantic_ld_st(Semantic sem)
 {
   static std::map sem_map = {
     std::pair{Semantic::Relaxed, ".relaxed"},
@@ -27,7 +27,7 @@ static std::string semantic_ld_st(Semantic sem)
   return sem_map[sem];
 }
 
-static std::string scope_ld_st(Semantic sem, Scope sco)
+inline std::string scope_ld_st(Semantic sem, Scope sco)
 {
   if (sem == Semantic::Volatile)
   {
@@ -36,7 +36,7 @@ static std::string scope_ld_st(Semantic sem, Scope sco)
   return scope(sco);
 }
 
-static void FormatLoad(std::ostream& out)
+inline void FormatLoad(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
@@ -161,7 +161,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
       }
     }
   }
-  out << std::endl
+  out << "\n"
       << R"XXX(
 template <typename _Type, typename _Tag, typename _Sco, typename _Mmio>
 struct __cuda_atomic_bind_load {
@@ -196,7 +196,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, 
 )XXX";
 }
 
-static void FormatStore(std::ostream& out)
+inline void FormatStore(std::ostream& out)
 {
   out << R"XXX(
 template <class _Fn, class _Sco>
@@ -315,7 +315,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
       }
     }
   }
-  out << std::endl
+  out << "\n"
       << R"XXX(
 template <typename _Type, typename _Tag, typename _Sco, typename _Mmio>
 struct __cuda_atomic_bind_store {
