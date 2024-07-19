@@ -25,11 +25,11 @@ enum class Mmio
 
 static std::string mmio(Mmio m)
 {
-  static std::map mmio_map{
-    std::pair{Mmio::Disabled, ""},
-    std::pair{Mmio::Enabled, ".mmio"},
+  static const char* mmio_map[]{
+    "",
+    ".mmio",
   };
-  return mmio_map[m];
+  return mmio_map[std::to_underlying(m)];
 }
 
 static std::string mmio_tag(Mmio m)
