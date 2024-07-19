@@ -5,7 +5,7 @@
 #    libcudacxx.test.atomics.codegen.diff
 
 include(${CMAKE_SOURCE_DIR}/cub/cmake/CPM.cmake)
-CPMAddPackage("gh:fmtlib/fmt#10.2.1")
+CPMAddPackage("gh:fmtlib/fmt#11.0.1")
 
 add_executable(
     codegen
