@@ -78,7 +78,7 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>> : public ba
   }
 };
 
-// needs_finalizeation or similar might be a better name
+// needs_finalization or similar might be a better name
 template <typename Dims>
 inline constexpr bool usable_for_queries = false;
 
