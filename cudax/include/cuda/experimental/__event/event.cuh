@@ -110,15 +110,15 @@ public:
   /**
    * @brief Construct an `event` object from a native `cudaEvent_t` handle.
    *
-   * @param __event The native handle
+   * @param __evnt The native handle
    *
    * @return event The constructed `event` object
    *
    * @note The constructed `event` object takes ownership of the native handle.
    */
-  _CCCL_NODISCARD static event from_native_handle(::cudaEvent_t __event) noexcept
+  _CCCL_NODISCARD static event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
-    return event(__event);
+    return event(__evnt);
   }
 
   /// Disallow construction from an `int`, e.g., `0`.
@@ -147,8 +147,8 @@ public:
 private:
   // Use `event::from_native_handle(e)` to construct an owning `event`
   // object from a `cudaEvent_t` handle.
-  explicit constexpr event(::cudaEvent_t __event) noexcept
-      : event_ref(__event)
+  explicit constexpr event(::cudaEvent_t __evnt) noexcept
+      : event_ref(__evnt)
   {}
 
   explicit event(unsigned int __flags)

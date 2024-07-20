@@ -74,15 +74,15 @@ public:
   /**
    * @brief Construct a `timed_event` object from a native `cudaEvent_t` handle.
    *
-   * @param __event The native handle
+   * @param __evnt The native handle
    *
    * @return timed_event The constructed `timed_event` object
    *
    * @note The constructed `timed_event` object takes ownership of the native handle.
    */
-  _CCCL_NODISCARD static timed_event from_native_handle(::cudaEvent_t __event) noexcept
+  _CCCL_NODISCARD static timed_event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
-    return timed_event(__event);
+    return timed_event(__evnt);
   }
 
   /// Disallow construction from an `int`, e.g., `0`.
@@ -112,8 +112,8 @@ public:
 private:
   // Use `timed_event::from_native_handle(e)` to construct an owning `timed_event`
   // object from a `cudaEvent_t` handle.
-  explicit constexpr timed_event(::cudaEvent_t __event) noexcept
-      : event(__event)
+  explicit constexpr timed_event(::cudaEvent_t __evnt) noexcept
+      : event(__evnt)
   {}
 };
 } // namespace cuda::experimental

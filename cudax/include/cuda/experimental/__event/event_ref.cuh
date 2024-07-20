@@ -61,13 +61,13 @@ public:
    *
    * This constructor provides an implicit conversion from `cudaEvent_t`
    *
-   * @post `get() == __event`
+   * @post `get() == __evnt`
    *
    * @note: It is the callers responsibilty to ensure the `event_ref` does not
    * outlive the event denoted by the `cudaEvent_t` handle.
    */
-  constexpr event_ref(::cudaEvent_t __event) noexcept
-      : __event_(__event)
+  constexpr event_ref(::cudaEvent_t __evnt) noexcept
+      : __event_(__evnt)
   {}
 
   /// Disallow construction from an `int`, e.g., `0`.
