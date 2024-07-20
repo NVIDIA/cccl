@@ -99,14 +99,16 @@ public:
    * @param __end The `timed_event` object representing the end time.
    * @param __start The `timed_event` object representing the start time.
    *
-   * @return cuda::std::chrono::microseconds The elapsed time in microseconds.
+   * @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
+   *
+   * @note The elapsed time has a resolution of approximately 0.5 microseconds.
    */
-  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::chrono::microseconds operator-(const timed_event& __end, const timed_event& __start)
+  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
     _CCCL_TRY_CUDA_API(
       ::cudaEventElapsedTime, "Failed to get CUDA event elapsed time", &__ms, __start.get(), __end.get());
-    return _CUDA_VSTD::chrono::microseconds(static_cast<_CUDA_VSTD::chrono::microseconds::rep>(__ms * 1'000.0f));
+    return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 
 private:
