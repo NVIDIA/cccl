@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 NVIDIA Corporation
+ *  Copyright 2024 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,119 +31,19 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename Function, typename Result>
 struct wrapped_function
 {
   // mutable because Function::operator() might be const
   mutable Function m_f;
 
-  inline _CCCL_HOST_DEVICE wrapped_function()
-      : m_f()
-  {}
-
-  inline _CCCL_HOST_DEVICE wrapped_function(const Function& f)
-      : m_f(f)
-  {}
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(Argument& x) const
+  template <typename... Ts>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(Ts&&... args) const
   {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(x)));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(const Argument& x) const
-  {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(x)));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(Argument1& x, Argument2& y) const
-  {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y)));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(const Argument1& x, Argument2& y) const
-  {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y)));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(const Argument1& x, const Argument2& y) const
-  {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y)));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(Argument1& x, const Argument2& y) const
-  {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y)));
+    return static_cast<Result>(m_f(thrust::raw_reference_cast(std::forward<Ts>(args))...));
   }
 }; // end wrapped_function
-
-// Specialize for void return types:
-template <typename Function>
-struct wrapped_function<Function, void>
-{
-  // mutable because Function::operator() might be const
-  mutable Function m_f;
-  inline _CCCL_HOST_DEVICE wrapped_function()
-      : m_f()
-  {}
-
-  inline _CCCL_HOST_DEVICE wrapped_function(const Function& f)
-      : m_f(f)
-  {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void operator()(Argument& x) const
-  {
-    m_f(thrust::raw_reference_cast(x));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void operator()(const Argument& x) const
-  {
-    m_f(thrust::raw_reference_cast(x));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void operator()(Argument1& x, Argument2& y) const
-  {
-    m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void operator()(const Argument1& x, Argument2& y) const
-  {
-    m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
-  }
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void operator()(const Argument1& x, const Argument2& y) const
-  {
-    m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
-  }
-  _CCCL_EXEC_CHECK_DISABLE
-  template <typename Argument1, typename Argument2>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void operator()(Argument1& x, const Argument2& y) const
-  {
-    m_f(thrust::raw_reference_cast(x), thrust::raw_reference_cast(y));
-  }
-}; // end wrapped_function
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

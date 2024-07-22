@@ -56,7 +56,7 @@ struct body
       : first(first)
       , stencil(stencil)
       , result(result)
-      , pred(pred)
+      , pred{pred}
       , sum(0)
   {}
 
@@ -64,7 +64,7 @@ struct body
       : first(b.first)
       , stencil(b.stencil)
       , result(b.result)
-      , pred(b.pred)
+      , pred{b.pred}
       , sum(0)
   {}
 

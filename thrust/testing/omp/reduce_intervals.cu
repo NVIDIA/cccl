@@ -12,7 +12,7 @@ void reduce_intervals(InputIterator input, OutputIterator output, BinaryFunction
   using index_type = typename Decomposition::index_type;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op(binary_op);
+  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
 
   for (index_type i = 0; i < decomp.size(); ++i, ++output)
   {
