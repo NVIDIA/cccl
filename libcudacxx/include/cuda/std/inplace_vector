@@ -141,7 +141,7 @@ struct _Rollback_change_size
 
   _LIBCUDACXX_INLINE_VISIBILITY void operator()() const noexcept
   {
-    __obj_->__change_size(__current_ - __first_);
+    __obj_->__size_ += static_cast<typename _Base::__size_type>(__current_ - __first_);
   }
 };
 
@@ -286,11 +286,6 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   }
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
-  {
-    this->__size_ += static_cast<__size_type>(__count);
-  }
-
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
   {
     return static_cast<size_type>(this->__size_);
@@ -339,7 +334,7 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
   {
     auto __final = _CUDA_VSTD::__construct_at(end(), _CUDA_VSTD::forward<_Args>(__args)...);
-    this->__change_size(1);
+    ++this->__size_;
     return *__final;
   }
 
@@ -347,7 +342,7 @@ protected:
   _LIBCUDACXX_INLINE_VISIBILITY void __destroy(iterator __first, iterator __last) noexcept
   {
     _CUDA_VSTD::__destroy(__first, __last);
-    __change_size(__first - __last);
+    this->__size_ -= static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
@@ -359,7 +354,7 @@ protected:
     {
       ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
     }
-    __change_size(__last - __first);
+    this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
@@ -373,7 +368,7 @@ protected:
       ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
     }
     __guard.__complete();
-    __change_size(__last - __first);
+    this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
@@ -385,7 +380,7 @@ protected:
     {
       ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
     }
-    __change_size(__last - __first);
+    this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
@@ -399,7 +394,7 @@ protected:
       ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
     }
     __guard.__complete();
-    __change_size(__last - __first);
+    this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
@@ -411,7 +406,7 @@ protected:
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
-    __change_size(__curr - __dest);
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
@@ -425,7 +420,7 @@ protected:
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
     __guard.__complete();
-    __change_size(__curr - __dest);
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
@@ -441,7 +436,7 @@ protected:
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
-    __change_size(__curr - __dest);
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
@@ -459,7 +454,7 @@ protected:
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
     __guard.__complete();
-    __change_size(__curr - __dest);
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 };
 
@@ -497,11 +492,6 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
   }
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
-  {
-    __size_ += static_cast<__size_type>(__count);
-  }
-
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
   {
     return static_cast<size_type>(__size_);
@@ -558,21 +548,21 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
 protected:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy(iterator __first, iterator __last) noexcept
   {
-    __change_size(__first - __last);
+    __size_ -= static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void
   __uninitialized_value_construct(iterator __first, iterator __last) noexcept
   {
     _CUDA_VSTD::fill(__first, __last, _Tp());
-    __change_size(__last - __first);
+    __size_ += static_cast<__size_type>(__last - __first);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void
   __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
   {
     _CUDA_VSTD::fill(__first, __last, __value);
-    __change_size(__last - __first);
+    __size_ += static_cast<__size_type>(__last - __first);
   }
 
   template <class _Iter>
@@ -581,9 +571,9 @@ protected:
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-    __change_size(_CUDA_VRANGES::distance(__first, __last));
+    __size_ += static_cast<__size_type>(_CUDA_VRANGES::distance(__first, __last));
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-    __change_size(_CUDA_VSTD::distance(__first, __last));
+    __size_ += static_cast<__size_type>(_CUDA_VSTD::distance(__first, __last));
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
   }
 
@@ -593,9 +583,9 @@ protected:
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-    __change_size(_CUDA_VRANGES::distance(__first, __last));
+    __size_ += static_cast<__size_type>(_CUDA_VRANGES::distance(__first, __last));
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-    __change_size(_CUDA_VSTD::distance(__first, __last));
+    __size_ += static_cast<__size_type>(_CUDA_VSTD::distance(__first, __last));
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
   }
 };
@@ -614,11 +604,6 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   constexpr __inplace_vector_base() = default;
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __change_size(const ptrdiff_t __count) noexcept
-  {
-    _LIBCUDACXX_UNREACHABLE();
-  }
-
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
   {
     return 0;
