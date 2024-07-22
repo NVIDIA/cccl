@@ -26,20 +26,17 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
-
-#include <cassert>
 
 namespace cuda::experimental
 {
 class event;
 class timed_event;
 
-/**
- * @brief An non-owning wrapper for an untimed `cudaEvent_t`.
- */
+//! @brief An non-owning wrapper for an untimed `cudaEvent_t`.
 class event_ref
 {
 private:
@@ -51,21 +48,17 @@ private:
 public:
   using value_type = ::cudaEvent_t;
 
-  /**
-   * @brief Construct a new `event_ref` that does refer to an event.
-   */
+  //! @brief Construct a new `event_ref` that does refer to an event.
   event_ref() = default;
 
-  /**
-   * @brief Construct a new `event_ref` object from a `cudaEvent_t`
-   *
-   * This constructor provides an implicit conversion from `cudaEvent_t`
-   *
-   * @post `get() == __evnt`
-   *
-   * @note: It is the callers responsibilty to ensure the `event_ref` does not
-   * outlive the event denoted by the `cudaEvent_t` handle.
-   */
+  //! @brief Construct a new `event_ref` object from a `cudaEvent_t`
+  //!
+  //! This constructor provides an implicit conversion from `cudaEvent_t`
+  //!
+  //! @post `get() == __evnt`
+  //!
+  //! @note: It is the callers responsibilty to ensure the `event_ref` does not
+  //! outlive the event denoted by the `cudaEvent_t` handle.
   constexpr event_ref(::cudaEvent_t __evnt) noexcept
       : __event_(__evnt)
   {}
@@ -75,14 +68,12 @@ public:
 
   /// Disallow construction from `nullptr`.
   event_ref(_CUDA_VSTD::nullptr_t) = delete;
+  //! @brief Records an event on the specified stream
+  //!
+  //! @param __stream
+  //!
+  //! @throws cuda_error if the event record fails
 
-  /**
-   * @brief Records an event on the specified stream
-   *
-   * @param __stream
-   *
-   * @throws cuda_error if the event record fails
-   */
   void record(stream_ref __stream)
   {
     assert(__event_ != nullptr);
@@ -90,13 +81,11 @@ public:
     _CCCL_TRY_CUDA_API(::cudaEventRecord, "Failed to record CUDA event", __event_, __stream.get());
   }
 
-  /**
-   * @brief Waits for a CUDA event_ref to complete on the specified stream
-   *
-   * @param __stream The stream to wait on
-   *
-   * @throws cuda_error if the event_ref wait fails
-   */
+  //! @brief Waits for a CUDA event_ref to complete on the specified stream
+  //!
+  //! @param __stream The stream to wait on
+  //!
+  //! @throws cuda_error if the event_ref wait fails
   void wait(stream_ref __stream) const
   {
     assert(__event_ != nullptr);
@@ -104,41 +93,35 @@ public:
     _CCCL_TRY_CUDA_API(::cudaStreamWaitEvent, "Failed to wait for CUDA event", __stream.get(), __event_);
   }
 
-  /**
-   * @brief Retrieve the native `cudaEvent_t` handle.
-   *
-   * @return cudaEvent_t The native handle being held by the event_ref object.
-   */
+  //! @brief Retrieve the native `cudaEvent_t` handle.
+  //!
+  //! @return cudaEvent_t The native handle being held by the event_ref object.
   _CCCL_NODISCARD constexpr ::cudaEvent_t get() const noexcept
   {
     return __event_;
   }
 
-  /**
-   * @brief Compares two `event_ref`s for equality
-   *
-   * @note Allows comparison with `cudaEvent_t` due to implicit conversion to
-   * `event_ref`.
-   *
-   * @param lhs The first `event_ref` to compare
-   * @param rhs The second `event_ref` to compare
-   * @return true if `lhs` and `rhs` refer to the same `cudaEvent_t` object.
-   */
+  //! @brief Compares two `event_ref`s for equality
+  //!
+  //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
+  //! `event_ref`.
+  //!
+  //! @param lhs The first `event_ref` to compare
+  //! @param rhs The second `event_ref` to compare
+  //! @return true if `lhs` and `rhs` refer to the same `cudaEvent_t` object.
   _CCCL_NODISCARD_FRIEND constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ == __rhs.__event_;
   }
 
-  /**
-   * @brief Compares two `event_ref`s for inequality
-   *
-   * @note Allows comparison with `cudaEvent_t` due to implicit conversion to
-   * `event_ref`.
-   *
-   * @param lhs The first `event_ref` to compare
-   * @param rhs The second `event_ref` to compare
-   * @return true if `lhs` and `rhs` refer to different `cudaEvent_t` objects.
-   */
+  //! @brief Compares two `event_ref`s for inequality
+  //!
+  //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
+  //! `event_ref`.
+  //!
+  //! @param lhs The first `event_ref` to compare
+  //! @param rhs The second `event_ref` to compare
+  //! @return true if `lhs` and `rhs` refer to different `cudaEvent_t` objects.
   _CCCL_NODISCARD_FRIEND constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ != __rhs.__event_;

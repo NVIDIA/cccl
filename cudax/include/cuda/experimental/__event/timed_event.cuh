@@ -28,81 +28,66 @@
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
-#include <cuda/stream_ref>
 
 // CUDAX headers here
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event.cuh>
 
-#include <cassert>
-
 namespace cuda::experimental
 {
-/**
- * @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
- */
+//! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
 class timed_event : public event
 {
 public:
-  /**
-   * @brief Construct a new `timed_event` object with timing enabled.
-   *
-   * @throws cuda_error if the event creation fails.
-   */
+  //! @brief Construct a new `timed_event` object with timing enabled.
+  //!
+  //! @throws cuda_error if the event creation fails.
   timed_event()
       : event(static_cast<unsigned int>(cudaEventDefault))
   {}
 
-  /**
-   * @brief Construct a new `timed_event` object with the specified flags.
-   *
-   * @throws cuda_error if the event creation fails.
-   */
+  //! @brief Construct a new `timed_event` object with the specified flags.
+  //!
+  //! @throws cuda_error if the event creation fails.
   explicit timed_event(flags __flags)
       : event(static_cast<unsigned int>(__flags))
   {}
 
-  /**
-   * @brief Construct a new `timed_event` object into the moved-from state.
-   *
-   * @post `get()` returns `cudaEvent_t()`.
-   */
+  //! @brief Construct a new `timed_event` object into the moved-from state.
+  //!
+  //! @post `get()` returns `cudaEvent_t()`.
   explicit constexpr timed_event(uninit_t) noexcept
       : event(uninit)
   {}
 
-  /**
-   * @brief Construct a `timed_event` object from a native `cudaEvent_t` handle.
-   *
-   * @param __evnt The native handle
-   *
-   * @return timed_event The constructed `timed_event` object
-   *
-   * @note The constructed `timed_event` object takes ownership of the native handle.
-   */
+  //! @brief Construct a `timed_event` object from a native `cudaEvent_t` handle.
+  //!
+  //! @param __evnt The native handle
+  //!
+  //! @return timed_event The constructed `timed_event` object
+  //!
+  //! @note The constructed `timed_event` object takes ownership of the native handle.
   _CCCL_NODISCARD static timed_event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
     return timed_event(__evnt);
   }
 
-  /// Disallow construction from an `int`, e.g., `0`.
+  // Disallow construction from an `int`, e.g., `0`.
   static timed_event from_native_handle(int) = delete;
 
-  /// Disallow construction from `nullptr`.
+  // Disallow construction from `nullptr`.
   static timed_event from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
 
-  /**
-   * @brief Compute the time elapsed between two `timed_event` objects.
-   *
-   * @throws cuda_error if the query for the elapsed time fails.
-   *
-   * @param __end The `timed_event` object representing the end time.
-   * @param __start The `timed_event` object representing the start time.
-   *
-   * @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
-   *
-   * @note The elapsed time has a resolution of approximately 0.5 microseconds.
-   */
+  //! @brief Compute the time elapsed between two `timed_event` objects.
+  //!
+  //! @throws cuda_error if the query for the elapsed time fails.
+  //!
+  //! @param __end The `timed_event` object representing the end time.
+  //! @param __start The `timed_event` object representing the start time.
+  //!
+  //! @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
+  //!
+  //! @note The elapsed time has a resolution of approximately 0.5 microseconds.
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;

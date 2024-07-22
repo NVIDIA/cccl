@@ -28,29 +28,22 @@
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
-#include <cuda/stream_ref>
 
 // CUDAX headers here
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event_ref.cuh>
 
-#include <cassert>
-
 namespace cuda::experimental
 {
 class timed_event;
 
-/**
- * @brief An owning wrapper for an untimed `cudaEvent_t`.
- */
+//! @brief An owning wrapper for an untimed `cudaEvent_t`.
 class event : public event_ref
 {
   friend class timed_event;
 
 public:
-  /**
-   * @brief Flags to use when creating the event.
-   */
+  //! @brief Flags to use when creating the event.
   enum class flags : unsigned int
   {
     none          = cudaEventDefault,
@@ -58,47 +51,37 @@ public:
     interprocess  = cudaEventInterprocess
   };
 
-  /**
-   * @brief Construct a new `event` object with timing disabled.
-   *
-   * @throws cuda_error if the event creation fails.
-   */
+  //! @brief Construct a new `event` object with timing disabled.
+  //!
+  //! @throws cuda_error if the event creation fails.
   event()
       : event(static_cast<unsigned int>(cudaEventDisableTiming))
   {}
 
-  /**
-   * @brief Construct a new `event` object with the specified flags.
-   *
-   * @throws cuda_error if the event creation fails.
-   */
+  //! @brief Construct a new `event` object with the specified flags.
+  //!
+  //! @throws cuda_error if the event creation fails.
   explicit event(flags __flags)
       : event(static_cast<unsigned int>(__flags) | static_cast<unsigned int>(cudaEventDisableTiming))
   {}
 
-  /**
-   * @brief Construct a new `event` object into the moved-from state.
-   *
-   * @post `get()` returns `cudaEvent_t()`.
-   */
+  //! @brief Construct a new `event` object into the moved-from state.
+  //!
+  //! @post `get()` returns `cudaEvent_t()`.
   explicit constexpr event(uninit_t) noexcept {}
 
-  /**
-   * @brief Move-construct a new `event` object
-   *
-   * @param __other
-   *
-   * @post `__other` is in a moved-from state.
-   */
+  //! @brief Move-construct a new `event` object
+  //!
+  //! @param __other
+  //!
+  //! @post `__other` is in a moved-from state.
   constexpr event(event&& __other) noexcept
       : event_ref(_CUDA_VSTD::exchange(__other.__event_, {}))
   {}
 
-  /**
-   * @brief Destroy the `event` object
-   *
-   * @note If the event fails to be destroyed, the error is silently ignored.
-   */
+  //! @brief Destroy the `event` object
+  //!
+  //! @note If the event fails to be destroyed, the error is silently ignored.
   ~event()
   {
     if (__event_ != nullptr)
@@ -107,33 +90,29 @@ public:
     }
   }
 
-  /**
-   * @brief Construct an `event` object from a native `cudaEvent_t` handle.
-   *
-   * @param __evnt The native handle
-   *
-   * @return event The constructed `event` object
-   *
-   * @note The constructed `event` object takes ownership of the native handle.
-   */
+  //! @brief Construct an `event` object from a native `cudaEvent_t` handle.
+  //!
+  //! @param __evnt The native handle
+  //!
+  //! @return event The constructed `event` object
+  //!
+  //! @note The constructed `event` object takes ownership of the native handle.
   _CCCL_NODISCARD static event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
     return event(__evnt);
   }
 
-  /// Disallow construction from an `int`, e.g., `0`.
+  // Disallow construction from an `int`, e.g., `0`.
   static event from_native_handle(int) = delete;
 
-  /// Disallow construction from `nullptr`.
+  // Disallow construction from `nullptr`.
   static event from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
 
-  /**
-   * @brief Retrieve the native `cudaEvent_t` handle and give up ownership.
-   *
-   * @return cudaEvent_t The native handle being held by the `event` object.
-   *
-   * @post The event object is in a moved-from state.
-   */
+  //! @brief Retrieve the native `cudaEvent_t` handle and give up ownership.
+  //!
+  //! @return cudaEvent_t The native handle being held by the `event` object.
+  //!
+  //! @post The event object is in a moved-from state.
   _CCCL_NODISCARD constexpr ::cudaEvent_t release() noexcept
   {
     return _CUDA_VSTD::exchange(__event_, {});
