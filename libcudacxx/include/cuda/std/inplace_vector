@@ -923,9 +923,7 @@ public:
       return;
     }
 
-    const auto __diff =
-      static_cast<ptrdiff_t>(_CUDA_VSTD::distance(__first, __last)) - static_cast<ptrdiff_t>(this->size());
-    if (__diff < 0)
+    if (static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)) < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
       this->__destroy(__new_end, this->end());
@@ -946,8 +944,7 @@ public:
       return;
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(__ilist.size()) - static_cast<ptrdiff_t>(this->size());
-    if (__diff < 0)
+    if (static_cast<size_type>(__ilist.size()) < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
       this->__destroy(__new_end, this->end());
@@ -1004,8 +1001,7 @@ public:
 
     const auto __first = __range.begin();
     const auto __last  = __unwrap_end(__range);
-    const auto __diff  = static_cast<ptrdiff_t>(__size) - static_cast<ptrdiff_t>(this->size());
-    if (__diff < 0)
+    if (static_cast<size_type>(__size) < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
       this->__destroy(__new_end, this->end());
@@ -1032,8 +1028,7 @@ public:
       return;
     }
 
-    const auto __diff = static_cast<ptrdiff_t>(__size) - static_cast<ptrdiff_t>(this->size());
-    if (__diff < 0)
+    if (static_cast<size_type>(__size) < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
       this->__destroy(__new_end, this->end());
