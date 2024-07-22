@@ -1759,9 +1759,9 @@ public:
 #  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr __synth_three_way_result_t<_Tp>
   operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
-    noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+    noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
-    return _CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+    return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
