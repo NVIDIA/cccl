@@ -13,19 +13,12 @@
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__iterator/reverse_iterator.h"
 #include "test_macros.h"
-
-struct Trivial
-{};
-
-struct NonTrivial
-{
-  __host__ __device__ constexpr NonTrivial() noexcept {}
-};
+#include "types.h"
 
 __host__ __device__ void test()
 {
@@ -81,6 +74,78 @@ __host__ __device__ void test()
 #if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(cuda::std::ranges::contiguous_range<inplace_vector>);
 #endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
+
+  // Ensure we uphoold the guarantees about triviality in [inplace.vector.overview]
+  // * If is_trivially_copy_constructible_v<T> is true, then IV has a trivial copy constructor.
+  static_assert(
+    cuda::std::is_trivially_copy_constructible<cuda::std::inplace_vector<ThrowingDefaultConstruct, 42>>::value, "");
+  static_assert(
+    !cuda::std::is_trivially_copy_constructible<cuda::std::inplace_vector<ThrowingCopyConstructor, 42>>::value, "");
+  static_assert(
+    cuda::std::is_trivially_copy_constructible<cuda::std::inplace_vector<ThrowingMoveConstructor, 42>>::value, "");
+  static_assert(
+    cuda::std::is_trivially_copy_constructible<cuda::std::inplace_vector<ThrowingCopyAssignment, 42>>::value, "");
+  static_assert(
+    cuda::std::is_trivially_copy_constructible<cuda::std::inplace_vector<ThrowingMoveAssignment, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_copy_constructible<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value,
+                "");
+
+  // * If is_trivially_move_constructible_v<T> is true, then IV has a trivial move constructor
+  static_assert(
+    cuda::std::is_trivially_move_constructible<cuda::std::inplace_vector<ThrowingDefaultConstruct, 42>>::value, "");
+  static_assert(
+    cuda::std::is_trivially_move_constructible<cuda::std::inplace_vector<ThrowingCopyConstructor, 42>>::value, "");
+  static_assert(
+    !cuda::std::is_trivially_move_constructible<cuda::std::inplace_vector<ThrowingMoveConstructor, 42>>::value, "");
+  static_assert(
+    cuda::std::is_trivially_move_constructible<cuda::std::inplace_vector<ThrowingCopyAssignment, 42>>::value, "");
+  static_assert(
+    cuda::std::is_trivially_move_constructible<cuda::std::inplace_vector<ThrowingMoveAssignment, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_move_constructible<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value,
+                "");
+
+  // * If is_trivially_destructible_v<T> is true, then IV has a trivial destructor
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::inplace_vector<ThrowingDefaultConstruct, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::inplace_vector<ThrowingCopyConstructor, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::inplace_vector<ThrowingMoveConstructor, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::inplace_vector<ThrowingCopyAssignment, 42>>::value, "");
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::inplace_vector<ThrowingMoveAssignment, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_destructible<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value, "");
+
+  // * If is_trivially_destructible_v<T> is true,
+  // if is_trivially_copy_constructible_v<T> && is_trivially_copy_assignable_v<T> is true, then IV has a trivial copy
+  // assignment operator
+  static_assert(cuda::std::is_trivially_copy_assignable<cuda::std::inplace_vector<ThrowingDefaultConstruct, 42>>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_copy_assignable<cuda::std::inplace_vector<ThrowingCopyConstructor, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_copy_assignable<cuda::std::inplace_vector<ThrowingMoveConstructor, 42>>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_copy_assignable<cuda::std::inplace_vector<ThrowingCopyAssignment, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_copy_assignable<cuda::std::inplace_vector<ThrowingMoveAssignment, 42>>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_copy_assignable<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value,
+                "");
+
+  // * If is_trivially_destructible_v<T> is true,
+  // if is_trivially_move_constructible_v<T> && is_trivially_move_assignable_v<T> is true, then IV has a trivial move
+  // assignment operator
+  static_assert(cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<ThrowingDefaultConstruct, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<ThrowingCopyConstructor, 42>>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<ThrowingMoveConstructor, 42>>::value,
+                "");
+  static_assert(cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<ThrowingCopyAssignment, 42>>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<ThrowingMoveAssignment, 42>>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value,
+                "");
 }
 
 int main(int, char**)

@@ -13,6 +13,7 @@
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
 
+#include "test_iterators.h"
 #include "test_macros.h"
 
 struct Trivial
@@ -64,6 +65,10 @@ struct NonTrivialDestructor
   __host__ __device__ NonTrivialDestructor(const int val) noexcept
       : val_(val)
   {}
+  NonTrivialDestructor(const NonTrivialDestructor&)            = default;
+  NonTrivialDestructor(NonTrivialDestructor&&)                 = default;
+  NonTrivialDestructor& operator=(const NonTrivialDestructor&) = default;
+  NonTrivialDestructor& operator=(NonTrivialDestructor&&)      = default;
   __host__ __device__ ~NonTrivialDestructor() noexcept {}
   __host__ __device__ friend bool operator==(const NonTrivialDestructor& lhs, const NonTrivialDestructor& rhs) noexcept
   {
@@ -74,6 +79,10 @@ struct NonTrivialDestructor
     return lhs.val_ < rhs.val_;
   }
 };
+static_assert(!cuda::std::is_trivially_copy_constructible<NonTrivialDestructor>::value, "");
+static_assert(!cuda::std::is_trivially_move_constructible<NonTrivialDestructor>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<NonTrivialDestructor>::value, "");
+static_assert(cuda::std::is_trivially_move_assignable<NonTrivialDestructor>::value, "");
 
 struct ThrowingDefaultConstruct
 {
@@ -96,6 +105,10 @@ struct ThrowingDefaultConstruct
     return lhs.val_ < rhs.val_;
   }
 };
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingDefaultConstruct>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingDefaultConstruct>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingDefaultConstruct>::value, "");
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingDefaultConstruct>::value, "");
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
 static_assert(!cuda::std::is_nothrow_default_constructible<ThrowingDefaultConstruct>::value, "");
 #endif // !TEST_COMPILER_GCC < 10
@@ -129,6 +142,10 @@ struct ThrowingCopyConstructor
     return lhs.val_ < rhs.val_;
   }
 };
+static_assert(!cuda::std::is_trivially_copy_constructible<ThrowingCopyConstructor>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingCopyConstructor>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingCopyConstructor>::value, "");
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingCopyConstructor>::value, "");
 static_assert(!cuda::std::is_nothrow_copy_constructible<ThrowingCopyConstructor>::value, "");
 
 struct ThrowingMoveConstructor
@@ -160,7 +177,85 @@ struct ThrowingMoveConstructor
     return lhs.val_ < rhs.val_;
   }
 };
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingMoveConstructor>::value, "");
+static_assert(!cuda::std::is_trivially_move_constructible<ThrowingMoveConstructor>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingMoveConstructor>::value, "");
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingMoveConstructor>::value, "");
 static_assert(!cuda::std::is_nothrow_move_constructible<ThrowingMoveConstructor>::value, "");
+
+struct ThrowingCopyAssignment
+{
+  int val_;
+
+  __host__ __device__ ThrowingCopyAssignment() noexcept
+      : val_(0)
+  {}
+  __host__ __device__ ThrowingCopyAssignment(const int val) noexcept
+      : val_(val)
+  {}
+
+  ThrowingCopyAssignment(const ThrowingCopyAssignment&) = default;
+  ThrowingCopyAssignment(ThrowingCopyAssignment&&)      = default;
+  __host__ __device__ ThrowingCopyAssignment& operator=(const ThrowingCopyAssignment& other) noexcept(false)
+  {
+    val_ = other.val_;
+    return *this;
+  }
+  ThrowingCopyAssignment& operator=(ThrowingCopyAssignment&&) = default;
+
+  __host__ __device__ friend bool
+  operator==(const ThrowingCopyAssignment& lhs, const ThrowingCopyAssignment& rhs) noexcept
+  {
+    return lhs.val_ == rhs.val_;
+  }
+  __host__ __device__ friend bool
+  operator<(const ThrowingCopyAssignment& lhs, const ThrowingCopyAssignment& rhs) noexcept
+  {
+    return lhs.val_ < rhs.val_;
+  }
+};
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingCopyAssignment>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingCopyAssignment>::value, "");
+static_assert(!cuda::std::is_trivially_copy_assignable<ThrowingCopyAssignment>::value, "");
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingCopyAssignment>::value, "");
+static_assert(!cuda::std::is_nothrow_copy_assignable<ThrowingCopyAssignment>::value, "");
+
+struct ThrowingMoveAssignment
+{
+  int val_;
+
+  __host__ __device__ ThrowingMoveAssignment() noexcept
+      : val_(0)
+  {}
+  __host__ __device__ ThrowingMoveAssignment(const int val) noexcept
+      : val_(val)
+  {}
+
+  ThrowingMoveAssignment(ThrowingMoveAssignment&&)                 = default;
+  ThrowingMoveAssignment(const ThrowingMoveAssignment&)            = default;
+  ThrowingMoveAssignment& operator=(const ThrowingMoveAssignment&) = default;
+  __host__ __device__ ThrowingMoveAssignment& operator=(ThrowingMoveAssignment&& other) noexcept(false)
+  {
+    val_ = other.val_;
+    return *this;
+  }
+
+  __host__ __device__ friend bool
+  operator==(const ThrowingMoveAssignment& lhs, const ThrowingMoveAssignment& rhs) noexcept
+  {
+    return lhs.val_ == rhs.val_;
+  }
+  __host__ __device__ friend bool
+  operator<(const ThrowingMoveAssignment& lhs, const ThrowingMoveAssignment& rhs) noexcept
+  {
+    return lhs.val_ < rhs.val_;
+  }
+};
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingMoveAssignment>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingMoveAssignment>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingMoveAssignment>::value, "");
+static_assert(!cuda::std::is_trivially_move_assignable<ThrowingMoveAssignment>::value, "");
+static_assert(!cuda::std::is_nothrow_move_assignable<ThrowingMoveAssignment>::value, "");
 
 struct ThrowingSwap
 {
