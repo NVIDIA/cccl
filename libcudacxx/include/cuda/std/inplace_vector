@@ -1043,33 +1043,33 @@ public:
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   // [containers.sequences.inplace.vector.access], element access
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference at(const size_type __count)
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference at(const size_type __pos)
   {
-    if (this->size() < __count)
+    if (this->size() < __pos)
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
-    return *(this->begin() + __count);
+    return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference at(const size_type __count) const
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference at(const size_type __pos) const
   {
-    if (this->size() < __count)
+    if (this->size() < __pos)
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
-    return *(this->begin() + __count);
+    return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](const size_type __count) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](const size_type __pos) noexcept
   {
-    return *(this->begin() + __count);
+    return *(this->begin() + __pos);
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference
-  operator[](const size_type __count) const noexcept
+  operator[](const size_type __pos) const noexcept
   {
-    return *(this->begin() + __count);
+    return *(this->begin() + __pos);
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference front() noexcept
