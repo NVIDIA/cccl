@@ -11,6 +11,44 @@
 #ifndef _CUDAX_EVENT_DETAIL_H
 #define _CUDAX_EVENT_DETAIL_H
 
+/*
+    event synopsis
+namespace cuda::experimental {
+class event : public event_ref {
+public:
+    enum class flags : unsigned int { none, blocking_sync, interprocess };
+
+    event();
+    event(flags);
+    event(uninit_t) noexcept;
+    event(event&&) noexcept;
+    ~event();
+
+    [[nodiscard]] static event from_native_handle(cudaEvent_t) noexcept;
+    static event from_native_handle(int) = delete;
+    static event from_native_handle(nullptr_t) = delete;
+
+    [[nodiscard]] cudaEvent_t release() noexcept;
+
+    [[nodiscard]] friend flags operator|(flags, flags) noexcept;
+
+    // From event_ref:
+    using value_type = cudaEvent_t;
+
+    void record(stream_ref) const;
+
+    void wait(stream_ref) const;
+
+    [[nodiscard]] cudaEvent_t get() const noexcept;
+
+    [[nodiscard]] explicit operator bool() const noexcept;
+
+    [[nodiscard]] friend bool operator==(event_ref, event_ref);
+    [[nodiscard]] friend bool operator!=(event_ref, event_ref);
+};
+}  // cuda::experimenal
+*/
+
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
@@ -88,6 +126,17 @@ public:
     {
       [[maybe_unused]] auto __status = ::cudaEventDestroy(__event_);
     }
+  }
+
+  //! @brief Move-assign an `event` object
+  //!
+  //! @param __other
+  //!
+  //! @post `__other` is in a moved-from state.
+  constexpr event& operator=(event&& __other) noexcept
+  {
+    __event_ = _CUDA_VSTD::exchange(__other.__event_, {});
+    return *this;
   }
 
   //! @brief Construct an `event` object from a native `cudaEvent_t` handle.
