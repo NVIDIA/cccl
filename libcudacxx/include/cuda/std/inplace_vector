@@ -297,12 +297,12 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   }
 
   // [containers.sequences.inplace.vector.data], data access
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* data() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _Tp* data() noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp* data() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY const _Tp* data() const noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_));
   }
