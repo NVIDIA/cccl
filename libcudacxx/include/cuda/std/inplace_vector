@@ -871,8 +871,8 @@ public:
       return;
     }
 
-    const pointer __begin = this->begin();
-    const iterator __end  = this->end();
+    const iterator __begin = this->begin();
+    const iterator __end   = this->end();
     if (__count < this->size())
     {
       _CUDA_VSTD::fill(__begin, __begin + __count, __value);
@@ -1188,7 +1188,7 @@ public:
       return __pos;
     }
 
-    const pointer __middle = __pos + __count;
+    const iterator __middle = __pos + __count;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
       this->__uninitialized_fill(__end, __middle, __value);
@@ -1249,8 +1249,8 @@ public:
       return __pos;
     }
 
-    const pointer __middle = __pos + __count;
-    const auto __to_copy   = __end - __pos;
+    const iterator __middle = __pos + __count;
+    const auto __to_copy    = __end - __pos;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
       _Iter __imiddle = _CUDA_VSTD::next(__first, __to_copy);
@@ -1293,8 +1293,8 @@ public:
       return __pos;
     }
 
-    const pointer __middle = __pos + __count;
-    const auto __to_copy   = __end - __pos;
+    const iterator __middle = __pos + __count;
+    const auto __to_copy    = __end - __pos;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
       auto __imiddel = __ilist.begin() + __to_copy;
@@ -1760,7 +1760,7 @@ public:
     {
       return 0;
     }
-    const pointer __old_end  = __cont.end();
+    const iterator __old_end = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove(__cont.begin(), __old_end, __value);
     __cont.__destroy(__new_end, __old_end);
     return static_cast<size_type>(__old_end - __new_end);
@@ -1774,7 +1774,7 @@ public:
     {
       return 0;
     }
-    const pointer __old_end  = __cont.end();
+    const iterator __old_end = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove_if(__cont.begin(), __old_end, _CUDA_VSTD::move(__pred));
     __cont.__destroy(__new_end, __old_end);
     return static_cast<size_type>(__old_end - __new_end);
