@@ -43,6 +43,7 @@
 #  include <cuda/std/__memory/uninitialized_algorithms.h>
 #  include <cuda/std/__new/bad_alloc.h>
 #  include <cuda/std/__new/launder.h>
+#  include <cuda/std/__ranges/access.h>
 #  include <cuda/std/__ranges/concepts.h>
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__type_traits/conditional.h>
@@ -79,12 +80,12 @@ _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_
 {
   if constexpr (_CUDA_VRANGES::common_range<_Range>)
   {
-    return __range.end();
+    return _CUDA_VRANGES::end(__range);
   }
   else
   {
-    auto __ret = __range.begin();
-    _CUDA_VRANGES::advance(__ret, __range.end());
+    auto __ret = _CUDA_VRANGES::begin(__range);
+    _CUDA_VRANGES::advance(__ret, _CUDA_VRANGES::end(__range));
     return __ret;
   }
   _LIBCUDACXX_UNREACHABLE();
@@ -828,8 +829,8 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
       : __base()
   {
-    auto __first = __range.begin();
-    auto __last  = __range.end();
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
     for (; __first != __last; ++__first)
     {
       emplace_back(_CUDA_VRANGES::iter_move(__first));
@@ -850,7 +851,7 @@ public:
         _CUDA_VSTD::__throw_bad_alloc();
       }
 
-      this->__uninitialized_move(__range.begin(), __unwrap_end(__range), this->begin());
+      this->__uninitialized_move(_CUDA_VRANGES::begin(__range), __unwrap_end(__range), this->begin());
     }
   }
 
@@ -860,7 +861,8 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
       : __base()
   {
-    const auto __count = static_cast<size_t>(_CUDA_VRANGES::distance(__range.begin(), __range.end()));
+    const auto __count =
+      static_cast<size_t>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range)));
     if (__count > 0)
     {
       if (_Capacity < __count)
@@ -868,7 +870,7 @@ public:
         _CUDA_VSTD::__throw_bad_alloc();
       }
 
-      this->__uninitialized_move(__range.begin(), __unwrap_end(__range), this->begin());
+      this->__uninitialized_move(_CUDA_VRANGES::begin(__range), __unwrap_end(__range), this->begin());
     }
   }
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -1001,8 +1003,8 @@ public:
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign_range(_Range&& __range)
   {
-    auto __first      = __range.begin();
-    const auto __last = __range.end();
+    auto __first      = _CUDA_VRANGES::begin(__range);
+    const auto __last = _CUDA_VRANGES::end(__range);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
       _LIBCUDACXX_ASSERT(__first == __last, "Cannot assign to inplace_vector with zero capacity ");
@@ -1038,7 +1040,7 @@ public:
       return;
     }
 
-    const auto __first = __range.begin();
+    const auto __first = _CUDA_VRANGES::begin(__range);
     const auto __last  = __unwrap_end(__range);
     if (static_cast<size_type>(__size) < this->size())
     {
@@ -1058,7 +1060,7 @@ public:
                          _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign_range(_Range&& __range)
   {
-    const auto __first = __range.begin();
+    const auto __first = _CUDA_VRANGES::begin(__range);
     const auto __last  = __unwrap_end(__range);
     const auto __size  = _CUDA_VRANGES::distance(__first, __last);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
@@ -1358,8 +1360,8 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
-    auto __first = __range.begin();
-    auto __last  = __range.end();
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
       if (__first != __last)
@@ -1385,10 +1387,10 @@ public:
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
-    auto __first = __range.begin();
+    auto __first = _CUDA_VRANGES::begin(__range);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      if (__first != __range.end())
+      if (__first != _CUDA_VRANGES::end(__range))
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
@@ -1403,8 +1405,8 @@ public:
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void append_range(_Range&& __range)
   {
-    auto __first = __range.begin();
-    auto __last  = __range.end();
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
     for (; __first != __last; ++__first)
     {
       emplace_back(*__first);
@@ -1416,10 +1418,10 @@ public:
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void append_range(_Range&& __range)
   {
-    auto __first = __range.begin();
+    auto __first = _CUDA_VRANGES::begin(__range);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      if (__first != __range.end())
+      if (__first != _CUDA_VRANGES::end(__range))
       {
         _CUDA_VSTD::__throw_bad_alloc();
       }
@@ -1531,8 +1533,8 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
-    auto __first = __range.begin();
-    auto __last  = __range.end();
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
     for (; this->size() != _Capacity && __first != __last; ++__first)
     {
       emplace_back(*__first);
@@ -1548,14 +1550,14 @@ public:
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      return __range.begin();
+      return _CUDA_VRANGES::begin(__range);
     }
 
     const auto __capacity = _Capacity - this->size();
     const auto __size     = _CUDA_VRANGES::size(__range);
     const auto __diff     = __size < __capacity ? __size : __capacity;
 
-    auto __first  = __range.begin();
+    auto __first  = _CUDA_VRANGES::begin(__range);
     auto __middle = _CUDA_VRANGES::next(__first, __diff);
     this->__uninitialized_move(__first, __middle, this->end());
     return __middle;
@@ -1569,11 +1571,11 @@ public:
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      return __range.begin();
+      return _CUDA_VRANGES::begin(__range);
     }
 
     const auto __capacity  = static_cast<ptrdiff_t>(_Capacity - this->size());
-    auto __first           = __range.begin();
+    auto __first           = _CUDA_VRANGES::begin(__range);
     const auto __size      = static_cast<ptrdiff_t>(_CUDA_VRANGES::distance(__first, __unwrap_end(__range)));
     const ptrdiff_t __diff = __size < __capacity ? __size : __capacity;
 
