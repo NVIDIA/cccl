@@ -1561,7 +1561,7 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void pop_back() noexcept
   {
     const auto __end = this->end();
-    this->__destroy(__end, __end + 1);
+    this->__destroy(__end - 1, __end);
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator
