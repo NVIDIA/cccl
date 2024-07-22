@@ -87,7 +87,9 @@ CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
     result_keys.begin(),
     result_values.begin());
 
-  CHECK(result_keys == thrust::host_vector<int>{0, 0, 2, 3, 3, 4, 5});
-  CHECK(result_values == thrust::host_vector<char>{'a', 'A', 'b', 'B', 'C', 'D', 'c'});
+  thrust::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  thrust::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs
+  CHECK(result_keys == expected_keys);
+  CHECK(result_values == expected_values);
 }

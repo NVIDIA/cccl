@@ -64,6 +64,11 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   Offset* merge_partitions,
   CompareOp compare_op)
 {
+  static_assert(
+    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, value_t<KeyIt1>, value_t<KeyIt1>>::type,
+                                bool>::value,
+    "Comparison operator must be convertible to bool");
+
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
@@ -116,6 +121,11 @@ __launch_bounds__(
     Offset* merge_partitions,
     vsmem_t global_temp_storage)
 {
+  static_assert(
+    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, value_t<KeyIt1>, value_t<KeyIt1>>::type,
+                                bool>::value,
+    "Comparison operator must be convertible to bool");
+
   using MergeAgent = typename choose_merge_agent<
     typename MaxPolicy::ActivePolicy::merge_policy,
     KeyIt1,
@@ -152,7 +162,6 @@ struct device_merge_policy_hub
 {
   static constexpr bool has_values = !::cuda::std::is_same<ValueT, NullType>::value;
 
-  // TODO(bgruber): is this correct?
   using tune_type = char[has_values ? sizeof(KeyT) + sizeof(ValueT) : sizeof(KeyT)];
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
@@ -217,9 +226,6 @@ struct dispatch_t
   static_assert(::cuda::std::is_same<cub::detail::value_t<ValueIt2>, value_t>::value, "");
   static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
                 "Comparison operator cannot compare two keys");
-  static_assert(
-    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>::value,
-    "Comparison operator must be convertible to bool");
 
   void* d_temp_storage;
   std::size_t& temp_storage_bytes;
@@ -271,27 +277,31 @@ struct dispatch_t
       const int partition_grid_size =
         static_cast<int>(cub::DivideAndRoundUp(num_partitions, threads_per_partition_block));
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        partition_grid_size, threads_per_partition_block, 0, stream)
-        .doit(
-          device_partition_merge_path_kernel<
-            max_policy_t,
-            KeyIt1,
-            ValueIt1,
-            KeyIt2,
-            ValueIt2,
-            KeyIt3,
-            ValueIt3,
-            Offset,
-            CompareOp>,
-          d_keys1,
-          num_items1,
-          d_keys2,
-          num_items2,
-          num_partitions,
-          merge_partitions,
-          compare_op);
-      const auto error = CubDebug(DebugSyncStream(stream));
+      auto error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+          partition_grid_size, threads_per_partition_block, 0, stream)
+          .doit(device_partition_merge_path_kernel<
+                  max_policy_t,
+                  KeyIt1,
+                  ValueIt1,
+                  KeyIt2,
+                  ValueIt2,
+                  KeyIt3,
+                  ValueIt3,
+                  Offset,
+                  CompareOp>,
+                d_keys1,
+                num_items1,
+                d_keys2,
+                num_items2,
+                num_partitions,
+                merge_partitions,
+                compare_op));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+      error = CubDebug(DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -302,22 +312,27 @@ struct dispatch_t
     if (num_tiles > 0)
     {
       auto vshmem_ptr = vsmem_t{allocations[1]};
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
-        .doit(
-          device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
-          d_keys1,
-          d_values1,
-          num_items1,
-          d_keys2,
-          d_values2,
-          num_items2,
-          d_keys_out,
-          d_values_out,
-          compare_op,
-          merge_partitions,
-          vshmem_ptr);
-      const auto error = CubDebug(DebugSyncStream(stream));
+      auto error      = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+          static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
+          .doit(
+            device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
+            d_keys1,
+            d_values1,
+            num_items1,
+            d_keys2,
+            d_values2,
+            num_items2,
+            d_keys_out,
+            d_values_out,
+            compare_op,
+            merge_partitions,
+            vshmem_ptr));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+      error = CubDebug(DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
