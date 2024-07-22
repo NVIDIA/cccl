@@ -157,6 +157,8 @@ struct __inplace_vector_destruct_base
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
   __inplace_vector_destruct_base() = default;
 
+  // default copy ctor would copy bytes, which is wrong. so we value-init the buffer and handle element copying in the
+  // derived classes
   _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base(const __inplace_vector_destruct_base& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
       : __elems_()
