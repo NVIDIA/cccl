@@ -55,6 +55,11 @@
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__type_traits/is_swappable.h>
 #  include <cuda/std/__type_traits/is_trivial.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_trivially_destructible.h>
+#  include <cuda/std/__type_traits/is_trivially_move_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstdint>
@@ -98,7 +103,6 @@ enum class __inplace_vector_specialization
 {
   __empty,
   __trivial,
-  __trivial_destructible,
   __default,
 };
 
@@ -113,10 +117,6 @@ __select_inplace_vector_specialization()
   else if (_CCCL_TRAIT(is_trivial, _Tp))
   {
     return __inplace_vector_specialization::__trivial;
-  }
-  else if (_CCCL_TRAIT(is_trivially_destructible, _Tp))
-  {
-    return __inplace_vector_specialization::__trivial_destructible;
   }
   else
   {
@@ -145,7 +145,7 @@ struct _Rollback_change_size
   }
 };
 
-template <class _Tp, size_t _Capacity, __inplace_vector_specialization>
+template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_destructible, _Tp)>
 struct __inplace_vector_destruct_base
 {
   using size_type   = size_t;
@@ -156,30 +156,6 @@ struct __inplace_vector_destruct_base
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
   __inplace_vector_destruct_base() = default;
-
-  // default copy ctor would copy bytes, which is wrong. so we value-init the buffer and handle element copying in the
-  // derived classes
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base(const __inplace_vector_destruct_base& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-      : __elems_()
-      , __size_(__other.size())
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base(__inplace_vector_destruct_base&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
-      : __elems_()
-      , __size_(__other.size())
-  {}
-
-  // Everything is done in __inplace_vector_base
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base&
-  operator=(const __inplace_vector_destruct_base&) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base& operator=(__inplace_vector_destruct_base&&) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
-  {}
-
   _LIBCUDACXX_INLINE_VISIBILITY ~__inplace_vector_destruct_base() noexcept
   {
     _Tp* __begin = _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(__elems_));
@@ -188,7 +164,7 @@ struct __inplace_vector_destruct_base
 };
 
 template <class _Tp, size_t _Capacity>
-struct __inplace_vector_destruct_base<_Tp, _Capacity, __inplace_vector_specialization::__trivial_destructible>
+struct __inplace_vector_destruct_base<_Tp, _Capacity, true>
 {
   using size_type   = size_t;
   using __size_type = __inplace_vector_size_type<_Capacity>;
@@ -198,34 +174,10 @@ struct __inplace_vector_destruct_base<_Tp, _Capacity, __inplace_vector_specializ
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
   constexpr __inplace_vector_destruct_base() = default;
-
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base(const __inplace_vector_destruct_base& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-      : __elems_()
-      , __size_(__other.size())
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base(__inplace_vector_destruct_base&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
-      : __elems_()
-      , __size_(__other.size())
-  {}
-
-  // Everything is done in __inplace_vector_base
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base&
-  operator=(const __inplace_vector_destruct_base&) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_destruct_base& operator=(__inplace_vector_destruct_base&&) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
-  {}
 };
 
-// Specialization for non-trivial types. Nothing in here can be constexpr
-template <class _Tp,
-          size_t _Capacity,
-          __inplace_vector_specialization _Spec = __select_inplace_vector_specialization<_Tp, _Capacity>()>
-struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_storage : public __inplace_vector_destruct_base<_Tp, _Capacity>
 {
   using size_type      = size_t;
   using __size_type    = __inplace_vector_size_type<_Capacity>;
@@ -233,57 +185,7 @@ struct __inplace_vector_base : __inplace_vector_destruct_base<_Tp, _Capacity, _S
   using iterator       = _Tp*;
   using const_iterator = const _Tp*;
 
-  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  constexpr __inplace_vector_base() = default;
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __inplace_vector_base(const __inplace_vector_base& __other) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>()
-  {
-    __uninitialized_copy(__other.begin(), __other.end(), begin());
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __inplace_vector_base(__inplace_vector_base&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
-      : __inplace_vector_destruct_base<_Tp, _Capacity, _Spec>()
-  {
-    __uninitialized_move(__other.begin(), __other.end(), begin());
-    __other.__destroy(__other.begin(), __other.end());
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_base& operator=(const __inplace_vector_base& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
-  {
-    if (__other.size() < size())
-    {
-      const auto __new_end = _CUDA_VSTD::copy(__other.begin(), __other.end(), begin());
-      __destroy(__new_end, end());
-    }
-    else
-    {
-      _CUDA_VSTD::copy(__other.begin(), __other.begin() + size(), begin());
-      __uninitialized_copy(__other.begin() + size(), __other.end(), end());
-    }
-    return *this;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_base& operator=(__inplace_vector_base&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
-  {
-    if (__other.size() < size())
-    {
-      const auto __new_end = _CUDA_VSTD::move(__other.begin(), __other.end(), begin());
-      __destroy(__new_end, end());
-    }
-    else
-    {
-      _CUDA_VSTD::move(__other.begin(), __other.begin() + size(), begin());
-      __uninitialized_move(__other.begin() + size(), __other.end(), end());
-    }
-
-    // Need to reset the other container
-    __other.__destroy(__other.begin(), __other.end());
-
-    return *this;
-  }
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_storage, __inplace_vector_destruct_base, _Tp, _Capacity);
 
   // [containers.sequences.inplace.vector.members] size/capacity
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
@@ -362,7 +264,7 @@ protected:
   _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_value_construct(iterator __first, iterator __last)
   {
     iterator __idx = __first;
-    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __first, __idx});
+    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __first, __idx});
     for (; __idx != __last; ++__idx)
     {
       ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
@@ -388,7 +290,7 @@ protected:
   _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
   {
     iterator __idx = __first;
-    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __first, __idx});
+    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __first, __idx});
     for (; __idx != __last; ++__idx)
     {
       ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
@@ -414,7 +316,7 @@ protected:
   _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __dest, __curr});
+    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
@@ -444,7 +346,7 @@ protected:
   _LIBCUDACXX_INLINE_VISIBILITY void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_base>{this, __dest, __curr});
+    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -456,6 +358,157 @@ protected:
     __guard.__complete();
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
+};
+
+// * If is_trivially_copy_constructible_v<T> is true, then IV has a trivial copy constructor.
+template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)>
+struct __inplace_vector_copy : __inplace_vector_storage<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  __inplace_vector_copy(const __inplace_vector_copy& __other) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+      : __base()
+  {
+    this->__uninitialized_copy(__other.begin(), __other.end(), this->begin());
+  }
+
+  __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
+  __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
+  __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_copy<_Tp, _Capacity, true> : __inplace_vector_storage<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
+
+  __inplace_vector_copy(const __inplace_vector_copy&)            = default;
+  __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
+  __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
+  __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
+};
+
+// * If is_trivially_move_constructible_v<T> is true, then IV has a trivial move constructor.
+template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_move_constructible, _Tp)>
+struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
+
+  __inplace_vector_move(const __inplace_vector_move&) = default;
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  __inplace_vector_move(__inplace_vector_move&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+      : __base()
+  {
+    this->__uninitialized_move(__other.begin(), __other.end(), this->begin());
+  }
+
+  __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
+  __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_move<_Tp, _Capacity, true> : __inplace_vector_copy<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
+
+  __inplace_vector_move(const __inplace_vector_move&)            = default;
+  __inplace_vector_move(__inplace_vector_move&&)                 = default;
+  __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
+  __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
+};
+
+// * if is_trivially_copy_constructible_v<T> && is_trivially_copy_assignable_v<T> is true, then IV has a trivial copy
+// assignment operator
+template <class _Tp,
+          size_t _Capacity,
+          bool = _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)>
+struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
+
+  __inplace_vector_copy_assign(const __inplace_vector_copy_assign&) = default;
+  __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)      = default;
+
+  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_copy_assign&
+  operator=(const __inplace_vector_copy_assign& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
+  {
+    if (__other.size() < this->size())
+    {
+      const auto __new_end = _CUDA_VSTD::copy(__other.begin(), __other.end(), this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _CUDA_VSTD::copy(__other.begin(), __other.begin() + this->size(), this->begin());
+      this->__uninitialized_copy(__other.begin() + this->size(), __other.end(), this->end());
+    }
+    return *this;
+  }
+  __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&) = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_copy_assign<_Tp, _Capacity, true> : __inplace_vector_move<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
+
+  __inplace_vector_copy_assign(const __inplace_vector_copy_assign&)            = default;
+  __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)                 = default;
+  __inplace_vector_copy_assign& operator=(const __inplace_vector_copy_assign&) = default;
+  __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&)      = default;
+};
+
+// * if is_trivially_move_constructible_v<T> && is_trivially_move_assignable_v<T> is true, then IV has a trivial move
+// assignment operator
+template <class _Tp,
+          size_t _Capacity,
+          bool = _CCCL_TRAIT(is_trivially_move_constructible, _Tp) && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)>
+struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
+
+  __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
+  __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
+  __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
+
+  _LIBCUDACXX_INLINE_VISIBILITY __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  {
+    if (__other.size() < this->size())
+    {
+      const auto __new_end = _CUDA_VSTD::move(__other.begin(), __other.end(), this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _CUDA_VSTD::move(__other.begin(), __other.begin() + this->size(), this->begin());
+      this->__uninitialized_move(__other.begin() + this->size(), __other.end(), this->end());
+    }
+    return *this;
+  }
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_move_assign<_Tp, _Capacity, true> : __inplace_vector_copy_assign<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
+
+  __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
+  __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
+  __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
+  __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&&)      = default;
+};
+
+// Specialization for non-trivial types. Nothing in here can be constexpr
+template <class _Tp,
+          size_t _Capacity,
+          __inplace_vector_specialization _Spec = __select_inplace_vector_specialization<_Tp, _Capacity>()>
+struct __inplace_vector_base : __inplace_vector_move_assign<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_base, __inplace_vector_move_assign, _Tp, _Capacity);
 };
 
 template <class _Tp, size_t _Capacity>
@@ -473,23 +526,9 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
   constexpr __inplace_vector_base()                                        = default;
   constexpr __inplace_vector_base(const __inplace_vector_base&)            = default;
+  constexpr __inplace_vector_base(__inplace_vector_base&&)                 = default;
   constexpr __inplace_vector_base& operator=(const __inplace_vector_base&) = default;
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __inplace_vector_base(__inplace_vector_base&& __other) noexcept
-      : __elems_()
-      , __size_(__other.__size_)
-  {
-    _CUDA_VSTD::copy(__other.__elems_, __other.__elems_ + __other.__size_, __elems_);
-    __other.__size_ = 0;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __inplace_vector_base& operator=(__inplace_vector_base&& __other) noexcept
-  {
-    _CUDA_VSTD::copy(__other.__elems_, __other.__elems_ + __other.__size_, __elems_);
-    __size_         = __other.__size_;
-    __other.__size_ = 0;
-    return *this;
-  }
+  constexpr __inplace_vector_base& operator=(__inplace_vector_base&&)      = default;
 
   // [containers.sequences.inplace.vector.members] size/capacity
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept

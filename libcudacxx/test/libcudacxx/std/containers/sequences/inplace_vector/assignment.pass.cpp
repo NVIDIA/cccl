@@ -29,8 +29,8 @@ __host__ __device__ constexpr void test_copy()
   // Zero capacity inplace_vector is nothrow_copy_assignable
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 42>>::value
-                    == cuda::std::is_nothrow_copy_constructible<T>::value
-                  && cuda::std::is_nothrow_copy_assignable<T>::value,
+                  == cuda::std::conjunction<cuda::std::is_nothrow_copy_constructible<T>,
+                                            cuda::std::is_nothrow_copy_assignable<T>>::value,
                 "");
 
   { // inplace_vector<T, 0> can be copy assigned
@@ -86,8 +86,8 @@ __host__ __device__ constexpr void test_move()
   // Zero capacity inplace_vector is nothrow_move_assignable
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 42>>::value
-                    == cuda::std::is_nothrow_move_constructible<T>::value
-                  && cuda::std::is_nothrow_move_assignable<T>::value,
+                  == cuda::std::conjunction<cuda::std::is_nothrow_move_constructible<T>,
+                                            cuda::std::is_nothrow_move_assignable<T>>::value,
                 "");
 
   { // inplace_vector<T, 0> can be move assigned
@@ -116,30 +116,30 @@ __host__ __device__ constexpr void test_move()
   }
 
   const cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
-  { // inplace_vector<T, N> can be move assigned a non-empty input, growing from empty. clears input
+  { // inplace_vector<T, N> can be move assigned a non-empty input, growing from empty
     inplace_vector input{T(1), T(42), T(1337), T(0)};
     inplace_vector vec{};
     vec = cuda::std::move(input);
     assert(!vec.empty());
-    assert(input.empty());
+    assert(input.size() == 4);
     assert(equal_range(vec, expected));
   }
 
-  { // inplace_vector<T, N> can be move assigned a non-empty input, shrinking. clears input
+  { // inplace_vector<T, N> can be move assigned a non-empty input, shrinking
     inplace_vector input{T(1), T(42), T(1337), T(0)};
     inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
     vec = cuda::std::move(input);
     assert(!vec.empty());
-    assert(input.empty());
+    assert(input.size() == 4);
     assert(equal_range(vec, expected));
   }
 
-  { // inplace_vector<T, N> can be move assigned a non-empty input, growing. clears input
+  { // inplace_vector<T, N> can be move assigned a non-empty input, growing
     inplace_vector input{T(1), T(42), T(1337), T(0)};
     inplace_vector vec{T(0), T(42)};
     vec = cuda::std::move(input);
     assert(!vec.empty());
-    assert(input.empty());
+    assert(input.size() == 4);
     assert(equal_range(vec, expected));
   }
 }
@@ -209,6 +209,10 @@ __host__ __device__ constexpr bool test()
     test<NonTrivial>();
     test<NonTrivialDestructor>();
     test<ThrowingDefaultConstruct>();
+    test<ThrowingCopyConstructor>();
+    test<ThrowingMoveConstructor>();
+    test<ThrowingCopyAssignment>();
+    test<ThrowingMoveAssignment>();
   }
 
   return true;

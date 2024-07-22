@@ -91,11 +91,11 @@ __host__ __device__ constexpr void test_copy_move()
     assert(equal_range(vec, input));
   }
 
-  { // inplace_vector<T, N> can be move constructed from non-empty input, clears input
+  { // inplace_vector<T, N> can be move constructed from non-empty input
     inplace_vector input{T(1), T(42), T(1337), T(0)};
     inplace_vector vec(cuda::std::move(input));
     assert(!vec.empty());
-    assert(input.empty());
+    assert(input.size() == 4);
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
 }
@@ -304,6 +304,8 @@ __host__ __device__ constexpr bool test()
   test<ThrowingDefaultConstruct>();
   test<ThrowingCopyConstructor>();
   test<ThrowingMoveConstructor>();
+  test<ThrowingCopyAssignment>();
+  test<ThrowingMoveAssignment>();
 
   // Due to reinterpret_cast within the destructor a on trivially destructible type cannot be constexpr at all
   if (!cuda::std::__libcpp_is_constant_evaluated())
