@@ -303,7 +303,7 @@ private:
 public:
   //! @brief Constructs a \c basic_resource_ref from a type that satisfies the \c resource or \c async_resource concept
   //! as well as all properties
-  //! @param res The resource to be wrapped within the \c basic_resource_ref
+  //! @param __res The resource to be wrapped within the \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
@@ -314,7 +314,7 @@ public:
 
   //! @brief Constructs a \c resource_ref from a type that satisfies the \c async_resource concept  as well as all
   //! properties. This ignores the async interface of the passed in resource
-  //! @param res The resource to be wrapped within the \c resource_ref
+  //! @param __res The resource to be wrapped within the \c resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
@@ -325,7 +325,7 @@ public:
 
   //! @brief Constructs a \c basic_resource_ref from a type that satisfies the \c resource or \c async_resource concept
   //! as well as all properties
-  //! @param res Pointer to a resource to be wrapped within the \c basic_resource_ref
+  //! @param __res Pointer to a resource to be wrapped within the \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
@@ -336,7 +336,7 @@ public:
 
   //! @brief Constructs a \c resource_ref from a type that satisfies the \c async_resource concept  as well as all
   //! properties. This ignores the async interface of the passed in resource
-  //! @param res Pointer to a resource to be wrapped within the \c resource_ref
+  //! @param __res Pointer to a resource to be wrapped within the \c resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
@@ -346,7 +346,7 @@ public:
   {}
 
   //! @brief Conversion from a \c basic_resource_ref with the same set of properties but in a different order
-  //! @param ref The other \c basic_resource_ref
+  //! @param __ref The other \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
   basic_resource_ref(basic_resource_ref<_Alloc_type, _OtherProperties...> __ref) noexcept
@@ -356,7 +356,7 @@ public:
 
   //! @brief Conversion from a \c async_resource_ref with the same set of properties but in a different order to a
   //! \c resource_ref
-  //! @param ref The other \c async_resource_ref
+  //! @param __ref The other \c async_resource_ref
   _LIBCUDACXX_TEMPLATE(_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((_OtherAllocType == _AllocType::_Async) _LIBCUDACXX_AND(_OtherAllocType != _Alloc_type)
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
@@ -366,7 +366,7 @@ public:
   {}
 
   //! @brief Equality comparison between two \c basic_resource_ref
-  //! @param rhs The other \c basic_resource_ref
+  //! @param __rhs The other \c basic_resource_ref
   //!
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! that equality comparison. Otherwise returns false.
@@ -380,7 +380,7 @@ public:
   }
 
   //! @brief Inequality comparison between two \c basic_resource_ref
-  //! @param rhs The other \c basic_resource_ref
+  //! @param __rhs The other \c basic_resource_ref
   //!
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! that inverse of the equality comparison. Otherwise returns true.
