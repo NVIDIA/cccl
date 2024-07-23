@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
       - name: Build workflow
         id: build-workflow
-        uses: ./.github/actions/workflow-build
+        uses: NVIDIA/cccl-gha/.github/actions/workflow-build@v1
         with:
           workflows: nightly
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
@@ -62,7 +62,7 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
+    uses: NVIDIA/cccl-gha/.github/workflows/workflow-dispatch-two-stage-group-linux.yml@v1
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
 
@@ -77,7 +77,7 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    uses: NVIDIA/cccl-gha/.github/workflows/workflow-dispatch-two-stage-group-windows.yml@v1
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
 
@@ -92,7 +92,7 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    uses: NVIDIA/cccl-gha/.github/workflows/workflow-dispatch-standalone-group-linux.yml@v1
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
 
@@ -107,7 +107,7 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    uses: NVIDIA/cccl-gha/.github/workflows/workflow-dispatch-standalone-group-windows.yml@v1
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
 
@@ -131,7 +131,7 @@ jobs:
 
       - name: Check workflow success
         id: check-workflow
-        uses: ./.github/actions/workflow-results
+        uses: NVIDIA/cccl-gha/.github/actions/workflow-results@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
