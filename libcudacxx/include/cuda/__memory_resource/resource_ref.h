@@ -278,7 +278,6 @@ template <_AllocType _Alloc_type, class _Resource>
 _LIBCUDACXX_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
   _Resource_vtable_builder::template _Create<_Resource, _Alloc_type>();
 
-//! @brief Checks whether a passed in type is a specialization of basic_resource_ref
 template <class>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref = false;
 
@@ -367,9 +366,8 @@ public:
 
   //! @brief Equality comparison between two \c basic_resource_ref
   //! @param __rhs The other \c basic_resource_ref
-  //!
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
-  //! that equality comparison. Otherwise returns false.
+  //! the result of that equality comparison. Otherwise returns false.
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
@@ -381,9 +379,8 @@ public:
 
   //! @brief Inequality comparison between two \c basic_resource_ref
   //! @param __rhs The other \c basic_resource_ref
-  //!
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
-  //! that inverse of the equality comparison. Otherwise returns true.
+  //! the inverse result of that equality comparison. Otherwise returns true.
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
@@ -410,12 +407,12 @@ public:
 template <_AllocType _Alloc_type, class... _Properties>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref<basic_resource_ref<_Alloc_type, _Properties...>> = true;
 
-//! @brief Type erased wrapper around a `resource` that satisfies \tparam Properties
+//! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
 //! @tparam _Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
 template <class... _Properties>
 using resource_ref = basic_resource_ref<_AllocType::_Default, _Properties...>;
 
-//! @brief Type erased wrapper around a `async_resource` that satisfies \tparam Properties
+//! @brief Type erased wrapper around a `async_resource` that satisfies \tparam _Properties
 //! @tparam _Properties The properties that any async resource wrapped within the `async_resource_ref` needs to satisfy
 template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;

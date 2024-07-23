@@ -68,15 +68,15 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 //! @brief The \c async_resource concept verifies that a type Resource satisfies the basic requirements of a
 //! memory resource and additionally supports stream ordered allocations
 //! @rst
-//! We require that a async resource supports the following interface
+//! We require that an async resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alginment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alginment)``
+//!   - ``allocate(size_t bytes, size_t alignment)``
+//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!
-//!   - ``allocate_async(size_t bytes, size_t alginment, cuda::strea_ref stream)``
-//!   - ``deallocate_async(void* ptr, size_t bytes, size_t alginment, cuda::strea_ref stream)``
+//!   - ``allocate_async(size_t bytes, size_t alignment, cuda::stream_ref stream)``
+//!   - ``deallocate_async(void* ptr, size_t bytes, size_t alignment, cuda::stream_ref stream)``
 //!
 //! @endrst
 //! @tparam _Resource The type that should implement the async resource concept
