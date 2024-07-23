@@ -42,7 +42,10 @@ function(libcudacxx_add_public_header_test header)
   set(headertest_${header_name} verify_${header_name})
   add_library(headertest_${header_name} SHARED "${headertest_src}.cu")
   target_include_directories(headertest_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
-  target_compile_options(headertest_${header_name} PRIVATE ${headertest_warning_levels_device})
+  target_compile_options(headertest_${header_name}
+                         PRIVATE
+                         ${headertest_warning_levels_device}
+                         -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
   # Ensure that if this is an atomic header, we only include the right architectures
   string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")
