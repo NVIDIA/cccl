@@ -108,3 +108,33 @@ void TestTransformIteratorNonCopyable()
 }
 
 DECLARE_UNITTEST(TestTransformIteratorNonCopyable);
+
+struct foo
+{
+  int x, y;
+};
+
+struct access_x
+{
+  _CCCL_HOST_DEVICE int& operator()(foo& f) const noexcept
+  {
+    return f.x;
+  }
+};
+
+void TestTransformIteratorAsDestination()
+{
+  constexpr auto n = 10;
+  thrust::host_vector<int> src(n, 1234);
+  thrust::host_vector<foo> dst(n, foo{1, 2});
+
+  thrust::copy(src.begin(), src.end(), thrust::make_transform_iterator(dst.begin(), access_x{}));
+
+  for (const auto& f : dst)
+  {
+    ASSERT_EQUAL(f.x, 1234);
+    ASSERT_EQUAL(f.y, 2);
+  }
+}
+
+DECLARE_UNITTEST(TestTransformIteratorAsDestination);

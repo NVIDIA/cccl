@@ -298,8 +298,25 @@ private:
   // See goo.gl/LELTNp
   THRUST_DISABLE_MSVC_WARNING_BEGIN(4172)
 
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  {
+    // TODO(bgruber): I am not sure this is the correct check here. There is also the trait
+    // thrust::detail::is_wrapped_reference that sounds fitting. Only allowing to pass through l-value references
+    // strikes me as more conservative though.
+    // TODO(bgruber): use an if constexpr in C++17
+    return dereference_impl(::cuda::std::is_lvalue_reference<iterator_reference_t<Iterator>>{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
+  typename super_t::reference dereference_impl(::cuda::std::true_type /* iterator returns a T& */) const
+  {
+    return m_f(*this->base());
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
+  typename super_t::reference dereference_impl(::cuda::std::false_type /* iterator returns a proxy ref */) const
   {
     // Create a temporary to allow iterators with wrapped references to
     // convert to their value type before calling m_f. Note that this
