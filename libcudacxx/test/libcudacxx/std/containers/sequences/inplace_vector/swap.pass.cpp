@@ -49,7 +49,9 @@ __host__ __device__ constexpr void test()
     assert(equal_range(right, expected_left));
 
     swap(left, right);
+#if !defined(TEST_COMPILER_MSVC2017)
     static_assert(noexcept(swap(left, right)) == nothrow_swap, "");
+#endif // !TEST_COMPILER_MSVC2017
     assert(equal_range(left, expected_left));
     assert(equal_range(right, expected_right));
   }
