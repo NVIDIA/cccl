@@ -41,7 +41,7 @@ struct wrapped_function
   template <typename... Ts>
   _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(Ts&&... args) const
   {
-    return static_cast<Result>(m_f(thrust::raw_reference_cast(std::forward<Ts>(args))...));
+    return static_cast<Result>(m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...));
   }
 }; // end wrapped_function
 } // namespace detail
