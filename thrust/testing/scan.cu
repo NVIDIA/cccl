@@ -8,6 +8,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 
+#include <cuda/std/array>
+
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -749,3 +751,90 @@ void TestInclusiveScanWithUserDefinedType()
   ASSERT_EQUAL(static_cast<Int>(vec.back()).i, 5);
 }
 DECLARE_UNITTEST(TestInclusiveScanWithUserDefinedType);
+
+// Represents a permutation as a tuple of integers, see also: https://en.wikipedia.org/wiki/Permutation
+// We need a distinct type (instead of an alias) for operator<< to be found via ADL
+struct permutation_t : ::cuda::std::array<int, 5>
+{
+  permutation_t() = default;
+
+  constexpr _CCCL_HOST_DEVICE permutation_t(int a, int b, int c, int d, int e)
+      : ::cuda::std::array<int, 5>{a, b, c, d, e}
+  {}
+
+  friend std::ostream& operator<<(std::ostream& os, const permutation_t& p)
+  {
+    os << '{';
+    for (std::size_t i = 0; i < p.size(); i++)
+    {
+      if (i > 0)
+      {
+        os << ", ";
+      }
+      os << p[i];
+    }
+    return os << '}';
+  }
+};
+
+// Composes two permutations. This operation is associative, but not commutative.
+struct composition_op_t
+{
+  _CCCL_HOST_DEVICE permutation_t operator()(permutation_t lhs, permutation_t rhs) const
+  {
+    permutation_t result;
+    for (std::size_t i = 0; i < lhs.size(); i++)
+    {
+      result[i] = rhs[lhs[i]];
+    }
+    return result;
+  }
+};
+
+void TestInclusiveScanWithNonCommutativeOp()
+{
+  const thrust::device_vector<permutation_t> input = {
+    {3, 2, 0, 1, 4},
+    {2, 4, 0, 1, 3},
+    {3, 2, 1, 4, 0},
+    {4, 3, 1, 0, 2},
+    {0, 3, 2, 4, 1},
+    {3, 2, 1, 0, 4},
+    {3, 4, 1, 2, 0},
+    {4, 2, 1, 0, 3},
+    {4, 0, 1, 3, 2},
+    {0, 2, 3, 1, 4}};
+  thrust::device_vector<permutation_t> output(10);
+  constexpr auto identity = permutation_t{0, 1, 2, 3, 4};
+
+  thrust::inclusive_scan(input.begin(), input.end(), output.begin(), composition_op_t{});
+  ASSERT_EQUAL(
+    output,
+    (thrust::device_vector<permutation_t>{
+      {3, 2, 0, 1, 4},
+      {1, 0, 2, 4, 3},
+      {2, 3, 1, 0, 4},
+      {1, 0, 3, 4, 2},
+      {3, 0, 4, 1, 2},
+      {0, 3, 4, 2, 1},
+      {3, 2, 0, 1, 4},
+      {0, 1, 4, 2, 3},
+      {4, 0, 2, 1, 3},
+      {4, 0, 3, 2, 1}}));
+
+  thrust::exclusive_scan(input.begin(), input.end(), output.begin(), identity, composition_op_t{});
+  ASSERT_EQUAL(
+    output,
+    (thrust::device_vector<permutation_t>{
+      {0, 1, 2, 3, 4},
+      {3, 2, 0, 1, 4},
+      {1, 0, 2, 4, 3},
+      {2, 3, 1, 0, 4},
+      {1, 0, 3, 4, 2},
+      {3, 0, 4, 1, 2},
+      {0, 3, 4, 2, 1},
+      {3, 2, 0, 1, 4},
+      {0, 1, 4, 2, 3},
+      {4, 0, 2, 1, 3}}));
+}
+DECLARE_UNITTEST(TestInclusiveScanWithNonCommutativeOp);
