@@ -476,7 +476,7 @@
       ],
       "filter": {
         "exclude": {
-          "name": "^libcudacxx\\.test\\.lit$"
+          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.diff)$"
         }
       }
     },
@@ -485,7 +485,7 @@
       "configurePreset": "libcudacxx-codegen",
       "filter": {
         "include": {
-          "name": "^libcudacxx\\.test\\.atomics.codegen.*$"
+          "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
         }
       }
     },
