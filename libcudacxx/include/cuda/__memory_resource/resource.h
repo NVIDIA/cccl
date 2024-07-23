@@ -53,7 +53,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 //!   - ``T() != T()``
 //!
 //! @endrst
-//! @tparam Resource The type that should implement the resource concept
+//! @tparam _Resource The type that should implement the resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT resource = _LIBCUDACXX_FRAGMENT(__resource_, _Resource);
 
@@ -79,22 +79,22 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 //!   - ``deallocate_async(void* ptr, size_t bytes, size_t alginment, cuda::strea_ref stream)``
 //!
 //! @endrst
-//! @tparam Resource The type that should implement the async resource concept
+//! @tparam _Resource The type that should implement the async resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_FRAGMENT(__async_resource_, _Resource);
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource` concept and
 //! also satisfies all the provided Properties
-//! @tparam Resource
-//! @tparam Properties
+//! @tparam _Resource
+//! @tparam _Properties
 template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT resource_with =
   resource<_Resource> && _CUDA_VSTD::__all_of<has_property<_Resource, _Properties>...>;
 
 //! @brief The \c async_resource_with concept verifies that a type Resource satisfies the `async_resource`
 //! concept and also satisfies all the provided Properties
-//! @tparam Resource
-//! @tparam Properties
+//! @tparam _Resource
+//! @tparam _Properties
 template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT async_resource_with =
   async_resource<_Resource> && _CUDA_VSTD::__all_of<has_property<_Resource, _Properties>...>;

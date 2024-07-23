@@ -411,12 +411,12 @@ template <_AllocType _Alloc_type, class... _Properties>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref<basic_resource_ref<_Alloc_type, _Properties...>> = true;
 
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam Properties
-//! @tparam Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
+//! @tparam _Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
 template <class... _Properties>
 using resource_ref = basic_resource_ref<_AllocType::_Default, _Properties...>;
 
 //! @brief Type erased wrapper around a `async_resource` that satisfies \tparam Properties
-//! @tparam Properties The properties that any async resource wrapped within the `async_resource_ref` needs to satisfy
+//! @tparam _Properties The properties that any async resource wrapped within the `async_resource_ref` needs to satisfy
 template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
