@@ -668,6 +668,9 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
     return nullptr;
   }
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+
   // [containers.sequences.inplace.vector.modifiers], modifiers
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp& unchecked_emplace_back(_Args&&...) noexcept
@@ -677,6 +680,8 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
     return *begin();
 #  endif // _CCCL_COMPILER_MSVC
   }
+
+  _CCCL_DIAG_POP
 
 protected:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void __destroy(iterator, iterator) noexcept
