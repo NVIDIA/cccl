@@ -1780,9 +1780,10 @@ public:
 #  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
   // [containers.sequences.inplace.vector.erasure]
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase(inplace_vector& __cont, const _Up& __value) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_assignable, typename inplace_vector::value_type)) // MSVC2017 cannot handle _Tp here
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase(inplace_vector& __cont, const _Tp& __value)
+#  if !defined(_CCCL_COMPILER_MSVC_2017)
+    noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+#  endif // !_CCCL_COMPILER_MSVC_2017
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
@@ -1795,8 +1796,10 @@ public:
   }
 
   template <class _Pred>
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase_if(inplace_vector& __cont, _Pred __pred) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_assignable, typename inplace_vector::value_type)) // MSVC2017 cannot handle _Tp here
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase_if(inplace_vector& __cont, _Pred __pred)
+#  if !defined(_CCCL_COMPILER_MSVC_2017)
+    noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+#  endif // !_CCCL_COMPILER_MSVC_2017
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
