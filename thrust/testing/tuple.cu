@@ -624,3 +624,20 @@ static_assert(
 static_assert(
   thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, int, thrust::null_type>>::value == 9, "");
 static_assert(thrust::tuple_size<thrust::tuple<int, int, int, int, int, int, int, int, int, int>>::value == 10, "");
+
+void TestTupleOfIteratorReferenceAssignsFromConst()
+{
+  // tuple of mutable references
+  thrust::device_vector<int> v(10);
+  using devref = decltype(v[0]);
+  auto refs    = thrust::detail::tuple_of_iterator_references<devref>{thrust::tuple<devref>(v[0])};
+
+  // tuple of const references
+  const thrust::device_vector<int> cv(10);
+  using devcref = decltype(cv[0]);
+  auto crefs    = thrust::detail::tuple_of_iterator_references<devcref>{thrust::tuple<devcref>(cv[0])};
+
+  // should compile:
+  refs = crefs;
+}
+DECLARE_UNITTEST(TestTupleOfIteratorReferenceAssignsFromConst);
