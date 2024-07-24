@@ -61,4 +61,5 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   Cudax_add_catch2_test(test_target event_tests ${cn_target}
     event/event_smoke.cu
   )
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 endforeach()

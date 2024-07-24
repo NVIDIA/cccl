@@ -10,39 +10,120 @@
 
 #include <cuda/experimental/event.cuh>
 
+#include "../common/utility.cuh"
 #include "../hierarchy/testing_common.cuh"
 #include <catch2/catch.hpp>
 
 namespace
 {
+namespace test
+{
 cudax::event_ref fn_takes_event_ref(cudax::event_ref ref)
 {
   return ref;
 }
+} // namespace test
 } // namespace
+
+static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::event_ref>);
+static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::event>);
+static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::timed_event>);
 
 TEST_CASE("can construct an event_ref from a cudaEvent_t", "[event]")
 {
-  ::cudaEvent_t event;
-  CUDAX_REQUIRE(::cudaEventCreate(&event) == ::cudaSuccess);
-  cudax::event_ref ref(event);
-  CUDAX_REQUIRE(ref.get() == event);
+  ::cudaEvent_t ev;
+  CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
+  cudax::event_ref ref(ev);
+  CUDAX_REQUIRE(ref.get() == ev);
+  CUDAX_REQUIRE(!!ref);
   // test implicit converstion from cudaEvent_t:
-  cudax::event_ref ref2 = ::fn_takes_event_ref(event);
-  CUDAX_REQUIRE(ref2.get() == event);
-  CUDAX_REQUIRE(::cudaEventDestroy(event) == ::cudaSuccess);
+  cudax::event_ref ref2 = ::test::fn_takes_event_ref(ev);
+  CUDAX_REQUIRE(ref2.get() == ev);
+  CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
+  // test an empty event_ref:
+  cudax::event_ref ref3(::cudaEvent_t{});
+  CUDAX_REQUIRE(ref3.get() == ::cudaEvent_t{});
+  CUDAX_REQUIRE(!ref3);
 }
 
 TEST_CASE("can copy construct an event_ref and compare for equality", "[event]")
 {
-  ::cudaEvent_t event;
-  CUDAX_REQUIRE(::cudaEventCreate(&event) == ::cudaSuccess);
-  const cudax::event_ref ref(event);
+  ::cudaEvent_t ev;
+  CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
+  const cudax::event_ref ref(ev);
   const cudax::event_ref ref2 = ref;
   CUDAX_REQUIRE(ref2 == ref);
   CUDAX_REQUIRE(!(ref != ref2));
   CUDAX_REQUIRE((ref ? true : false)); // test contextual convertibility to bool
   CUDAX_REQUIRE(!!ref);
   CUDAX_REQUIRE(::cudaEvent_t{} != ref);
-  CUDAX_REQUIRE(::cudaEventDestroy(event) == ::cudaSuccess);
+  CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
+  // copy from empty event_ref:
+  const cudax::event_ref ref3(::cudaEvent_t{});
+  const cudax::event_ref ref4 = ref3;
+  CUDAX_REQUIRE(ref4 == ref3);
+  CUDAX_REQUIRE(!(ref3 != ref4));
+  CUDAX_REQUIRE(!ref4);
+}
+
+TEST_CASE("can use event_ref to record and wait on an event", "[event]")
+{
+  ::cudaEvent_t ev;
+  CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
+  const cudax::event_ref ref(ev);
+
+  test::managed<int> i(0);
+  test::stream stream;
+  ::test::invokernel<<<1, 1, 0, stream.get()>>>(
+    [] _CCCL_HOST_DEVICE(int* pi) {
+      *pi = 42;
+    },
+    i.get());
+  ref.record(stream);
+  ref.wait(stream);
+  CUDAX_REQUIRE(*i == 42);
+
+  stream.wait();
+  CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
+}
+
+TEST_CASE("can construct an event with a stream_ref", "[event]")
+{
+  test::stream stream;
+  cudax::event ev(stream.ref());
+  CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
+}
+
+TEST_CASE("can wait on an event", "[event]")
+{
+  test::stream stream;
+  ::test::managed<int> i(0);
+  ::test::invokernel<<<1, 1, 0, stream.get()>>>(
+    [] _CCCL_HOST_DEVICE(int* pi) {
+      *pi = 42;
+    },
+    i.get());
+  cudax::event ev(stream);
+  ev.wait(stream);
+  CUDAX_REQUIRE(*i == 42);
+  stream.wait();
+}
+
+TEST_CASE("can take the difference of two timed_event objects", "[event]")
+{
+  test::stream stream;
+  ::test::managed<int> i(0);
+  cudax::timed_event start(stream);
+  ::test::invokernel<<<1, 1, 0, stream.get()>>>(
+    [] _CCCL_HOST_DEVICE(int* pi) {
+      *pi = 42;
+    },
+    i.get());
+  cudax::timed_event end(stream);
+  end.wait(stream);
+  CUDAX_REQUIRE(*i == 42);
+  auto elapsed = end - start;
+  CUDAX_REQUIRE(elapsed.count() >= 0);
+  STATIC_REQUIRE(_CUDA_VSTD::is_same_v<decltype(elapsed), _CUDA_VSTD::chrono::nanoseconds>);
+  stream.wait();
 }

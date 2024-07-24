@@ -25,7 +25,6 @@
 #endif // no system header
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
