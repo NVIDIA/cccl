@@ -62,7 +62,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  */
 class stream_ref
 {
-private:
+protected:
   ::cudaStream_t __stream{0};
 
 public:
@@ -167,6 +167,20 @@ public:
         ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
     }
     return true;
+  }
+
+  /**
+   * \brief Queries the priority of the wrapped stream.
+   * 
+   * \throws cuda::cuda_error if the query fails.
+   * 
+   * \return value representing the priority of the wrapped stream.
+  */
+  _CCCL_NODISCARD int priority() const
+  {
+    int __result = 0;
+    _CCCL_TRY_CUDA_API(::cudaStreamGetPriority, "Failed to get stream priority", get(), &__result);
+    return __result;
   }
 };
 
