@@ -99,13 +99,16 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 
   if (first != last)
   {
-    ValueType sum = wrapped_binary_op(*first, init);
+    ValueType sum = wrapped_binary_op(init, *first);
+    *result       = sum;
+    ++first;
+    ++result;
 
-    *result = sum;
-
-    for (++first, ++result; first != last; ++first, ++result)
+    while (first != last)
     {
       *result = sum = wrapped_binary_op(sum, *first);
+      ++first;
+      ++result;
     }
   }
 

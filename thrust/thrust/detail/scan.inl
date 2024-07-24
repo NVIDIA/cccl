@@ -36,6 +36,8 @@
 #include <thrust/system/detail/generic/scan_by_key.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <iterator>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -50,35 +52,42 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   return inclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end inclusive_scan()
 
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename AssociativeOperator>
-_CCCL_HOST_DEVICE typename std::enable_if<
-  ::cuda::std::__invokable<AssociativeOperator,
-                           typename ::cuda::std::iterator_traits<InputIterator>::value_type,
-                           typename ::cuda::std::iterator_traits<InputIterator>::value_type>::value,
-  OutputIterator>::type
-inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-               InputIterator first,
-               InputIterator last,
-               OutputIterator result,
-               AssociativeOperator binary_op)
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename AssociativeOperator,
+          typename ::cuda::std::enable_if<
+            ::cuda::std::__invokable<AssociativeOperator,
+                                     typename std::iterator_traits<InputIterator>::value_type,
+                                     typename std::iterator_traits<InputIterator>::value_type>::value,
+            int>::type>
+_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  AssociativeOperator binary_op)
 {
   using thrust::system::detail::generic::inclusive_scan;
   return inclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, binary_op);
 } // end inclusive_scan()
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE typename std::enable_if<
-  !::cuda::std::__invokable<T,
-                            typename ::cuda::std::iterator_traits<InputIterator>::value_type,
-                            typename ::cuda::std::iterator_traits<InputIterator>::value_type>::value,
-  OutputIterator>::type
-inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-               InputIterator first,
-               InputIterator last,
-               OutputIterator result,
-               T init)
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename T,
+          typename ::cuda::std::enable_if<
+            !::cuda::std::__invokable<T,
+                                      typename std::iterator_traits<InputIterator>::value_type,
+                                      typename std::iterator_traits<InputIterator>::value_type>::value,
+            int>::type>
+_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  T init)
 {
   using thrust::system::detail::generic::inclusive_scan;
   return inclusive_scan(
@@ -314,8 +323,8 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;

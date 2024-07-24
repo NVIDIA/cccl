@@ -123,7 +123,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       ScanOp,
                       InputValueT,
                       std::int32_t,
-                      InitValueT,
+                      AccumT,
                       cub::DeviceScanPolicy<AccumT, ScanOp>,
                       ForceInclusive>;
   using Dispatch64 =
@@ -132,7 +132,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       ScanOp,
                       InputValueT,
                       std::int64_t,
-                      InitValueT,
+                      AccumT,
                       cub::DeviceScanPolicy<AccumT, ScanOp>,
                       ForceInclusive>;
 
