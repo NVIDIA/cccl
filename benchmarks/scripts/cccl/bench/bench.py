@@ -607,6 +607,31 @@ class Bench:
             definitions = definitions + "#define TUNE_{} {}\n".format(ct_axis_name, description)
 
         return definitions
+    
+    def get_command_line(self, ct_point, rt_values):
+        bench_path = os.path.join('.', 'bin', self.exe_name())
+        cmd = [bench_path]
+
+        for value in ct_point:
+            cmd.append('-a')
+            cmd.append(value)
+
+        cmd.append("--stopping-criterion")
+        cmd.append("entropy")
+
+        # NVBench is currently broken for multiple GPUs, use `CUDA_VISIBLE_DEVICES`
+        cmd.append("-d")
+        cmd.append("0")
+
+        for bench in rt_values:
+            cmd.append('-b')
+            cmd.append(bench)
+
+            for axis in rt_values[bench]:
+                cmd.append('-a')
+                cmd.append("{}=[{}]".format(axis, ",".join(rt_values[bench][axis])))
+        
+        return cmd
 
     def do_run(self, ct_point, rt_values, timeout, is_search=True):
         logger = Logger()
@@ -616,30 +641,9 @@ class Bench:
             if os.path.exists(result_path):
                 os.remove(result_path)
 
-            bench_path = os.path.join('.', 'bin', self.exe_name())
-            cmd = [bench_path]
-
-            for value in ct_point:
-                cmd.append('-a')
-                cmd.append(value)
-
+            cmd = self.get_command_line(ct_point, rt_values)
             cmd.append('--jsonbin')
             cmd.append(result_path)
-
-            cmd.append("--stopping-criterion")
-            cmd.append("entropy")
-
-            # NVBench is currently broken for multiple GPUs, use `CUDA_VISIBLE_DEVICES`
-            cmd.append("-d")
-            cmd.append("0")
-
-            for bench in rt_values:
-                cmd.append('-b')
-                cmd.append(bench)
-
-                for axis in rt_values[bench]:
-                    cmd.append('-a')
-                    cmd.append("{}=[{}]".format(axis, ",".join(rt_values[bench][axis])))
 
             logger.info("starting benchmark {} with {}: {}".format(self.label(), ct_point, " ".join(cmd)))
 
