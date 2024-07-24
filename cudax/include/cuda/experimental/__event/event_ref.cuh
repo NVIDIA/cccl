@@ -77,16 +77,14 @@ public:
     _CCCL_TRY_CUDA_API(::cudaEventRecord, "Failed to record CUDA event", __event_, __stream.get());
   }
 
-  //! @brief Waits for a CUDA event_ref to complete on the specified stream
+  //! @brief Waits until all the work in the stream prior to the record of the
+  //!        event has completed.
   //!
-  //! @param __stream The stream to wait on
-  //!
-  //! @throws cuda_error if the event_ref wait fails
-  void wait(stream_ref __stream) const
+  //! @throws cuda_error if waiting for the event fails
+  void wait() const
   {
     assert(__event_ != nullptr);
-    assert(__stream.get() != nullptr);
-    _CCCL_TRY_CUDA_API(::cudaStreamWaitEvent, "Failed to wait for CUDA event", __stream.get(), __event_);
+    _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
   }
 
   //! @brief Retrieve the native `cudaEvent_t` handle.

@@ -80,7 +80,7 @@ TEST_CASE("can use event_ref to record and wait on an event", "[event]")
     },
     i.get());
   ref.record(stream);
-  ref.wait(stream);
+  ref.wait();
   CUDAX_REQUIRE(*i == 42);
 
   stream.wait();
@@ -99,12 +99,12 @@ TEST_CASE("can wait on an event", "[event]")
   test::stream stream;
   ::test::managed<int> i(0);
   ::test::invokernel<<<1, 1, 0, stream.get()>>>(
-    [] _CCCL_HOST_DEVICE(int* pi) {
+    [] _CCCL_DEVICE(int* pi) {
       *pi = 42;
     },
     i.get());
   cudax::event ev(stream);
-  ev.wait(stream);
+  ev.wait();
   CUDAX_REQUIRE(*i == 42);
   stream.wait();
 }
@@ -115,12 +115,12 @@ TEST_CASE("can take the difference of two timed_event objects", "[event]")
   ::test::managed<int> i(0);
   cudax::timed_event start(stream);
   ::test::invokernel<<<1, 1, 0, stream.get()>>>(
-    [] _CCCL_HOST_DEVICE(int* pi) {
+    [] _CCCL_DEVICE(int* pi) {
       *pi = 42;
     },
     i.get());
   cudax::timed_event end(stream);
-  end.wait(stream);
+  end.wait();
   CUDAX_REQUIRE(*i == 42);
   auto elapsed = end - start;
   CUDAX_REQUIRE(elapsed.count() >= 0);
