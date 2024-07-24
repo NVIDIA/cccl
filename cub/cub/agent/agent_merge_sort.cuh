@@ -383,7 +383,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
       int idx      = BLOCK_THREADS * item + threadIdx.x;
-      output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
+      output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
     }
   }
   else
@@ -394,7 +394,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
       int idx = BLOCK_THREADS * item + threadIdx.x;
       if (idx < count1 + count2)
       {
-        output[item] = (idx < count1) ? input1[idx] : input2[idx - count1];
+        output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
       }
     }
   }
