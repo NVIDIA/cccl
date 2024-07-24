@@ -63,6 +63,7 @@ For more information about the sccache configuration and authentication, see the
 ## Quickstart: Docker (Manual Approach) <a name="docker"></a>
 
 ### Prerequisites
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 - [Docker](https://docs.docker.com/desktop/install/linux-install/)
 
 ### Steps

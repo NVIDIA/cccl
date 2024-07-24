@@ -33,7 +33,7 @@ template <class _Tp, class = void>
 struct __has_allocator_type : false_type
 {};
 template <class _Tp>
-struct __has_allocator_type<_Tp, __void_t<typename _Tp::allocator_type>> : true_type
+struct __has_allocator_type<_Tp, void_t<typename _Tp::allocator_type>> : true_type
 {};
 
 template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
@@ -46,7 +46,7 @@ struct __uses_allocator<_Tp, _Alloc, true> : is_convertible<_Alloc, typename _Tp
 template <class _Tp, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v = false;
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v<_Tp, __void_t<typename _Tp::allocator_type>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v<_Tp, void_t<typename _Tp::allocator_type>> = true;
 
 template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
 _LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v = false;

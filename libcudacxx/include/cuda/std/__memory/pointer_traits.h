@@ -40,7 +40,7 @@ struct __has_element_type : false_type
 {};
 
 template <class _Tp>
-struct __has_element_type<_Tp, __void_t<typename _Tp::element_type>> : true_type
+struct __has_element_type<_Tp, void_t<typename _Tp::element_type>> : true_type
 {};
 
 template <class _Ptr, bool = __has_element_type<_Ptr>::value>
@@ -123,7 +123,7 @@ struct __has_difference_type : false_type
 {};
 
 template <class _Tp>
-struct __has_difference_type<_Tp, __void_t<typename _Tp::difference_type>> : true_type
+struct __has_difference_type<_Tp, void_t<typename _Tp::difference_type>> : true_type
 {};
 
 template <class _Ptr, bool = __has_difference_type<_Ptr>::value>
@@ -349,8 +349,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto to_address(_Tp* __p) noexcep
 }
 
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto to_address(const _Pointer& __p) noexcept
-  -> decltype(_CUDA_VSTD::__to_address(__p))
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);
 }

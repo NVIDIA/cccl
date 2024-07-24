@@ -35,5 +35,9 @@ int main(int, char**)
     static_assert(cf.imag() == cd.imag(), "");
   }
 
+  static_assert(cuda::std::is_same<cuda::std::common_type<cuda::std::complex<float>, cuda::std::complex<double>>::type,
+                                   cuda::std::complex<cuda::std::common_type<float, double>::type>>::value,
+                "");
+
   return 0;
 }

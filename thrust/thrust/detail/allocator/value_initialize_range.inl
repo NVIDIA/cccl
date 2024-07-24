@@ -73,15 +73,15 @@ struct needs_default_construct_via_allocator<std::allocator<U>, T>
 template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
   needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>
-default_construct_range(Allocator& a, Pointer p, Size n)
+value_initialize_range(Allocator& a, Pointer p, Size n)
 {
   thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, construct1_via_allocator<Allocator>(a));
 }
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE typename disable_if<
-  needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>::type
-default_construct_range(Allocator& a, Pointer p, Size n)
+_CCCL_HOST_DEVICE
+typename disable_if<needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>::type
+value_initialize_range(Allocator& a, Pointer p, Size n)
 {
   thrust::uninitialized_fill_n(allocator_system<Allocator>::get(a), p, n, typename pointer_element<Pointer>::type());
 }
@@ -89,9 +89,9 @@ default_construct_range(Allocator& a, Pointer p, Size n)
 } // namespace allocator_traits_detail
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE void default_construct_range(Allocator& a, Pointer p, Size n)
+_CCCL_HOST_DEVICE void value_initialize_range(Allocator& a, Pointer p, Size n)
 {
-  return allocator_traits_detail::default_construct_range(a, p, n);
+  return allocator_traits_detail::value_initialize_range(a, p, n);
 }
 
 } // namespace detail

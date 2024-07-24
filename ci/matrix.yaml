@@ -40,9 +40,12 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang16']}
+    # Python jobs:
+    - {jobs: ['test'], project: 'pycuda'}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc', 'clang']}
+
   nightly:
   # libcudacxx build fails, CUB tests fail:
     - {jobs: ['build'], ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['cub']}
@@ -176,8 +179,9 @@ host_compilers:
 #     windows: `ci/<spec[prefix]>_<project>.sh <spec[args]>`
 jobs:
   # General:
-  build: { gpu: false }
-  test:  { gpu: true, needs: 'build' }
+  build:        { gpu: false }
+  test:         { gpu: true, needs: 'build' }
+  test_nobuild: { gpu: true, name: 'Test', invoke: { prefix: 'test' } }
 
   # CCCL:
   infra: { gpu: true } # example project launches a kernel
@@ -228,6 +232,9 @@ projects:
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
     stds: [17, 20]
+  pycuda:
+    name: "cuda (python)"
+    job_map: { build: [], test: ['test_nobuild'] }
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:

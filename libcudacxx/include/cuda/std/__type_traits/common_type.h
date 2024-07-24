@@ -61,7 +61,7 @@ struct __common_type2_imp
 
 // sub-bullet 3 - "if decay_t<decltype(false ? declval<D1>() : declval<D2>())> ..."
 template <class _Tp, class _Up>
-struct __common_type2_imp<_Tp, _Up, __void_t<__cond_type<_Tp, _Up>>>
+struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __decay_t<__cond_type<_Tp, _Up>> type;
 };
@@ -74,13 +74,13 @@ template <class... _Tp>
 struct __common_types;
 
 template <class _Tp, class _Up>
-struct __common_type_impl<__common_types<_Tp, _Up>, __void_t<__common_type_t<_Tp, _Up>>>
+struct __common_type_impl<__common_types<_Tp, _Up>, void_t<__common_type_t<_Tp, _Up>>>
 {
   typedef __common_type_t<_Tp, _Up> type;
 };
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>, __void_t<__common_type_t<_Tp, _Up>>>
+struct __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>, void_t<__common_type_t<_Tp, _Up>>>
     : __common_type_impl<__common_types<__common_type_t<_Tp, _Up>, _Vp, _Rest...>>
 {};
 

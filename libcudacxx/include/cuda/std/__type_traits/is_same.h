@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_same : _BoolConstant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>
+struct _LIBCUDACXX_TEMPLATE_VIS is_same : bool_constant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -43,10 +43,10 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = _LIBCUDACXX_IS_SAME(_Tp, _Up);
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = _BoolConstant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
+using _IsSame = bool_constant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = _BoolConstant<!_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
+using _IsNotSame = bool_constant<!_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
 
 #else
 
@@ -70,10 +70,10 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = is_same<_Tp, _Up>::value;
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = _BoolConstant<is_same<_Tp, _Up>::value>;
+using _IsSame = bool_constant<is_same<_Tp, _Up>::value>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = _BoolConstant<!is_same<_Tp, _Up>::value>;
+using _IsNotSame = bool_constant<!is_same<_Tp, _Up>::value>;
 
 #endif // defined(_LIBCUDACXX_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 

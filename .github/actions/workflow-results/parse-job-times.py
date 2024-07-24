@@ -120,7 +120,7 @@ def main():
     for id, stats in result.items():
         job_seconds = stats['job_seconds']
         command_seconds = stats['command_seconds']
-        overhead = (job_seconds - command_seconds) * 100 / command_seconds
+        overhead = (job_seconds - command_seconds) * 100 / command_seconds if command_seconds > 0 else 100
         print(f"{stats['job_duration']:10} {stats['command_duration']:10} {overhead:10.0f} {stats['name']}")
     print("::endgroup::")
 

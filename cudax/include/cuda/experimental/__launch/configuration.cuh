@@ -331,10 +331,10 @@ struct kernel_config
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts)
       : dims(dims)
-      , options(opts...){};
+      , options(opts...) {};
   constexpr kernel_config(const Dimensions& dims, const ::cuda::std::tuple<Options...>& opts)
       : dims(dims)
-      , options(opts){};
+      , options(opts) {};
 
   /**
    * @brief Add a new option to this configuration

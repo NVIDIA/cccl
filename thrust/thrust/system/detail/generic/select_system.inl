@@ -84,23 +84,23 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
 
 template <typename System1, typename System2, typename System3>
 _CCCL_HOST_DEVICE
-  typename thrust::detail::lazy_disable_if<select_system3_exists<System1, System2, System3>::value,
-                                           thrust::detail::minimum_system<System1, System2, System3>>::type&
-  select_system(thrust::execution_policy<System1>& system1,
-                thrust::execution_policy<System2>& system2,
-                thrust::execution_policy<System3>& system3)
+typename thrust::detail::lazy_disable_if<select_system3_exists<System1, System2, System3>::value,
+                                         thrust::detail::minimum_system<System1, System2, System3>>::type&
+select_system(thrust::execution_policy<System1>& system1,
+              thrust::execution_policy<System2>& system2,
+              thrust::execution_policy<System3>& system3)
 {
   return select_system(select_system(system1, system2), system3);
 } // end select_system()
 
 template <typename System1, typename System2, typename System3, typename System4>
 _CCCL_HOST_DEVICE
-  typename thrust::detail::lazy_disable_if<select_system4_exists<System1, System2, System3, System4>::value,
-                                           thrust::detail::minimum_system<System1, System2, System3, System4>>::type&
-  select_system(thrust::execution_policy<System1>& system1,
-                thrust::execution_policy<System2>& system2,
-                thrust::execution_policy<System3>& system3,
-                thrust::execution_policy<System4>& system4)
+typename thrust::detail::lazy_disable_if<select_system4_exists<System1, System2, System3, System4>::value,
+                                         thrust::detail::minimum_system<System1, System2, System3, System4>>::type&
+select_system(thrust::execution_policy<System1>& system1,
+              thrust::execution_policy<System2>& system2,
+              thrust::execution_policy<System3>& system3,
+              thrust::execution_policy<System4>& system4)
 {
   return select_system(select_system(system1, system2, system3), system4);
 } // end select_system()
