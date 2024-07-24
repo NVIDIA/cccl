@@ -357,7 +357,7 @@ OutputIterator inclusive_scan(
 
   if (n != 0)
   {
-    typedef typename scan_detail::inclusive_body_init<InputIterator, OutputIterator, BinaryFunction, ValueType> Body;
+    using Body = typename scan_detail::inclusive_body_init<InputIterator, OutputIterator, BinaryFunction, ValueType>;
     Body scan_body(first, result, binary_op, init);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }

@@ -68,12 +68,8 @@ void TestScanSimple()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with init
-  iter      = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(3));
-  result[0] = 4;
-  result[1] = 7;
-  result[2] = 5;
-  result[3] = 9;
-  result[4] = 4;
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(3));
+  result = {4, 7, 5, 9, 4};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -86,12 +82,8 @@ void TestScanSimple()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with init and op
-  iter      = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(3), thrust::plus<T>());
-  result[0] = 4;
-  result[1] = 7;
-  result[2] = 5;
-  result[3] = 9;
-  result[4] = 4;
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(3), thrust::plus<T>());
+  result = {4, 7, 5, 9, 4};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -111,13 +103,9 @@ void TestScanSimple()
   ASSERT_EQUAL(input, result);
 
   // inplace inclusive scan with init
-  input     = input_copy;
-  iter      = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3));
-  result[0] = 4;
-  result[1] = 7;
-  result[2] = 5;
-  result[3] = 9;
-  result[4] = 4;
+  input  = input_copy;
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3));
+  result = {4, 7, 5, 9, 4};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
 

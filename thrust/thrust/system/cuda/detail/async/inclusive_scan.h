@@ -145,7 +145,7 @@ unique_eager_event async_inclusive_scan_n(
                       BinaryOp,
                       InputValueT,
                       std::int32_t,
-                      InitialValueType,
+                      AccumT,
                       cub::DeviceScanPolicy<AccumT, BinaryOp>,
                       ForceInclusive>;
   using Dispatch64 =
@@ -154,7 +154,7 @@ unique_eager_event async_inclusive_scan_n(
                       BinaryOp,
                       InputValueT,
                       std::int64_t,
-                      InitialValueType,
+                      AccumT,
                       cub::DeviceScanPolicy<AccumT, BinaryOp>,
                       ForceInclusive>;
 

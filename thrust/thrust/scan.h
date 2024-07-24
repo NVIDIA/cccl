@@ -207,30 +207,37 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
  */
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename AssociativeOperator,
+          typename ::cuda::std::enable_if<
+            ::cuda::std::__invokable<AssociativeOperator,
+                                     typename std::iterator_traits<InputIterator>::value_type,
+                                     typename std::iterator_traits<InputIterator>::value_type>::value,
+            int>::type = 0>
+_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  AssociativeOperator binary_op);
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename AssociativeOperator>
-_CCCL_HOST_DEVICE typename std::enable_if<
-  ::cuda::std::__invokable<AssociativeOperator,
-                           typename ::cuda::std::iterator_traits<InputIterator>::value_type,
-                           typename ::cuda::std::iterator_traits<InputIterator>::value_type>::value,
-  OutputIterator>::type
-inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-               InputIterator first,
-               InputIterator last,
-               OutputIterator result,
-               AssociativeOperator binary_op);
-
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE typename std::enable_if<
-  !::cuda::std::__invokable<T,
-                            typename ::cuda::std::iterator_traits<InputIterator>::value_type,
-                            typename ::cuda::std::iterator_traits<InputIterator>::value_type>::value,
-  OutputIterator>::type
-inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-               InputIterator first,
-               InputIterator last,
-               OutputIterator result,
-               T init);
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename T,
+          typename ::cuda::std::enable_if<
+            !::cuda::std::__invokable<T,
+                                      typename std::iterator_traits<InputIterator>::value_type,
+                                      typename std::iterator_traits<InputIterator>::value_type>::value,
+            int>::type = 0>
+_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  T init);
 
 /*! \p inclusive_scan computes an inclusive prefix sum operation. The
  *  term 'inclusive' means that each result includes the corresponding
