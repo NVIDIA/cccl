@@ -57,4 +57,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/configuration.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+
+  Cudax_add_catch2_test(test_target misc_tests ${cn_target}
+    utility/driver_api.cu
+  )
 endforeach()

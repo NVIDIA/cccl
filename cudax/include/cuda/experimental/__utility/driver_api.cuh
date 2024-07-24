@@ -15,12 +15,13 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 
+// Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \
-  reinterpret_cast<decltype(function_name)*>(getDriverEntryPoint(#function_name))
+  reinterpret_cast<decltype(function_name)*>(get_driver_entry_point(#function_name))
 
 namespace cuda::experimental::detail::driver
 {
-inline void* getDriverEntryPoint(const char* name)
+inline void* get_driver_entry_point(const char* name)
 {
   void* fn;
   cudaDriverEntryPointQueryResult result;
@@ -36,36 +37,39 @@ inline void* getDriverEntryPoint(const char* name)
   return fn;
 }
 
+template <typename Fn, typename... Args>
+inline void call_driver_fn(Fn fn, const char* err_msg, Args... args) {
+  CUresult status = fn(args...);
+  if (status != CUDA_SUCCESS) {
+    ::cuda::__throw_cuda_error(static_cast<cudaError_t>(status), err_msg);
+  }
+}
+
 inline void ctxPush(CUcontext ctx)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPushCurrent);
-  CUresult status       = driver_fn(ctx);
-  if (status != CUDA_SUCCESS)
-  {
-    ::cuda::__throw_cuda_error(static_cast<cudaError_t>(status), "Failed to push context");
-  }
+  call_driver_fn(driver_fn, "Failed to push context", ctx);
 }
 
 inline void ctxPop()
 {
-  CUcontext dummy;
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPopCurrent);
-  CUresult status       = driver_fn(&dummy);
-  if (status != CUDA_SUCCESS)
-  {
-    ::cuda::__throw_cuda_error(static_cast<cudaError_t>(status), "Failed to pop context");
-  }
+  CUcontext dummy;
+  call_driver_fn(driver_fn, "Failed to pop context", &dummy);
+}
+
+inline CUcontext ctxGetCurrent() {
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxGetCurrent);
+  CUcontext result;
+  call_driver_fn(driver_fn, "Failed to get current context", &result);
+  return result;
 }
 
 inline CUcontext streamGetCtx(CUstream stream)
 {
-  CUcontext result;
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCtx);
-  CUresult status       = driver_fn(stream, &result);
-  if (status != CUDA_SUCCESS)
-  {
-    ::cuda::__throw_cuda_error(static_cast<cudaError_t>(status), "Failed to get context from a stream");
-  }
+  CUcontext result;
+  call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &result);
   return result;
 }
 } // namespace cuda::experimental::detail::driver
