@@ -41,7 +41,8 @@ TEST_CASE("can copy construct an event_ref and compare for equality", "[event]")
   const cudax::event_ref ref2 = ref;
   CUDAX_REQUIRE(ref2 == ref);
   CUDAX_REQUIRE(!(ref != ref2));
-  CUDAX_REQUIRE(ref != cudax::event_ref{});
+  CUDAX_REQUIRE((ref ? true : false)); // test contextual convertibility to bool
+  CUDAX_REQUIRE(!!ref);
   CUDAX_REQUIRE(::cudaEvent_t{} != ref);
   CUDAX_REQUIRE(::cudaEventDestroy(event) == ::cudaSuccess);
 }

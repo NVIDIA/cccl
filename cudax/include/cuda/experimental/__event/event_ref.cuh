@@ -18,7 +18,6 @@ class event_ref {
 public:
     using value_type = cudaEvent_t;
 
-    event_ref() = default;
     event_ref(cudaEvent_t event_) noexcept : event(event_) {}
 
     event_ref(int) = delete;
@@ -78,9 +77,6 @@ private:
 public:
   using value_type = ::cudaEvent_t;
 
-  //! @brief Construct a new `event_ref` that does refer to an event.
-  event_ref() = default;
-
   //! @brief Construct a new `event_ref` object from a `cudaEvent_t`
   //!
   //! This constructor provides an implicit conversion from `cudaEvent_t`
@@ -129,6 +125,14 @@ public:
   _CCCL_NODISCARD constexpr ::cudaEvent_t get() const noexcept
   {
     return __event_;
+  }
+
+  //! @brief Checks if the `event_ref` is valid
+  //!
+  //! @return true if the `event_ref` is valid, false otherwise.
+  _CCCL_NODISCARD explicit constexpr operator bool() const noexcept
+  {
+    return __event_ != nullptr;
   }
 
   //! @brief Compares two `event_ref`s for equality

@@ -16,8 +16,7 @@
 namespace cuda::experimental {
 class timed_event : public event {
 public:
-    timed_event();
-    timed_event(flags);
+    timed_event(stream_ref, flags = flags::none);
     timed_event(uninit_t) noexcept;
     timed_event(timed_event&&) noexcept;
     ~timed_event();
@@ -82,19 +81,15 @@ namespace cuda::experimental
 class timed_event : public event
 {
 public:
-  //! @brief Construct a new `timed_event` object with timing enabled.
+  //! @brief Construct a new `timed_event` object with the specified flags
+  //!        and record the event on the specified stream.
   //!
   //! @throws cuda_error if the event creation fails.
-  timed_event()
-      : event(static_cast<unsigned int>(cudaEventDefault))
-  {}
-
-  //! @brief Construct a new `timed_event` object with the specified flags.
-  //!
-  //! @throws cuda_error if the event creation fails.
-  explicit timed_event(flags __flags)
+  explicit timed_event(stream_ref __stream, flags __flags = flags::none)
       : event(static_cast<unsigned int>(__flags))
-  {}
+  {
+    record(__stream);
+  }
 
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!

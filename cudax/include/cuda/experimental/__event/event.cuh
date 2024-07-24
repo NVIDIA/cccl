@@ -18,11 +18,11 @@ class event : public event_ref {
 public:
     enum class flags : unsigned int { none, blocking_sync, interprocess };
 
-    event();
-    event(flags);
+    event(stream_ref, flags = flags::none);
     event(uninit_t) noexcept;
     event(event&&) noexcept;
     ~event();
+    event& operator=(event&&) noexcept;
 
     [[nodiscard]] static event from_native_handle(cudaEvent_t) noexcept;
     static event from_native_handle(int) = delete;
@@ -89,24 +89,22 @@ public:
     interprocess  = cudaEventInterprocess
   };
 
-  //! @brief Construct a new `event` object with timing disabled.
+  //! @brief Construct a new `event` object with timing disabled, and record
+  //!        the event in the specified stream.
   //!
   //! @throws cuda_error if the event creation fails.
-  event()
-      : event(static_cast<unsigned int>(cudaEventDisableTiming))
-  {}
-
-  //! @brief Construct a new `event` object with the specified flags.
-  //!
-  //! @throws cuda_error if the event creation fails.
-  explicit event(flags __flags)
-      : event(static_cast<unsigned int>(__flags) | static_cast<unsigned int>(cudaEventDisableTiming))
-  {}
+  explicit event(stream_ref __stream, flags __flags = flags::none)
+      : event(static_cast<unsigned int>(__flags) | cudaEventDisableTiming)
+  {
+    record(__stream);
+  }
 
   //! @brief Construct a new `event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr event(uninit_t) noexcept {}
+  explicit constexpr event(uninit_t) noexcept
+      : event_ref(::cudaEvent_t{})
+  {}
 
   //! @brief Move-construct a new `event` object
   //!
@@ -180,6 +178,7 @@ private:
   {}
 
   explicit event(unsigned int __flags)
+      : event_ref(::cudaEvent_t{})
   {
     _CCCL_TRY_CUDA_API(
       ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
