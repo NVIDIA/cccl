@@ -37,10 +37,11 @@ struct device
   //! @brief Retrieve the native ordinal of the device
   //!
   //! @return int The native device ordinal held by the device object
-  _CCCL_NODISCARD constexpr int get() const noexcept {
+  _CCCL_NODISCARD constexpr int get() const noexcept
+  {
     return __id;
   }
 };
 
-}
+} // namespace cuda::experimental
 #endif
