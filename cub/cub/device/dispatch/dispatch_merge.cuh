@@ -218,13 +218,8 @@ template <typename KeyIt1,
           typename PolicyHub = device_merge_policy_hub<value_t<KeyIt1>, value_t<ValueIt1>>>
 struct dispatch_t
 {
-  using key_t   = cub::detail::value_t<KeyIt1>;
-  using value_t = cub::detail::value_t<ValueIt1>;
-
   // Cannot check output iterators, since they could be discard iterators, which do not have the right value_type
-  static_assert(::cuda::std::is_same<cub::detail::value_t<KeyIt2>, key_t>::value, "");
-  static_assert(::cuda::std::is_same<cub::detail::value_t<ValueIt2>, value_t>::value, "");
-  static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
+  static_assert(::cuda::std::__invokable<CompareOp, cub::detail::value_t<KeyIt1>, cub::detail::value_t<KeyIt1>>::value,
                 "Comparison operator cannot compare two keys");
 
   void* d_temp_storage;
@@ -351,7 +346,7 @@ struct dispatch_t
     {
       return error;
     }
-    dispatch_t dispatch{std::forward<Args>(args)...};
+    dispatch_t dispatch{::cuda::std::forward<Args>(args)...};
     error = CubDebug(PolicyHub::max_policy::Invoke(ptx_version, dispatch));
     if (cudaSuccess != error)
     {
