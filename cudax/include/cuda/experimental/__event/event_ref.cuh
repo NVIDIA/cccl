@@ -11,35 +11,6 @@
 #ifndef _CUDAX_EVENT_REF_DETAIL_H
 #define _CUDAX_EVENT_REF_DETAIL_H
 
-/*
-    event_ref synopsis
-namespace cuda::experimental {
-class event_ref {
-public:
-    using value_type = cudaEvent_t;
-
-    event_ref(cudaEvent_t event_) noexcept : event(event_) {}
-
-    event_ref(int) = delete;
-    event_ref(nullptr_t) = delete;
-
-    void record(stream_ref) const;
-
-    void wait(stream_ref) const;
-
-    [[nodiscard]] cudaEvent_t get() const noexcept;
-
-    [[nodiscard]] explicit operator bool() const noexcept;
-
-    [[nodiscard]] friend bool operator==(event_ref, event_ref);
-    [[nodiscard]] friend bool operator!=(event_ref, event_ref);
-
-private:
-    cudaEvent_t event{}; // exposition only
-};
-}  // cuda::experimenal
-*/
-
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
@@ -72,7 +43,7 @@ private:
   friend class event;
   friend class timed_event;
 
-  ::cudaEvent_t __event_{0};
+  ::cudaEvent_t __event_{};
 
 public:
   using value_type = ::cudaEvent_t;

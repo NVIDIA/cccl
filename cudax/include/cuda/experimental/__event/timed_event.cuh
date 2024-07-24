@@ -11,48 +11,6 @@
 #ifndef _CUDAX_TIMED_EVENT_DETAIL_H
 #define _CUDAX_TIMED_EVENT_DETAIL_H
 
-/*
-    timed_event synopsis
-namespace cuda::experimental {
-class timed_event : public event {
-public:
-    timed_event(stream_ref, flags = flags::none);
-    timed_event(uninit_t) noexcept;
-    timed_event(timed_event&&) noexcept;
-    ~timed_event();
-    timed_event& operator=(timed_event&&) noexcept;
-
-    [[nodiscard]] static timed_event from_native_handle(cudaEvent_t) noexcept;
-    static timed_event from_native_handle(int) = delete;
-    static timed_event from_native_handle(nullptr_t) = delete;
-
-    [[nodiscard]] friend auto operator-(const timed_event& end, const timed_event& start) noexcept
-        -> cuda::std::chrono::nanoseconds;
-
-    // from event:
-    enum class flags : unsigned int { none, blocking_sync, interprocess };
-
-    [[nodiscard]] cudaEvent_t release() noexcept;
-
-    [[nodiscard]] friend flags operator|(flags, flags) noexcept;
-
-    // From event_ref:
-    using value_type = cudaEvent_t;
-
-    void record(stream_ref) const;
-
-    void wait(stream_ref) const;
-
-    [[nodiscard]] cudaEvent_t get() const noexcept;
-
-    [[nodiscard]] explicit operator bool() const noexcept;
-
-    [[nodiscard]] friend bool operator==(event_ref, event_ref);
-    [[nodiscard]] friend bool operator!=(event_ref, event_ref);
-};
-}  // cuda::experimenal
-*/
-
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
@@ -97,6 +55,11 @@ public:
   explicit constexpr timed_event(uninit_t) noexcept
       : event(uninit)
   {}
+
+  timed_event(timed_event&&) noexcept            = default;
+  timed_event(const timed_event&)                = delete;
+  timed_event& operator=(timed_event&&) noexcept = default;
+  timed_event& operator=(const timed_event&)     = delete;
 
   //! @brief Construct a `timed_event` object from a native `cudaEvent_t` handle.
   //!

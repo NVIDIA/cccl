@@ -11,48 +11,12 @@
 #ifndef _CUDAX_EVENT_DETAIL_H
 #define _CUDAX_EVENT_DETAIL_H
 
-/*
-    event synopsis
-namespace cuda::experimental {
-class event : public event_ref {
-public:
-    enum class flags : unsigned int { none, blocking_sync, interprocess };
-
-    event(stream_ref, flags = flags::none);
-    event(uninit_t) noexcept;
-    event(event&&) noexcept;
-    ~event();
-    event& operator=(event&&) noexcept;
-
-    [[nodiscard]] static event from_native_handle(cudaEvent_t) noexcept;
-    static event from_native_handle(int) = delete;
-    static event from_native_handle(nullptr_t) = delete;
-
-    [[nodiscard]] cudaEvent_t release() noexcept;
-
-    [[nodiscard]] friend flags operator|(flags, flags) noexcept;
-
-    // From event_ref:
-    using value_type = cudaEvent_t;
-
-    void record(stream_ref) const;
-
-    void wait(stream_ref) const;
-
-    [[nodiscard]] cudaEvent_t get() const noexcept;
-
-    [[nodiscard]] explicit operator bool() const noexcept;
-
-    [[nodiscard]] friend bool operator==(event_ref, event_ref);
-    [[nodiscard]] friend bool operator!=(event_ref, event_ref);
-};
-}  // cuda::experimenal
-*/
-
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
 #include <cuda/std/detail/__config>
+
+#include "cuda/std/detail/libcxx/include/__config"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -115,6 +79,9 @@ public:
       : event_ref(_CUDA_VSTD::exchange(__other.__event_, {}))
   {}
 
+  // Disallow copy construction.
+  event(const event&) = delete;
+
   //! @brief Destroy the `event` object
   //!
   //! @note If the event fails to be destroyed, the error is silently ignored.
@@ -131,11 +98,15 @@ public:
   //! @param __other
   //!
   //! @post `__other` is in a moved-from state.
-  constexpr event& operator=(event&& __other) noexcept
+  event& operator=(event&& __other) noexcept
   {
-    __event_ = _CUDA_VSTD::exchange(__other.__event_, {});
+    event __tmp(_CUDA_VSTD::move(__other));
+    _CUDA_VSTD::swap(__event_, __tmp.__event_);
     return *this;
   }
+
+  // Disallow copy assignment.
+  event& operator=(const event&) = delete;
 
   //! @brief Construct an `event` object from a native `cudaEvent_t` handle.
   //!
