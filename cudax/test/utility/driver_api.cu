@@ -13,32 +13,32 @@
 
 #include "../hierarchy/testing_common.cuh"
 
-TEST_CASE("Call each one", "[driver api]") {
-    cudaStream_t stream;
-    // Assumes the ctx stack was empty or had one ctx, should be the case unless some other
-    // test leaves 2+ ctxs on the stack
+TEST_CASE("Call each one", "[driver api]")
+{
+  cudaStream_t stream;
+  // Assumes the ctx stack was empty or had one ctx, should be the case unless some other
+  // test leaves 2+ ctxs on the stack
 
-    // Pushes the primary context if the stack is empty
-    CUDART(cudaStreamCreate(&stream));
+  // Pushes the primary context if the stack is empty
+  CUDART(cudaStreamCreate(&stream));
 
-    auto ctx = cuda::experimental::detail::driver::ctxGetCurrent();
-    CUDAX_REQUIRE(ctx != nullptr);
+  auto ctx = cuda::experimental::detail::driver::ctxGetCurrent();
+  CUDAX_REQUIRE(ctx != nullptr);
 
-    cuda::experimental::detail::driver::ctxPop();
-    CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == nullptr);
+  cuda::experimental::detail::driver::ctxPop();
+  CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == nullptr);
 
-    cuda::experimental::detail::driver::ctxPush(ctx);
-    CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == ctx);
+  cuda::experimental::detail::driver::ctxPush(ctx);
+  CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == ctx);
 
-    cuda::experimental::detail::driver::ctxPush(ctx);
-    CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == ctx);
+  cuda::experimental::detail::driver::ctxPush(ctx);
+  CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == ctx);
 
-    cuda::experimental::detail::driver::ctxPop();
-    CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == ctx);
+  cuda::experimental::detail::driver::ctxPop();
+  CUDAX_REQUIRE(cuda::experimental::detail::driver::ctxGetCurrent() == ctx);
 
+  auto stream_ctx = cuda::experimental::detail::driver::streamGetCtx(stream);
+  CUDAX_REQUIRE(ctx == stream_ctx);
 
-    auto stream_ctx = cuda::experimental::detail::driver::streamGetCtx(stream);
-    CUDAX_REQUIRE(ctx == stream_ctx);
-
-    CUDART(cudaStreamDestroy(stream));
+  CUDART(cudaStreamDestroy(stream));
 }

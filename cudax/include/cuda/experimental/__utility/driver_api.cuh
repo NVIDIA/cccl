@@ -26,11 +26,14 @@ inline void* get_driver_entry_point(const char* name)
   void* fn;
   cudaDriverEntryPointQueryResult result;
   cudaGetDriverEntryPoint(name, &fn, cudaEnableDefault, &result);
-  if (result != cudaDriverEntryPointSuccess) {
-    if (result == cudaDriverEntryPointVersionNotSufficent) {
+  if (result != cudaDriverEntryPointSuccess)
+  {
+    if (result == cudaDriverEntryPointVersionNotSufficent)
+    {
       ::cuda::__throw_cuda_error(cudaErrorNotSupported, "Driver does not support this API");
     }
-    else {
+    else
+    {
       ::cuda::__throw_cuda_error(cudaErrorUnknown, "Failed to access driver API");
     }
   }
@@ -38,9 +41,11 @@ inline void* get_driver_entry_point(const char* name)
 }
 
 template <typename Fn, typename... Args>
-inline void call_driver_fn(Fn fn, const char* err_msg, Args... args) {
+inline void call_driver_fn(Fn fn, const char* err_msg, Args... args)
+{
   CUresult status = fn(args...);
-  if (status != CUDA_SUCCESS) {
+  if (status != CUDA_SUCCESS)
+  {
     ::cuda::__throw_cuda_error(static_cast<cudaError_t>(status), err_msg);
   }
 }
@@ -58,7 +63,8 @@ inline void ctxPop()
   call_driver_fn(driver_fn, "Failed to pop context", &dummy);
 }
 
-inline CUcontext ctxGetCurrent() {
+inline CUcontext ctxGetCurrent()
+{
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxGetCurrent);
   CUcontext result;
   call_driver_fn(driver_fn, "Failed to get current context", &result);
