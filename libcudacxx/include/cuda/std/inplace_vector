@@ -1789,7 +1789,11 @@ public:
     }
     const iterator __old_end = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove(__cont.begin(), __old_end, __value);
+#  if !defined(_CCCL_COMPILER_MSVC_2017)
     __cont.__destroy(__new_end, __old_end);
+#  else // ^^^ !_CCCL_COMPILER_MSVC_2017 ^^^ / vvv _CCCL_COMPILER_MSVC_2017 vvv
+    __cont.resize(__cont.size() - static_cast<size_type>(__old_end - __new_end));
+#  endif // _CCCL_COMPILER_MSVC_2017
     return static_cast<size_type>(__old_end - __new_end);
   }
 
@@ -1805,7 +1809,11 @@ public:
     }
     const iterator __old_end = __cont.end();
     const iterator __new_end = _CUDA_VSTD::remove_if(__cont.begin(), __old_end, _CUDA_VSTD::move(__pred));
+#  if !defined(_CCCL_COMPILER_MSVC_2017)
     __cont.__destroy(__new_end, __old_end);
+#  else // ^^^ !_CCCL_COMPILER_MSVC_2017 ^^^ / vvv _CCCL_COMPILER_MSVC_2017 vvv
+    __cont.resize(__cont.size() - static_cast<size_type>(__old_end - __new_end));
+#  endif // _CCCL_COMPILER_MSVC_2017
     return static_cast<size_type>(__old_end - __new_end);
   }
 };
