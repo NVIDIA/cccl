@@ -11,8 +11,8 @@
 #ifndef _CUDAX__DEVICE_DEVICE
 #define _CUDAX__DEVICE_DEVICE
 
-#include <cuda_runtime_api.h>
 #include <cuda/std/detail/__config>
+#include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -35,10 +35,11 @@ struct device
   //! @brief Retrieve the native ordinal of the device
   //!
   //! @return int The native device ordinal held by the device object
-  _CCCL_NODISCARD constexpr int get() const noexcept {
+  _CCCL_NODISCARD constexpr int get() const noexcept
+  {
     return __id;
   }
 };
 
-}
+} // namespace cuda::experimental
 #endif
