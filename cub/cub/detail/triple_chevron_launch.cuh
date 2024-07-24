@@ -27,7 +27,7 @@
 #pragma once
 
 #include <cuda/__cccl_config> // _CCCL_ATTRIBUTE_HIDDEN
-
+#include <cuda/cmath>
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -48,7 +48,7 @@ namespace detail
 
   struct triple_chevron
   {
-    typedef size_t Size;
+    using size_t Size;
     dim3 const grid;
     dim3 const block;
     Size const shared_mem;
@@ -65,7 +65,7 @@ namespace detail
           stream(stream_) {}
 
     template<class K, class... Args>
-    cudaError_t __host__
+    cudaError_t _CCCL_HOST
     doit_host(K k, Args const&... args) const
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
@@ -76,10 +76,7 @@ namespace detail
     size_t _CCCL_DEVICE
     align_up(size_t offset) const
     {
-      // should use ceil_div, where does it come from?
-      // return ::cuda::ceil_div(offset, alignof(T)) * alignof(T);
-      constexpr ::cuda::std::size_t alignment = ::cuda::std::alignment_of<T>::value;
-      return alignment * ((offset + (alignment - 1))/ alignment);
+      return ::cuda::ceil_div(offset, alignof(T)) * alignof(T);
     }
 
     size_t _CCCL_DEVICE argument_pack_size(size_t size) const { return size; }
@@ -146,7 +143,7 @@ namespace detail
     #endif
 
     template <class K, class... Args>
-    __host__ _CCCL_DEVICE __forceinline__
+    _CCCL_HOST _CCCL_DEVICE __forceinline__
     cudaError_t doit(K k, Args const&... args) const
     {
       NV_IF_TARGET(NV_IS_HOST,
