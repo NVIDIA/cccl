@@ -13,6 +13,9 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cstdint>
+
+#include "cuda/std/__atomic/functions/cuda_ptx_generated_helper.h"
 #include "cuda_ptx_generated.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,6 +35,92 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_CUDA_COMPILER)
+
+template <class _Operand>
+using __atomic_cuda_enable_non_native_load = typename enable_if<_Operand::__size <= 8, bool>::type;
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_load<_Operand> = 0>
+static inline _CCCL_DEVICE bool
+__cuda_atomic_load(_Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
+{
+  uint16_t* __aligned     = (uint16_t*) ((intptr_t) __ptr & ~(sizeof(uint16_t) - 1));
+  const uint16_t __offset = uint16_t((intptr_t) __ptr & (sizeof(uint16_t) - 1)) * 8;
+  const uint16_t __mask   = ((1 << 8) - 1) << __offset;
+
+  uint16_t __value = 0;
+
+  __cuda_atomic_load(__aligned, __value, _Order{}, __atomic_cuda_operand_b16{}, _Sco{}, __atomic_cuda_mmio_disable{});
+  __dst = static_cast<_Type>(__value >> __offset);
+}
+
+template <class _Type, class _Order, class _Sco>
+static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
+  _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Order, __atomic_cuda_operand_b8, _Sco)
+{
+  uint16_t* __aligned     = (uint16_t*) ((intptr_t) __ptr & ~(sizeof(uint16_t) - 1));
+  const uint16_t __offset = uint16_t((intptr_t) __ptr & (sizeof(uint16_t) - 1)) * 8;
+  const uint16_t __mask   = ((1 << 8) - 1) << __offset;
+
+  // Algorithm for 8b CAS with 16b intrinsics
+  // __old = __window[0:16] where [__cmp] resides in either of the two 8b offsets
+  // First CAS attempt 'guesses' that the masked portion of the window is 0x00.
+  uint16_t __old       = (uint16_t(__op) << __offset);
+  uint16_t __old_value = 0;
+
+  bool __success = false;
+
+  // Reemit CAS instructions until either of two conditions are met
+  while (1)
+  {
+    // Combine the desired value and most recently fetched expected masked portion of the window
+    uint16_t __attempt = (__old & ~__mask) | (uint16_t(__op) << __offset);
+
+    if (__cuda_atomic_compare_exchange(
+          __aligned, __old, __old, __attempt, _Order{}, __atomic_cuda_operand_b16{}, _Sco{}))
+    {
+      // CAS was successful
+      return true;
+    }
+    __old_value = (__old & __mask) >> __offset;
+    // The expected value no longer matches inside the CAS.
+    if (__old_value != __cmp)
+    {
+      __dst = __old_value;
+      break;
+    }
+  }
+  return false;
+}
+
+// Lower level fetch_update that bypasses memorder dispatch
+template <class _Type, class _Fn, class _Sco, class _Order, class _Operand>
+_CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Order, _Operand, _Sco)
+{
+  _Type __expected = 0;
+  __cuda_atomic_load(__ptr, __expected, __atomic_cuda_relaxed{}, _Operand{}, _Sco{}, __atomic_cuda_mmio_disable{});
+  _Type __desired = __op(__expected);
+  while (!__cuda_atomic_compare_exchange(__ptr, __expected, __expected, __desired, _Order{}, _Operand{}, _Sco{}))
+  {
+    __desired = __op(__expected);
+  }
+  return __expected;
+}
+
+template <class _Operand>
+using __atomic_cuda_enable_non_native_add = typename enable_if<_Operand::__size <= 16, bool>::type;
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_add<_Operand> = 0>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+{
+  __dst = __cuda_atomic_fetch_update(
+    __ptr,
+    [__op](_Type __old) {
+      return __old + __op;
+    },
+    _Order{},
+    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
+    _Sco{});
+}
 
 template <typename _Tp, typename _Fn, typename _Sco>
 _CCCL_DEVICE _Tp __atomic_fetch_update_cuda(_Tp* __ptr, const _Fn& __op, int __memorder, _Sco)
@@ -205,35 +294,6 @@ _CCCL_DEVICE double __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int 
 //   memcpy(&__new, __val, sizeof(__proxy_t));
 //   __atomic_exchange_cuda(__ptr, &__new, &__old, __memorder, _Sco{});
 //   memcpy(__ret, &__old, sizeof(__proxy_t));
-// }
-
-// template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
-// _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
-//   _Tp volatile* __ptr, _Tp* __expected, const _Tp __desired, bool, int __success_memorder, int __failure_memorder,
-//   _Sco)
-// {
-//   auto const __aligned = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
-//   auto const __offset  = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * 8;
-//   auto const __mask    = ((1 << sizeof(_Tp) * 8) - 1) << __offset;
-
-//   uint32_t __old = *__expected << __offset;
-//   uint32_t __old_value;
-//   while (1)
-//   {
-//     __old_value = (__old & __mask) >> __offset;
-//     if (__old_value != *__expected)
-//     {
-//       break;
-//     }
-//     uint32_t const __attempt = (__old & ~__mask) | (*__desired << __offset);
-//     if (__atomic_compare_exchange_cuda(
-//           __aligned, &__old, &__attempt, true, __success_memorder, __failure_memorder, _Sco{}))
-//     {
-//       return true;
-//     }
-//   }
-//   *__expected = __old_value;
-//   return false;
 // }
 
 // template <typename _Tp, typename _Sco, __enable_if_t<sizeof(_Tp) <= 2, int> = 0>
