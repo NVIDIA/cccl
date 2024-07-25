@@ -49,6 +49,16 @@ public:
   {
     return __id;
   }
+
+  //! @brief Retrieve the number of devices available on the system
+  //!
+  //! @throws cuda_error if the device count query fails
+  _CCCL_NODISCARD static int count()
+  {
+    int count = 0;
+    _CCCL_TRY_CUDA_API(cudaGetDeviceCount, "failed to get the device count", &count);
+    return count;
+  }
 };
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
