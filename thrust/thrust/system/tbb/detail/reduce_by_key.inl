@@ -36,7 +36,6 @@
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
 
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #include <cassert>
@@ -66,7 +65,6 @@ struct partial_sum_type
 {
   using type = thrust::iterator_value_t<InputIterator>;
 };
-
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
 thrust::pair<InputIterator1,
