@@ -1778,45 +1778,48 @@ public:
 #  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
   // [containers.sequences.inplace.vector.erasure]
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase(inplace_vector& __cont, const _Tp& __value)
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
-    noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
-#  endif // !_CCCL_COMPILER_MSVC_2017
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type
+  __erase(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
       return 0;
     }
-    const iterator __old_end = __cont.end();
-    const iterator __new_end = _CUDA_VSTD::remove(__cont.begin(), __old_end, __value);
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
-    __cont.__destroy(__new_end, __old_end);
-#  else // ^^^ !_CCCL_COMPILER_MSVC_2017 ^^^ / vvv _CCCL_COMPILER_MSVC_2017 vvv
-    __cont.resize(__cont.size() - static_cast<size_type>(__old_end - __new_end));
-#  endif // _CCCL_COMPILER_MSVC_2017
+    const iterator __old_end = this->end();
+    const iterator __new_end = _CUDA_VSTD::remove(this->begin(), __old_end, __value);
+    this->__destroy(__new_end, __old_end);
     return static_cast<size_type>(__old_end - __new_end);
   }
 
   template <class _Pred>
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr size_type erase_if(inplace_vector& __cont, _Pred __pred)
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
-    noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
-#  endif // !_CCCL_COMPILER_MSVC_2017
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type
+  __erase_if(_Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
       return 0;
     }
-    const iterator __old_end = __cont.end();
-    const iterator __new_end = _CUDA_VSTD::remove_if(__cont.begin(), __old_end, _CUDA_VSTD::move(__pred));
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
-    __cont.__destroy(__new_end, __old_end);
-#  else // ^^^ !_CCCL_COMPILER_MSVC_2017 ^^^ / vvv _CCCL_COMPILER_MSVC_2017 vvv
-    __cont.resize(__cont.size() - static_cast<size_type>(__old_end - __new_end));
-#  endif // _CCCL_COMPILER_MSVC_2017
+    const iterator __old_end = this->end();
+    const iterator __new_end = _CUDA_VSTD::remove_if(this->begin(), __old_end, _CUDA_VSTD::move(__pred));
+    this->__destroy(__new_end, __old_end);
     return static_cast<size_type>(__old_end - __new_end);
   }
 };
+
+// [containers.sequences.inplace.vector.erasure]
+template <class _Tp, size_t _Capacity>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr size_t
+erase(inplace_vector<_Tp, _Capacity>& __cont, const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+{
+  return __cont.__erase(__value);
+}
+
+template <class _Tp, size_t _Capacity, class _Pred>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr size_t
+erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+{
+  return __cont.__erase_if(__pred);
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
