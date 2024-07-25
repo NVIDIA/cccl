@@ -672,6 +672,17 @@ class Bench:
 
         return self.axes_values(sub_space, False)
 
+    def list(self, ct_workload_point, rt_values):
+        result = {}
+        bench_path = os.path.join('.', 'bin', self.exe_name())
+        for subbench in rt_values:
+            result[subbench] = {}
+            for rt_point in values_to_space(rt_values[subbench]):
+                workload_point = list(ct_workload_point) + list(rt_point)
+                cmd = [bench_path] + [f'-a "{param}"' for param in workload_point]
+                result[subbench][' '.join(workload_point)] = ' '.join(cmd)
+        return result
+
     def run(self, ct_workload_point, rt_values, estimator, is_search=True):
         logger = Logger()
         bench_cache = BenchCache()
