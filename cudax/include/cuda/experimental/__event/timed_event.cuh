@@ -28,7 +28,6 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
-// CUDAX headers here
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event.cuh>
 

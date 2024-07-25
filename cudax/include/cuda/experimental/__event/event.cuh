@@ -28,7 +28,6 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
 
-// CUDAX headers here
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event_ref.cuh>
 
