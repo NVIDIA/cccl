@@ -7,7 +7,6 @@ enabled = true
 name = "CUDA C++ Core Libraries"
 project = "cccl"
 logo = "img/logo.png"
-output_format = "linkcheck"
 
 repo_url         = "https://github.com/NVIDIA/cccl"
 social_media_set = ""
