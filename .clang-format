@@ -117,15 +117,12 @@ IncludeCategories:
   - Regex:           '^<thrust/'
     Priority:            3
     SortPriority:        2
-  - Regex:           '^<cuda/experimental'
-    Priority:            5
-    SortPriority:        4
   - Regex:           '^<cuda/'
     Priority:            4
     SortPriority:        3
   - Regex:           '^<[a-z_]*>$'
-    Priority:            6
-    SortPriority:        5
+    Priority:            5
+    SortPriority:        4
   - Regex:           '^<cuda'
     Priority:            0
     SortPriority:        0
