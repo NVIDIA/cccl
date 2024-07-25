@@ -39,8 +39,19 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief cuda_memory_resource uses `cudaMalloc` / `cudaFree` for allocation / deallocation.
-struct cuda_memory_resource
+class cuda_memory_resource
 {
+private:
+  int __device_id_{0};
+
+public:
+  constexpr cuda_memory_resource() noexcept
+      : __device_id_(0)
+  {}
+  constexpr cuda_memory_resource(const int __device_id) noexcept
+      : __device_id_(__device_id)
+  {}
+
   //! @brief Allocate device memory of size at least \p __bytes.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
@@ -54,6 +65,8 @@ struct cuda_memory_resource
       _CUDA_VSTD::__throw_bad_alloc();
     }
 
+    __cuda_set_device_wrapper __device_wrapper{__device_id_};
+
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(::cudaMalloc, "Failed to allocate memory with cudaMalloc.", &__ptr, __bytes);
     return __ptr;
@@ -65,6 +78,7 @@ struct cuda_memory_resource
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
   void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const
   {
+    __cuda_set_device_wrapper __device_wrapper{__device_id_};
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
                        "Invalid alignment passed to cuda_memory_resource::deallocate.");
@@ -73,17 +87,19 @@ struct cuda_memory_resource
   }
 
   //! @brief Equality comparison with another \c cuda_memory_resource
-  //! @return true
-  _CCCL_NODISCARD constexpr bool operator==(cuda_memory_resource const&) const noexcept
+  //! @param __other The other \c cuda_memory_resource
+  //! @return true, if both resources hold the same device id
+  _CCCL_NODISCARD constexpr bool operator==(cuda_memory_resource const& __other) const noexcept
   {
-    return true;
+    return __device_id_ == __other.__device_id_;
   }
 #    if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c cuda_memory_resource
-  //! @return false
-  _CCCL_NODISCARD constexpr bool operator!=(cuda_memory_resource const&) const noexcept
+  //! @param __other The other \c cuda_memory_resource
+  //! @return true, if both resources hold different device id's
+  _CCCL_NODISCARD constexpr bool operator!=(cuda_memory_resource const& __other) const noexcept
   {
-    return false;
+    return __device_id_ != __other.__device_id_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 

@@ -47,4 +47,34 @@
     (void) __status;                                   \
   }
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+//! @brief `__cuda_set_device_wrapper` is a simple helper that sets the current device to a given target and resets it
+//! back in its destructor
+struct __cuda_set_device_wrapper
+{
+  int __target_device_   = 0;
+  int __original_device_ = 0;
+
+  __cuda_set_device_wrapper(const int __target_device)
+      : __target_device_(__target_device)
+  {
+    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device", &__original_device_);
+    if (__original_device_ != __target_device_)
+    {
+      _CCCL_TRY_CUDA_API(::cudaSetDevice, "Failed to set device", __target_device_);
+    }
+  }
+
+  ~__cuda_set_device_wrapper()
+  {
+    if (__original_device_ != __target_device_)
+    {
+      _CCCL_TRY_CUDA_API(::cudaSetDevice, "Failed to set device", __original_device_);
+    }
+  }
+};
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
 #endif //_CUDA__STD__CUDA_API_WRAPPER_H
