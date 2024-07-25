@@ -61,7 +61,7 @@ Synchronization Primitives
        primitive for constraining concurrent access
      - libcu++ 1.1.0 / CCCL 2.0.0 / CUDA 11.0
    * - :ref:`cuda::binary_semaphore <libcudacxx-extended-api-synchronization-counting-semaphore>`
-     - System wide `std::binary_semaphore <https://en.cppreference.com/w/cpp/thread/binary_semaphore>`_
+     - System wide `std::binary_semaphore <https://en.cppreference.com/w/cpp/thread/counting_semaphore>`_
        primitive for mutual exclusion
      - libcu++ 1.1.0 / CCCL 2.0.0 / CUDA 11.0
 

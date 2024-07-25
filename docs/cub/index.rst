@@ -435,7 +435,7 @@ How is CUB different than Thrust and Modern GPU?
 CUB and Thrust
 --------------------------------------------------
 
-CUB and `Thrust <http://thrust.github.io/>`_ share some
+CUB and `Thrust <https://nvidia.github.io/cccl/thrust/>`_ share some
 similarities in that they both provide similar device-wide primitives for CUDA.
 However, they target different abstraction layers for parallel computing.
 Thrust abstractions are agnostic of any particular parallel framework (e.g.,

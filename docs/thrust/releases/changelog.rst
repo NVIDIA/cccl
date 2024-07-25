@@ -223,7 +223,7 @@ Thrust 1.17.0 is the final minor release of the 1.X series. This release
 provides GDB pretty-printers for device vectors/references, a new
 ``unique_count`` algorithm, and an easier way to create tagged Thrust
 iterators. Several documentation fixes are included, which can be found
-on the new Thrust documentation site at https://nvidia.github.io/thrust.
+on the new Thrust documentation site at https://nvidia.github.io/cccl/thrust/.
 We’ll be migrating existing documentation sources to this new location
 over the next few months.
 
@@ -255,8 +255,7 @@ Other Enhancements
 
 -  NVIDIA/thrust#1512: Use CUB to implement ``adjacent_difference``.
 -  NVIDIA/thrust#1555: Use CUB to implement ``scan_by_key``.
--  NVIDIA/thrust#1611: Add new doxybook-based Thrust documentation at
-   https://nvidia.github.io/thrust.
+-  NVIDIA/thrust#1611: Add new doxybook-based Thrust documentation
 -  NVIDIA/thrust#1639: Fixed broken link in documentation. Thanks to
    @jrhemstad for this contribution.
 -  NVIDIA/thrust#1644: Increase contrast of search input text in new doc

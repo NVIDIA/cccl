@@ -188,7 +188,7 @@ Some parts are distributed under the [Apache License v2.0] and the [Boost Licens
 
 [GitHub]: https://github.com/NVIDIA/cccl/tree/main/thrust
 
-[contributing section]: https://nvidia.github.io/thrust/contributing.html
+[contributing section]: https://nvidia.github.io/cccl/thrust/contributing.html
 
 [CMake build system]: https://cmake.org
 

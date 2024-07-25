@@ -24,6 +24,10 @@ sphinx_exclude_patterns = [
     "tools",
     "VERSION.md",
 ]
+sphinx_conf_py_extra = """
+linkcheck_ignore = ['.*\\.md', '.*\\.cu', 'index.html#sec.*', '.*flexible-data-arrangement']
+"""
+
 
 project_build_order = [ "libcudacxx", "cub", "thrust", "cccl", "pycuda" ]
 
@@ -52,6 +56,9 @@ use_fast_doxygen_conversion = true
 sphinx_generate_doxygen_groups = true
 sphinx_generate_doxygen_pages = true
 sphinx_exclude_patterns = []
+
+[repo_docs.projects.libcudacxx.builds.linkcheck] 
+output_format = "linkcheck"
 
 [repo_docs.projects.cub]
 name = "CUB"
@@ -182,6 +189,9 @@ doxygen_conf_extra = """
   STRIP_FROM_PATH        = ../../cub
 """
 
+[repo_docs.projects.cub.builds.linkcheck] 
+output_format = "linkcheck"
+
 [repo_docs.projects.thrust]
 name = "Thrust: The C++ Parallel Algorithms Library"
 docs_root = "thrust"
@@ -280,6 +290,9 @@ doxygen_conf_extra = """
   STRIP_FROM_PATH        = ../../thrust
 """
 
+[repo_docs.projects.thrust.builds.linkcheck] 
+output_format = "linkcheck"
+
 [repo_docs.projects.pycuda]
 name = "pycuda"
 docs_root = "pycuda"
@@ -302,3 +315,6 @@ enhanced_search_enabled = true
 python_paths = [
     "${root}/../python/cuda"
 ]
+
+[repo_docs.projects.pycuda.builds.linkcheck] 
+output_format = "linkcheck"
