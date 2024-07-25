@@ -88,7 +88,9 @@ extern "C++" {
 #  endif
 
 #  if (defined(_CCCL_COMPILER_NVHPC) && defined(__linux__)) || defined(_CCCL_COMPILER_NVRTC)
-#    define __ELF__
+#    ifndef __ELF__
+#      define __ELF__
+#    endif // !__ELF__
 #  endif
 
 #  if defined(__ELF__)
