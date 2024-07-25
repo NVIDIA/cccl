@@ -32,10 +32,10 @@ detailed below.
 
 **Note:** If CMake is unable to locate Thrust, specify the path to Thrust's CMake
 configuration directory (where this README file is located) as `Thrust_DIR`.
-If cloning Thrust from github, this would be
+If using Thrust from the CCCL sources, this would be
 
 ```
-$ cmake . -DThrust_DIR=<thrust git repo root>/thrust/cmake/
+$ cmake . -DThrust_DIR=<CCCL git repo root>/thrust/thrust/cmake/
 ```
 
 #### TBB / OpenMP

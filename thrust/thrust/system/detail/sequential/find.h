@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE InputIterator
 find_if(execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred(pred);
+  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (first != last)
   {

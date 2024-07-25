@@ -57,7 +57,7 @@ struct body
       : first(first)
       , sum(init)
       , first_call(true)
-      , binary_op(binary_op)
+      , binary_op{binary_op}
   {}
 
   // note: we only initalize sum with b.sum to avoid calling OutputType's default constructor
@@ -65,7 +65,7 @@ struct body
       : first(b.first)
       , sum(b.sum)
       , first_call(true)
-      , binary_op(b.binary_op)
+      , binary_op{b.binary_op}
   {}
 
   template <typename Size>

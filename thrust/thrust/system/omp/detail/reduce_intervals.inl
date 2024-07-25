@@ -67,7 +67,7 @@ void reduce_intervals(
   using OutputType = typename thrust::iterator_value<OutputIterator>::type;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op(binary_op);
+  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
 
   using index_type = std::intptr_t;
 
