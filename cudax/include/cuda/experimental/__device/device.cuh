@@ -42,4 +42,4 @@ struct device
 };
 
 } // namespace cuda::experimental
-#endif
+#endif // _CUDAX__DEVICE_DEVICE
