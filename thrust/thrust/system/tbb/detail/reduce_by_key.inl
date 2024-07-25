@@ -64,19 +64,9 @@ inline L divide_ri(const L x, const R y)
 template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
 {
-  using value_t = thrust::iterator_value_t<InputIterator>;
-  // TODO(bgruber): unify with CUB's accumulator_t
-  using type = ::cuda::std::__decay_t<typename ::cuda::std::__invoke_of<BinaryFunction, value_t, value_t>::type>;
+  using type = thrust::iterator_value_t<InputIterator>;
 };
 
-// gevtushenko preferred to detect a ::result_type on the function first
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-template <typename InputIterator, typename BinaryFunction>
-struct partial_sum_type<InputIterator, BinaryFunction, ::cuda::std::void_t<typename BinaryFunction::result_type>>
-{
-  using type = typename BinaryFunction::result_type;
-};
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
 thrust::pair<InputIterator1,
