@@ -16,6 +16,8 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
+#include "cuda/std/__cccl/attributes.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
