@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/experimental/device.cuh>
 
@@ -236,4 +237,49 @@ TEST_CASE("Smoke", "[device]")
     }
 #endif
   }
+}
+
+TEST_CASE("global devices vector", "[device]")
+{
+  CUDAX_REQUIRE(cudax::devices.size() > 0);
+  CUDAX_REQUIRE(cudax::devices.begin() != cudax::devices.end());
+  CUDAX_REQUIRE(cudax::devices.begin() == cudax::devices.begin());
+  CUDAX_REQUIRE(cudax::devices.end() == cudax::devices.end());
+  CUDAX_REQUIRE(cudax::devices.size() == static_cast<size_t>(cudax::devices.end() - cudax::devices.begin()));
+
+  CUDAX_REQUIRE(0 == cudax::devices[0].get());
+  CUDAX_REQUIRE(0 == (*cudax::devices.begin()).get());
+  CUDAX_REQUIRE(0 == cudax::devices.begin()->get());
+
+  // The device iterator itself does no range checking so these tests are safe
+  // regardless of the number of devices in the system.
+  auto it1 = cudax::devices.begin();
+  ++it1;
+  CUDAX_REQUIRE(1 == it1->get());
+
+  auto it2 = it1++;
+  CUDAX_REQUIRE(1 == it2->get());
+  CUDAX_REQUIRE(2 == it1->get());
+
+  CUDAX_REQUIRE(it1 != it2);
+
+  --it1;
+  CUDAX_REQUIRE(1 == it1->get());
+
+  it2 = it1--;
+  CUDAX_REQUIRE(1 == it2->get());
+  CUDAX_REQUIRE(0 == it1->get());
+
+  it1 += 3;
+  CUDAX_REQUIRE(3 == it1->get());
+
+  it1 -= 2;
+  CUDAX_REQUIRE(1 == it1->get());
+
+  CUDAX_REQUIRE(2 == (it1 + 1)->get());
+  CUDAX_REQUIRE(2 == (1 + it1)->get());
+  CUDAX_REQUIRE(0 == (it1 - 1)->get());
+  CUDAX_REQUIRE(1 == (it1 + 1) - it1);
+
+  CUDAX_REQUIRE(2 == it1[1].get());
 }
