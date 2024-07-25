@@ -80,4 +80,3 @@ enough compute capability (SM version), like this:
 
 For more information on which compilers correspond to which PTX ISA, see
 the `PTX ISA release notes <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes>`__.
-
