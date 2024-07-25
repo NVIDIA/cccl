@@ -32,8 +32,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-/// \concept has_property
-/// \brief The \c has_property concept
+//! @brief The \c has_property concept verifies that a Resource satisfies a given Property
+//! @rst
+//! For \c has_property we require the following free function to be callable
+//!
+//! .. code cpp::
+//!
+//!    get_property(const Resource& res, Property prop);
+//!
+//! @endrst
 template <class _Resource, class _Property, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool has_property = false;
 
@@ -44,11 +51,21 @@ _LIBCUDACXX_INLINE_VAR constexpr bool has_property<
   _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
   true;
 
-/// \concept property_with_value
-/// \brief The \c property_with_value concept
 template <class _Property>
 using __property_value_t = typename _Property::value_type;
 
+//! @brief The \c property_with_value concept verifies that a Property is stateful and signals this through the
+//! `value_type` alias
+//! @rst
+//! .. code cpp::
+//!
+//!    struct stateless_property {};
+//!    static_assert(!cuda::property_with_value<stateless_property>);
+//!
+//!    struct stateful_property { using value_type = int; };
+//!    static_assert(!cuda::property_with_value<stateful_property>);
+//!
+//! @endrst
 template <class _Property, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool property_with_value = false;
 
@@ -56,8 +73,34 @@ template <class _Property>
 _LIBCUDACXX_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
   true;
 
-/// \concept has_property_with
-/// \brief The \c has_property_with concept
+//! @brief The \c has_property_with concept verifies that a Resource satisfies a given stateful Property
+//! @rst
+//! For \c has_property_with we require the following free function to be callable and its return type to exactly match
+//! the ``value_type`` of the Property
+//!
+//! .. code cpp::
+//!
+//!    struct stateless_property {};
+//!    constexpr void get_property(const Resource& res, stateless_property) {}
+//!
+//!    // The resource must be stateful
+//!    static_assert(!cuda::has_property_with<Resource, stateless_property, int>);
+//!
+//!    struct stateful_property { using value_type = int; };
+//!    constexpr int get_property(const Resource& res, stateful_property) {}
+//!
+//!    // The resource is stateful and has the correct return type
+//!    static_assert(cuda::has_property_with<Resource, stateful_property, int>);
+//!
+//!    // The resource is stateful but the return type is incorrect
+//!    static_assert(!cuda::has_property_with<Resource, stateful_property, double>);
+//!
+//!    constexpr double get_property(const OtherResource& res, stateful_property) {}
+//!
+//!    // The resource is stateful but the value_type does not match the `get_property` return type
+//!    static_assert(!cuda::has_property_with<OtherResource, stateful_property, double>);
+//!
+//! @endrst
 template <class _Resource, class _Property, class _Return>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __has_property_with_,
@@ -66,8 +109,6 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Resource, class _Property, class _Return>
 _LIBCUDACXX_CONCEPT has_property_with = _LIBCUDACXX_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
 
-/// \concept __has_upstream_resource
-/// \brief The \c __has_upstream_resource concept
 template <class _Resource, class _Upstream>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __has_upstream_resource_,
@@ -76,9 +117,6 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Resource, class _Upstream>
 _LIBCUDACXX_CONCEPT __has_upstream_resource = _LIBCUDACXX_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
 
-/// class forward_property
-/// \brief The \c forward_property crtp template simplifies the user facing side of forwarding properties
-///        We can just derive from it to properly forward all properties
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn
@@ -101,11 +139,26 @@ struct __fn
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
 
+//! @brief The \c forward_property CRTP template allows Derived to forward all properties of Upstream
+//! @rst
+//! .. code cpp::
+//!
+//!    class UpstreamWithProperties;
+//!
+//!    class DerivedClass : cuda::forward_properties<DerivedClass, UpstreamWithProperties> {
+//!      // This method is needed to forward stateful properties
+//!      UpstreamWithProperties& upstream_resource() const { ... }
+//!    };
+//!
+//! .. note::
+//!
+//!    In order to forward stateful properties, a type needs do implement an `upstream_resource()` method that returns
+//!    an instance of the upstream.
+//!
+//! @endrst
 template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
-/// class get_property
-/// \brief The \c get_property customization point ensures that `cuda::get_property` is always available
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
 void get_property();
 
