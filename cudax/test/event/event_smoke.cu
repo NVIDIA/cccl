@@ -66,6 +66,14 @@ TEST_CASE("can copy construct an event_ref and compare for equality", "[event]")
   CUDAX_REQUIRE(!ref4);
 }
 
+struct assign_42
+{
+  __device__ constexpr void operator()(int* pi) const noexcept
+  {
+    *pi = 42;
+  }
+};
+
 TEST_CASE("can use event_ref to record and wait on an event", "[event]")
 {
   ::cudaEvent_t ev;
@@ -74,11 +82,7 @@ TEST_CASE("can use event_ref to record and wait on an event", "[event]")
 
   test::managed<int> i(0);
   test::stream stream;
-  ::test::invokernel<<<1, 1, 0, stream.get()>>>(
-    [] _CCCL_HOST_DEVICE(int* pi) {
-      *pi = 42;
-    },
-    i.get());
+  ::test::invokernel<<<1, 1, 0, stream.get()>>>(assign_42{}, i.get());
   ref.record(stream);
   ref.wait();
   CUDAX_REQUIRE(*i == 42);
@@ -98,11 +102,7 @@ TEST_CASE("can wait on an event", "[event]")
 {
   test::stream stream;
   ::test::managed<int> i(0);
-  ::test::invokernel<<<1, 1, 0, stream.get()>>>(
-    [] _CCCL_DEVICE(int* pi) {
-      *pi = 42;
-    },
-    i.get());
+  ::test::invokernel<<<1, 1, 0, stream.get()>>>(assign_42{}, i.get());
   cudax::event ev(stream);
   ev.wait();
   CUDAX_REQUIRE(*i == 42);
@@ -114,11 +114,7 @@ TEST_CASE("can take the difference of two timed_event objects", "[event]")
   test::stream stream;
   ::test::managed<int> i(0);
   cudax::timed_event start(stream);
-  ::test::invokernel<<<1, 1, 0, stream.get()>>>(
-    [] _CCCL_DEVICE(int* pi) {
-      *pi = 42;
-    },
-    i.get());
+  ::test::invokernel<<<1, 1, 0, stream.get()>>>(assign_42{}, i.get());
   cudax::timed_event end(stream);
   end.wait();
   CUDAX_REQUIRE(*i == 42);
