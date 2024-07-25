@@ -209,10 +209,8 @@
 
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M0(_REQ) _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M1(_REQ) _LIBCUDACXX_PP_EXPAND _REQ
-#  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_(...)                               \
-    {                                                                           \
-      _LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) \
-    }
+#  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_(...) \
+    {_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)                                              \
     _LIBCUDACXX_PP_CAT3(                                                                               \
       _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_,                                                       \

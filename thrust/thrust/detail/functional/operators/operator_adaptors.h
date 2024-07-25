@@ -29,7 +29,6 @@
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/tuple.h>
-#include <thrust/type_traits/void_t.h>
 
 #include <type_traits>
 

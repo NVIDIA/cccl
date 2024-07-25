@@ -106,8 +106,8 @@ struct bit_not
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(~THRUST_FWD(t1)))
-    -> decltype(~THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
+    noexcept(noexcept(~THRUST_FWD(t1))) -> decltype(~THRUST_FWD(t1))
   {
     return ~THRUST_FWD(t1);
   }

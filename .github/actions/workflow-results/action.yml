@@ -8,11 +8,20 @@ inputs:
   pr_number:
     description: "The PR number to comment on, if applicable. No comment will be made if not provided."
     required: false
+  slack_token:
+    description: "The Slack token to use for notifications. No notifications will be sent if not provided."
+    required: false
+  slack_log:
+    description: "Slack channel ID for verbose notifications."
+    required: false
+  slack_alert:
+    description: "Slack channel ID for alert notifications."
+    required: false
 
 outputs:
   success:
     description: "Whether any jobs failed."
-    value: ${{ steps.check-dispatch.outputs.success }}
+    value: ${{ steps.check-success.outputs.success }}
 
 runs:
   using: "composite"
@@ -112,6 +121,10 @@ runs:
         printf "SUMMARY=%s\n" "$(cat final_summary.md | url_encode_string)" | tee -a "${GITHUB_OUTPUT}"
         echo "::endgroup::"
 
+        echo "::group::GHA Output: EXEC_SUMMARY"
+        printf "EXEC_SUMMARY=%s\n" "$(cat execution/heading.txt)" | tee -a "${GITHUB_OUTPUT}"
+        echo "::endgroup::"
+
         cp final_summary.md ${GITHUB_STEP_SUMMARY}
 
     - name: Comment on PR
@@ -140,7 +153,7 @@ runs:
           });
 
     - name: Check for job success
-      id: check-dispatch
+      id: check-success
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "::group::Checking for success artifacts"
@@ -162,3 +175,38 @@ runs:
         fi
 
         echo "success=true" >> "${GITHUB_OUTPUT}"
+
+    - name: Send Slack log notification
+      if: ${{ always() && inputs.slack_token != '' && inputs.slack_log != '' }}
+      uses: slackapi/slack-github-action@v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
+        WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
+        STATUS: ${{ steps.check-success.outcome }}
+        EXEC_SUMMARY: ${{ steps.final-summary.outputs.EXEC_SUMMARY }}
+        SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      with:
+        channel-id: ${{ inputs.slack_log }}
+        slack-message: |
+          Workflow '${{ env.WORKFLOW_TYPE }}' has finished with status `${{ env.STATUS }}`:
+
+          ${{ env.EXEC_SUMMARY }}
+
+          Details: ${{ env.SUMMARY_URL }}
+
+    - name: Send Slack alert notification
+      if: ${{ failure() && inputs.slack_token != '' && inputs.slack_alert != '' }}
+      uses: slackapi/slack-github-action@v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
+        WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
+        EXEC_SUMMARY: ${{ steps.final-summary.outputs.EXEC_SUMMARY }}
+        SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      with:
+        channel-id: ${{ inputs.slack_alert }}
+        slack-message: |
+          Workflow '${{ env.WORKFLOW_TYPE }}' has failed:
+
+          ${{ env.EXEC_SUMMARY }}
+
+          Details: ${{ env.SUMMARY_URL }}

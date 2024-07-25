@@ -118,8 +118,8 @@ mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
 }
 
 template <class _Sp, class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun_t
-    : public __unary_function<const _Tp*, _Sp>
+class _LIBCUDACXX_TEMPLATE_VIS
+_LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun_t : public __unary_function<const _Tp*, _Sp>
 {
   _Sp (_Tp::*__p_)() const;
 
@@ -134,8 +134,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun1_t
-    : public __binary_function<const _Tp*, _Ap, _Sp>
+class _LIBCUDACXX_TEMPLATE_VIS
+_LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 
@@ -179,8 +179,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun1_ref_t
-    : public __binary_function<_Tp, _Ap, _Sp>
+class _LIBCUDACXX_TEMPLATE_VIS
+_LIBCUDACXX_DEPRECATED_IN_CXX11 const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 

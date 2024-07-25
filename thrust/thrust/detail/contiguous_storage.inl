@@ -27,9 +27,9 @@
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/allocator/copy_construct_range.h>
-#include <thrust/detail/allocator/default_construct_range.h>
 #include <thrust/detail/allocator/destroy_range.h>
 #include <thrust/detail/allocator/fill_construct_range.h>
+#include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
 #include <thrust/detail/swap.h>
 
@@ -203,10 +203,10 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::swap(contiguous_storage& x)
 } // end contiguous_storage::swap()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::default_construct_n(iterator first, size_type n)
+_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::value_initialize_n(iterator first, size_type n)
 {
-  default_construct_range(m_allocator, first.base(), n);
-} // end contiguous_storage::default_construct_n()
+  value_initialize_range(m_allocator, first.base(), n);
+} // end contiguous_storage::value_initialize_n()
 
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void

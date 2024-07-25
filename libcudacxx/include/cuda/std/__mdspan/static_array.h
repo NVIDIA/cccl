@@ -249,13 +249,13 @@ struct __partially_static_array_impl_maker<_Tp,
   using __dynamic_idxs = typename __mask_sequence<_CUDA_VSTD::integer_sequence<size_t, _Idxs...>,
                                                   _CUDA_VSTD::integer_sequence<bool, (_Vals == __sentinal)...>>::type;
   using __impl_base    = __partially_static_array_impl<
-    _Tp,
-    _static_t,
-    _CUDA_VSTD::integer_sequence<_static_t, _Vals...>,
-    __sentinal,
-    _CUDA_VSTD::integer_sequence<size_t, _Idxs...>,
-    __dynamic_idxs,
-    _CUDA_VSTD::make_index_sequence<__dynamic_idxs::size()>>;
+       _Tp,
+       _static_t,
+       _CUDA_VSTD::integer_sequence<_static_t, _Vals...>,
+       __sentinal,
+       _CUDA_VSTD::integer_sequence<size_t, _Idxs...>,
+       __dynamic_idxs,
+       _CUDA_VSTD::make_index_sequence<__dynamic_idxs::size()>>;
 };
 
 template <class _Tp, class _static_t, class _ValsSeq, _static_t __sentinal = dynamic_extent>

@@ -816,8 +816,8 @@ _CCCL_HOST_DEVICE span(const _Container&) -> span<const typename _Container::val
 
 _LIBCUDACXX_TEMPLATE(class _It, class _EndOrSize)
 _LIBCUDACXX_REQUIRES(contiguous_iterator<_It>)
-_CCCL_HOST_DEVICE span(_It, _EndOrSize)
-  -> span<remove_reference_t<iter_reference_t<_It>>, __maybe_static_ext<_EndOrSize>>;
+_CCCL_HOST_DEVICE span(_It,
+                       _EndOrSize) -> span<remove_reference_t<iter_reference_t<_It>>, __maybe_static_ext<_EndOrSize>>;
 
 _LIBCUDACXX_TEMPLATE(class _Range)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)

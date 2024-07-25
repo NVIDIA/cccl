@@ -39,9 +39,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __enable_if_t<_CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp),
-                _Tp>
-  midpoint(_Tp __a, _Tp __b) noexcept
+__enable_if_t<_CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp),
+              _Tp>
+midpoint(_Tp __a, _Tp __b) noexcept
 {
   using _Up = __make_unsigned_t<_Tp>;
 
@@ -77,9 +77,9 @@ _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Fp __fp_abs
 }
 
 template <class _Fp>
-_CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
-  midpoint(_Fp __a, _Fp __b) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 __enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
+midpoint(_Fp __a, _Fp __b) noexcept
 {
   _CCCL_CONSTEXPR_CXX14 _Fp __lo = numeric_limits<_Fp>::min() * 2;
   _CCCL_CONSTEXPR_CXX14 _Fp __hi = numeric_limits<_Fp>::max() / 2;

@@ -31,9 +31,9 @@ namespace detail
 {
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE inline void default_construct_range(Allocator& a, Pointer p, Size n);
+_CCCL_HOST_DEVICE inline void value_initialize_range(Allocator& a, Pointer p, Size n);
 
 } // namespace detail
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/allocator/default_construct_range.inl>
+#include <thrust/detail/allocator/value_initialize_range.inl>

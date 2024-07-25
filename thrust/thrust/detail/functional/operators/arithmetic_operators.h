@@ -50,8 +50,8 @@ struct unary_plus
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(+THRUST_FWD(t1)))
-    -> decltype(+THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
+    noexcept(noexcept(+THRUST_FWD(t1))) -> decltype(+THRUST_FWD(t1))
   {
     return +THRUST_FWD(t1);
   }
@@ -107,16 +107,16 @@ operator-(const actor<T1>& _1, const actor<T2>& _2)
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::multiplies<>>, typename as_actor<T1>::type, actor<T2>>>
-  operator*(const T1& _1, const actor<T2>& _2)
+actor<composite<transparent_binary_operator<thrust::multiplies<>>, typename as_actor<T1>::type, actor<T2>>>
+operator*(const T1& _1, const actor<T2>& _2)
 {
   return compose(transparent_binary_operator<thrust::multiplies<>>(), make_actor(_1), make_actor(_2));
 } // end operator*()
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::multiplies<>>, actor<T1>, typename as_actor<T2>::type>>
-  operator*(const actor<T1>& _1, const T2& _2)
+actor<composite<transparent_binary_operator<thrust::multiplies<>>, actor<T1>, typename as_actor<T2>::type>>
+operator*(const actor<T1>& _1, const T2& _2)
 {
   return compose(transparent_binary_operator<thrust::multiplies<>>(), make_actor(_1), make_actor(_2));
 } // end operator*()
@@ -130,16 +130,16 @@ operator*(const actor<T1>& _1, const actor<T2>& _2)
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::divides<>>, actor<T1>, typename as_actor<T2>::type>>
-  operator/(const actor<T1>& _1, const T2& _2)
+actor<composite<transparent_binary_operator<thrust::divides<>>, actor<T1>, typename as_actor<T2>::type>>
+operator/(const actor<T1>& _1, const T2& _2)
 {
   return compose(transparent_binary_operator<thrust::divides<>>(), make_actor(_1), make_actor(_2));
 } // end operator/()
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::divides<>>, typename as_actor<T1>::type, actor<T2>>>
-  operator/(const T1& _1, const actor<T2>& _2)
+actor<composite<transparent_binary_operator<thrust::divides<>>, typename as_actor<T1>::type, actor<T2>>>
+operator/(const T1& _1, const actor<T2>& _2)
 {
   return compose(transparent_binary_operator<thrust::divides<>>(), make_actor(_1), make_actor(_2));
 } // end operator/()
@@ -153,16 +153,16 @@ operator/(const actor<T1>& _1, const actor<T2>& _2)
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::modulus<>>, actor<T1>, typename as_actor<T2>::type>>
-  operator%(const actor<T1>& _1, const T2& _2)
+actor<composite<transparent_binary_operator<thrust::modulus<>>, actor<T1>, typename as_actor<T2>::type>>
+operator%(const actor<T1>& _1, const T2& _2)
 {
   return compose(transparent_binary_operator<thrust::modulus<>>(), make_actor(_1), make_actor(_2));
 } // end operator%()
 
 template <typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor<composite<transparent_binary_operator<thrust::modulus<>>, typename as_actor<T1>::type, actor<T2>>>
-  operator%(const T1& _1, const actor<T2>& _2)
+actor<composite<transparent_binary_operator<thrust::modulus<>>, typename as_actor<T1>::type, actor<T2>>>
+operator%(const T1& _1, const actor<T2>& _2)
 {
   return compose(transparent_binary_operator<thrust::modulus<void>>(), make_actor(_1), make_actor(_2));
 } // end operator%()
@@ -181,8 +181,8 @@ struct prefix_increment
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(++THRUST_FWD(t1)))
-    -> decltype(++THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
+    noexcept(noexcept(++THRUST_FWD(t1))) -> decltype(++THRUST_FWD(t1))
   {
     return ++THRUST_FWD(t1);
   }
@@ -202,8 +202,8 @@ struct postfix_increment
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)++))
-    -> decltype(THRUST_FWD(t1)++)
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
+    noexcept(noexcept(THRUST_FWD(t1)++)) -> decltype(THRUST_FWD(t1)++)
   {
     return THRUST_FWD(t1)++;
   }
@@ -223,8 +223,8 @@ struct prefix_decrement
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(--THRUST_FWD(t1)))
-    -> decltype(--THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
+    noexcept(noexcept(--THRUST_FWD(t1))) -> decltype(--THRUST_FWD(t1))
   {
     return --THRUST_FWD(t1);
   }
@@ -244,8 +244,8 @@ struct postfix_decrement
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(THRUST_FWD(t1)--))
-    -> decltype(THRUST_FWD(t1)--)
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const
+    noexcept(noexcept(THRUST_FWD(t1)--)) -> decltype(THRUST_FWD(t1)--)
   {
     return THRUST_FWD(t1)--;
   }

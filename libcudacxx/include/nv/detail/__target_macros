@@ -504,18 +504,12 @@
 
 #  if defined(_NV_TARGET_CPP11)
 
-#    define _NV_BLOCK_EXPAND(...)     \
-      {                               \
-        _NV_REMOVE_PAREN(__VA_ARGS__) \
-      }
+#    define _NV_BLOCK_EXPAND(...)       {_NV_REMOVE_PAREN(__VA_ARGS__)}
 #    define _NV_TARGET_IF(cond, t, ...) _NV_IF(_NV_ARCH_COND_CAT(cond), t, __VA_ARGS__)
 
 #  else // <C++11 fallback
 
-#    define _NV_BLOCK_EXPAND(x) \
-      {                         \
-        x                       \
-      }
+#    define _NV_BLOCK_EXPAND(x) {x}
 
 #    define _NV_TARGET_IF(cond, t)         _NV_IF(_NV_ARCH_COND_CAT(cond), t, _NV_TARGET_EMPTY_PARAM)
 #    define _NV_TARGET_IF_ELSE(cond, t, f) _NV_IF(_NV_ARCH_COND_CAT(cond), t, f)

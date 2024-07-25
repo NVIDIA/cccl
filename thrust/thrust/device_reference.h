@@ -298,7 +298,7 @@ public:
   }
 
 // declare these members for the purpose of Doxygenating them
-// they actually exist in a derived-from class
+// they actually exist in a base class
 #if 0
     /*! Address-of operator returns a \p device_ptr pointing to the object
      *  referenced by this \p device_reference. It does not return the
@@ -960,7 +960,7 @@ _CCCL_HOST_DEVICE void swap(device_reference<T>& x, device_reference<T>& y)
 }
 
 // declare these methods for the purpose of Doxygenating them
-// they actually are defined for a derived-from class
+// they actually are defined for a base class
 #if THRUST_DOXYGEN
 /*! Writes to an output stream the value of a \p device_reference.
  *

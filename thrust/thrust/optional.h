@@ -26,6 +26,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
 
+#include <cuda/std/__type_traits/void_t.h>
+
 #define THRUST_OPTIONAL_VERSION_MAJOR 0
 #define THRUST_OPTIONAL_VERSION_MINOR 2
 
@@ -152,31 +154,20 @@ template <
 #  endif
   typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>,
   int      = 0>
-_CCCL_HOST_DEVICE constexpr auto
-invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
-  -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(
+  noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
 {
   return std::mem_fn(f)(std::forward<Args>(args)...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Fn, typename... Args, typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
-_CCCL_HOST_DEVICE constexpr auto
-invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
-  -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
+_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(noexcept(
+  std::forward<Fn>(f)(std::forward<Args>(args)...))) -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
 {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
 #endif
-
-// std::void_t from C++17
-template <class...>
-struct voider
-{
-  using type = void;
-};
-template <class... Ts>
-using void_t = typename voider<Ts...>::type;
 
 // Trait for checking if a type is a thrust::optional
 template <class T>
@@ -199,7 +190,8 @@ using get_map_return = optional<fixup_void<invoke_result_t<F, U>>>;
 template <class F, class = void, class... U>
 struct returns_void_impl;
 template <class F, class... U>
-struct returns_void_impl<F, void_t<invoke_result_t<F, U...>>, U...> : std::is_void<invoke_result_t<F, U...>>
+struct returns_void_impl<F, ::cuda::std::void_t<invoke_result_t<F, U...>>, U...>
+    : std::is_void<invoke_result_t<F, U...>>
 {};
 template <class F, class... U>
 using returns_void = returns_void_impl<F, void, U...>;
@@ -959,8 +951,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-    map(F&& f) &
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  map(F&& f) &
   {
     return optional_map_impl(*this, std::forward<F>(f));
   }
@@ -970,8 +962,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-    map(F&& f) &&
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  map(F&& f) &&
   {
     return optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -2250,8 +2242,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-    map(F&& f) &
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  map(F&& f) &
   {
     return detail::optional_map_impl(*this, std::forward<F>(f));
   }
@@ -2261,8 +2253,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-    map(F&& f) &&
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  map(F&& f) &&
   {
     return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
   }

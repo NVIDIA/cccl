@@ -56,28 +56,20 @@ _LIBCUDACXX_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
 concept __member_size = __size_enabled<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  {
-    _LIBCUDACXX_AUTO_CAST(__t.size())
-  } -> __integer_like;
+  { _LIBCUDACXX_AUTO_CAST(__t.size()) } -> __integer_like;
 };
 
 template <class _Tp>
 concept __unqualified_size =
   __size_enabled<_Tp> && !__member_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    {
-      _LIBCUDACXX_AUTO_CAST(size(__t))
-    } -> __integer_like;
+    { _LIBCUDACXX_AUTO_CAST(size(__t)) } -> __integer_like;
   };
 
 template <class _Tp>
 concept __difference =
   !__member_size<_Tp> && !__unqualified_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    {
-      _CUDA_VRANGES::begin(__t)
-    } -> forward_iterator;
-    {
-      _CUDA_VRANGES::end(__t)
-    } -> sized_sentinel_for<decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>;
+    { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
+    { _CUDA_VRANGES::end(__t) } -> sized_sentinel_for<decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>;
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>

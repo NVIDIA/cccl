@@ -100,15 +100,9 @@ constexpr bool __is_mapping_of =
 template <class _Mp>
 concept __layout_mapping_alike = requires {
   requires __is_extents<typename _Mp::extents_type>::value;
-  {
-    _Mp::is_always_strided()
-  } -> same_as<bool>;
-  {
-    _Mp::is_always_exhaustive()
-  } -> same_as<bool>;
-  {
-    _Mp::is_always_unique()
-  } -> same_as<bool>;
+  { _Mp::is_always_strided() } -> same_as<bool>;
+  { _Mp::is_always_exhaustive() } -> same_as<bool>;
+  { _Mp::is_always_unique() } -> same_as<bool>;
   bool_constant<_Mp::is_always_strided()>::value;
   bool_constant<_Mp::is_always_exhaustive()>::value;
   bool_constant<_Mp::is_always_unique()>::value;
@@ -320,11 +314,11 @@ struct layout_stride
 #  else
         : __base_t(__base_t{__member_pair_t(
 #  endif
-          __e, __strides_storage_t(__impl::fill_strides(__s))
+            __e, __strides_storage_t(__impl::fill_strides(__s))
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
+          }
 #  else
-            )})
+              )})
 #  endif
     {
       /*
@@ -353,11 +347,11 @@ struct layout_stride
 #  else
         : __base_t(__base_t{__member_pair_t(
 #  endif
-          __e, __strides_storage_t(__impl::fill_strides(__s))
+            __e, __strides_storage_t(__impl::fill_strides(__s))
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
+          }
 #  else
-            )})
+              )})
 #  endif
     {
       /*
@@ -395,11 +389,11 @@ struct layout_stride
 #  else
         : __base_t(__base_t{__member_pair_t(
 #  endif
-          __other.extents(), __strides_storage_t(__impl::fill_strides(__other))
+            __other.extents(), __strides_storage_t(__impl::fill_strides(__other))
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
+          }
 #  else
-            )})
+              )})
 #  endif
     {
       /*

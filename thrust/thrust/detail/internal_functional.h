@@ -185,24 +185,6 @@ struct generate_functor
                               thrust::detail::identity_<device_generate_functor<Generator>>>
 {};
 
-template <typename ResultType, typename BinaryFunction>
-struct zipped_binary_op
-{
-  using result_type = ResultType;
-
-  _CCCL_HOST_DEVICE zipped_binary_op(BinaryFunction binary_op)
-      : m_binary_op(binary_op)
-  {}
-
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE inline result_type operator()(Tuple t)
-  {
-    return m_binary_op(thrust::get<0>(t), thrust::get<1>(t));
-  }
-
-  BinaryFunction m_binary_op;
-};
-
 template <typename T>
 struct is_non_const_reference
     : ::cuda::std::_And<thrust::detail::not_<::cuda::std::is_const<T>>,

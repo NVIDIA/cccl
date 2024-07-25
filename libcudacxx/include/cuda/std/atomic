@@ -358,16 +358,16 @@ _LIBCUDACXX_INLINE_VISIBILITY void atomic_notify_all(atomic<_Tp>* __o) noexcept
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
 }
@@ -388,16 +388,16 @@ _LIBCUDACXX_INLINE_VISIBILITY _Tp* atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
 }
@@ -420,16 +420,16 @@ atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrdiff_t __op, memory_order __m) n
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
 }
@@ -450,16 +450,16 @@ _LIBCUDACXX_INLINE_VISIBILITY _Tp* atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
-  atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
+__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
 }
@@ -822,14 +822,8 @@ static_assert(LIBCUDACXX_ATOMIC_INT_LOCK_FREE, "This library assumes atomic<int>
 typedef atomic<int> atomic_signed_lock_free;
 typedef atomic<unsigned> atomic_unsigned_lock_free;
 
-#define LIBCUDACXX_ATOMIC_FLAG_INIT \
-  {                                 \
-    false                           \
-  }
-#define LIBCUDACXX_ATOMIC_VAR_INIT(__v) \
-  {                                     \
-    __v                                 \
-  }
+#define LIBCUDACXX_ATOMIC_FLAG_INIT     {false}
+#define LIBCUDACXX_ATOMIC_VAR_INIT(__v) {__v}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

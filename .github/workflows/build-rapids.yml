@@ -2,6 +2,12 @@ name: Build all RAPIDS repositories
 
 on:
   workflow_call:
+    inputs:
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   check-event:
@@ -16,6 +22,7 @@ jobs:
         run: |
           [[ '${{ github.event_name }}' == 'push' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
           [[ '${{ github.event_name }}' == 'schedule' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'workflow_dispatch' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
           [[ '${{ github.event_name }}' == 'pull_request' && '${{ github.repository }}' != 'NVIDIA/cccl' ]] \
           && echo "ok=true"  | tee -a $GITHUB_OUTPUT \
           || echo "ok=false" | tee -a $GITHUB_OUTPUT;
@@ -156,3 +163,22 @@ jobs:
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             --volume "$RUNNER_TEMP/ci-entrypoint.sh:/ci-entrypoint.sh" \
             -- /ci-entrypoint.sh ./ci/rapids/rapids-entrypoint.sh /ci.sh
+
+  notify-failure:
+    name: Notify Slack of RAPIDS failure
+    if: ${{ failure() && inputs.enable_slack_alerts }}
+    needs: build-rapids
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          WORKFLOW_TYPE: ${{ github.workflow }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          slack-message: |
+            RAPIDS build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
+
+            Details: ${{ env.SUMMARY_URL }}

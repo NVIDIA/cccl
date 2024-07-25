@@ -1366,7 +1366,7 @@ struct __narrowing_check
   {};
 
   template <class _Dest, class _Source>
-  struct __narrowing_check_impl<_Dest, _Source, __void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
+  struct __narrowing_check_impl<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
   {
     using type = __type_identity<_Dest>;
   };
@@ -1395,8 +1395,8 @@ template <class _Tp, size_t>
 struct __overload_bool
 {
   template <class _Up, class _Ap = __remove_cvref_t<_Up>>
-  _LIBCUDACXX_INLINE_VISIBILITY auto operator()(bool, _Up&&) const
-    -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
+  _LIBCUDACXX_INLINE_VISIBILITY auto
+  operator()(bool, _Up&&) const -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
 };
 
 template <size_t _Idx>
@@ -1733,9 +1733,8 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS 
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<
-  _Ip,
-  variant<_Types...>>&
+_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<_Ip, variant<_Types...>>&
 get(variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1744,9 +1743,8 @@ get(variant<_Types...>& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<
-  _Ip,
-  variant<_Types...>>&&
+_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<_Ip, variant<_Types...>>&&
 get(variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1755,9 +1753,8 @@ get(variant<_Types...>&& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<
-  _Ip,
-  variant<_Types...>>&
+_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<_Ip, variant<_Types...>>&
 get(const variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1766,9 +1763,8 @@ get(const variant<_Types...>& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<
-  _Ip,
-  variant<_Types...>>&&
+_LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<_Ip, variant<_Types...>>&&
 get(const variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -2095,9 +2091,8 @@ visit(_Visitor&& __visitor, _Vs&&... __vs)
 }
 
 template <class... _Types>
-_LIBCUDACXX_INLINE_VISIBILITY auto
-swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(noexcept(__lhs.swap(__rhs)))
-  -> decltype(__lhs.swap(__rhs))
+_LIBCUDACXX_INLINE_VISIBILITY auto swap(variant<_Types...>& __lhs, variant<_Types...>& __rhs) noexcept(
+  noexcept(__lhs.swap(__rhs))) -> decltype(__lhs.swap(__rhs))
 {
   return __lhs.swap(__rhs);
 }

@@ -29,8 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
-    : public integral_constant<bool, _LIBCUDACXX_IS_LITERAL(_Tp)>
+struct _LIBCUDACXX_TEMPLATE_VIS
+_LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type : public integral_constant<bool, _LIBCUDACXX_IS_LITERAL(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

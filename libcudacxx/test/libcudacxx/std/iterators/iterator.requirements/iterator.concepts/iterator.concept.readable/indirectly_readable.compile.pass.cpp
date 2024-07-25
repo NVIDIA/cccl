@@ -234,7 +234,7 @@ static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile noexcept>);
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile&>);
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile & noexcept>);
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile&&>);
-static_assert(!cuda::std::indirectly_readable < int(S::*)() volatile&& noexcept >);
+static_assert(!cuda::std::indirectly_readable < int(S::*)() volatile && noexcept >);
 
 int main(int, char**)
 {

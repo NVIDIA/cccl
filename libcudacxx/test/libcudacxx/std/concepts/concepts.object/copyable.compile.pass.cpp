@@ -50,7 +50,7 @@ static_assert(copyable<int (S::*)() volatile noexcept>, "");
 static_assert(copyable<int (S::*)() volatile&>, "");
 static_assert(copyable<int (S::*)() volatile & noexcept>, "");
 static_assert(copyable<int (S::*)() volatile&&>, "");
-static_assert(copyable < int(S::*)() volatile&& noexcept >, "");
+static_assert(copyable < int(S::*)() volatile && noexcept >, "");
 static_assert(copyable<int (S::*)() const volatile>, "");
 static_assert(copyable<int (S::*)() const volatile noexcept>, "");
 static_assert(copyable<int (S::*)() const volatile&>, "");

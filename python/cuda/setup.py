@@ -6,8 +6,10 @@ import sys
 import os
 import glob
 import shutil
+
 from setuptools import Command, setup, find_packages, find_namespace_packages
 from setuptools.command.build_py import build_py
+from wheel.bdist_wheel import bdist_wheel
 
 
 project_path = os.path.abspath(os.path.dirname(__file__))
@@ -17,11 +19,23 @@ cccl_headers = [
     ['libcudacxx', 'include'],
     ['thrust', 'thrust']
 ]
+with open(os.path.join(project_path, 'cuda', 'cooperative', '_version.py')) as f:
+    exec(f.read())
+ver = __version__
+del __version__
+
 
 class CustomBuildCommand(build_py):
     def run(self):
         self.run_command('package_cccl')
         build_py.run(self)
+
+
+class CustomWheelBuild(bdist_wheel):
+
+    def run(self):
+        self.run_command('package_cccl')
+        super().run()
 
 
 class PackageCCCLCommand(Command):
@@ -46,7 +60,7 @@ class PackageCCCLCommand(Command):
 
 setup(
     name="cuda-cooperative",
-    version="0.1.0",  # TODO Read from CCCL version
+    version=ver,
     description="Experimental Core Library for CUDA Python",
     author="NVIDIA Corporation",
     classifiers=[
@@ -68,7 +82,8 @@ setup(
     },
     cmdclass={
         'package_cccl': PackageCCCLCommand,
-        'build_py': CustomBuildCommand
+        'build_py': CustomBuildCommand,
+        'bdist_wheel': CustomWheelBuild,
     },
     include_package_data=True
 )

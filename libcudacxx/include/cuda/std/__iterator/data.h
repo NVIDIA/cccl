@@ -35,8 +35,8 @@ constexpr _LIBCUDACXX_INLINE_VISIBILITY auto data(_Cont& __c) noexcept(noexcept(
 }
 
 template <class _Cont>
-constexpr _LIBCUDACXX_INLINE_VISIBILITY auto data(const _Cont& __c) noexcept(noexcept(__c.data()))
-  -> decltype(__c.data())
+constexpr _LIBCUDACXX_INLINE_VISIBILITY auto
+data(const _Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
 {
   return __c.data();
 }

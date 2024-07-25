@@ -36,6 +36,8 @@
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
 
+#include <cuda/std/__type_traits/void_t.h>
+
 #include <cassert>
 #include <thread>
 
@@ -58,21 +60,17 @@ inline L divide_ri(const L x, const R y)
   return (x + (y - 1)) / y;
 }
 
-template <typename InputIterator, typename BinaryFunction, typename OutputIterator = void>
+template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
-    : thrust::detail::eval_if<thrust::detail::has_result_type<BinaryFunction>::value,
-                              thrust::detail::result_type<BinaryFunction>,
-                              thrust::detail::eval_if<thrust::detail::is_output_iterator<OutputIterator>::value,
-                                                      thrust::iterator_value<InputIterator>,
-                                                      thrust::iterator_value<OutputIterator>>>
-{};
+{
+  using type = typename thrust::iterator_value<InputIterator>::type;
+};
 
 template <typename InputIterator, typename BinaryFunction>
-struct partial_sum_type<InputIterator, BinaryFunction, void>
-    : thrust::detail::eval_if<thrust::detail::has_result_type<BinaryFunction>::value,
-                              thrust::detail::result_type<BinaryFunction>,
-                              thrust::iterator_value<InputIterator>>
-{};
+struct partial_sum_type<InputIterator, BinaryFunction, ::cuda::std::void_t<typename BinaryFunction::result_type>>
+{
+  using type = typename BinaryFunction::result_type;
+};
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
 thrust::pair<InputIterator1,

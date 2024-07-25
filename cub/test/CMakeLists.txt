@@ -202,10 +202,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       else()
         target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=0)
       endif()
-
-      if (CUB_IN_THRUST)
-        thrust_fix_clang_nvcc_build_for(${config_c2h_target})
-      endif()
     endif() # config_c2h_target
 
     if (CUB_SEPARATE_CATCH2)
@@ -240,10 +236,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
           target_link_options(${config_c2run_target} PRIVATE "-cuda")
         endif()
 
-        if (CUB_IN_THRUST)
-          thrust_fix_clang_nvcc_build_for(${config_c2run_target})
-        endif()
-
         add_test(NAME ${config_c2run_target}
           COMMAND "$<TARGET_FILE:${config_c2run_target}>"
         )
@@ -263,10 +255,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_compile_definitions(${test_target} PRIVATE NVRTC_THRUST_PATH="-I${CMAKE_SOURCE_DIR}/thrust")
       target_compile_definitions(${test_target} PRIVATE NVRTC_LIBCUDACXX_PATH="-I${CMAKE_SOURCE_DIR}/libcudacxx/include")
       target_compile_definitions(${test_target} PRIVATE NVRTC_CTK_PATH="-I${CUDAToolkit_INCLUDE_DIRS}")
-    endif()
-
-    if (CUB_IN_THRUST)
-      thrust_fix_clang_nvcc_build_for(${test_target})
     endif()
 
     if ("${test_target}" MATCHES "test.iterator")
@@ -297,9 +285,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_link_libraries(${test_target} nvtx3-cpp)
     endif()
 
-    if (CUB_IN_THRUST)
-      thrust_fix_clang_nvcc_build_for(${test_target})
-    endif()
 
     _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)

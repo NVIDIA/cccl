@@ -38,7 +38,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/type_traits/void_t.h>
 
 #include <iterator>
 

@@ -26,7 +26,7 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/api/owned.h>
-#include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
+#include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
 #if defined(_CCCL_CUDA_COMPILER)
@@ -1063,7 +1063,7 @@ struct __get_size_align
 
 // aligned_size_t<n> overload: return n.
 template <typename T>
-struct __get_size_align<T, _CUDA_VSTD::__void_t<decltype(T::align)>>
+struct __get_size_align<T, _CUDA_VSTD::void_t<decltype(T::align)>>
 {
   static constexpr int align = T::align;
 };

@@ -740,22 +740,22 @@ template <class E> constexpr const E* data(initializer_list<E> il) noexcept;    
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Iter>
-struct __libcpp_is_trivial_iterator : public _LIBCUDACXX_BOOL_CONSTANT(is_pointer<_Iter>::value)
+struct __libcpp_is_trivial_iterator : public bool_constant<is_pointer<_Iter>::value>
 {};
 
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<move_iterator<_Iter>>
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
+    : public bool_constant<__libcpp_is_trivial_iterator<_Iter>::value>
 {};
 
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<reverse_iterator<_Iter>>
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
+    : public bool_constant<__libcpp_is_trivial_iterator<_Iter>::value>
 {};
 
 template <class _Iter>
 struct __libcpp_is_trivial_iterator<__wrap_iter<_Iter>>
-    : public _LIBCUDACXX_BOOL_CONSTANT(__libcpp_is_trivial_iterator<_Iter>::value)
+    : public bool_constant<__libcpp_is_trivial_iterator<_Iter>::value>
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD

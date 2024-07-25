@@ -77,14 +77,12 @@ public:
    */
   explicit vector_base(const Alloc& alloc);
 
-  /*! This constructor creates a vector_base with default-constructed
-   *  elements.
+  /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
    */
   explicit vector_base(size_type n);
 
-  /*! This constructor creates a vector_base with default-constructed
-   *  elements.
+  /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
    *  \param alloc The allocator to use by this vector_base.
    */
@@ -210,7 +208,7 @@ public:
    *  This method will resize this vector_base to the specified number of
    *  elements. If the number is smaller than this vector_base's current
    *  size this vector_base is truncated, otherwise this vector_base is
-   *  extended and new elements are default constructed.
+   *  extended and new elements are value initialized.
    */
   void resize(size_type new_size);
 
@@ -499,7 +497,7 @@ private:
   template <typename ForwardIterator>
   void range_init(ForwardIterator first, ForwardIterator last, thrust::random_access_traversal_tag);
 
-  void default_init(size_type n);
+  void value_init(size_type n);
 
   void fill_init(size_type n, const T& x);
 
@@ -512,7 +510,7 @@ private:
   template <typename InputIteratorOrIntegralType>
   void insert_dispatch(iterator position, InputIteratorOrIntegralType n, InputIteratorOrIntegralType x, true_type);
 
-  // this method appends n default-constructed elements at the end
+  // this method appends n value-initialized elements at the end
   void append(size_type n);
 
   // this method performs insertion from a fill value

@@ -32,9 +32,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<_InputIterator, _OutputIterator>
-  __move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 pair<_InputIterator, _OutputIterator>
+__move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   for (; __first != __last; ++__first, (void) ++__result)
   {

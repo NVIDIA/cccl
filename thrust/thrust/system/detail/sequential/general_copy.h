@@ -70,8 +70,8 @@ iter_assign(OutputIterator dst, InputIterator src)
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
 inline _CCCL_HOST_DEVICE
-  typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
-  iter_assign(OutputIterator dst, InputIterator src)
+typename thrust::detail::disable_if<reference_is_assignable<InputIterator, OutputIterator>::value>::type
+iter_assign(OutputIterator dst, InputIterator src)
 {
   using value_type = typename thrust::iterator_value<InputIterator>::type;
 
