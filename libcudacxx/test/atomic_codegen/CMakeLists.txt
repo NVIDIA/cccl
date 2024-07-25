@@ -16,6 +16,11 @@ foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
         STATIC ${test_path}
     )
 
+    set_target_properties(
+        atomic_codegen_${test_name}
+        PROPERTIES CUDA_ARCHITECTURES "80"
+    )
+
     ## Important for testing the local headers
     target_include_directories(atomic_codegen_${test_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
     add_dependencies(libcudacxx.test.atomics.ptx atomic_codegen_${test_name})
