@@ -61,20 +61,20 @@ jobs:
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
-          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cugraph_ops_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cuspatial_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_KvikIO_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
-          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.39"}'
-          # RAPIDS_wholegraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.08"}'
+          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cugraph_ops_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cuspatial_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_KvikIO_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.40"}'
+          # RAPIDS_wholegraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
