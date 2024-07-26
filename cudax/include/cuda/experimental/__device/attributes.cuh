@@ -661,7 +661,7 @@ struct device::attrs
   using deferred_mapping_cuda_array_supported_t = __attr<::cudaDevAttrDeferredMappingCudaArraySupported>;
   static constexpr deferred_mapping_cuda_array_supported_t deferred_mapping_cuda_array_supported{};
 
-  // true if the device supports IPC Events.
+  // true if the device supports IPC Events, false otherwise.
   using ipc_event_support_t = __attr<::cudaDevAttrIpcEventSupport>;
   static constexpr ipc_event_support_t ipc_event_support{};
 
