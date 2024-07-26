@@ -171,11 +171,11 @@ public:
 
   /**
    * \brief Queries the priority of the wrapped stream.
-   * 
+   *
    * \throws cuda::cuda_error if the query fails.
-   * 
+   *
    * \return value representing the priority of the wrapped stream.
-  */
+   */
   _CCCL_NODISCARD int priority() const
   {
     int __result = 0;

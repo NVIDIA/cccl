@@ -16,9 +16,9 @@
 
 TEST_CASE("Stream create", "[stream]")
 {
-    cudax::stream str1, str2;
-    cudax::event ev1(str1);
-    
-    auto ev2 = str1.record_event();
-    str2.wait(str1);
+  cudax::stream str1, str2;
+  cudax::event ev1(str1);
+
+  auto ev2 = str1.record_event();
+  str2.wait(str1);
 }

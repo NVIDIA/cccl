@@ -27,8 +27,8 @@
 #include <cuda/experimental/__device/device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/stream_ref>
 #include <cuda/std/utility>
+#include <cuda/stream_ref>
 
 namespace cuda::experimental
 {
@@ -104,7 +104,8 @@ struct stream : stream_ref
   //! @param __other
   //!
   //! @post `__other` is in a moved-from state.
-  stream& operator=(stream&& __other) {
+  stream& operator=(stream&& __other)
+  {
     stream __tmp(_CUDA_VSTD::move(__other));
     _CUDA_VSTD::swap(__stream, __tmp.__stream);
     return *this;
@@ -120,7 +121,8 @@ struct stream : stream_ref
   //! @return A new event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  event record_event(event::flags __flags = event::flags::none) const {
+  event record_event(event::flags __flags = event::flags::none) const
+  {
     return event(*this, __flags);
   }
 
@@ -129,27 +131,31 @@ struct stream : stream_ref
   //! @return A new timed event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  timed_event record_timed_event(event::flags __flags = event::flags::none) const {
+  timed_event record_timed_event(event::flags __flags = event::flags::none) const
+  {
     return timed_event(*this, __flags);
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of the specified event
-  //! 
+  //!
   //! @param __ev Event that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
-  void wait(event_ref __ev) const {
+  void wait(event_ref __ev) const
+  {
     assert(__ev.get() != nullptr);
     _CCCL_TRY_CUDA_API(::cudaStreamWaitEvent, "Failed to make a stream wait for an event", get(), __ev.get());
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of all work from the specified stream
   //!
-  //! @param __other Stream that this stream should wait for 
+  //! @param __other Stream that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
-  void wait(const stream_ref __other) const {
-    // TODO consider an optimization to not create an event every time and instead have one persistent event or one per stream
+  void wait(const stream_ref __other) const
+  {
+    // TODO consider an optimization to not create an event every time and instead have one persistent event or one per
+    // stream
     assert(__stream.get() != nullptr);
     event __tmp(__other);
     wait(__tmp);
