@@ -11,10 +11,7 @@
 #ifndef _CUDAX__DEVICE_DEVICE
 #define _CUDAX__DEVICE_DEVICE
 
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
-
-#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,6 +20,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda_runtime_api.h>
+
+#include <cuda/std/__cuda/api_wrapper.h>
 
 namespace cuda::experimental
 {
