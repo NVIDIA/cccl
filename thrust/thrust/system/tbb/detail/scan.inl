@@ -58,7 +58,7 @@ struct inclusive_body_init
   inclusive_body_init(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
       : input(input)
       , output(output)
-      , binary_op(binary_op)
+      , binary_op{binary_op}
       , sum(init)
       , first_call(true)
   {}
@@ -152,7 +152,7 @@ struct inclusive_body
   inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
       : input(input)
       , output(output)
-      , binary_op(binary_op)
+      , binary_op{binary_op}
       , sum(init)
       , first_call(true)
   {}
