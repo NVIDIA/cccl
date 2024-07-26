@@ -59,6 +59,7 @@ struct agent_t
 {
   using policy = Policy;
 
+  // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = typename ::cuda::std::iterator_traits<KeysIt1>::value_type;
   using item_type = typename ::cuda::std::iterator_traits<ItemsIt1>::value_type;
 
