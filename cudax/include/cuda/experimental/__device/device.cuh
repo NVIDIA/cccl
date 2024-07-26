@@ -37,6 +37,8 @@ class device
   int __id = 0;
 
 public:
+  struct attrs;
+
   //! @brief Create a `device` object from a native device ordinal.
   /*implicit*/ constexpr device(int id) noexcept
       : __id(id)
@@ -58,6 +60,20 @@ public:
     int count = 0;
     _CCCL_TRY_CUDA_API(cudaGetDeviceCount, "failed to get the device count", &count);
     return count;
+  }
+
+  //! @brief Retrieve the specified attribute for the device
+  //!
+  //! @param __attr The attribute to query. See `device::attrs` for the available
+  //!        attributes.
+  //!
+  //! @throws cuda_error if the attribute query fails
+  //!
+  //! @sa device::attrs
+  template <typename Attribute>
+  _CCCL_NODISCARD auto attr(Attribute __attr) const
+  {
+    return __attr(*this);
   }
 };
 
