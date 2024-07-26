@@ -791,7 +791,7 @@ New Features
 -  NVIDIA/thrust#1159: CMake multi-config support, which allows multiple
    combinations of host and device systems to be built and tested at
    once. More details can be found here:
-   https://github.com/NVIDIA/thrust/blob/main/CONTRIBUTING.md#multi-config-cmake-options
+   :ref:`Multi Config CMake Options <cmake-multi-config-options>`
 -  CMake refactoring:
 
    -  Added install targets to CMake builds.
@@ -799,7 +799,7 @@ New Features
    -  Thrust can be added to another CMake project by calling
       ``add_subdirectory`` with the Thrust source root (see
       NVIDIA/thrust#976). An example can be found here:
-      https://github.com/NVIDIA/thrust/blob/main/examples/cmake/add_subdir/CMakeLists.txt
+      https://github.com/NVIDIA/cccl/blob/main/thrust/examples/cmake/add_subdir/CMakeLists.txt
    -  CMake < 3.15 is no longer supported.
    -  Dialects are now configured through target properties. A new
       ``THRUST_CPP_DIALECT`` option has been added for single config
@@ -830,7 +830,7 @@ Other Enhancements
 ~~~~~~~~~~~~~~~~~~
 
 -  Contributor documentation:
-   https://github.com/NVIDIA/thrust/blob/main/CONTRIBUTING.md
+   https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md
 -  Code of Conduct:
    https://github.com/NVIDIA/thrust/blob/main/CODE_OF_CONDUCT.md. Thanks
    to Conor Hoekstra for this contribution.

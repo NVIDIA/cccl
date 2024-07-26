@@ -149,8 +149,9 @@ that the default ABI version may change in any release. A subset of
 older ABI versions can be used instead by defining
 ``_LIBCUDACXX_CUDA_ABI_VERSION`` to the desired version.
 
-For more information on specific ABI versions, please see the `releases
-section <../releases.md>`_ and `changelog <changelog.md>`_.
+For more information on specific ABI versions, please see the 
+:ref:`release section <libcudacxx-releases>` and 
+:ref:`changelog <libcudacxx-releases-changelog>`.
 
 A program is ill-formed, no diagnostic required, if it uses two
 different translation units compiled with a different NVIDIA C++
