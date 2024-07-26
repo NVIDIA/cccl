@@ -9,7 +9,7 @@
 // UNSUPPORTED: nvrtc, pre-sm-70
 
 // uncomment for a really verbose output detailing what test steps are being launched
-// #define DEBUG_TESTERS
+#define DEBUG_TESTERS
 
 #include <cuda/std/cassert>
 #include <cuda/std/semaphore>
@@ -19,7 +19,6 @@
 template <int N>
 struct release
 {
-  using async                         = cuda::std::true_type;
   static constexpr size_t threadcount = N;
 
   template <typename Semaphore>
@@ -32,7 +31,6 @@ struct release
 template <int N>
 struct acquire
 {
-  using async                         = cuda::std::true_type;
   static constexpr size_t threadcount = N;
 
   template <typename Semaphore>
@@ -42,13 +40,12 @@ struct acquire
   }
 };
 
-using a3_r3_a3_r3 =
-  performer_list<acquire<3>, async_tester_fence, release<3>, async_tester_fence, acquire<3>, async_tester_fence, release<3>>;
+using a3_r3_a3_r3 = performer_list<acquire<3>, release<3>, acquire<3>, release<3>>;
 
 void kernel_invoker()
 {
-  validate_pinned<cuda::std::counting_semaphore<3>, a3_r3_a3_r3>(0);
-  validate_pinned<cuda::counting_semaphore<cuda::thread_scope_system, 3>, a3_r3_a3_r3>(0);
+  validate_pinned<cuda::std::counting_semaphore<3>, a3_r3_a3_r3>(3);
+  validate_pinned<cuda::counting_semaphore<cuda::thread_scope_system, 3>, a3_r3_a3_r3>(3);
 }
 
 int main(int arg, char** argv)

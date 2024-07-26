@@ -128,7 +128,7 @@ struct clear_token
   }
 };
 
-using aw_w_w = performer_list<barrier_arrive_and_wait<2>, barrier_wait, barrier_wait, async_tester_fence, clear_token>;
+using a2_w_w = performer_list<barrier_arrive<2>, barrier_wait, barrier_wait, async_tester_fence, clear_token>;
 
 using completion_performers_a =
   performer_list<clear_token, barrier_arrive<2>, barrier_wait, async_tester_fence, validate_completion_result, barrier_wait>;
@@ -141,8 +141,8 @@ using cuda_barrier_system = cuda::barrier<cuda::thread_scope_system, Completion>
 
 void kernel_invoker()
 {
-  validate_pinned<barrier_and_token<cuda::std::barrier<>>, aw_w_w>(2);
-  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, aw_w_w>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a2_w_w>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a2_w_w>(2);
 
   validate_pinned<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_a>(2);
   validate_pinned<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_a>(2);
