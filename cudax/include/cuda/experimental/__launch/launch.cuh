@@ -12,9 +12,10 @@
 #define _CUDAX__LAUNCH_LAUNCH
 #include <cuda_runtime.h>
 
-#include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/stream_ref>
+
+#include <cuda/experimental/__launch/configuration.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
