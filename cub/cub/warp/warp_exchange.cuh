@@ -27,7 +27,7 @@
 
 /**
  * @file
- * The cub::WarpExchange class provides [<em>collective</em>](index.html#sec0)
+ * The cub::WarpExchange class provides [<em>collective</em>](../index.html#sec0)
  * methods for rearranging data partitioned across a CUDA warp.
  */
 
@@ -68,7 +68,7 @@ using InternalWarpExchangeImpl =
 } // namespace detail
 
 /**
- * @brief The WarpExchange class provides [<em>collective</em>](index.html#sec0)
+ * @brief The WarpExchange class provides [<em>collective</em>](../index.html#sec0)
  *        methods for rearranging data partitioned across a CUDA warp.
  *
  * @tparam T
@@ -94,10 +94,10 @@ using InternalWarpExchangeImpl =
  *   partitioning of items across threads (where consecutive items belong to a
  *   single thread).
  * - WarpExchange supports the following types of data exchanges:
- *   - Transposing between [<em>blocked</em>](index.html#sec5sec3) and
- *     [<em>striped</em>](index.html#sec5sec3) arrangements
+ *   - Transposing between [<em>blocked</em>](../index.html#sec5sec3) and
+ *     [<em>striped</em>](../index.html#sec5sec3) arrangements
  *   - Scattering ranked items to a
- *     [<em>striped arrangement</em>](index.html#sec5sec3)
+ *     [<em>striped arrangement</em>](../index.html#sec5sec3)
  *
  * @par A Simple Example
  * @par
