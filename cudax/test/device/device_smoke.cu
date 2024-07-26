@@ -29,20 +29,31 @@ void device_smoke_test()
 
     SECTION("max_threads_per_block")
     {
-      auto max = device::attrs::max_threads_per_block(dev0);
+      STATIC_REQUIRE(::cudaDevAttrMaxThreadsPerBlock == device::attrs::max_threads_per_block);
+      STATIC_REQUIRE(::cuda::std::is_same_v<int, device::attrs::max_threads_per_block_t::type>);
+      STATIC_REQUIRE(::cuda::std::is_same_v<int, device::attr_result_t<device::attrs::max_threads_per_block>>);
+
+      auto max = dev0.attr(device::attrs::max_threads_per_block);
       STATIC_REQUIRE(::cuda::std::is_same_v<decltype(max), int>);
       CUDAX_REQUIRE(max > 0);
-      CUDAX_REQUIRE(max == dev0.attr(device::attrs::max_threads_per_block));
+      CUDAX_REQUIRE(max == dev0.attr<cudaDevAttrMaxThreadsPerBlock>());
     }
 
     SECTION("compute_mode")
     {
-      auto mode = device::attrs::compute_mode(dev0);
-      STATIC_REQUIRE(::cuda::std::is_same_v<decltype(mode), device::attrs::compute_mode_t::mode>);
+      STATIC_REQUIRE(::cudaDevAttrComputeMode == device::attrs::compute_mode);
+      STATIC_REQUIRE(::cuda::std::is_same_v<::cudaComputeMode, device::attrs::compute_mode_t::type>);
+      STATIC_REQUIRE(::cuda::std::is_same_v<::cudaComputeMode, device::attr_result_t<device::attrs::compute_mode>>);
+      STATIC_REQUIRE(::cudaComputeModeDefault == device::attrs::compute_mode._default);
+      STATIC_REQUIRE(::cudaComputeModeProhibited == device::attrs::compute_mode.prohibited);
+      STATIC_REQUIRE(::cudaComputeModeExclusiveProcess == device::attrs::compute_mode.exclusive_process);
+
+      auto mode = dev0.attr(device::attrs::compute_mode);
+      STATIC_REQUIRE(::cuda::std::is_same_v<decltype(mode), ::cudaComputeMode>);
       CUDAX_REQUIRE((mode == device::attrs::compute_mode._default || //
                      mode == device::attrs::compute_mode.prohibited || //
                      mode == device::attrs::compute_mode.exclusive_process));
-      CUDAX_REQUIRE(mode == dev0.attr(device::attrs::compute_mode));
+      CUDAX_REQUIRE(mode == dev0.attr<::cudaDevAttrComputeMode>());
     }
   }
 }

@@ -17,6 +17,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 
 #include "cuda/std/__cccl/attributes.h"
+#include "cuda/std/__type_traits/decay.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -36,8 +37,21 @@ class device
 {
   int __id = 0;
 
+  template <::cudaDeviceAttr Attr>
+  struct __attr
+  {
+    using type = int;
+    constexpr operator ::cudaDeviceAttr() const noexcept
+    {
+      return Attr;
+    }
+  };
+
 public:
   struct attrs;
+
+  template <const auto& Attr>
+  using attr_result_t = typename _CUDA_VSTD::decay_t<decltype(Attr)>::type;
 
   //! @brief Create a `device` object from a native device ordinal.
   /*implicit*/ constexpr device(int id) noexcept
@@ -57,9 +71,9 @@ public:
   //! @throws cuda_error if the device count query fails
   _CCCL_NODISCARD static int count()
   {
-    int count = 0;
-    _CCCL_TRY_CUDA_API(cudaGetDeviceCount, "failed to get the device count", &count);
-    return count;
+    int __count = 0;
+    _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the device count", &__count);
+    return __count;
   }
 
   //! @brief Retrieve the specified attribute for the device
@@ -70,10 +84,19 @@ public:
   //! @throws cuda_error if the attribute query fails
   //!
   //! @sa device::attrs
-  template <typename Attribute>
-  _CCCL_NODISCARD auto attr(Attribute __attr) const
+  template <::cudaDeviceAttr Attr>
+  _CCCL_NODISCARD auto attr() const
   {
-    return __attr(*this);
+    return attr(__attr<Attr>());
+  }
+
+  //! @overload
+  template <::cudaDeviceAttr Attr>
+  _CCCL_NODISCARD auto attr(__attr<Attr>) const
+  {
+    int __value = 0;
+    _CCCL_TRY_CUDA_API(cudaDeviceGetAttribute, "failed to get device attribute", &__value, Attr, get());
+    return static_cast<typename __attr<Attr>::type>(__value);
   }
 };
 
