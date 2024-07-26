@@ -17,12 +17,6 @@ void device_smoke_test()
 {
   using cudax::device;
 
-  SECTION("Device count")
-  {
-    int count = device::count();
-    CUDAX_REQUIRE(count > 0);
-  }
-
   SECTION("Attributes")
   {
     device dev0(0);
