@@ -120,7 +120,6 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   ScanOp scan_op)
 {
   using InputValueT             = cub::detail::InputValue<InitValueT>;
-  using OffsetT                 = int;
   using AccumT                  = cub::detail::accumulator_t<ScanOp, InitValueT, cub::detail::value_t<InputIt>>;
   constexpr bool ForceInclusive = true;
 

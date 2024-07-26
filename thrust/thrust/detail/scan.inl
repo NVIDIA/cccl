@@ -18,9 +18,6 @@
 
 #include <thrust/detail/config.h>
 
-#include "cuda/std/__functional/invoke.h"
-#include "cuda/std/__iterator/iterator_traits.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -36,8 +33,6 @@
 #include <thrust/system/detail/generic/scan_by_key.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <iterator>
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -52,15 +47,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   return inclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end inclusive_scan()
 
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename AssociativeOperator,
-          typename ::cuda::std::enable_if<
-            ::cuda::std::__invokable<AssociativeOperator,
-                                     typename std::iterator_traits<InputIterator>::value_type,
-                                     typename std::iterator_traits<InputIterator>::value_type>::value,
-            int>::type>
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
@@ -70,28 +58,6 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 {
   using thrust::system::detail::generic::inclusive_scan;
   return inclusive_scan(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, binary_op);
-} // end inclusive_scan()
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename T,
-          typename ::cuda::std::enable_if<
-            !::cuda::std::__invokable<T,
-                                      typename std::iterator_traits<InputIterator>::value_type,
-                                      typename std::iterator_traits<InputIterator>::value_type>::value,
-            int>::type>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  T init)
-{
-  using thrust::system::detail::generic::inclusive_scan;
-  return inclusive_scan(
-    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, init, thrust::plus<>());
 } // end inclusive_scan()
 
 _CCCL_EXEC_CHECK_DISABLE
