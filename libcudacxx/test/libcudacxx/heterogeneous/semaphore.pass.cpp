@@ -48,7 +48,7 @@ using a3_r3_a3_r3 =
 void kernel_invoker()
 {
   validate_pinned<cuda::std::counting_semaphore<3>, a3_r3_a3_r3>(0);
-  validate_pinned<cuda::counting_semaphore<cuda::thread_scope_system, 3>, a_a_r2>(0);
+  validate_pinned<cuda::counting_semaphore<cuda::thread_scope_system, 3>, a3_r3_a3_r3>(0);
 }
 
 int main(int arg, char** argv)
