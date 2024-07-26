@@ -48,7 +48,7 @@ _CCCL_HOST_DEVICE RandomAccessIterator
 lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   Size start = 0, i;
   while (start < n)
@@ -82,7 +82,7 @@ _CCCL_HOST_DEVICE RandomAccessIterator
 upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   Size start = 0, i;
   while (start < n)
@@ -123,7 +123,7 @@ _CCCL_HOST_DEVICE bool binary_search(RandomAccessIterator first, RandomAccessIte
   RandomAccessIterator iter = thrust::system::detail::generic::scalar::lower_bound(first, last, value, comp);
 
   // wrap comp
-  thrust::detail::wrapped_function<Compare, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<Compare, bool> wrapped_comp{comp};
 
   return iter != last && !wrapped_comp(value, *iter);
 }

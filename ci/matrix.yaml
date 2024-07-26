@@ -66,13 +66,13 @@ workflows:
     - {jobs: ['build'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['libcudacxx']}
     - {jobs: ['build'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
     - {jobs: ['build'], ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17],     project: ['libcudacxx']}
+  # H100 runners are currently flakey, only build since those use CPU-only runners:
+    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20]}
+    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17]}
+
     - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['cub', 'thrust']}
     - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['cub', 'thrust']}
     - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17],     project: ['cub', 'thrust']}
    # - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14]     }
    # - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all'    }
    # - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]     }

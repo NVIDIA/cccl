@@ -39,7 +39,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = _LIBCUDACXX_IS_SIGNED(_Tp);
 #else
 
 template <class _Tp, bool = is_integral<_Tp>::value>
-struct __libcpp_is_signed_impl : public _BoolConstant<(_Tp(-1) < _Tp(0))>
+struct __libcpp_is_signed_impl : public bool_constant<(_Tp(-1) < _Tp(0))>
 {};
 
 template <class _Tp>

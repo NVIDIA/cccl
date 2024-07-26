@@ -47,12 +47,12 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   add_dependencies(${config_prefix}.all ${config_meta_target})
 
   # Add tests:
-  Cudax_add_catch2_test(test_target hierarchy_tests ${cn_target}
+  cudax_add_catch2_test(test_target hierarchy_tests ${cn_target}
     hierarchy/hierarchy_smoke.cu
     hierarchy/hierarchy_custom_types.cu
   )
 
-  Cudax_add_catch2_test(test_target launch_tests ${cn_target}
+  cudax_add_catch2_test(test_target launch_tests ${cn_target}
     launch/launch_smoke.cu
     launch/configuration.cu
   )
@@ -60,6 +60,11 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   Cudax_add_catch2_test(test_target device_tests ${cn_target}
     device/device_smoke.cu
+  )
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+
+  cudax_add_catch2_test(test_target event_tests ${cn_target}
+    event/event_smoke.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 endforeach()

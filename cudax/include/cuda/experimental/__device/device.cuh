@@ -78,25 +78,25 @@ public:
 
   //! @brief Retrieve the specified attribute for the device
   //!
-  //! @param __attr The attribute to query. See `device::attrs` for the available
+  //! @param attr The attribute to query. See `device::attrs` for the available
   //!        attributes.
   //!
   //! @throws cuda_error if the attribute query fails
   //!
   //! @sa device::attrs
   template <::cudaDeviceAttr Attr>
-  _CCCL_NODISCARD auto attr() const
-  {
-    return attr(__attr<Attr>());
-  }
-
-  //! @overload
-  template <::cudaDeviceAttr Attr>
-  _CCCL_NODISCARD auto attr(__attr<Attr>) const
+  _CCCL_NODISCARD auto attr([[maybe_unused]] __attr<Attr> attr) const
   {
     int __value = 0;
     _CCCL_TRY_CUDA_API(cudaDeviceGetAttribute, "failed to get device attribute", &__value, Attr, get());
     return static_cast<typename __attr<Attr>::type>(__value);
+  }
+
+  //! @overload
+  template <::cudaDeviceAttr Attr>
+  _CCCL_NODISCARD auto attr() const
+  {
+    return attr(__attr<Attr>());
   }
 };
 

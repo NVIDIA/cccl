@@ -31,10 +31,6 @@ function(cub_add_header_test label definitions)
     cub_clone_target_properties(${headertest_target} ${cub_target})
     cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
 
-    if (CUB_IN_THRUST)
-      thrust_fix_clang_nvcc_build_for(${headertest_target})
-    endif()
-
     add_dependencies(cub.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})
   endforeach()

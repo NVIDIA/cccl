@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred(pred);
+  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (first != last)
   {
