@@ -180,8 +180,11 @@ TEST_CASE("Smoke", "[device]")
                             ::cudaDevAttrDeferredMappingCudaArraySupported,
                             bool>();
     ::test_device_attribute<device::attrs::ipc_event_support, ::cudaDevAttrIpcEventSupport, bool>();
+
+#if CUDART_VERSION >= 12020
     ::test_device_attribute<device::attrs::numa_config, ::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>();
     ::test_device_attribute<device::attrs::numa_id, ::cudaDevAttrNumaId, int>();
+#endif
 
     SECTION("compute_mode")
     {
@@ -220,6 +223,7 @@ TEST_CASE("Smoke", "[device]")
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.all_devices));
     }
 
+#if CUDART_VERSION >= 12020
     SECTION("numa_config")
     {
       STATIC_REQUIRE(::cudaDeviceNumaConfigNone == device::attrs::numa_config.none);
@@ -229,5 +233,6 @@ TEST_CASE("Smoke", "[device]")
       CUDAX_REQUIRE((config == device::attrs::numa_config.none || //
                      config == device::attrs::numa_config.numa_node));
     }
+#endif
   }
 }

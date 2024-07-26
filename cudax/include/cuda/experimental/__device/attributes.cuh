@@ -211,6 +211,7 @@ template <>
 struct device::__attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
     : detail::__attr_with_type<::cudaDevAttrMemoryPoolSupportedHandleTypes, unsigned int>
 {};
+#if CUDART_VERSION >= 12020
 template <>
 struct device::__attr<::cudaDevAttrNumaConfig> //
     : detail::__attr_with_type<::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>
@@ -218,6 +219,7 @@ struct device::__attr<::cudaDevAttrNumaConfig> //
   static constexpr type none      = ::cudaDeviceNumaConfigNone;
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
+#endif
 
 struct device::attrs
 {
@@ -444,7 +446,8 @@ struct device::attrs
   using multi_processor_count_t = __attr<::cudaDevAttrMultiProcessorCount>;
   static constexpr multi_processor_count_t multi_processor_count{};
 
-  // true if there is a run time limit for kernels executed on the device, or false if not
+  // true if there is a run time limit for kernels executed on the device, or
+  // false if not
   using kernel_exec_timeout_t = __attr<::cudaDevAttrKernelExecTimeout>;
   static constexpr kernel_exec_timeout_t kernel_exec_timeout{};
 
@@ -460,8 +463,9 @@ struct device::attrs
   using compute_mode_t = __attr<::cudaDevAttrComputeMode>;
   static constexpr compute_mode_t compute_mode{};
 
-  // true if the device supports executing multiple kernels within the same context simultaneously, or false if not.
-  // It is not guaranteed that multiple kernels will be resident on the device concurrently so this feature should
+  // true if the device supports executing multiple kernels within the same
+  // context simultaneously, or false if not. It is not guaranteed that multiple
+  // kernels will be resident on the device concurrently so this feature should
   // not be relied upon for correctness.
   using concurrent_kernels_t = __attr<::cudaDevAttrConcurrentKernels>;
   static constexpr concurrent_kernels_t concurrent_kernels{};
@@ -500,7 +504,8 @@ struct device::attrs
   using max_threads_per_multi_processor_t = __attr<::cudaDevAttrMaxThreadsPerMultiProcessor>;
   static constexpr max_threads_per_multi_processor_t max_threads_per_multi_processor{};
 
-  // true if the device shares a unified address space with the host, or false if not
+  // true if the device shares a unified address space with the host, or false
+  // if not
   using unified_addressing_t = __attr<::cudaDevAttrUnifiedAddressing>;
   static constexpr unified_addressing_t unified_addressing{};
 
@@ -524,13 +529,15 @@ struct device::attrs
   using local_l1_cache_supported_t = __attr<::cudaDevAttrLocalL1CacheSupported>;
   static constexpr local_l1_cache_supported_t local_l1_cache_supported{};
 
-  // Maximum amount of shared memory available to a multiprocessor in bytes; this amount is shared by all thread
-  // blocks simultaneously resident on a multiprocessor
+  // Maximum amount of shared memory available to a multiprocessor in bytes;
+  // this amount is shared by all thread blocks simultaneously resident on a
+  // multiprocessor
   using max_shared_memory_per_multiprocessor_t = __attr<::cudaDevAttrMaxSharedMemoryPerMultiprocessor>;
   static constexpr max_shared_memory_per_multiprocessor_t max_shared_memory_per_multiprocessor{};
 
-  // Maximum number of 32-bit registers available to a multiprocessor; this number is shared by all thread blocks
-  // simultaneously resident on a multiprocessor
+  // Maximum number of 32-bit registers available to a multiprocessor; this
+  // number is shared by all thread blocks simultaneously resident on a
+  // multiprocessor
   using max_registers_per_multiprocessor_t = __attr<::cudaDevAttrMaxRegistersPerMultiprocessor>;
   static constexpr max_registers_per_multiprocessor_t max_registers_per_multiprocessor{};
 
@@ -546,7 +553,8 @@ struct device::attrs
   using multi_gpu_board_group_id_t = __attr<::cudaDevAttrMultiGpuBoardGroupID>;
   static constexpr multi_gpu_board_group_id_t multi_gpu_board_group_id{};
 
-  // true if the link between the device and the host supports native atomic operations
+  // true if the link between the device and the host supports native atomic
+  // operations
   using host_native_atomic_supported_t = __attr<::cudaDevAttrHostNativeAtomicSupported>;
   static constexpr host_native_atomic_supported_t host_native_atomic_supported{};
 
@@ -665,6 +673,8 @@ struct device::attrs
   using ipc_event_support_t = __attr<::cudaDevAttrIpcEventSupport>;
   static constexpr ipc_event_support_t ipc_event_support{};
 
+#if CUDART_VERSION >= 12020
+
   // NUMA configuration of a device: value is of type cudaDeviceNumaConfig enum
   using numa_config_t = __attr<::cudaDevAttrNumaConfig>;
   static constexpr numa_config_t numa_config{};
@@ -672,6 +682,8 @@ struct device::attrs
   // NUMA node ID of the GPU memory
   using numa_id_t = __attr<::cudaDevAttrNumaId>;
   static constexpr numa_id_t numa_id{};
+
+#endif // CUDART_VERSION >= 12020
 };
 } // namespace cuda::experimental
 
