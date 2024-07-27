@@ -24,12 +24,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__event/event_ref.cuh>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
-
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__event/event_ref.cuh>
 
 namespace cuda::experimental
 {

@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 #define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/atomic>
-
 #include <cuda/experimental/launch.cuh>
 
 #include "../hierarchy/testing_common.cuh"
