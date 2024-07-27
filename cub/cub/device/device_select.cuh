@@ -380,10 +380,10 @@ struct DeviceSelect
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const {
   //!            return (a < compare);
   //!        }
@@ -534,10 +534,10 @@ struct DeviceSelect
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const {
   //!            return (a < compare);
   //!        }
