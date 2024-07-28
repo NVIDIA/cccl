@@ -37,7 +37,7 @@ TEST_CASE("From native handle", "[stream]")
     cudax::launch(stream, one_thread_dims, ::test::assign_42{}, i.get());
     stream.wait();
     CUDAX_REQUIRE(*i == 42);
-    stream.release();
+    (void) stream.release();
   }
   CUDART(cudaStreamDestroy(handle));
 }

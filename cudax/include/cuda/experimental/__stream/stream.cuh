@@ -37,7 +37,7 @@ namespace detail
 {
 // 0 is a valid stream in CUDA, so we need some other invalid stream representation
 // Can't make it constexpr, because cudaStream_t is a pointer type
-static const cudaStream_t invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
+static const ::cudaStream_t invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
 } // namespace detail
 
 //! @brief An owning wrapper for cudaStream_t.
@@ -172,7 +172,7 @@ struct stream : stream_ref
   //! @return stream The constructed `stream` object
   //!
   //! @note The constructed `stream` object takes ownership of the native handle.
-  _CCCL_NODISCARD static stream from_native_handle(cudaStream_t __handle)
+  _CCCL_NODISCARD static stream from_native_handle(::cudaStream_t __handle)
   {
     return stream(__handle);
   }
@@ -188,7 +188,7 @@ struct stream : stream_ref
   //! @return cudaStream_t The native handle being held by the `stream` object.
   //!
   //! @post The stream object is in a moved-from state.
-  _CCCL_NODISCARD cudaStream_t release()
+  _CCCL_NODISCARD ::cudaStream_t release()
   {
     return _CUDA_VSTD::exchange(__stream, detail::invalid_stream);
   }
@@ -196,7 +196,7 @@ struct stream : stream_ref
 private:
   // Use `stream::from_native_handle(s)` to construct an owning `stream`
   // object from a `cudaStream_t` handle.
-  explicit stream(cudaStream_t __handle)
+  explicit stream(::cudaStream_t __handle)
       : stream_ref(__handle)
   {}
 };
