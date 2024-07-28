@@ -36,6 +36,7 @@ namespace cuda::experimental
 namespace detail
 {
 // 0 is a valid stream in CUDA, so we need some other invalid stream representation
+// Can't make it constexpr, because cudaStream_t is a pointer type
 static const cudaStream_t invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
 } // namespace detail
 
@@ -72,7 +73,8 @@ struct stream : stream_ref
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
   //! @post `stream()` returns an invalid stream handle
-  explicit constexpr stream(uninit_t) noexcept
+  // Can't be constexpr because invalid_stream isn't
+  explicit stream(uninit_t) noexcept
       : stream_ref(detail::invalid_stream)
   {}
 
@@ -135,6 +137,8 @@ struct stream : stream_ref
   {
     return timed_event(*this, __flags);
   }
+
+  using stream_ref::wait;
 
   //! @brief Make all future work submitted into this stream depend on completion of the specified event
   //!
