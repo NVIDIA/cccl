@@ -32,6 +32,7 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/resource_ref.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/__cuda/ensure_current_device.h>
 #  include <cuda/std/__new/bad_alloc.h>
 
 #  if _CCCL_STD_VER >= 2014
@@ -39,15 +40,18 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief cuda_memory_resource uses `cudaMalloc` / `cudaFree` for allocation / deallocation.
+//! By default uses device 0 to allocate memory
 class cuda_memory_resource
 {
 private:
   int __device_id_{0};
 
 public:
-  constexpr cuda_memory_resource() noexcept
-      : __device_id_(0)
-  {}
+  //! @brief default constructs a cuda_memory_resource allocating memory on device 0
+  cuda_memory_resource() = default;
+
+  //! @brief default constructs a cuda_memory_resource allocating memory on device \p __device_id
+  //! @param __device_id The id of the device we are allocating memory on
   constexpr cuda_memory_resource(const int __device_id) noexcept
       : __device_id_(__device_id)
   {}
@@ -65,7 +69,8 @@ public:
       _CUDA_VSTD::__throw_bad_alloc();
     }
 
-    __cuda_set_device_wrapper __device_wrapper{__device_id_};
+    // We need to ensure that we allocate on the right device as `cudaMalloc` always uses the current device
+    __ensure_current_device __device_wrapper{__device_id_};
 
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(::cudaMalloc, "Failed to allocate memory with cudaMalloc.", &__ptr, __bytes);
@@ -78,7 +83,6 @@ public:
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
   void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const
   {
-    __cuda_set_device_wrapper __device_wrapper{__device_id_};
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
                        "Invalid alignment passed to cuda_memory_resource::deallocate.");
