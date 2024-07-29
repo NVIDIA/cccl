@@ -194,13 +194,14 @@ THRUST_NAMESPACE_BEGIN
  */
 template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
 class transform_iterator
-    : public detail::transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
+    : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
 {
   /*! \cond
    */
 
 public:
-  using super_t = typename detail::transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
+  using super_t =
+    typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
 
   friend class thrust::iterator_core_access;
   /*! \endcond
