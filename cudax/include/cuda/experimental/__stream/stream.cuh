@@ -147,11 +147,11 @@ struct stream : stream_ref
   //! @param __other Stream that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
-  void wait(const stream_ref __other) const
+  void wait(stream_ref __other) const
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one per
     // stream
-    assert(__stream.get() != nullptr);
+    assert(__stream.get() != detail::invalid_stream);
     event __tmp(__other);
     wait(__tmp);
   }
