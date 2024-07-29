@@ -25,6 +25,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
   auto result = dev0.attr(Attr);
   STATIC_REQUIRE(::cuda::std::is_same_v<decltype(result), ExpectedResult>);
   CUDAX_REQUIRE(result == dev0.attr<ExpectedAttr>());
+  CUDAX_REQUIRE(result == Attr(dev0));
   return result;
 }
 } // namespace
@@ -188,14 +189,14 @@ TEST_CASE("Smoke", "[device]")
 
     SECTION("compute_mode")
     {
-      STATIC_REQUIRE(::cudaComputeModeDefault == device::attrs::compute_mode._default);
-      STATIC_REQUIRE(::cudaComputeModeProhibited == device::attrs::compute_mode.prohibited);
-      STATIC_REQUIRE(::cudaComputeModeExclusiveProcess == device::attrs::compute_mode.exclusive_process);
+      STATIC_REQUIRE(::cudaComputeModeDefault == device::attrs::compute_mode.default_mode);
+      STATIC_REQUIRE(::cudaComputeModeProhibited == device::attrs::compute_mode.prohibited_mode);
+      STATIC_REQUIRE(::cudaComputeModeExclusiveProcess == device::attrs::compute_mode.exclusive_process_mode);
 
       auto mode = device(0).attr(device::attrs::compute_mode);
-      CUDAX_REQUIRE((mode == device::attrs::compute_mode._default || //
-                     mode == device::attrs::compute_mode.prohibited || //
-                     mode == device::attrs::compute_mode.exclusive_process));
+      CUDAX_REQUIRE((mode == device::attrs::compute_mode.default_mode || //
+                     mode == device::attrs::compute_mode.prohibited_mode || //
+                     mode == device::attrs::compute_mode.exclusive_process_mode));
     }
 
     SECTION("gpu_direct_rdma_flush_writes_options")

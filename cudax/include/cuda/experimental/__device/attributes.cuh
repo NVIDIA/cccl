@@ -11,13 +11,7 @@
 #ifndef _CUDAX__DEVICE_ATTRIBUTES_
 #define _CUDAX__DEVICE_ATTRIBUTES_
 
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
-
-#include <cuda/std/__cuda/api_wrapper.h>
-
-#include "cuda/experimental/__device/device.cuh"
-#include "cuda/std/__cccl/attributes.h"
+#include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,18 +21,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/attributes.h>
+#include <cuda/std/__cuda/api_wrapper.h>
+
+#include <cuda/experimental/__device/device.cuh>
+
 namespace cuda::experimental
 {
 
 namespace detail
 {
-template <::cudaDeviceAttr Attr, typename Type>
+template <::cudaDeviceAttr _Attr, typename _Type>
 struct __attr_with_type
 {
-  using type = Type;
+  using type = _Type;
+
   constexpr operator ::cudaDeviceAttr() const noexcept
   {
-    return Attr;
+    return _Attr;
+  }
+
+  _CCCL_NODISCARD type operator()(device __dev) const
+  {
+    return __dev.attr<_Attr>();
   }
 };
 } // namespace detail
@@ -68,9 +73,9 @@ template <>
 struct device::__attr<::cudaDevAttrComputeMode> //
     : detail::__attr_with_type<::cudaDevAttrComputeMode, ::cudaComputeMode>
 {
-  static constexpr type _default          = cudaComputeModeDefault;
-  static constexpr type prohibited        = cudaComputeModeProhibited;
-  static constexpr type exclusive_process = cudaComputeModeExclusiveProcess;
+  static constexpr type default_mode           = cudaComputeModeDefault;
+  static constexpr type prohibited_mode        = cudaComputeModeProhibited;
+  static constexpr type exclusive_process_mode = cudaComputeModeExclusiveProcess;
 };
 template <>
 struct device::__attr<::cudaDevAttrConcurrentKernels> //

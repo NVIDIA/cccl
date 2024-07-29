@@ -11,13 +11,7 @@
 #ifndef _CUDAX__DEVICE_DEVICE
 #define _CUDAX__DEVICE_DEVICE
 
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
-
-#include <cuda/std/__cuda/api_wrapper.h>
-
-#include "cuda/std/__cccl/attributes.h"
-#include "cuda/std/__type_traits/decay.h"
+#include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,6 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/attributes.h>
+#include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__type_traits/decay.h>
+
 namespace cuda::experimental
 {
 // Dummy struct for now to be able to reference it in other places
@@ -35,27 +33,42 @@ namespace cuda::experimental
 //! @brief A non-owning representation of a CUDA device
 class device
 {
-  int __id = 0;
+  int __id_ = 0;
 
-  template <::cudaDeviceAttr Attr>
+  template <::cudaDeviceAttr _Attr>
   struct __attr
   {
     using type = int;
-    constexpr operator ::cudaDeviceAttr() const noexcept
+
+    _CCCL_NODISCARD constexpr operator ::cudaDeviceAttr() const noexcept
     {
-      return Attr;
+      return _Attr;
+    }
+
+    _CCCL_NODISCARD type operator()(device __dev) const
+    {
+      return __dev.attr<_Attr>();
     }
   };
 
 public:
   struct attrs;
 
-  template <const auto& Attr>
-  using attr_result_t = typename _CUDA_VSTD::decay_t<decltype(Attr)>::type;
+  //! @brief For a given attribute, returns the type of the attribute value.
+  //!
+  //! @par Example
+  //! @code
+  //! using threads_per_block_t = device::attr_result_t<device::attrs::max_threads_per_block>;
+  //! static_assert(std::is_same_v<threads_per_block_t, int>);
+  //! @endcode
+  //!
+  //! @sa device::attrs
+  template <::cudaDeviceAttr _Attr>
+  using attr_result_t = typename __attr<_Attr>::type;
 
   //! @brief Create a `device` object from a native device ordinal.
-  /*implicit*/ constexpr device(int id) noexcept
-      : __id(id)
+  /*implicit*/ constexpr device(int __id) noexcept
+      : __id_(__id)
   {}
 
   //! @brief Retrieve the native ordinal of the device
@@ -63,30 +76,30 @@ public:
   //! @return int The native device ordinal held by the device object
   _CCCL_NODISCARD constexpr int get() const noexcept
   {
-    return __id;
+    return __id_;
   }
 
   //! @brief Retrieve the specified attribute for the device
   //!
-  //! @param attr The attribute to query. See `device::attrs` for the available
+  //! @param __attr The attribute to query. See `device::attrs` for the available
   //!        attributes.
   //!
   //! @throws cuda_error if the attribute query fails
   //!
   //! @sa device::attrs
-  template <::cudaDeviceAttr Attr>
-  _CCCL_NODISCARD auto attr([[maybe_unused]] __attr<Attr> attr) const
+  template <::cudaDeviceAttr _Attr>
+  _CCCL_NODISCARD auto attr([[maybe_unused]] device::__attr<_Attr> __attr) const
   {
     int __value = 0;
-    _CCCL_TRY_CUDA_API(cudaDeviceGetAttribute, "failed to get device attribute", &__value, Attr, get());
-    return static_cast<typename __attr<Attr>::type>(__value);
+    _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, _Attr, get());
+    return static_cast<typename device::__attr<_Attr>::type>(__value);
   }
 
   //! @overload
-  template <::cudaDeviceAttr Attr>
+  template <::cudaDeviceAttr _Attr>
   _CCCL_NODISCARD auto attr() const
   {
-    return attr(__attr<Attr>());
+    return attr(__attr<_Attr>());
   }
 };
 
