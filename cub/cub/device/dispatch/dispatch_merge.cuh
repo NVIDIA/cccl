@@ -64,11 +64,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   Offset* merge_partitions,
   CompareOp compare_op)
 {
-  static_assert(
-    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, value_t<KeyIt1>, value_t<KeyIt1>>::type,
-                                bool>::value,
-    "Comparison operator must be convertible to bool");
-
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
@@ -121,9 +116,12 @@ __launch_bounds__(
     Offset* merge_partitions,
     vsmem_t global_temp_storage)
 {
+  // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
+  using key_t = value_t<KeyIt1>;
+  static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
+                "Comparison operator cannot compare two keys");
   static_assert(
-    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, value_t<KeyIt1>, value_t<KeyIt1>>::type,
-                                bool>::value,
+    ::cuda::std::is_convertible<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>::value,
     "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
@@ -218,15 +216,6 @@ template <typename KeyIt1,
           typename PolicyHub = device_merge_policy_hub<value_t<KeyIt1>, value_t<ValueIt1>>>
 struct dispatch_t
 {
-  using key_t   = cub::detail::value_t<KeyIt1>;
-  using value_t = cub::detail::value_t<ValueIt1>;
-
-  // Cannot check output iterators, since they could be discard iterators, which do not have the right value_type
-  static_assert(::cuda::std::is_same<cub::detail::value_t<KeyIt2>, key_t>::value, "");
-  static_assert(::cuda::std::is_same<cub::detail::value_t<ValueIt2>, value_t>::value, "");
-  static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
-                "Comparison operator cannot compare two keys");
-
   void* d_temp_storage;
   std::size_t& temp_storage_bytes;
   KeyIt1 d_keys1;
@@ -351,7 +340,7 @@ struct dispatch_t
     {
       return error;
     }
-    dispatch_t dispatch{std::forward<Args>(args)...};
+    dispatch_t dispatch{::cuda::std::forward<Args>(args)...};
     error = CubDebug(PolicyHub::max_policy::Invoke(ptx_version, dispatch));
     if (cudaSuccess != error)
     {

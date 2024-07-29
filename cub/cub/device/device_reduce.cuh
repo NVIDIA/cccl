@@ -1035,7 +1035,7 @@ struct DeviceReduce
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }

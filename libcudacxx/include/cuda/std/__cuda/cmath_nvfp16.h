@@ -35,7 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__v);), ({
-                      float __vf            = __v;
+                      float __vf            = __half2float(__v);
                       __vf                  = ::sin(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
@@ -61,7 +61,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sinh(__half __v)
 {
-  return __half(::sinh(float(__v)));
+  return __float2half(::sinh(__half2float(__v)));
 }
 
 // clang-format off
@@ -71,7 +71,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half cos(__half __v)
     return ::hcos(__v);
   ), (
     {
-      float __vf            = __v;
+      float __vf            = __half2float(__v);
       __vf                  = ::cos(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
@@ -94,7 +94,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half cos(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half cosh(__half __v)
 {
-  return __half(::cosh(float(__v)));
+  return __float2half(::cosh(__half2float(__v)));
 }
 
 // clang-format off
@@ -104,7 +104,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half exp(__half __v)
     return ::hexp(__v);
   ), (
     {
-      float __vf            = __v;
+      float __vf            = __half2float(__v);
       __vf                  = ::exp(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
@@ -127,12 +127,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half exp(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half hypot(__half __x, __half __y)
 {
-  return __half(::hypot(float(__x), float(__y)));
+  return __float2half(::hypot(__half2float(__x), __half2float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half atan2(__half __x, __half __y)
 {
-  return __half(::atan2(float(__x), float(__y)));
+  return __float2half(::atan2(__half2float(__x), __half2float(__y)));
 }
 
 // clang-format off
@@ -142,7 +142,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half log(__half __x)
     return ::hlog(__x);
   ), (
     {
-      float __vf            = __x;
+      float __vf            = __half2float(__x);
       __vf                  = ::log(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
@@ -164,7 +164,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half log(__half __x)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sqrt(__half __x)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __half(::sqrt(float(__x)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::sqrt(__half2float(__x)));))
 }
 
 // floating point helper
@@ -210,7 +210,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY bool isfinite(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half __constexpr_copysign(__half __x, __half __y) noexcept
 {
-  return __half(::copysignf(float(__x), float(__y)));
+  return __float2half(::copysignf(__half2float(__x), __half2float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half copysign(__half __x, __half __y)
