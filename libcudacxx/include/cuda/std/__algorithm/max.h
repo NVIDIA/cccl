@@ -30,14 +30,14 @@ _CCCL_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Compare>
-_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp&
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp&
 max(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__a, __b) ? __b : __a;
 }
 
 template <class _Tp>
-_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp& max(const _Tp& __a, const _Tp& __b)
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp& max(const _Tp& __a, const _Tp& __b)
 {
   return _CUDA_VSTD::max(__a, __b, __less{});
 }

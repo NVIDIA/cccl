@@ -55,6 +55,10 @@ int main(int, char**)
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");
+#else // TEST_STD_VER >= 2014
+  constexpr int x = 0;
+  constexpr int y = 1;
+  static_assert(&cuda::std::max(x, y, cuda::std::greater<int>()) == &x, "");
 #endif // TEST_STD_VER >= 2014
 
   return 0;
