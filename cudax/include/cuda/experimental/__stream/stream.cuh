@@ -22,10 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__device/device.cuh>
-#include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
+
+#include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__event/timed_event.cuh>
 
 namespace cuda::experimental
 {
@@ -193,4 +194,4 @@ private:
 
 } // namespace cuda::experimental
 
-#endif
+#endif // _CUDAX__STREAM_STREAM

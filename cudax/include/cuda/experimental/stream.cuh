@@ -13,4 +13,4 @@
 
 #include <cuda/experimental/__stream/stream.cuh>
 
-#endif
+#endif // __CUDAX_STREAM__
