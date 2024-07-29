@@ -11,10 +11,8 @@
 #ifndef _CUDAX__STREAM_STREAM
 #define _CUDAX__STREAM_STREAM
 
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
-
 #include <cuda/std/detail/__config>
+#include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,7 +25,6 @@
 #include <cuda/experimental/__device/device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/utility>
 #include <cuda/stream_ref>
 
 namespace cuda::experimental
@@ -48,20 +45,15 @@ struct stream : stream_ref
 
   //! @brief Constructs a stream on a specified device and with specified priority
   //!
+  //! Priority is defaulted to stream::default_priority
+  //!
   //! @throws cuda_error if stream creation fails
-  explicit stream(device __dev, int __priority)
+  explicit stream(device __dev, int __priority = default_priority)
   {
     __scoped_device dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamDefault, __priority);
   }
-
-  //! @brief Constructs a stream on a specified device and with default priority
-  //!
-  //! @throws cuda_error if stream creation fails
-  explicit stream(device __dev)
-      : stream(__dev, default_priority)
-  {}
 
   //! @brief Constructs a stream on the default device
   //!
@@ -87,7 +79,6 @@ struct stream : stream_ref
       : stream(_CUDA_VSTD::exchange(__other.__stream, detail::invalid_stream))
   {}
 
-  // Disallow copy construction.
   stream(const stream&) = delete;
 
   //! Destroy the `stream` object
@@ -106,14 +97,13 @@ struct stream : stream_ref
   //! @param __other
   //!
   //! @post `__other` is in a moved-from state.
-  stream& operator=(stream&& __other)
+  stream& operator=(stream&& __other) noexcept
   {
     stream __tmp(_CUDA_VSTD::move(__other));
     _CUDA_VSTD::swap(__stream, __tmp.__stream);
     return *this;
   }
 
-  // Disallow copy assignment.
   stream& operator=(const stream&) = delete;
 
   // Ideally records and waits below would be in stream_ref, but we can't have it depend on cudax yet
