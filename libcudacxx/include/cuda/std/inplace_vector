@@ -865,8 +865,11 @@ public:
     const auto __count = __ilist.size();
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__count == 0, "Cannot assign to inplace_vector with zero capacity ");
-      return *this;
+      if (__count != 0)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+      return;
     }
 
     if (_Capacity < __count)
@@ -893,8 +896,16 @@ public:
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__count == 0, "Cannot assign to inplace_vector with zero capacity ");
+      if (__first != __last)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
+    }
+
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
     }
 
     const iterator __begin = this->begin();
@@ -918,7 +929,10 @@ public:
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__first == __last, "Cannot assign to inplace_vector with zero capacity ");
+      if (__first != __last)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
     }
 
@@ -945,11 +959,20 @@ public:
   {
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__first == __last, "Cannot assign to inplace_vector with zero capacity ");
+      if (__first != __last)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
     }
 
-    if (static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)) < this->size())
+    const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    if (__count < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
       this->__destroy(__new_end, this->end());
@@ -964,13 +987,22 @@ public:
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(initializer_list<_Tp> __ilist)
   {
+    const auto __count = static_cast<size_type>(__ilist.size());
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__ilist.size() == 0, "Cannot assign to inplace_vector with zero capacity ");
+      if (__count != 0)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
     }
 
-    if (static_cast<size_type>(__ilist.size()) < this->size())
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    if (__count < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
       this->__destroy(__new_end, this->end());
@@ -992,7 +1024,10 @@ public:
     const auto __last = _CUDA_VRANGES::end(__range);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__first == __last, "Cannot assign to inplace_vector with zero capacity ");
+      if (__first != __last)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
     }
 
@@ -1021,8 +1056,16 @@ public:
     const auto __size = _CUDA_VRANGES::size(__range);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__size == 0, "Cannot assign to inplace_vector with zero capacity ");
+      if (__size != 0)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
+    }
+
+    if (_Capacity < __size)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
     }
 
     const auto __first = _CUDA_VRANGES::begin(__range);
@@ -1047,11 +1090,19 @@ public:
   {
     const auto __first = _CUDA_VRANGES::begin(__range);
     const auto __last  = _CUDA_VRANGES::__unwrap_end(__range);
-    const auto __size  = _CUDA_VRANGES::distance(__first, __last);
     _CCCL_IF_CONSTEXPR (_Capacity == 0)
     {
-      _LIBCUDACXX_ASSERT(__size == 0, "Cannot assign to inplace_vector with zero capacity ");
+      if (__first != __last)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
       return;
+    }
+
+    const auto __size = _CUDA_VRANGES::distance(__first, __last);
+    if (_Capacity < __size)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
     }
 
     if (static_cast<size_type>(__size) < this->size())
