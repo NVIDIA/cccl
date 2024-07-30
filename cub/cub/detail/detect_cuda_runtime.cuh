@@ -36,13 +36,7 @@
 // We cannot use `cub/config.cuh` here due to circular dependencies
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 // CUDA headers might not be present when using NVRTC, see NVIDIA/cccl#2095 for detail
 #if !defined(_CCCL_COMPILER_NVRTC)

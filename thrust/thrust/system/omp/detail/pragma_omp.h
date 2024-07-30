@@ -29,13 +29,7 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+_CCCL_IMPLICIT_SYSTEM_HEADER
 
 #if defined(_CCCL_COMPILER_MSVC)
 // MSVC ICEs when using the standard C++11 `_Pragma` operator with OpenMP

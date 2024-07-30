@@ -19,13 +19,7 @@
 #include <cuda/std/__cccl/system_header.h>
 
 // We want to ensure that all warning emmiting from this header are supressed
-#if defined(_CCCL_FORCE_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_FORCE_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_FORCE_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+_CCCL_FORCE_SYSTEM_HEADER
 
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
