@@ -58,6 +58,11 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
+  Cudax_add_catch2_test(test_target device_tests ${cn_target}
+    device/device_smoke.cu
+  )
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+
   cudax_add_catch2_test(test_target event_tests ${cn_target}
     event/event_smoke.cu
   )
