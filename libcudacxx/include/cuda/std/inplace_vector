@@ -863,15 +863,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
   {
     const auto __count = __ilist.size();
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__count != 0)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     if (_Capacity < __count)
     {
       _CUDA_VSTD::__throw_bad_alloc();
@@ -894,15 +885,6 @@ public:
   // inplace_vector.assign
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(const size_type __count, const _Tp& __value)
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != __last)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     if (_Capacity < __count)
     {
       _CUDA_VSTD::__throw_bad_alloc();
@@ -927,15 +909,6 @@ public:
     __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(_Iter __first, _Iter __last)
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != __last)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     iterator __end = this->end();
     for (iterator __current = this->begin(); __current != __end; ++__current, (void) ++__first)
     {
@@ -957,15 +930,6 @@ public:
   _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(_Iter __first, _Iter __last)
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != __last)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
     if (_Capacity < __count)
     {
@@ -988,15 +952,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(initializer_list<_Tp> __ilist)
   {
     const auto __count = static_cast<size_type>(__ilist.size());
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__count != 0)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     if (_Capacity < __count)
     {
       _CUDA_VSTD::__throw_bad_alloc();
@@ -1022,16 +977,7 @@ public:
   {
     auto __first      = _CUDA_VRANGES::begin(__range);
     const auto __last = _CUDA_VRANGES::end(__range);
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != __last)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
-    iterator __end = this->end();
+    iterator __end    = this->end();
     for (iterator __current = this->begin(); __current != __end; ++__current, (void) ++__first)
     {
       if (__first == __last)
@@ -1054,15 +1000,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign_range(_Range&& __range)
   {
     const auto __size = _CUDA_VRANGES::size(__range);
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__size != 0)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     if (_Capacity < __size)
     {
       _CUDA_VSTD::__throw_bad_alloc();
@@ -1090,22 +1027,13 @@ public:
   {
     const auto __first = _CUDA_VRANGES::begin(__range);
     const auto __last  = _CUDA_VRANGES::__unwrap_end(__range);
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != __last)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
-    const auto __size = _CUDA_VRANGES::distance(__first, __last);
+    const auto __size  = static_cast<size_type>(_CUDA_VRANGES::distance(__first, __last));
     if (_Capacity < __size)
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
 
-    if (static_cast<size_type>(__size) < this->size())
+    if (__size < this->size())
     {
       const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
       this->__destroy(__new_end, this->end());
@@ -1396,17 +1324,8 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
-    auto __first = _CUDA_VRANGES::begin(__range);
-    auto __last  = _CUDA_VRANGES::end(__range);
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != __last)
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return nullptr;
-    }
-
+    auto __first             = _CUDA_VRANGES::begin(__range);
+    auto __last              = _CUDA_VRANGES::end(__range);
     const iterator __old_end = this->end();
     for (; __first != __last; ++__first)
     {
@@ -1424,15 +1343,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != _CUDA_VRANGES::end(__range))
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return nullptr;
-    }
-
     return insert(__cpos, __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
 
@@ -1455,15 +1365,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      if (__first != _CUDA_VRANGES::end(__range))
-      {
-        _CUDA_VSTD::__throw_bad_alloc();
-      }
-      return;
-    }
-
     insert(this->end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -1584,11 +1485,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      return _CUDA_VRANGES::begin(__range);
-    }
-
     const auto __capacity = _Capacity - this->size();
     const auto __size     = _CUDA_VRANGES::size(__range);
     const auto __diff     = __size < __capacity ? __size : __capacity;
@@ -1605,11 +1501,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      return _CUDA_VRANGES::begin(__range);
-    }
-
     const auto __capacity = static_cast<ptrdiff_t>(_Capacity - this->size());
     auto __first          = _CUDA_VRANGES::begin(__range);
     const auto __size = static_cast<ptrdiff_t>(_CUDA_VRANGES::distance(__first, _CUDA_VRANGES::__unwrap_end(__range)));
@@ -1684,10 +1575,6 @@ public:
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void clear() noexcept
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      return;
-    }
     this->__destroy(this->begin(), this->end());
   }
 
@@ -1749,13 +1636,8 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void swap(inplace_vector& __other) noexcept(
-    _Capacity == 0 || (_CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2)))
+    _CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2))
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      return;
-    }
-
     if (this->size() < __other.size())
     {
       const auto __new_mid = _CUDA_VSTD::swap_ranges(this->begin(), this->end(), __other.begin());
@@ -1832,10 +1714,6 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type
   __erase(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      return 0;
-    }
     const iterator __old_end = this->end();
     const iterator __new_end = _CUDA_VSTD::remove(this->begin(), __old_end, __value);
     this->__destroy(__new_end, __old_end);
@@ -1846,14 +1724,480 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type
   __erase_if(_Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
-    _CCCL_IF_CONSTEXPR (_Capacity == 0)
-    {
-      return 0;
-    }
     const iterator __old_end = this->end();
     const iterator __new_end = _CUDA_VSTD::remove_if(this->begin(), __old_end, _CUDA_VSTD::move(__pred));
     this->__destroy(__new_end, __old_end);
     return static_cast<size_type>(__old_end - __new_end);
+  }
+};
+
+template <class _Tp>
+class inplace_vector<_Tp, 0> : __inplace_vector_base<_Tp, 0>
+{
+private:
+  using __base = __inplace_vector_base<_Tp, 0>;
+
+public:
+  using value_type      = _Tp;
+  using size_type       = size_t;
+  using difference_type = ptrdiff_t;
+  using pointer         = _Tp*;
+  using const_pointer   = const _Tp*;
+  using reference       = _Tp&;
+  using const_reference = const _Tp&;
+
+  using iterator       = pointer;
+  using const_iterator = const_pointer;
+
+  using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
+  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  constexpr inplace_vector() noexcept                        = default;
+  constexpr inplace_vector(const inplace_vector&)            = default;
+  constexpr inplace_vector(inplace_vector&&)                 = default;
+  constexpr inplace_vector& operator=(const inplace_vector&) = default;
+  constexpr inplace_vector& operator=(inplace_vector&&)      = default;
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit inplace_vector(const size_type __count)
+      : __base()
+  {
+    if (__count > 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(const size_type __count, const _Tp& __value)
+      : __base()
+  {
+    if (__count > 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Iter __first, _Iter __last)
+      : __base()
+  {
+    if (__first != __last)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(initializer_list<_Tp> __ilist)
+      : __base()
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
+      : __base()
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return *this;
+  }
+
+  // inplace_vector.assign
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(const size_type __count, const _Tp&)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(_Iter __first, _Iter __last)
+  {
+    if (__first != __last)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign(initializer_list<_Tp> __ilist)
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void assign_range(_Range&& __range)
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  // [containers.sequences.inplace.vector.access], element access
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference at(const size_type __pos)
+  {
+    _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference at(const size_type __pos) const
+  {
+    _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](const size_type __pos) noexcept
+  {
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference
+  operator[](const size_type __pos) const noexcept
+  {
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference front() noexcept
+  {
+    return *this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference front() const noexcept
+  {
+    return *this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference back() noexcept
+  {
+    return *(this->end() - 1);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference back() const noexcept
+  {
+    return *(this->end() - 1);
+  }
+
+  using __base::data;
+
+  // inplace_vector.iterators
+  using __base::begin;
+  using __base::end;
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reverse_iterator rbegin() noexcept
+  {
+    return reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator rbegin() const noexcept
+  {
+    return const_reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reverse_iterator rend() noexcept
+  {
+    return reverse_iterator{this->begin()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator rend() const noexcept
+  {
+    return const_reverse_iterator{this->begin()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_iterator cbegin() const noexcept
+  {
+    return this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_iterator cend() const noexcept
+  {
+    return this->end();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator crbegin() const noexcept
+  {
+    return const_reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reverse_iterator crend() const noexcept
+  {
+    return const_reverse_iterator{this->begin()};
+  }
+
+  // [containers.sequences.inplace.vector.members] size/capacity
+  using __base::empty;
+  using __base::size;
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type max_size() const noexcept
+  {
+    return 0;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type capacity() const noexcept
+  {
+    return 0;
+  }
+
+  // [containers.sequences.inplace.vector.modifiers], modifiers
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator __cpos, const _Tp& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return emplace(__cpos, __value);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator __cpos, _Tp&& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return emplace(__cpos, _CUDA_VSTD::move(__value));
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator, const size_type __count, const _Tp&)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator, _Iter __first, _Iter __last)
+  {
+    if (__first != __last)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator, initializer_list<_Tp> __ilist)
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void append_range(_Range&& __range)
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  template <class... _Args>
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator emplace(const_iterator, _Args&&...)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return nullptr;
+  }
+
+  template <class... _Args>
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference emplace_back(_Args&&... __args)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference push_back(const _Tp& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference push_back(_Tp&& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return this->unchecked_emplace_back(_CUDA_VSTD::move(__value));
+  }
+
+  template <class... _Args>
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer try_emplace_back(_Args&&...) noexcept
+  {
+    return nullptr;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer try_push_back(const _Tp&) noexcept
+  {
+    return nullptr;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer try_push_back(_Tp&&) noexcept
+  {
+    return nullptr;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr _CUDA_VRANGES::iterator_t<_Range> try_append_range(_Range&& __range) noexcept
+  {
+    return _CUDA_VRANGES::begin(__range);
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  using __base::unchecked_emplace_back;
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference unchecked_push_back(const _Tp& __value) noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference unchecked_push_back(_Tp&& __value) noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void pop_back() noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator erase(const_iterator) noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator erase(const_iterator __cfirst, const_iterator __clast) noexcept
+  {
+    if (__cfirst != __clast)
+    {
+      _CUDA_VSTD_NOVERSION::terminate();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void clear() noexcept {}
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __count)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void resize(const size_type __count, const _Tp&)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void reserve(const size_type __count)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void shrink_to_fit() noexcept {}
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr void swap(inplace_vector&) noexcept {}
+  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void swap(inplace_vector&, inplace_vector&) noexcept {}
+
+  // inplace_vector.comparison
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  operator==(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return true;
+  }
+#  if _CCCL_STD_VER <= 2017
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  operator!=(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return false;
+  }
+#  endif // _CCCL_STD_VER <= 2017
+
+#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr __synth_three_way_result_t<_Tp>
+  operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+  }
+#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  operator<(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return false;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  operator>(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return false;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  operator<=(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return true;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  operator>=(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return true;
+  }
+#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+
+  // [containers.sequences.inplace.vector.erasure]
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type __erase(const _Tp&) noexcept
+  {
+    return 0;
+  }
+
+  template <class _Pred>
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type __erase_if(_Pred) noexcept
+  {
+    return 0;
   }
 };
 
