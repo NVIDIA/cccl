@@ -33,6 +33,8 @@
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/__functional/address_stability.h>
+
 #include <nvbench_helper.cuh>
 
 template <class InT, class OutT>
@@ -121,9 +123,10 @@ static void mul(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
     const T scalar = startScalar;
-    thrust::transform(c.begin(), c.end(), b.begin(), [=] __device__ __host__(const T& ci) {
-      return ci * scalar;
-    });
+    thrust::transform(
+      c.begin(), c.end(), b.begin(), cuda::proclaim_copyable_arguments([=] __device__ __host__(const T& ci) {
+        return ci * scalar;
+      }));
   });
 }
 
@@ -145,9 +148,14 @@ static void add(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(n);
 
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    thrust::transform(a.begin(), a.end(), b.begin(), c.begin(), [] __device__ __host__(const T& ai, const T& bi) {
-      return ai + bi;
-    });
+    thrust::transform(
+      a.begin(),
+      a.end(),
+      b.begin(),
+      c.begin(),
+      cuda::proclaim_copyable_arguments([] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
+        return ai + bi;
+      }));
   });
 }
 
@@ -170,9 +178,14 @@ static void triad(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
     const T scalar = startScalar;
-    thrust::transform(b.begin(), b.end(), c.begin(), a.begin(), [=] __device__ __host__(const T& bi, const T& ci) {
-      return bi + scalar * ci;
-    });
+    thrust::transform(
+      b.begin(),
+      b.end(),
+      c.begin(),
+      a.begin(),
+      cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& bi, const T& ci) {
+        return bi + scalar * ci;
+      }));
   });
 }
 
@@ -199,9 +212,11 @@ static void nstream(nvbench::state& state, nvbench::type_list<T>)
       thrust::make_zip_iterator(a.begin(), b.begin(), c.begin()),
       thrust::make_zip_iterator(a.end(), b.end(), c.end()),
       a.begin(),
-      thrust::make_zip_function([=] __device__ __host__(const T& ai, const T& bi, const T& ci) {
-        return ai + bi + scalar * ci;
-      }));
+
+      thrust::make_zip_function(
+        cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) {
+          return ai + bi + scalar * ci;
+        })));
   });
 }
 
