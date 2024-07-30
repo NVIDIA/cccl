@@ -25,7 +25,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 
 namespace cuda::experimental
@@ -49,7 +49,7 @@ struct stream : stream_ref
   //! Priority is defaulted to stream::default_priority
   //!
   //! @throws cuda_error if stream creation fails
-  explicit stream(device __dev, int __priority = default_priority)
+  explicit stream(device_ref __dev, int __priority = default_priority)
   {
     __scoped_device dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
@@ -60,7 +60,7 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails.
   stream()
-      : stream(device{0})
+      : stream(device_ref{0})
   {}
 
   //! @brief Construct a new `stream` object into the moved-from state.

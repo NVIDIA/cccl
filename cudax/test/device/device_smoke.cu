@@ -18,7 +18,7 @@ namespace
 template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 [[maybe_unused]] auto test_device_attribute()
 {
-  cudax::device dev0(0);
+  cudax::device_ref dev0(0);
   STATIC_REQUIRE(Attr == ExpectedAttr);
   STATIC_REQUIRE(::cuda::std::is_same_v<cudax::device::attr_result_t<Attr>, ExpectedResult>);
 
@@ -33,6 +33,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 TEST_CASE("Smoke", "[device]")
 {
   using cudax::device;
+  using cudax::device_ref;
 
   SECTION("Attributes")
   {
@@ -193,7 +194,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(::cudaComputeModeProhibited == device::attrs::compute_mode.prohibited_mode);
       STATIC_REQUIRE(::cudaComputeModeExclusiveProcess == device::attrs::compute_mode.exclusive_process_mode);
 
-      auto mode = device(0).attr(device::attrs::compute_mode);
+      auto mode = device_ref(0).attr(device::attrs::compute_mode);
       CUDAX_REQUIRE((mode == device::attrs::compute_mode.default_mode || //
                      mode == device::attrs::compute_mode.prohibited_mode || //
                      mode == device::attrs::compute_mode.exclusive_process_mode));
@@ -206,7 +207,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(
         ::cudaFlushGPUDirectRDMAWritesOptionMemOps == device::attrs::gpu_direct_rdma_flush_writes_options.mem_ops);
 
-      auto options = device(0).attr(device::attrs::gpu_direct_rdma_flush_writes_options);
+      auto options = device_ref(0).attr(device::attrs::gpu_direct_rdma_flush_writes_options);
       CUDAX_REQUIRE((options == device::attrs::gpu_direct_rdma_flush_writes_options.host || //
                      options == device::attrs::gpu_direct_rdma_flush_writes_options.mem_ops));
     }
@@ -218,7 +219,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(
         ::cudaGPUDirectRDMAWritesOrderingAllDevices == device::attrs::gpu_direct_rdma_writes_ordering.all_devices);
 
-      auto ordering = device(0).attr(device::attrs::gpu_direct_rdma_writes_ordering);
+      auto ordering = device_ref(0).attr(device::attrs::gpu_direct_rdma_writes_ordering);
       CUDAX_REQUIRE((ordering == device::attrs::gpu_direct_rdma_writes_ordering.none || //
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.owner || //
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.all_devices));
@@ -230,7 +231,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(::cudaDeviceNumaConfigNone == device::attrs::numa_config.none);
       STATIC_REQUIRE(::cudaDeviceNumaConfigNumaNode == device::attrs::numa_config.numa_node);
 
-      auto config = device(0).attr(device::attrs::numa_config);
+      auto config = device_ref(0).attr(device::attrs::numa_config);
       CUDAX_REQUIRE((config == device::attrs::numa_config.none || //
                      config == device::attrs::numa_config.numa_node));
     }

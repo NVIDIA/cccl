@@ -24,7 +24,7 @@
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 
 namespace cuda::experimental
 {
@@ -41,7 +41,7 @@ struct __attr_with_type
     return _Attr;
   }
 
-  _CCCL_NODISCARD type operator()(device __dev) const
+  _CCCL_NODISCARD type operator()(device_ref __dev) const
   {
     return __dev.attr<_Attr>();
   }
@@ -50,27 +50,27 @@ struct __attr_with_type
 
 // TODO: give this a strong type for kilohertz
 template <>
-struct device::__attr<::cudaDevAttrClockRate> //
+struct device_ref::__attr<::cudaDevAttrClockRate> //
     : detail::__attr_with_type<::cudaDevAttrClockRate, int>
 {};
 template <>
-struct device::__attr<::cudaDevAttrGpuOverlap> //
+struct device_ref::__attr<::cudaDevAttrGpuOverlap> //
     : detail::__attr_with_type<::cudaDevAttrGpuOverlap, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrKernelExecTimeout> //
+struct device_ref::__attr<::cudaDevAttrKernelExecTimeout> //
     : detail::__attr_with_type<::cudaDevAttrKernelExecTimeout, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrIntegrated> //
+struct device_ref::__attr<::cudaDevAttrIntegrated> //
     : detail::__attr_with_type<::cudaDevAttrIntegrated, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrCanMapHostMemory> //
+struct device_ref::__attr<::cudaDevAttrCanMapHostMemory> //
     : detail::__attr_with_type<::cudaDevAttrCanMapHostMemory, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrComputeMode> //
+struct device_ref::__attr<::cudaDevAttrComputeMode> //
     : detail::__attr_with_type<::cudaDevAttrComputeMode, ::cudaComputeMode>
 {
   static constexpr type default_mode           = cudaComputeModeDefault;
@@ -78,133 +78,133 @@ struct device::__attr<::cudaDevAttrComputeMode> //
   static constexpr type exclusive_process_mode = cudaComputeModeExclusiveProcess;
 };
 template <>
-struct device::__attr<::cudaDevAttrConcurrentKernels> //
+struct device_ref::__attr<::cudaDevAttrConcurrentKernels> //
     : detail::__attr_with_type<::cudaDevAttrConcurrentKernels, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrEccEnabled> //
+struct device_ref::__attr<::cudaDevAttrEccEnabled> //
     : detail::__attr_with_type<::cudaDevAttrEccEnabled, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrTccDriver> //
+struct device_ref::__attr<::cudaDevAttrTccDriver> //
     : detail::__attr_with_type<::cudaDevAttrTccDriver, bool>
 {};
 // TODO: give this a strong type for kilohertz
 template <>
-struct device::__attr<::cudaDevAttrMemoryClockRate> //
+struct device_ref::__attr<::cudaDevAttrMemoryClockRate> //
     : detail::__attr_with_type<::cudaDevAttrMemoryClockRate, int>
 {};
 // TODO: give this a strong type for bits
 template <>
-struct device::__attr<::cudaDevAttrGlobalMemoryBusWidth> //
+struct device_ref::__attr<::cudaDevAttrGlobalMemoryBusWidth> //
     : detail::__attr_with_type<::cudaDevAttrGlobalMemoryBusWidth, int>
 {};
 // TODO: give this a strong type for bytes
 template <>
-struct device::__attr<::cudaDevAttrL2CacheSize> //
+struct device_ref::__attr<::cudaDevAttrL2CacheSize> //
     : detail::__attr_with_type<::cudaDevAttrL2CacheSize, int>
 {};
 template <>
-struct device::__attr<::cudaDevAttrUnifiedAddressing> //
+struct device_ref::__attr<::cudaDevAttrUnifiedAddressing> //
     : detail::__attr_with_type<::cudaDevAttrUnifiedAddressing, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrStreamPrioritiesSupported> //
+struct device_ref::__attr<::cudaDevAttrStreamPrioritiesSupported> //
     : detail::__attr_with_type<::cudaDevAttrStreamPrioritiesSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrGlobalL1CacheSupported> //
+struct device_ref::__attr<::cudaDevAttrGlobalL1CacheSupported> //
     : detail::__attr_with_type<::cudaDevAttrGlobalL1CacheSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrLocalL1CacheSupported> //
+struct device_ref::__attr<::cudaDevAttrLocalL1CacheSupported> //
     : detail::__attr_with_type<::cudaDevAttrLocalL1CacheSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrManagedMemory> //
+struct device_ref::__attr<::cudaDevAttrManagedMemory> //
     : detail::__attr_with_type<::cudaDevAttrManagedMemory, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrIsMultiGpuBoard> //
+struct device_ref::__attr<::cudaDevAttrIsMultiGpuBoard> //
     : detail::__attr_with_type<::cudaDevAttrIsMultiGpuBoard, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrHostNativeAtomicSupported> //
+struct device_ref::__attr<::cudaDevAttrHostNativeAtomicSupported> //
     : detail::__attr_with_type<::cudaDevAttrHostNativeAtomicSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrPageableMemoryAccess> //
+struct device_ref::__attr<::cudaDevAttrPageableMemoryAccess> //
     : detail::__attr_with_type<::cudaDevAttrPageableMemoryAccess, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrConcurrentManagedAccess> //
+struct device_ref::__attr<::cudaDevAttrConcurrentManagedAccess> //
     : detail::__attr_with_type<::cudaDevAttrConcurrentManagedAccess, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrComputePreemptionSupported> //
+struct device_ref::__attr<::cudaDevAttrComputePreemptionSupported> //
     : detail::__attr_with_type<::cudaDevAttrComputePreemptionSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrCanUseHostPointerForRegisteredMem> //
+struct device_ref::__attr<::cudaDevAttrCanUseHostPointerForRegisteredMem> //
     : detail::__attr_with_type<::cudaDevAttrCanUseHostPointerForRegisteredMem, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrCooperativeLaunch> //
+struct device_ref::__attr<::cudaDevAttrCooperativeLaunch> //
     : detail::__attr_with_type<::cudaDevAttrCooperativeLaunch, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrCooperativeMultiDeviceLaunch> //
+struct device_ref::__attr<::cudaDevAttrCooperativeMultiDeviceLaunch> //
     : detail::__attr_with_type<::cudaDevAttrCooperativeMultiDeviceLaunch, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrCanFlushRemoteWrites> //
+struct device_ref::__attr<::cudaDevAttrCanFlushRemoteWrites> //
     : detail::__attr_with_type<::cudaDevAttrCanFlushRemoteWrites, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrHostRegisterSupported> //
+struct device_ref::__attr<::cudaDevAttrHostRegisterSupported> //
     : detail::__attr_with_type<::cudaDevAttrHostRegisterSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrDirectManagedMemAccessFromHost> //
+struct device_ref::__attr<::cudaDevAttrDirectManagedMemAccessFromHost> //
     : detail::__attr_with_type<::cudaDevAttrDirectManagedMemAccessFromHost, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrSparseCudaArraySupported> //
+struct device_ref::__attr<::cudaDevAttrSparseCudaArraySupported> //
     : detail::__attr_with_type<::cudaDevAttrSparseCudaArraySupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrMemoryPoolsSupported> //
+struct device_ref::__attr<::cudaDevAttrMemoryPoolsSupported> //
     : detail::__attr_with_type<::cudaDevAttrMemoryPoolsSupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrGPUDirectRDMASupported> //
+struct device_ref::__attr<::cudaDevAttrGPUDirectRDMASupported> //
     : detail::__attr_with_type<::cudaDevAttrGPUDirectRDMASupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrDeferredMappingCudaArraySupported> //
+struct device_ref::__attr<::cudaDevAttrDeferredMappingCudaArraySupported> //
     : detail::__attr_with_type<::cudaDevAttrDeferredMappingCudaArraySupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrIpcEventSupport> //
+struct device_ref::__attr<::cudaDevAttrIpcEventSupport> //
     : detail::__attr_with_type<::cudaDevAttrIpcEventSupport, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrPageableMemoryAccessUsesHostPageTables>
+struct device_ref::__attr<::cudaDevAttrPageableMemoryAccessUsesHostPageTables>
     : detail::__attr_with_type<::cudaDevAttrPageableMemoryAccessUsesHostPageTables, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrHostRegisterReadOnlySupported> //
+struct device_ref::__attr<::cudaDevAttrHostRegisterReadOnlySupported> //
     : detail::__attr_with_type<::cudaDevAttrHostRegisterReadOnlySupported, bool>
 {};
 template <>
-struct device::__attr<::cudaDevAttrGPUDirectRDMAFlushWritesOptions> //
+struct device_ref::__attr<::cudaDevAttrGPUDirectRDMAFlushWritesOptions> //
     : detail::__attr_with_type<::cudaDevAttrGPUDirectRDMAFlushWritesOptions, ::cudaFlushGPUDirectRDMAWritesOptions>
 {
   static constexpr type host    = ::cudaFlushGPUDirectRDMAWritesOptionHost;
   static constexpr type mem_ops = ::cudaFlushGPUDirectRDMAWritesOptionMemOps;
 };
 template <>
-struct device::__attr<::cudaDevAttrGPUDirectRDMAWritesOrdering> //
+struct device_ref::__attr<::cudaDevAttrGPUDirectRDMAWritesOrdering> //
     : detail::__attr_with_type<::cudaDevAttrGPUDirectRDMAWritesOrdering, ::cudaGPUDirectRDMAWritesOrdering>
 {
   static constexpr type none        = ::cudaGPUDirectRDMAWritesOrderingNone;
@@ -213,12 +213,12 @@ struct device::__attr<::cudaDevAttrGPUDirectRDMAWritesOrdering> //
 };
 // TODO: This is a bitmask. What are the possible values?
 template <>
-struct device::__attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
+struct device_ref::__attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
     : detail::__attr_with_type<::cudaDevAttrMemoryPoolSupportedHandleTypes, unsigned int>
 {};
 #if CUDART_VERSION >= 12020
 template <>
-struct device::__attr<::cudaDevAttrNumaConfig> //
+struct device_ref::__attr<::cudaDevAttrNumaConfig> //
     : detail::__attr_with_type<::cudaDevAttrNumaConfig, ::cudaDeviceNumaConfig>
 {
   static constexpr type none      = ::cudaDeviceNumaConfigNone;
@@ -226,7 +226,7 @@ struct device::__attr<::cudaDevAttrNumaConfig> //
 };
 #endif
 
-struct device::attrs
+struct device_ref::attrs
 {
   // Maximum number of threads per block
   using max_threads_per_block_t = __attr<::cudaDevAttrMaxThreadsPerBlock>;
