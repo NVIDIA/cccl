@@ -108,8 +108,8 @@ struct _Resource_vtable_builder
     }
 
     template <class _Resource>
-    static bool _Equal(void* __left, void* __right) {
-        return *static_cast<_Resource *>(__left) == *static_cast<_Resource *>(__right);
+    static bool _Equal(void* __left, void* __rhs) {
+        return *static_cast<_Resource *>(__left) == *static_cast<_Resource *>(__rhs);
     }
 
     _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
@@ -279,7 +279,7 @@ _LIBCUDACXX_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
   _Resource_vtable_builder::template _Create<_Resource, _Alloc_type>();
 
 template <class>
-_LIBCUDACXX_INLINE_VAR constexpr bool _Is_basic_resource_ref = false;
+_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref = false;
 
 template <_AllocType _Alloc_type, class... _Properties>
 class basic_resource_ref
@@ -300,38 +300,52 @@ private:
     _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
 
 public:
+  //! @brief Constructs a \c basic_resource_ref from a type that satisfies the \c resource or \c async_resource concept
+  //! as well as all properties
+  //! @param __res The resource to be wrapped within the \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!_Is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
+  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_ref_base<_Alloc_type>(_CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
+  //! @brief Constructs a \c resource_ref from a type that satisfies the \c async_resource concept  as well as all
+  //! properties. This ignores the async interface of the passed in resource
+  //! @param __res The resource to be wrapped within the \c resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!_Is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
+  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_ref_base<_Alloc_type>(_CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
+  //! @brief Constructs a \c basic_resource_ref from a type that satisfies the \c resource or \c async_resource concept
+  //! as well as all properties
+  //! @param __res Pointer to a resource to be wrapped within the \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!_Is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
+  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
       : _Resource_ref_base<_Alloc_type>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
+  //! @brief Constructs a \c resource_ref from a type that satisfies the \c async_resource concept  as well as all
+  //! properties. This ignores the async interface of the passed in resource
+  //! @param __res Pointer to a resource to be wrapped within the \c resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!_Is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
+  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
       : _Resource_ref_base<_Alloc_type>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
+  //! @brief Conversion from a \c basic_resource_ref with the same set of properties but in a different order
+  //! @param __ref The other \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
   basic_resource_ref(basic_resource_ref<_Alloc_type, _OtherProperties...> __ref) noexcept
@@ -339,6 +353,9 @@ public:
       , __vtable(__ref)
   {}
 
+  //! @brief Conversion from a \c async_resource_ref with the same set of properties but in a different order to a
+  //! \c resource_ref
+  //! @param __ref The other \c async_resource_ref
   _LIBCUDACXX_TEMPLATE(_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((_OtherAllocType == _AllocType::_Async) _LIBCUDACXX_AND(_OtherAllocType != _Alloc_type)
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
@@ -347,43 +364,57 @@ public:
       , __vtable(__ref)
   {}
 
+  //! @brief Equality comparison between two \c basic_resource_ref
+  //! @param __rhs The other \c basic_resource_ref
+  //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
+  //! the result of that equality comparison. Otherwise returns false.
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
-  _CCCL_NODISCARD bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
+  _CCCL_NODISCARD bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
   {
-    return (this->__static_vtable->__equal_fn == __right.__static_vtable->__equal_fn) //
-        && this->__static_vtable->__equal_fn(this->__object, __right.__object);
+    return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
+        && this->__static_vtable->__equal_fn(this->__object, __rhs.__object);
   }
 
+  //! @brief Inequality comparison between two \c basic_resource_ref
+  //! @param __rhs The other \c basic_resource_ref
+  //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
+  //! the inverse result of that equality comparison. Otherwise returns true.
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
-  _CCCL_NODISCARD bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
+  _CCCL_NODISCARD bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
   {
-    return !(*this == __right);
+    return !(*this == __rhs);
   }
 
+  //! @brief Forwards the stateless properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(
-    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
   friend void get_property(const basic_resource_ref&, _Property) noexcept {}
 
+  //! @brief Forwards the stateful properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
   }
 };
 
+//! @brief Checks whether a passed in type is a specialization of basic_resource_ref
 template <_AllocType _Alloc_type, class... _Properties>
-_LIBCUDACXX_INLINE_VAR constexpr bool _Is_basic_resource_ref<basic_resource_ref<_Alloc_type, _Properties...>> = true;
+_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref<basic_resource_ref<_Alloc_type, _Properties...>> = true;
 
-template <class... _Properties> //
+//! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
+//! @tparam _Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
+template <class... _Properties>
 using resource_ref = basic_resource_ref<_AllocType::_Default, _Properties...>;
 
-template <class... _Properties> //
+//! @brief Type erased wrapper around a `async_resource` that satisfies \tparam _Properties
+//! @tparam _Properties The properties that any async resource wrapped within the `async_resource_ref` needs to satisfy
+template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR

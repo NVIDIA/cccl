@@ -157,7 +157,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto size = __size::__fn{};
+_CCCL_GLOBAL_CONSTANT auto size = __size::__fn{};
 } // namespace __cpo
 
 // [range.prim.ssize]
@@ -198,7 +198,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto ssize = __ssize::__fn{};
+_CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017

@@ -51,7 +51,7 @@ struct __tuple_sfinae_base
   {};
 
   template <class... _Tp, class... _Up>
-  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : _BoolConstant<sizeof...(_Tp) == sizeof...(_Up)>
+  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : bool_constant<sizeof...(_Tp) == sizeof...(_Up)>
   {};
 
   template <template <class, class...> class, class _Tp, class _Up, bool = __test_size<_Tp, _Up>::value>

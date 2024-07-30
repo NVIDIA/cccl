@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 NVIDIA Corporation
+ *  Copyright 2024 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,31 +27,12 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
+#include <thrust/functional.h>
 
 THRUST_NAMESPACE_BEGIN
-
-// forward definitions for is_commutative
-template <typename T>
-struct plus;
-template <typename T>
-struct multiplies;
-template <typename T>
-struct minimum;
-template <typename T>
-struct maximum;
-template <typename T>
-struct logical_or;
-template <typename T>
-struct logical_and;
-template <typename T>
-struct bit_or;
-template <typename T>
-struct bit_and;
-template <typename T>
-struct bit_xor;
-
 namespace detail
 {
+
 template <typename BinaryFunction>
 struct is_commutative : public thrust::detail::false_type
 {};

@@ -123,7 +123,7 @@ git clone --recursive https://github.com/NVIDIA/thrust.git
 
 ## Using Thrust From Your Project
 
-For CMake-based projects, we provide a CMake package for use with `find_package`. See the [CMake README](https://github.com/NVIDIA/cccl/blob/main/docs/thrust/github_pages/setup/cmake_options.md) for more information.
+For CMake-based projects, we provide a CMake package for use with `find_package`. See :ref:`CMake Options <cmake-options>` for more information.
 Thrust can also be added via `add_subdirectory` or tools like the [CMake Package Manager](https://github.com/cpm-cmake/CPM.cmake).
 
 For non-CMake projects, compile with:
@@ -188,7 +188,7 @@ Some parts are distributed under the [Apache License v2.0] and the [Boost Licens
 
 [GitHub]: https://github.com/NVIDIA/cccl/tree/main/thrust
 
-[contributing section]: https://nvidia.github.io/thrust/contributing.html
+[contributing section]: https://nvidia.github.io/cccl/thrust/contributing.html
 
 [CMake build system]: https://cmake.org
 

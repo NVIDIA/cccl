@@ -1011,7 +1011,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an exclusive prefix max scan of 512 integer
-  //! items that are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3)
+  //! items that are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3)
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
   //! .. code-block:: c++
@@ -2180,7 +2180,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. code-block:: c++
@@ -2314,7 +2314,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. code-block:: c++

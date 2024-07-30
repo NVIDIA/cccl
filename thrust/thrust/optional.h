@@ -736,7 +736,7 @@ struct nullopt_t
 /// foo(thrust::nullopt); //pass an empty optional
 /// ```
 #ifdef __CUDA_ARCH__
-__device__ static _LIBCUDACXX_CONSTEXPR_GLOBAL
+__device__ static _CCCL_CONSTEXPR_GLOBAL
 #else
 static constexpr
 #endif // __CUDA_ARCH__

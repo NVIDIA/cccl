@@ -30,7 +30,7 @@ endif()
 
 # Support adding CUB to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
-if (NOT CUB_TOPLEVEL_PROJECT AND NOT CUB_IN_THRUST)
+if (NOT CUB_TOPLEVEL_PROJECT)
   include(cmake/CubAddSubdir.cmake)
   return()
 endif()
@@ -51,12 +51,10 @@ mark_as_advanced(CUB_ENABLE_CPP_DIALECT_IN_NAMES)
 
 # This option is only used when CUB is built stand-alone; otherwise the Thrust
 # option has the same effect.
-if (NOT CUB_IN_THRUST)
-  option(CUB_IGNORE_DEPRECATED_API
-    "Suppress warnings about deprecated Thrust/CUB API."
-    OFF
-  )
-endif()
+option(CUB_IGNORE_DEPRECATED_API
+  "Suppress warnings about deprecated Thrust/CUB API."
+  OFF
+)
 
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
