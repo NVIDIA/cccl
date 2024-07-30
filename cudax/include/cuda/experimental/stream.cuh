@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_HIERARCHY___
-#define __CUDAX_HIERARCHY___
+#ifndef __CUDAX_STREAM__
+#define __CUDAX_STREAM__
 
-#include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
+#include <cuda/experimental/__stream/stream.cuh>
 
-#endif // __CUDAX_HIERARCHY___
+#endif // __CUDAX_STREAM__

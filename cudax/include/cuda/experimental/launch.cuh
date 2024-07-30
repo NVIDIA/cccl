@@ -13,4 +13,4 @@
 
 #include <cuda/experimental/__launch/launch.cuh>
 
-#endif
+#endif // __CUDAX_LAUNCH___
