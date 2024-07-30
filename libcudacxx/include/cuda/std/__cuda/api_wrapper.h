@@ -47,4 +47,20 @@
     (void) __status;                                   \
   }
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
+
+/**
+ * @brief  Returns the device id of the current device
+ * @throws cuda_error if cudaGetDevice was not successful
+ * @returns The device id
+ */
+_CCCL_NODISCARD inline int __get_current_cuda_device()
+{
+  int __device = -1;
+  _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with cudaGetDevice.", &__device);
+  return __device;
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA_MR
+
 #endif //_CUDA__STD__CUDA_API_WRAPPER_H

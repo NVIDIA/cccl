@@ -11,6 +11,7 @@
 #ifndef __CUDAX_MEMORY_RESOURCE_H
 #define __CUDAX_MEMORY_RESOURCE_H
 
+#include <cuda/experimental/__memory_resource/cuda_async_memory_resource.h>
 #include <cuda/experimental/__memory_resource/cuda_memory_pool.h>
 
 #endif // __CUDAX_MEMORY_RESOURCE_H
