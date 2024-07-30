@@ -420,7 +420,7 @@ ASSERT_NOEXCEPT(cuda::std::ranges::end(cuda::std::declval<int (&)[10]>()));
 ASSERT_NOEXCEPT(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>()));
 
 #if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberEnd
+_CCCL_GLOBAL_CONSTANT struct NoThrowMemberEnd
 {
   __host__ __device__ ThrowingIterator<int> begin() const;
   __host__ __device__ ThrowingIterator<int> end() const noexcept; // auto(t.end()) doesn't throw
@@ -428,7 +428,7 @@ _LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberEnd
 static_assert(noexcept(cuda::std::ranges::end(ntme)));
 static_assert(noexcept(cuda::std::ranges::cend(ntme)));
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowADLEnd
+_CCCL_GLOBAL_CONSTANT struct NoThrowADLEnd
 {
   __host__ __device__ ThrowingIterator<int> begin() const;
   __host__ __device__ friend ThrowingIterator<int> end(NoThrowADLEnd&) noexcept; // auto(end(t)) doesn't throw
@@ -439,7 +439,7 @@ static_assert(noexcept(cuda::std::ranges::cend(ntae)));
 #endif // !TEST_COMPILER_MSVC_2019
 
 #if !defined(TEST_COMPILER_ICC)
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberEndReturnsRef
+_CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 {
   __host__ __device__ ThrowingIterator<int> begin() const;
   __host__ __device__ ThrowingIterator<int>& end() const noexcept; // auto(t.end()) may throw
@@ -448,7 +448,7 @@ static_assert(!noexcept(cuda::std::ranges::end(ntmerr)));
 static_assert(!noexcept(cuda::std::ranges::cend(ntmerr)));
 #endif // !TEST_COMPILER_ICC
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct EndReturnsArrayRef
+_CCCL_GLOBAL_CONSTANT struct EndReturnsArrayRef
 {
   __host__ __device__ auto begin() const noexcept -> int (&)[10];
   __host__ __device__ auto end() const noexcept -> int (&)[10];

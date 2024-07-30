@@ -176,7 +176,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto get_property = __get_property::__fn{};
+_CCCL_GLOBAL_CONSTANT auto get_property = __get_property::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
