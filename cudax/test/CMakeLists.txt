@@ -71,7 +71,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target stream_tests ${cn_target}
     stream/stream_smoke.cu
   )
-    
+
   cudax_add_catch2_test(test_target misc_tests ${cn_target}
     utility/driver_api.cu
   )
