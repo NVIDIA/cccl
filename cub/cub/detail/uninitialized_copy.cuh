@@ -58,6 +58,7 @@ template <typename T,
           typename ::cuda::std::enable_if<::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
 _CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
 {
+  // gevtushenko: placement new should work here as well, but the code generated for copy assignment is sometimes better
   *ptr = ::cuda::std::forward<U>(val);
 }
 
