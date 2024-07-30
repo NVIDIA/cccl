@@ -721,10 +721,9 @@ private:
  * `{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }`.
  *
  * @par Re-using dynamically allocating shared memory
- * The following example under the examples/block folder illustrates usage of
+ * The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of
  * dynamically shared memory with BlockReduce and how to re-purpose
- * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
+ * the same memory region.
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */

@@ -1249,8 +1249,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
  *  \param pred The Adaptable Binary Predicate to negate.
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x,y)</tt> always returns
  *          the same value as <tt>!pred(x,y)</tt>.
- *  \tparam Binary Predicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/AdaptableBinaryPredicate">Adaptable Binary Predicate</a>.
+ *  \tparam Binary Predicate is a model of an Adaptable Binary Predicate.
  *  \see binary_negate
  *  \see not1
  */
