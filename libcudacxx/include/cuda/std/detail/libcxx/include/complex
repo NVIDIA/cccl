@@ -1116,6 +1116,9 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> pow(const complex<_Tp>& __x, c
   return _CUDA_VSTD::exp(__y * _CUDA_VSTD::log(__x));
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244)
+
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>>
 pow(const complex<_Tp>& __x, const complex<_Up>& __y)
@@ -1137,6 +1140,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>> pow(cons
   using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x, 0), __result_type(__y));
 }
+
+_CCCL_DIAG_POP
 
 // __sqr, computes pow(x, 2)
 
