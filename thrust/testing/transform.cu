@@ -5,6 +5,7 @@
 #include <thrust/pair.h>
 #include <thrust/transform.h>
 #include <thrust/tuple.h>
+#include <thrust/zip_function.h>
 
 #include <unittest/unittest.h>
 
@@ -802,3 +803,49 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformWithIndirection()
   ASSERT_EQUAL(output[6], T(1));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformWithIndirection);
+
+struct Sum
+{
+  _CCCL_HOST_DEVICE auto
+  operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const -> double
+  {
+    return a + b + c + d + e;
+  }
+};
+
+// TODO(bgruber): I want to test that thrust::transform for the CUDA backend unwraps the zip_iterators (at least one
+// level). How should I best do this?
+void TestTransformWithZipIteartors()
+{
+  constexpr int num_items = 100;
+  thrust::device_vector<std::int8_t> a(num_items, 1);
+  thrust::device_vector<std::int16_t> b(num_items, 2);
+  thrust::device_vector<std::int32_t> c(num_items, 3);
+  thrust::device_vector<std::int64_t> d(num_items, 4);
+  thrust::device_vector<float> e(num_items, 5);
+
+  thrust::device_vector<double> result(num_items);
+  // SECTION("once")
+  {
+    const auto z = thrust::make_zip_iterator(a.begin(), b.begin(), c.begin(), d.begin(), e.begin());
+    thrust::transform(z, z + num_items, result.begin(), thrust::make_zip_function(Sum{}));
+
+    // compute reference and verify
+    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    ASSERT_EQUAL(reference, result);
+  }
+  // SECTION("trice")
+  {
+    const auto z = thrust::make_zip_iterator(
+      thrust::make_zip_iterator(thrust::make_zip_iterator(a.begin(), b.begin(), c.begin(), d.begin(), e.begin())));
+    thrust::transform(z,
+                      z + num_items,
+                      result.begin(),
+                      thrust::make_zip_function(thrust::make_zip_function(thrust::make_zip_function(Sum{}))));
+
+    // compute reference and verify
+    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    ASSERT_EQUAL(reference, result);
+  }
+}
+DECLARE_UNITTEST(TestTransformWithZipIteartors);
