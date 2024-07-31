@@ -21,11 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/atomic>
-#include <cuda/std/cassert> // IWYU pragma: keep (for assert)
-#include <cuda/std/iterator> // IWYU pragma: keep (for random_access_iterator_tag)
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/cassert>
 
 #include <cuda/experimental/__device/device.cuh>
 
@@ -50,12 +48,6 @@ public:
   _CCCL_NODISCARD iterator begin() const noexcept;
 
   _CCCL_NODISCARD iterator end() const noexcept;
-
-private:
-  // The number of available devices is not expected to change during the
-  // lifetime of the program, so cache the count to avoid repeated calls to
-  // `cudaGetDeviceCount`.
-  mutable _CUDA_VSTD::atomic<size_type> __size_{~0UL};
 };
 
 //! @brief A random-access iterator over all available CUDA devices
@@ -180,14 +172,11 @@ _CCCL_NODISCARD inline constexpr device all_devices::operator[](size_type __id_)
 
 _CCCL_NODISCARD inline all_devices::size_type all_devices::size() const
 {
-  size_type __size = __size_.load(_CUDA_VSTD::memory_order_relaxed);
-  if (__size == ~0UL)
-  {
+  static const size_type __size = [] {
     int __count = 0;
     _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
-    __size = static_cast<size_type>(__count);
-    __size_.store(__size, _CUDA_VSTD::memory_order_relaxed);
-  }
+    return static_cast<size_type>(__count);
+  }();
   return __size;
 }
 
