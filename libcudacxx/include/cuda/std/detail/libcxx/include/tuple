@@ -366,7 +366,7 @@ public:
   }
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
   {
-    __value_ = __t.__value_;
+    __value_ = _CUDA_VSTD::move(__t.__value_);
     return *this;
   }
 
