@@ -46,7 +46,7 @@ int main(int, char**)
 {
   static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, float>>::value, "");
   static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialEmpty>>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialEmpty>>::value, "");
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialNonEmpty>>::value, "");
   static_assert(!cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTriviallyCopyAble>>::value, "");
 
   return 0;
