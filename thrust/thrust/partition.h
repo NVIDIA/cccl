@@ -161,10 +161,11 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate
 /*! \p partition reorders the elements <tt>[first, last)</tt> based on the function
  *  object \p pred applied to a stencil range <tt>[stencil, stencil + (last - first))</tt>,
  *  such that all of the elements whose corresponding stencil element satisfies \p pred precede all of the elements
- * whose corresponding stencil element fails to satisfy it. The postcondition is that, for some iterator \c middle in
- * the range <tt>[first, last)</tt>, <tt>pred(*stencil_i)</tt> is \c true for every iterator \c stencil_i in the range
- * <tt>[stencil,stencil + (middle - first))</tt> and \c false for every iterator \c stencil_i in the range <tt>[stencil
- * + (middle - first), stencil + (last - first))</tt>. The return value of \p stable_partition is \c middle.
+ *  whose corresponding stencil element fails to satisfy it. The postcondition is that, for some iterator \c middle in
+ *  the range <tt>[first, last)</tt>, <tt>pred(*stencil_i)</tt> is \c true for every iterator \c stencil_i in the range
+ *  <tt>[stencil,stencil + (middle - first))</tt> and \c false for every iterator \c stencil_i in the range
+ *  <tt>[stencil + (middle - first), stencil + (last - first))</tt>.
+ *  The return value of \p stable_partition is \c middle.
  *
  *  Note that the relative order of elements in the two reordered sequences is not
  *  necessarily the same as it was in the original sequence. A different algorithm,
@@ -229,10 +230,11 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
 /*! \p partition reorders the elements <tt>[first, last)</tt> based on the function
  *  object \p pred applied to a stencil range <tt>[stencil, stencil + (last - first))</tt>,
  *  such that all of the elements whose corresponding stencil element satisfies \p pred precede all of the elements
- * whose corresponding stencil element fails to satisfy it. The postcondition is that, for some iterator \c middle in
- * the range <tt>[first, last)</tt>, <tt>pred(*stencil_i)</tt> is \c true for every iterator \c stencil_i in the range
- * <tt>[stencil,stencil + (middle - first))</tt> and \c false for every iterator \c stencil_i in the range <tt>[stencil
- * + (middle - first), stencil + (last - first))</tt>. The return value of \p stable_partition is \c middle.
+ *  whose corresponding stencil element fails to satisfy it. The postcondition is that, for some iterator \c middle in
+ *  the range <tt>[first, last)</tt>, <tt>pred(*stencil_i)</tt> is \c true for every iterator \c stencil_i in the range
+ *  <tt>[stencil,stencil + (middle - first))</tt> and \c false for every iterator \c stencil_i in the range
+ *  <tt>[stencil + (middle - first), stencil + (last - first))</tt>.
+ *  The return value of \p stable_partition is \c middle.
  *
  *  Note that the relative order of elements in the two reordered sequences is not
  *  necessarily the same as it was in the original sequence. A different algorithm,

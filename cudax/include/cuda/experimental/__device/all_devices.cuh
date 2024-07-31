@@ -22,10 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cassert>
 
 #include <cuda/experimental/__device/device.cuh>
+
+#include <vector>
 
 namespace cuda::experimental
 {
@@ -35,159 +36,122 @@ namespace __detail
 class all_devices
 {
 public:
-  using size_type = _CUDA_VSTD::size_t;
-  struct iterator;
-  using const_iterator = iterator;
+  using size_type      = ::std::vector<device>::size_type;
+  using iterator       = ::std::vector<device>::const_iterator;
+  using const_iterator = ::std::vector<device>::const_iterator;
 
   all_devices() = default;
 
-  _CCCL_NODISCARD constexpr device operator[](size_type __i) const noexcept;
+  _CCCL_NODISCARD const device& operator[](size_type __i) const noexcept;
 
   _CCCL_NODISCARD size_type size() const;
 
   _CCCL_NODISCARD iterator begin() const noexcept;
 
   _CCCL_NODISCARD iterator end() const noexcept;
+
+private:
+  struct __initializer_iterator;
+
+  static const ::std::vector<device>& __devices();
 };
 
-//! @brief A random-access iterator over all available CUDA devices
-struct all_devices::iterator
+//! @brief A proxy object used to in-place construct a `device` object from an
+//! integer ID
+struct __emplace_device
 {
-  using value_type        = device;
-  using difference_type   = int;
-  using pointer           = const device*;
-  using reference         = device;
-  using iterator_category = ::cuda::std::random_access_iterator_tag;
-  using iterator_concept  = ::cuda::std::random_access_iterator_tag;
+  int __id_;
 
-  //! @brief Proxy object used as the return value of `operator->`
-  struct __proxy
-  {
-    _CCCL_NODISCARD const device* operator->() const noexcept
-    {
-      return &__dev_;
-    }
-
-    device __dev_;
-  };
-
-  _CCCL_NODISCARD constexpr device operator*() const noexcept
+  _CCCL_NODISCARD constexpr operator device() const noexcept
   {
     return device(__id_);
   }
 
-  _CCCL_NODISCARD constexpr device operator[](int __offset) const noexcept
+  const __emplace_device* operator->() const noexcept
   {
-    return device(__id_ + __offset);
+    return this;
   }
-
-  _CCCL_NODISCARD constexpr __proxy operator->() const noexcept
-  {
-    return __proxy{device(__id_)};
-  }
-
-  constexpr iterator& operator++() noexcept
-  {
-    ++__id_;
-    return *this;
-  }
-
-  constexpr iterator operator++(int) noexcept
-  {
-    auto tmp = *this;
-    ++__id_;
-    return tmp;
-  }
-
-  constexpr iterator& operator--() noexcept
-  {
-    --__id_;
-    return *this;
-  }
-
-  constexpr iterator operator--(int) noexcept
-  {
-    auto tmp = *this;
-    --__id_;
-    return tmp;
-  }
-
-  constexpr iterator& operator+=(int __offset) noexcept
-  {
-    __id_ += __offset;
-    return *this;
-  }
-
-  _CCCL_NODISCARD constexpr iterator operator+(int __offset) noexcept
-  {
-    return iterator(__id_ + __offset);
-  }
-
-  constexpr iterator& operator-=(int __offset) noexcept
-  {
-    __id_ -= __offset;
-    return *this;
-  }
-
-  _CCCL_NODISCARD constexpr iterator operator-(int __offset) noexcept
-  {
-    return iterator(__id_ - __offset);
-  }
-
-  _CCCL_NODISCARD_FRIEND constexpr iterator operator+(int __lhs, const iterator& __rhs) noexcept
-  {
-    return iterator(__lhs + __rhs.__id_);
-  }
-
-  _CCCL_NODISCARD_FRIEND constexpr int operator-(const iterator& __lhs, const iterator& __rhs) noexcept
-  {
-    return __lhs.__id_ - __rhs.__id_;
-  }
-
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(const iterator& __lhs, const iterator& __rhs) noexcept
-  {
-    return __lhs.__id_ == __rhs.__id_;
-  }
-
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(const iterator& __lhs, const iterator& __rhs) noexcept
-  {
-    return __lhs.__id_ != __rhs.__id_;
-  }
-
-private:
-  friend struct all_devices;
-
-  constexpr explicit iterator(int __id) noexcept
-      : __id_(__id)
-  {}
-
-  int __id_ = 0;
 };
 
-_CCCL_NODISCARD inline constexpr device all_devices::operator[](size_type __id_) const noexcept
+//! @brief An iterator used to in-place construct `device` objects in a
+//! std::vector.
+//!
+//! Since `device` objects are not movable or copyable, we need to construct them
+//! in-place with a proxy object that can be implicitly converted to a `device`
+//! object.
+struct all_devices::__initializer_iterator
+{
+  using value_type        = __emplace_device;
+  using reference         = __emplace_device;
+  using iterator_category = ::std::forward_iterator_tag;
+  using difference_type   = int;
+  using pointer           = __emplace_device;
+
+  int __id_;
+
+  __emplace_device operator*() const
+  {
+    return __emplace_device{__id_};
+  }
+
+  __emplace_device operator->() const
+  {
+    return __emplace_device{__id_};
+  }
+
+  __initializer_iterator& operator++()
+  {
+    ++__id_;
+    return *this;
+  }
+
+  __initializer_iterator operator++(int)
+  {
+    auto __tmp = *this;
+    ++__id_;
+    return __tmp;
+  }
+
+  bool operator==(const __initializer_iterator& __other) const noexcept
+  {
+    return __id_ == __other.__id_;
+  }
+
+  bool operator!=(const __initializer_iterator& __other) const noexcept
+  {
+    return __id_ != __other.__id_;
+  }
+};
+
+_CCCL_NODISCARD inline const device& all_devices::operator[](size_type __id_) const noexcept
 {
   assert(__id_ < size());
-  return device(static_cast<int>(__id_));
+  return __devices()[__id_];
 }
 
 _CCCL_NODISCARD inline all_devices::size_type all_devices::size() const
 {
-  static const size_type __size = [] {
-    int __count = 0;
-    _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
-    return static_cast<size_type>(__count);
-  }();
-  return __size;
+  return __devices().size();
 }
 
 _CCCL_NODISCARD inline all_devices::iterator all_devices::begin() const noexcept
 {
-  return iterator(0);
+  return __devices().begin();
 }
 
 _CCCL_NODISCARD inline all_devices::iterator all_devices::end() const noexcept
 {
-  return iterator(static_cast<int>(size()));
+  return __devices().end();
+}
+
+inline const ::std::vector<device>& all_devices::__devices()
+{
+  static const ::std::vector<device> __devices = [] {
+    int __count = 0;
+    _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "failed to get the count of CUDA devices", &__count);
+    return ::std::vector<device>{__initializer_iterator{0}, __initializer_iterator{__count}};
+  }();
+  return __devices;
 }
 } // namespace __detail
 
@@ -201,11 +165,11 @@ _CCCL_NODISCARD inline all_devices::iterator all_devices::end() const noexcept
 //! @code
 //! class __all_devices {                     // exposition only
 //! public:
-//!   using size_type = ::cuda::std::size_t;
+//!   using size_type = ::std::size_t;
 //!   struct iterator;
 //!   using const_iterator = iterator;
 //!
-//!   [[nodiscard]] constexpr device operator[](size_type i) const noexcept;
+//!   [[nodiscard]] constexpr const device& operator[](size_type i) const noexcept;
 //!
 //!   [[nodiscard]] size_type size() const;
 //!
@@ -217,15 +181,17 @@ _CCCL_NODISCARD inline all_devices::iterator all_devices::end() const noexcept
 //!
 //! @par
 //! `__all_devices::iterator` is a random access iterator with a `reference`
-//! type of `device`.
+//! type of `const device&`.
 //!
 //! @par Example
 //! @code
-//! auto dev0 = cuda::devices[0];
+//! auto& dev0 = cuda::devices[0];
 //! assert(cuda::devices.size() == cuda::std::distance(cuda::devices.begin(), cuda::devices.end()));
 //! @endcode
 //!
-//! @sa device
+//! @sa
+//! * device
+//! * device_ref
 inline constexpr __detail::all_devices devices{};
 
 } // namespace cuda::experimental

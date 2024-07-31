@@ -19,7 +19,7 @@ namespace
 template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 [[maybe_unused]] auto test_device_attribute()
 {
-  cudax::device dev0(0);
+  cudax::device_ref dev0(0);
   STATIC_REQUIRE(Attr == ExpectedAttr);
   STATIC_REQUIRE(::cuda::std::is_same_v<cudax::device::attr_result_t<Attr>, ExpectedResult>);
 
@@ -34,6 +34,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 TEST_CASE("Smoke", "[device]")
 {
   using cudax::device;
+  using cudax::device_ref;
 
   SECTION("Attributes")
   {
@@ -194,7 +195,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(::cudaComputeModeProhibited == device::attrs::compute_mode.prohibited_mode);
       STATIC_REQUIRE(::cudaComputeModeExclusiveProcess == device::attrs::compute_mode.exclusive_process_mode);
 
-      auto mode = device(0).attr(device::attrs::compute_mode);
+      auto mode = device_ref(0).attr(device::attrs::compute_mode);
       CUDAX_REQUIRE((mode == device::attrs::compute_mode.default_mode || //
                      mode == device::attrs::compute_mode.prohibited_mode || //
                      mode == device::attrs::compute_mode.exclusive_process_mode));
@@ -207,7 +208,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(
         ::cudaFlushGPUDirectRDMAWritesOptionMemOps == device::attrs::gpu_direct_rdma_flush_writes_options.mem_ops);
 
-      auto options = device(0).attr(device::attrs::gpu_direct_rdma_flush_writes_options);
+      auto options = device_ref(0).attr(device::attrs::gpu_direct_rdma_flush_writes_options);
       CUDAX_REQUIRE((options == device::attrs::gpu_direct_rdma_flush_writes_options.host || //
                      options == device::attrs::gpu_direct_rdma_flush_writes_options.mem_ops));
     }
@@ -219,7 +220,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(
         ::cudaGPUDirectRDMAWritesOrderingAllDevices == device::attrs::gpu_direct_rdma_writes_ordering.all_devices);
 
-      auto ordering = device(0).attr(device::attrs::gpu_direct_rdma_writes_ordering);
+      auto ordering = device_ref(0).attr(device::attrs::gpu_direct_rdma_writes_ordering);
       CUDAX_REQUIRE((ordering == device::attrs::gpu_direct_rdma_writes_ordering.none || //
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.owner || //
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.all_devices));
@@ -231,7 +232,7 @@ TEST_CASE("Smoke", "[device]")
       STATIC_REQUIRE(::cudaDeviceNumaConfigNone == device::attrs::numa_config.none);
       STATIC_REQUIRE(::cudaDeviceNumaConfigNumaNode == device::attrs::numa_config.numa_node);
 
-      auto config = device(0).attr(device::attrs::numa_config);
+      auto config = device_ref(0).attr(device::attrs::numa_config);
       CUDAX_REQUIRE((config == device::attrs::numa_config.none || //
                      config == device::attrs::numa_config.numa_node));
     }
@@ -250,36 +251,17 @@ TEST_CASE("global devices vector", "[device]")
   CUDAX_REQUIRE(0 == cudax::devices[0].get());
   CUDAX_REQUIRE(0 == (*cudax::devices.begin()).get());
   CUDAX_REQUIRE(0 == cudax::devices.begin()->get());
+  CUDAX_REQUIRE(0 == cudax::devices.begin()[0].get());
 
-  // The device iterator itself does no range checking so these tests are safe
-  // regardless of the number of devices in the system.
-  auto it1 = cudax::devices.begin();
-  ++it1;
-  CUDAX_REQUIRE(1 == it1->get());
+  if (cudax::devices.size() > 1)
+  {
+    CUDAX_REQUIRE(1 == cudax::devices[1].get());
+    CUDAX_REQUIRE(1 == (*std::next(cudax::devices.begin())).get());
+    CUDAX_REQUIRE(1 == std::next(cudax::devices.begin())->get());
+    CUDAX_REQUIRE(1 == cudax::devices.begin()[1].get());
 
-  auto it2 = it1++;
-  CUDAX_REQUIRE(1 == it2->get());
-  CUDAX_REQUIRE(2 == it1->get());
-
-  CUDAX_REQUIRE(it1 != it2);
-
-  --it1;
-  CUDAX_REQUIRE(1 == it1->get());
-
-  it2 = it1--;
-  CUDAX_REQUIRE(1 == it2->get());
-  CUDAX_REQUIRE(0 == it1->get());
-
-  it1 += 3;
-  CUDAX_REQUIRE(3 == it1->get());
-
-  it1 -= 2;
-  CUDAX_REQUIRE(1 == it1->get());
-
-  CUDAX_REQUIRE(2 == (it1 + 1)->get());
-  CUDAX_REQUIRE(2 == (1 + it1)->get());
-  CUDAX_REQUIRE(0 == (it1 - 1)->get());
-  CUDAX_REQUIRE(1 == (it1 + 1) - it1);
-
-  CUDAX_REQUIRE(2 == it1[1].get());
+    CUDAX_REQUIRE(0 == (*std::prev(cudax::devices.end())).get());
+    CUDAX_REQUIRE(0 == std::prev(cudax::devices.end())->get());
+    CUDAX_REQUIRE(0 == cudax::devices.end()[-1].get());
+  }
 }
