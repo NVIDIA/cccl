@@ -23,6 +23,8 @@
 #  include <stdexcept>
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
+_CCCL_DIAG_SUPPRESS_MSVC(4072) // unreachable code
+
 template <class T>
 __host__ __device__ constexpr void test_copy()
 {

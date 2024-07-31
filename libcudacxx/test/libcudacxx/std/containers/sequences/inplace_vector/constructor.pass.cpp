@@ -27,7 +27,8 @@
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_MSVC(5246)
+_CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces
+_CCCL_DIAG_SUPPRESS_MSVC(4072) // unreachable code
 
 template <class T>
 __host__ __device__ constexpr void test_default()
