@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  typedef typename thrust::iterator_traits<InputIterator1>::difference_type difference_type;
+  using difference_type = typename thrust::iterator_traits<InputIterator1>::difference_type;
 
   // empty sequence
   if (first == last)

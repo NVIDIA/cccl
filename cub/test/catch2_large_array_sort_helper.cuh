@@ -64,7 +64,7 @@ namespace detail
 {
 
 template <typename KeyType>
-class key_sort_ref_key_transform : public thrust::unary_function<std::size_t, KeyType>
+class key_sort_ref_key_transform
 {
   static constexpr double max_key = static_cast<double>(::cuda::std::numeric_limits<KeyType>::max());
   const double m_conversion;
@@ -120,7 +120,7 @@ struct index_to_summary
 };
 
 template <typename KeyType>
-class pair_sort_ref_key_transform : public thrust::unary_function<std::size_t, KeyType>
+class pair_sort_ref_key_transform
 {
   static constexpr KeyType max_key = ::cuda::std::numeric_limits<KeyType>::max();
 

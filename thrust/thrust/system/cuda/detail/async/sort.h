@@ -144,7 +144,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
       nullptr,
       tmp_size,
       first,
-      static_cast<thrust::detail::uint8_t*>(nullptr) // Items.
+      static_cast<std::uint8_t*>(nullptr) // Items.
       ,
       n,
       comp,
@@ -154,7 +154,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
@@ -188,7 +188,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
       tmp_ptr,
       tmp_size,
       first,
-      static_cast<thrust::detail::uint8_t*>(nullptr) // Items.
+      static_cast<std::uint8_t*>(nullptr) // Items.
       ,
       n,
       comp,
@@ -250,7 +250,7 @@ auto async_stable_sort_n(execution_policy<DerivedPolicy>& policy, ForwardIt firs
 
   size_t keys_temp_storage = thrust::detail::aligned_storage_size(sizeof(T) * n, 128);
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, keys_temp_storage + tmp_size);
+  auto content = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, keys_temp_storage + tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
@@ -314,7 +314,8 @@ template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typenam
 auto async_stable_sort(execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, StrictWeakOrdering comp)
   // A GCC 5 bug requires an explicit trailing return type here, so stick with
   // THRUST_DECLTYPE_RETURNS for now.
-  THRUST_DECLTYPE_RETURNS(thrust::system::cuda::detail::async_stable_sort_n(policy, first, distance(first, last), comp))
+  THRUST_DECLTYPE_RETURNS(
+    thrust::system::cuda::detail::async_stable_sort_n(policy, first, thrust::distance(first, last), comp))
 
 } // namespace cuda_cub
 

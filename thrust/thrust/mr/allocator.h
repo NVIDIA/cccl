@@ -62,29 +62,29 @@ class allocator : private validator<MR>
 {
 public:
   /*! The pointer to void type of this allocator. */
-  typedef typename MR::pointer void_pointer;
+  using void_pointer = typename MR::pointer;
 
   /*! The value type allocated by this allocator. Equivalent to \p T. */
-  typedef T value_type;
+  using value_type = T;
   /*! The pointer type allocated by this allocator. Equivaled to the pointer type of \p MR rebound to \p T. */
-  typedef typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other pointer;
+  using pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other;
   /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
-  typedef typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other const_pointer;
+  using const_pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other;
   /*! The reference to the type allocated by this allocator. Supports smart references. */
-  typedef typename thrust::detail::pointer_traits<pointer>::reference reference;
+  using reference = typename thrust::detail::pointer_traits<pointer>::reference;
   /*! The const reference to the type allocated by this allocator. Supports smart references. */
-  typedef typename thrust::detail::pointer_traits<const_pointer>::reference const_reference;
+  using const_reference = typename thrust::detail::pointer_traits<const_pointer>::reference;
   /*! The size type of this allocator. Always \p std::size_t. */
-  typedef std::size_t size_type;
+  using size_type = std::size_t;
   /*! The difference type between pointers allocated by this allocator. */
-  typedef typename thrust::detail::pointer_traits<pointer>::difference_type difference_type;
+  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
 
   /*! Specifies that the allocator shall be propagated on container copy assignment. */
-  typedef detail::true_type propagate_on_container_copy_assignment;
+  using propagate_on_container_copy_assignment = detail::true_type;
   /*! Specifies that the allocator shall be propagated on container move assignment. */
-  typedef detail::true_type propagate_on_container_move_assignment;
+  using propagate_on_container_move_assignment = detail::true_type;
   /*! Specifies that the allocator shall be propagated on container swap. */
-  typedef detail::true_type propagate_on_container_swap;
+  using propagate_on_container_swap = detail::true_type;
 
   /*! The \p rebind metafunction provides the type of an \p allocator instantiated with another type.
    *
@@ -93,9 +93,9 @@ public:
   template <typename U>
   struct rebind
   {
-    /*! The typedef \p other gives the type of the rebound \p allocator.
+    /*! The alias \p other gives the type of the rebound \p allocator.
      */
-    typedef allocator<U, MR> other;
+    using other = allocator<U, MR>;
   };
 
   /*! Calculates the maximum number of elements allocated by this allocator.
@@ -182,7 +182,7 @@ using polymorphic_allocator = allocator<T, polymorphic_adaptor_resource<Pointer>
 template <typename T, typename Upstream>
 class stateless_resource_allocator : public thrust::mr::allocator<T, Upstream>
 {
-  typedef thrust::mr::allocator<T, Upstream> base;
+  using base = thrust::mr::allocator<T, Upstream>;
 
 public:
   /*! The \p rebind metafunction provides the type of an \p stateless_resource_allocator instantiated with another type.
@@ -192,9 +192,9 @@ public:
   template <typename U>
   struct rebind
   {
-    /*! The typedef \p other gives the type of the rebound \p stateless_resource_allocator.
+    /*! The alias \p other gives the type of the rebound \p stateless_resource_allocator.
      */
-    typedef stateless_resource_allocator<U, Upstream> other;
+    using other = stateless_resource_allocator<U, Upstream>;
   };
 
   /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the

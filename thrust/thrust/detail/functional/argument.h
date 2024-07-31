@@ -45,13 +45,13 @@ namespace functional
 template <unsigned int i, typename Env>
 struct argument_helper
 {
-  typedef typename thrust::tuple_element<i, Env>::type type;
+  using type = typename thrust::tuple_element<i, Env>::type;
 };
 
 template <unsigned int i>
 struct argument_helper<i, thrust::tuple<>>
 {
-  typedef thrust::tuple<> type;
+  using type = thrust::tuple<>;
 };
 
 template <unsigned int i>

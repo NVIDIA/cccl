@@ -42,9 +42,8 @@ void iter_swap(_I1, _I2) = delete;
 #  if _CCCL_STD_VER > 2017
 template <class _T1, class _T2>
 concept __unqualified_iter_swap =
-  (__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>) &&requires(_T1&& __x, _T2&& __y) {
-    iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y));
-  };
+  (__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>)
+  && requires(_T1&& __x, _T2&& __y) { iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y)); };
 
 template <class _T1, class _T2>
 concept __readable_swappable = !__unqualified_iter_swap<_T1, _T2> && indirectly_readable<_T1>
@@ -107,9 +106,9 @@ struct __fn
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
   _LIBCUDACXX_REQUIRES(__moveable_storable<_T2, _T1>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_T1&& __x, _T2&& __y) const
-    noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(
-      __y))) && noexcept(*__y = _CUDA_VRANGES::iter_move(__x)) && noexcept(*_CUDA_VSTD::forward<_T1>(__x) =
-                                                                             declval<iter_value_t<_T2>>()))
+    noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y)))
+             && noexcept(*__y = _CUDA_VRANGES::iter_move(__x))
+             && noexcept(*_CUDA_VSTD::forward<_T1>(__x) = declval<iter_value_t<_T2>>()))
   {
     iter_value_t<_T2> __old(_CUDA_VRANGES::iter_move(__y));
     *__y                           = _CUDA_VRANGES::iter_move(__x);
@@ -120,7 +119,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto iter_swap = __iter_swap::__fn{};
+_CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

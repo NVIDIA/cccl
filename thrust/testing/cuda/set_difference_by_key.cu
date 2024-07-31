@@ -32,8 +32,8 @@ __global__ void set_difference_by_key_kernel(
 template <typename ExecutionPolicy>
 void TestSetDifferenceByKeyDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = typename Vector::iterator;
 
   // clang-format off
   Vector a_key(4), b_key(5);
@@ -52,7 +52,7 @@ void TestSetDifferenceByKeyDevice(ExecutionPolicy exec)
 
   Vector result_key(2), result_val(2);
 
-  typedef thrust::pair<Iterator, Iterator> iter_pair;
+  using iter_pair = thrust::pair<Iterator, Iterator>;
 
   thrust::device_vector<iter_pair> end_vec(1);
 
@@ -93,8 +93,8 @@ DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceDevice);
 
 void TestSetDifferenceByKeyCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   // clang-format off
   Vector a_key(4), b_key(5);

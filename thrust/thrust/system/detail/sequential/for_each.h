@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE InputIterator
 for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, UnaryFunction f)
 {
   // wrap f
-  thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f(f);
+  thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f{f};
 
   for (; first != last; ++first)
   {
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE InputIterator
 for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n, UnaryFunction f)
 {
   // wrap f
-  thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f(f);
+  thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f{f};
 
   for (Size i = 0; i != n; i++)
   {

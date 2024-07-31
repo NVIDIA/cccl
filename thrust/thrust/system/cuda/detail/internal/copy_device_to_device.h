@@ -57,8 +57,8 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
   execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::true_type)
 {
-  typedef typename thrust::iterator_traits<InputIt>::value_type InputTy;
-  const auto n = thrust::distance(first, last);
+  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
+  const auto n  = thrust::distance(first, last);
   if (n > 0)
   {
     cudaError status;
@@ -77,7 +77,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
   execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::false_type)
 {
-  typedef typename thrust::iterator_traits<InputIt>::value_type InputTy;
+  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
   return cuda_cub::transform(policy, first, last, result, thrust::identity<InputTy>());
 }
 

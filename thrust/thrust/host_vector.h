@@ -60,13 +60,13 @@ template <typename T, typename Alloc = std::allocator<T>>
 class host_vector : public detail::vector_base<T, Alloc>
 {
 private:
-  typedef detail::vector_base<T, Alloc> Parent;
+  using Parent = detail::vector_base<T, Alloc>;
 
 public:
   /*! \cond
    */
-  typedef typename Parent::size_type size_type;
-  typedef typename Parent::value_type value_type;
+  using size_type  = typename Parent::size_type;
+  using value_type = typename Parent::value_type;
   /*! \endcond
    */
 
@@ -274,7 +274,7 @@ public:
   {}
 
 // declare these members for the purpose of Doxygenating them
-// they actually exist in a derived-from class
+// they actually exist in a base class
 #if 0
     /*! \brief Resizes this vector to the specified number of elements.
      *  \param new_size Number of elements this vector should contain.

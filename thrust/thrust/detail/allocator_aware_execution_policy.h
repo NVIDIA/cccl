@@ -49,15 +49,15 @@ struct allocator_aware_execution_policy
   template <typename MemoryResource>
   struct execute_with_memory_resource_type
   {
-    typedef thrust::detail::execute_with_allocator<thrust::mr::allocator<thrust::detail::max_align_t, MemoryResource>,
-                                                   ExecutionPolicyCRTPBase>
-      type;
+    using type =
+      thrust::detail::execute_with_allocator<thrust::mr::allocator<thrust::detail::max_align_t, MemoryResource>,
+                                             ExecutionPolicyCRTPBase>;
   };
 
   template <typename Allocator>
   struct execute_with_allocator_type
   {
-    typedef thrust::detail::execute_with_allocator<Allocator, ExecutionPolicyCRTPBase> type;
+    using type = thrust::detail::execute_with_allocator<Allocator, ExecutionPolicyCRTPBase>;
   };
 
   template <typename MemoryResource>

@@ -480,7 +480,7 @@ void TestTupleSwap()
   ASSERT_EQUAL(b, thrust::get<1>(t2));
   ASSERT_EQUAL(c, thrust::get<2>(t2));
 
-  typedef thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable> swappable_tuple;
+  using swappable_tuple = thrust::tuple<user_swappable, user_swappable, user_swappable, user_swappable>;
 
   thrust::host_vector<swappable_tuple> h_v1(1), h_v2(1);
   thrust::device_vector<swappable_tuple> d_v1(1), d_v2(1);

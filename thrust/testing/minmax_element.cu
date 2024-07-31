@@ -24,7 +24,7 @@ DECLARE_VECTOR_UNITTEST(TestMinMaxElementSimple);
 template <class Vector>
 void TestMinMaxElementWithTransform()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(6);
   data[0] = 3;
@@ -111,7 +111,7 @@ DECLARE_UNITTEST(TestMinMaxElementDispatchImplicit);
 
 void TestMinMaxElementWithBigIndexesHelper(int magnitude)
 {
-  typedef thrust::counting_iterator<long long> Iter;
+  using Iter = thrust::counting_iterator<long long>;
   Iter begin(1);
   Iter end = begin + (1ll << magnitude);
   ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);

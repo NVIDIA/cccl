@@ -74,7 +74,7 @@ THRUST_NAMESPACE_BEGIN
  *  {
  *    thrust::device_vector<float> v(4);
  *
- *    typedef thrust::device_vector<float>::iterator FloatIterator;
+ *    using FloatIterator = thrust::device_vector<float>::iterator;
  *    thrust::transform_output_iterator<square_root, FloatIterator> iter(v.begin(), square_root());
  *
  *    iter[0] =  1.0f;    // stores sqrtf( 1.0f)
@@ -101,7 +101,7 @@ class transform_output_iterator : public detail::transform_output_iterator_base<
    */
 
 public:
-  typedef typename detail::transform_output_iterator_base<UnaryFunction, OutputIterator>::type super_t;
+  using super_t = typename detail::transform_output_iterator_base<UnaryFunction, OutputIterator>::type;
 
   friend class thrust::iterator_core_access;
   /*! \endcond

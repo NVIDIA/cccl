@@ -50,7 +50,7 @@ static_assert(semiregular<int (S::*)() volatile noexcept>, "");
 static_assert(semiregular<int (S::*)() volatile&>, "");
 static_assert(semiregular<int (S::*)() volatile & noexcept>, "");
 static_assert(semiregular<int (S::*)() volatile&&>, "");
-static_assert(semiregular < int(S::*)() volatile&& noexcept >, "");
+static_assert(semiregular < int(S::*)() volatile && noexcept >, "");
 static_assert(semiregular<int (S::*)() const volatile>, "");
 static_assert(semiregular<int (S::*)() const volatile noexcept>, "");
 static_assert(semiregular<int (S::*)() const volatile&>, "");

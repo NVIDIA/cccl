@@ -33,6 +33,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-typedef thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::tag device_system_tag;
+using device_system_tag = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::tag;
 
 THRUST_NAMESPACE_END

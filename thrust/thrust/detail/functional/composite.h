@@ -55,7 +55,7 @@ public:
   template <typename Env>
   struct result
   {
-    typedef typename Eval0::template result<thrust::tuple<typename Eval1::template result<Env>::type>>::type type;
+    using type = typename Eval0::template result<thrust::tuple<typename Eval1::template result<Env>::type>>::type;
   };
 
   _CCCL_HOST_DEVICE composite(const Eval0& e0, const Eval1& e1)
@@ -82,8 +82,8 @@ public:
   template <typename Env>
   struct result
   {
-    typedef typename Eval0::template result<
-      thrust::tuple<typename Eval1::template result<Env>::type, typename Eval2::template result<Env>::type>>::type type;
+    using type = typename Eval0::template result<
+      thrust::tuple<typename Eval1::template result<Env>::type, typename Eval2::template result<Env>::type>>::type;
   };
 
   _CCCL_HOST_DEVICE composite(const Eval0& e0, const Eval1& e1, const Eval2& e2)

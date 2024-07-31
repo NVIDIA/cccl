@@ -64,11 +64,16 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   constexpr std::size_t single_item = 1;
   c2h::device_vector<int> cuda_arch(single_item);
 
-  int* ptx_version{};
-  cudaMallocHost(&ptx_version, sizeof(*ptx_version));
-
   // Query the arch the kernel was actually compiled for
-  get_cuda_arch_from_kernel(thrust::raw_pointer_cast(cuda_arch.data()), ptx_version);
+  int ptx_version = [&]() -> int {
+    int* buffer{};
+    cudaMallocHost(&buffer, sizeof(*buffer));
+    get_cuda_arch_from_kernel(thrust::raw_pointer_cast(cuda_arch.data()), buffer);
+    int result = *buffer;
+    cudaFreeHost(buffer);
+    return result;
+  }();
+
   int kernel_cuda_arch = cuda_arch[0];
 
   // Host cub::PtxVersion
@@ -79,6 +84,6 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   REQUIRE(0 != kernel_cuda_arch);
 
   // Ensure that the ptx version corresponds to the arch the kernel was compiled for
-  REQUIRE(*ptx_version == kernel_cuda_arch);
+  REQUIRE(ptx_version == kernel_cuda_arch);
   REQUIRE(host_ptx_version == kernel_cuda_arch);
 }

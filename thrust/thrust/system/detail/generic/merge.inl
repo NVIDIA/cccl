@@ -68,7 +68,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   InputIterator2 last2,
   OutputIterator result)
 {
-  typedef typename thrust::iterator_value<InputIterator1>::type value_type;
+  using value_type = typename thrust::iterator_value<InputIterator1>::type;
   return thrust::merge(exec, first1, last1, first2, last2, result, thrust::less<value_type>());
 } // end merge()
 
@@ -92,13 +92,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result,
   Compare comp)
 {
-  typedef thrust::tuple<InputIterator1, InputIterator3> iterator_tuple1;
-  typedef thrust::tuple<InputIterator2, InputIterator4> iterator_tuple2;
-  typedef thrust::tuple<OutputIterator1, OutputIterator2> iterator_tuple3;
+  using iterator_tuple1 = thrust::tuple<InputIterator1, InputIterator3>;
+  using iterator_tuple2 = thrust::tuple<InputIterator2, InputIterator4>;
+  using iterator_tuple3 = thrust::tuple<OutputIterator1, OutputIterator2>;
 
-  typedef thrust::zip_iterator<iterator_tuple1> zip_iterator1;
-  typedef thrust::zip_iterator<iterator_tuple2> zip_iterator2;
-  typedef thrust::zip_iterator<iterator_tuple3> zip_iterator3;
+  using zip_iterator1 = thrust::zip_iterator<iterator_tuple1>;
+  using zip_iterator2 = thrust::zip_iterator<iterator_tuple2>;
+  using zip_iterator3 = thrust::zip_iterator<iterator_tuple3>;
 
   zip_iterator1 zipped_first1 = thrust::make_zip_iterator(thrust::make_tuple(keys_first1, values_first1));
   zip_iterator1 zipped_last1  = thrust::make_zip_iterator(thrust::make_tuple(keys_last1, values_first1));
@@ -135,7 +135,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  typedef typename thrust::iterator_value<InputIterator1>::type value_type;
+  using value_type = typename thrust::iterator_value<InputIterator1>::type;
   return thrust::merge_by_key(
     exec,
     keys_first1,

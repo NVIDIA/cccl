@@ -28,7 +28,7 @@ struct TestZipIteratorReduce
     device_vector<T> d_data0 = h_data0;
     device_vector<T> d_data1 = h_data1;
 
-    typedef tuple<T, T> Tuple;
+    using Tuple = tuple<T, T>;
 
     // run on host
     Tuple h_result = reduce(

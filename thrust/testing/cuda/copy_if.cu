@@ -125,7 +125,7 @@ DECLARE_UNITTEST(TestCopyIfDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestCopyIfCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector data(5);
   data[0] = 1;
@@ -259,8 +259,8 @@ DECLARE_UNITTEST(TestCopyIfStencilDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector data(5);
   data[0] = 1;

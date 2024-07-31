@@ -110,8 +110,8 @@ template <class _Rollback>
 struct __exception_guard_noexceptions
 {
   __exception_guard_noexceptions() = delete;
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-    _LIBCUDACXX_NODEBUG_TYPE explicit __exception_guard_noexceptions(_Rollback)
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE explicit __exception_guard_noexceptions(_Rollback)
   {}
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE __exception_guard_noexceptions(

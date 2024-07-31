@@ -18,7 +18,7 @@ struct TestPairStableSortByKey
 {
   void operator()(const size_t n)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     // host arrays
     thrust::host_vector<T> h_p1 = unittest::random_integers<T>(n);

@@ -32,7 +32,7 @@ struct _LIBCUDACXX_TYPE_VIS in_place_t
 {
   explicit in_place_t() = default;
 };
-_LIBCUDACXX_CPO_ACCESSIBILITY in_place_t in_place{};
+_CCCL_GLOBAL_CONSTANT in_place_t in_place{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS in_place_type_t

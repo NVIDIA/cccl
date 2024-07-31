@@ -167,14 +167,14 @@ struct my_tag : THRUST_NS_QUALIFIER::device_execution_policy<my_tag>
 namespace unittest
 {
 
-using THRUST_NS_QUALIFIER::detail::int16_t;
-using THRUST_NS_QUALIFIER::detail::int32_t;
-using THRUST_NS_QUALIFIER::detail::int64_t;
-using THRUST_NS_QUALIFIER::detail::int8_t;
+using std::int16_t;
+using std::int32_t;
+using std::int64_t;
+using std::int8_t;
 
-using THRUST_NS_QUALIFIER::detail::uint16_t;
-using THRUST_NS_QUALIFIER::detail::uint32_t;
-using THRUST_NS_QUALIFIER::detail::uint64_t;
-using THRUST_NS_QUALIFIER::detail::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+using std::uint8_t;
 
 } // namespace unittest

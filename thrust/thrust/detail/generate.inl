@@ -60,7 +60,7 @@ void generate(ForwardIterator first, ForwardIterator last, Generator gen)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -72,7 +72,7 @@ OutputIterator generate_n(OutputIterator first, Size n, Generator gen)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<OutputIterator>::type System;
+  using System = typename thrust::iterator_system<OutputIterator>::type;
 
   System system;
 

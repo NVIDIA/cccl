@@ -46,16 +46,12 @@ _LIBCUDACXX_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_po
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
 concept __member_data = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  {
-    _LIBCUDACXX_AUTO_CAST(__t.data())
-  } -> __ptr_to_object;
+  { _LIBCUDACXX_AUTO_CAST(__t.data()) } -> __ptr_to_object;
 };
 
 template <class _Tp>
 concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && requires(_Tp&& __t) {
-  {
-    _CUDA_VRANGES::begin(__t)
-  } -> contiguous_iterator;
+  { _CUDA_VRANGES::begin(__t) } -> contiguous_iterator;
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -101,7 +97,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto data = __data::__fn{};
+_CCCL_GLOBAL_CONSTANT auto data = __data::__fn{};
 } // namespace __cpo
 
 // [range.prim.cdata]
@@ -131,7 +127,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cdata = __cdata::__fn{};
+_CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017

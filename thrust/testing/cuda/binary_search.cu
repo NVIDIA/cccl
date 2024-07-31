@@ -8,9 +8,9 @@
 
 void TestEqualRangeOnStream()
 { // Regression test for GH issue #921 (nvbug 2173437)
-  typedef typename thrust::device_vector<int> vector_t;
-  typedef typename vector_t::iterator iterator_t;
-  typedef thrust::pair<iterator_t, iterator_t> result_t;
+  using vector_t   = typename thrust::device_vector<int>;
+  using iterator_t = typename vector_t::iterator;
+  using result_t   = thrust::pair<iterator_t, iterator_t>;
 
   vector_t input(10);
   thrust::sequence(thrust::device, input.begin(), input.end(), 0);

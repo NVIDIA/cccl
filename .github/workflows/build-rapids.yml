@@ -1,0 +1,184 @@
+name: Build all RAPIDS repositories
+
+on:
+  workflow_call:
+    inputs:
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check-event:
+    name: Check GH Event
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check_gh_event.outputs.ok }}
+    steps:
+      - id: check_gh_event
+        name: Check GH Event
+        shell: bash
+        run: |
+          [[ '${{ github.event_name }}' == 'push' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'schedule' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'workflow_dispatch' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
+          [[ '${{ github.event_name }}' == 'pull_request' && '${{ github.repository }}' != 'NVIDIA/cccl' ]] \
+          && echo "ok=true"  | tee -a $GITHUB_OUTPUT \
+          || echo "ok=false" | tee -a $GITHUB_OUTPUT;
+
+  build-rapids:
+    name: "${{ matrix.libs }}"
+    if: needs.check-event.outputs.ok == 'true'
+    needs: check-event
+    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu32"') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { cuda: '12.5', libs: 'rmm KvikIO cudf cudf_kafka cuspatial',        }
+          - { cuda: '12.5', libs: 'rmm ucxx raft cuvs',                          }
+          - { cuda: '12.5', libs: 'rmm ucxx raft cumlprims_mg cuml',             }
+          - { cuda: '12.5', libs: 'rmm ucxx raft cugraph-ops wholegraph cugraph' }
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Add NVCC problem matcher
+        run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12h
+      - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+        env:
+          CI: true
+          RAPIDS_LIBS: ${{ matrix.libs }}
+          # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
+          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cugraph_ops_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cuspatial_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_KvikIO_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.40"}'
+          # RAPIDS_wholegraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-24.10"}'
+        run: |
+          cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
+          #! /usr/bin/env bash
+          # Start the ssh-agent and add the repo deploy keys
+          if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
+          ssh-add - <<< '${{ secrets.RAPIDSAI_CUMLPRIMS_DEPLOY_KEY }}'
+          ssh-add - <<< '${{ secrets.RAPIDSAI_CUGRAPH_OPS_DEPLOY_KEY }}'
+          devcontainer-utils-init-ssh-deploy-keys || true
+          exec "$@"
+          EOF
+
+          cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
+          #! /usr/bin/env bash
+          set -eo pipefail
+
+          . ~/cccl/ci/rapids/post-create-command.sh;
+
+          declare -a failures
+          declare -A failures_map
+
+          # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
+          for RAPIDS_ENABLE_TESTS in OFF ON; do
+            _apply_manifest_modifications;
+            for lib in ${RAPIDS_LIBS}; do
+              sccache -z
+              if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
+                if ! test -v failures_map["${lib}"]; then
+                  failures+=("${lib}")
+                  failures_map["${lib}"]=1
+                fi
+              fi
+              sccache --show-adv-stats
+            done
+          done
+
+          # Print failures and exit
+          if test ${#failures[@]} -gt 0; then
+            echo "::error:: Failures: ${failures[*]}"
+            echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+            echo "::error:: To replicate this failure locally, follow the steps below:"
+            echo "1. Clone the repository, and navigate to the correct branch and commit:"
+            echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+            echo ""
+            echo "2. Run the failed command inside the same Docker container used by this CI job:"
+            cat <<__EOF
+             RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
+               .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
+               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
+          __EOF
+            echo ""
+            echo "For additional information, see:"
+            echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+            echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+            exit 1
+          fi
+          EOF
+
+          chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
+
+          mkdir -p .aws
+
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=$AWS_ACCESS_KEY_ID
+          aws_session_token=$AWS_SESSION_TOKEN
+          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
+          .devcontainer/launch.sh \
+            --docker \
+            --cuda ${{matrix.cuda}} \
+            --host rapids-conda \
+            --env VAULT_HOST= \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            --volume "$RUNNER_TEMP/ci-entrypoint.sh:/ci-entrypoint.sh" \
+            -- /ci-entrypoint.sh ./ci/rapids/rapids-entrypoint.sh /ci.sh
+
+  notify-failure:
+    name: Notify Slack of RAPIDS failure
+    if: ${{ failure() && inputs.enable_slack_alerts }}
+    needs: build-rapids
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          WORKFLOW_TYPE: ${{ github.workflow }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          slack-message: |
+            RAPIDS build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
+
+            Details: ${{ env.SUMMARY_URL }}

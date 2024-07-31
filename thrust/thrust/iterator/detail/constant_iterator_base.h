@@ -41,31 +41,28 @@ namespace detail
 template <typename Value, typename Incrementable, typename System>
 struct constant_iterator_base
 {
-  typedef Value value_type;
+  using value_type = Value;
 
   // the reference type is the same as the value_type.
   // we wish to avoid returning a reference to the internal state
   // of the constant_iterator, which is prone to subtle bugs.
   // consider the temporary iterator created in the expression
   // *(iter + i)
-  typedef value_type reference;
+  using reference = value_type;
 
   // the incrementable type is int unless otherwise specified
-  typedef
-    typename thrust::detail::ia_dflt_help<Incrementable, thrust::detail::identity_<thrust::detail::intmax_t>>::type
-      incrementable;
+  using incrementable =
+    typename thrust::detail::ia_dflt_help<Incrementable, thrust::detail::identity_<thrust::detail::intmax_t>>::type;
 
-  typedef typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag> base_iterator;
+  using base_iterator = typename thrust::counting_iterator<incrementable, System, thrust::random_access_traversal_tag>;
 
-  typedef
-    typename thrust::iterator_adaptor<constant_iterator<Value, Incrementable, System>,
-                                      base_iterator,
-                                      value_type, // XXX we may need to pass const value_type here as boost
-                                                  // counting_iterator does
-                                      typename thrust::iterator_system<base_iterator>::type,
-                                      typename thrust::iterator_traversal<base_iterator>::type,
-                                      reference>
-      type;
+  using type = typename thrust::iterator_adaptor<
+    constant_iterator<Value, Incrementable, System>,
+    base_iterator,
+    value_type,
+    typename thrust::iterator_system<base_iterator>::type,
+    typename thrust::iterator_traversal<base_iterator>::type,
+    reference>;
 }; // end constant_iterator_base
 
 } // namespace detail

@@ -337,5 +337,7 @@ int main(int argc, char** argv)
   Test<128>();
   Test<130>();
 
+  g_allocator.FreeAllCached();
+
   return 0;
 }

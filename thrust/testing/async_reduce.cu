@@ -836,4 +836,45 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_async_copy_then_reduce, BuiltinNu
 
 // TODO: when_all from reductions.
 
+// See also issue: https://github.com/NVIDIA/cccl/issues/1886
+struct test_async_reduce_bug1886
+{
+  struct tuple_sum
+  {
+    __device__ thrust::tuple<int, int>
+    operator()(const thrust::tuple<int, int>& t1, const thrust::tuple<int, int>& t2) const
+    {
+      return thrust::make_tuple(thrust::get<0>(t1) + thrust::get<0>(t2), thrust::get<1>(t1) + thrust::get<1>(t2));
+    }
+  };
+
+  void operator()() const
+  {
+    // Initialize input data
+    thrust::device_vector<int> d_data1{1, 2, 3, 4, 5};
+    thrust::device_vector<int> d_data2{10, 20, 30, 40, 50};
+
+    using TupleType = thrust::tuple<int, int>;
+    using IteratorType =
+      thrust::zip_iterator<thrust::tuple<thrust::device_vector<int>::iterator, thrust::device_vector<int>::iterator>>;
+
+    // Create zip_begin and zip_end iterators
+    IteratorType zip_begin = thrust::make_zip_iterator(thrust::make_tuple(d_data1.begin(), d_data2.begin()));
+    IteratorType zip_end   = thrust::make_zip_iterator(thrust::make_tuple(d_data2.end(), d_data2.end()));
+
+    // Initialize the starting tuple
+    TupleType init = thrust::make_tuple(0, 0);
+
+    // Perform async reduce using zip_begin and zip_end
+    auto future = thrust::async::reduce(thrust::device, zip_begin, zip_end, init, tuple_sum());
+
+    // Get the result
+    TupleType result = future.get();
+
+    // Print the result
+    std::cout << "Sum: (" << thrust::get<0>(result) << ", " << thrust::get<1>(result) << ")" << std::endl;
+  }
+};
+DECLARE_UNITTEST(test_async_reduce_bug1886);
+
 #endif

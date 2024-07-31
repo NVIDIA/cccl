@@ -140,7 +140,7 @@ struct grid_level
   using allowed_above = allowed_levels<>;
   using allowed_below = allowed_levels<block_level, cluster_level>;
 };
-_LIBCUDACXX_CPO_ACCESSIBILITY grid_level grid;
+_CCCL_GLOBAL_CONSTANT grid_level grid;
 
 /**
  * @brief Type representing the cluster level in CUDA thread hierarchy
@@ -158,7 +158,7 @@ struct cluster_level
   using allowed_above = allowed_levels<grid_level>;
   using allowed_below = allowed_levels<block_level>;
 };
-_LIBCUDACXX_CPO_ACCESSIBILITY cluster_level cluster;
+_CCCL_GLOBAL_CONSTANT cluster_level cluster;
 
 /**
  * @brief Type representing the block level in CUDA thread hierarchy
@@ -176,7 +176,7 @@ struct block_level
   using allowed_above = allowed_levels<grid_level, cluster_level>;
   using allowed_below = allowed_levels<thread_level>;
 };
-_LIBCUDACXX_CPO_ACCESSIBILITY block_level block;
+_CCCL_GLOBAL_CONSTANT block_level block;
 
 /**
  * @brief Type representing the thread level in CUDA thread hierarchy
@@ -194,7 +194,7 @@ struct thread_level
   using allowed_above = allowed_levels<block_level>;
   using allowed_below = allowed_levels<>;
 };
-_LIBCUDACXX_CPO_ACCESSIBILITY thread_level thread;
+_CCCL_GLOBAL_CONSTANT thread_level thread;
 
 template <typename Level>
 constexpr bool is_core_cuda_hierarchy_level =

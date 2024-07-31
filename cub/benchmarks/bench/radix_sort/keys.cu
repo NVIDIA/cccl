@@ -27,6 +27,8 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <nvbench_helper.cuh>
 
 // %//RANGE//% TUNE_RADIX_BITS bits 8:9:1
@@ -46,7 +48,7 @@ struct policy_hub_t
 {
   static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
-  using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {

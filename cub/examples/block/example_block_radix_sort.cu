@@ -50,7 +50,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 /// Verbose output
@@ -87,10 +87,10 @@ __launch_bounds__(BLOCK_THREADS) __global__
 
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  typedef BlockLoad<Key, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoadT;
+  using BlockLoadT = BlockLoad<Key, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockRadixSort type for our thread block
-  typedef BlockRadixSort<Key, BLOCK_THREADS, ITEMS_PER_THREAD> BlockRadixSortT;
+  using BlockRadixSortT = BlockRadixSort<Key, BLOCK_THREADS, ITEMS_PER_THREAD>;
 
   // Shared memory
   __shared__ union TempStorage

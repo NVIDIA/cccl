@@ -38,14 +38,14 @@ _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer 
 template <typename ToPointer, typename FromPointer>
 _CCCL_HOST_DEVICE ToPointer reinterpret_pointer_cast(FromPointer ptr)
 {
-  typedef typename thrust::detail::pointer_element<ToPointer>::type to_element;
+  using to_element = typename thrust::detail::pointer_element<ToPointer>::type;
   return ToPointer(reinterpret_cast<to_element*>(thrust::raw_pointer_cast(ptr)));
 }
 
 template <typename ToPointer, typename FromPointer>
 _CCCL_HOST_DEVICE ToPointer static_pointer_cast(FromPointer ptr)
 {
-  typedef typename thrust::detail::pointer_element<ToPointer>::type to_element;
+  using to_element = typename thrust::detail::pointer_element<ToPointer>::type;
   return ToPointer(static_cast<to_element*>(thrust::raw_pointer_cast(ptr)));
 }
 

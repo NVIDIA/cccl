@@ -8,7 +8,7 @@
 template <class Vector>
 void TestMaxElementSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(6);
   data[0] = 3;
@@ -29,7 +29,7 @@ DECLARE_VECTOR_UNITTEST(TestMaxElementSimple);
 template <class Vector>
 void TestMaxElementWithTransform()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(6);
   data[0] = 3;

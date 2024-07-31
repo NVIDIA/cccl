@@ -152,18 +152,18 @@ public:
   }
 
 private:
-  typedef typename Upstream::pointer void_ptr;
-  typedef thrust::detail::pointer_traits<void_ptr> void_ptr_traits;
-  typedef typename void_ptr_traits::template rebind<char>::other char_ptr;
+  using void_ptr        = typename Upstream::pointer;
+  using void_ptr_traits = thrust::detail::pointer_traits<void_ptr>;
+  using char_ptr        = typename void_ptr_traits::template rebind<char>::other;
 
   struct block_descriptor;
   struct chunk_descriptor;
   struct oversized_block_descriptor;
 
-  typedef typename void_ptr_traits::template rebind<block_descriptor>::other block_descriptor_ptr;
-  typedef typename void_ptr_traits::template rebind<chunk_descriptor>::other chunk_descriptor_ptr;
-  typedef typename void_ptr_traits::template rebind<oversized_block_descriptor>::other oversized_block_descriptor_ptr;
-  typedef thrust::detail::pointer_traits<oversized_block_descriptor_ptr> oversized_block_ptr_traits;
+  using block_descriptor_ptr           = typename void_ptr_traits::template rebind<block_descriptor>::other;
+  using chunk_descriptor_ptr           = typename void_ptr_traits::template rebind<chunk_descriptor>::other;
+  using oversized_block_descriptor_ptr = typename void_ptr_traits::template rebind<oversized_block_descriptor>::other;
+  using oversized_block_ptr_traits     = thrust::detail::pointer_traits<oversized_block_descriptor_ptr>;
 
   struct block_descriptor
   {
@@ -204,7 +204,7 @@ private:
     std::size_t previous_allocated_count;
   };
 
-  typedef thrust::host_vector<pool, allocator<pool, Upstream>> pool_vector;
+  using pool_vector = thrust::host_vector<pool, allocator<pool, Upstream>>;
 
   Upstream* m_upstream;
 

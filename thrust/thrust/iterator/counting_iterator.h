@@ -115,7 +115,7 @@ THRUST_NAMESPACE_BEGIN
  *   thrust::device_vector<int> indices(8);
  *
  *   // compute indices of nonzero elements
- *   typedef thrust::device_vector<int>::iterator IndexIterator;
+ *   using IndexIterator = thrust::device_vector<int>::iterator;
  *
  *   // use make_counting_iterator to define the sequence [0, 8)
  *   IndexIterator indices_end = thrust::copy_if(thrust::make_counting_iterator(0),
@@ -139,13 +139,13 @@ class counting_iterator : public detail::counting_iterator_base<Incrementable, S
 {
   /*! \cond
    */
-  typedef typename detail::counting_iterator_base<Incrementable, System, Traversal, Difference>::type super_t;
+  using super_t = typename detail::counting_iterator_base<Incrementable, System, Traversal, Difference>::type;
 
   friend class thrust::iterator_core_access;
 
 public:
-  typedef typename super_t::reference reference;
-  typedef typename super_t::difference_type difference_type;
+  using reference       = typename super_t::reference;
+  using difference_type = typename super_t::difference_type;
 
   /*! \endcond
    */
@@ -196,7 +196,7 @@ private:
   _CCCL_HOST_DEVICE bool
   equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
   {
-    typedef thrust::detail::counting_iterator_equal<difference_type, Incrementable, OtherIncrementable> e;
+    using e = thrust::detail::counting_iterator_equal<difference_type, Incrementable, OtherIncrementable>;
     return e::equal(this->base(), y.base());
   }
 
@@ -204,11 +204,11 @@ private:
   _CCCL_HOST_DEVICE difference_type
   distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference> const& y) const
   {
-    typedef typename thrust::detail::eval_if<
+    using d = typename thrust::detail::eval_if<
       thrust::detail::is_numeric<Incrementable>::value,
       thrust::detail::identity_<thrust::detail::number_distance<difference_type, Incrementable, OtherIncrementable>>,
       thrust::detail::identity_<
-        thrust::detail::iterator_distance<difference_type, Incrementable, OtherIncrementable>>>::type d;
+        thrust::detail::iterator_distance<difference_type, Incrementable, OtherIncrementable>>>::type;
 
     return d::distance(this->base(), y.base());
   }

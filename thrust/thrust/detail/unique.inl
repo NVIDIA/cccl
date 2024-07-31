@@ -165,7 +165,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -177,7 +177,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredic
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -189,8 +189,8 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -203,8 +203,8 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -218,8 +218,8 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator1>::type System1;
-  typedef typename thrust::iterator_system<ForwardIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<ForwardIterator1>::type;
+  using System2 = typename thrust::iterator_system<ForwardIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -233,8 +233,8 @@ thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator1>::type System1;
-  typedef typename thrust::iterator_system<ForwardIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<ForwardIterator1>::type;
+  using System2 = typename thrust::iterator_system<ForwardIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -252,10 +252,10 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
-  typedef typename thrust::iterator_system<OutputIterator1>::type System3;
-  typedef typename thrust::iterator_system<OutputIterator2>::type System4;
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -281,10 +281,10 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
-  typedef typename thrust::iterator_system<OutputIterator1>::type System3;
-  typedef typename thrust::iterator_system<OutputIterator2>::type System4;
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -329,7 +329,7 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -343,7 +343,7 @@ unique_count(ForwardIterator first, ForwardIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 

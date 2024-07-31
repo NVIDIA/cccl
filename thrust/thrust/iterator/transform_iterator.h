@@ -91,7 +91,7 @@ THRUST_NAMESPACE_BEGIN
  *    v[2] = 9.0f;
  *    v[3] = 16.0f;
  *
- *    typedef thrust::device_vector<float>::iterator FloatIterator;
+ *    using FloatIterator = thrust::device_vector<float>::iterator;
  *
  *    thrust::transform_iterator<square_root, FloatIterator> iter(v.begin(), square_root());
  *
@@ -147,7 +147,7 @@ THRUST_NAMESPACE_BEGIN
  *  Note that in the previous two examples the transform functor (namely \c square_root
  *  and \c square) inherits from \c thrust::unary_function.  Inheriting from
  *  \c thrust::unary_function ensures that a functor is a valid \c AdaptableUnaryFunction
- *  and provides all the necessary \c typedef declarations.  The \p transform_iterator
+ *  and provides all the necessary nested alias.  The \p transform_iterator
  *  can also be applied to a \c UnaryFunction that does not inherit from
  *  \c thrust::unary_function using an optional template argument.  The following example
  *  illustrates how to use the third template argument to specify the \c result_type of
@@ -175,7 +175,7 @@ THRUST_NAMESPACE_BEGIN
  *    v[2] = 9.0f;
  *    v[3] = 16.0f;
  *
- *    typedef thrust::device_vector<float>::iterator FloatIterator;
+ *    using FloatIterator = thrust::device_vector<float>::iterator;
  *
  *    // note: float result_type is specified explicitly
  *    thrust::transform_iterator<square_root, FloatIterator, float> iter(v.begin(), square_root());
@@ -194,13 +194,14 @@ THRUST_NAMESPACE_BEGIN
  */
 template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
 class transform_iterator
-    : public detail::transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
+    : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
 {
   /*! \cond
    */
 
 public:
-  typedef typename detail::transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type super_t;
+  using super_t =
+    typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
 
   friend class thrust::iterator_core_access;
   /*! \endcond

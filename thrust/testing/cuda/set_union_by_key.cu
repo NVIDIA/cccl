@@ -31,8 +31,8 @@ __global__ void set_union_by_key_kernel(
 template <typename ExecutionPolicy>
 void TestSetUnionByKeyDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = typename Vector::iterator;
 
   // clang-format off
   Vector a_key(3), b_key(4);
@@ -90,8 +90,8 @@ DECLARE_UNITTEST(TestSetUnionByKeyDeviceDevice);
 
 void TestSetUnionByKeyCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   Vector a_key(3), b_key(4);
   Vector a_val(3), b_val(4);

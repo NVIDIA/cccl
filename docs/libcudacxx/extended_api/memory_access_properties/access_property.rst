@@ -258,7 +258,7 @@ Mapping of access properties to NVVM-IR and the PTX ISA
 
 When ``cuda::access_property`` is applied to memory operation, it
 sometimes matches with some of the cache eviction priorities and cache
-hints introduced in the `PTX ISA Version 7.4 <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#ptx-isa-version-7-4>`_.
+hints introduced in the `PTX ISA Version 7.4 <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#changes-in-ptx-isa-version-7-4>`_.
 See `Cache Eviction Priority Hints <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#cache-eviction-priority-hints>`_
 
 -  ``global``: ``evict_unchanged``

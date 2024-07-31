@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/function_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>

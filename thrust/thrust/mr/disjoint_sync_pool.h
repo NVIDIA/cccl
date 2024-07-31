@@ -51,10 +51,10 @@ namespace mr
 template <typename Upstream, typename Bookkeeper>
 struct disjoint_synchronized_pool_resource : public memory_resource<typename Upstream::pointer>
 {
-  typedef disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper> unsync_pool;
-  typedef std::lock_guard<std::mutex> lock_t;
+  using unsync_pool = disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper>;
+  using lock_t      = std::lock_guard<std::mutex>;
 
-  typedef typename Upstream::pointer void_ptr;
+  using void_ptr = typename Upstream::pointer;
 
 public:
   /*! Get the default options for a disjoint pool. These are meant to be a sensible set of values for many use cases,

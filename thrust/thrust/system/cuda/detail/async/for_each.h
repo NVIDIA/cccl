@@ -122,7 +122,8 @@ namespace cuda_cub
 // ADL entry point.
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename UnaryFunction>
 auto async_for_each(execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, UnaryFunction&& func)
-  THRUST_RETURNS(thrust::system::cuda::detail::async_for_each_n(policy, first, distance(first, last), THRUST_FWD(func)));
+  THRUST_RETURNS(
+    thrust::system::cuda::detail::async_for_each_n(policy, first, thrust::distance(first, last), THRUST_FWD(func)));
 
 } // namespace cuda_cub
 

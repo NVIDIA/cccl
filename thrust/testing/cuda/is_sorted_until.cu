@@ -17,7 +17,7 @@ void TestIsSortedUntilDevice(ExecutionPolicy exec)
 
   thrust::device_vector<int> v = unittest::random_integers<int>(n);
 
-  typedef typename thrust::device_vector<int>::iterator iter_type;
+  using iter_type = typename thrust::device_vector<int>::iterator;
 
   thrust::device_vector<iter_type> result(1);
 
@@ -58,10 +58,10 @@ DECLARE_UNITTEST(TestIsSortedUntilDeviceDevice);
 
 void TestIsSortedUntilCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
-  typedef Vector::value_type T;
-  typedef Vector::iterator Iterator;
+  using T        = Vector::value_type;
+  using Iterator = Vector::iterator;
 
   cudaStream_t s;
   cudaStreamCreate(&s);

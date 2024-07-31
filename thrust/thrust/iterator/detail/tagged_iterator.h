@@ -40,21 +40,21 @@ class tagged_iterator;
 template <typename Iterator, typename Tag>
 struct tagged_iterator_base
 {
-  typedef thrust::iterator_adaptor<tagged_iterator<Iterator, Tag>,
-                                   Iterator,
-                                   typename thrust::iterator_value<Iterator>::type,
-                                   Tag,
-                                   typename thrust::iterator_traversal<Iterator>::type,
-                                   typename thrust::iterator_reference<Iterator>::type,
-                                   typename thrust::iterator_difference<Iterator>::type>
-    type;
+  using type =
+    thrust::iterator_adaptor<tagged_iterator<Iterator, Tag>,
+                             Iterator,
+                             typename thrust::iterator_value<Iterator>::type,
+                             Tag,
+                             typename thrust::iterator_traversal<Iterator>::type,
+                             typename thrust::iterator_reference<Iterator>::type,
+                             typename thrust::iterator_difference<Iterator>::type>;
 }; // end tagged_iterator_base
 
 template <typename Iterator, typename Tag>
 class tagged_iterator : public tagged_iterator_base<Iterator, Tag>::type
 {
 private:
-  typedef typename tagged_iterator_base<Iterator, Tag>::type super_t;
+  using super_t = typename tagged_iterator_base<Iterator, Tag>::type;
 
 public:
   _CCCL_HOST_DEVICE tagged_iterator() {}

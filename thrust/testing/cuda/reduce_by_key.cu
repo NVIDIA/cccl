@@ -114,14 +114,13 @@ void initialize_values(Vector& values)
 template <typename ExecutionPolicy>
 void TestReduceByKeyDevice(ExecutionPolicy exec)
 {
-  typedef int T;
+  using T = int;
 
   thrust::device_vector<T> keys;
   thrust::device_vector<T> values;
 
-  typedef
-    typename thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>
-      iterator_pair;
+  using iterator_pair =
+    typename thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>;
 
   thrust::device_vector<iterator_pair> new_last_vec(1);
   iterator_pair new_last;
@@ -244,8 +243,8 @@ DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector keys;
   Vector values;
@@ -348,7 +347,7 @@ void TestReduceByKeyCudaStreamsNoSync()
 DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
-class div_op : public thrust::unary_function<std::int64_t, std::int64_t>
+class div_op
 {
   std::int64_t m_divisor;
 
@@ -364,7 +363,7 @@ public:
 };
 
 // Produces unique sequence for key
-class mod_op : public thrust::unary_function<std::int64_t, std::int64_t>
+class mod_op
 {
   std::int64_t m_divisor;
 

@@ -100,12 +100,12 @@ public:
   /*! \typedef result_type
    *  \brief The type of the integer produced by this \p uniform_int_distribution.
    */
-  typedef IntType result_type;
+  using result_type = IntType;
 
   /*! \typedef param_type
    *  \brief The type of the object encapsulating this \p uniform_int_distribution's parameters.
    */
-  typedef thrust::pair<IntType, IntType> param_type;
+  using param_type = thrust::pair<IntType, IntType>;
 
   // constructors and reset functions
 

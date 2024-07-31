@@ -91,10 +91,10 @@ struct BlockReduceRaking
   };
 
   /// Layout type for padded thread block raking grid
-  typedef BlockRakingLayout<T, BLOCK_THREADS> BlockRakingLayout;
+  using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
 
   ///  WarpReduce utility type
-  typedef typename WarpReduce<T, BlockRakingLayout::RAKING_THREADS>::InternalWarpReduce WarpReduce;
+  using WarpReduce = typename WarpReduce<T, BlockRakingLayout::RAKING_THREADS>::InternalWarpReduce;
 
   /// Constants
   enum

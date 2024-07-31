@@ -11,9 +11,9 @@
     void operator()(const size_t)                                                                              \
     {                                                                                                          \
       const size_t num_samples = 10000;                                                                        \
-      typedef typename Vector::value_type T;                                                                   \
-      Vector lhs = unittest::random_samples<T>(num_samples);                                                   \
-      Vector rhs = unittest::random_samples<T>(num_samples);                                                   \
+      using T                  = typename Vector::value_type;                                                  \
+      Vector lhs               = unittest::random_samples<T>(num_samples);                                     \
+      Vector rhs               = unittest::random_samples<T>(num_samples);                                     \
       thrust::replace(rhs.begin(), rhs.end(), T(0), T(1));                                                     \
                                                                                                                \
       Vector lhs_reference = lhs;                                                                              \
@@ -198,8 +198,8 @@ struct suffix_decrement_reference
   void TestFunctionalPlaceholdersPrefix##name()                                                               \
   {                                                                                                           \
     const size_t num_samples = 10000;                                                                         \
-    typedef typename Vector::value_type T;                                                                    \
-    Vector input = unittest::random_samples<T>(num_samples);                                                  \
+    using T                  = typename Vector::value_type;                                                   \
+    Vector input             = unittest::random_samples<T>(num_samples);                                      \
                                                                                                               \
     Vector input_reference = input;                                                                           \
     Vector reference(input.size());                                                                           \
@@ -222,8 +222,8 @@ PREFIX_FUNCTIONAL_PLACEHOLDERS_TEST(Decrement, --, prefix_decrement_reference);
   void TestFunctionalPlaceholdersSuffix##name()                                                               \
   {                                                                                                           \
     const size_t num_samples = 10000;                                                                         \
-    typedef typename Vector::value_type T;                                                                    \
-    Vector input = unittest::random_samples<T>(num_samples);                                                  \
+    using T                  = typename Vector::value_type;                                                   \
+    Vector input             = unittest::random_samples<T>(num_samples);                                      \
                                                                                                               \
     Vector input_reference = input;                                                                           \
     Vector reference(input.size());                                                                           \

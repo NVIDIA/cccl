@@ -95,7 +95,7 @@ struct WarpReduceSmem
   };
 
   /// Shared memory flag type
-  typedef unsigned char SmemFlag;
+  using SmemFlag = unsigned char;
 
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
   struct _TempStorage

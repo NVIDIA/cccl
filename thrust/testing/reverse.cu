@@ -4,7 +4,7 @@
 
 #include <unittest/unittest.h>
 
-typedef unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t> ReverseTypes;
+using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
 void TestReverseSimple()
@@ -73,7 +73,7 @@ void TestReverseCopySimple()
   }
 #endif // _CCCL_COMPILER_GCC
 
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector input(5);
   input[0] = 1;

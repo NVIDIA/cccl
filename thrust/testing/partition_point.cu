@@ -16,8 +16,8 @@ struct is_even
 template <typename Vector>
 void TestPartitionPointSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector v(4);
   v[0] = 1;
@@ -40,8 +40,8 @@ DECLARE_VECTOR_UNITTEST(TestPartitionPointSimple);
 template <class Vector>
 void TestPartitionPoint()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   const size_t n = (1 << 16) + 13;
 

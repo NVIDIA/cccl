@@ -11,10 +11,11 @@
 #ifndef _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS
 #define _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS
 
-#include <cuda/experimental/__hierarchy/level_dimensions.cuh>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/tuple>
 
-#include "cuda/std/__utility/declval.h"
+#include <cuda/experimental/__hierarchy/level_dimensions.cuh>
+
 #include <nv/target>
 
 #if _CCCL_STD_VER >= 2017

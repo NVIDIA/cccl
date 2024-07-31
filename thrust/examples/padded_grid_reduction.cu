@@ -22,10 +22,9 @@
 // values in the padded region of the grid
 template <typename IndexType, typename ValueType>
 struct transform_tuple
-    : public thrust::unary_function<thrust::tuple<IndexType, ValueType>, thrust::tuple<bool, ValueType, ValueType>>
 {
-  typedef typename thrust::tuple<IndexType, ValueType> InputTuple;
-  typedef typename thrust::tuple<bool, ValueType, ValueType> OutputTuple;
+  using InputTuple  = typename thrust::tuple<IndexType, ValueType>;
+  using OutputTuple = typename thrust::tuple<bool, ValueType, ValueType>;
 
   IndexType n, N;
 
@@ -45,11 +44,8 @@ struct transform_tuple
 // contains the smallest and largest *valid* values.
 template <typename IndexType, typename ValueType>
 struct reduce_tuple
-    : public thrust::binary_function<thrust::tuple<bool, ValueType, ValueType>,
-                                     thrust::tuple<bool, ValueType, ValueType>,
-                                     thrust::tuple<bool, ValueType, ValueType>>
 {
-  typedef typename thrust::tuple<bool, ValueType, ValueType> Tuple;
+  using Tuple = typename thrust::tuple<bool, ValueType, ValueType>;
 
   __host__ __device__ Tuple operator()(const Tuple& t0, const Tuple& t1) const
   {
@@ -108,7 +104,7 @@ int main()
   std::cout << "\n";
 
   // compute min & max over valid region of the 2d grid
-  typedef thrust::tuple<bool, float, float> result_type;
+  using result_type = thrust::tuple<bool, float, float>;
 
   result_type init(true, FLT_MAX, -FLT_MAX); // initial value
   transform_tuple<int, float> unary_op(n, N); // transformation operator

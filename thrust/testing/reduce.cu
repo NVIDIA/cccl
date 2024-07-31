@@ -28,7 +28,7 @@ struct is_equal_div_10_reduce
 template <class Vector>
 void TestReduceSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(3);
   v[0] = 1;
@@ -165,7 +165,7 @@ template <typename Vector>
 void TestReduceWithIndirection()
 {
   // add numbers modulo 3 with external lookup table
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(7);
   data[0] = 0;

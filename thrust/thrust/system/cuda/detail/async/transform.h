@@ -127,8 +127,8 @@ namespace cuda_cub
 template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename UnaryOperation>
 auto async_transform(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, OutputIt output, UnaryOperation&& op)
-  THRUST_RETURNS(
-    thrust::system::cuda::detail::async_transform_n(policy, first, distance(first, last), output, THRUST_FWD(op)));
+  THRUST_RETURNS(thrust::system::cuda::detail::async_transform_n(
+    policy, first, thrust::distance(first, last), output, THRUST_FWD(op)));
 
 } // namespace cuda_cub
 

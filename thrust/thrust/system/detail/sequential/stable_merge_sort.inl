@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE void inplace_merge(
   RandomAccessIterator last,
   StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
+  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
 
   thrust::detail::temporary_array<value_type, DerivedPolicy> a(exec, first, middle);
   thrust::detail::temporary_array<value_type, DerivedPolicy> b(exec, middle, last);
@@ -72,8 +72,8 @@ _CCCL_HOST_DEVICE void inplace_merge_by_key(
   RandomAccessIterator2 first2,
   StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type1;
-  typedef typename thrust::iterator_value<RandomAccessIterator2>::type value_type2;
+  using value_type1 = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using value_type2 = typename thrust::iterator_value<RandomAccessIterator2>::type;
 
   RandomAccessIterator2 middle2 = first2 + (middle1 - first1);
   RandomAccessIterator2 last2   = first2 + (last1 - first1);
@@ -191,8 +191,8 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort(
   RandomAccessIterator last,
   StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
-  typedef typename thrust::iterator_difference<RandomAccessIterator>::type difference_type;
+  using value_type      = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using difference_type = typename thrust::iterator_difference<RandomAccessIterator>::type;
 
   difference_type n = last - first;
 
@@ -235,9 +235,9 @@ _CCCL_HOST_DEVICE void iterative_stable_merge_sort_by_key(
   RandomAccessIterator2 values_first,
   StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type1;
-  typedef typename thrust::iterator_value<RandomAccessIterator2>::type value_type2;
-  typedef typename thrust::iterator_difference<RandomAccessIterator1>::type difference_type;
+  using value_type1     = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using value_type2     = typename thrust::iterator_value<RandomAccessIterator2>::type;
+  using difference_type = typename thrust::iterator_difference<RandomAccessIterator1>::type;
 
   difference_type n = keys_last - keys_first;
 

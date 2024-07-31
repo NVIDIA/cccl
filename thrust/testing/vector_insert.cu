@@ -8,7 +8,7 @@ struct TestVectorRangeInsertSimple
 {
   void operator()(size_t)
   {
-    typedef typename Vector::value_type T;
+    using T = typename Vector::value_type;
 
     Vector v1(5);
     thrust::sequence(v1.begin(), v1.end());
@@ -173,7 +173,7 @@ struct TestVectorFillInsertSimple
 {
   void operator()(size_t)
   {
-    typedef typename Vector::value_type T;
+    using T = typename Vector::value_type;
 
     // test when insertion range fits inside capacity
     // and the size of the insertion is greater than the number

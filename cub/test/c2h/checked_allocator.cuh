@@ -109,7 +109,7 @@ public:
   template <typename U>
   struct rebind
   {
-    typedef checked_cuda_allocator<U> other;
+    using other = checked_cuda_allocator<U>;
   };
 
   _CCCL_HOST_DEVICE checked_cuda_allocator() {}

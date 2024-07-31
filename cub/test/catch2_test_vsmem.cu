@@ -474,4 +474,6 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
     // The virtual shared memory helper pads vsmem to a multiple of a line size, hence the range check
     REQUIRE(launch_config_info->config_vsmem_per_block >= expected_vsmem_per_block);
   }
+
+  cudaFreeHost(launch_config_info);
 }

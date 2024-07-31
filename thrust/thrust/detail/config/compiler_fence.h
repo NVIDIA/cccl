@@ -28,14 +28,12 @@
 
 #include <thrust/detail/preprocessor.h>
 
-// TODO: Enable this or remove this file once nvGRAPH/CUSP migrates off of it.
-// #if defined(_CCCL_COMPILER_MSVC)
-//  #pragma message("warning: The functionality in this header is unsafe, deprecated, and will soon be removed. Use
-//  C++11 or C11 atomics instead.")
-// #else
-//  #warning The functionality in this header is unsafe, deprecated, and will soon be removed. Use C++11 or C11 atomics
-//  instead.
-// #endif
+#if defined(_CCCL_COMPILER_MSVC)
+#  pragma message( \
+    "warning: The functionality in this header is unsafe, deprecated, and will soon be removed. Use C++11 atomics instead.")
+#else
+#warning The functionality in this header is unsafe, deprecated, and will soon be removed. Use C++11 or C11 atomics instead.
+#endif
 
 // msvc case
 #if defined(_CCCL_COMPILER_MSVC)

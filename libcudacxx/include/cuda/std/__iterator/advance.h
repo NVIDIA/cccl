@@ -238,7 +238,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto advance = __advance::__fn{};
+_CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_RANGES

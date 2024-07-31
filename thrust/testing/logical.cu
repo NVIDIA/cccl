@@ -7,7 +7,7 @@
 template <class Vector>
 void TestAllOf()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(3, 1);
 
@@ -62,7 +62,7 @@ DECLARE_UNITTEST(TestAllOfDispatchImplicit);
 template <class Vector>
 void TestAnyOf()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(3, 1);
 
@@ -117,7 +117,7 @@ DECLARE_UNITTEST(TestAnyOfDispatchImplicit);
 template <class Vector>
 void TestNoneOf()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(3, 1);
 

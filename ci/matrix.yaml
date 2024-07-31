@@ -53,9 +53,12 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang16']}
+    # Python jobs:
+    - {jobs: ['test'], project: 'pycuda'}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc', 'clang']}
+
   nightly:
     - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',    std: [11]}
     - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]}
@@ -85,7 +88,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '24.08'
+devcontainer_version: '24.10'
 
 # All supported C++ standards:
 all_stds: [11, 14, 17, 20]
@@ -94,7 +97,7 @@ ctk_versions:
   11.1: { stds: [11, 14, 17,   ] }
   11.8: { stds: [11, 14, 17,   ] }
   12.0: { stds: [11, 14, 17, 20] }
-  12.4: { stds: [11, 14, 17, 20], aka: 'curr' }
+  12.5: { stds: [11, 14, 17, 20], aka: 'curr' }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -165,8 +168,9 @@ host_compilers:
 #     windows: `ci/<spec[prefix]>_<project>.sh <spec[args]>`
 jobs:
   # General:
-  build: { gpu: false }
-  test:  { gpu: true, needs: 'build' }
+  build:        { gpu: false }
+  test:         { gpu: true, needs: 'build' }
+  test_nobuild: { gpu: true, name: 'Test', invoke: { prefix: 'test' } }
 
   # CCCL:
   infra: { gpu: true } # example project launches a kernel
@@ -217,6 +221,9 @@ projects:
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
     stds: [17, 20]
+  pycuda:
+    name: "cuda (python)"
+    job_map: { build: [], test: ['test_nobuild'] }
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:

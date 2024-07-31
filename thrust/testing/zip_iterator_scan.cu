@@ -32,7 +32,7 @@ struct TestZipIteratorScan
     device_vector<T> d_data0 = h_data0;
     device_vector<T> d_data1 = h_data1;
 
-    typedef tuple<T, T> Tuple;
+    using Tuple = tuple<T, T>;
 
     host_vector<Tuple> h_result(n);
     device_vector<Tuple> d_result(n);

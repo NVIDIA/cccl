@@ -7,6 +7,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/universal_vector.h>
 
+#include <cuda/std/utility>
+
 #include <unittest/exceptions.h>
 #include <unittest/util.h>
 
@@ -104,13 +106,13 @@ double const DEFAULT_ABSOLUTE_TOL = 1e-4;
 template <typename T>
 struct value_type
 {
-  typedef ::cuda::std::__remove_const_t<::cuda::std::__libcpp_remove_reference_t<T>> type;
+  using type = ::cuda::std::__remove_const_t<::cuda::std::__libcpp_remove_reference_t<T>>;
 };
 
 template <typename T>
 struct value_type<THRUST_NS_QUALIFIER::device_reference<T>>
 {
-  typedef typename value_type<T>::type type;
+  using type = typename value_type<T>::type;
 };
 
 ////
@@ -386,6 +388,17 @@ public:
 ////
 // check sequences
 
+inline int promote_char(char c)
+{
+  return c;
+}
+
+template <typename T>
+T&& promote_char(T&& t)
+{
+  return ::cuda::std::forward<T>(t);
+}
+
 template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
 void assert_equal(
   ForwardIterator1 first1,
@@ -396,8 +409,8 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  typedef typename THRUST_NS_QUALIFIER::iterator_difference<ForwardIterator1>::type difference_type;
-  typedef typename THRUST_NS_QUALIFIER::iterator_value<ForwardIterator1>::type InputType;
+  using difference_type = typename THRUST_NS_QUALIFIER::iterator_difference<ForwardIterator1>::type;
+  using InputType       = typename THRUST_NS_QUALIFIER::iterator_value<ForwardIterator1>::type;
 
   bool failure = false;
 
@@ -435,16 +448,7 @@ void assert_equal(
 
       if (mismatches <= MAX_OUTPUT_LINES)
       {
-        _CCCL_IF_CONSTEXPR (sizeof(InputType) == 1)
-        {
-          f << "  [" << i << "] " << *first1 + InputType() << "  " << *first2 + InputType() << "\n"; // unprintable
-                                                                                                     // chars are a
-                                                                                                     // problem
-        }
-        else
-        {
-          f << "  [" << i << "] " << *first1 << "  " << *first2 << "\n";
-        }
+        f << "  [" << i << "] " << promote_char(*first1) << "  " << promote_char(*first2) << "\n";
       }
     }
 
@@ -482,7 +486,7 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  typedef typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type InputType;
+  using InputType = typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type;
   assert_equal(first1, last1, first2, last2, THRUST_NS_QUALIFIER::equal_to<InputType>(), filename, lineno);
 }
 
@@ -497,7 +501,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  typedef typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type InputType;
+  using InputType = typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type;
   assert_equal(first1, last1, first2, last2, almost_equal_to<InputType>(a_tol, r_tol), filename, lineno);
 }
 

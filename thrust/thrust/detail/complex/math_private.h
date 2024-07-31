@@ -34,7 +34,8 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
-#include <thrust/detail/cstdint.h>
+
+#include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -44,11 +45,11 @@ namespace complex
 
 using thrust::complex;
 
-typedef union
+using ieee_float_shape_type = union
 {
   float value;
   uint32_t word;
-} ieee_float_shape_type;
+};
 
 _CCCL_HOST_DEVICE inline void get_float_word(uint32_t& i, float d)
 {
@@ -72,7 +73,7 @@ _CCCL_HOST_DEVICE inline void set_float_word(float& d, uint32_t i)
 }
 
 // Assumes little endian ordering
-typedef union
+using ieee_double_shape_type = union
 {
   double value;
   struct
@@ -84,7 +85,7 @@ typedef union
   {
     uint64_t w;
   } xparts;
-} ieee_double_shape_type;
+};
 
 _CCCL_HOST_DEVICE inline void get_high_word(uint32_t& i, double d)
 {

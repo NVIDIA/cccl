@@ -12,8 +12,6 @@
 // template<class T, T N>
 //   using make_integer_sequence = integer_sequence<T, 0, 1, ..., N-1>;
 
-// UNSUPPORTED: c++03, c++11
-
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>

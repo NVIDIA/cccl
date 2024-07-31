@@ -80,8 +80,8 @@ OutputIterator transform_inclusive_scan(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -100,8 +100,8 @@ OutputIterator transform_exclusive_scan(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;

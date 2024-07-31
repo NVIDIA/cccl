@@ -55,7 +55,7 @@ equal(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputI
 template <class Derived, class InputIt1, class InputIt2>
 bool _CCCL_HOST_DEVICE equal(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2)
 {
-  typedef typename thrust::iterator_value<InputIt1>::type InputType1;
+  using InputType1 = typename thrust::iterator_value<InputIt1>::type;
   return cuda_cub::equal(policy, first1, last1, first2, equal_to<InputType1>());
 }
 

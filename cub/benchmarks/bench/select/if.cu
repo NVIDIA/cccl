@@ -43,7 +43,6 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 constexpr bool keep_rejects = false;
-constexpr bool may_alias    = false;
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -106,16 +105,17 @@ T value_from_entropy(double percentage)
   return static_cast<T>(result);
 }
 
-template <typename T, typename OffsetT>
-void select(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T, typename OffsetT, typename InPlaceAlgT>
+void select(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlaceAlgT>)
 {
-  using input_it_t        = const T*;
-  using flag_it_t         = cub::NullType*;
-  using output_it_t       = T*;
-  using num_selected_it_t = OffsetT*;
-  using select_op_t       = less_then_t<T>;
-  using equality_op_t     = cub::NullType;
-  using offset_t          = OffsetT;
+  using input_it_t         = const T*;
+  using flag_it_t          = cub::NullType*;
+  using output_it_t        = T*;
+  using num_selected_it_t  = OffsetT*;
+  using select_op_t        = less_then_t<T>;
+  using equality_op_t      = cub::NullType;
+  using offset_t           = OffsetT;
+  constexpr bool may_alias = InPlaceAlgT::value;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<T>;
@@ -158,8 +158,8 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> out(selected_elements);
 
   input_it_t d_in                  = thrust::raw_pointer_cast(in.data());
-  flag_it_t d_flags                = nullptr;
   output_it_t d_out                = thrust::raw_pointer_cast(out.data());
+  flag_it_t d_flags                = nullptr;
   num_selected_it_t d_num_selected = thrust::raw_pointer_cast(num_selected.data());
 
   state.add_element_count(elements);
@@ -189,8 +189,10 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
+using in_place_alg = nvbench::type_list<::cuda::std::false_type, ::cuda::std::true_type>;
+
+NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, offset_types, in_place_alg))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "IsInPlace{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});

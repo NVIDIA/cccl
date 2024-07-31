@@ -28,9 +28,7 @@ struct NonMovable
 
 template <class Opt, class F>
 concept has_or_else = requires(Opt&& opt, F&& f) {
-  {
-    cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))
-  };
+  { cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f)) };
 };
 
 #else

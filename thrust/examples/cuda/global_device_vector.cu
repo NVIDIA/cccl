@@ -19,9 +19,8 @@ extern "C" cudaError_t cudaFreeIgnoreShutdown(void* ptr)
   return err;
 }
 
-typedef thrust::system::cuda::detail::
-  cuda_memory_resource<cudaMalloc, cudaFreeIgnoreShutdown, thrust::cuda::pointer<void>>
-    device_ignore_shutdown_memory_resource;
+using device_ignore_shutdown_memory_resource =
+  thrust::system::cuda::detail::cuda_memory_resource<cudaMalloc, cudaFreeIgnoreShutdown, thrust::cuda::pointer<void>>;
 
 template <typename T>
 using device_ignore_shutdown_allocator =

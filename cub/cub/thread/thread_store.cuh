@@ -291,8 +291,8 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Type<false> /*is_primitive*/)
 {
   // Create a temporary using shuffle-words, then store using volatile-words
-  typedef typename UnitWord<T>::VolatileWord VolatileWord;
-  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  using VolatileWord = typename UnitWord<T>::VolatileWord;
+  using ShuffleWord  = typename UnitWord<T>::ShuffleWord;
 
   constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
   constexpr int SHUFFLE_MULTIPLE  = sizeof(T) / sizeof(ShuffleWord);
@@ -326,8 +326,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadStore(T* ptr, T val, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_pointer*/)
 {
   // Create a temporary using shuffle-words, then store using device-words
-  typedef typename UnitWord<T>::DeviceWord DeviceWord;
-  typedef typename UnitWord<T>::ShuffleWord ShuffleWord;
+  using DeviceWord  = typename UnitWord<T>::DeviceWord;
+  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
 
   constexpr int DEVICE_MULTIPLE  = sizeof(T) / sizeof(DeviceWord);
   constexpr int SHUFFLE_MULTIPLE = sizeof(T) / sizeof(ShuffleWord);

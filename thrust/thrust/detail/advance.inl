@@ -59,9 +59,9 @@ prev(BidirectionalIterator i, typename iterator_traits<BidirectionalIterator>::d
 
 template <typename BidirectionalIterator>
 _CCCL_HOST_DEVICE
-  typename detail::disable_if<has_difference_type<iterator_traits<BidirectionalIterator>>::value,
-                              BidirectionalIterator>::type
-  prev(BidirectionalIterator i, typename detail::pointer_traits<BidirectionalIterator>::difference_type n = 1)
+typename detail::disable_if<has_difference_type<iterator_traits<BidirectionalIterator>>::value,
+                            BidirectionalIterator>::type
+prev(BidirectionalIterator i, typename detail::pointer_traits<BidirectionalIterator>::difference_type n = 1)
 {
   thrust::system::detail::generic::advance(i, -n);
   return i;

@@ -52,7 +52,7 @@ DECLARE_UNITTEST(TestSetIntersectionDispatchImplicit);
 template <typename Vector>
 void TestSetIntersectionSimple()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector a(3), b(4);
 

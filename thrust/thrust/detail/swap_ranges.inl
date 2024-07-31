@@ -51,8 +51,8 @@ ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, Fo
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator1>::type System1;
-  typedef typename thrust::iterator_system<ForwardIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<ForwardIterator1>::type;
+  using System2 = typename thrust::iterator_system<ForwardIterator2>::type;
 
   System1 system1;
   System2 system2;

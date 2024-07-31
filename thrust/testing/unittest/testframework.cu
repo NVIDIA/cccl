@@ -431,7 +431,7 @@ bool UnitTestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwarg
   {
     // all non-keyword arguments are assumed to be test names or partial test names
 
-    typedef TestMap::iterator TestMapIterator;
+    using TestMapIterator = TestMap::iterator;
 
     // vector to accumulate tests
     std::vector<UnitTest*> tests_to_run;

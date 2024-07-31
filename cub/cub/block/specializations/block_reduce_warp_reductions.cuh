@@ -91,7 +91,7 @@ struct BlockReduceWarpReductions
   };
 
   ///  WarpReduce utility type
-  typedef typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce WarpReduce;
+  using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage
@@ -181,7 +181,7 @@ struct BlockReduceWarpReductions
     // Share lane aggregates
     if (lane_id == 0)
     {
-      detail::uninitialized_copy(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     CTA_SYNC();

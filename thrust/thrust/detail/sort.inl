@@ -188,7 +188,7 @@ void sort(RandomAccessIterator first, RandomAccessIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator>::type System;
+  using System = typename thrust::iterator_system<RandomAccessIterator>::type;
 
   System system;
 
@@ -200,7 +200,7 @@ _CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator las
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator>::type System;
+  using System = typename thrust::iterator_system<RandomAccessIterator>::type;
 
   System system;
 
@@ -212,7 +212,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator>::type System;
+  using System = typename thrust::iterator_system<RandomAccessIterator>::type;
 
   System system;
 
@@ -224,7 +224,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWe
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator>::type System;
+  using System = typename thrust::iterator_system<RandomAccessIterator>::type;
 
   System system;
 
@@ -240,8 +240,8 @@ void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_la
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator1>::type System1;
-  typedef typename thrust::iterator_system<RandomAccessIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<RandomAccessIterator1>::type;
+  using System2 = typename thrust::iterator_system<RandomAccessIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -257,8 +257,8 @@ void sort_by_key(RandomAccessIterator1 keys_first,
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator1>::type System1;
-  typedef typename thrust::iterator_system<RandomAccessIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<RandomAccessIterator1>::type;
+  using System2 = typename thrust::iterator_system<RandomAccessIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -272,8 +272,8 @@ void stable_sort_by_key(
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator1>::type System1;
-  typedef typename thrust::iterator_system<RandomAccessIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<RandomAccessIterator1>::type;
+  using System2 = typename thrust::iterator_system<RandomAccessIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -289,8 +289,8 @@ void stable_sort_by_key(RandomAccessIterator1 keys_first,
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomAccessIterator1>::type System1;
-  typedef typename thrust::iterator_system<RandomAccessIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<RandomAccessIterator1>::type;
+  using System2 = typename thrust::iterator_system<RandomAccessIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -303,7 +303,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -315,7 +315,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -327,7 +327,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -339,7 +339,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Com
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 

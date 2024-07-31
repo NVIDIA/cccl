@@ -133,8 +133,8 @@ void TestConstantIteratorTransform()
 {
   using namespace thrust;
 
-  typedef typename Vector::value_type T;
-  typedef constant_iterator<T> ConstIter;
+  using T         = typename Vector::value_type;
+  using ConstIter = constant_iterator<T>;
 
   Vector result(4);
 
@@ -162,8 +162,8 @@ void TestConstantIteratorReduce()
 {
   using namespace thrust;
 
-  typedef int T;
-  typedef constant_iterator<T> ConstIter;
+  using T         = int;
+  using ConstIter = constant_iterator<T>;
 
   ConstIter first = make_constant_iterator<T>(7);
   ConstIter last  = first + 4;

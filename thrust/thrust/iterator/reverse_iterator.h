@@ -79,7 +79,7 @@ THRUST_NAMESPACE_BEGIN
  *  v[2] = 2.0f;
  *  v[3] = 3.0f;
  *
- *  typedef thrust::device_vector<float>::iterator Iterator;
+ *  using Iterator = thrust::device_vector<float>::iterator;
  *
  *  // note that we point the iterator to the *end* of the device_vector
  *  thrust::reverse_iterator<Iterator> iter(values.end());
@@ -94,7 +94,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  Since reversing a range is a common operation, containers like \p device_vector
- *  have nested typedefs for declaration shorthand and methods for constructing
+ *  have nested aliases for declaration shorthand and methods for constructing
  *  reverse_iterators. The following code snippet is equivalent to the previous:
  *
  *  \code
@@ -154,7 +154,7 @@ class reverse_iterator : public detail::reverse_iterator_base<BidirectionalItera
    */
 
 private:
-  typedef typename thrust::detail::reverse_iterator_base<BidirectionalIterator>::type super_t;
+  using super_t = typename thrust::detail::reverse_iterator_base<BidirectionalIterator>::type;
 
   friend class thrust::iterator_core_access;
   /*! \endcond

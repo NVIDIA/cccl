@@ -106,7 +106,7 @@ public:
   inline _CCCL_HOST_DEVICE tuple_of_iterator_references&
   operator=(const thrust::reference<thrust::tuple<Us...>, Pointer, Derived>& other)
   {
-    typedef thrust::tuple<Us...> tuple_type;
+    using tuple_type = thrust::tuple<Us...>;
 
     // XXX perhaps this could be accelerated
     super_t::operator=(tuple_type{other});

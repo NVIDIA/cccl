@@ -9,7 +9,7 @@
 
 void TestNvccIndependenceTransform()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
@@ -27,7 +27,7 @@ DECLARE_UNITTEST(TestNvccIndependenceTransform);
 
 void TestNvccIndependenceReduce()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
@@ -44,7 +44,7 @@ DECLARE_UNITTEST(TestNvccIndependenceReduce);
 
 void TestNvccIndependenceExclusiveScan()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
@@ -61,7 +61,7 @@ DECLARE_UNITTEST(TestNvccIndependenceExclusiveScan);
 
 void TestNvccIndependenceSort()
 {
-  typedef int T;
+  using T     = int;
   const int n = 10;
 
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);

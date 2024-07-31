@@ -34,7 +34,7 @@
  */
 
 // define a 2d float vector
-typedef thrust::tuple<float, float> vec2;
+using vec2 = thrust::tuple<float, float>;
 
 int main()
 {

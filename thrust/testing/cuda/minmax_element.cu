@@ -29,8 +29,8 @@ void TestMinMaxElementDevice(ExecutionPolicy exec)
   typename thrust::device_vector<int>::iterator d_min;
   typename thrust::device_vector<int>::iterator d_max;
 
-  typedef thrust::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>
-    pair_type;
+  using pair_type =
+    thrust::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>;
 
   thrust::device_vector<pair_type> d_result(1);
 
@@ -83,7 +83,7 @@ DECLARE_UNITTEST(TestMinMaxElementDeviceDevice);
 
 void TestMinMaxElementCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector data(6);
   data[0] = 3;
@@ -107,8 +107,8 @@ DECLARE_UNITTEST(TestMinMaxElementCudaStreams);
 
 void TestMinMaxElementDevicePointer()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector data(6);
   data[0] = 3;

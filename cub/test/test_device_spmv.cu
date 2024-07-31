@@ -31,17 +31,21 @@
 #include <cub/device/device_spmv.cuh>
 #include <cub/util_debug.cuh>
 
-#include <thrust/device_vector.h>
 #include <thrust/distance.h>
+#include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
 #include <thrust/mismatch.h>
 #include <thrust/scan.h>
+
+#include <cuda/std/type_traits>
 
 #include <iostream>
 #include <type_traits>
 #include <typeinfo>
 
 #include "test_util.h"
+#include <c2h/device_policy.cuh>
+#include <c2h/vector.cuh>
 
 bool g_verbose = false;
 
@@ -121,7 +125,14 @@ struct csr_matrix
 
   void finalize()
   {
-    thrust::exclusive_scan(m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
+    _CCCL_IF_CONSTEXPR (HostStorage)
+    {
+      thrust::exclusive_scan(thrust::host, m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
+    }
+    else
+    {
+      thrust::exclusive_scan(c2h::device_policy, m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
+    }
     AssertEquals(m_row_offsets.back(), m_num_nonzeros);
   }
 
@@ -196,8 +207,7 @@ struct csr_matrix
 
 private:
   template <typename VecValueT>
-  using vector_t =
-    cub::detail::conditional_t<HostStorage, thrust::host_vector<VecValueT>, thrust::device_vector<VecValueT>>;
+  using vector_t = ::cuda::std::_If<HostStorage, c2h::host_vector<VecValueT>, c2h::device_vector<VecValueT>>;
 
   vector_t<ValueT> m_values;
   vector_t<int> m_row_offsets;
@@ -236,17 +246,18 @@ struct fp_almost_equal_functor
 // Use fuzzy check for floating point values.
 template <typename ValueT>
 bool compare_results(
-  std::true_type /* is_fp */, const thrust::host_vector<ValueT>& h_vec1, const thrust::device_vector<ValueT>& d_vec2)
+  std::true_type /* is_fp */, const c2h::host_vector<ValueT>& h_vec1, const c2h::device_vector<ValueT>& d_vec2)
 {
-  thrust::device_vector<ValueT> d_vec1(h_vec1);
-  auto err = thrust::mismatch(d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin(), fp_almost_equal_functor<ValueT>{});
+  c2h::device_vector<ValueT> d_vec1(h_vec1);
+  auto err = thrust::mismatch(
+    c2h::device_policy, d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin(), fp_almost_equal_functor<ValueT>{});
   if (err.first == d_vec1.cend() || err.second == d_vec2.cend())
   {
     return true;
   }
   else
   {
-    thrust::host_vector<ValueT> h_vec2(d_vec2);
+    c2h::host_vector<ValueT> h_vec2(d_vec2);
     const auto idx = thrust::distance(d_vec1.cbegin(), err.first);
     std::cerr << "Mismatch at position " << idx << ": " << print_cast(ValueT{h_vec1[idx]}) << " vs "
               << print_cast(ValueT{h_vec2[idx]}) << std::endl;
@@ -256,17 +267,17 @@ bool compare_results(
 
 template <typename ValueT>
 bool compare_results(
-  std::false_type /* is_fp */, const thrust::host_vector<ValueT>& h_vec1, const thrust::device_vector<ValueT>& d_vec2)
+  std::false_type /* is_fp */, const c2h::host_vector<ValueT>& h_vec1, const c2h::device_vector<ValueT>& d_vec2)
 {
-  thrust::device_vector<ValueT> d_vec1(h_vec1);
-  auto err = thrust::mismatch(d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin());
+  c2h::device_vector<ValueT> d_vec1(h_vec1);
+  auto err = thrust::mismatch(c2h::device_policy, d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin());
   if (err.first == d_vec1.cend() || err.second == d_vec2.cend())
   {
     return true;
   }
   else
   {
-    thrust::host_vector<ValueT> h_vec2(d_vec2);
+    c2h::host_vector<ValueT> h_vec2(d_vec2);
     const auto idx = thrust::distance(d_vec1.cbegin(), err.first);
     std::cerr << "Mismatch at position " << idx << ": " << print_cast(ValueT{h_vec1[idx]}) << " vs "
               << print_cast(ValueT{h_vec2[idx]}) << std::endl;
@@ -337,9 +348,9 @@ host_csr_matrix<ValueT> make_random_csr_matrix(int num_rows, int num_cols, float
 //==============================================================================
 // Fill a vector with random values.
 template <typename ValueT>
-thrust::host_vector<ValueT> make_random_vector(int len)
+c2h::host_vector<ValueT> make_random_vector(int len)
 {
-  thrust::host_vector<ValueT> vec(len);
+  c2h::host_vector<ValueT> vec(len);
   for (auto& val : vec)
   {
     if (std::is_floating_point<ValueT>::value)
@@ -359,7 +370,7 @@ thrust::host_vector<ValueT> make_random_vector(int len)
 // Serial y = Ax computation
 template <typename ValueT>
 void compute_reference_solution(
-  const host_csr_matrix<ValueT>& a, const thrust::host_vector<ValueT>& x, thrust::host_vector<ValueT>& y)
+  const host_csr_matrix<ValueT>& a, const c2h::host_vector<ValueT>& x, c2h::host_vector<ValueT>& y)
 {
   if (a.get_num_rows() == 0 || a.get_num_columns() == 0)
   {
@@ -387,9 +398,9 @@ void compute_reference_solution(
 // cub::DeviceSpmv::CsrMV y = Ax computation
 template <typename ValueT>
 void compute_cub_solution(
-  const device_csr_matrix<ValueT>& a, const thrust::device_vector<ValueT>& x, thrust::device_vector<ValueT>& y)
+  const device_csr_matrix<ValueT>& a, const c2h::device_vector<ValueT>& x, c2h::device_vector<ValueT>& y)
 {
-  thrust::device_vector<char> temp_storage;
+  c2h::device_vector<char> temp_storage;
   std::size_t temp_storage_bytes{};
   auto err = cub::DeviceSpmv::CsrMV(
     nullptr,
@@ -424,7 +435,7 @@ void compute_cub_solution(
 // Compute y = Ax twice, one reference and one cub::DeviceSpmv, and compare the
 // results.
 template <typename ValueT>
-void test_spmv(const host_csr_matrix<ValueT>& h_a, const thrust::host_vector<ValueT>& h_x)
+void test_spmv(const host_csr_matrix<ValueT>& h_a, const c2h::host_vector<ValueT>& h_x)
 {
   if (g_verbose)
   {
@@ -440,10 +451,10 @@ void test_spmv(const host_csr_matrix<ValueT>& h_a, const thrust::host_vector<Val
   }
 
   const device_csr_matrix<ValueT> d_a(h_a);
-  const thrust::device_vector<ValueT> d_x(h_x);
+  const c2h::device_vector<ValueT> d_x(h_x);
 
-  thrust::host_vector<ValueT> h_y(h_a.get_num_rows());
-  thrust::device_vector<ValueT> d_y(d_a.get_num_rows());
+  c2h::host_vector<ValueT> h_y(h_a.get_num_rows());
+  c2h::device_vector<ValueT> d_y(d_a.get_num_rows());
 
   compute_reference_solution(h_a, h_x, h_y);
   compute_cub_solution(d_a, d_x, d_y);
@@ -453,7 +464,7 @@ void test_spmv(const host_csr_matrix<ValueT>& h_a, const thrust::host_vector<Val
     std::cout << "reference output:\n  [";
     print_vector(std::cout, h_y);
     std::cout << "]\n";
-    thrust::host_vector<ValueT> tmp_y(d_y);
+    c2h::host_vector<ValueT> tmp_y(d_y);
     std::cout << "cub::DeviceSpmv output:\n  [";
     print_vector(std::cout, tmp_y);
     std::cout << "]" << std::endl;
@@ -497,7 +508,7 @@ void test_doc_example()
   h_a.append_value(8, 7, ValueT{1});
   h_a.finalize();
 
-  thrust::host_vector<ValueT> h_x(9, ValueT{1});
+  c2h::host_vector<ValueT> h_x(9, ValueT{1});
 
   test_spmv(h_a, h_x);
 }
@@ -510,8 +521,8 @@ void test_random(int rows, int cols, float target_fill_ratio)
   std::cout << "\n\ntest_random<" << typeid(ValueT).name() << ">(" << rows << ", " << cols << ", " << target_fill_ratio
             << ")" << std::endl;
 
-  host_csr_matrix<ValueT> h_a     = make_random_csr_matrix<ValueT>(rows, cols, target_fill_ratio);
-  thrust::host_vector<ValueT> h_x = make_random_vector<ValueT>(cols);
+  host_csr_matrix<ValueT> h_a  = make_random_csr_matrix<ValueT>(rows, cols, target_fill_ratio);
+  c2h::host_vector<ValueT> h_x = make_random_vector<ValueT>(cols);
 
   test_spmv(h_a, h_x);
 }

@@ -31,9 +31,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
-  prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
+inline _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
+prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
   _LIBCUDACXX_ASSERT(__n <= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
                      "Attempt to prev(it, +n) on a non-bidi iterator");
@@ -81,7 +81,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto prev = __prev::__fn{};
+_CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

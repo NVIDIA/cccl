@@ -44,8 +44,8 @@ namespace detail
 namespace generic_type_traits_ns
 {
 
-typedef char yes;
-typedef char (&no)[2];
+using yes = char;
+using no  = char (&)[2];
 
 struct any_conversion
 {

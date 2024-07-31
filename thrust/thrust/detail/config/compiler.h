@@ -45,7 +45,6 @@
 #define THRUST_DEVICE_COMPILER_NVCC    4
 
 // figure out which host compiler we're using
-// XXX we should move the definition of THRUST_DEPRECATED out of this logic
 #if defined(_CCCL_COMPILER_MSVC)
 #  define THRUST_HOST_COMPILER     THRUST_HOST_COMPILER_MSVC
 #  define THRUST_MSVC_VERSION      _MSC_VER

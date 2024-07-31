@@ -150,11 +150,10 @@ struct iterator_facade_default_category_device
 template <typename Traversal, typename ValueParam, typename Reference>
 struct iterator_facade_default_category_any
 {
-  typedef thrust::detail::iterator_category_with_system_and_traversal<
+  using type = thrust::detail::iterator_category_with_system_and_traversal<
     typename iterator_facade_default_category_std<Traversal, ValueParam, Reference>::type,
     thrust::any_system_tag,
-    Traversal>
-    type;
+    Traversal>;
 }; // end iterator_facade_default_category_any
 
 template <typename System, typename Traversal, typename ValueParam, typename Reference>
@@ -184,26 +183,26 @@ struct iterator_facade_default_category
 template <typename System, typename Traversal, typename ValueParam, typename Reference>
 struct iterator_facade_category_impl
 {
-  typedef typename iterator_facade_default_category<System, Traversal, ValueParam, Reference>::type category;
+  using category = typename iterator_facade_default_category<System, Traversal, ValueParam, Reference>::type;
 
   // we must be able to deduce both Traversal & System from category
   // otherwise, munge them all together
-  typedef typename thrust::detail::eval_if<
+  using type = typename thrust::detail::eval_if<
     ::cuda::std::_And<
       ::cuda::std::is_same<Traversal, typename thrust::detail::iterator_category_to_traversal<category>::type>,
       ::cuda::std::is_same<System, typename thrust::detail::iterator_category_to_system<category>::type>>::value,
     thrust::detail::identity_<category>,
     thrust::detail::identity_<
-      thrust::detail::iterator_category_with_system_and_traversal<category, System, Traversal>>>::type type;
+      thrust::detail::iterator_category_with_system_and_traversal<category, System, Traversal>>>::type;
 }; // end iterator_facade_category_impl
 
 template <typename CategoryOrSystem, typename CategoryOrTraversal, typename ValueParam, typename Reference>
 struct iterator_facade_category
 {
-  typedef typename thrust::detail::eval_if<
+  using type = typename thrust::detail::eval_if<
     thrust::detail::is_iterator_category<CategoryOrTraversal>::value,
-    thrust::detail::identity_<CategoryOrTraversal>, // categories are fine as-is
-    iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal, ValueParam, Reference>>::type type;
+    thrust::detail::identity_<CategoryOrTraversal>,
+    iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal, ValueParam, Reference>>::type;
 }; // end iterator_facade_category
 
 } // namespace detail

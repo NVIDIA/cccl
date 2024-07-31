@@ -70,7 +70,7 @@ struct copy_iterators
 template <typename Vector>
 void print(const std::string& name, const Vector& v)
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   std::cout << name << ": ";
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
@@ -79,9 +79,9 @@ void print(const std::string& name, const Vector& v)
 
 int main()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
-  typedef thrust::device_system_tag System;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
+  using System   = thrust::device_system_tag;
 
   // allocate device memory
   Vector A(5);

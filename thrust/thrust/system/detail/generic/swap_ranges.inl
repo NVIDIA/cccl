@@ -63,8 +63,8 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
   ForwardIterator1 last1,
   ForwardIterator2 first2)
 {
-  typedef thrust::tuple<ForwardIterator1, ForwardIterator2> IteratorTuple;
-  typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
+  using IteratorTuple = thrust::tuple<ForwardIterator1, ForwardIterator2>;
+  using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator result = thrust::for_each(
     exec,

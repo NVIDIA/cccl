@@ -35,16 +35,11 @@ case $mode in
     misses=$((final_misses - SCCACHE_START_MISSES))
     total=$((hits + misses))
 
-    prefix=""
-    if [ ${GITHUB_ACTIONS:-false} = "true" ]; then
-      prefix="::notice::"
-    fi
-
     if (( total > 0 )); then
       hit_rate=$(awk -v hits="$hits" -v total="$total" 'BEGIN { printf "%.2f", (hits / total) * 100 }')
-      echo ${prefix}"sccache hits: $hits | misses: $misses | hit rate: $hit_rate%"
+      echo "sccache hits: $hits | misses: $misses | hit rate: $hit_rate%"
     else
-      echo ${prefix}"sccache stats: N/A No new compilation requests"
+      echo "sccache stats: N/A No new compilation requests"
     fi
     unset SCCACHE_START_HITS
     unset SCCACHE_START_MISSES

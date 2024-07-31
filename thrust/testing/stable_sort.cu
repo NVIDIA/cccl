@@ -75,7 +75,7 @@ void InitializeSimpleStableKeySortTest(Vector& unsorted_keys, Vector& sorted_key
 template <class Vector>
 void TestStableSortSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector unsorted_keys;
   Vector sorted_keys;
@@ -140,7 +140,7 @@ template <typename Vector>
 void TestStableSortWithIndirection()
 {
   // add numbers modulo 3 with external lookup table
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(7);
   data[0] = 1;

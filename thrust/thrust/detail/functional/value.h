@@ -52,7 +52,7 @@ public:
   template <typename Env>
   struct result
   {
-    typedef T type;
+    using type = T;
   };
 
   _CCCL_HOST_DEVICE value(const T& arg)

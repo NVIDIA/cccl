@@ -123,7 +123,7 @@ struct is_equal_div_10_unique
 template <typename Vector>
 void TestUniqueSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(10);
   data[0] = 11;
@@ -186,7 +186,7 @@ VariableUnitTest<TestUnique, IntegralTypes> TestUniqueInstance;
 template <typename Vector>
 void TestUniqueCopySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(10);
   data[0] = 11;
@@ -282,7 +282,7 @@ VariableUnitTest<TestUniqueCopyToDiscardIterator, IntegralTypes> TestUniqueCopyT
 template <typename Vector>
 void TestUniqueCountSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector data(10);
   data[0] = 11;

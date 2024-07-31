@@ -60,7 +60,7 @@ void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -72,7 +72,7 @@ ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 

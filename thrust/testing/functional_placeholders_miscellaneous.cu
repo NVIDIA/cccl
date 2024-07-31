@@ -24,7 +24,7 @@ struct TestFunctionalPlaceholdersValue
   void operator()(const size_t)
   {
     const size_t n = 10000;
-    typedef typename Vector::value_type T;
+    using T        = typename Vector::value_type;
 
     T a(13);
 
@@ -51,7 +51,7 @@ struct TestFunctionalPlaceholdersTransformIterator
   void operator()(const size_t)
   {
     const size_t n = 10000;
-    typedef typename Vector::value_type T;
+    using T        = typename Vector::value_type;
 
     T a(13);
 

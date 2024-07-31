@@ -1,3 +1,5 @@
+.. _cmake-options:
+
 CMake Options
 =============
 
@@ -82,6 +84,8 @@ Single Config CMake Options
 
    -  Selects the C++ standard dialect to use. Default is ``14``
       (C++14).
+
+.. _cmake-multi-config-options:
 
 Multi Config CMake Options
 --------------------------

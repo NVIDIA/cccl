@@ -40,7 +40,7 @@ namespace detail
 template <typename BidirectionalIterator>
 struct reverse_iterator_base
 {
-  typedef thrust::iterator_adaptor<thrust::reverse_iterator<BidirectionalIterator>, BidirectionalIterator> type;
+  using type = thrust::iterator_adaptor<thrust::reverse_iterator<BidirectionalIterator>, BidirectionalIterator>;
 }; // end reverse_iterator_base
 
 } // namespace detail

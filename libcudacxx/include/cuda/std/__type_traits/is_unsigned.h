@@ -42,7 +42,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_unsigned_v = _LIBCUDACXX_IS_UNSIGNED(_T
 #else
 
 template <class _Tp, bool = is_integral<_Tp>::value>
-struct __libcpp_is_unsigned_impl : public _BoolConstant<(_Tp(0) < _Tp(-1))>
+struct __libcpp_is_unsigned_impl : public bool_constant<(_Tp(0) < _Tp(-1))>
 {};
 
 template <class _Tp>

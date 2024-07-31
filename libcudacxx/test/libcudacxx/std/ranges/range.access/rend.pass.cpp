@@ -629,7 +629,7 @@ ASSERT_NOEXCEPT(cuda::std::ranges::rend(cuda::std::declval<int (&)[10]>()));
 ASSERT_NOEXCEPT(cuda::std::ranges::crend(cuda::std::declval<int (&)[10]>()));
 
 #if !defined(TEST_COMPILER_MSVC_2019)
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberREnd
+_CCCL_GLOBAL_CONSTANT struct NoThrowMemberREnd
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const;
   __host__ __device__ ThrowingIterator<int> rend() const noexcept; // auto(t.rend()) doesn't throw
@@ -637,7 +637,7 @@ _LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberREnd
 static_assert(noexcept(cuda::std::ranges::rend(ntmre)));
 static_assert(noexcept(cuda::std::ranges::crend(ntmre)));
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowADLREnd
+_CCCL_GLOBAL_CONSTANT struct NoThrowADLREnd
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const;
   __host__ __device__ friend ThrowingIterator<int> rend(NoThrowADLREnd&) noexcept; // auto(rend(t)) doesn't throw
@@ -648,7 +648,7 @@ static_assert(noexcept(cuda::std::ranges::crend(ntare)));
 #endif // !TEST_COMPILER_MSVC_2019
 
 #if !defined(TEST_COMPILER_ICC)
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberREndReturnsRef
+_CCCL_GLOBAL_CONSTANT struct NoThrowMemberREndReturnsRef
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const;
   __host__ __device__ ThrowingIterator<int>& rend() const noexcept; // auto(t.rend()) may throw
@@ -657,7 +657,7 @@ static_assert(!noexcept(cuda::std::ranges::rend(ntmrerr)));
 static_assert(!noexcept(cuda::std::ranges::crend(ntmrerr)));
 #endif // !TEST_COMPILER_ICC
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct REndReturnsArrayRef
+_CCCL_GLOBAL_CONSTANT struct REndReturnsArrayRef
 {
   __host__ __device__ auto rbegin() const noexcept -> int (&)[10];
   __host__ __device__ auto rend() const noexcept -> int (&)[10];
@@ -665,7 +665,7 @@ _LIBCUDACXX_CPO_ACCESSIBILITY struct REndReturnsArrayRef
 static_assert(noexcept(cuda::std::ranges::rend(rerar)));
 static_assert(noexcept(cuda::std::ranges::crend(rerar)));
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowBeginThrowingEnd
+_CCCL_GLOBAL_CONSTANT struct NoThrowBeginThrowingEnd
 {
   __host__ __device__ int* begin() const noexcept;
   __host__ __device__ int* end() const;
@@ -674,7 +674,7 @@ static_assert(noexcept(cuda::std::ranges::rend(ntbte)));
 static_assert(noexcept(cuda::std::ranges::crend(ntbte)));
 
 #if !defined(TEST_COMPILER_ICC)
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowEndThrowingBegin
+_CCCL_GLOBAL_CONSTANT struct NoThrowEndThrowingBegin
 {
   __host__ __device__ int* begin() const;
   __host__ __device__ int* end() const noexcept;

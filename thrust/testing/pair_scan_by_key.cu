@@ -30,7 +30,7 @@ struct TestPairScanByKey
 {
   void operator()(const size_t n)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     thrust::host_vector<T> h_p1 = unittest::random_integers<T>(n);
     thrust::host_vector<T> h_p2 = unittest::random_integers<T>(n);

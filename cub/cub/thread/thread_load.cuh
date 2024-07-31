@@ -102,29 +102,32 @@ enum CacheLoadModifier
  * @tparam MODIFIER
  *   <b>[inferred]</b> CacheLoadModifier enumeration
  *
- * @tparam InputIteratorT
- *   <b>[inferred]</b> Input iterator type \iterator
+ * @tparam RandomAccessIterator
+ *   <b>[inferred]</b> The input's iterator type \iterator
  */
-template <CacheLoadModifier MODIFIER, typename InputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<InputIteratorT> ThreadLoad(InputIteratorT itr);
+template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
 //@}  end member group
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /// Helper structure for templated load iteration (inductive case)
+/// \deprecated [Since 2.6.0] Use UnrolledThreadLoad() or UnrolledCopy() instead.
 template <int COUNT, int MAX>
 struct IterateThreadLoad
 {
   template <CacheLoadModifier MODIFIER, typename T>
+  CUB_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead")
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* ptr, T* vals)
   {
     vals[COUNT] = ThreadLoad<MODIFIER>(ptr + COUNT);
     IterateThreadLoad<COUNT + 1, MAX>::template Load<MODIFIER>(ptr, vals);
   }
 
-  template <typename InputIteratorT, typename T>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(InputIteratorT itr, T* vals)
+  template <typename RandomAccessIterator, typename T>
+  CUB_DEPRECATED_BECAUSE("Use UnrolledCopy() instead")
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(RandomAccessIterator itr, T* vals)
   {
     vals[COUNT] = itr[COUNT];
     IterateThreadLoad<COUNT + 1, MAX>::Dereference(itr, vals);
@@ -139,10 +142,43 @@ struct IterateThreadLoad<MAX, MAX>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* /*ptr*/, T* /*vals*/)
   {}
 
-  template <typename InputIteratorT, typename T>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(InputIteratorT /*itr*/, T* /*vals*/)
+  template <typename RandomAccessIterator, typename T>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(RandomAccessIterator /*itr*/, T* /*vals*/)
   {}
 };
+
+namespace detail
+{
+template <CacheLoadModifier MODIFIER, typename T, int... Is>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+UnrolledThreadLoadImpl(T const* src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
+{
+  // TODO(bgruber): replace by fold over comma in C++17
+  int dummy[] = {(dst[Is] = ThreadLoad<MODIFIER>(src + Is), 0)...};
+  (void) dummy;
+}
+
+template <typename RandomAccessIterator, typename T, int... Is>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
+{
+  // TODO(bgruber): replace by fold over comma in C++17
+  int dummy[] = {(dst[Is] = src[Is], 0)...};
+  (void) dummy;
+}
+} // namespace detail
+
+template <int Count, CacheLoadModifier MODIFIER, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledThreadLoad(T const* src, T* dst)
+{
+  detail::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+}
+
+template <int Count, typename RandomAccessIterator, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* dst)
+{
+  detail::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+}
 
 /**
  * Define a uint4 (16B) ThreadLoad specialization for the given Cache load modifier
@@ -273,9 +309,9 @@ _CUB_LOAD_ALL(LOAD_LDG, global.nc)
 /**
  * ThreadLoad definition for LOAD_DEFAULT modifier on iterator types
  */
-template <typename InputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<InputIteratorT>
-ThreadLoad(InputIteratorT itr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<false> /*is_pointer*/)
+template <typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator>
+ThreadLoad(RandomAccessIterator itr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<false> /*is_pointer*/)
 {
   return *itr;
 }
@@ -284,7 +320,8 @@ ThreadLoad(InputIteratorT itr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<fal
  * ThreadLoad definition for LOAD_DEFAULT modifier on pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T* ptr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<true> /*is_pointer*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T
+ThreadLoad(const T* ptr, Int2Type<LOAD_DEFAULT> /*modifier*/, Int2Type<true> /*is_pointer*/)
 {
   return *ptr;
 }
@@ -293,9 +330,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T* ptr, Int2Type<LOAD_DEFAULT> /*mod
  * ThreadLoad definition for LOAD_VOLATILE modifier on primitive pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(T* ptr, Int2Type<true> /*is_primitive*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, Int2Type<true> /*is_primitive*/)
 {
-  T retval = *reinterpret_cast<volatile T*>(ptr);
+  T retval = *reinterpret_cast<const volatile T*>(ptr);
   return retval;
 }
 
@@ -303,16 +340,15 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(T* ptr, Int2Type<true
  * ThreadLoad definition for LOAD_VOLATILE modifier on non-primitive pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(T* ptr, Int2Type<false> /*is_primitive*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, Int2Type<false> /*is_primitive*/)
 {
-  // Word type for memcopying
-  typedef typename UnitWord<T>::VolatileWord VolatileWord;
-
+  // Word type for memcpying
+  using VolatileWord              = typename UnitWord<T>::VolatileWord;
   constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
   T retval;
   VolatileWord* words = reinterpret_cast<VolatileWord*>(&retval);
-  IterateThreadLoad<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  UnrolledCopy<VOLATILE_MULTIPLE>(reinterpret_cast<const volatile VolatileWord*>(ptr), words);
   return retval;
 }
 
@@ -320,9 +356,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(T* ptr, Int2Type<fals
  * ThreadLoad definition for LOAD_VOLATILE modifier on pointer types
  */
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T* ptr, Int2Type<LOAD_VOLATILE> /*modifier*/, Int2Type<true> /*is_pointer*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T
+ThreadLoad(const T* ptr, Int2Type<LOAD_VOLATILE> /*modifier*/, Int2Type<true> /*is_pointer*/)
 {
-  // Apply tags for partial-specialization
   return ThreadLoadVolatilePointer(ptr, Int2Type<Traits<T>::PRIMITIVE>());
 }
 
@@ -332,26 +368,18 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T* ptr, Int2Type<LOAD_VOLATILE> /*mo
 template <typename T, int MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T const* ptr, Int2Type<MODIFIER> /*modifier*/, Int2Type<true> /*is_pointer*/)
 {
-  typedef typename UnitWord<T>::DeviceWord DeviceWord;
-
+  using DeviceWord              = typename UnitWord<T>::DeviceWord;
   constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
 
   DeviceWord words[DEVICE_MULTIPLE];
-
-  IterateThreadLoad<0, DEVICE_MULTIPLE>::template Load<CacheLoadModifier(MODIFIER)>(
-    reinterpret_cast<DeviceWord*>(const_cast<T*>(ptr)), words);
-
+  UnrolledThreadLoad<DEVICE_MULTIPLE, CacheLoadModifier(MODIFIER)>(reinterpret_cast<const DeviceWord*>(ptr), words);
   return *reinterpret_cast<T*>(words);
 }
 
-/**
- * ThreadLoad definition for generic modifiers
- */
-template <CacheLoadModifier MODIFIER, typename InputIteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<InputIteratorT> ThreadLoad(InputIteratorT itr)
+template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
-  // Apply tags for partial-specialization
-  return ThreadLoad(itr, Int2Type<MODIFIER>(), Int2Type<::cuda::std::is_pointer<InputIteratorT>::value>());
+  return ThreadLoad(itr, Int2Type<MODIFIER>(), Int2Type<::cuda::std::is_pointer<RandomAccessIterator>::value>());
 }
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS

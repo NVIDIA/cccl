@@ -49,7 +49,7 @@
 template <typename Vector>
 void print_vector(const std::string& name, const Vector& v)
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
   std::cout << "  " << std::setw(20) << name << "  ";
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
   std::cout << std::endl;
@@ -59,8 +59,8 @@ void print_vector(const std::string& name, const Vector& v)
 template <typename Vector1, typename Vector2>
 void dense_histogram(const Vector1& input, Vector2& histogram)
 {
-  typedef typename Vector1::value_type ValueType; // input value type
-  typedef typename Vector2::value_type IndexType; // histogram index type
+  using ValueType = typename Vector1::value_type; // input value type
+  using IndexType = typename Vector2::value_type; // histogram index type
 
   // copy input data (could be skipped if input is allowed to be modified)
   thrust::device_vector<ValueType> data(input);
@@ -98,8 +98,8 @@ void dense_histogram(const Vector1& input, Vector2& histogram)
 template <typename Vector1, typename Vector2, typename Vector3>
 void sparse_histogram(const Vector1& input, Vector2& histogram_values, Vector3& histogram_counts)
 {
-  typedef typename Vector1::value_type ValueType; // input value type
-  typedef typename Vector3::value_type IndexType; // histogram index type
+  using ValueType = typename Vector1::value_type; // input value type
+  using IndexType = typename Vector3::value_type; // histogram index type
 
   // copy input data (could be skipped if input is allowed to be modified)
   thrust::device_vector<ValueType> data(input);

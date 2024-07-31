@@ -67,7 +67,8 @@ CUB_NAMESPACE_BEGIN
 //!
 //!  - ``A`` is an ``m * n`` sparse matrix whose non-zero structure is specified in
 //!    `compressed-storage-row (CSR) format
-//!    <http://en.wikipedia.org/wiki/Sparse_matrix#Compressed_row_Storage_.28CRS_or_CSR.29>`_ (i.e., three arrays:
+//!    <https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)>`_ (i.e., three
+//!    arrays:
 //!    ``values``, ``row_offsets``, and ``column_indices``)
 //!  - ``x`` and ``y`` are dense vectors
 //!

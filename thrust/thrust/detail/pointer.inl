@@ -110,8 +110,8 @@ _CCCL_HOST_DEVICE typename pointer<Element, Tag, Reference, Derived>::super_t::r
 pointer<Element, Tag, Reference, Derived>::dereference() const
 {
   // Need to handle cpp refs and fancy refs differently:
-  typedef typename super_t::reference RefT;
-  typedef typename ::cuda::std::is_reference<RefT>::type IsCppRef;
+  using RefT     = typename super_t::reference;
+  using IsCppRef = typename ::cuda::std::is_reference<RefT>::type;
 
   const derived_type& derivedPtr = static_cast<const derived_type&>(*this);
 

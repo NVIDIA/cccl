@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&&
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomIterator>::type System;
+  using System = typename thrust::iterator_system<RandomIterator>::type;
   System system;
 
   return thrust::shuffle(select_system(system), first, last, g);
@@ -70,8 +70,8 @@ _CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, O
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<RandomIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<RandomIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;

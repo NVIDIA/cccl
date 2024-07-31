@@ -37,6 +37,8 @@
 #  include <thrust/type_traits/integer_sequence.h>
 #  include <thrust/type_traits/remove_cvref.h>
 
+#  include <cuda/std/__memory/unique_ptr.h>
+
 #  include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -669,12 +671,12 @@ public:
   _CCCL_HOST explicit unique_eager_event(unique_eager_future<U>&& other)
       // NOTE: We upcast to `unique_ptr<async_signal>` here.
       : device_(other.where())
-      , async_signal_(std::move(other.async_signal_))
+      , async_signal_(other.async_signal_.release())
   {}
 
   _CCCL_HOST
-    // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
-    explicit unique_eager_event(new_stream_t const&)
+  // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
+  explicit unique_eager_event(new_stream_t const&)
       : device_(0)
       , async_signal_(new detail::async_signal(detail::unique_stream{}))
   {
@@ -758,11 +760,11 @@ struct unique_eager_future final
 
 private:
   int device_ = 0;
-  std::unique_ptr<detail::async_value<value_type>> async_signal_;
+  ::cuda::std::unique_ptr<detail::async_value<value_type>> async_signal_;
 
   _CCCL_HOST explicit unique_eager_future(int device_id, std::unique_ptr<detail::async_value<value_type>> async_signal)
       : device_(device_id)
-      , async_signal_(std::move(async_signal))
+      , async_signal_(async_signal.release())
   {}
 
 public:
@@ -777,8 +779,8 @@ public:
   unique_eager_future& operator=(unique_eager_future const&) = delete;
 
   _CCCL_HOST
-    // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
-    explicit unique_eager_future(new_stream_t const&)
+  // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
+  explicit unique_eager_future(new_stream_t const&)
       : device_(0)
       , async_signal_(new detail::async_value<value_type>(detail::unique_stream{}))
   {

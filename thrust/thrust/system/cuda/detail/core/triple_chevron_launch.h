@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,9 +35,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/cuda/detail/core/alignment.h>
 
-#include <cassert>
+#include <thrust/system/cuda/config.h>
+
+#include <cuda/cmath>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -48,7 +49,7 @@ namespace launcher
 
 struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 {
-  typedef size_t Size;
+  using Size = size_t;
   dim3 const grid;
   dim3 const block;
   Size const shared_mem;
@@ -71,38 +72,45 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class T>
   size_t _CCCL_DEVICE align_up(size_t offset) const
   {
-    size_t alignment = alignment_of<T>::value;
-    return alignment * ((offset + (alignment - 1)) / alignment);
+    return ::cuda::ceil_div(offset, alignof(T)) * alignof(T);
   }
 
   size_t _CCCL_DEVICE argument_pack_size(size_t size) const
   {
     return size;
   }
-  template <class Arg, class... Args>
-  size_t _CCCL_DEVICE argument_pack_size(size_t size, Arg const& arg, Args const&... args) const
+
+  template <class... Args>
+  size_t _CCCL_DEVICE argument_pack_size(size_t size, Args const&...) const
   {
-    size = align_up<Arg>(size);
-    return argument_pack_size(size + sizeof(Arg), args...);
+    // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
+    int dummy[] = {(size += align_up<Args>(size) + sizeof(Args), 0)...};
+    (void) dummy;
+    return size;
   }
 
   template <class Arg>
-  size_t _CCCL_DEVICE copy_arg(char* buffer, size_t offset, Arg arg) const
+  void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, Arg arg) const
   {
+    // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
+    // static_assert(::cuda::std::is_trivially_copyable<Arg>::value, "");
+
     offset = align_up<Arg>(offset);
     for (int i = 0; i != sizeof(Arg); ++i)
     {
-      buffer[offset + i] = *((char*) &arg + i);
+      buffer[offset + i] = reinterpret_cast<const char*>(&arg)[i];
     }
-    return offset + sizeof(Arg);
+    offset += sizeof(Arg);
   }
 
   _CCCL_DEVICE void fill_arguments(char*, size_t) const {}
 
-  template <class Arg, class... Args>
-  _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Arg const& arg, Args const&... args) const
+  template <class... Args>
+  _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Args const&... args) const
   {
-    fill_arguments(buffer, copy_arg(buffer, offset, arg), args...);
+    // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
+    int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
+    (void) dummy;
   }
 
 #ifdef THRUST_RDC_ENABLED

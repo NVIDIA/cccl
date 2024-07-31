@@ -494,7 +494,7 @@ DECLARE_UNITTEST(TestBijectionLength);
 template <typename Vector>
 void TestShuffleKeyPosition()
 {
-  typedef typename Vector::value_type T;
+  using T            = typename Vector::value_type;
   size_t m           = 20;
   size_t num_samples = 100;
   thrust::host_vector<size_t> index_sum(m, 0);
@@ -554,7 +554,7 @@ struct vector_compare
 template <typename Vector>
 void TestShuffleUniformPermutation()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   size_t m                  = 5;
   size_t num_samples        = 1000;
@@ -586,7 +586,7 @@ DECLARE_VECTOR_UNITTEST(TestShuffleUniformPermutation);
 template <typename Vector>
 void TestShuffleEvenSpacingBetweenOccurances()
 {
-  typedef typename Vector::value_type T;
+  using T                     = typename Vector::value_type;
   const uint64_t shuffle_size = 10;
   const uint64_t num_samples  = 1000;
 
@@ -640,7 +640,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestShuffleEvenSpacingBetweenOccurances);
 template <typename Vector>
 void TestShuffleEvenDistribution()
 {
-  typedef typename Vector::value_type T;
+  using T                        = typename Vector::value_type;
   const uint64_t shuffle_sizes[] = {10, 100, 500};
   thrust::default_random_engine g(0xD5);
   for (auto shuffle_size : shuffle_sizes)

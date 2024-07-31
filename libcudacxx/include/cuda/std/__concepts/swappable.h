@@ -55,9 +55,8 @@ void swap(_Tp&, _Tp&) = delete;
 #  if _CCCL_STD_VER > 2017
 template <class _Tp, class _Up>
 concept __unqualified_swappable_with =
-  (__class_or_enum<remove_cvref_t<_Tp>> || __class_or_enum<remove_cvref_t<_Up>>) &&requires(_Tp&& __t, _Up&& __u) {
-    swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
-  };
+  (__class_or_enum<remove_cvref_t<_Tp>> || __class_or_enum<remove_cvref_t<_Up>>)
+  && requires(_Tp&& __t, _Up&& __u) { swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u)); };
 
 template <class _Tp>
 concept __exchangeable =
@@ -159,7 +158,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto swap = __swap::__fn{};
+_CCCL_GLOBAL_CONSTANT auto swap = __swap::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

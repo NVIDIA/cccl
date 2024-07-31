@@ -13,7 +13,7 @@
 
 void TestCopyNFromConstIterator()
 {
-  typedef int T;
+  using T = int;
 
   std::vector<T> v(5);
   v[0] = 0;
@@ -48,7 +48,7 @@ DECLARE_UNITTEST(TestCopyNFromConstIterator);
 
 void TestCopyNToDiscardIterator()
 {
-  typedef int T;
+  using T = int;
 
   thrust::host_vector<T> h_input(5, 1);
   thrust::device_vector<T> d_input = h_input;
@@ -71,7 +71,7 @@ DECLARE_UNITTEST(TestCopyNToDiscardIterator);
 template <class Vector>
 void TestCopyNMatchingTypes()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -161,7 +161,7 @@ DECLARE_UNITTEST(TestCopyNVectorBool);
 template <class Vector>
 void TestCopyNListTo()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   // copy from list to Vector
   std::list<T> l;
@@ -205,7 +205,7 @@ DECLARE_VECTOR_UNITTEST(TestCopyNListTo);
 template <typename Vector>
 void TestCopyNCountingIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::counting_iterator<T> iter(1);
 
@@ -223,7 +223,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNCountingIterator);
 template <typename Vector>
 void TestCopyNZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(4);
   v1[0] = 1;
@@ -250,7 +250,7 @@ DECLARE_VECTOR_UNITTEST(TestCopyNZipIterator);
 template <typename Vector>
 void TestCopyNConstantIteratorToZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(4, T(0));
   Vector v2(4, T(0));

@@ -54,6 +54,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -231,9 +233,9 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
+                     InputIteratorT>;
 
   // Parameterized BlockLoad type for data
   using BlockLoadT =
@@ -257,12 +259,12 @@ struct AgentRle
   using WarpExchangePairs = WarpExchange<LengthOffsetPair, ITEMS_PER_THREAD>;
 
   using WarpExchangePairsStorage =
-    cub::detail::conditional_t<STORE_WARP_TIME_SLICING, typename WarpExchangePairs::TempStorage, NullType>;
+    ::cuda::std::_If<STORE_WARP_TIME_SLICING, typename WarpExchangePairs::TempStorage, NullType>;
 
   using WarpExchangeOffsets = WarpExchange<OffsetT, ITEMS_PER_THREAD>;
   using WarpExchangeLengths = WarpExchange<LengthT, ITEMS_PER_THREAD>;
 
-  typedef LengthOffsetPair WarpAggregates[WARPS];
+  using WarpAggregates = LengthOffsetPair[WARPS];
 
   // Shared memory type for this thread block
   struct _TempStorage

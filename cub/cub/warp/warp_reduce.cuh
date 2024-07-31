@@ -49,6 +49,8 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -93,7 +95,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize WarpReduce for type int
-//!        typedef cub::WarpReduce<int> WarpReduce;
+//!        using WarpReduce = cub::WarpReduce<int>;
 //!
 //!        // Allocate WarpReduce shared memory for 4 warps
 //!        __shared__ typename WarpReduce::TempStorage temp_storage[4];
@@ -120,7 +122,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize WarpReduce for type int
-//!        typedef cub::WarpReduce<int> WarpReduce;
+//!        using WarpReduce = cub::WarpReduce<int>;
 //!
 //!        // Allocate WarpReduce shared memory for one warp
 //!        __shared__ typename WarpReduce::TempStorage temp_storage;
@@ -172,8 +174,8 @@ public:
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpReduce = cub::detail::
-    conditional_t<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpReduce =
+    ::cuda::std::_If<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
@@ -233,7 +235,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for 4 warps
   //!        __shared__ typename WarpReduce::TempStorage temp_storage[4];
@@ -279,7 +281,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for one warp
   //!        __shared__ typename WarpReduce::TempStorage temp_storage;
@@ -330,7 +332,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for one warp
   //!        __shared__ typename WarpReduce::TempStorage temp_storage;
@@ -384,7 +386,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for one warp
   //!        __shared__ typename WarpReduce::TempStorage temp_storage;
@@ -443,7 +445,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for 4 warps
   //!        __shared__ typename WarpReduce::TempStorage temp_storage[4];
@@ -501,7 +503,7 @@ public:
   //!    __global__ void ExampleKernel(int *d_data, int valid_items)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for one warp
   //!        __shared__ typename WarpReduce::TempStorage temp_storage;
@@ -561,7 +563,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for one warp
   //!        __shared__ typename WarpReduce::TempStorage temp_storage;
@@ -620,7 +622,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize WarpReduce for type int
-  //!        typedef cub::WarpReduce<int> WarpReduce;
+  //!        using WarpReduce = cub::WarpReduce<int>;
   //!
   //!        // Allocate WarpReduce shared memory for one warp
   //!        __shared__ typename WarpReduce::TempStorage temp_storage;

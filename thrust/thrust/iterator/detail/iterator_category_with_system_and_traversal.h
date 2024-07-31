@@ -41,7 +41,7 @@ struct iterator_category_to_system;
 template <typename Category, typename System, typename Traversal>
 struct iterator_category_to_system<iterator_category_with_system_and_traversal<Category, System, Traversal>>
 {
-  typedef System type;
+  using type = System;
 }; // end iterator_category_to_system
 
 // specialize iterator_category_to_traversal for iterator_category_with_system_and_traversal
@@ -51,7 +51,7 @@ struct iterator_category_to_traversal;
 template <typename Category, typename System, typename Traversal>
 struct iterator_category_to_traversal<iterator_category_with_system_and_traversal<Category, System, Traversal>>
 {
-  typedef Traversal type;
+  using type = Traversal;
 }; // end iterator_category_to_traversal
 
 } // namespace detail

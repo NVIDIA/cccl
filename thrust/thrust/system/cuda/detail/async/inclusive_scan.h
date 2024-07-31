@@ -71,8 +71,8 @@ unique_eager_event
 async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt out, BinaryOp op)
 {
   using AccumT     = typename thrust::iterator_traits<ForwardIt>::value_type;
-  using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, thrust::detail::int32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, thrust::detail::int64_t, AccumT>;
+  using Dispatch32 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::int32_t, AccumT>;
+  using Dispatch64 = cub::DispatchScan<ForwardIt, OutputIt, BinaryOp, cub::NullType, std::int64_t, AccumT>;
 
   auto const device_alloc = get_async_device_allocator(policy);
   unique_eager_event ev;
@@ -94,7 +94,7 @@ async_inclusive_scan_n(execution_policy<DerivedPolicy>& policy, ForwardIt first,
   }
 
   // Allocate temporary storage.
-  auto content        = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
+  auto content        = uninitialized_allocate_unique_n<std::uint8_t>(device_alloc, tmp_size);
   void* const tmp_ptr = raw_pointer_cast(content.get());
 
   // Set up stream with dependencies.
@@ -138,7 +138,7 @@ template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typenam
 auto async_inclusive_scan(
   execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel&& last, OutputIt&& out, BinaryOp&& op)
   THRUST_RETURNS(thrust::system::cuda::detail::async_inclusive_scan_n(
-    policy, first, distance(first, THRUST_FWD(last)), THRUST_FWD(out), THRUST_FWD(op)))
+    policy, first, thrust::distance(first, THRUST_FWD(last)), THRUST_FWD(out), THRUST_FWD(op)))
 
 } // namespace cuda_cub
 

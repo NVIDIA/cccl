@@ -87,7 +87,7 @@ DECLARE_VECTOR_UNITTEST(TestReverseIteratorCopy);
 
 void TestReverseIteratorExclusiveScanSimple()
 {
-  typedef int T;
+  using T        = int;
   const size_t n = 10;
 
   thrust::host_vector<T> h_data(n);

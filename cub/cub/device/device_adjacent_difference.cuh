@@ -44,8 +44,9 @@
 #include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/detail/cstdint.h>
 #include <thrust/detail/integer_traits.h>
+
+#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 

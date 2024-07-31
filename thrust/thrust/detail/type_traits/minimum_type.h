@@ -47,19 +47,19 @@ struct minimum_type_impl
 template <typename T1, typename T2>
 struct minimum_type_impl<T1, T2, true, false>
 {
-  typedef T2 type;
+  using type = T2;
 }; // end minimum_type_impl
 
 template <typename T1, typename T2>
 struct minimum_type_impl<T1, T2, false, true>
 {
-  typedef T1 type;
+  using type = T1;
 }; // end minimum_type_impl
 
 template <typename T1, typename T2>
 struct minimum_type_impl<T1, T2, true, true>
 {
-  typedef T1 type;
+  using type = T1;
 }; // end minimum_type_impl
 
 template <typename T1, typename T2>
@@ -73,7 +73,7 @@ struct primitive_minimum_type
 template <typename T>
 struct primitive_minimum_type<T, T>
 {
-  typedef T type;
+  using type = T;
 }; // end primitive_minimum_type
 
 // XXX this belongs somewhere more general

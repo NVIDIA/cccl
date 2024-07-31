@@ -61,7 +61,7 @@ struct __common_type2_imp
 
 // sub-bullet 3 - "if decay_t<decltype(false ? declval<D1>() : declval<D2>())> ..."
 template <class _Tp, class _Up>
-struct __common_type2_imp<_Tp, _Up, __void_t<__cond_type<_Tp, _Up>>>
+struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __decay_t<__cond_type<_Tp, _Up>> type;
 };
@@ -74,13 +74,13 @@ template <class... _Tp>
 struct __common_types;
 
 template <class _Tp, class _Up>
-struct __common_type_impl<__common_types<_Tp, _Up>, __void_t<__common_type_t<_Tp, _Up>>>
+struct __common_type_impl<__common_types<_Tp, _Up>, void_t<__common_type_t<_Tp, _Up>>>
 {
   typedef __common_type_t<_Tp, _Up> type;
 };
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>, __void_t<__common_type_t<_Tp, _Up>>>
+struct __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>, void_t<__common_type_t<_Tp, _Up>>>
     : __common_type_impl<__common_types<__common_type_t<_Tp, _Up>, _Vp, _Rest...>>
 {};
 
@@ -118,7 +118,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up, _Vp, _Rest...>
     : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
 {};
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2014
 template <class... _Tp>
 using common_type_t = typename common_type<_Tp...>::type;
 
@@ -127,7 +127,44 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __has_common_type = false;
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
-#endif
+#endif // _CCCL_STD_VER >= 2014
+
+#if defined(_LIBCUDACXX_HAS_NVFP16) && !defined(__CUDA_NO_HALF_CONVERSIONS__) && !defined(__CUDA_NO_HALF_OPERATORS__)
+template <>
+struct common_type<__half, __half>
+{
+  using type = __half;
+};
+template <class T>
+struct common_type<__half, T> : common_type<float, T>
+{};
+template <class T>
+struct common_type<T, __half> : common_type<T, float>
+{};
+#endif // _LIBCUDACXX_HAS_NVFP16 && !__CUDA_NO_HALF_CONVERSIONS__ && !__CUDA_NO_HALF_OPERATORS__
+
+#if defined(_LIBCUDACXX_HAS_NVBF16) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) \
+  && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+template <>
+struct common_type<__nv_bfloat16, __nv_bfloat16>
+{
+  using type = __nv_bfloat16;
+};
+template <class T>
+struct common_type<__nv_bfloat16, T> : common_type<float, T>
+{};
+template <class T>
+struct common_type<T, __nv_bfloat16> : common_type<T, float>
+{};
+
+// __half and __nvbfloat16 have unordered conversion rank
+template <>
+struct common_type<__half, __nv_bfloat16>
+{};
+template <>
+struct common_type<__nv_bfloat16, __half>
+{};
+#endif // _LIBCUDACXX_HAS_NVBF16 && !__CUDA_NO_BFLOAT16_CONVERSIONS__ && !__CUDA_NO_BFLOAT16_OPERATORS__
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

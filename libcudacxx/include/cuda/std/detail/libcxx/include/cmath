@@ -602,9 +602,9 @@ inline _LIBCUDACXX_INLINE_VISIBILITY long double hypot(long double x, long doubl
 
 template <class _A1, class _A2, class _A3>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-  __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value && is_arithmetic<_A3>::value,
-                __promote<_A1, _A2, _A3>>
-  hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
+__enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value && is_arithmetic<_A3>::value,
+              __promote_t<_A1, _A2, _A3>>
+hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
   static_assert(
@@ -709,9 +709,9 @@ __constexpr_copysign(long double __x, long double __y) noexcept
 }
 
 template <class _A1, class _A2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value, __promote_t<_A1, _A2>>
-  __constexpr_copysign(_A1 __x, _A2 __y) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value, __promote_t<_A1, _A2>>
+__constexpr_copysign(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
   static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
@@ -763,7 +763,11 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_fmax(float __x, float __y) noexcept
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#    if defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+  if (false)
+#    else // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+#    endif // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (__constexpr_isnan(__x))
     {
@@ -783,7 +787,11 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_fmax(double __x, double __y) noexcept
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#    if defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+  if (false)
+#    else // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+#    endif // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (__constexpr_isnan(__x))
     {
@@ -803,7 +811,11 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 __constexpr_fmax(long double __x, long double __y) noexcept
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#    if defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+  if (false)
+#    else // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_LIBCUDACXX_IS_CONSTANT_EVALUATED())
+#    endif // defined(_CCCL_COMPILER_ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
     if (__constexpr_isnan(__x))
     {
@@ -973,7 +985,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) no
     return __b;
   }
   const _Fp __x = __a + __t * (__b - __a);
-  if (__t > 1 == __b > __a)
+  if ((__t > 1) == (__b > __a))
   {
     return __b < __x ? __x : __b;
   }

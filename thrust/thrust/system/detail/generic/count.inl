@@ -76,8 +76,8 @@ template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
 count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
-  typedef typename thrust::iterator_traits<InputIterator>::value_type InputType;
-  typedef typename thrust::iterator_traits<InputIterator>::difference_type CountType;
+  using InputType = typename thrust::iterator_traits<InputIterator>::value_type;
+  using CountType = typename thrust::iterator_traits<InputIterator>::difference_type;
 
   thrust::system::detail::generic::count_if_transform<InputType, Predicate, CountType> unary_op(pred);
   thrust::plus<CountType> binary_op;

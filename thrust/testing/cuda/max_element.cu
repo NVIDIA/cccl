@@ -24,7 +24,7 @@ void TestMaxElementDevice(ExecutionPolicy exec)
   thrust::host_vector<int> h_data   = unittest::random_samples<int>(n);
   thrust::device_vector<int> d_data = h_data;
 
-  typedef typename thrust::device_vector<int>::iterator iter_type;
+  using iter_type = typename thrust::device_vector<int>::iterator;
 
   thrust::device_vector<iter_type> d_result(1);
 
@@ -72,8 +72,8 @@ DECLARE_UNITTEST(TestMaxElementDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestMaxElementCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector data(6);
   data[0] = 3;
@@ -111,8 +111,8 @@ DECLARE_UNITTEST(TestMaxElementCudaStreamsNoSync);
 
 void TestMaxElementDevicePointer()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector data(6);
   data[0] = 3;

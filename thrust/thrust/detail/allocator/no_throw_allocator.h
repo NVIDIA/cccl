@@ -36,7 +36,7 @@ template <typename BaseAllocator>
 struct no_throw_allocator : BaseAllocator
 {
 private:
-  typedef BaseAllocator super_t;
+  using super_t = BaseAllocator;
 
 public:
   inline _CCCL_HOST_DEVICE no_throw_allocator(const BaseAllocator& other = BaseAllocator())
@@ -46,7 +46,7 @@ public:
   template <typename U>
   struct rebind
   {
-    typedef no_throw_allocator<typename super_t::template rebind<U>::other> other;
+    using other = no_throw_allocator<typename super_t::template rebind<U>::other>;
   }; // end rebind
 
   _CCCL_HOST_DEVICE void deallocate(typename super_t::pointer p, typename super_t::size_type n)

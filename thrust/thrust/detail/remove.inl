@@ -120,7 +120,7 @@ ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& val
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -132,8 +132,8 @@ OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterat
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -146,7 +146,7 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System;
+  using System = typename thrust::iterator_system<ForwardIterator>::type;
 
   System system;
 
@@ -158,8 +158,8 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIter
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<ForwardIterator>::type System1;
-  typedef typename thrust::iterator_system<InputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<ForwardIterator>::type;
+  using System2 = typename thrust::iterator_system<InputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -172,8 +172,8 @@ OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIte
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<OutputIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -187,9 +187,9 @@ remove_copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
-  typedef typename thrust::iterator_system<OutputIterator>::type System3;
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator>::type;
 
   System1 system1;
   System2 system2;

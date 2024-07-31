@@ -30,7 +30,7 @@ int main()
 
   {
     // no virtual calls will be issued
-    typedef thrust::mr::allocator<int, thrust::mr::new_delete_resource> Alloc;
+    using Alloc = thrust::mr::allocator<int, thrust::mr::new_delete_resource>;
     Alloc alloc(&memres);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
@@ -39,7 +39,7 @@ int main()
   {
     // virtual calls will be issued - wrapping in a polymorphic wrapper
     thrust::mr::polymorphic_adaptor_resource<void*> adaptor(&memres);
-    typedef thrust::mr::polymorphic_allocator<int, void*> Alloc;
+    using Alloc = thrust::mr::polymorphic_allocator<int, void*>;
     Alloc alloc(&adaptor);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
@@ -47,30 +47,29 @@ int main()
 
   {
     // use the global device_ptr-flavored device memory resource
-    typedef thrust::device_ptr_memory_resource<thrust::device_memory_resource> Resource;
+    using Resource = thrust::device_ptr_memory_resource<thrust::device_memory_resource>;
     thrust::mr::polymorphic_adaptor_resource<thrust::device_ptr<void>> adaptor(
       thrust::mr::get_global_resource<Resource>());
-    typedef thrust::mr::polymorphic_allocator<int, thrust::device_ptr<void>> Alloc;
+    using Alloc = thrust::mr::polymorphic_allocator<int, thrust::device_ptr<void>>;
     Alloc alloc(&adaptor);
 
     do_stuff_with_vector<thrust::device_vector<int, Alloc>>(alloc);
   }
 
-  typedef thrust::mr::unsynchronized_pool_resource<thrust::mr::new_delete_resource> Pool;
+  using Pool = thrust::mr::unsynchronized_pool_resource<thrust::mr::new_delete_resource>;
   Pool pool(&memres);
   {
-    typedef thrust::mr::allocator<int, Pool> Alloc;
+    using Alloc = thrust::mr::allocator<int, Pool>;
     Alloc alloc(&pool);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
   }
 
-  typedef thrust::mr::disjoint_unsynchronized_pool_resource<thrust::mr::new_delete_resource,
-                                                            thrust::mr::new_delete_resource>
-    DisjointPool;
+  using DisjointPool =
+    thrust::mr::disjoint_unsynchronized_pool_resource<thrust::mr::new_delete_resource, thrust::mr::new_delete_resource>;
   DisjointPool disjoint_pool(&memres, &memres);
   {
-    typedef thrust::mr::allocator<int, DisjointPool> Alloc;
+    using Alloc = thrust::mr::allocator<int, DisjointPool>;
     Alloc alloc(&disjoint_pool);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);

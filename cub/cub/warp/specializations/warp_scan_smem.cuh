@@ -90,7 +90,7 @@ struct WarpScanSmem
   using CellT = T;
 
   /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
-  typedef CellT _TempStorage[WARP_SMEM_ELEMENTS];
+  using _TempStorage = CellT[WARP_SMEM_ELEMENTS];
 
   // Alias wrapper allowing storage to be unioned
   struct TempStorage : Uninitialized<_TempStorage>

@@ -9,13 +9,13 @@
 template <typename T>
 struct reference
 {
-  typedef T& type;
+  using type = T&;
 };
 
 template <>
 struct reference<void>
 {
-  typedef void type;
+  using type = void;
 };
 
 struct unit
@@ -30,7 +30,7 @@ struct tracked_pointer
                               typename reference<T>::type,
                               std::ptrdiff_t>
 {
-  typedef T* raw_pointer;
+  using raw_pointer = T*;
 
   std::size_t id;
   std::size_t size;
@@ -161,7 +161,7 @@ void TestPool()
 
   upstream.id_to_allocate = -1u;
 
-  typedef PoolTemplate<tracked_resource> Pool;
+  using Pool = PoolTemplate<tracked_resource>;
 
   thrust::mr::pool_options opts = Pool::get_default_options();
   opts.cache_oversized          = false;
@@ -251,7 +251,7 @@ void TestPoolCachingOversized()
 
   upstream.id_to_allocate = -1u;
 
-  typedef PoolTemplate<tracked_resource> Pool;
+  using Pool = PoolTemplate<tracked_resource>;
 
   thrust::mr::pool_options opts = Pool::get_default_options();
   opts.cache_oversized          = true;
@@ -356,7 +356,7 @@ DECLARE_UNITTEST(TestSynchronizedPoolCachingOversized);
 template <template <typename> class PoolTemplate>
 void TestGlobalPool()
 {
-  typedef PoolTemplate<thrust::mr::new_delete_resource> Pool;
+  using Pool = PoolTemplate<thrust::mr::new_delete_resource>;
 
   ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }

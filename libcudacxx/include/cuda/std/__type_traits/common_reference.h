@@ -58,12 +58,12 @@ template <class _Tp, class _Up>
 struct __cond_res_workaround<_Tp, _Up, void_t<__cond_res_if_right<_Tp, _Up>>>
 {
   using _RTp = remove_cvref_t<_Tp>;
-  using type = conditional_t<
-    is_same_v<_RTp, remove_cvref_t<_Up>>
-      && (is_scalar_v<_RTp> || is_array_v<_RTp>) &&((is_lvalue_reference_v<_Tp> && is_rvalue_reference_v<_Up>)
-                                                    || (is_rvalue_reference_v<_Tp> && is_lvalue_reference_v<_Up>) ),
-    decay_t<__copy_cv_t<remove_reference_t<_Tp>, remove_reference_t<_Up>>>,
-    __cond_res_if_right<_Tp, _Up>>;
+  using type =
+    conditional_t<is_same_v<_RTp, remove_cvref_t<_Up>> && (is_scalar_v<_RTp> || is_array_v<_RTp>)
+                    && ((is_lvalue_reference_v<_Tp> && is_rvalue_reference_v<_Up>)
+                        || (is_rvalue_reference_v<_Tp> && is_lvalue_reference_v<_Up>) ),
+                  decay_t<__copy_cv_t<remove_reference_t<_Tp>, remove_reference_t<_Up>>>,
+                  __cond_res_if_right<_Tp, _Up>>;
 };
 
 template <class _Xp, class _Yp>

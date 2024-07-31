@@ -223,7 +223,7 @@ Thrust 1.17.0 is the final minor release of the 1.X series. This release
 provides GDB pretty-printers for device vectors/references, a new
 ``unique_count`` algorithm, and an easier way to create tagged Thrust
 iterators. Several documentation fixes are included, which can be found
-on the new Thrust documentation site at https://nvidia.github.io/thrust.
+on the new Thrust documentation site at https://nvidia.github.io/cccl/thrust/.
 We’ll be migrating existing documentation sources to this new location
 over the next few months.
 
@@ -255,8 +255,7 @@ Other Enhancements
 
 -  NVIDIA/thrust#1512: Use CUB to implement ``adjacent_difference``.
 -  NVIDIA/thrust#1555: Use CUB to implement ``scan_by_key``.
--  NVIDIA/thrust#1611: Add new doxybook-based Thrust documentation at
-   https://nvidia.github.io/thrust.
+-  NVIDIA/thrust#1611: Add new doxybook-based Thrust documentation
 -  NVIDIA/thrust#1639: Fixed broken link in documentation. Thanks to
    @jrhemstad for this contribution.
 -  NVIDIA/thrust#1644: Increase contrast of search input text in new doc
@@ -792,7 +791,7 @@ New Features
 -  NVIDIA/thrust#1159: CMake multi-config support, which allows multiple
    combinations of host and device systems to be built and tested at
    once. More details can be found here:
-   https://github.com/NVIDIA/thrust/blob/main/CONTRIBUTING.md#multi-config-cmake-options
+   :ref:`Multi Config CMake Options <cmake-multi-config-options>`
 -  CMake refactoring:
 
    -  Added install targets to CMake builds.
@@ -800,7 +799,7 @@ New Features
    -  Thrust can be added to another CMake project by calling
       ``add_subdirectory`` with the Thrust source root (see
       NVIDIA/thrust#976). An example can be found here:
-      https://github.com/NVIDIA/thrust/blob/main/examples/cmake/add_subdir/CMakeLists.txt
+      https://github.com/NVIDIA/cccl/blob/main/thrust/examples/cmake/add_subdir/CMakeLists.txt
    -  CMake < 3.15 is no longer supported.
    -  Dialects are now configured through target properties. A new
       ``THRUST_CPP_DIALECT`` option has been added for single config
@@ -831,7 +830,7 @@ Other Enhancements
 ~~~~~~~~~~~~~~~~~~
 
 -  Contributor documentation:
-   https://github.com/NVIDIA/thrust/blob/main/CONTRIBUTING.md
+   https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md
 -  Code of Conduct:
    https://github.com/NVIDIA/thrust/blob/main/CODE_OF_CONDUCT.md. Thanks
    to Conor Hoekstra for this contribution.

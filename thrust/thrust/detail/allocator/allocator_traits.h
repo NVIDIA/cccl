@@ -66,8 +66,8 @@ __THRUST_DEFINE_HAS_MEMBER_FUNCTION(has_member_system_impl, system)
 template <typename Alloc, typename U>
 struct has_rebind
 {
-  typedef char yes_type;
-  typedef int no_type;
+  using yes_type = char;
+  using no_type  = int;
 
   template <typename S>
   static yes_type test(typename S::template rebind<U>::other*);
@@ -76,7 +76,7 @@ struct has_rebind
 
   static bool const value = sizeof(test<U>(0)) == sizeof(yes_type);
 
-  typedef thrust::detail::integral_constant<bool, value> type;
+  using type = thrust::detail::integral_constant<bool, value>;
 };
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -105,87 +105,87 @@ struct has_rebind<std::allocator<T>, U> : false_type
 template <typename T>
 struct nested_pointer
 {
-  typedef typename T::pointer type;
+  using type = typename T::pointer;
 };
 
 template <typename T>
 struct nested_const_pointer
 {
-  typedef typename T::const_pointer type;
+  using type = typename T::const_pointer;
 };
 
 template <typename T>
 struct nested_reference
 {
-  typedef typename T::reference type;
+  using type = typename T::reference;
 };
 
 template <typename T>
 struct nested_const_reference
 {
-  typedef typename T::const_reference type;
+  using type = typename T::const_reference;
 };
 
 template <typename T>
 struct nested_void_pointer
 {
-  typedef typename T::void_pointer type;
+  using type = typename T::void_pointer;
 };
 
 template <typename T>
 struct nested_const_void_pointer
 {
-  typedef typename T::const_void_pointer type;
+  using type = typename T::const_void_pointer;
 };
 
 template <typename T>
 struct nested_difference_type
 {
-  typedef typename T::difference_type type;
+  using type = typename T::difference_type;
 };
 
 template <typename T>
 struct nested_size_type
 {
-  typedef typename T::size_type type;
+  using type = typename T::size_type;
 };
 
 template <typename T>
 struct nested_propagate_on_container_copy_assignment
 {
-  typedef typename T::propagate_on_container_copy_assignment type;
+  using type = typename T::propagate_on_container_copy_assignment;
 };
 
 template <typename T>
 struct nested_propagate_on_container_move_assignment
 {
-  typedef typename T::propagate_on_container_move_assignment type;
+  using type = typename T::propagate_on_container_move_assignment;
 };
 
 template <typename T>
 struct nested_propagate_on_container_swap
 {
-  typedef typename T::propagate_on_container_swap type;
+  using type = typename T::propagate_on_container_swap;
 };
 
 template <typename T>
 struct nested_is_always_equal
 {
-  typedef typename T::is_always_equal type;
+  using type = typename T::is_always_equal;
 };
 
 template <typename T>
 struct nested_system_type
 {
-  typedef typename T::system_type type;
+  using type = typename T::system_type;
 };
 
 template <typename Alloc>
 struct has_member_system
 {
-  typedef typename allocator_system<Alloc>::type system_type;
+  using system_type = typename allocator_system<Alloc>::type;
 
-  typedef typename has_member_system_impl<Alloc, system_type&(void)>::type type;
+  using type              = typename has_member_system_impl<Alloc, system_type&()>::type;
   static const bool value = type::value;
 };
 
@@ -194,19 +194,19 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 template <class Alloc, class U, bool = has_rebind<Alloc, U>::value>
 struct rebind_alloc
 {
-  typedef typename Alloc::template rebind<U>::other type;
+  using type = typename Alloc::template rebind<U>::other;
 };
 
 template <template <typename, typename...> class Alloc, typename T, typename... Args, typename U>
 struct rebind_alloc<Alloc<T, Args...>, U, true>
 {
-  typedef typename Alloc<T, Args...>::template rebind<U>::other type;
+  using type = typename Alloc<T, Args...>::template rebind<U>::other;
 };
 
 template <template <typename, typename...> class Alloc, typename T, typename... Args, typename U>
 struct rebind_alloc<Alloc<T, Args...>, U, false>
 {
-  typedef Alloc<U, Args...> type;
+  using type = Alloc<U, Args...>;
 };
 
 } // namespace allocator_traits_detail
@@ -214,61 +214,70 @@ struct rebind_alloc<Alloc<T, Args...>, U, false>
 template <typename Alloc>
 struct allocator_traits
 {
-  typedef Alloc allocator_type;
+  using allocator_type = Alloc;
 
-  typedef typename allocator_type::value_type value_type;
+  using value_type = typename allocator_type::value_type;
 
-  typedef typename eval_if<allocator_traits_detail::has_pointer<allocator_type>::value,
-                           allocator_traits_detail::nested_pointer<allocator_type>,
-                           identity_<value_type*>>::type pointer;
+  using pointer = typename eval_if<allocator_traits_detail::has_pointer<allocator_type>::value,
+                                   allocator_traits_detail::nested_pointer<allocator_type>,
+                                   identity_<value_type*>>::type;
 
 private:
   template <typename T>
   struct rebind_pointer
   {
-    typedef typename pointer_traits<pointer>::template rebind<T>::other type;
+    using type = typename pointer_traits<pointer>::template rebind<T>::other;
   };
 
 public:
-  typedef typename eval_if<allocator_traits_detail::has_const_pointer<allocator_type>::value,
-                           allocator_traits_detail::nested_const_pointer<allocator_type>,
-                           rebind_pointer<const value_type>>::type const_pointer;
+  using const_pointer =
+    typename eval_if<allocator_traits_detail::has_const_pointer<allocator_type>::value,
+                     allocator_traits_detail::nested_const_pointer<allocator_type>,
+                     rebind_pointer<const value_type>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_void_pointer<allocator_type>::value,
-                           allocator_traits_detail::nested_void_pointer<allocator_type>,
-                           rebind_pointer<void>>::type void_pointer;
+  using void_pointer =
+    typename eval_if<allocator_traits_detail::has_void_pointer<allocator_type>::value,
+                     allocator_traits_detail::nested_void_pointer<allocator_type>,
+                     rebind_pointer<void>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_const_void_pointer<allocator_type>::value,
-                           allocator_traits_detail::nested_const_void_pointer<allocator_type>,
-                           rebind_pointer<const void>>::type const_void_pointer;
+  using const_void_pointer =
+    typename eval_if<allocator_traits_detail::has_const_void_pointer<allocator_type>::value,
+                     allocator_traits_detail::nested_const_void_pointer<allocator_type>,
+                     rebind_pointer<const void>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_difference_type<allocator_type>::value,
-                           allocator_traits_detail::nested_difference_type<allocator_type>,
-                           pointer_difference<pointer>>::type difference_type;
+  using difference_type =
+    typename eval_if<allocator_traits_detail::has_difference_type<allocator_type>::value,
+                     allocator_traits_detail::nested_difference_type<allocator_type>,
+                     pointer_difference<pointer>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_size_type<allocator_type>::value,
-                           allocator_traits_detail::nested_size_type<allocator_type>,
-                           ::cuda::std::make_unsigned<difference_type>>::type size_type;
+  using size_type = typename eval_if<allocator_traits_detail::has_size_type<allocator_type>::value,
+                                     allocator_traits_detail::nested_size_type<allocator_type>,
+                                     ::cuda::std::make_unsigned<difference_type>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_propagate_on_container_copy_assignment<allocator_type>::value,
-                           allocator_traits_detail::nested_propagate_on_container_copy_assignment<allocator_type>,
-                           identity_<false_type>>::type propagate_on_container_copy_assignment;
+  using propagate_on_container_copy_assignment =
+    typename eval_if<allocator_traits_detail::has_propagate_on_container_copy_assignment<allocator_type>::value,
+                     allocator_traits_detail::nested_propagate_on_container_copy_assignment<allocator_type>,
+                     identity_<false_type>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_propagate_on_container_move_assignment<allocator_type>::value,
-                           allocator_traits_detail::nested_propagate_on_container_move_assignment<allocator_type>,
-                           identity_<false_type>>::type propagate_on_container_move_assignment;
+  using propagate_on_container_move_assignment =
+    typename eval_if<allocator_traits_detail::has_propagate_on_container_move_assignment<allocator_type>::value,
+                     allocator_traits_detail::nested_propagate_on_container_move_assignment<allocator_type>,
+                     identity_<false_type>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_propagate_on_container_swap<allocator_type>::value,
-                           allocator_traits_detail::nested_propagate_on_container_swap<allocator_type>,
-                           identity_<false_type>>::type propagate_on_container_swap;
+  using propagate_on_container_swap =
+    typename eval_if<allocator_traits_detail::has_propagate_on_container_swap<allocator_type>::value,
+                     allocator_traits_detail::nested_propagate_on_container_swap<allocator_type>,
+                     identity_<false_type>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
-                           allocator_traits_detail::nested_is_always_equal<allocator_type>,
-                           ::cuda::std::is_empty<allocator_type>>::type is_always_equal;
+  using is_always_equal =
+    typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
+                     allocator_traits_detail::nested_is_always_equal<allocator_type>,
+                     ::cuda::std::is_empty<allocator_type>>::type;
 
-  typedef typename eval_if<allocator_traits_detail::has_system_type<allocator_type>::value,
-                           allocator_traits_detail::nested_system_type<allocator_type>,
-                           thrust::iterator_system<pointer>>::type system_type;
+  using system_type =
+    typename eval_if<allocator_traits_detail::has_system_type<allocator_type>::value,
+                     allocator_traits_detail::nested_system_type<allocator_type>,
+                     thrust::iterator_system<pointer>>::type;
 
   // XXX rebind and rebind_traits are alias templates
   //     and so are omitted while c++11 is unavailable
@@ -283,9 +292,9 @@ public:
   // rebind_* mechanisms.
   using other = allocator_traits;
 
-  // Deprecated std::allocator typedefs that we need:
-  typedef typename thrust::detail::pointer_traits<pointer>::reference reference;
-  typedef typename thrust::detail::pointer_traits<const_pointer>::reference const_reference;
+  // Deprecated std::allocator aliases that we need:
+  using reference       = typename thrust::detail::pointer_traits<pointer>::reference;
+  using const_reference = typename thrust::detail::pointer_traits<const_pointer>::reference;
 
   inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n);
 
@@ -312,7 +321,7 @@ public:
 
 // we consider a type an allocator if T::value_type exists
 // it doesn't make much sense (containers, which are not allocators, will fulfill this requirement),
-// but allocator_traits is specified to work for any type with that nested typedef
+// but allocator_traits is specified to work for any type with that nested alias
 template <typename T>
 struct is_allocator : allocator_traits_detail::has_value_type<T>
 {};
@@ -322,15 +331,15 @@ template <typename Alloc>
 struct allocator_system
 {
   // the type of the allocator's system
-  typedef typename eval_if<allocator_traits_detail::has_system_type<Alloc>::value,
-                           allocator_traits_detail::nested_system_type<Alloc>,
-                           thrust::iterator_system<typename allocator_traits<Alloc>::pointer>>::type type;
+  using type = typename eval_if<allocator_traits_detail::has_system_type<Alloc>::value,
+                                allocator_traits_detail::nested_system_type<Alloc>,
+                                thrust::iterator_system<typename allocator_traits<Alloc>::pointer>>::type;
 
   // the type that get returns
-  typedef typename eval_if<allocator_traits_detail::has_member_system<Alloc>::value, // if Alloc.system() exists
-                           ::cuda::std::add_lvalue_reference<type>, // then get() needs to return a reference
-                           identity_<type> // else get() needs to return a value
-                           >::type get_result_type;
+  using get_result_type =
+    typename eval_if<allocator_traits_detail::has_member_system<Alloc>::value,
+                     ::cuda::std::add_lvalue_reference<type>,
+                     identity_<type>>::type;
 
   _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a);
 };

@@ -97,12 +97,12 @@ integer keys:
     __global__ void BlockSortKernel(int *d_in, int *d_out)
     {
         // Specialize BlockLoad, BlockStore, and BlockRadixSort collective types
-        typedef cub::BlockLoad<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_LOAD_TRANSPOSE> BlockLoadT;
-        typedef cub::BlockStore<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_STORE_TRANSPOSE> BlockStoreT;
-        typedef cub::BlockRadixSort<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD> BlockRadixSortT;
+        using BlockLoadT = cub::BlockLoad<
+          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_LOAD_TRANSPOSE>;
+        using BlockStoreT = cub::BlockStore<
+          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_STORE_TRANSPOSE>;
+        using BlockRadixSortT = cub::BlockRadixSort<
+          int, BLOCK_THREADS, ITEMS_PER_THREAD>;
 
         // Allocate type-safe, repurposable shared memory for collectives
         __shared__ union {
@@ -281,7 +281,7 @@ fragment performing a collective prefix sum across the threads of a thread block
     __global__ void SomeKernelFoo(...)
     {
         // Specialize BlockScan for 128 threads on integer types
-      typedef cub::BlockScan<int, 128> BlockScan;
+      using BlockScan = cub::BlockScan<int, 128>;
 
       // Allocate shared memory for BlockScan
       __shared__ typename BlockScan::TempStorage scan_storage;
@@ -435,7 +435,7 @@ How is CUB different than Thrust and Modern GPU?
 CUB and Thrust
 --------------------------------------------------
 
-CUB and `Thrust <http://thrust.github.io/>`_ share some
+CUB and `Thrust <https://nvidia.github.io/cccl/thrust/>`_ share some
 similarities in that they both provide similar device-wide primitives for CUDA.
 However, they target different abstraction layers for parallel computing.
 Thrust abstractions are agnostic of any particular parallel framework (e.g.,

@@ -20,8 +20,8 @@ __global__ void set_symmetric_difference_kernel(
 template <typename ExecutionPolicy>
 void TestSetSymmetricDifferenceDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef typename Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = typename Vector::iterator;
 
   // clang-format off
   Vector a(4), b(5);
@@ -62,8 +62,8 @@ DECLARE_UNITTEST(TestSetSymmetricDifferenceDeviceDevice);
 
 void TestSetSymmetricDifferenceCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   // clang-format off
   Vector a(4), b(5);

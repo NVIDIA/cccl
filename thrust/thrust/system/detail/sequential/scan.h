@@ -31,7 +31,6 @@
 #endif // no system header
 #include <thrust/detail/function.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/function_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
@@ -59,7 +58,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   using ValueType = typename thrust::iterator_value<InputIterator>::type;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op(binary_op);
+  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
 
   if (first != last)
   {

@@ -19,7 +19,7 @@
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnarySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -79,7 +79,7 @@ DECLARE_UNITTEST(TestTransformUnaryDispatchImplicit);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -144,7 +144,7 @@ DECLARE_UNITTEST(TestTransformIfUnaryNoStencilDispatchImplicit);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -216,7 +216,7 @@ DECLARE_UNITTEST(TestTransformIfUnaryDispatchImplicit);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -285,7 +285,7 @@ DECLARE_UNITTEST(TestTransformBinaryDispatchImplicit);
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   typename Vector::iterator iter;
 
@@ -312,7 +312,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
     stencil.begin(),
     output.begin(),
     thrust::minus<T>(),
-    thrust::not1(identity));
+    thrust::not_fn(identity));
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
   ASSERT_EQUAL(output, result);
@@ -440,14 +440,14 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnaryToDiscardIteratorZip
   thrust::host_vector<T> h_output(n);
   thrust::device_vector<T> d_output(n);
 
-  typedef typename thrust::host_vector<T>::iterator Iterator1;
-  typedef typename thrust::device_vector<T>::iterator Iterator2;
+  using Iterator1 = typename thrust::host_vector<T>::iterator;
+  using Iterator2 = typename thrust::device_vector<T>::iterator;
 
-  typedef thrust::tuple<Iterator1, thrust::discard_iterator<>> Tuple1;
-  typedef thrust::tuple<Iterator2, thrust::discard_iterator<>> Tuple2;
+  using Tuple1 = thrust::tuple<Iterator1, thrust::discard_iterator<>>;
+  using Tuple2 = thrust::tuple<Iterator2, thrust::discard_iterator<>>;
 
-  typedef thrust::zip_iterator<Tuple1> ZipIterator1;
-  typedef thrust::zip_iterator<Tuple2> ZipIterator2;
+  using ZipIterator1 = thrust::zip_iterator<Tuple1>;
+  using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
   ZipIterator1 z1(thrust::make_tuple(h_output.begin(), thrust::make_discard_iterator()));
   ZipIterator2 z2(thrust::make_tuple(d_output.begin(), thrust::make_discard_iterator()));
@@ -766,7 +766,7 @@ template <typename Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformWithIndirection()
 {
   // add numbers modulo 3 with external lookup table
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector input1(7);
   Vector input2(7);

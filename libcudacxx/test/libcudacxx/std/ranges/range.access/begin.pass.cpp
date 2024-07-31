@@ -371,14 +371,14 @@ ASSERT_NOEXCEPT(cuda::std::ranges::begin(cuda::std::declval<int (&)[10]>()));
 ASSERT_NOEXCEPT(cuda::std::ranges::cbegin(cuda::std::declval<int (&)[10]>()));
 
 #if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberBegin
+_CCCL_GLOBAL_CONSTANT struct NoThrowMemberBegin
 {
   __host__ __device__ ThrowingIterator<int> begin() const noexcept; // auto(t.begin()) doesn't throw
 } ntmb;
 static_assert(noexcept(cuda::std::ranges::begin(ntmb)));
 static_assert(noexcept(cuda::std::ranges::cbegin(ntmb)));
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowADLBegin
+_CCCL_GLOBAL_CONSTANT struct NoThrowADLBegin
 {
   __host__ __device__ friend ThrowingIterator<int> begin(NoThrowADLBegin&) noexcept; // auto(begin(t)) doesn't throw
   __host__ __device__ friend ThrowingIterator<int> begin(const NoThrowADLBegin&) noexcept;
@@ -388,7 +388,7 @@ static_assert(noexcept(cuda::std::ranges::cbegin(ntab)));
 #endif // !TEST_COMPILER_MSVC_2019
 
 #if !defined(TEST_COMPILER_ICC)
-_LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberBeginReturnsRef
+_CCCL_GLOBAL_CONSTANT struct NoThrowMemberBeginReturnsRef
 {
   __host__ __device__ ThrowingIterator<int>& begin() const noexcept; // auto(t.begin()) may throw
 } ntmbrr;
@@ -396,7 +396,7 @@ static_assert(!noexcept(cuda::std::ranges::begin(ntmbrr)));
 static_assert(!noexcept(cuda::std::ranges::cbegin(ntmbrr)));
 #endif // !TEST_COMPILER_ICC
 
-_LIBCUDACXX_CPO_ACCESSIBILITY struct BeginReturnsArrayRef
+_CCCL_GLOBAL_CONSTANT struct BeginReturnsArrayRef
 {
   __host__ __device__ auto begin() const noexcept -> int (&)[10];
 } brar;

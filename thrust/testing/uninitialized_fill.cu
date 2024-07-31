@@ -77,7 +77,7 @@ DECLARE_UNITTEST(TestUninitializedFillNDispatchImplicit);
 template <class Vector>
 void TestUninitializedFillPOD()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -157,7 +157,7 @@ struct TestUninitializedFillNonPOD
 {
   void operator()(const size_t)
   {
-    typedef CopyConstructTest T;
+    using T                 = CopyConstructTest;
     thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
     T exemplar;
@@ -187,7 +187,7 @@ DECLARE_UNITTEST(TestUninitializedFillNonPOD);
 template <class Vector>
 void TestUninitializedFillNPOD()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -246,7 +246,7 @@ struct TestUninitializedFillNNonPOD
 {
   void operator()(const size_t)
   {
-    typedef CopyConstructTest T;
+    using T                 = CopyConstructTest;
     thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
     T exemplar;

@@ -44,7 +44,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/cstdint.h>
 #  include <thrust/detail/minmax.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
@@ -56,6 +55,8 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -120,6 +121,7 @@ struct DispatchUniqueByKey
       values_out,
       static_cast<OffsetT*>(nullptr),
       num_items,
+      binary_pred,
       stream);
     CUDA_CUB_RET_IF_FAIL(status);
 
@@ -190,11 +192,11 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
 
   // 32-bit offset-type dispatch
   using dispatch32_t =
-    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, thrust::detail::uint32_t>;
+    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, std::uint32_t>;
 
   // 64-bit offset-type dispatch
   using dispatch64_t =
-    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, thrust::detail::uint64_t>;
+    DispatchUniqueByKey<Derived, KeyInputIt, ValInputIt, KeyOutputIt, ValOutputIt, BinaryPred, std::uint64_t>;
 
   // Query temporary storage requirements
   THRUST_INDEX_TYPE_DISPATCH2(
@@ -215,7 +217,7 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
   cuda_cub::throw_on_error(status, "unique_by_key: failed on 1st step");
 
   // Allocate temporary storage.
-  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, temp_storage_bytes);
+  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, temp_storage_bytes);
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
@@ -272,7 +274,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
   KeyOutputIt keys_result,
   ValOutputIt values_result)
 {
-  typedef typename iterator_traits<KeyInputIt>::value_type key_type;
+  using key_type = typename iterator_traits<KeyInputIt>::value_type;
   return cuda_cub::unique_by_key_copy(
     policy, keys_first, keys_last, values_first, keys_result, values_result, equal_to<key_type>());
 }
@@ -297,7 +299,7 @@ template <class Derived, class KeyInputIt, class ValInputIt>
 pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
 unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInputIt keys_last, ValInputIt values_first)
 {
-  typedef typename iterator_traits<KeyInputIt>::value_type key_type;
+  using key_type = typename iterator_traits<KeyInputIt>::value_type;
   return cuda_cub::unique_by_key(policy, keys_first, keys_last, values_first, equal_to<key_type>());
 }
 

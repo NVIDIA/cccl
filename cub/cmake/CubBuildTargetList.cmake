@@ -132,30 +132,15 @@ function(cub_build_target_list)
   # Handle dialect options:
   set(num_dialects_enabled 0)
   foreach (dialect IN LISTS CUB_CPP_DIALECT_OPTIONS)
-    if (CUB_IN_THRUST)
-      # Just use Thrust's settings:
-      if (THRUST_ENABLE_MULTICONFIG)
-        set(CUB_ENABLE_DIALECT_CPP${dialect}
-            ${THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${dialect}}
-        )
-      else()
-        set(val OFF)
-        if (dialect EQUAL ${THRUST_CPP_DIALECT})
-          set(val ON)
-        endif()
-        set(CUB_ENABLE_DIALECT_CPP${dialect} ${val})
-      endif()
-    else()
-      # Create CMake options:
-      set(default_value OFF)
-      if (dialect EQUAL 14) # Default to just 14 on:
-        set(default_value ON)
-      endif()
-      option(CUB_ENABLE_DIALECT_CPP${dialect}
-        "Generate C++${dialect} build configurations."
-        ${default_value}
-      )
+    # Create CMake options:
+    set(default_value OFF)
+    if (dialect EQUAL 14) # Default to just 14 on:
+      set(default_value ON)
     endif()
+    option(CUB_ENABLE_DIALECT_CPP${dialect}
+      "Generate C++${dialect} build configurations."
+      ${default_value}
+    )
 
     if (CUB_ENABLE_DIALECT_CPP${dialect})
       math(EXPR num_dialects_enabled "${num_dialects_enabled} + 1")
@@ -188,14 +173,8 @@ function(cub_build_target_list)
   # Generic config flags:
   macro(add_flag_option flag docstring default)
     set(cub_opt "CUB_${flag}")
-    if (CUB_IN_THRUST)
-      set(thrust_opt "THRUST_${flag}")
-      # Use thrust's settings:
-      set(${cub_opt} ${${thrust_opt}})
-    else()
-      option(${cub_opt} "${docstring}" "${default}")
-      mark_as_advanced(${cub_opt})
-    endif()
+    option(${cub_opt} "${docstring}" "${default}")
+    mark_as_advanced(${cub_opt})
   endmacro()
   add_flag_option(IGNORE_DEPRECATED_CPP_DIALECT "Don't warn about any deprecated C++ standards and compilers." OFF)
   add_flag_option(IGNORE_DEPRECATED_CPP_11 "Don't warn about deprecated C++11." OFF)

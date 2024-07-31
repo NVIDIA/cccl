@@ -56,7 +56,7 @@ struct body
       : first(first)
       , stencil(stencil)
       , result(result)
-      , pred(pred)
+      , pred{pred}
       , sum(0)
   {}
 
@@ -64,7 +64,7 @@ struct body
       : first(b.first)
       , stencil(b.stencil)
       , result(b.result)
-      , pred(b.pred)
+      , pred{b.pred}
       , sum(0)
   {}
 
@@ -115,8 +115,8 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)
 {
-  typedef typename thrust::iterator_difference<InputIterator1>::type Size;
-  typedef typename copy_if_detail::body<InputIterator1, InputIterator2, OutputIterator, Predicate, Size> Body;
+  using Size = typename thrust::iterator_difference<InputIterator1>::type;
+  using Body = typename copy_if_detail::body<InputIterator1, InputIterator2, OutputIterator, Predicate, Size>;
 
   Size n = thrust::distance(first, last);
 

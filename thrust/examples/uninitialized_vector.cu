@@ -38,7 +38,7 @@ struct uninitialized_allocator : thrust::device_allocator<T>
   template <typename U>
   struct rebind
   {
-    typedef uninitialized_allocator<U> other;
+    using other = uninitialized_allocator<U>;
   };
 
   // note that construct is annotated as
@@ -51,7 +51,7 @@ struct uninitialized_allocator : thrust::device_allocator<T>
 
 // to make a device_vector which does not initialize its elements,
 // use uninitialized_allocator as the 2nd template parameter
-typedef thrust::device_vector<float, uninitialized_allocator<float>> uninitialized_vector;
+using uninitialized_vector = thrust::device_vector<float, uninitialized_allocator<float>>;
 
 int main()
 {

@@ -100,7 +100,7 @@ class transform_input_output_iterator
    */
 
 public:
-  typedef typename detail::transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type super_t;
+  using super_t = typename detail::transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type;
 
   friend class thrust::iterator_core_access;
   /*! \endcond

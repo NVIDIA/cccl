@@ -17,8 +17,8 @@ void TestMismatchDevice(ExecutionPolicy exec)
   thrust::device_vector<int> a = {1, 2, 3, 4};
   thrust::device_vector<int> b = {1, 2, 4, 3};
 
-  typedef thrust::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>
-    pair_type;
+  using pair_type =
+    thrust::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>;
 
   thrust::device_vector<pair_type> d_result(1);
 
@@ -69,7 +69,7 @@ DECLARE_UNITTEST(TestMismatchDeviceDevice);
 
 void TestMismatchCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
+  using Vector = thrust::device_vector<int>;
 
   Vector a = {1, 2, 3, 4};
   Vector b = {1, 2, 4, 3};

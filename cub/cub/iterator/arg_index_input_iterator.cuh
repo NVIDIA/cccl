@@ -87,7 +87,7 @@ CUB_NAMESPACE_BEGIN
  * cub::ArgIndexInputIterator<double*> itr(d_in);
  *
  * // Within device code:
- * typedef typename cub::ArgIndexInputIterator<double*>::value_type Tuple;
+ * using Tuple = typename cub::ArgIndexInputIterator<double*>::value_type;
  * Tuple item_offset_pair.key = *itr;
  * printf("%f @ %d\n",
  *   item_offset_pair.value,
@@ -119,32 +119,32 @@ public:
   // Required iterator traits
 
   /// My own type
-  typedef ArgIndexInputIterator self_type;
+  using self_type = ArgIndexInputIterator;
 
   /// Type to express the result of subtracting one iterator from another
-  typedef OffsetT difference_type;
+  using difference_type = OffsetT;
 
   /// The type of the element the iterator can point to
-  typedef KeyValuePair<difference_type, OutputValueT> value_type;
+  using value_type = KeyValuePair<difference_type, OutputValueT>;
 
   /// The type of a pointer to an element the iterator can point to
-  typedef value_type* pointer;
+  using pointer = value_type*;
 
   /// The type of a reference to an element the iterator can point to
-  typedef value_type reference;
+  using reference = value_type;
 
 #if (THRUST_VERSION >= 100700)
   // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
 
   /// The iterator category
-  typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+  using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::any_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
-    reference>::type iterator_category;
+    reference>::type;
 #else
   /// The iterator category
-  typedef std::random_access_iterator_tag iterator_category;
+  using iterator_category = std::random_access_iterator_tag;
 #endif // THRUST_VERSION
 
 private:

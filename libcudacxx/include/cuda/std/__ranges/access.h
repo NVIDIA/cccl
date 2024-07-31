@@ -49,17 +49,13 @@ void begin(const _Tp&) = delete;
 #  if _CCCL_STD_VER > 2017
 template <class _Tp>
 concept __member_begin = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  {
-    _LIBCUDACXX_AUTO_CAST(__t.begin())
-  } -> input_or_output_iterator;
+  { _LIBCUDACXX_AUTO_CAST(__t.begin()) } -> input_or_output_iterator;
 };
 
 template <class _Tp>
 concept __unqualified_begin =
   !__member_begin<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    {
-      _LIBCUDACXX_AUTO_CAST(begin(__t))
-    } -> input_or_output_iterator;
+    { _LIBCUDACXX_AUTO_CAST(begin(__t)) } -> input_or_output_iterator;
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -129,7 +125,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto begin = __begin::__fn{};
+_CCCL_GLOBAL_CONSTANT auto begin = __begin::__fn{};
 } // namespace __cpo
 
 // [range.range]
@@ -149,18 +145,14 @@ void end(const _Tp&) = delete;
 template <class _Tp>
 concept __member_end = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   typename iterator_t<_Tp>;
-  {
-    _LIBCUDACXX_AUTO_CAST(__t.end())
-  } -> sentinel_for<iterator_t<_Tp>>;
+  { _LIBCUDACXX_AUTO_CAST(__t.end()) } -> sentinel_for<iterator_t<_Tp>>;
 };
 
 template <class _Tp>
 concept __unqualified_end =
   !__member_end<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     typename iterator_t<_Tp>;
-    {
-      _LIBCUDACXX_AUTO_CAST(end(__t))
-    } -> sentinel_for<iterator_t<_Tp>>;
+    { _LIBCUDACXX_AUTO_CAST(end(__t)) } -> sentinel_for<iterator_t<_Tp>>;
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -221,7 +213,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto end = __end::__fn{};
+_CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
 } // namespace __cpo
 
 // [range.access.cbegin]
@@ -251,7 +243,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cbegin = __cbegin::__fn{};
+_CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
 } // namespace __cpo
 
 // [range.access.cend]
@@ -281,7 +273,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cend = __cend::__fn{};
+_CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
 #endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
 

@@ -88,7 +88,7 @@ private:
   };
 
   /// Shared memory storage layout type (last element from each thread's input)
-  typedef T _TempStorage[BLOCK_THREADS];
+  using _TempStorage = T[BLOCK_THREADS];
 
 public:
   /// \smemstorage{BlockShuffle}

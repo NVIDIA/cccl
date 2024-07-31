@@ -36,11 +36,11 @@ template <typename T, typename System, typename Pointer>
 class malloc_allocator : public thrust::detail::tagged_allocator<T, System, Pointer>
 {
 private:
-  typedef thrust::detail::tagged_allocator<T, System, Pointer> super_t;
+  using super_t = thrust::detail::tagged_allocator<T, System, Pointer>;
 
 public:
-  typedef typename super_t::pointer pointer;
-  typedef typename super_t::size_type size_type;
+  using pointer   = typename super_t::pointer;
+  using size_type = typename super_t::size_type;
 
   pointer allocate(size_type cnt);
 

@@ -66,7 +66,7 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
   //     values if the range of the RNG is smaller than the range of the distribution
   //     we should improve this implementation in a later version
 
-  typedef typename thrust::detail::largest_available_float::type float_type;
+  using float_type = typename thrust::detail::largest_available_float::type;
 
   const float_type real_min(static_cast<float_type>(parm.first));
   const float_type real_max(static_cast<float_type>(parm.second));
@@ -127,8 +127,8 @@ template <typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
 uniform_int_distribution<IntType>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
-  typedef std::basic_ostream<CharT, Traits> ostream_type;
-  typedef typename ostream_type::ios_base ios_base;
+  using ostream_type = std::basic_ostream<CharT, Traits>;
+  using ios_base     = typename ostream_type::ios_base;
 
   // save old flags and fill character
   const typename ios_base::fmtflags flags = os.flags();
@@ -150,8 +150,8 @@ template <typename IntType>
 template <typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>& uniform_int_distribution<IntType>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
-  typedef std::basic_istream<CharT, Traits> istream_type;
-  typedef typename istream_type::ios_base ios_base;
+  using istream_type = std::basic_istream<CharT, Traits>;
+  using ios_base     = typename istream_type::ios_base;
 
   // save old flags
   const typename ios_base::fmtflags flags = is.flags();

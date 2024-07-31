@@ -113,6 +113,11 @@ valid_subdirs=()
 # The img folder should not be removed:
 valid_subdirs+=("img")
 
+# Don't remove RAPIDS containers:
+for rapids_container in *rapids*; do
+    valid_subdirs+=("${rapids_container}")
+done
+
 # For each unique combination
 for combination in $combinations; do
     cuda_version=$(echo "$combination" | jq -r '.cuda')

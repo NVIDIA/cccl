@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2021 NVIDIA Corporation
+ *  Copyright 2008-2024 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -57,23 +57,8 @@ THRUST_NAMESPACE_BEGIN
  * integer_sequence_push_back \see <a
  * href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::integer_sequence</tt></a>
  */
-#if _CCCL_STD_VER >= 2014
 template <typename T, T... Is>
 using integer_sequence = ::cuda::std::integer_sequence<T, Is...>;
-#else
-template <typename T, T... Is>
-struct integer_sequence
-{
-  using type       = integer_sequence;
-  using value_type = T;
-  using size_type  = ::cuda::std::size_t;
-
-  _CCCL_HOST_DEVICE static constexpr size_type size() noexcept
-  {
-    return sizeof...(Is);
-  }
-};
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -90,46 +75,8 @@ struct integer_sequence
  *  \see integer_sequence_push_back
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::index_sequence</tt></a>
  */
-#if _CCCL_STD_VER >= 2014
 template <::cuda::std::size_t... Is>
 using index_sequence = ::cuda::std::index_sequence<Is...>;
-#else
-template <::cuda::std::size_t... Is>
-using index_sequence = integer_sequence<::cuda::std::size_t, Is...>;
-#endif
-
-#if _CCCL_STD_VER < 2014
-/*! \cond
- */
-
-namespace detail
-{
-
-/*! \brief Create a new \c integer_sequence containing the elements of \c
- * Sequence0 followed by the elements of \c Sequence1. \c Sequence0::size() is
- * added to each element from \c Sequence1 in the new sequence.
- *
- *  \see integer_sequence
- *  \see index_sequence
- *  \see make_reversed_integer_sequence
- *  \see make_index_sequence
- *  \see make_reversed_index_sequence
- *  \see merge_and_renumber_reversed_integer_sequences_impl
- */
-template <typename Sequence0, typename Sequence1>
-struct merge_and_renumber_integer_sequences_impl;
-template <typename Sequence0, typename Sequence1>
-using merge_and_renumber_integer_sequences =
-  typename merge_and_renumber_integer_sequences_impl<Sequence0, Sequence1>::type;
-
-template <typename T, ::cuda::std::size_t N>
-struct make_integer_sequence_impl;
-
-} // namespace detail
-
-/*! \endcond
- */
-#endif
 
 /*! \brief Create a new \c integer_sequence with elements
  *  <tt>0, 1, 2, ..., N - 1</tt> of type \c T.
@@ -141,49 +88,8 @@ struct make_integer_sequence_impl;
  *  \see make_reversed_index_sequence
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::make_integer_sequence</tt></a>
  */
-#if _CCCL_STD_VER >= 2014
 template <typename T, ::cuda::std::size_t N>
 using make_integer_sequence = ::cuda::std::make_integer_sequence<T, N>;
-#else
-template <typename T, ::cuda::std::size_t N>
-using make_integer_sequence = typename detail::make_integer_sequence_impl<T, N>::type;
-
-/*! \cond
- */
-
-namespace detail
-{
-
-template <typename T, T... Is0, T... Is1>
-struct merge_and_renumber_integer_sequences_impl<integer_sequence<T, Is0...>, integer_sequence<T, Is1...>>
-{
-  using type = integer_sequence<T, Is0..., (sizeof...(Is0) + Is1)...>;
-};
-
-template <typename T, ::cuda::std::size_t N>
-struct make_integer_sequence_impl
-{
-  using type =
-    merge_and_renumber_integer_sequences<make_integer_sequence<T, N / 2>, make_integer_sequence<T, N - N / 2>>;
-};
-
-template <typename T>
-struct make_integer_sequence_impl<T, 0>
-{
-  using type = integer_sequence<T>;
-};
-
-template <typename T>
-struct make_integer_sequence_impl<T, 1>
-{
-  using type = integer_sequence<T, 0>;
-};
-
-} // namespace detail
-
-/*! \endcond
- */
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -198,13 +104,8 @@ struct make_integer_sequence_impl<T, 1>
  *  \see make_reversed_index_sequence
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::make_index_sequence</tt></a>
  */
-#if _CCCL_STD_VER >= 2014
 template <::cuda::std::size_t N>
 using make_index_sequence = ::cuda::std::make_index_sequence<N>;
-#else
-template <::cuda::std::size_t N>
-using make_index_sequence = make_integer_sequence<::cuda::std::size_t, N>;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

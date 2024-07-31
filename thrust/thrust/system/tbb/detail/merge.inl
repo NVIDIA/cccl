@@ -263,8 +263,8 @@ merge(execution_policy<DerivedPolicy>&,
       OutputIterator result,
       StrictWeakOrdering comp)
 {
-  typedef typename merge_detail::range<InputIterator1, InputIterator2, OutputIterator, StrictWeakOrdering> Range;
-  typedef merge_detail::body Body;
+  using Range = typename merge_detail::range<InputIterator1, InputIterator2, OutputIterator, StrictWeakOrdering>;
+  using Body  = merge_detail::body;
   Range range(first1, last1, first2, last2, result, comp);
   Body body;
 
@@ -295,10 +295,15 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
-  typedef typename merge_by_key_detail::
-    range<InputIterator1, InputIterator2, InputIterator3, InputIterator4, OutputIterator1, OutputIterator2, StrictWeakOrdering>
-      Range;
-  typedef merge_by_key_detail::body Body;
+  using Range = typename merge_by_key_detail::range<
+    InputIterator1,
+    InputIterator2,
+    InputIterator3,
+    InputIterator4,
+    OutputIterator1,
+    OutputIterator2,
+    StrictWeakOrdering>;
+  using Body = merge_by_key_detail::body;
 
   Range range(
     keys_first1, keys_last1, keys_first2, keys_last2, values_first3, values_first4, keys_result, values_result, comp);

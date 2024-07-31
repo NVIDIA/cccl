@@ -44,7 +44,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
+// CUDA headers might not be present when using NVRTC, see NVIDIA/cccl#2095 for detail
+#if !defined(_CCCL_COMPILER_NVRTC)
+#  include <cuda_runtime_api.h>
+#endif // !_CCCL_COMPILER_NVRTC
 
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 

@@ -47,7 +47,7 @@ struct tuple_transform_functor<Tuple, UnaryMetaFunction, UnaryFunction, thrust::
   static _CCCL_HOST typename tuple_meta_transform<Tuple, UnaryMetaFunction>::type
   do_it_on_the_host(const Tuple& t, UnaryFunction f)
   {
-    typedef typename tuple_meta_transform<Tuple, UnaryMetaFunction>::type XfrmTuple;
+    using XfrmTuple = typename tuple_meta_transform<Tuple, UnaryMetaFunction>::type;
 
     return XfrmTuple(f(thrust::get<Is>(t))...);
   }
@@ -55,7 +55,7 @@ struct tuple_transform_functor<Tuple, UnaryMetaFunction, UnaryFunction, thrust::
   static _CCCL_HOST_DEVICE typename tuple_meta_transform<Tuple, UnaryMetaFunction>::type
   do_it_on_the_host_or_device(const Tuple& t, UnaryFunction f)
   {
-    typedef typename tuple_meta_transform<Tuple, UnaryMetaFunction>::type XfrmTuple;
+    using XfrmTuple = typename tuple_meta_transform<Tuple, UnaryMetaFunction>::type;
 
     return XfrmTuple(f(thrust::get<Is>(t))...);
   }

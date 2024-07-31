@@ -24,7 +24,7 @@ template <typename ExecutionPolicy>
 void TestPairStableSortDevice(ExecutionPolicy exec)
 {
   size_t n = 10000;
-  typedef thrust::pair<int, int> P;
+  using P  = thrust::pair<int, int>;
 
   thrust::host_vector<int> h_p1 = unittest::random_integers<int>(n);
   thrust::host_vector<int> h_p2 = unittest::random_integers<int>(n);

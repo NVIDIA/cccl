@@ -152,7 +152,7 @@ public:
 
   template <bool _Dummy = true,
             class       = __enable_if_t<__dependent_type<is_default_constructible<_T1>, _Dummy>::value
-                                  && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>>
+                                        && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : _Base1(__value_init_tag())

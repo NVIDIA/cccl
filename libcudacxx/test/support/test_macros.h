@@ -461,7 +461,7 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  endif // not MSVC
 #endif
 
-#define TEST_CONSTEXPR_GLOBAL _LIBCUDACXX_CONSTEXPR_GLOBAL
+#define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
 #if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000

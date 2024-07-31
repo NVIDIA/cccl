@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Pred>
-struct _Not : _BoolConstant<!_Pred::value>
+struct _Not : bool_constant<!_Pred::value>
 {};
 
 #if _CCCL_STD_VER > 2011

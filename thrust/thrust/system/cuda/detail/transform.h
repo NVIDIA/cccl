@@ -193,7 +193,7 @@ OutputIt THRUST_FUNCTION unary(
     return result;
   }
 
-  typedef unary_transform_f<InputIt, OutputIt, StencilIt, TransformOp, Predicate> unary_transform_t;
+  using unary_transform_t = unary_transform_f<InputIt, OutputIt, StencilIt, TransformOp, Predicate>;
 
   cuda_cub::parallel_for(policy, unary_transform_t(items, result, stencil, transform_op, predicate), num_items);
 
@@ -223,7 +223,7 @@ OutputIt THRUST_FUNCTION binary(
     return result;
   }
 
-  typedef binary_transform_f<InputIt1, InputIt2, OutputIt, StencilIt, TransformOp, Predicate> binary_transform_t;
+  using binary_transform_t = binary_transform_f<InputIt1, InputIt2, OutputIt, StencilIt, TransformOp, Predicate>;
 
   cuda_cub::parallel_for(
     policy, binary_transform_t(items1, items2, result, stencil, transform_op, predicate), num_items);
@@ -251,7 +251,7 @@ OutputIt THRUST_FUNCTION transform_if(
   TransformOp transform_op,
   Predicate predicate)
 {
-  typedef typename iterator_traits<InputIt>::difference_type size_type;
+  using size_type     = typename iterator_traits<InputIt>::difference_type;
   size_type num_items = static_cast<size_type>(thrust::distance(first, last));
   return __transform::unary(policy, first, result, num_items, stencil, transform_op, predicate);
 } // func transform_if
@@ -296,7 +296,7 @@ OutputIt THRUST_FUNCTION transform_if(
   TransformOp transform_op,
   Predicate predicate)
 {
-  typedef typename iterator_traits<InputIt1>::difference_type size_type;
+  using size_type     = typename iterator_traits<InputIt1>::difference_type;
   size_type num_items = static_cast<size_type>(thrust::distance(first1, last1));
   return __transform::binary(policy, first1, first2, result, num_items, stencil, transform_op, predicate);
 } // func transform_if

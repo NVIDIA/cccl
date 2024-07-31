@@ -30,10 +30,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
-#  include <type_traits>
-#endif
-
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup utility
@@ -45,17 +41,13 @@ THRUST_NAMESPACE_BEGIN
  */
 
 template <typename...>
-struct voider
+struct THRUST_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") voider
 {
   using type = void;
 };
 
-#if _CCCL_STD_VER >= 2017
-using std::void_t;
-#else
 template <typename... Ts>
-using void_t = typename voider<Ts...>::type;
-#endif
+using void_t THRUST_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") = void;
 
 /*! \} // type traits
  */

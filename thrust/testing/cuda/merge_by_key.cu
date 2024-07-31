@@ -53,7 +53,7 @@ void TestMergeByKeyDevice(ExecutionPolicy exec)
 
   thrust::device_vector<int> result_key(7), result_val(7);
 
-  typedef typename thrust::device_vector<int>::iterator Iterator;
+  using Iterator = typename thrust::device_vector<int>::iterator;
 
   thrust::device_vector<thrust::pair<Iterator, Iterator>> result_ends(1);
 
@@ -94,8 +94,8 @@ DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
 
 void TestMergeByKeyCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::iterator Iterator;
+  using Vector   = thrust::device_vector<int>;
+  using Iterator = Vector::iterator;
 
   // clang-format off
   Vector a_key(3), a_val(3), b_key(4), b_val(4);

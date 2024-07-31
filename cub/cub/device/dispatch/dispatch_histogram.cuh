@@ -611,9 +611,9 @@ public:
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
-        cub::detail::conditional_t<std::is_pointer<LevelIteratorT>::value,
-                                   CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                                   LevelIteratorT>;
+        ::cuda::std::_If<std::is_pointer<LevelIteratorT>::value,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
 
       WrappedLevelIteratorT wrapped_levels(d_levels);
 
@@ -647,11 +647,11 @@ public:
     // rule: 2^l * 2^r = 2^(l + r) to determine a sufficiently large type to hold the
     // multiplication result.
     // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
-    using IntArithmeticT = cub::detail::conditional_t< //
+    using IntArithmeticT = ::cuda::std::_If< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
 #if CUB_IS_INT128_ENABLED
-      cub::detail::conditional_t< //
+      ::cuda::std::_If< //
         (::cuda::std::is_same<CommonT, __int128_t>::value || //
          ::cuda::std::is_same<CommonT, __uint128_t>::value), //
         CommonT, //
@@ -665,10 +665,9 @@ public:
     template <typename T>
     using is_integral_excl_int128 =
 #if CUB_IS_INT128_ENABLED
-      cub::detail::conditional_t<
-        ::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
-        ::cuda::std::false_type,
-        ::cuda::std::is_integral<T>>;
+      ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
+                       ::cuda::std::false_type,
+                       ::cuda::std::is_integral<T>>;
 #else
       ::cuda::std::is_integral<T>;
 #endif
@@ -933,10 +932,10 @@ public:
       }
 
       // Use the search transform op for converting samples to privatized bins
-      typedef SearchTransform<const LevelT*> PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = SearchTransform<const LevelT*>;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      typedef PassThruTransform OutputDecodeOpT;
+      using OutputDecodeOpT = PassThruTransform;
 
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
       OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1135,10 +1134,10 @@ public:
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      typedef PassThruTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = PassThruTransform;
 
       // Use the search transform op for converting privatized bins to output bins
-      typedef SearchTransform<const LevelT*> OutputDecodeOpT;
+      using OutputDecodeOpT = SearchTransform<const LevelT*>;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1301,10 +1300,10 @@ public:
       }
 
       // Use the scale transform op for converting samples to privatized bins
-      typedef ScaleTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = ScaleTransform;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      typedef PassThruTransform OutputDecodeOpT;
+      using OutputDecodeOpT = PassThruTransform;
 
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
       OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1520,10 +1519,10 @@ public:
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      typedef PassThruTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = PassThruTransform;
 
       // Use the scale transform op for converting privatized bins to output bins
-      typedef ScaleTransform OutputDecodeOpT;
+      using OutputDecodeOpT = ScaleTransform;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
