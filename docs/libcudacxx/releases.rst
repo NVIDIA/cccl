@@ -1,7 +1,7 @@
 .. _libcudacxx-releases:
 
 Releases
-============
+========
 
 .. toctree::
    :maxdepth: 1

@@ -39,7 +39,8 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
   target_compile_options(headertest_${header_name}
     PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:${headertest_warning_levels_device}>
-    $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>)
+    $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>
+    -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
   target_link_libraries(headertest_${header_name} CUDA::cudart)
 
   if(fallback)

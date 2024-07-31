@@ -102,7 +102,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto empty = __empty::__fn{};
+_CCCL_GLOBAL_CONSTANT auto empty = __empty::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017

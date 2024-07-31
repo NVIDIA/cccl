@@ -11,11 +11,15 @@
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
+#include <cuda/atomic>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
 
 #include <new> // IWYU pragma: keep (needed for placement new)
+
+// TODO unify the common testing header
+#include "../hierarchy/testing_common.cuh"
 
 namespace
 {
@@ -104,6 +108,32 @@ public:
   const T& operator*() const noexcept
   {
     return *get();
+  }
+};
+
+struct assign_42
+{
+  __device__ constexpr void operator()(int* pi) const noexcept
+  {
+    *pi = 42;
+  }
+};
+
+struct verify_42
+{
+  __device__ void operator()(int* pi) const noexcept
+  {
+    CUDAX_REQUIRE(*pi == 42);
+  }
+};
+
+struct spin_until_80
+{
+  __device__ void operator()(int* pi) const noexcept
+  {
+    cuda::atomic_ref atomic_pi(*pi);
+    while (atomic_pi.load() != 80)
+      ;
   }
 };
 

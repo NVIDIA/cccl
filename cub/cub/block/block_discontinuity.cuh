@@ -28,7 +28,7 @@
 
 /**
  * @file
- * The cub::BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for
+ * The cub::BlockDiscontinuity class provides [<em>collective</em>](../index.html#sec0) methods for
  * flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
  */
 
