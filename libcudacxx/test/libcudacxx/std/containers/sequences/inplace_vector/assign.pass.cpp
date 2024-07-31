@@ -26,7 +26,8 @@
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_MSVC(5246)
+_CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces
+_CCCL_DIAG_SUPPRESS_MSVC(4072) // unreachable code
 
 #if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC_2017)
 template <class T, template <class, size_t> class Range>
