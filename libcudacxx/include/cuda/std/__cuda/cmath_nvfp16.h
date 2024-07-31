@@ -36,7 +36,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__v);), ({
                       float __vf            = __half2float(__v);
-                      __vf                  = ::sin(__vf);
+                      __vf                  = ::sinf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
                       uint16_t __repr = __half_raw(__v).x;
@@ -61,7 +61,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sinh(__half __v)
 {
-  return __float2half(::sinh(__half2float(__v)));
+  return __float2half(::sinhf(__half2float(__v)));
 }
 
 // clang-format off
@@ -72,7 +72,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half cos(__half __v)
   ), (
     {
       float __vf            = __half2float(__v);
-      __vf                  = ::cos(__vf);
+      __vf                  = ::cosf(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
       uint16_t __repr = __half_raw(__v).x;
@@ -94,7 +94,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half cos(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half cosh(__half __v)
 {
-  return __float2half(::cosh(__half2float(__v)));
+  return __float2half(::coshf(__half2float(__v)));
 }
 
 // clang-format off
@@ -105,7 +105,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half exp(__half __v)
   ), (
     {
       float __vf            = __half2float(__v);
-      __vf                  = ::exp(__vf);
+      __vf                  = ::expf(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
       uint16_t __repr = __half_raw(__v).x;
@@ -127,12 +127,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half exp(__half __v)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half hypot(__half __x, __half __y)
 {
-  return __float2half(::hypot(__half2float(__x), __half2float(__y)));
+  return __float2half(::hypotf(__half2float(__x), __half2float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half atan2(__half __x, __half __y)
 {
-  return __float2half(::atan2(__half2float(__x), __half2float(__y)));
+  return __float2half(::atan2f(__half2float(__x), __half2float(__y)));
 }
 
 // clang-format off
@@ -143,7 +143,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half log(__half __x)
   ), (
     {
       float __vf            = __half2float(__x);
-      __vf                  = ::log(__vf);
+      __vf                  = ::logf(__vf);
       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
       uint16_t __repr = __half_raw(__x).x;
@@ -164,7 +164,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half log(__half __x)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sqrt(__half __x)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::sqrt(__half2float(__x)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::sqrtf(__half2float(__x)));))
 }
 
 // floating point helper
