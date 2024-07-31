@@ -338,8 +338,10 @@ doxygen_predefined = [
   "_CCCL_FORCEINLINE=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
+  "_CCCL_IF_CONSTEXPR=if constexpr",
   "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_NODISCARD_FRIEND=",
+  "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CCCL_STD_VER=2020",
   "_CUDA_VMR=cuda::mr",
   "_CUDA_VSTD=cuda::std",
@@ -347,6 +349,7 @@ doxygen_predefined = [
   "_LIBCUDACXX_EAT_REST(x)=",
   "_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR=DOXYGEN_SHOULD_SKIP_THIS",
   "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+  "_LIBCUDACXX_CPO_ACCESSIBILITY=inline",
 ]
 
 # make sure to use ./fetch_imgs.sh
