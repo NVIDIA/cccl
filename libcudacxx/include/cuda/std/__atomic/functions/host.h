@@ -35,10 +35,18 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 #if !defined(_CCCL_COMPILER_NVRTC)
 
 template <typename _Tp>
-struct __atomic_alignment_wrapper
+struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
 {
-  _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __atom;
+  _Tp __atom;
 };
+
+template <typename _Tp>
+__atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
+{
+  __atomic_alignment_wrapper<_Tp>* __w =
+    reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<__remove_cv_t<_Tp>*>(__a));
+  return __w;
+}
 
 // Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
 inline void __atomic_thread_fence_host(memory_order __order)
@@ -51,24 +59,17 @@ inline void __atomic_signal_fence_host(memory_order __order)
   __atomic_signal_fence(__atomic_order_to_int(__order));
 }
 
-template <typename _Tp>
-_Tp* __atomic_force_align_host(_Tp* __a)
-{
-  return const_cast<_Tp*>(
-    static_cast<__remove_cv_t<_Tp>*>(__builtin_assume_aligned(const_cast<__remove_cv_t<_Tp>*>(__a), sizeof(_Tp))));
-}
-
 template <typename _Tp, typename _Up>
 inline void __atomic_store_host(_Tp* __a, _Up __val, memory_order __order)
 {
-  __atomic_store(__atomic_force_align_host(__a), &__val, __atomic_order_to_int(__order));
+  __atomic_store(&__atomic_force_align_host(__a)->__atom, &__val, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp>
 inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> __remove_cv_t<_Tp>
 {
   __remove_cv_t<_Tp> __ret;
-  __atomic_load(__atomic_force_align_host(__a), &__ret, __atomic_order_to_int(__order));
+  __atomic_load(&__atomic_force_align_host(__a)->__atom, &__ret, __atomic_order_to_int(__order));
   return __ret;
 }
 
@@ -76,7 +77,7 @@ template <typename _Tp, typename _Up>
 inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> __remove_cv_t<_Tp>
 {
   __remove_cv_t<_Tp> __ret;
-  __atomic_exchange(__atomic_force_align_host(__a), &__val, &__ret, __atomic_order_to_int(__order));
+  __atomic_exchange(&__atomic_force_align_host(__a)->__atom, &__val, &__ret, __atomic_order_to_int(__order));
   return __ret;
 }
 
@@ -85,7 +86,7 @@ inline bool __atomic_compare_exchange_strong_host(
   _Tp* __a, _Up* __expected, _Up __desired, memory_order __success, memory_order __failure)
 {
   return __atomic_compare_exchange(
-    __atomic_force_align_host(__a),
+    &__atomic_force_align_host(__a)->__atom,
     __expected,
     &__desired,
     false,
@@ -98,7 +99,7 @@ inline bool __atomic_compare_exchange_weak_host(
   _Tp* __a, _Up* __expected, _Up __desired, memory_order __success, memory_order __failure)
 {
   return __atomic_compare_exchange(
-    __atomic_force_align_host(__a),
+    &__atomic_force_align_host(__a)->__atom,
     __expected,
     &__desired,
     true,
