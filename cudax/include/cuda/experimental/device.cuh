@@ -13,5 +13,6 @@
 
 #include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 
 #endif // __CUDAX_DEVICE__
