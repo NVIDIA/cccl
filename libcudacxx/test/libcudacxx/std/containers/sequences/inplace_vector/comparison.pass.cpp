@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++11
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
@@ -22,8 +21,7 @@
 template <class T>
 __host__ __device__ constexpr void test_equality()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
   inplace_vector lhs{T(1), T(42), T(1337), T(0)};
   inplace_vector rhs{T(0), T(1), T(2), T(3), T(4)};
@@ -40,8 +38,7 @@ __host__ __device__ constexpr void test_equality()
 template <class T>
 __host__ __device__ constexpr void test_relation()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
   inplace_vector lhs{T(0), T(1), T(1), T(3), T(4)};
   inplace_vector rhs{T(0), T(1), T(2), T(3), T(4)};
