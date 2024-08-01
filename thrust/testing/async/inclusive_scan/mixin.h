@@ -19,20 +19,19 @@ namespace inclusive_scan
 namespace mixin
 {
 
-//------------------------------------------------------------------------------
 namespace postfix_args_init
 {
 
-template <typename value_type, typename alternate_binary_op = thrust::maximum<>>
+template <typename ValueType, typename AltBinaryOp = thrust::maximum<>>
 struct all_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:
-    std::tuple<value_type, alternate_binary_op> // - initial_value with binary_op
+    std::tuple<ValueType, AltBinaryOp> // - initial_value with binary_op
     >;
 
   static postfix_args_type generate_postfix_args()
   {
-    return postfix_args_type{std::make_tuple(value_type{42}, alternate_binary_op{})};
+    return postfix_args_type{std::make_tuple(ValueType{42}, AltBinaryOp{})};
   }
 };
 

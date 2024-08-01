@@ -267,7 +267,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *  term 'inclusive' means that each result includes the corresponding
  *  input operand in the partial sum. More precisely,
  *  <tt>binary_op(init, \*first)</tt> is assigned to <tt>*result</tt>
- *  and so on. This version of \p inclusive_scan equires both an associative
+ *  and so on. This version of \p inclusive_scan requires both an associative
  *  operator and an initial value \p init.  When the input and
  *  output sequences are the same, the scan is performed in-place.
  *
@@ -289,9 +289,8 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
- *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
+ * and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's \c first_argument_type and
+ * \c second_argument_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *  \tparam AssociativeOperator is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
@@ -305,11 +304,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *
  *  \code
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
- *
- *  thrust::maximum<int> binary_op;
- *
- *  thrust::inclusive_scan(thrust::host, data, data + 10, data, 1, binary_op); // in-place scan
- *
+ *  thrust::inclusive_scan(thrust::host, data, data + 10, data, 1, thrust::maximum<>{}); // in-place scan
  *  // data is now {1, 1, 2, 2, 2, 4, 4, 4, 4, 8}
  *  \endcode
  *
@@ -328,7 +323,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  term 'inclusive' means that each result includes the corresponding
  *  input operand in the partial sum. More precisely,
  *  <tt>binary_op(init, \*first)</tt> is assigned to <tt>*result</tt>
- *  and so on. This version of \p inclusive_scan equires both an associative
+ *  and so on. This version of \p inclusive_scan requires both an associative
  *  operator and an initial value \p init.  When the input and
  *  output sequences are the same, the scan is performed in-place.
  *
@@ -346,9 +341,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
  * Iterator</a> and \c InputIterator's \c value_type is convertible to \c OutputIterator's \c value_type. \tparam
  * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>
- *                         and \c OutputIterator's \c value_type is convertible to
- *                         both \c AssociativeOperator's \c first_argument_type and
- *                         \c second_argument_type.
+ * and \c OutputIterator's \c value_type is convertible to both \c AssociativeOperator's \c first_argument_type and
+ * \c second_argument_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *  \tparam AssociativeOperator is a model of <a
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
@@ -361,11 +355,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *
  *  \code
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
- *
  *  thrust::maximum<int> binary_op;
- *
- *  thrust::inclusive_scan(data, data + 10, data, 1, binary_op); // in-place scan
- *
+ *  thrust::inclusive_scan(data, data + 10, data, 1, thrust::maximum<>{}); // in-place scan
  *  // data is now {1, 1, 2, 2, 2, 4, 4, 4, 4, 8}
  *  \endcode
  *
