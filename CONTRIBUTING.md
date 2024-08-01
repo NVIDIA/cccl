@@ -69,7 +69,7 @@ There are multiple options for building and running our tests. Which option you 
 
 #### Building
 
-Building CCCL requires you to have a working installation of sccache. Follow the docs here https://github.com/mozilla/sccache?tab=readme-ov-file#installation
+Building CCCL requires you to have a working installation of sccache. Follow the docs here https://github.com/mozilla/sccache?tab=readme-ov-file#installation. Note that by using the devcontainers, sccache will already be installed.
 
 Use the build scripts provided in the `ci/` directory to build tests for each component. Building tests does not require a GPU.
 
