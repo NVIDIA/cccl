@@ -25,7 +25,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 
 namespace cuda::experimental

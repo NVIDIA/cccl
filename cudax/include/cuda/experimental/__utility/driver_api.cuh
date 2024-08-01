@@ -71,6 +71,38 @@ inline CUcontext ctxGetCurrent()
   return result;
 }
 
+inline CUdevice deviceGet(int ordinal)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDeviceGet);
+  CUdevice result;
+  call_driver_fn(driver_fn, "Failed to get device", &result, ordinal);
+  return result;
+}
+
+inline CUcontext primaryCtxRetain(CUdevice dev)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRetain);
+  CUcontext result;
+  call_driver_fn(driver_fn, "Failed to retain context for a device", &result, dev);
+  return result;
+}
+
+inline void primaryCtxRelease(CUdevice dev)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRelease);
+  // TODO we might need to ignore failure here
+  call_driver_fn(driver_fn, "Failed to release context for a device", dev);
+}
+
+inline bool isPrimaryCtxActive(CUdevice dev)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxGetState);
+  int result;
+  unsigned int dummy;
+  call_driver_fn(driver_fn, "Failed to check the primary ctx state", dev, &dummy, &result);
+  return result == 1;
+}
+
 inline CUcontext streamGetCtx(CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCtx);

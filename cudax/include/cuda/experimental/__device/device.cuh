@@ -21,7 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda.h>
+
 #include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__utility/driver_api.cuh>
+
+#include <cassert>
+#include <mutex>
 
 namespace cuda::experimental
 {
@@ -56,12 +62,34 @@ public:
 #  endif
 #endif
 
+  CUcontext primary_context() const
+  {
+    ::std::call_once(__init_once, [this]() {
+      __device      = detail::driver::deviceGet(__id_);
+      __primary_ctx = detail::driver::primaryCtxRetain(__device);
+    });
+    assert(__primary_ctx != nullptr);
+    return __primary_ctx;
+  }
+
+  ~device()
+  {
+    if (__primary_ctx)
+    {
+      detail::driver::primaryCtxRelease(__device);
+    }
+  }
+
 private:
   // TODO: put a mutable thread-safe (or thread_local) cache of device
   // properties here.
 
   friend class device_ref;
   friend struct detail::__emplace_device;
+
+  mutable CUcontext __primary_ctx = nullptr;
+  mutable CUdevice __device{};
+  mutable ::std::once_flag __init_once;
 
   explicit constexpr device(int __id) noexcept
       : device_ref(__id)
