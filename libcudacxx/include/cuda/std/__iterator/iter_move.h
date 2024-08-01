@@ -119,7 +119,7 @@ struct __fn
 _LIBCUDACXX_END_NAMESPACE_CPO
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto iter_move = __iter_move::__fn{};
+_CCCL_GLOBAL_CONSTANT auto iter_move = __iter_move::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

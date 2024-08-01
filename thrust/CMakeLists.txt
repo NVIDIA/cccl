@@ -58,7 +58,6 @@ option(THRUST_ENABLE_HEADER_TESTING "Test that all public headers compile." "ON"
 option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
-option(THRUST_INCLUDE_CUB_CMAKE "Build CUB tests and examples. (Requires CUDA)." "OFF")
 
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
@@ -66,8 +65,7 @@ option(THRUST_INCLUDE_CUB_CMAKE "Build CUB tests and examples. (Requires CUDA)."
 if (NOT (THRUST_ENABLE_HEADER_TESTING OR
          THRUST_ENABLE_TESTING OR
          THRUST_ENABLE_EXAMPLES OR
-         THRUST_ENABLE_BENCHMARKS OR
-         THRUST_INCLUDE_CUB_CMAKE))
+         THRUST_ENABLE_BENCHMARKS))
   return()
 endif()
 
@@ -130,12 +128,4 @@ endif()
 
 if (THRUST_ENABLE_BENCHMARKS)
   add_subdirectory(benchmarks)
-endif()
-
-if (THRUST_INCLUDE_CUB_CMAKE AND THRUST_CUDA_FOUND)
-  set(CUB_IN_THRUST ON)
-  # CUB's path is specified generically to support both GitHub and Perforce
-  # source tree layouts. The include directory used by cub-config.cmake
-  # for source layouts is the same as the project root.
-  add_subdirectory("${_CUB_INCLUDE_DIR}" dependencies/cub)
 endif()

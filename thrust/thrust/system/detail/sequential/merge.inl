@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   while (first1 != last1 && first2 != last2)
   {
@@ -97,7 +97,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   while (keys_first1 != keys_last1 && keys_first2 != keys_last2)
   {

@@ -17,7 +17,7 @@ changes. CUB's tests and examples can be built by configuring Thrust with the
 CMake option `THRUST_INCLUDE_CUB_CMAKE=ON`.
 
 This process is described in more detail in Thrust's
-[CONTRIBUTING.md](https://nvidia.github.io/thrust/contributing.html).
+[CONTRIBUTING.md](https://nvidia.github.io/cccl/thrust/contributing.html).
 
 The CMake options in the following section may be used to customize CUB's build
 process. Note that some of these are controlled by Thrust for compatibility and
@@ -63,8 +63,3 @@ The configuration options for CUB are:
   - Enable separable compilation on all targets that are agnostic of RDC.
   - Targets that explicitly require RDC to be enabled or disabled will ignore this setting.
   - Default is `OFF`.
-
-# Development Model
-
-CUB follows the same development model as Thrust, described
-[here](https://nvidia.github.io/thrust/releases/versioning.html).

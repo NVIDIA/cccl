@@ -29,6 +29,7 @@
 #include <thrust/functional.h>
 #include <thrust/system/detail/generic/inner_product.h>
 #include <thrust/transform_reduce.h>
+#include <thrust/zip_function.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -66,15 +67,9 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   BinaryFunction1 binary_op1,
   BinaryFunction2 binary_op2)
 {
-  using ZipIter = thrust::zip_iterator<thrust::tuple<InputIterator1, InputIterator2>>;
-
-  ZipIter first = thrust::make_zip_iterator(thrust::make_tuple(first1, first2));
-
-  // only the first iterator in the tuple is relevant for the purposes of last
-  ZipIter last = thrust::make_zip_iterator(thrust::make_tuple(last1, first2));
-
-  return thrust::transform_reduce(
-    exec, first, last, thrust::detail::zipped_binary_op<OutputType, BinaryFunction2>(binary_op2), init, binary_op1);
+  const auto first = thrust::make_zip_iterator(first1, first2);
+  const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters
+  return thrust::transform_reduce(exec, first, last, thrust::make_zip_function(binary_op2), init, binary_op1);
 } // end inner_product()
 
 } // namespace generic

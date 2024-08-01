@@ -115,28 +115,10 @@ struct __pair_constraints
   };
 };
 
-// We need to synthesize the copy / move assignment if it would be implicitly deleted as a member of a class
-// In that case _T1 would be copy assignable but _TestSynthesizeAssignment<_T1> would not
-// This happens e.g for reference types
-template <class _T1>
-struct _TestSynthesizeAssignment
-{
-  _T1 __dummy;
-};
-
-template <class _T1, class _T2>
-struct __must_synthesize_assignment
-    : integral_constant<bool,
-                        (_CCCL_TRAIT(is_copy_assignable, _T1) && _CCCL_TRAIT(is_copy_assignable, _T2)
-                         && !(_CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_T1>)
-                              && _CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_T2>)))
-                          || (_CCCL_TRAIT(is_move_assignable, _T1) && _CCCL_TRAIT(is_move_assignable, _T2)
-                              && !(_CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_T1>)
-                                   && _CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_T2>)))>
-{};
-
 // base class to ensure `is_trivially_copyable` when possible
-template <class _T1, class _T2, bool = __must_synthesize_assignment<_T1, _T2>::value>
+template <class _T1,
+          class _T2,
+          bool = __must_synthesize_assignment<_T1>::value || __must_synthesize_assignment<_T2>::value>
 struct __pair_base
 {
   _T1 first;

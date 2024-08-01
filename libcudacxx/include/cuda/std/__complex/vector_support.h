@@ -67,7 +67,7 @@ struct __complex_can_implicitly_construct : false_type
 {};
 
 template <class _Dest, class _Source>
-struct __complex_can_implicitly_construct<_Dest, _Source, __void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
+struct __complex_can_implicitly_construct<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
     : true_type
 {};
 
@@ -82,7 +82,7 @@ struct __has_vector_type : false_type
 {};
 
 template <class _Tp>
-struct __has_vector_type<_Tp, __void_t<__type_to_vector_t<_Tp>>> : true_type
+struct __has_vector_type<_Tp, void_t<__type_to_vector_t<_Tp>>> : true_type
 {};
 
 template <class _Tp>

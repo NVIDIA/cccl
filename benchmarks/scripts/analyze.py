@@ -273,7 +273,8 @@ def case_top(alpha, N, algname, ct_point_name, case_dfs):
 
     for subbench in case_dfs:
         case_dfs[subbench] = extract_complete_variants(case_dfs[subbench])
-    print(extract_scores(case_dfs).head(N))
+    with pd.option_context('display.max_rows', None):
+        print(extract_scores(case_dfs).head(N))
 
 
 def top(args):

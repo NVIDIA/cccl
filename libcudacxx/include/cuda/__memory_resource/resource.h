@@ -34,8 +34,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-/// \concept resource
-/// \brief The \c resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __resource_,
@@ -44,11 +42,21 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(_CUDA_VSTD::same_as<void, decltype(__res.deallocate(__ptr, __bytes, __alignment))>),
     requires(_CUDA_VSTD::equality_comparable<_Resource>)));
 
+//! @brief The \c resource concept verifies that a type Resource satisfies the basic requirements of a memory
+//! resource
+//! @rst
+//! We require that a resource supports the following interface
+//!
+//!   - ``allocate(size_t bytes, size_t alginment)``
+//!   - ``deallocate(void* ptr, size_t bytes, size_t alginment)``
+//!   - ``T() == T()``
+//!   - ``T() != T()``
+//!
+//! @endrst
+//! @tparam _Resource The type that should implement the resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT resource = _LIBCUDACXX_FRAGMENT(__resource_, _Resource);
 
-/// \concept async_resource
-/// \brief The \c async_resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __async_resource_,
@@ -57,17 +65,36 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(_CUDA_VSTD::same_as<void*, decltype(__res.allocate_async(__bytes, __alignment, __stream))>),
     requires(_CUDA_VSTD::same_as<void, decltype(__res.deallocate_async(__ptr, __bytes, __alignment, __stream))>)));
 
+//! @brief The \c async_resource concept verifies that a type Resource satisfies the basic requirements of a
+//! memory resource and additionally supports stream ordered allocations
+//! @rst
+//! We require that an async resource supports the following interface
+//!
+//!   - ``allocate(size_t bytes, size_t alignment)``
+//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
+//!   - ``T() == T()``
+//!   - ``T() != T()``
+//!
+//!   - ``allocate_async(size_t bytes, size_t alignment, cuda::stream_ref stream)``
+//!   - ``deallocate_async(void* ptr, size_t bytes, size_t alignment, cuda::stream_ref stream)``
+//!
+//! @endrst
+//! @tparam _Resource The type that should implement the async resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_FRAGMENT(__async_resource_, _Resource);
 
-/// \concept resource_with
-/// \brief The \c resource_with concept
+//! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource` concept and
+//! also satisfies all the provided Properties
+//! @tparam _Resource
+//! @tparam _Properties
 template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT resource_with =
   resource<_Resource> && _CUDA_VSTD::__all_of<has_property<_Resource, _Properties>...>;
 
-/// \concept async_resource_with
-/// \brief The \c async_resource_with concept
+//! @brief The \c async_resource_with concept verifies that a type Resource satisfies the `async_resource`
+//! concept and also satisfies all the provided Properties
+//! @tparam _Resource
+//! @tparam _Properties
 template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT async_resource_with =
   async_resource<_Resource> && _CUDA_VSTD::__all_of<has_property<_Resource, _Properties>...>;
