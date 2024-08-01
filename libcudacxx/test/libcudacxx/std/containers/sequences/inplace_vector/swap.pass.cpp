@@ -21,8 +21,6 @@
 #include "test_macros.h"
 #include "types.h"
 
-_CCCL_DIAG_SUPPRESS_MSVC(4072) // unreachable code
-
 template <class T>
 __host__ __device__ constexpr void test()
 {
