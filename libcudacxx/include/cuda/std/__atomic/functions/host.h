@@ -87,7 +87,8 @@ inline bool __atomic_compare_exchange_strong_host(
 {
   return __atomic_compare_exchange(
     &__atomic_force_align_host(__a)->__atom,
-    __expected,
+    // This is only alignment wrapped in order to prevent GCC-6 from triggering unused warning
+    &__atomic_force_align_host(__expected)->__atom,
     &__desired,
     false,
     __atomic_order_to_int(__success),
@@ -100,7 +101,8 @@ inline bool __atomic_compare_exchange_weak_host(
 {
   return __atomic_compare_exchange(
     &__atomic_force_align_host(__a)->__atom,
-    __expected,
+    // This is only alignment wrapped in order to prevent GCC-6 from triggering unused warning
+    &__atomic_force_align_host(__expected)->__atom,
     &__desired,
     true,
     __atomic_order_to_int(__success),
