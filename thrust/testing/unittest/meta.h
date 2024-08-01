@@ -157,4 +157,19 @@ struct transform2<type_list<T1s...>, type_list<T2s...>, Template>
   using type = type_list<typename ApplyTemplate2<Template, T1s, T2s>::type...>;
 };
 
+template <typename... Ls>
+struct concat;
+
+template <typename L>
+struct concat<L>
+{
+  using type = L;
+};
+
+template <template <typename...> class L, typename... T1s, typename... T2s, typename... Ls>
+struct concat<L<T1s...>, L<T2s...>, Ls...>
+{
+  using type = concat<L<T1s..., T2s...>, Ls...>;
+};
+
 } // namespace unittest
