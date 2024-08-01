@@ -72,9 +72,6 @@
 
 _CCCL_PUSH_MACROS
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Capacity>
@@ -2217,8 +2214,6 @@ erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TR
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-_CCCL_DIAG_POP
 
 _CCCL_POP_MACROS
 
