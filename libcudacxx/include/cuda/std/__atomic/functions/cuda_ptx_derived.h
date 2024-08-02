@@ -40,12 +40,11 @@ template <class _Operand>
 using __atomic_cuda_enable_non_native_load = typename enable_if<_Operand::__size <= 8, bool>::type;
 
 template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_load<_Operand> = 0>
-static inline _CCCL_DEVICE bool
-__cuda_atomic_load(_Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
+static inline _CCCL_DEVICE void
+__cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
   uint16_t* __aligned     = (uint16_t*) ((intptr_t) __ptr & ~(sizeof(uint16_t) - 1));
   const uint16_t __offset = uint16_t((intptr_t) __ptr & (sizeof(uint16_t) - 1)) * 8;
-  const uint16_t __mask   = ((1 << 8) - 1) << __offset;
 
   uint16_t __value = 0;
 
@@ -66,8 +65,6 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   // First CAS attempt 'guesses' that the masked portion of the window is 0x00.
   uint16_t __old       = (uint16_t(__op) << __offset);
   uint16_t __old_value = 0;
-
-  bool __success = false;
 
   // Reemit CAS instructions until either of two conditions are met
   while (1)
@@ -109,6 +106,9 @@ _CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Or
 template <class _Operand>
 using __atomic_cuda_enable_non_native_add = typename enable_if<_Operand::__size <= 16, bool>::type;
 
+template <class _Operand>
+using __atomic_cuda_enable_non_native_exchange = typename enable_if<_Operand::__size <= 8, bool>::type;
+
 template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_add<_Operand> = 0>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
@@ -116,6 +116,73 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_add(_Type* __ptr, _Type& __d
     __ptr,
     [__op](_Type __old) {
       return __old + __op;
+    },
+    _Order{},
+    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
+    _Sco{});
+}
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_add<_Operand> = 0>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_and(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+{
+  __dst = __cuda_atomic_fetch_update(
+    __ptr,
+    [__op](_Type __old) {
+      return __old & __op;
+    },
+    _Order{},
+    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
+    _Sco{});
+}
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_add<_Operand> = 0>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_xor(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+{
+  __dst = __cuda_atomic_fetch_update(
+    __ptr,
+    [__op](_Type __old) {
+      return __old ^ __op;
+    },
+    _Order{},
+    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
+    _Sco{});
+}
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_add<_Operand> = 0>
+static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+{
+  __dst = __cuda_atomic_fetch_update(
+    __ptr,
+    [__op](_Type __old) {
+      return __old | __op;
+    },
+    _Order{},
+    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
+    _Sco{});
+}
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_exchange<_Operand> = 0>
+static inline _CCCL_DEVICE void __cuda_atomic_exchange(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
+{
+  __dst = __cuda_atomic_fetch_update(
+    __ptr,
+    [__op](_Type __old) {
+      return __op;
+    },
+    _Order{},
+    __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
+    _Sco{});
+}
+
+template <class _Type, class _Order, class _Operand, class _Sco, __atomic_cuda_enable_non_native_exchange<_Operand> = 0>
+static inline _CCCL_DEVICE void
+__cuda_atomic_store(_Type* __ptr, _Type __val, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
+{
+  // Store requires cas on 8b types
+  __cuda_atomic_fetch_update(
+    __ptr,
+    [__val](_Type __old) {
+      return __val;
     },
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
