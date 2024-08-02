@@ -120,6 +120,11 @@ public:
   //! @param __other Another \c uninitialized_buffer
   uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept
   {
+    if (this == _CUDA_VSTD::addressof(__other))
+    {
+      return *this;
+    }
+
     if (__buf_)
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
