@@ -28,6 +28,12 @@ namespace cuda::experimental
 {
 class device;
 
+namespace detail
+{
+template <::cudaDeviceAttr _Attr>
+struct __dev_attr;
+} // namespace detail
+
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
@@ -35,37 +41,7 @@ class device_ref
 
   int __id_ = 0;
 
-  template <::cudaDeviceAttr _Attr>
-  struct __attr
-  {
-    using type = int;
-
-    _CCCL_NODISCARD constexpr operator ::cudaDeviceAttr() const noexcept
-    {
-      return _Attr;
-    }
-
-    _CCCL_NODISCARD type operator()(device_ref __dev) const
-    {
-      return __dev.attr<_Attr>();
-    }
-  };
-
 public:
-  struct attrs;
-
-  //! @brief For a given attribute, returns the type of the attribute value.
-  //!
-  //! @par Example
-  //! @code
-  //! using threads_per_block_t = device_ref::attr_result_t<device_ref::attrs::max_threads_per_block>;
-  //! static_assert(std::is_same_v<threads_per_block_t, int>);
-  //! @endcode
-  //!
-  //! @sa device_ref::attrs
-  template <::cudaDeviceAttr _Attr>
-  using attr_result_t = typename __attr<_Attr>::type;
-
   //! @brief Create a `device_ref` object from a native device ordinal.
   /*implicit*/ constexpr device_ref(int __id) noexcept
       : __id_(__id)
@@ -79,27 +55,27 @@ public:
     return __id_;
   }
 
-  //! @brief Retrieve the specified attribute for the `device_ref`
+  //! @brief Retrieve the specified attribute for the device
   //!
-  //! @param __attr The attribute to query. See `device_ref::attrs` for the available
+  //! @param __attr The attribute to query. See `device::attrs` for the available
   //!        attributes.
   //!
   //! @throws cuda_error if the attribute query fails
   //!
-  //! @sa device_ref::attrs
+  //! @sa device::attrs
   template <::cudaDeviceAttr _Attr>
-  _CCCL_NODISCARD auto attr([[maybe_unused]] device_ref::__attr<_Attr> __attr) const
+  _CCCL_NODISCARD auto attr([[maybe_unused]] detail::__dev_attr<_Attr> __attr) const
   {
     int __value = 0;
     _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, _Attr, get());
-    return static_cast<typename device_ref::__attr<_Attr>::type>(__value);
+    return static_cast<typename detail::__dev_attr<_Attr>::type>(__value);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
   _CCCL_NODISCARD auto attr() const
   {
-    return attr(__attr<_Attr>());
+    return attr(detail::__dev_attr<_Attr>());
   }
 };
 

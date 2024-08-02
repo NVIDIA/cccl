@@ -31,11 +31,26 @@ namespace cuda::experimental
 //! @brief An immovable "owning" representation of a CUDA device.
 class device : public device_ref
 {
-  // TODO: put a mutable thread-safe (or thread_local) cache of device
-  // properties here.
+public:
+  struct attrs;
+
+  //! @brief For a given attribute, returns the type of the attribute value.
+  //!
+  //! @par Example
+  //! @code
+  //! using threads_per_block_t = device::attr_result_t<device::attrs::max_threads_per_block>;
+  //! static_assert(std::is_same_v<threads_per_block_t, int>);
+  //! @endcode
+  //!
+  //! @sa device::attrs
+  template <::cudaDeviceAttr _Attr>
+  using attr_result_t = typename detail::__dev_attr<_Attr>::type;
 
 private:
   friend class device_ref;
+
+  // TODO: put a mutable thread-safe (or thread_local) cache of device
+  // properties here.
 
   explicit constexpr device(int __id) noexcept
       : device_ref(__id)
