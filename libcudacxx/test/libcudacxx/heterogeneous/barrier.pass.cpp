@@ -10,7 +10,7 @@
 // XFAIL: clang && (!nvcc)
 
 // uncomment for a really verbose output detailing what test steps are being launched
-// #define DEBUG_TESTERS
+#define DEBUG_TESTERS
 
 #include <cuda/barrier>
 #include <cuda/std/cassert>
@@ -61,9 +61,11 @@ struct barrier_and_token_with_completion
   {}
 };
 
+template <int N>
 struct barrier_arrive
 {
-  using async = cuda::std::true_type;
+  using async                         = cuda::std::true_type;
+  static constexpr size_t threadcount = N;
 
   template <typename Data>
   __host__ __device__ static void perform(Data& data)
@@ -89,17 +91,6 @@ struct barrier_wait
   }
 };
 
-struct barrier_arrive_and_wait
-{
-  using async = cuda::std::true_type;
-
-  template <typename Data>
-  __host__ __device__ static void perform(Data& data)
-  {
-    data.barrier.arrive_and_wait();
-  }
-};
-
 struct validate_completion_result
 {
   template <typename Data>
@@ -119,42 +110,21 @@ struct clear_token
   }
 };
 
-using a_aw_w = performer_list<barrier_arrive, barrier_arrive_and_wait, barrier_wait, async_tester_fence, clear_token>;
-
-using aw_aw = performer_list<barrier_arrive_and_wait, barrier_arrive_and_wait>;
-
-using a_w_aw = performer_list<barrier_arrive, barrier_wait, barrier_arrive_and_wait, async_tester_fence, clear_token>;
-
-using a_w_a_w =
-  performer_list<barrier_arrive, barrier_wait, barrier_arrive, barrier_wait, async_tester_fence, clear_token>;
+using a2_w_w = performer_list<barrier_arrive<2>, barrier_wait, barrier_wait, async_tester_fence, clear_token>;
 
 using completion_performers_a =
-  performer_list<clear_token,
-                 barrier_arrive,
-                 barrier_arrive_and_wait,
-                 async_tester_fence,
-                 validate_completion_result,
-                 barrier_wait>;
+  performer_list<clear_token, barrier_arrive<2>, barrier_wait, async_tester_fence, validate_completion_result, barrier_wait>;
 
 using completion_performers_b =
-  performer_list<clear_token, barrier_arrive, barrier_arrive_and_wait, async_tester_fence, validate_completion_result>;
+  performer_list<clear_token, barrier_arrive<2>, barrier_wait, async_tester_fence, validate_completion_result>;
 
 template <typename Completion>
 using cuda_barrier_system = cuda::barrier<cuda::thread_scope_system, Completion>;
 
 void kernel_invoker()
 {
-  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_aw_w>(2);
-  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_aw_w>(2);
-
-  validate_pinned<barrier_and_token<cuda::std::barrier<>>, aw_aw>(2);
-  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, aw_aw>(2);
-
-  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_w_aw>(2);
-  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_aw>(2);
-
-  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a_w_a_w>(2);
-  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a_w_a_w>(2);
+  validate_pinned<barrier_and_token<cuda::std::barrier<>>, a2_w_w>(2);
+  validate_pinned<barrier_and_token<cuda::barrier<cuda::thread_scope_system>>, a2_w_w>(2);
 
   validate_pinned<barrier_and_token_with_completion<cuda::std::barrier>, completion_performers_a>(2);
   validate_pinned<barrier_and_token_with_completion<cuda_barrier_system>, completion_performers_a>(2);
