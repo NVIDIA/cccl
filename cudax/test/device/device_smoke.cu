@@ -242,8 +242,9 @@ TEST_CASE("Smoke", "[device]")
         | ::cudaMemHandleTypeWin32 //
         | ::cudaMemHandleTypeWin32Kmt //
 #if CUDART_VERSION >= 12040
-        | ::cudaMemHandleTypeFabric;
+        | ::cudaMemHandleTypeFabric
 #endif
+        ;
       auto handle_types = device_ref(0).attr(device::attrs::memory_pool_supported_handle_types);
       CUDAX_REQUIRE(handle_types <= all_handle_types);
     }
