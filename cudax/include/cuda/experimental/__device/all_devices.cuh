@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cassert>
+#include <cuda/std/detail/libcxx/include/stdexcept>
 
 #include <cuda/experimental/__device/device.cuh>
 
@@ -43,6 +44,8 @@ public:
   all_devices() = default;
 
   _CCCL_NODISCARD const device& operator[](size_type __i) const noexcept;
+
+  _CCCL_NODISCARD const device& at(size_type __i) const;
 
   _CCCL_NODISCARD size_type size() const;
 
@@ -109,6 +112,15 @@ struct all_devices::__initializer_iterator
 _CCCL_NODISCARD inline const device& all_devices::operator[](size_type __id_) const noexcept
 {
   assert(__id_ < size());
+  return __devices()[__id_];
+}
+
+_CCCL_NODISCARD inline const device& all_devices::at(size_type __id_) const
+{
+  if (__id_ >= size())
+  {
+    _CUDA_VSTD::__throw_out_of_range("device index out of range");
+  }
   return __devices()[__id_];
 }
 

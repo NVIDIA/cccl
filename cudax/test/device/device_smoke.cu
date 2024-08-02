@@ -264,4 +264,14 @@ TEST_CASE("global devices vector", "[device]")
     CUDAX_REQUIRE(0 == std::prev(cudax::devices.end())->get());
     CUDAX_REQUIRE(0 == cudax::devices.end()[-1].get());
   }
+
+  try
+  {
+    [[maybe_unused]] const cudax::device& dev = cudax::devices.at(cudax::devices.size());
+    CUDAX_REQUIRE(false); // should not get here
+  }
+  catch (const std::out_of_range&)
+  {
+    CUDAX_REQUIRE(true); // expected
+  }
 }
