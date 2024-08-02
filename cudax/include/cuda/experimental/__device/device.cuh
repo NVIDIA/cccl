@@ -25,10 +25,19 @@
 
 namespace cuda::experimental
 {
-namespace __detail
+namespace detail
 {
-struct __emplace_device; // see all_devices.cuh
-} // namespace __detail
+//! @brief A proxy object used to in-place construct a `device` object from an
+//! integer ID. Used in __detail/all_devices.cuh.
+struct __emplace_device
+{
+  int __id_;
+
+  _CCCL_NODISCARD constexpr operator device() const noexcept;
+
+  _CCCL_NODISCARD constexpr const __emplace_device* operator->() const noexcept;
+};
+} // namespace detail
 
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
@@ -36,17 +45,23 @@ struct __emplace_device; // see all_devices.cuh
 //! @brief An immovable "owning" representation of a CUDA device.
 class device : public device_ref
 {
-  device_ref ref() const noexcept
-  {
-    return *this;
-  }
+public:
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  if defined(_CCCL_COMPILER_MSVC)
+  // When __EDG__ is defined, std::construct_at will not permit constructing
+  // a device object from an __emplace_device object. This is a workaround.
+  constexpr device(detail::__emplace_device __ed) noexcept
+      : device(__ed.__id_)
+  {}
+#  endif
+#endif
 
 private:
   // TODO: put a mutable thread-safe (or thread_local) cache of device
   // properties here.
 
   friend class device_ref;
-  friend struct __detail::__emplace_device;
+  friend struct detail::__emplace_device;
 
   explicit constexpr device(int __id) noexcept
       : device_ref(__id)
@@ -58,6 +73,19 @@ private:
   device& operator=(device&&)      = delete;
   device& operator=(const device&) = delete;
 };
+
+namespace detail
+{
+_CCCL_NODISCARD inline constexpr __emplace_device::operator device() const noexcept
+{
+  return device(__id_);
+}
+
+_CCCL_NODISCARD inline constexpr const __emplace_device* __emplace_device::operator->() const noexcept
+{
+  return this;
+}
+} // namespace detail
 
 } // namespace cuda::experimental
 

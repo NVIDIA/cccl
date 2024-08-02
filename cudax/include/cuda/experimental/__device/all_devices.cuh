@@ -30,7 +30,7 @@
 
 namespace cuda::experimental
 {
-namespace __detail
+namespace detail
 {
 //! @brief A random-access range of all available CUDA devices
 class all_devices
@@ -56,23 +56,6 @@ private:
   static const ::std::vector<device>& __devices();
 };
 
-//! @brief A proxy object used to in-place construct a `device` object from an
-//! integer ID
-struct __emplace_device
-{
-  int __id_;
-
-  _CCCL_NODISCARD constexpr operator device() const noexcept
-  {
-    return device(__id_);
-  }
-
-  const __emplace_device* operator->() const noexcept
-  {
-    return this;
-  }
-};
-
 //! @brief An iterator used to in-place construct `device` objects in a
 //! std::vector.
 //!
@@ -89,23 +72,23 @@ struct all_devices::__initializer_iterator
 
   int __id_;
 
-  __emplace_device operator*() const
+  __emplace_device operator*() const noexcept
   {
     return __emplace_device{__id_};
   }
 
-  __emplace_device operator->() const
+  __emplace_device operator->() const noexcept
   {
     return __emplace_device{__id_};
   }
 
-  __initializer_iterator& operator++()
+  __initializer_iterator& operator++() noexcept
   {
     ++__id_;
     return *this;
   }
 
-  __initializer_iterator operator++(int)
+  __initializer_iterator operator++(int) noexcept
   {
     auto __tmp = *this;
     ++__id_;
@@ -153,7 +136,7 @@ inline const ::std::vector<device>& all_devices::__devices()
   }();
   return __devices;
 }
-} // namespace __detail
+} // namespace detail
 
 //! @brief A range of all available CUDA devices
 //!
@@ -192,7 +175,7 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! @sa
 //! * device
 //! * device_ref
-inline constexpr __detail::all_devices devices{};
+inline constexpr detail::all_devices devices{};
 
 } // namespace cuda::experimental
 
