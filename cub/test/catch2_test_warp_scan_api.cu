@@ -56,7 +56,7 @@ struct sum_op
 };
 
 // example-begin inclusive-warp-scan-init-value
-__global__ void InclusiveScanKernel(int* output)
+__global__ void InclusiveWarpScanKernel(int* output)
 {
   // Specialize WarpScan for type int
   using warp_scan_t = cub::WarpScan<int>;
@@ -89,7 +89,7 @@ CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
 {
   thrust::device_vector<int> d_out(num_warps * 32);
 
-  InclusiveScanKernel<<<1, num_warps * 32>>>(thrust::raw_pointer_cast(d_out.data()));
+  InclusiveWarpScanKernel<<<1, num_warps * 32>>>(thrust::raw_pointer_cast(d_out.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
@@ -109,7 +109,7 @@ CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
 }
 
 // example-begin inclusive-warp-scan-init-value-aggregate
-__global__ void InclusiveScanKernelAggr(int* output, int* d_warp_aggregate)
+__global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
 {
   // Specialize WarpScan for type int
   using warp_scan_t = cub::WarpScan<int>;
@@ -144,7 +144,7 @@ CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "
   thrust::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);
 
-  InclusiveScanKernelAggr<<<1, num_warps * 32>>>(
+  InclusiveWarpScanKernelAggr<<<1, num_warps * 32>>>(
     thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_warp_aggregate.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

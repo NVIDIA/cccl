@@ -53,6 +53,7 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__cuda/ensure_current_device.h>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -105,36 +106,11 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-/**
- * \brief RAII helper which saves the current device and switches to the
- *        specified device on construction and switches to the saved device on
- *        destruction.
- */
-struct SwitchDevice
-{
-private:
-  int const old_device;
-  bool const needs_reset;
 
-public:
-  _CCCL_HOST inline SwitchDevice(int new_device)
-      : old_device(CurrentDevice())
-      , needs_reset(old_device != new_device)
-  {
-    if (needs_reset)
-    {
-      CubDebug(cudaSetDevice(new_device));
-    }
-  }
+//! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
+//! to the saved device on destruction.
+using SwitchDevice = ::cuda::__ensure_current_device;
 
-  _CCCL_HOST inline ~SwitchDevice()
-  {
-    if (needs_reset)
-    {
-      CubDebug(cudaSetDevice(old_device));
-    }
-  }
-};
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**

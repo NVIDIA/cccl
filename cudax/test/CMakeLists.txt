@@ -74,6 +74,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
   cudax_add_catch2_test(test_target stream_tests ${cn_target}
+    stream/get_stream.cu
     stream/stream_smoke.cu
   )
 
