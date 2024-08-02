@@ -151,7 +151,7 @@ struct stream : stream_ref
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one per
     // stream
-    assert(__stream.get() != detail::invalid_stream);
+    assert(__stream != detail::invalid_stream);
     event __tmp(__other);
     wait(__tmp);
   }
