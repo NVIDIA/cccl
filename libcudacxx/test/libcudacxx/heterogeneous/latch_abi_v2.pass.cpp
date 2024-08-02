@@ -17,30 +17,31 @@
 #include <cuda/std/latch>
 
 #include "helpers.h"
-
 static_assert(sizeof(cuda::latch<cuda::thread_scope_device>) == 64, "");
 
 template <int N>
 struct count_down
 {
-  using async = cuda::std::true_type;
+  using async                         = cuda::std::true_type;
+  static constexpr size_t threadcount = N;
 
   template <typename Latch>
   __host__ __device__ static void perform(Latch& latch)
   {
-    latch.count_down(N);
+    latch.count_down(1);
   }
 };
 
 template <int N>
 struct arrive_and_wait
 {
-  using async = cuda::std::true_type;
+  using async                         = cuda::std::true_type;
+  static constexpr size_t threadcount = N;
 
   template <typename Latch>
   __host__ __device__ static void perform(Latch& latch)
   {
-    latch.arrive_and_wait(N);
+    latch.arrive_and_wait(1);
   }
 };
 
@@ -71,20 +72,20 @@ struct reset
 
 using r0_w = performer_list<reset<0>, latch_wait>;
 
-using r5_cd1_aw2_w_cd2 = performer_list<reset<5>, count_down<1>, arrive_and_wait<2>, latch_wait, count_down<2>>;
+using r5_cd5_w_w = performer_list<reset<5>, count_down<5>, latch_wait, latch_wait>;
 
-using r3_aw1_aw1_aw1 = performer_list<reset<3>, arrive_and_wait<1>, arrive_and_wait<1>, arrive_and_wait<1>>;
+using r5_aw5_w_w = performer_list<reset<5>, arrive_and_wait<5>, latch_wait, latch_wait>;
 
 void kernel_invoker()
 {
   validate_pinned<cuda::std::latch, r0_w>(0);
   validate_pinned<cuda::latch<cuda::thread_scope_system>, r0_w>(0);
 
-  validate_pinned<cuda::std::latch, r5_cd1_aw2_w_cd2>(0);
-  validate_pinned<cuda::latch<cuda::thread_scope_system>, r5_cd1_aw2_w_cd2>(0);
+  validate_pinned<cuda::std::latch, r5_cd5_w_w>(0);
+  validate_pinned<cuda::latch<cuda::thread_scope_system>, r5_cd5_w_w>(0);
 
-  validate_pinned<cuda::std::latch, r3_aw1_aw1_aw1>(0);
-  validate_pinned<cuda::latch<cuda::thread_scope_system>, r3_aw1_aw1_aw1>(0);
+  validate_pinned<cuda::std::latch, r5_aw5_w_w>(0);
+  validate_pinned<cuda::latch<cuda::thread_scope_system>, r5_aw5_w_w>(0);
 }
 
 int main(int arg, char** argv)

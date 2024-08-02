@@ -414,6 +414,7 @@ struct dispatch_histogram
         d_output_histograms, d_output_histograms + NUM_ACTIVE_CHANNELS, d_output_histograms_wrapper.begin());
       ::cuda::std::copy(
         typedAllocations, typedAllocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
+      // TODO(bgruber): we can probably skip copying the function objects when they are empty
       ::cuda::std::copy(
         privatized_decode_op, privatized_decode_op + NUM_ACTIVE_CHANNELS, privatized_decode_op_wrapper.begin());
       ::cuda::std::copy(output_decode_op, output_decode_op + NUM_ACTIVE_CHANNELS, output_decode_op_wrapper.begin());
@@ -844,6 +845,12 @@ public:
   // Pass-through bin transform operator
   struct PassThruTransform
   {
+// GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
+// bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ == 14
+    char dummy;
+#endif
+
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid)
