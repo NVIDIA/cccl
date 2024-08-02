@@ -183,7 +183,11 @@ runs:
           cp -v "$filepath" "$result_dir"
         }
 
-        find_and_copy "sccache_stats.json" || true # Ignore failures
+        find_and_copy "sccache_stats.json" || :
+        find_and_copy ".ninja_log" || :
+        find_and_copy "cccl_meta_bench.csv" || :
+        find_and_copy "cccl_meta_bench.db" || :
+        find_and_copy "cccl_meta_bench.log" || :
 
         echo "::group::Job artifacts"
         tree "$result_dir"

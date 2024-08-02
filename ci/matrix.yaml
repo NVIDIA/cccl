@@ -8,6 +8,8 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
   #
   override:
+    # Using the L4 runners since they are abundant and reliable NVKS testers:
+    - {jobs: ['benchmark'], project: 'cccl', gpu: 'l4', sm: 'gpu'}
 
   pull_request:
     # Old CTK
@@ -185,6 +187,7 @@ jobs:
 
   # CCCL:
   infra: { gpu: true } # example project launches a kernel
+  benchmark: { gpu: true }
 
   # libcudacxx:
   nvrtc: { gpu: true, name: 'NVRTC' }

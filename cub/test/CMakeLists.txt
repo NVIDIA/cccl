@@ -18,7 +18,6 @@ else()
   )
 endif()
 
-include("${CUB_SOURCE_DIR}/cmake/CPM.cmake")
 CPMAddPackage("gh:catchorg/Catch2@2.13.9")
 
 option(METAL_BUILD_DOC OFF)

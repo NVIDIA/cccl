@@ -15,7 +15,11 @@
 #if defined(_MSC_VER)
 #  define NVBENCH_HELPER_HAS_I128 0
 #else
-#  define NVBENCH_HELPER_HAS_I128 1
+// FIXME: Disabling this for now. The thrust.bench.unique.by_key TU and some others appear
+// to be hanging, running cicc for more than 8 hours at 100% CPU.
+// Removing I128 from the type list reduces that TU's build time to <1 minute.
+// #  define NVBENCH_HELPER_HAS_I128 1
+#  define NVBENCH_HELPER_HAS_I128 0
 #endif
 
 #if NVBENCH_HELPER_HAS_I128
