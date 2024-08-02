@@ -69,6 +69,15 @@ constexpr auto loaded_bytes_per_iteration() -> std::size_t
 }
 #endif
 
+enum class Algorithm
+{
+  fallback_for,
+  prefetch,
+  unrolled_staged,
+  memcpy_async,
+  ublkcp
+};
+
 template <int BlockThreads>
 struct prefetch_policy_t
 {
@@ -93,9 +102,14 @@ _CCCL_DEVICE void prefetch(It)
 {}
 
 // this kernel guarantees stable addresses for the parameters of the user provided function
-template <typename Offset, typename F, typename RandomAccessIteartorOut, typename... RandomAccessIteartorIn>
-CUB_DETAIL_KERNEL_ATTRIBUTES void transform_prefetch_kernel(
-  Offset len, int num_elem_per_thread, F f, RandomAccessIteartorOut out, RandomAccessIteartorIn... ins)
+template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... RandomAccessIteartorIn>
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>,
+  Offset len,
+  int num_elem_per_thread,
+  F f,
+  RandomAccessIteartorOut out,
+  RandomAccessIteartorIn... ins)
 {
   const int tile_size = blockDim.x * num_elem_per_thread;
   const Offset offset = static_cast<Offset>(blockIdx.x) * tile_size;
@@ -130,17 +144,21 @@ struct unrolled_policy_t
 
 // ahendriksen: no __restrict__ should be necessary on the input pointers since we already separated the load stage from
 // the store stage.
-template <typename MaxPolicy,
+template <typename UnrolledPolicy,
           typename Offset,
           typename F,
           typename RandomAccessIteartorOut,
           typename... RandomAccessIteartorIn>
-__launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void transform_unrolled_staged_kernel(
-    Offset len, F f, RandomAccessIteartorOut out, RandomAccessIteartorIn... ins)
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::unrolled_staged>,
+  Offset len,
+  int,
+  F f,
+  RandomAccessIteartorOut out,
+  RandomAccessIteartorIn... ins)
 {
-  constexpr int block_dim        = MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS;
-  constexpr int items_per_thread = MaxPolicy::ActivePolicy::algo_policy::ITEMS_PER_THREAD;
+  constexpr int block_dim        = UnrolledPolicy::BLOCK_THREADS;
+  constexpr int items_per_thread = UnrolledPolicy::ITEMS_PER_THREAD;
   constexpr int tile_size        = block_dim * items_per_thread;
   const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_size;
 
@@ -169,6 +187,16 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS)
     }
   }(cuda::std::array<value_t<RandomAccessIteartorIn>, items_per_thread>{}...);
 }
+
+// used for both, memcpy_async and ublkcp kernels
+template <int BlockThreads>
+struct async_copy_policy_t
+{
+  static constexpr int BLOCK_THREADS = BlockThreads;
+  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
+  static constexpr int MIN_ITEMS_PER_THREAD = 1;
+  static constexpr int MAX_ITEMS_PER_THREAD = 32;
+};
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
 template <class F, class Tuple, std::size_t... Is>
@@ -213,9 +241,14 @@ _CCCL_DEVICE T* copy_and_return_smem_dst(
   return smem_dst;
 }
 
-template <typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
-CUB_DETAIL_KERNEL_ATTRIBUTES void transform_memcpy_async_kernel(
-  Offset len, int num_elem_per_thread, F f, RandomAccessIteartorOut out, const InTs*... pointers)
+template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
+  Offset len,
+  int num_elem_per_thread,
+  F f,
+  RandomAccessIteartorOut out,
+  const InTs*... pointers)
 {
   extern __shared__ char smem[];
 
@@ -299,16 +332,6 @@ _CCCL_HOST_DEVICE ptr_set<T> make_ublkcp_ptr_set(T* ptr)
   };
 }
 
-// used for both, memcpy_async and ublkcp kernels
-template <int BlockThreads>
-struct async_copy_policy_t
-{
-  static constexpr int BLOCK_THREADS = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int MIN_ITEMS_PER_THREAD = 1;
-  static constexpr int MAX_ITEMS_PER_THREAD = 32;
-};
-
 // TODO(bgruber): inline this as lambda in C++14
 template <typename T>
 _CCCL_DEVICE void copy_ptr_set(
@@ -346,10 +369,14 @@ fetch_operand(uint32_t tile_stride, const char* smem, int& smem_offset, int smem
   return smem_operand_tile_base[smem_idx];
 };
 
-// TODO(bgruber): apply Offset type
-template <typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
-CUB_DETAIL_KERNEL_ATTRIBUTES void transform_ublkcp_kernel(
-  Offset len, int num_elem_per_thread, F f, RandomAccessIteartorOut out, ptr_set<const InTs>... pointers)
+template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
+  Offset len,
+  int num_elem_per_thread,
+  F f,
+  RandomAccessIteartorOut out,
+  ptr_set<const InTs>... pointers)
 {
 #if CUB_PTX_ARCH >= 900
   __shared__ uint64_t bar;
@@ -412,14 +439,61 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void transform_ublkcp_kernel(
 #endif // CUB_PTX_ARCH >= 900
 }
 
-enum class Algorithm
+template <typename It>
+union kernel_arg
 {
-  fallback_for,
-  prefetch,
-  unrolled_staged,
-  memcpy_async,
-  ublkcp
+  It iterator;
+  ptr_set<const value_t<It>> ptr_set;
 };
+
+template <typename It>
+_CCCL_HOST_DEVICE auto make_ptr_set_kernel_arg(It ptr) -> kernel_arg<It>
+{
+  kernel_arg<It> arg;
+  using T     = value_t<It>;
+  arg.ptr_set = ptr_set<const T>{
+    round_down_ptr_128(ptr),
+    round_up_16(offset_to_aligned_ptr_128(ptr) * sizeof(T)),
+    // (ptr - ptr_base) * sizeof(T) rounded up to nearest multiple of 16
+    static_cast<uint32_t>(sizeof(T) * (ptr - round_down_ptr_128(ptr))),
+  };
+  return arg;
+}
+
+template <typename It>
+_CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
+                                    kernel_arg<It> arg) -> ptr_set<const value_t<It>>
+{
+  return ::cuda::std::move(arg.ptr_set);
+}
+
+template <Algorithm Alg, typename It>
+_CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It> arg) -> It
+{
+  return ::cuda::std::move(arg.iterator);
+}
+
+// There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
+// with the same arguments for each algorithm. Only the device compiler will then select the implementation. This saves
+// some compile-time and binary size.
+template <typename MaxPolicy,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteartorOut,
+          typename... RandomAccessIteartorsIn>
+__launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
+    Offset len, int num_elem_per_thread, F f, RandomAccessIteartorOut out, kernel_arg<RandomAccessIteartorsIn>... ins)
+{
+  constexpr auto alg = ::cuda::std::integral_constant<Algorithm, MaxPolicy::ActivePolicy::algorithm>{};
+  transform_kernel_impl<MaxPolicy::ActivePolicy::algo_policy>(
+    alg,
+    len,
+    num_elem_per_thread,
+    ::cuda::std::move(f),
+    ::cuda::std::move(out),
+    select_kernel_arg(alg, ::cuda::std::move(ins))...);
+}
 
 constexpr int arch_to_min_bif(int sm_arch)
 {
@@ -568,21 +642,27 @@ struct dispatch_t<RequiresStableAddress,
   static constexpr int loaded_bytes_per_iter =
     static_cast<int>(loaded_bytes_per_iteration<RandomAccessIteratorsIn...>());
 
+  using kernel_ptr_t =
+    decltype(&transform_kernel<typename PolicyHub::max_policy,
+                               Offset,
+                               TransformOp,
+                               RandomAccessIteratorOut,
+                               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
+
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running on?
   template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_memcpy_async_kernel(cuda::std::index_sequence<Is...>)
-    -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron,
-                                       decltype(&transform_memcpy_async_kernel<Offset,
-                                                                               TransformOp,
-                                                                               RandomAccessIteratorOut,
-                                                                               value_t<RandomAccessIteratorsIn>...>),
-                                       int>>
+    -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, kernel_ptr_t, int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
 
     auto kernel =
-      transform_memcpy_async_kernel<Offset, TransformOp, RandomAccessIteratorOut, value_t<RandomAccessIteratorsIn>...>;
+      transform_kernel<typename PolicyHub::max_policy,
+                       Offset,
+                       TransformOp,
+                       RandomAccessIteratorOut,
+                       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>;
 
     // Increase the number of output elements per thread until we reach the required bytes in flight.
     int chosen_elem_per_thread = 0;
@@ -648,16 +728,17 @@ struct dispatch_t<RequiresStableAddress,
   // on?
   template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_ublkcp_kernel(cuda::std::index_sequence<Is...>)
-    -> PoorExpected<::cuda::std::tuple<
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron,
-      decltype(&transform_ublkcp_kernel<Offset, TransformOp, RandomAccessIteratorOut, value_t<RandomAccessIteratorsIn>...>),
-      int>>
+    -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, kernel_ptr_t, int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
 
     auto kernel =
-      transform_ublkcp_kernel<Offset, TransformOp, RandomAccessIteratorOut, value_t<RandomAccessIteratorsIn>...>;
+      transform_kernel<typename PolicyHub::max_policy,
+                       Offset,
+                       TransformOp,
+                       RandomAccessIteratorOut,
+                       THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>;
 
     // Increase the number of output elements per thread until we reach the required bytes in flight.
     int chosen_elem_per_thread = 0;
@@ -729,7 +810,7 @@ struct dispatch_t<RequiresStableAddress,
       ::cuda::std::get<2>(*ret),
       op,
       out,
-      make_ublkcp_ptr_set<const value_t<RandomAccessIteratorsIn>>(
+      make_ptr_set_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
         THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...);
   }
 
@@ -750,7 +831,8 @@ struct dispatch_t<RequiresStableAddress,
       ::cuda::std::get<2>(*ret),
       op,
       out,
-      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in))...);
+      kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>{
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in))}...);
   }
 
   template <typename ActivePolicy, std::size_t... Is>
@@ -760,13 +842,19 @@ struct dispatch_t<RequiresStableAddress,
     using policy_t        = typename ActivePolicy::algo_policy;
     const Offset grid_dim = ::cuda::ceil_div(num_items, Offset{policy_t::BLOCK_THREADS * policy_t::ITEMS_PER_THREAD});
     auto kernel =
-      transform_unrolled_staged_kernel<ActivePolicy,
-                                       Offset,
-                                       TransformOp,
-                                       RandomAccessIteratorOut,
-                                       RandomAccessIteratorsIn...>;
+      transform_kernel<typename PolicyHub::max_policy,
+                       Offset,
+                       TransformOp,
+                       RandomAccessIteratorOut,
+                       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>;
     return THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, policy_t::BLOCK_THREADS, 0, stream)
-      .doit(kernel, num_items, op, out, ::cuda::std::get<Is>(in)...);
+      .doit(kernel,
+            num_items,
+            /* items per thread taken from policy */ -1,
+            op,
+            out,
+            kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>{
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in))}...);
   }
 
   template <typename ActivePolicy, std::size_t... Is>
@@ -777,10 +865,11 @@ struct dispatch_t<RequiresStableAddress,
     constexpr int block_dim = policy_t::BLOCK_THREADS;
 
     auto kernel =
-      transform_prefetch_kernel<Offset,
-                                TransformOp,
-                                RandomAccessIteratorOut,
-                                THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>;
+      transform_kernel<typename PolicyHub::max_policy,
+                       Offset,
+                       TransformOp,
+                       RandomAccessIteratorOut,
+                       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>;
     int max_occupancy = 0;
     const auto error  = MaxSmOccupancy(max_occupancy, kernel, block_dim, 0);
     if (error != cudaSuccess)
@@ -803,7 +892,8 @@ struct dispatch_t<RequiresStableAddress,
             items_per_thread_clamped,
             op,
             out,
-            THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in))...);
+            kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>{
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in))}...);
   }
 
   template <std::size_t... Is>
