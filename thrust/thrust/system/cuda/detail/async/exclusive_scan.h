@@ -155,7 +155,7 @@ auto async_exclusive_scan(
   InitialValueType&& init,
   BinaryOp&& op)
   THRUST_RETURNS(thrust::system::cuda::detail::async_exclusive_scan_n(
-    policy, first, distance(first, THRUST_FWD(last)), THRUST_FWD(out), THRUST_FWD(init), THRUST_FWD(op)))
+    policy, first, thrust::distance(first, THRUST_FWD(last)), THRUST_FWD(out), THRUST_FWD(init), THRUST_FWD(op)))
 
 } // namespace cuda_cub
 

@@ -57,17 +57,15 @@ template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPre
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
-  using key_t = typename ::cuda::std::iterator_traits<KeyIt1>::value_type;
-  static_assert(::cuda::std::is_same<key_t, typename ::cuda::std::iterator_traits<KeyIt2>::value_type>::value, "");
-
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
   OffsetT keys1_end   = (cub::min)(diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
     const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
-    const key_t key1  = keys1[mid];
-    const key_t key2  = keys2[diag - 1 - mid];
+    // pull copies of the keys before calling binary_pred so proxy references are unwrapped
+    const detail::value_t<KeyIt1> key1 = keys1[mid];
+    const detail::value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
     if (binary_pred(key2, key1))
     {
       keys1_end = mid;
@@ -723,10 +721,9 @@ private:
  * `{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }`.
  *
  * @par Re-using dynamically allocating shared memory
- * The following example under the examples/block folder illustrates usage of
+ * The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of
  * dynamically shared memory with BlockReduce and how to re-purpose
- * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
+ * the same memory region.
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */

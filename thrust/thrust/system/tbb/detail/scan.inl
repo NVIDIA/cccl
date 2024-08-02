@@ -28,7 +28,6 @@
 #include <thrust/advance.h>
 #include <thrust/detail/function.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/function_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -59,7 +58,7 @@ struct inclusive_body
   inclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType dummy)
       : input(input)
       , output(output)
-      , binary_op(binary_op)
+      , binary_op{binary_op}
       , sum(dummy)
       , first_call(true)
   {}
@@ -67,7 +66,7 @@ struct inclusive_body
   inclusive_body(inclusive_body& b, ::tbb::split)
       : input(b.input)
       , output(b.output)
-      , binary_op(b.binary_op)
+      , binary_op{b.binary_op}
       , sum(b.sum)
       , first_call(true)
   {}
@@ -153,7 +152,7 @@ struct exclusive_body
   exclusive_body(InputIterator input, OutputIterator output, BinaryFunction binary_op, ValueType init)
       : input(input)
       , output(output)
-      , binary_op(binary_op)
+      , binary_op{binary_op}
       , sum(init)
       , first_call(true)
   {}
@@ -161,7 +160,7 @@ struct exclusive_body
   exclusive_body(exclusive_body& b, ::tbb::split)
       : input(b.input)
       , output(b.output)
-      , binary_op(b.binary_op)
+      , binary_op{b.binary_op}
       , sum(b.sum)
       , first_call(true)
   {}

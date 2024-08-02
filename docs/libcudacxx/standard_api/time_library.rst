@@ -34,7 +34,7 @@ we use:
 -  `GetSystemTimePreciseAsFileTime <https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemtimepreciseasfiletime>`_ and
    `GetSystemTimeAsFileTime <https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemtimeasfiletime>`_
    for host code on Windows.
--  `clock_gettime(CLOCK_REALTIME, ...) <https://linux.die.net/man/3/clock_gettime>`_ and `gettimeofday <https://linux.die.net/man/2/gettimeofday>`_
+-  `clock_gettime(CLOCK_REALTIME, ...) <https://man7.org/linux/man-pages/man3/clock_gettime.3.html>`_ and `gettimeofday <https://man7.org/linux/man-pages/man2/gettimeofday.2.html>`_
    for host code on Linux, Android, and QNX.
 -  `PTX's %globaltimer <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer>`_ for device code.
 

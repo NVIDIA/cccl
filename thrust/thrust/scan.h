@@ -74,8 +74,8 @@ THRUST_NAMESPACE_BEGIN
  * Iterator</a>, and if \c x and \c y are objects of \c OutputIterator's \c value_type, then <tt>x + y</tt> is defined.
  * If \c T is \c OutputIterator's \c value_type, then <tt>T(0)</tt> is defined.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan to compute an in-place
  *  prefix sum using the \p thrust::host execution policy for parallelization:
@@ -131,8 +131,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  * Iterator</a>, and if \c x and \c y are objects of \c OutputIterator's \c value_type, then <tt>x + y</tt> is defined.
  * If \c T is \c OutputIterator's \c value_type, then <tt>T(0)</tt> is defined.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan
  *
@@ -186,8 +186,8 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan to compute an in-place
  *  prefix sum using the \p thrust::host execution policy for parallelization:
@@ -242,8 +242,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan
  *
@@ -291,8 +291,8 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  * Iterator</a>, and if \c x and \c y are objects of \c OutputIterator's \c value_type, then <tt>x + y</tt> is defined.
  * If \c T is \c OutputIterator's \c value_type, then <tt>T(0)</tt> is defined.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan to compute an in-place
  *  prefix sum using the \p thrust::host execution policy for parallelization:
@@ -342,8 +342,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  * Iterator</a>, and if \c x and \c y are objects of \c OutputIterator's \c value_type, then <tt>x + y</tt> is defined.
  * If \c T is \c OutputIterator's \c value_type, then <tt>T(0)</tt> is defined.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan
  *
@@ -391,8 +391,8 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  * Iterator</a>, and if \c x and \c y are objects of \c OutputIterator's \c value_type, then <tt>x + y</tt> is defined.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan to compute an in-place
  *  prefix sum using the \p thrust::host execution policy for parallelization:
@@ -443,8 +443,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  * Iterator</a>, and if \c x and \c y are objects of \c OutputIterator's \c value_type, then <tt>x + y</tt> is defined.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan
  *
@@ -498,8 +498,8 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan to compute an in-place
  *  prefix sum using the \p thrust::host execution policy for parallelization:
@@ -561,8 +561,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  \pre \p first may equal \p result but the range <tt>[first, last)</tt> and the range
+ *  <tt>[result, result + (last - first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan
  *
@@ -628,9 +628,10 @@ exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>, and if \c x and \c y are
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan_by_key using the \p thrust::host
  *  execution policy for parallelization:
@@ -694,9 +695,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>, and if \c x and \c y are
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan_by_key
  *
@@ -759,9 +761,10 @@ inclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined. \tparam BinaryPredicate is a
  * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan_by_key using the \p thrust::host
  *  execution policy for parallelization:
@@ -835,9 +838,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  * objects of \c OutputIterator's \c value_type, then <tt>binary_op(x,y)</tt> is defined. \tparam BinaryPredicate is a
  * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan_by_key
  *
@@ -911,9 +915,10 @@ OutputIterator inclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan_by_key using the \p thrust::host
  *  execution policy for parallelization:
@@ -994,9 +999,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
  * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p inclusive_scan_by_key
  *
@@ -1061,9 +1067,10 @@ OutputIterator inclusive_scan_by_key(
  *  \param first2 The beginning of the input value sequence.
  *  \param result The beginning of the output value sequence.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key using the
  *  \p thrust::host execution policy for parallelization:
@@ -1118,9 +1125,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \param first2 The beginning of the input value sequence.
  *  \param result The beginning of the output value sequence.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key.
  *
@@ -1166,9 +1174,10 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *  \param init The initial of the exclusive sum value.
  *  \return The end of the output sequence.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key using the \p
  *  thrust::host execution policy for parallelization:
@@ -1223,9 +1232,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \param init The initial of the exclusive sum value.
  *  \return The end of the output sequence.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key
  *
@@ -1281,9 +1291,10 @@ OutputIterator exclusive_scan_by_key(
  *  \param binary_pred The binary predicate used to determine equality of keys.
  *  \return The end of the output sequence.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key using the
  *  \p thrust::host execution policy for parallelization:
@@ -1352,9 +1363,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \param binary_pred The binary predicate used to determine equality of keys.
  *  \return The end of the output sequence.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key
  *
@@ -1434,9 +1446,10 @@ OutputIterator exclusive_scan_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and
  * \c AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key using the
  *  \p thrust::host execution policy for parallelization:
@@ -1525,9 +1538,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  * is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and
  * \c AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range <tt>[result, result + (last1
- * - first1))</tt> shall not overlap otherwise. \pre \p first2 may equal \p result but the range <tt>[first2, first2 +
- * (last1 - first1)</tt> and range <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first1 may equal \p result but the range <tt>[first1, last1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
+ *  \pre \p first2 may equal \p result but the range <tt>[first2, first2 + (last1 - first1)</tt> and the range
+ *  <tt>[result, result + (last1 - first1))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p exclusive_scan_by_key
  *

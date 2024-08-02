@@ -63,18 +63,12 @@ inline L divide_ri(const L x, const R y)
 template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
 {
-  using type = typename thrust::iterator_value<InputIterator>::type;
-};
-
-template <typename InputIterator, typename BinaryFunction>
-struct partial_sum_type<InputIterator, BinaryFunction, ::cuda::std::void_t<typename BinaryFunction::result_type>>
-{
-  using type = typename BinaryFunction::result_type;
+  using type = thrust::iterator_value_t<InputIterator>;
 };
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
 thrust::pair<InputIterator1,
-             thrust::pair<typename thrust::iterator_value<InputIterator1>::type,
+             thrust::pair<thrust::iterator_value_t<InputIterator1>,
                           typename partial_sum_type<InputIterator2, BinaryFunction>::type>>
 reduce_last_segment_backward(
   InputIterator1 keys_first,
@@ -90,7 +84,7 @@ reduce_last_segment_backward(
   thrust::reverse_iterator<InputIterator1> keys_last_r(keys_first);
   thrust::reverse_iterator<InputIterator2> values_first_r(values_first + n);
 
-  typename thrust::iterator_value<InputIterator1>::type result_key             = *keys_first_r;
+  thrust::iterator_value_t<InputIterator1> result_key                          = *keys_first_r;
   typename partial_sum_type<InputIterator2, BinaryFunction>::type result_value = *values_first_r;
 
   // consume the entirety of the first key's sequence
@@ -111,7 +105,7 @@ template <typename InputIterator1,
           typename BinaryFunction>
 thrust::tuple<OutputIterator1,
               OutputIterator2,
-              typename thrust::iterator_value<InputIterator1>::type,
+              thrust::iterator_value_t<InputIterator1>,
               typename partial_sum_type<InputIterator2, BinaryFunction>::type>
 reduce_by_key_with_carry(
   InputIterator1 keys_first,
@@ -124,8 +118,7 @@ reduce_by_key_with_carry(
 {
   // first, consume the last sequence to produce the carry
   // XXX is there an elegant way to pose this such that we don't need to default construct carry?
-  thrust::pair<typename thrust::iterator_value<InputIterator1>::type,
-               typename partial_sum_type<InputIterator2, BinaryFunction>::type>
+  thrust::pair<thrust::iterator_value_t<InputIterator1>, typename partial_sum_type<InputIterator2, BinaryFunction>::type>
     carry;
 
   thrust::tie(keys_last, carry) =
@@ -215,7 +208,7 @@ struct serial_reduce_by_key_body
     Iterator6 my_carry_result  = carry_result + interval_idx;
 
     // consume the rest of the interval with reduce_by_key
-    using key_type   = typename thrust::iterator_value<Iterator1>::type;
+    using key_type   = thrust::iterator_value_t<Iterator1>;
     using value_type = typename partial_sum_type<Iterator2, BinaryFunction>::type;
 
     // XXX is there a way to pose this so that we don't require default construction of carry?

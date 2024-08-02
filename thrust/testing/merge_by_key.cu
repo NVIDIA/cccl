@@ -1,6 +1,8 @@
 #include <thrust/functional.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/merge.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
@@ -253,3 +255,67 @@ void TestMergeByKeyDescending(size_t n)
   TestMergeByKey<T, thrust::greater<T>>(n);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeByKeyDescending);
+
+struct def_level_fn
+{
+  _CCCL_DEVICE std::uint32_t operator()(int i) const
+  {
+    return static_cast<uint32_t>(i + 10);
+  }
+};
+
+struct offset_transform
+{
+  _CCCL_DEVICE int operator()(int i) const
+  {
+    return i + 1;
+  }
+};
+
+// Tests the use of thrust::merge_by_key similar to cuDF in
+// https://github.com/rapidsai/cudf/blob/branch-24.08/cpp/src/lists/dremel.cu#L413
+void TestMergeByKeyFromCuDFDremel()
+{
+  // TODO(bgruber): I have no idea what this code is actually computing, but I tried to replicate the types/iterators
+  constexpr std::ptrdiff_t empties_size = 123;
+  constexpr int max_vals_size           = 225;
+  constexpr int level                   = 4;
+  constexpr int curr_rep_values_size    = 0;
+
+  thrust::device_vector<int> empties(empties_size, 42);
+  thrust::device_vector<int> empties_idx(empties_size, 13);
+
+  thrust::device_vector<std::uint8_t> temp_rep_vals(max_vals_size);
+  thrust::device_vector<std::uint8_t> temp_def_vals(max_vals_size);
+  thrust::device_vector<std::uint8_t> rep_level(max_vals_size);
+  thrust::device_vector<std::uint8_t> def_level(max_vals_size);
+
+  auto offset_transformer  = offset_transform{};
+  auto transformed_empties = thrust::make_transform_iterator(empties.begin(), offset_transformer);
+
+  auto input_parent_rep_it = thrust::make_constant_iterator(level);
+  auto input_parent_def_it = thrust::make_transform_iterator(empties_idx.begin(), def_level_fn{});
+  auto input_parent_zip_it = thrust::make_zip_iterator(input_parent_rep_it, input_parent_def_it);
+  auto input_child_zip_it  = thrust::make_zip_iterator(temp_rep_vals.begin(), temp_def_vals.begin());
+  auto output_zip_it       = thrust::make_zip_iterator(rep_level.begin(), def_level.begin());
+
+  thrust::merge_by_key(
+    transformed_empties,
+    transformed_empties + empties_size,
+    thrust::make_counting_iterator(0),
+    thrust::make_counting_iterator(curr_rep_values_size),
+    input_parent_zip_it,
+    input_child_zip_it,
+    thrust::make_discard_iterator(),
+    output_zip_it);
+
+  thrust::device_vector<std::uint8_t> reference_rep_level(max_vals_size);
+  thrust::fill(reference_rep_level.begin(), reference_rep_level.begin() + empties_size, level);
+
+  thrust::device_vector<std::uint8_t> reference_def_level(max_vals_size);
+  thrust::fill(reference_def_level.begin(), reference_def_level.begin() + empties_size, 13 + 10);
+
+  ASSERT_EQUAL(reference_rep_level, rep_level);
+  ASSERT_EQUAL(reference_def_level, def_level);
+}
+DECLARE_UNITTEST(TestMergeByKeyFromCuDFDremel);

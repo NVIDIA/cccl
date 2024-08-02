@@ -1743,19 +1743,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) static_assert(true, "")
 #  endif
 
-#  if (defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ <= 11) \
-    && (defined(__CUDACC_VER_MINOR__) && __CUDACC_VER_MINOR__ <= 2)
-#    define _LIBCUDACXX_CONSTEXPR_GLOBAL const
-#  else
-#    define _LIBCUDACXX_CONSTEXPR_GLOBAL constexpr
-#  endif
-
-#  if defined(__CUDA_ARCH__)
-#    define _LIBCUDACXX_CPO_ACCESSIBILITY _CCCL_DEVICE _LIBCUDACXX_CONSTEXPR_GLOBAL
-#  else
-#    define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr
-#  endif
-
 // Older nvcc do not handle the constraint of `construct_at` in earlier std modes
 // So to preserve our performance optimization we default to the unconstrained
 // `__construct_at` and only in C++20 use `construct_at`
