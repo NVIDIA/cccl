@@ -48,6 +48,7 @@ if (cudax_ENABLE_SAMPLES)
   ExternalProject_Add(cudax_samples
     PREFIX samples
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/samples"
+    BUILD_ALWAYS ON
     INSTALL_COMMAND cmake -E echo "Skipping install step.")
   add_dependencies(cudax.all cudax_samples)
 endif()

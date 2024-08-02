@@ -41,7 +41,7 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
-target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include)
 
 # "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, etc.

@@ -38,6 +38,10 @@
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda_runtime.h>
 
+#include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/stream.cuh>
+namespace cudax = cuda::experimental;
+
 /**
  * CUDA Kernel Device code
  *
@@ -61,6 +65,9 @@ int main(void)
 {
   // Error code to check return values for CUDA calls
   cudaError_t err = cudaSuccess;
+
+  // A CUDA stream on which to execute the vector addition kernel
+  cudax::stream stream;
 
   // Print the vector length to be used, and compute its size
   int numElements = 50000;
@@ -141,17 +148,11 @@ int main(void)
   }
 
   // Launch the Vector Add CUDA Kernel
-  int threadsPerBlock = 256;
-  int blocksPerGrid   = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+  constexpr int threadsPerBlock = 256;
+  int blocksPerGrid             = (numElements + threadsPerBlock - 1) / threadsPerBlock;
   printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-  vectorAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
-  err = cudaGetLastError();
-
-  if (err != cudaSuccess)
-  {
-    fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
-    exit(EXIT_FAILURE);
-  }
+  auto dims = cudax::make_hierarchy(cudax::grid_dims(blocksPerGrid), cudax::block_dims<threadsPerBlock>());
+  cudax::launch(stream, dims, vectorAdd, d_A, d_B, d_C, numElements);
 
   // Copy the device result vector in device memory to the host result vector
   // in host memory.
