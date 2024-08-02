@@ -24,7 +24,7 @@
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/min.h>
 // TODO: modularize bit a bit
-#include <cuda/std/detail/libcxx/include/bit>
+#include <cuda/std/bit>
 // #include <cuda/std/__bit/countr.h>
 // #include <cuda/std/__bit/invert_if.h>
 // #include <cuda/std/__bit/popcount.h>
@@ -34,6 +34,8 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/detail/libcxx/include/cstring>
+
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -117,6 +119,39 @@ public:
     return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__libcpp_ctz(__mask_)));
   }
 
+  friend inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+  swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
+  {
+    bool __t = __x;
+    __x      = __y;
+    __y      = __t;
+  }
+
+  template <class _Dp>
+  friend inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+  swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
+  {
+    bool __t = __x;
+    __x      = __y;
+    __y      = __t;
+  }
+
+  friend inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+  swap(__bit_reference<_Cp> __x, bool& __y) noexcept
+  {
+    bool __t = __x;
+    __x      = __y;
+    __y      = __t;
+  }
+
+  friend inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+  swap(bool& __x, __bit_reference<_Cp> __y) noexcept
+  {
+    bool __t = __x;
+    __x      = __y;
+    __y      = __t;
+  }
+
 private:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
   _CCCL_CONSTEXPR_CXX14 explicit __bit_reference(__storage_pointer __s, __storage_type __m) noexcept
@@ -124,42 +159,6 @@ private:
       , __mask_(__m)
   {}
 };
-
-template <class _Cp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
-{
-  bool __t = __x;
-  __x      = __y;
-  __y      = __t;
-}
-
-template <class _Cp, class _Dp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
-{
-  bool __t = __x;
-  __x      = __y;
-  __y      = __t;
-}
-
-template <class _Cp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-swap(__bit_reference<_Cp> __x, bool& __y) noexcept
-{
-  bool __t = __x;
-  __x      = __y;
-  __y      = __t;
-}
-
-template <class _Cp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-swap(bool& __x, __bit_reference<_Cp> __y) noexcept
-{
-  bool __t = __x;
-  __x      = __y;
-  __y      = __t;
-}
 
 template <class _Cp>
 class __bit_const_reference
@@ -1066,14 +1065,10 @@ template <class _Cp, bool _IsConst>
 class __bit_iterator
 {
 public:
-  using difference_type = typename _Cp::difference_type;
-  using value_type      = bool;
-  using pointer         = __bit_iterator;
-#ifndef _LIBCUDACXX_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
-  using reference = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
-#else
-  using reference = __conditional_t<_IsConst, bool, __bit_reference<_Cp>>;
-#endif
+  using difference_type   = typename _Cp::difference_type;
+  using value_type        = bool;
+  using pointer           = __bit_iterator;
+  using reference         = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
   using iterator_category = random_access_iterator_tag;
 
 private:
@@ -1088,35 +1083,18 @@ private:
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bit_iterator() noexcept
-#if _CCCL_STD_VER >= 2014
       : __seg_(nullptr)
       , __ctz_(0)
-#endif // C++14+
   {}
 
-  // When _IsConst=false, this is the copy constructor.
-  // It is non-trivial. Making it trivial would break ABI.
-  // When _IsConst=true, this is a converting constructor;
-  // the copy and move constructors are implicitly generated
-  // and trivial.
+  _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _IsConst>& __it) = default;
+
+  template <bool _OtherIsConst, class = __enable_if_t<_IsConst == true && _OtherIsConst == false>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  __bit_iterator(const __bit_iterator<_Cp, false>& __it) noexcept
+  __bit_iterator(const __bit_iterator<_Cp, _OtherIsConst>& __it) noexcept
       : __seg_(__it.__seg_)
       , __ctz_(__it.__ctz_)
   {}
-
-  // When _IsConst=false, we have a user-provided copy constructor,
-  // so we must also provide a copy assignment operator because
-  // the implicit generation of a defaulted one is deprecated.
-  // When _IsConst=true, the assignment operators are
-  // implicitly generated and trivial.
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bit_iterator&
-  operator=(const _If<_IsConst, struct __private_nat, __bit_iterator>& __it)
-  {
-    __seg_ = __it.__seg_;
-    __ctz_ = __it.__ctz_;
-    return *this;
-  }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
@@ -1331,5 +1309,7 @@ private:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___BIT_REFERENCE

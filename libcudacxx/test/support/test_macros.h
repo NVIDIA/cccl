@@ -4,6 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -183,11 +184,6 @@
 #  define TEST_CONSTEXPR_CXX20 constexpr
 #else
 #  define TEST_CONSTEXPR_CXX20
-#endif
-#if TEST_STD_VER >= 2023
-#  define TEST_CONSTEXPR_CXX23 constexpr
-#else
-#  define TEST_CONSTEXPR_CXX23
 #endif
 #if TEST_STD_VER >= 2023
 #  define TEST_CONSTEXPR_CXX23 constexpr

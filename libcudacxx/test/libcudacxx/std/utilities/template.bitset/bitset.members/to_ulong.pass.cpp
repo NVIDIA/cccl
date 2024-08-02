@@ -66,9 +66,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2011 && (!defined(_CCCL_CUDACC_BELOW_11_8) || !defined(_CCCL_COMPILER_MSVC))
+#if TEST_STD_VER >= 2014 && (!defined(_CCCL_CUDACC_BELOW_11_8) || !defined(_CCCL_COMPILER_MSVC))
   static_assert(test(), "");
-#endif
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

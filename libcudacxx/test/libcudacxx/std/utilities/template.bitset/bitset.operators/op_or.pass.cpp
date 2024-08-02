@@ -16,9 +16,9 @@
 #include "test_macros.h"
 
 template <cuda::std::size_t N>
-__host__ __device__ BITSET_TEST_CONSTEXPR bool test_op_or()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_op_or()
 {
-  span_stub<const char*> const cases = get_test_cases<N>();
+  auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c1 = 0; c1 != cases.size(); ++c1)
   {
     for (cuda::std::size_t c2 = 0; c2 != cases.size(); ++c2)
@@ -44,8 +44,8 @@ int main(int, char**)
   test_op_or<64>();
   test_op_or<65>();
   test_op_or<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2011 && !defined(_CCCL_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars
-                                                             // needed here
+// 11.4 added support for constexpr device vars needed here
+#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
   static_assert(test_op_or<0>(), "");
   static_assert(test_op_or<1>(), "");
   static_assert(test_op_or<31>(), "");
@@ -54,7 +54,7 @@ int main(int, char**)
   static_assert(test_op_or<63>(), "");
   static_assert(test_op_or<64>(), "");
   static_assert(test_op_or<65>(), "");
-#endif
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

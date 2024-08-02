@@ -23,17 +23,32 @@
 // executed.
 _CCCL_NV_DIAG_SUPPRESS(186)
 
-template <cuda::std::size_t N>
-__host__ __device__ void test_char_pointer_ctor_throw()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  NV_IF_TARGET(
-    NV_IS_HOST, try {
-      cuda::std::bitset<N> v("xxx1010101010xxxx");
-      assert(false);
-    } catch (std::invalid_argument&){})
-#endif
+template <cuda::std::size_t N>
+void test_char_pointer_ctor_throw()
+{
+  try
+  {
+    cuda::std::bitset<N> v("xxx1010101010xxxx");
+    assert(false);
+  }
+  catch (std::invalid_argument&)
+  {}
 }
+
+void test_exceptions()
+{
+  test_char_pointer_ctor_throw<0>();
+  test_char_pointer_ctor_throw<1>();
+  test_char_pointer_ctor_throw<31>();
+  test_char_pointer_ctor_throw<32>();
+  test_char_pointer_ctor_throw<33>();
+  test_char_pointer_ctor_throw<63>();
+  test_char_pointer_ctor_throw<64>();
+  test_char_pointer_ctor_throw<65>();
+  test_char_pointer_ctor_throw<1000>();
+}
+#endif
 
 template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char_pointer_ctor()
@@ -131,20 +146,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
 int main(int, char**)
 {
-  test_char_pointer_ctor_throw<0>();
-  test_char_pointer_ctor_throw<1>();
-  test_char_pointer_ctor_throw<31>();
-  test_char_pointer_ctor_throw<32>();
-  test_char_pointer_ctor_throw<33>();
-  test_char_pointer_ctor_throw<63>();
-  test_char_pointer_ctor_throw<64>();
-  test_char_pointer_ctor_throw<65>();
-  test_char_pointer_ctor_throw<1000>();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif
 
   test();
-#if TEST_STD_VER > 2011
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

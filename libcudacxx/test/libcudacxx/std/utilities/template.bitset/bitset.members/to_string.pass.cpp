@@ -42,7 +42,7 @@ int main(int, char**)
 #  include "test_macros.h"
 
 template <class CharT, cuda::std::size_t N>
-BITSET_TEST_CONSTEXPR void
+TEST_CONSTEXPR_CXX14 void
 check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const& b, CharT zero, CharT one)
 {
   assert(s.size() == b.size());
@@ -60,9 +60,9 @@ check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const&
 }
 
 template <cuda::std::size_t N>
-BITSET_TEST_CONSTEXPR bool test_to_string()
+TEST_CONSTEXPR_CXX14 bool test_to_string()
 {
-  cuda::std::vector<cuda::std::bitset<N>> const cases = get_test_cases<N>();
+  cuda::std::vector<cuda::std::bitset<N>> const cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
   {
     cuda::std::bitset<N> const v = cases[c];
@@ -100,9 +100,9 @@ BITSET_TEST_CONSTEXPR bool test_to_string()
 
 #  ifndef TEST_HAS_NO_WIDE_CHARACTERS
 template <cuda::std::size_t N>
-BITSET_TEST_CONSTEXPR bool test_to_string_wchar()
+TEST_CONSTEXPR_CXX14 bool test_to_string_wchar()
 {
-  cuda::std::vector<cuda::std::bitset<N>> const cases = get_test_cases<N>();
+  cuda::std::vector<cuda::std::bitset<N>> const cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
   {
     cuda::std::bitset<N> const v = cases[c];
@@ -149,7 +149,7 @@ int main(int, char**)
   test_to_string<64>();
   test_to_string<65>();
   test_to_string<1000>(); // not in constexpr because of constexpr evaluation step limits
-#  if TEST_STD_VER > 20
+#  if TEST_STD_VER >= 2023
   static_assert(test_to_string<0>(), "");
   static_assert(test_to_string<1>(), "");
   static_assert(test_to_string<31>(), "");
@@ -170,7 +170,7 @@ int main(int, char**)
   test_to_string_wchar<64>();
   test_to_string_wchar<65>();
   test_to_string_wchar<1000>(); // not in constexpr because of constexpr evaluation step limits
-#    if TEST_STD_VER > 20
+#    if TEST_STD_VER >= 2023
   static_assert(test_to_string_wchar<0>(), "");
   static_assert(test_to_string_wchar<1>(), "");
   static_assert(test_to_string_wchar<31>(), "");

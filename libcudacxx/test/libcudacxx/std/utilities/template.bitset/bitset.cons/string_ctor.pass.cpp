@@ -186,7 +186,7 @@ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#  if TEST_STD_VER > 20
+#  if TEST_STD_VER >= 2023
   static_assert(test(), "");
 #  endif
 

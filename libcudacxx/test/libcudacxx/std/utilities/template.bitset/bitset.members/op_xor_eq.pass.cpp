@@ -18,9 +18,9 @@
 _CCCL_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
-__host__ __device__ BITSET_TEST_CONSTEXPR bool test_op_xor_eq()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_op_xor_eq()
 {
-  span_stub<const char*> const cases = get_test_cases<N>();
+  auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   if (Start >= 9)
   {
     assert(End >= cases.size());
@@ -58,8 +58,8 @@ int main(int, char**)
   test_op_xor_eq<64>();
   test_op_xor_eq<65>();
   test_op_xor_eq<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2011 && !defined(_CCCL_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars
-                                                             // needed here
+// 11.4 added support for constexpr device vars needed here
+#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
   static_assert(test_op_xor_eq<0>(), "");
   static_assert(test_op_xor_eq<1>(), "");
   static_assert(test_op_xor_eq<31>(), "");
@@ -71,7 +71,7 @@ int main(int, char**)
   static_assert(test_op_xor_eq<64, 6>(), "");
   static_assert(test_op_xor_eq<65, 0, 6>(), "");
   static_assert(test_op_xor_eq<65, 6>(), "");
-#endif
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

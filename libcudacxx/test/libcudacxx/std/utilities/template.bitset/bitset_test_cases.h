@@ -3,72 +3,39 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LIBCPP_TEST_BITSET_TEST_CASES_H
-#define LIBCPP_TEST_BITSET_TEST_CASES_H
+#ifndef LIBCUDACXX_TEST_BITSET_TEST_CASES_H
+#define LIBCUDACXX_TEST_BITSET_TEST_CASES_H
 
+#include <cuda/std/array>
 #include <cuda/std/bitset>
+#include <cuda/std/tuple>
 
 #include "template_cost_testing.h" // for base cases of REPEAT_*
 #include "test_macros.h"
 
-#ifdef _CCCL_CUDACC_BELOW_11_4 // 11.4 introduced support for constexpr device variables
-#  define BITSET_TEST_CONSTEXPR
+#if TEST_STD_VER == 2011
+#  define BITSET_TEST_CONSTEXPR const
 #else
-#  define BITSET_TEST_CONSTEXPR TEST_CONSTEXPR_CXX14
+#  define BITSET_TEST_CONSTEXPR TEST_CONSTEXPR_GLOBAL
 #endif
 
-template <typename T>
-class span_stub
-{
-public:
-  template <cuda::std::size_t Size>
-  __host__ __device__ BITSET_TEST_CONSTEXPR span_stub(const T (&arr)[Size])
-      : _ptr(arr)
-      , _len(Size)
-  {}
-
-  __host__ __device__ BITSET_TEST_CONSTEXPR cuda::std::size_t size() const
-  {
-    return _len;
+#define NUMARGS(...) (::cuda::std::tuple_size<decltype(::cuda::std::make_tuple(__VA_ARGS__))>::value)
+#define DEFINE_CASES(N, ...)                                                                                    \
+  __host__ __device__ BITSET_TEST_CONSTEXPR cuda::std::array<const char*, NUMARGS(__VA_ARGS__)> get_test_cases( \
+    cuda::std::integral_constant<int, N>)                                                                       \
+  {                                                                                                             \
+    return {{__VA_ARGS__}};                                                                                     \
   }
 
-  __host__ __device__ BITSET_TEST_CONSTEXPR const T& operator[](cuda::std::size_t idx) const
-  {
-    return _ptr[idx];
-  }
+DEFINE_CASES(0, "")
 
-private:
-  const T* _ptr;
-  cuda::std::size_t _len;
-};
+DEFINE_CASES(1, "0", "1")
 
-#ifdef _CCCL_COMPILER_NVRTC
-#  define DEFINE_CASES_HOST_HELPER(N, ...)
-#else
-#  define DEFINE_CASES_HOST_HELPER(N, ...) BITSET_TEST_CONSTEXPR const char* cases_##N[] = {__VA_ARGS__};
-#endif
-
-#define DEFINE_CASES(N, ...)                                                           \
-  DEFINE_CASES_HOST_HELPER(N, __VA_ARGS__)                                             \
-  __device__ BITSET_TEST_CONSTEXPR const char* cases_##N##_device[] = {__VA_ARGS__};   \
-                                                                                       \
-  template <>                                                                          \
-  __host__ __device__ BITSET_TEST_CONSTEXPR span_stub<const char*> get_test_cases<N>() \
-  {                                                                                    \
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return cases_##N;), (return cases_##N##_device;));  \
-  }
-
-template <int N>
-__host__ __device__ BITSET_TEST_CONSTEXPR span_stub<const char*> get_test_cases();
-
-DEFINE_CASES(0, "", )
-
-DEFINE_CASES(1, "0", "1", )
-
-DEFINE_CASES(2, "00", "01", "10", "11", )
+DEFINE_CASES(2, "00", "01", "10", "11")
 
 DEFINE_CASES(
   31,
@@ -83,7 +50,7 @@ DEFINE_CASES(
   "1111111111111111000000000000001",
   "1010101010101010101010101010101",
   "0101010101010101010101010101010",
-  "1111111111111111111111111111111", )
+  "1111111111111111111111111111111")
 
 DEFINE_CASES(
   32,
@@ -98,7 +65,7 @@ DEFINE_CASES(
   "11111111111111110000000000000001",
   "10101010101010101010101010101010",
   "01010101010101010101010101010101",
-  "11111111111111111111111111111111", )
+  "11111111111111111111111111111111")
 
 DEFINE_CASES(
   33,
@@ -113,7 +80,7 @@ DEFINE_CASES(
   "111111111111111100000000000000001",
   "101010101010101010101010101010101",
   "010101010101010101010101010101010",
-  "111111111111111111111111111111111", )
+  "111111111111111111111111111111111")
 
 DEFINE_CASES(
   63,
@@ -128,7 +95,7 @@ DEFINE_CASES(
   "111111111111111111111111111111110000000000000000000000000000001",
   "101010101010101010101010101010101010101010101010101010101010101",
   "010101010101010101010101010101010101010101010101010101010101010",
-  "111111111111111111111111111111111111111111111111111111111111111", )
+  "111111111111111111111111111111111111111111111111111111111111111")
 
 DEFINE_CASES(
   64,
@@ -143,7 +110,7 @@ DEFINE_CASES(
   "1111111111111111111111111111111100000000000000000000000000000001",
   "1010101010101010101010101010101010101010101010101010101010101010",
   "0101010101010101010101010101010101010101010101010101010101010101",
-  "1111111111111111111111111111111111111111111111111111111111111111", )
+  "1111111111111111111111111111111111111111111111111111111111111111")
 
 DEFINE_CASES(
   65,
@@ -158,7 +125,7 @@ DEFINE_CASES(
   "11111111111111111111111111111111000000000000000000000000000000001",
   "10101010101010101010101010101010101010101010101010101010101010101",
   "01010101010101010101010101010101010101010101010101010101010101010",
-  "11111111111111111111111111111111111111111111111111111111111111111", )
+  "11111111111111111111111111111111111111111111111111111111111111111")
 
 #define BITSET_ZERO()    "0"
 #define BITSET_ONE()     "1"
@@ -191,6 +158,6 @@ DEFINE_CASES(
   REPEAT_500(BITSET_ONE) REPEAT_499(BITSET_ZERO) BITSET_ONE(),
   REPEAT_500(BITSET_ONEZERO),
   REPEAT_500(BITSET_ZEROONE),
-  REPEAT_1000(BITSET_ONE), )
+  REPEAT_1000(BITSET_ONE))
 
-#endif // !LIBCPP_TEST_BITSET_TEST_CASES_H
+#endif // !LIBCUDACXX_TEST_BITSET_TEST_CASES_H

@@ -14,7 +14,6 @@
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
-                           //
 template <cuda::std::size_t N>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_default_ctor()
 {
@@ -57,9 +56,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2011
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

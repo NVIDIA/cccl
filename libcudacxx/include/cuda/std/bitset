@@ -11,11 +11,11 @@
 #ifndef _CUDA_STD_BITSET
 #define _CUDA_STD_BITSET
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
 _CCCL_PUSH_MACROS
 
-#include "detail/libcxx/include/bitset"
+#include <cuda/std/detail/libcxx/include/bitset>
 
 _CCCL_POP_MACROS
 
