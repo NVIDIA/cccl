@@ -381,8 +381,8 @@ As mentioned above, not all possible source breaking changes constitute a Breaki
 
 Users are encouraged to adhere to the following guidelines in order to minimize the risk of disruptions from accidentally depending on parts of CCCL that are not part of the public API:
 
-- Do not add any declarations to the `thrust::`, `cub::`, `nv::`, or `cuda::` namespaces unless an exception is noted for a specific symbol, e.g., specializing a type trait.
-    - **Rationale**: This would cause symbol conflicts if a symbol is added with the same name.
+- Do not add any declarations to, or specialize any template from, the `thrust::`, `cub::`, `nv::`, or `cuda::` namespaces unless an exception is noted for a specific symbol, e.g., specializing `cuda::std::iterator_traits`
+    - **Rationale**: This would cause conflicts if a symbol or specialization is added with the same name.
 - Do not take the address of any API in the `thrust::`, `cub::`, `cuda::`, or `nv::` namespaces.
     - **Rationale**: This would prevent adding overloads of these APIs.
 - Do not forward declare any API in the `thrust::`, `cub::`, `cuda::`, or `nv::` namespaces.
