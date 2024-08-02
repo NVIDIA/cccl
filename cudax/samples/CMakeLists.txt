@@ -36,7 +36,7 @@ CPMAddPackage(
 
 # Default to building for the GPU on the current system
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES native)
+  set(CMAKE_CUDA_ARCHITECTURES 86)
 endif()
 
 # Creates a cmake executable target for the main program
