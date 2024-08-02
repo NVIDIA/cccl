@@ -211,11 +211,16 @@ struct device_ref::__attr<::cudaDevAttrGPUDirectRDMAWritesOrdering> //
   static constexpr type owner       = ::cudaGPUDirectRDMAWritesOrderingOwner;
   static constexpr type all_devices = ::cudaGPUDirectRDMAWritesOrderingAllDevices;
 };
-// TODO: This is a bitmask. What are the possible values?
 template <>
 struct device_ref::__attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
-    : detail::__attr_with_type<::cudaDevAttrMemoryPoolSupportedHandleTypes, unsigned int>
-{};
+    : detail::__attr_with_type<::cudaDevAttrMemoryPoolSupportedHandleTypes, ::cudaMemAllocationHandleType>
+{
+  static constexpr type none                  = ::cudaMemHandleTypeNone;
+  static constexpr type posix_file_descriptor = ::cudaMemHandleTypePosixFileDescriptor;
+  static constexpr type win32                 = ::cudaMemHandleTypeWin32;
+  static constexpr type win32_kmt             = ::cudaMemHandleTypeWin32Kmt;
+  static constexpr type fabric                = ::cudaMemHandleTypeFabric;
+};
 #if CUDART_VERSION >= 12020
 template <>
 struct device_ref::__attr<::cudaDevAttrNumaConfig> //
