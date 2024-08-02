@@ -80,6 +80,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target misc_tests ${cn_target}
     utility/driver_api.cu
+    utility/ensure_current_device.cu
   )
 
   cudax_add_catch2_test(test_target containers ${cn_target}

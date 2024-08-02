@@ -25,7 +25,8 @@ inline void* get_driver_entry_point(const char* name)
 {
   void* fn;
   cudaDriverEntryPointQueryResult result;
-  cudaGetDriverEntryPoint(name, &fn, cudaEnableDefault, &result);
+  // For minor version compatibility request the 12.0 version of everything for now
+  cudaGetDriverEntryPointByVersion(name, &fn, 12000, cudaEnableDefault, &result);
   if (result != cudaDriverEntryPointSuccess)
   {
     if (result == cudaDriverEntryPointVersionNotSufficent)
@@ -56,11 +57,12 @@ inline void ctxPush(CUcontext ctx)
   call_driver_fn(driver_fn, "Failed to push context", ctx);
 }
 
-inline void ctxPop()
+inline CUcontext ctxPop()
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPopCurrent);
-  CUcontext dummy;
-  call_driver_fn(driver_fn, "Failed to pop context", &dummy);
+  CUcontext result;
+  call_driver_fn(driver_fn, "Failed to pop context", &result);
+  return result;
 }
 
 inline CUcontext ctxGetCurrent()
@@ -109,6 +111,31 @@ inline CUcontext streamGetCtx(CUstream stream)
   CUcontext result;
   call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &result);
   return result;
+}
+
+inline void streamWaitEvent(CUstream stream, CUevent event)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamWaitEvent);
+  call_driver_fn(driver_fn, "Failed to make a stream wait for an event", stream, event, CU_EVENT_WAIT_DEFAULT);
+}
+
+inline void eventRecord(CUevent event, CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventRecord);
+  call_driver_fn(driver_fn, "Failed to record CUDA event", event, stream);
+}
+
+// Destroy calls return error codes to let the calling code decide if the error should be ignored
+inline cudaError_t streamDestroy(CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamDestroy);
+  return static_cast<cudaError_t>(driver_fn(stream));
+}
+
+inline cudaError_t eventDestroy(CUevent event)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventDestroy);
+  return static_cast<cudaError_t>(driver_fn(event));
 }
 } // namespace cuda::experimental::detail::driver
 

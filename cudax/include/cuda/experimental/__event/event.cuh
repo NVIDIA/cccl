@@ -30,6 +30,7 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event_ref.cuh>
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 namespace cuda::experimental
 {
@@ -54,7 +55,7 @@ public:
   //!
   //! @throws cuda_error if the event creation fails.
   explicit event(stream_ref __stream, flags __flags = flags::none)
-      : event(static_cast<unsigned int>(__flags) | cudaEventDisableTiming)
+      : event(__stream, static_cast<unsigned int>(__flags) | cudaEventDisableTiming)
   {
     record(__stream);
   }
@@ -85,7 +86,9 @@ public:
   {
     if (__event_ != nullptr)
     {
-      [[maybe_unused]] auto __status = ::cudaEventDestroy(__event_);
+      // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
+      // Alternative would be to store the device and push/pop here
+      [[maybe_unused]] auto __status = detail::driver::eventDestroy(__event_);
     }
   }
 
@@ -144,9 +147,10 @@ private:
       : event_ref(__evnt)
   {}
 
-  explicit event(unsigned int __flags)
+  explicit event(stream_ref __stream, unsigned int __flags)
       : event_ref(::cudaEvent_t{})
   {
+    detail::__ensure_current_device dev_setter(__stream);
     _CCCL_TRY_CUDA_API(
       ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
   }

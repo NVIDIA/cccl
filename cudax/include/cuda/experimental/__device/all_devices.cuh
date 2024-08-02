@@ -189,43 +189,6 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! * device_ref
 inline constexpr detail::all_devices devices{};
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-
-//! @brief RAII helper which saves the current device and switches to the
-//!        specified device on construction and switches to the saved device on
-//!        destruction.
-//!
-struct __scoped_device
-{
-  //! @brief Construct a new `__scoped_device` object and switch to the specified
-  //!        device.
-  //!
-  //! @param new_device The device to switch to
-  //!
-  //! @throws cuda_error if the device switch fails
-  explicit __scoped_device(device_ref new_device)
-  {
-    auto ctx = devices[new_device.get()].primary_context();
-    detail::driver::ctxPush(ctx);
-  }
-
-  __scoped_device(__scoped_device&&)                 = delete;
-  __scoped_device(__scoped_device const&)            = delete;
-  __scoped_device& operator=(__scoped_device&&)      = delete;
-  __scoped_device& operator=(__scoped_device const&) = delete;
-
-  //! @brief Destroy the `__scoped_device` object and switch back to the original
-  //!        device.
-  //!
-  //! @throws cuda_error if the device switch fails. If the destructor is called
-  //!         during stack unwinding, the program is automatically terminated.
-  ~__scoped_device() noexcept(false)
-  {
-    detail::driver::ctxPop();
-  }
-};
-
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 } // namespace cuda::experimental
 
 #endif // _CUDAX__DEVICE_ALL_DEVICES

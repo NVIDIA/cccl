@@ -13,7 +13,7 @@
 
 #include "../hierarchy/testing_common.cuh"
 
-TEST_CASE("Call each one", "[driver api]")
+TEST_CASE("Call each driver api", "[utility]")
 {
   namespace driver = cuda::experimental::detail::driver;
   cudaStream_t stream;
@@ -66,5 +66,5 @@ TEST_CASE("Call each one", "[driver api]")
   CUDART(cudaStreamCreate(&stream));
   CUDAX_REQUIRE(driver::ctxGetCurrent() == ctx);
 
-  CUDART(cudaStreamDestroy(stream));
+  CUDART(driver::streamDestroy(stream));
 }
