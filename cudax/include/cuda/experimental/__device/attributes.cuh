@@ -234,7 +234,9 @@ struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
   static constexpr type posix_file_descriptor = ::cudaMemHandleTypePosixFileDescriptor;
   static constexpr type win32                 = ::cudaMemHandleTypeWin32;
   static constexpr type win32_kmt             = ::cudaMemHandleTypeWin32Kmt;
-  static constexpr type fabric                = ::cudaMemHandleTypeFabric;
+#if CUDART_VERSION >= 12040
+  static constexpr type fabric = ::cudaMemHandleTypeFabric;
+#endif
 };
 #if CUDART_VERSION >= 12020
 template <>
