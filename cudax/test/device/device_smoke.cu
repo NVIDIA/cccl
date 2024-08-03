@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/experimental/device.cuh>
 
@@ -236,5 +237,41 @@ TEST_CASE("Smoke", "[device]")
                      config == device::attrs::numa_config.numa_node));
     }
 #endif
+  }
+}
+
+TEST_CASE("global devices vector", "[device]")
+{
+  CUDAX_REQUIRE(cudax::devices.size() > 0);
+  CUDAX_REQUIRE(cudax::devices.begin() != cudax::devices.end());
+  CUDAX_REQUIRE(cudax::devices.begin() == cudax::devices.begin());
+  CUDAX_REQUIRE(cudax::devices.end() == cudax::devices.end());
+  CUDAX_REQUIRE(cudax::devices.size() == static_cast<size_t>(cudax::devices.end() - cudax::devices.begin()));
+
+  CUDAX_REQUIRE(0 == cudax::devices[0].get());
+  CUDAX_REQUIRE(0 == (*cudax::devices.begin()).get());
+  CUDAX_REQUIRE(0 == cudax::devices.begin()->get());
+  CUDAX_REQUIRE(0 == cudax::devices.begin()[0].get());
+
+  if (cudax::devices.size() > 1)
+  {
+    CUDAX_REQUIRE(1 == cudax::devices[1].get());
+    CUDAX_REQUIRE(1 == (*std::next(cudax::devices.begin())).get());
+    CUDAX_REQUIRE(1 == std::next(cudax::devices.begin())->get());
+    CUDAX_REQUIRE(1 == cudax::devices.begin()[1].get());
+
+    CUDAX_REQUIRE(0 == (*std::prev(cudax::devices.end())).get());
+    CUDAX_REQUIRE(0 == std::prev(cudax::devices.end())->get());
+    CUDAX_REQUIRE(0 == cudax::devices.end()[-1].get());
+  }
+
+  try
+  {
+    [[maybe_unused]] const cudax::device& dev = cudax::devices.at(cudax::devices.size());
+    CUDAX_REQUIRE(false); // should not get here
+  }
+  catch (const std::out_of_range&)
+  {
+    CUDAX_REQUIRE(true); // expected
   }
 }
