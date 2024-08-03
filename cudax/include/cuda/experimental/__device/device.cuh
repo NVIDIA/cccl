@@ -39,7 +39,7 @@ struct __emplace_device
 {
   int __id_;
 
-  _CCCL_NODISCARD constexpr operator device() const noexcept;
+  _CCCL_NODISCARD operator device() const noexcept;
 
   _CCCL_NODISCARD constexpr const __emplace_device* operator->() const noexcept;
 };
@@ -104,7 +104,7 @@ private:
 
 namespace detail
 {
-_CCCL_NODISCARD inline constexpr __emplace_device::operator device() const noexcept
+_CCCL_NODISCARD inline __emplace_device::operator device() const noexcept
 {
   return device(__id_);
 }
