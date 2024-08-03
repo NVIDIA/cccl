@@ -25,8 +25,13 @@ inline void* get_driver_entry_point(const char* name)
 {
   void* fn;
   cudaDriverEntryPointQueryResult result;
+#if CUDART_VERSION >= 12050
   // For minor version compatibility request the 12.0 version of everything for now
   cudaGetDriverEntryPointByVersion(name, &fn, 12000, cudaEnableDefault, &result);
+#else
+  // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
+  cudaGetDriverEntryPoint(name, &fn, cudaEnableDefault, &result);
+#endif
   if (result != cudaDriverEntryPointSuccess)
   {
     if (result == cudaDriverEntryPointVersionNotSufficent)
