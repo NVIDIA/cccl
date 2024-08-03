@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__type_traits/decay.h>
 
 namespace cuda::experimental
 {

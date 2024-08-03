@@ -30,9 +30,8 @@
 
 namespace cuda::experimental::detail
 {
-//! @brief RAII helper which saves the current device and switches to the
-//!        specified device on construction and switches to the saved device on
-//!        destruction.
+//! @brief RAII helper which on construction sets the current device to the specified one or one a
+//! stream was created under. It sets the state back on destruction.
 //!
 struct __ensure_current_device
 {
@@ -48,6 +47,12 @@ struct __ensure_current_device
     detail::driver::ctxPush(ctx);
   }
 
+  //! @brief Construct a new `__ensure_current_device` object and switch to the device
+  //!        under which the specified stream was created.
+  //!
+  //! @param stream Stream indicating the device to switch to
+  //!
+  //! @throws cuda_error if the device switch fails
   explicit __ensure_current_device(stream_ref stream)
   {
     auto ctx = detail::driver::streamGetCtx(stream.get());
