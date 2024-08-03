@@ -149,14 +149,10 @@ int main(void)
   int numElements = 50000;
   printf("[Vector addition of %d elements]\n", numElements);
 
-  // Allocate the host input vector A
-  cudax::host_vector<float> h_A(numElements);
-
-  // Allocate the host input vector B
-  cudax::host_vector<float> h_B(numElements);
-
-  // Allocate the host output vector C
-  cudax::host_vector<float> h_C(numElements);
+  // Allocate the host vectors
+  cudax::host_vector<float> h_A(numElements); // input
+  cudax::host_vector<float> h_B(numElements); // input
+  cudax::host_vector<float> h_C(numElements); // output
 
   // Initialize the host input vectors
   for (int i = 0; i < numElements; ++i)
@@ -165,31 +161,27 @@ int main(void)
     h_B[i] = rand() / (float) RAND_MAX;
   }
 
-  // Allocate the device input vector A
-  cudax::device_vector<float> d_A(numElements);
-
-  // Allocate the device input vector B
-  cudax::device_vector<float> d_B(numElements);
-
-  // Allocate the device output vector C
-  cudax::device_vector<float> d_C(numElements);
+  // Allocate the device vectors
+  cudax::device_vector<float> d_A(numElements); // input
+  cudax::device_vector<float> d_B(numElements); // input
+  cudax::device_vector<float> d_C(numElements); // output
 
   // Copy the host input vectors A and B in host memory to the device input
-  // vectors in
-  // device memory
+  // vectors in device memory
   printf("Copy input data from the host memory to the CUDA device\n");
   d_A = h_A;
   d_B = h_B;
 
-  // Launch the Vector Add CUDA Kernel
+  // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
   int blocksPerGrid             = (numElements + threadsPerBlock - 1) / threadsPerBlock;
-  printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
   auto dims = cudax::make_hierarchy(cudax::grid_dims(blocksPerGrid), cudax::block_dims<threadsPerBlock>());
+
+  // Launch the vectorAdd kernel
+  printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
   cudax::launch_ex(stream, dims, vectorAdd, d_A, d_B, d_C);
 
-  // Copy the device result vector in device memory to the host result vector
-  // in host memory.
+  // Copy the results from the device vector d_C back to the host vector h_C.
   printf("Copy output data from the CUDA device to the host memory\n");
   h_C = d_C;
 
