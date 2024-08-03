@@ -72,7 +72,7 @@ struct __ensure_current_device
   ~__ensure_current_device() noexcept(false)
   {
     // TODO would it make sense to assert here that we pushed and popped the same thing?
-    auto ctx = detail::driver::ctxPop();
+    detail::driver::ctxPop();
   }
 };
 } // namespace cuda::experimental::detail
