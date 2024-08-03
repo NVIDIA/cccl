@@ -41,14 +41,84 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/std/span>
+
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 namespace cudax = cuda::experimental;
 
+namespace thrust
+{
+template <class T, class Alloc>
+::cuda::std::span<T> __prelaunch(::cuda::stream_ref, ::thrust::device_vector<T, Alloc>& v)
+{
+  return {v.data().get(), v.size()};
+}
+
+template <class T, class Alloc>
+::cuda::std::span<const T> __prelaunch(::cuda::stream_ref, const ::thrust::device_vector<T, Alloc>& v)
+{
+  return {v.data().get(), v.size()};
+}
+} // namespace thrust
+
+// Cheating for now by using thrust's device_vector and host_vector
 namespace cuda::experimental
 {
-using thrust::device_vector;
-using thrust::host_vector;
+using ::cuda::std::span;
+using ::thrust::device_vector;
+using ::thrust::host_vector;
+
+namespace detail
+{
+struct __ignore
+{
+  template <typename... Args>
+  constexpr __ignore(Args&&...) noexcept
+  {}
+};
+} // namespace detail
+
+namespace __prelaunch_
+{
+template <class Arg>
+Arg&& __prelaunch(detail::__ignore, Arg&& arg) noexcept
+{
+  return std::forward<Arg>(arg);
+}
+
+template <typename Arg>
+using __prelaunch_t = decltype(__prelaunch(std::declval<stream_ref>(), std::declval<Arg>()));
+
+struct __fn
+{
+  template <typename Arg>
+  __prelaunch_t<Arg> operator()(stream_ref stream, Arg&& arg) const noexcept
+  {
+    // Intentionally unqualified call to __prelaunch to allow ADL
+    return __prelaunch(stream, std::forward<Arg>(arg));
+  }
+};
+} // namespace __prelaunch_
+
+inline constexpr __prelaunch_::__fn __prelaunch{};
+
+template <typename... ExpArgs, typename... ActArgs, typename... Levels>
+void launch_ex(
+  ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs...), ActArgs&&... args)
+{
+  static_assert(sizeof...(ExpArgs) == sizeof...(ActArgs), "Number of expected and actual arguments must match");
+
+  cudaError_t status = [&](auto&&... args) {
+    return detail::launch_impl(
+      stream, kernel_config(dims), kernel, static_cast<ExpArgs>(static_cast<decltype(args)>(args))...);
+  }(__prelaunch(stream, std::forward<ActArgs>(args))...);
+
+  if (status != cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
+  }
+}
 } // namespace cuda::experimental
 
 /**
@@ -57,11 +127,11 @@ using thrust::host_vector;
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-__global__ void vectorAdd(const float* A, const float* B, float* C, int numElements)
+__global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B, cudax::span<float> C)
 {
   int i = blockDim.x * blockIdx.x + threadIdx.x;
 
-  if (i < numElements)
+  if (i < A.size())
   {
     C[i] = A[i] + B[i] + 0.0f;
   }
@@ -116,7 +186,7 @@ int main(void)
   int blocksPerGrid             = (numElements + threadsPerBlock - 1) / threadsPerBlock;
   printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
   auto dims = cudax::make_hierarchy(cudax::grid_dims(blocksPerGrid), cudax::block_dims<threadsPerBlock>());
-  cudax::launch(stream, dims, vectorAdd, d_A.data().get(), d_B.data().get(), d_C.data().get(), numElements);
+  cudax::launch_ex(stream, dims, vectorAdd, d_A, d_B, d_C);
 
   // Copy the device result vector in device memory to the host result vector
   // in host memory.
