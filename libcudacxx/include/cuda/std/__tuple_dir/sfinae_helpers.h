@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_copy_assignable.h>
+#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -51,7 +53,7 @@ struct __tuple_sfinae_base
   {};
 
   template <class... _Tp, class... _Up>
-  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : _BoolConstant<sizeof...(_Tp) == sizeof...(_Up)>
+  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : bool_constant<sizeof...(_Tp) == sizeof...(_Up)>
   {};
 
   template <template <class, class...> class, class _Tp, class _Up, bool = __test_size<_Tp, _Up>::value>
@@ -145,8 +147,6 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
   using __enable_assign = false_type;
 };
 
-#if _CCCL_STD_VER > 2011
-
 enum class __smf_availability
 {
   __trivial,
@@ -209,7 +209,23 @@ struct __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
 
 template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
 using __sfinae_base = __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
-#endif // _CCCL_STD_VER > 2011
+
+// We need to synthesize the copy / move assignment if it would be implicitly deleted as a member of a class
+// In that case _Tp would be copy assignable but _TestSynthesizeAssignment<_Tp> would not
+// This happens e.g for reference types
+template <class _Tp>
+struct _TestSynthesizeAssignment
+{
+  _Tp __dummy;
+};
+
+template <class _Tp>
+struct __must_synthesize_assignment
+    : integral_constant<
+        bool,
+        (_CCCL_TRAIT(is_copy_assignable, _Tp) && !_CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_Tp>))
+          || (_CCCL_TRAIT(is_move_assignable, _Tp) && !_CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_Tp>))>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

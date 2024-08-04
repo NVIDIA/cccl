@@ -1013,17 +1013,16 @@ _CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_
  *
  *  This version of \p unique_count uses the function object \p binary_pred to test for equality.
  *
- *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input range.
  *  \param last  The end of the input range.
  *  \param binary_pred  The binary predicate used to determine equality.
  *  \return The number of runs of equal elements in <tt>[first, new_last)</tt>
  *
- *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p BinaryPredicate's \c first_argument_type
- * and to \p BinaryPredicate's \c second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p BinaryPredicate's \c first_argument_type
+ *  and to \p BinaryPredicate's \c second_argument_type.
+ *  \tparam BinaryPredicate is a model of <a
+ *  href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p unique_count to
  *  determine the number of runs of equal elements:
@@ -1051,17 +1050,16 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
  *
  *  This version of \p unique_count uses \c operator== to test for equality.
  *
- *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input range.
  *  \param last  The end of the input range.
  *  \param binary_pred  The binary predicate used to determine equality.
  *  \return The number of runs of equal elements in <tt>[first, new_last)</tt>
  *
- *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p BinaryPredicate's \c first_argument_type
- * and to \p BinaryPredicate's \c second_argument_type. \tparam BinaryPredicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  Iterator</a>, and \p ForwardIterator's \c value_type is convertible to \p BinaryPredicate's \c first_argument_type
+ *  and to \p BinaryPredicate's \c second_argument_type.
+ *  \tparam BinaryPredicate is a model of <a
+ *  href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p unique_count to
  *  determine the number of runs of equal elements:

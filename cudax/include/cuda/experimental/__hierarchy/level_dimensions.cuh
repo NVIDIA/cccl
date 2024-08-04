@@ -11,8 +11,9 @@
 #ifndef _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
 #define _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
 
-#include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -155,7 +156,8 @@ struct level_dimensions
   _CCCL_HOST_DEVICE constexpr level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  _CCCL_HOST_DEVICE constexpr level_dimensions(){};
+  _CCCL_HOST_DEVICE constexpr level_dimensions()
+      : dims(){};
 };
 
 /**

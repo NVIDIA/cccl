@@ -80,6 +80,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
 template <typename NumeratorT, typename DenominatorT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT DivideAndRoundUp(NumeratorT n, DenominatorT d)
 {
+  // TODO(bgruber): implement using ::cuda::ceil_div
   static_assert(
     cub::detail::is_integral_or_enum<NumeratorT>::value && cub::detail::is_integral_or_enum<DenominatorT>::value,
     "DivideAndRoundUp is only intended for integral types.");

@@ -198,18 +198,34 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct __tuple_leaf_default_constructor_tag
 {};
 
-template <size_t _Ip, class _Hp, bool = _CCCL_TRAIT(is_empty, _Hp) && !__libcpp_is_final<_Hp>::value>
+enum class __tuple_leaf_specialization
+{
+  __default,
+  __synthesize_assignment,
+  __empty_non_final,
+};
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf_specialization __tuple_leaf_choose()
+{
+  return _CCCL_TRAIT(is_empty, _Tp) && !__libcpp_is_final<_Tp>::value ? __tuple_leaf_specialization::__empty_non_final
+       : __must_synthesize_assignment<_Tp>::value
+         ? __tuple_leaf_specialization::__synthesize_assignment
+         : __tuple_leaf_specialization::__default;
+}
+
+template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>()>
 class __tuple_leaf;
 
-template <size_t _Ip, class _Hp, bool _Ep>
+template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 inline _LIBCUDACXX_INLINE_VISIBILITY void
 swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(__is_nothrow_swappable<_Hp>::value)
 {
   swap(__x.get(), __y.get());
 }
 
-template <size_t _Ip, class _Hp, bool>
-class __tuple_leaf
+template <size_t _Ip, class _Hp>
+class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 {
   _Hp __value_;
 
@@ -223,42 +239,30 @@ class __tuple_leaf
 #endif
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf& operator=(const __tuple_leaf&);
-
 public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
-  }
+  {}
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
-  }
+  {}
 
   template <class _Alloc>
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
       : __value_()
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
-  }
+  {}
 
   template <class _Alloc>
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
-  }
+  {}
 
   template <class _Alloc>
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : __value_(__a)
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
-  }
+  {}
 
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
@@ -267,39 +271,22 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
-  {
-    static_assert(__can_bind_reference<_Tp&&>(),
-                  "Attempted construction of reference element binds to a "
-                  "temporary whose lifetime has ended");
-  }
+  {}
 
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_INLINE_VISIBILITY explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
-  {
-    static_assert(__can_bind_reference<_Tp&&>(),
-                  "Attempted construction of reference element binds to a "
-                  "temporary whose lifetime has ended");
-  }
+  {}
 
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_INLINE_VISIBILITY explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp),
-                  "Attempted to uses-allocator construct a reference element in a tuple");
-  }
+  {}
 
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_INLINE_VISIBILITY explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t), __a)
-  {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp),
-                  "Attempted to uses-allocator construct a reference element in a tuple");
-  }
-
-  __tuple_leaf(const __tuple_leaf& __t) = default;
-  __tuple_leaf(__tuple_leaf&& __t)      = default;
+  {}
 
   template <class _Tp>
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf&
@@ -326,10 +313,90 @@ public:
 };
 
 template <size_t _Ip, class _Hp>
-class __tuple_leaf<_Ip, _Hp, true> : private _Hp
+class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignment>
 {
-  _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf& operator=(const __tuple_leaf&);
+  _Hp __value_;
 
+  template <class _Tp>
+  _LIBCUDACXX_INLINE_VISIBILITY static constexpr bool __can_bind_reference()
+  {
+#if __has_keyword(__reference_binds_to_temporary)
+    return !__reference_binds_to_temporary(_Hp, _Tp);
+#else
+    return true;
+#endif
+  }
+
+public:
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
+      : __value_()
+  {
+    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
+  }
+
+  template <class _Tp>
+  using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
+
+  template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
+      : __value_(_CUDA_VSTD::forward<_Tp>(__t))
+  {
+    static_assert(__can_bind_reference<_Tp&&>(),
+                  "Attempted construction of reference element binds to a "
+                  "temporary whose lifetime has ended");
+  }
+
+  template <class _Tp, class _Alloc>
+  _LIBCUDACXX_INLINE_VISIBILITY explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+      : __value_(_CUDA_VSTD::forward<_Tp>(__t))
+  {
+    static_assert(__can_bind_reference<_Tp&&>(),
+                  "Attempted construction of reference element binds to a "
+                  "temporary whose lifetime has ended");
+  }
+
+  __tuple_leaf(const __tuple_leaf& __t) = default;
+  __tuple_leaf(__tuple_leaf&& __t)      = default;
+
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
+  {
+    __value_ = __t.__value_;
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
+  {
+    __value_ = _CUDA_VSTD::move(__t.__value_);
+    return *this;
+  }
+
+  template <class _Tp>
+  _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf&
+  operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
+  {
+    __value_ = _CUDA_VSTD::forward<_Tp>(__t);
+    return *this;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
+  {
+    _CUDA_VSTD::swap(*this, __t);
+    return 0;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Hp& get() noexcept
+  {
+    return __value_;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Hp& get() const noexcept
+  {
+    return __value_;
+  }
+};
+
+template <size_t _Ip, class _Hp>
+class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private _Hp
+{
 public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible<_Hp>::value) {}
 
@@ -376,10 +443,15 @@ public:
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t), __a)
   {}
 
-  __tuple_leaf(__tuple_leaf const&) = default;
-  __tuple_leaf(__tuple_leaf&&)      = default;
+  template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, const _Tp&), int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf&
+  operator=(const _Tp& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, const _Tp&))
+  {
+    _Hp::operator=(__t);
+    return *this;
+  }
 
-  template <class _Tp>
+  template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, _Tp), int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY __tuple_leaf&
   operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
@@ -425,9 +497,14 @@ struct __tuple_impl;
 template <size_t... _Indx, class... _Tp>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
+    , public __sfinae_base<true,
+                           true,
+                           __all<_CCCL_TRAIT(is_copy_assignable, _Tp)...>::value,
+                           __all<_CCCL_TRAIT(is_move_assignable, _Tp)...>::value>
 {
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __tuple_impl() noexcept(
     __all<_CCCL_TRAIT(is_nothrow_default_constructible, _Tp)...>::value)
+      : __tuple_leaf<_Indx, _Tp>()...
   {}
 
   // Handle non-allocator, full initialization
@@ -487,24 +564,10 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
     return *this;
   }
 
-  __tuple_impl(const __tuple_impl&) = default;
-  __tuple_impl(__tuple_impl&&)      = default;
-
-  _LIBCUDACXX_INLINE_VISIBILITY __tuple_impl&
-  operator=(const __tuple_impl& __t) noexcept((__all<_CCCL_TRAIT(is_nothrow_copy_assignable, _Tp)...>::value))
-  {
-    _CUDA_VSTD::__swallow(
-      __tuple_leaf<_Indx, _Tp>::operator=(static_cast<const __tuple_leaf<_Indx, _Tp>&>(__t).get())...);
-    return *this;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY __tuple_impl&
-  operator=(__tuple_impl&& __t) noexcept((__all<_CCCL_TRAIT(is_nothrow_move_assignable, _Tp)...>::value))
-  {
-    _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
-      _CUDA_VSTD::forward<_Tp>(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t).get()))...);
-    return *this;
-  }
+  __tuple_impl(const __tuple_impl&)            = default;
+  __tuple_impl(__tuple_impl&&)                 = default;
+  __tuple_impl& operator=(const __tuple_impl&) = default;
+  __tuple_impl& operator=(__tuple_impl&&)      = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY void
   swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
@@ -853,20 +916,8 @@ public:
   using _CanCopyAssign = __all<_CCCL_TRAIT(is_copy_assignable, _Tp)...>;
   using _CanMoveAssign = __all<_CCCL_TRAIT(is_move_assignable, _Tp)...>;
 
-  _LIBCUDACXX_INLINE_VISIBILITY tuple&
-  operator=(__conditional_t<_CanCopyAssign::value, tuple, __nat> const& __t) noexcept(
-    (__all<_CCCL_TRAIT(is_nothrow_copy_assignable, _Tp)...>::value))
-  {
-    __base_.operator=(__t.__base_);
-    return *this;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY tuple& operator=(__conditional_t<_CanMoveAssign::value, tuple, __nat>&& __t) noexcept(
-    (__all<_CCCL_TRAIT(is_nothrow_move_assignable, _Tp)...>::value))
-  {
-    __base_.operator=(static_cast<_BaseT&&>(__t.__base_));
-    return *this;
-  }
+  tuple& operator=(const tuple& __t) = default;
+  tuple& operator=(tuple&& __t)      = default;
 
   template <class _Tuple, __enable_if_t<__tuple_assignable<_Tuple, tuple>::value, bool> = false>
   _LIBCUDACXX_INLINE_VISIBILITY tuple&
@@ -1037,7 +1088,7 @@ struct __ignore_t
 
 namespace
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY __ignore_t<unsigned char> ignore{};
+_CCCL_GLOBAL_CONSTANT __ignore_t<unsigned char> ignore{};
 } // namespace
 
 template <class... _Tp>

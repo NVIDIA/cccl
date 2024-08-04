@@ -64,7 +64,7 @@ vector_base<T, Alloc>::vector_base(size_type n)
     : m_storage()
     , m_size(0)
 {
-  default_init(n);
+  value_init(n);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -72,7 +72,7 @@ vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
-  default_init(n);
+  value_init(n);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -212,16 +212,16 @@ void vector_base<T, Alloc>::init_dispatch(IteratorOrIntegralType n, IteratorOrIn
 } // end vector_base::init_dispatch()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::default_init(size_type n)
+void vector_base<T, Alloc>::value_init(size_type n)
 {
   if (n > 0)
   {
     m_storage.allocate(n);
     m_size = n;
 
-    m_storage.default_construct_n(begin(), size());
+    m_storage.value_initialize_n(begin(), size());
   } // end if
-} // end vector_base::default_init()
+} // end vector_base::value_init()
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
@@ -792,7 +792,7 @@ void vector_base<T, Alloc>::append(size_type n)
       // we've got room for all of them
 
       // default construct new elements at the end of the vector
-      m_storage.default_construct_n(end(), n);
+      m_storage.value_initialize_n(end(), n);
 
       // extend the size
       m_size += n;
@@ -822,7 +822,7 @@ void vector_base<T, Alloc>::append(size_type n)
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
         // construct new elements to insert
-        new_storage.default_construct_n(new_end, n);
+        new_storage.value_initialize_n(new_end, n);
         new_end += n;
       } // end try
       catch (...)

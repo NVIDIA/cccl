@@ -10,9 +10,11 @@
 
 #ifndef _CUDAX__LAUNCH_CONFIGURATION
 #define _CUDAX__LAUNCH_CONFIGURATION
-#include <cuda/experimental/hierarchy.cuh>
+
 #include <cuda/std/span>
 #include <cuda/std/tuple>
+
+#include <cuda/experimental/hierarchy.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental

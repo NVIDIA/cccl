@@ -54,7 +54,7 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable>Assignable">Assignable</a>, \p T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, \p T is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">EqualityComparable</a>, objects of \p T may be
  * compared for equality with objects of \p ForwardIterator's \c value_type, and \p T is convertible to \p
  * ForwardIterator's \c value_type.
@@ -105,7 +105,7 @@ replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>, and \p ForwardIterator is mutable. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable>Assignable">Assignable</a>, \p T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, \p T is a model of <a
  * href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">EqualityComparable</a>, objects of \p T may be
  * compared for equality with objects of \p ForwardIterator's \c value_type, and \p T is convertible to \p
  * ForwardIterator's \c value_type.

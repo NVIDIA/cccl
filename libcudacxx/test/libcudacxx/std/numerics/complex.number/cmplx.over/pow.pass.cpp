@@ -32,56 +32,27 @@
 #include "../cases.h"
 #include "test_macros.h"
 
-template <class T>
-__host__ __device__ double promote(T, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0);
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-__host__ __device__ __half promote(__half);
-#  ifdef _LIBCUDACXX_HAS_NVBF16
-__host__ __device__ __nv_bfloat16 promote(__nv_bfloat16);
-#  endif
-#endif
-__host__ __device__ float promote(float);
-__host__ __device__ double promote(double);
-__host__ __device__ long double promote(long double);
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-// This is a workaround for __half's conversions being just bad.
-__host__ __device__ float operator+(float, __half);
-__host__ __device__ float operator+(__half, float);
-__host__ __device__ double operator+(double, __half);
-__host__ __device__ double operator+(__half, double);
-#  ifdef _LIBCUDACXX_HAS_NVBF16
-// This is a workaround for __nv_bfloat16's conversions being just bad.
-__host__ __device__ float operator+(float, __nv_bfloat16);
-__host__ __device__ float operator+(__nv_bfloat16, float);
-__host__ __device__ double operator+(double, __nv_bfloat16);
-__host__ __device__ double operator+(__nv_bfloat16, double);
-#  endif
-#endif
-
 template <class T, class U>
 __host__ __device__ void test(T x, const cuda::std::complex<U>& y)
 {
-  typedef decltype(promote(x) + promote(real(y))) V;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<V>>::value), "");
-  assert(cuda::std::pow(x, y) == pow(cuda::std::complex<V>(x, 0), cuda::std::complex<V>(y)));
+  using promote_t = typename cuda::std::common_type<T, U>::type;
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value), "");
+  assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x, 0), cuda::std::complex<promote_t>(y)));
 }
 
 template <class T, class U>
 __host__ __device__ void test(const cuda::std::complex<T>& x, U y)
 {
-  typedef decltype(promote(real(x)) + promote(y)) V;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<V>>::value), "");
-  assert(cuda::std::pow(x, y) == pow(cuda::std::complex<V>(x), cuda::std::complex<V>(y, 0)));
+  using promote_t = typename cuda::std::common_type<T, U>::type;
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value), "");
+  assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x), cuda::std::complex<promote_t>(y, 0)));
 }
 
 template <class T, class U>
 __host__ __device__ void test(const cuda::std::complex<T>& x, const cuda::std::complex<U>& y)
 {
-  typedef decltype(promote(real(x)) + promote(real(y))) V;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<V>>::value), "");
-  assert(cuda::std::pow(x, y) == pow(cuda::std::complex<V>(x), cuda::std::complex<V>(y)));
+  using promote_t = typename cuda::std::common_type<T, U>::type;
+  assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x), cuda::std::complex<promote_t>(y)));
 }
 
 template <class T, class U>
@@ -131,14 +102,14 @@ int main(int, char**)
   test<int, __half>();
   test<unsigned, __half>();
   test<long long, __half>();
-#  ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVBF16
   test<__nv_bfloat16, float>();
   test<__nv_bfloat16, double>();
   test<int, __nv_bfloat16>();
   test<unsigned, __nv_bfloat16>();
   test<long long, __nv_bfloat16>();
-#  endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
 
   return 0;
 }

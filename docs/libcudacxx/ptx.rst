@@ -480,9 +480,9 @@ Instructions by section
      - No
    * - `wmma.store <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-wmma-store>`__
      - No
-   * - `wmma.mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions-wmma-mma>`__
+   * - `wmma.mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-wmma-mma>`__
      - No
-   * - `mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions-mma>`__
+   * - `mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-mma>`__
      - No
    * - `ldmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-ldmatrix>`__
      - No
@@ -490,7 +490,7 @@ Instructions by section
      - No
    * - `movmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-transpose-instruction-movmatrix>`__
      - No
-   * - `mma.sp <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#multiply-and-accumulate-instruction-mma-sp>`__
+   * - `mma.sp <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-for-sparse-mma>`__
      - No
 
 .. list-table:: `Asynchronous Warpgroup Level Matrix Multiply-Accumulate Instructions <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions>`__

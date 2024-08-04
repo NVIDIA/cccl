@@ -9,11 +9,8 @@
 //===----------------------------------------------------------------------===//
 #define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/atomic>
-#include <cuda/experimental/launch.cuh>
 
-#include <functional>
-#include <iostream>
-#include <type_traits>
+#include <cuda/experimental/launch.cuh>
 
 #include "../hierarchy/testing_common.cuh"
 #include <cooperative_groups.h>

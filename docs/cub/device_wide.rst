@@ -17,6 +17,7 @@ CUB device-level single-problem parallel algorithms:
 * :cpp:struct:`cub::DeviceFor <cub::DeviceFor>` provides device-wide, parallel operations for iterating over data residing within device-accessible memory
 * :cpp:class:`cub::DeviceHistogram <cub::DeviceHistogram>` constructs histograms from data samples residing within device-accessible memory
 * :cpp:struct:`cub::DevicePartition <cub::DevicePartition>` partitions data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceMerge <cub::DeviceMerge>` merges two sorted sequences in device-accessible memory into a single one
 * :cpp:class:`cub::DeviceMergeSort <cub::DeviceMergeSort>` sorts items residing within device-accessible memory
 * :cpp:class:`cub::DeviceRadixSort <cub::DeviceRadixSort>` sorts items residing within device-accessible memory using radix sorting method
 * :cpp:struct:`cub::DeviceReduce <cub::DeviceReduce>` computes reduction of items residing within device-accessible memory

@@ -78,7 +78,7 @@ An atomic operation is atomic at the scope it specifies if:
 .. note::
    If `hostNativeAtomicSupported` is `0`, atomic load or store operations at system scope that affect a
    naturally-aligned 16-byte wide object in
-   `unified memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#unified-memory>`__ or
+   `unified memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__ or
    `mapped memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ require system
    support. NVIDIA is not aware of any system that lacks this support and there is no CUDA API query available to
    detect such systems.
