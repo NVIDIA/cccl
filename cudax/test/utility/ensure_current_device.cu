@@ -42,12 +42,12 @@ TEST_CASE("ensure current device", "[device]")
 {
   test::empty_driver_stack();
   // If possible use something different than CUDART default 0
-  int target_device = cudax::devices.size() - 1;
+  int target_device = static_cast<int>(cudax::devices.size() - 1);
   int dev_id        = 0;
 
   SECTION("device setter")
   {
-    recursive_check_device_setter(cudax::devices.size() - 1);
+    recursive_check_device_setter(target_device);
 
     CUDAX_REQUIRE(test::count_driver_stack() == 0);
   }
@@ -72,7 +72,7 @@ TEST_CASE("ensure current device", "[device]")
       }
       {
         auto lambda = [&](int dev_id) {
-          cudax::stream another_stream(target_device);
+          cudax::stream another_stream(dev_id);
           CUDAX_REQUIRE(test::count_driver_stack() == 0);
           stream.wait(another_stream);
           CUDAX_REQUIRE(test::count_driver_stack() == 0);
