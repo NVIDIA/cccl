@@ -34,6 +34,7 @@ private:
   cuda::atomic<ptrdiff_t, _Sco> tickets;
 
 public:
+    static_assert(__least_max_value >= 0, "The least maximum value must be a positive number");
 
     _LIBCUDACXX_INLINE_VISIBILITY bool try_acquire()
   {
@@ -130,11 +131,12 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __fair_semaphore(ptrdiff_t count = 0) : tickets(0),
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __fair_semaphore(ptrdiff_t count = 0) : tickets(0),
                                                                         current(0),
                                                                         max_(count)
   {
-    assert(count > 0); // per https://en.cppreference.com/w/cpp/thread/counting_semaphore/counting_semaphore
+    assert(count >= 0); // per https://en.cppreference.com/w/cpp/thread/counting_semaphore/counting_semaphore
+    assert(count <= max());
   }
 
   ~__fair_semaphore() = default;
