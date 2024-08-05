@@ -28,7 +28,7 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
-namespace cuda::experimental::detail
+namespace cuda::experimental
 {
 //! @brief RAII helper which on construction sets the current device to the specified one or one a
 //! stream was created under. It sets the state back on destruction.
@@ -75,6 +75,6 @@ struct __ensure_current_device
     detail::driver::ctxPop();
   }
 };
-} // namespace cuda::experimental::detail
+} // namespace cuda::experimental
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 #endif // _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE

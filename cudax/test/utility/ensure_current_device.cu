@@ -21,7 +21,7 @@ namespace driver = cuda::experimental::detail::driver;
 void recursive_check_device_setter(int id)
 {
   int cudart_id;
-  cudax::detail::__ensure_current_device setter(cudax::device_ref{id});
+  cudax::__ensure_current_device setter(cudax::device_ref{id});
   CUDAX_REQUIRE(test::count_driver_stack() == cudax::devices.size() - id);
   auto ctx = driver::ctxGetCurrent();
   CUDART(cudaGetDevice(&cudart_id));
@@ -58,7 +58,7 @@ TEST_CASE("ensure current device", "[device]")
       cudax::stream stream(target_device);
       CUDAX_REQUIRE(test::count_driver_stack() == 0);
       {
-        cudax::detail::__ensure_current_device setter(cudax::device_ref{target_device});
+        cudax::__ensure_current_device setter(cudax::device_ref{target_device});
         CUDAX_REQUIRE(driver::ctxGetCurrent() == driver::streamGetCtx(stream.get()));
       }
       {
@@ -86,7 +86,7 @@ TEST_CASE("ensure current device", "[device]")
         }
       }
 
-      cudax::detail::__ensure_current_device setter(stream);
+      cudax::__ensure_current_device setter(stream);
       CUDAX_REQUIRE(test::count_driver_stack() == 1);
       CUDART(cudaGetDevice(&dev_id));
       CUDAX_REQUIRE(dev_id == target_device);
@@ -97,13 +97,13 @@ TEST_CASE("ensure current device", "[device]")
 
     {
       // Check NULL stream ref is handled ok
-      cudax::detail::__ensure_current_device setter1(cudax::device_ref{target_device});
+      cudax::__ensure_current_device setter1(cudax::device_ref{target_device});
       cudaStream_t null_stream = nullptr;
       auto ref                 = cuda::stream_ref(null_stream);
       auto ctx                 = driver::ctxGetCurrent();
       CUDAX_REQUIRE(test::count_driver_stack() == 1);
 
-      cudax::detail::__ensure_current_device setter2(ref);
+      cudax::__ensure_current_device setter2(ref);
       CUDAX_REQUIRE(test::count_driver_stack() == 2);
       CUDAX_REQUIRE(ctx == driver::ctxGetCurrent());
       CUDART(cudaGetDevice(&dev_id));

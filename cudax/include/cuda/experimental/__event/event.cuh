@@ -150,7 +150,7 @@ private:
   explicit event(stream_ref __stream, unsigned int __flags)
       : event_ref(::cudaEvent_t{})
   {
-    detail::__ensure_current_device dev_setter(__stream);
+    [[maybe_unused]] __ensure_current_device __dev_setter(__stream);
     _CCCL_TRY_CUDA_API(
       ::cudaEventCreateWithFlags, "Failed to create CUDA event", &__event_, static_cast<unsigned int>(__flags));
   }

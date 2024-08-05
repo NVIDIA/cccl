@@ -52,7 +52,7 @@ struct stream : stream_ref
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
   {
-    detail::__ensure_current_device dev_setter(__dev);
+    [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamDefault, __priority);
   }
@@ -146,15 +146,16 @@ struct stream : stream_ref
     detail::driver::streamWaitEvent(get(), __ev.get());
   }
 
-  //! @brief Make all future work submitted into this stream depend on completion of all work from the specified stream
+  //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
+  //! stream
   //!
   //! @param __other Stream that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
   void wait(stream_ref __other) const
   {
-    // TODO consider an optimization to not create an event every time and instead have one persistent event or one per
-    // stream
+    // TODO consider an optimization to not create an event every time and instead have one persistent event or one
+    // per stream
     assert(__stream != detail::invalid_stream);
     event __tmp(__other);
     wait(__tmp);

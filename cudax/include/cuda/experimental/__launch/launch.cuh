@@ -120,7 +120,7 @@ template <typename... Args, typename... Config, typename Dimensions, typename Ke
 void launch(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
 {
-  detail::__ensure_current_device dev_setter(stream);
+  [[maybe_unused]] __ensure_current_device __dev_setter(stream);
   cudaError_t status;
   if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, Args...>)
   {
@@ -183,7 +183,7 @@ void launch(
 template <typename... Args, typename... Levels, typename Kernel>
 void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
 {
-  detail::__ensure_current_device dev_setter(stream);
+  [[maybe_unused]] __ensure_current_device __dev_setter(stream);
   cudaError_t status;
   if constexpr (::cuda::std::is_invocable_v<Kernel, hierarchy_dimensions<Levels...>, Args...>)
   {
@@ -248,7 +248,7 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(kernel_config<Dimensions, Config...>, ExpArgs...),
             ActArgs&&... args)
 {
-  detail::__ensure_current_device dev_setter(stream);
+  [[maybe_unused]] __ensure_current_device __dev_setter(stream);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, conf, kernel, conf, args...);
   }(std::forward<ActArgs>(args)...);
@@ -303,7 +303,7 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(hierarchy_dimensions<Levels...>, ExpArgs...),
             ActArgs&&... args)
 {
-  detail::__ensure_current_device dev_setter(stream);
+  [[maybe_unused]] __ensure_current_device __dev_setter(stream);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, kernel_config(dims), kernel, dims, args...);
   }(std::forward<ActArgs>(args)...);
@@ -359,7 +359,7 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(ExpArgs...),
             ActArgs&&... args)
 {
-  detail::__ensure_current_device dev_setter(stream);
+  [[maybe_unused]] __ensure_current_device __dev_setter(stream);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, conf, kernel, args...);
   }(std::forward<ActArgs>(args)...);
@@ -412,7 +412,7 @@ template <typename... ExpArgs, typename... ActArgs, typename... Levels>
 void launch(
   ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs...), ActArgs&&... args)
 {
-  detail::__ensure_current_device dev_setter(stream);
+  [[maybe_unused]] __ensure_current_device __dev_setter(stream);
   cudaError_t status = [&](ExpArgs... args) {
     return detail::launch_impl(stream, kernel_config(dims), kernel, args...);
   }(std::forward<ActArgs>(args)...);
