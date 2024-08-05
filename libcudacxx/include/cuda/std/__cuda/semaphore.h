@@ -24,6 +24,18 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+void simple_backoff() {
+  int wait_iterations = 1;
+  volatile int ctr = 0;
+  const int max_iterations = 1024;
+
+  for (int i = 0; i < wait_iterations; ++i)
+  {
+    ctr++;
+  }
+  wait_iterations = (wait_iterations * 2 >= max_iterations) ? max_iterations : wait_iterations * 2;
+}
+
 
 template <thread_scope _Sco, ptrdiff_t __least_max_value = INT_MAX>
 class __fair_semaphore
@@ -41,36 +53,61 @@ public:
     ptrdiff_t available_tickets = max_ - tickets.load();
     return (available_tickets > 0) ? true : false;
   }
+  
+  _LIBCUDACXX_INLINE_VISIBILITY bool our_turn(ptrdiff_t ticket_num)
+  {
+    ptrdiff_t serving_ticket = current.load();
+    return ticket_num == serving_ticket;
+  }
 
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr ptrdiff_t max() noexcept
   {
     return _CUDA_VSTD::numeric_limits<ptrdiff_t>::max();
   }
 
+  // should block until it's their turn. Right? 
   _LIBCUDACXX_INLINE_VISIBILITY void acquire()
-  {
-    while (!try_acquire())
-    {
-      int wait_iterations = 1;
-      volatile int ctr = 0;
-      const int max_iterations = 1024;
-
-      for (int i = 0; i < wait_iterations; ++i)
-      {
-        ctr++;
-      }
-      wait_iterations = (wait_iterations * 2 >= max_iterations) ? max_iterations : wait_iterations * 2;
+  { 
+    // if there aren't any tickets available we block
+    while(!try_acquire()) {
+      simple_backoff();
     }
     ptrdiff_t t = tickets.fetch_add(1, cuda::memory_order_relaxed);
-
+    // now we're in line
+    // give the newly added value
+    while (!our_turn(t+1)) 
+    {
+      simple_backoff();
+    }
+    // blocking has concluded at this point
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY bool __acquire_slow_timed(
     _CUDA_VSTD::chrono::nanoseconds const& __rel_time) {
+
     return __libcpp_thread_poll_with_backoff(
       [this]() {
         ptrdiff_t const remaining = max_ - tickets.load(memory_order_acquire);
-        return remaining > 0 && __fetch_add_if_slow(remaining);
+        bool success = false;
+        // potential to refine this so that time between loading
+        // tickets and time between return doesn't allow possibility of
+        // another thread to alter remaining?
+        while(remaining > 0 && !success) {
+          success = tickets.compare_exchange_weak(remaining, 
+            remaining + 1,
+            memory_order_acquire,
+            memory_order_relaxed);
+        }
+        // keep looping until we finally succeed. Now that it's been added
+        // we need to make sure it's our turn
+        while(!our_turn(remaining+1)) {
+          simple_backoff();
+        }
+        return true;
+
+        // I don't think we should do the below code because it'll terminate 
+        // potentially early 
+        // return our_turn(remaining+1);
       },
       __rel_time);
   }
@@ -81,8 +118,13 @@ public:
     current.fetch_add(update, memory_order_relaxed);
     if (update > 1)
     {
-      tickets.notify_all();
-      current.notify_all();
+      // if the update is one, we update one at a time
+      // do we need to use CG or something to emulate conditions for waking up 
+      // threads? 
+      for(int i = 0; i<update; i++) {
+        tickets.notify_one();
+        current.notify_one();
+      }
     }
     else
     {
@@ -91,44 +133,16 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY bool __fetch_add_if_slow(ptrdiff_t remaining)
-  {
-    while (remaining > 0)
-    {
-      if (tickets.compare_exchange_weak(remaining, remaining + 1,
-        memory_order_acquire,
-        memory_order_relaxed))
-      {
-        return true;
-      }
-    }
-    return false;
-  }
-
   template <class Rep, class Period>
   _LIBCUDACXX_INLINE_VISIBILITY bool try_acquire_for(_CUDA_VSTD::chrono::duration<Rep, Period> const& __rel_time)
   {
-    if (try_acquire())
-    {
-      return true;
-    }
-    else
-    {
-      return __acquire_slow_timed(__rel_time);
-    }
+    return __acquire_slow_timed(__rel_time); 
   }
 
   template <class Clock, class Duration>
   _LIBCUDACXX_INLINE_VISIBILITY bool try_acquire_until(_CUDA_VSTD::chrono::time_point<Clock, Duration> const& __abs_time)
   {
-    if (try_acquire())
-    {
-      return true;
-    }
-    else
-    {
-      return __acquire_slow_timed(__abs_time - Clock::now());
-    }
+    return __acquire_slow_timed(__abs_time - Clock::now());  
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __fair_semaphore(ptrdiff_t count = 0) : tickets(0),
@@ -136,6 +150,7 @@ public:
                                                                         max_(count)
   {
     assert(count >= 0); // per https://en.cppreference.com/w/cpp/thread/counting_semaphore/counting_semaphore
+    // i noticed it's not in the standard to have a default value, imo should be removed
     assert(count <= max());
   }
 
