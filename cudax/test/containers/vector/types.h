@@ -564,4 +564,7 @@ __host__ __device__ constexpr bool equal_range(const Range1& range1, const Range
 
 namespace cudax = cuda::experimental;
 
+struct user_defined_property
+{};
+
 #endif // CUDAX_TEST_CONTAINER_VECTOR_TYPES_H

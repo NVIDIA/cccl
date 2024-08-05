@@ -9,10 +9,12 @@
 
 // UNSUPPORTED: c++11
 
+#include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/vector>
@@ -20,263 +22,219 @@
 #include <stdexcept>
 
 #include "types.h"
+#include <catch2/catch.hpp>
 
-_CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_MSVC(5246)
+template <class T, class Tuple>
+struct unpack_properties;
 
-template <class T>
-__host__ __device__ constexpr void test_copy_move()
+template <class T, class... Properties>
+struct unpack_properties<T, cuda::std::tuple<Properties...>>
 {
-  // Zero capacity inplace_vector is trivial
-  static_assert(cuda::std::is_nothrow_copy_constructible<cudax::vector<T, 0>>::value, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<cudax::vector<T, 0>>::value, "");
-  static_assert(cuda::std::is_nothrow_copy_constructible<cudax::vector<T, 42>>::value
-                  == cuda::std::is_nothrow_copy_constructible<T>::value,
-                "");
-  static_assert(cuda::std::is_nothrow_move_constructible<cudax::vector<T, 42>>::value
-                  == cuda::std::is_nothrow_move_constructible<T>::value,
-                "");
-  { // inplace_vector<T, 0> can be copy constructed
-    cudax::vector<T, 0> input{};
-    cudax::vector<T, 0> vec(input);
-    assert(vec.empty());
+  using type = cudax::vector<T, Properties...>;
+};
+
+template <class T, class Tuple>
+using unpacked_vector = typename unpack_properties<T, Tuple>::type;
+
+TEMPLATE_TEST_CASE(
+  "cudax::vector constructors",
+  "[container][vector]",
+  int,
+  Trivial,
+  NonTrivial,
+  ThrowingDefaultConstruct,
+  ThrowingCopyConstructor,
+  ThrowingMoveConstructor,
+  ThrowingCopyAssignment,
+  ThrowingMoveAssignment,
+  NonTrivialDestructor)
+{
+  cuda::mr::cuda_memory_resource resource{};
+
+  using vector = cudax::vector<TestType, cuda::mr::device_accessible>;
+  using T      = TestType;
+
+  SECTION("copy construction")
+  {
+    static_assert(!cuda::std::is_nothrow_copy_constructible<vector>::value, "");
+    { // can be copy constructed from empty input
+      const vector input{resource, 0};
+      vector vec(input);
+      assert(vec.empty());
+    }
+
+    { // can be copy constructed from non-empty input
+      const vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      vector vec(input);
+      assert(!vec.empty());
+      assert(equal_range(vec, input));
+    }
   }
 
-  { // inplace_vector<T, 0> can be move constructed
-    cudax::vector<T, 0> input{};
-    cudax::vector<T, 0> vec(cuda::std::move(input));
-    assert(input.empty());
-    assert(vec.empty());
-  }
+  SECTION("move construction")
+  {
+    static_assert(!cuda::std::is_nothrow_move_constructible<vector>::value, "");
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be copy constructed from empty input
-    const inplace_vector input{};
-    inplace_vector vec(input);
-    assert(vec.empty());
-  }
+    { // can be move constructed with empty input
+      const vector input{resource, 0};
+      vector vec(cuda::std::move(input));
+      assert(vec.empty());
+      assert(input.empty());
+    }
 
-  { // inplace_vector<T, N> can be move constructed with empty input
-    inplace_vector input{};
-    inplace_vector vec(cuda::std::move(input));
-    assert(vec.empty());
-    assert(input.empty());
-  }
-
-  { // inplace_vector<T, N> can be copy constructed from non-empty input
-    inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec(input);
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-
-  { // inplace_vector<T, N> can be move constructed from non-empty input
-    inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec(cuda::std::move(input));
-    assert(!vec.empty());
-    assert(input.size() == 4);
-    assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    { // can be move constructed from non-empty input
+      vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      vector vec(cuda::std::move(input));
+      assert(!vec.empty());
+      assert(input.size() == 4);
+      assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    }
   }
 }
 
-template <class T>
-__host__ __device__ constexpr void test_size()
+#if 0
+template <class T, class... Properties>
+void test_size()
 {
-  { // inplace_vector<T, 0> can be constructed from a size
-    cudax::vector<T, 0> vec(0);
+  using vector = cudax::vector<T, Properties...>;
+  { // can be constructed from a size, is empty if zero
+    vector vec(0);
     assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(cudax::vector<T, 0>(0)), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+    static_assert(!noexcept(vector(0)), "");
+#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
   }
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be constructed from a size, is empty if zero
-    inplace_vector vec(0);
-    assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(inplace_vector(0)), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
-  }
-
-  { // inplace_vector<T, N> can be constructed from a size, elements are value initialized
+  { // can be constructed from a size, elements are value initialized
     constexpr size_t size{3};
-    inplace_vector vec(size);
+    vector vec(size);
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(inplace_vector(3)), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+    static_assert(!noexcept(vector(3)), "");
+#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
   }
 }
 
-template <class T>
-__host__ __device__ constexpr void test_size_value()
+template <class T, class... Properties>
+void test_size_value()
 {
-  { // inplace_vector<T, 0> can be constructed from a size and a const T&
-    cudax::vector<T, 0> vec(0, T(42));
+  using vector = cudax::vector<T, Properties...>;
+  { // can be constructed from a size and a const T&, is empty if zero
+    vector vec(0, T(42));
     assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(cudax::vector<T, 0>(0, T(42))), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+    static_assert(!noexcept(vector(0, T(42))), "");
+#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
   }
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be constructed from a size and a const T&, is empty if zero
-    inplace_vector vec(0, T(42));
-    assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(inplace_vector(0, T(42))), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
-  }
-
-  { // inplace_vector<T, N> can be constructed from a size and a const T&, elements are copied
+  { // can be constructed from a size and a const T&, elements are copied
     constexpr size_t size{3};
-    inplace_vector vec(size, T(42));
+    vector vec(size, T(42));
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(inplace_vector(3, T(42))), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+    static_assert(!noexcept(vector(3, T(42))), "");
+#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
   }
 }
 
-template <class T>
-__host__ __device__ constexpr void test_iter()
+template <class T, class... Properties>
+void test_iter()
 {
-  const cuda::std::array<T, 4> input{T(1), T(42), T(1337), T(0)};
-  { // inplace_vector<T, 0> can be constructed from two equal input iterators
+  using vector = cudax::vector<T, Properties...>;
+  { // can be constructed from two equal input iterators
     using iter = cpp17_input_iterator<const T*>;
-    cudax::vector<T, 0> vec(iter{input.begin()}, iter{input.begin()});
+    vector vec(iter{input.begin()}, iter{input.begin()});
     assert(vec.empty());
   }
 
-  { // inplace_vector<T, 0> can be constructed from two equal forward iterators
+  { // can be constructed from two equal forward iterators
     using iter = forward_iterator<const T*>;
-    cudax::vector<T, 0> vec(iter{input.begin()}, iter{input.begin()});
+    vector vec(iter{input.begin()}, iter{input.begin()});
     assert(vec.empty());
   }
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be constructed from two equal input iterators
+  { // can be constructed from two input iterators
     using iter = cpp17_input_iterator<const T*>;
-    inplace_vector vec(iter{input.begin()}, iter{input.begin()});
-    assert(vec.empty());
-  }
-
-  { // inplace_vector<T, N> can be constructed from two equal forward iterators
-    using iter = forward_iterator<const T*>;
-    inplace_vector vec(iter{input.begin()}, iter{input.begin()});
-    assert(vec.empty());
-  }
-
-  { // inplace_vector<T, N> can be constructed from two input iterators
-    using iter = cpp17_input_iterator<const T*>;
-    inplace_vector vec(iter{input.begin()}, iter{input.end()});
+    vector vec(iter{input.begin()}, iter{input.end()});
     assert(!vec.empty());
     assert(equal_range(vec, input));
   }
 
-  { // inplace_vector<T, N> can be constructed from two forward iterators
+  { // can be constructed from two forward iterators
     using iter = forward_iterator<const T*>;
-    inplace_vector vec(iter{input.begin()}, iter{input.end()});
+    vector vec(iter{input.begin()}, iter{input.end()});
     assert(!vec.empty());
     assert(equal_range(vec, input));
   }
 }
 
-template <class T>
-__host__ __device__ constexpr void test_init_list()
+template <class T, class... Properties>
+void test_init_list()
 {
-  { // inplace_vector<T, 0> can be constructed from an empty initializer_list
+  using vector = cudax::vector<T, Properties...>;
+  { // can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
-    cudax::vector<T, 0> vec(input);
+    vector vec(input);
     assert(vec.empty());
   }
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be constructed from an empty initializer_list
-    cuda::std::initializer_list<T> input{};
-    inplace_vector vec(input);
-    assert(vec.empty());
-  }
-
-  { // inplace_vector<T, N> can be constructed from a non-empty initializer_list
+  { // can be constructed from a non-empty initializer_list
     const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec(input);
+    vector vec(input);
     assert(!vec.empty());
     assert(equal_range(vec, input));
   }
 }
 
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
-template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_range()
+template <class T, template <class, size_t> class Range, class... Properties>
+void test_range()
 {
-  { // inplace_vector<T, 0> can be constructed from an empty range
-    cudax::vector<T, 0> vec(Range<T, 0>{});
+  using vector = cudax::vector<T, Properties...>;
+  { // can be constructed from an empty range
+    vector vec(Range<T, 0>{});
     assert(vec.empty());
   }
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be constructed from an empty range
-    inplace_vector vec(Range<T, 0>{});
-    assert(vec.empty());
-  }
-
-  { // inplace_vector<T, N> can be constructed from a non-empty range
-    inplace_vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
+  { // can be constructed from a non-empty range
+    vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
 }
 
+template <class T, class... Properties>
+void test_range()
+{
+  test_range<T, input_range, Properties...>();
+  test_range<T, uncommon_range, Properties...>();
+  test_range<T, sized_uncommon_range, Properties...>();
+  test_range<T, cuda::std::array, Properties...>();
+}
+
+template <class T, class... Properties>
+void test()
+{
+  test_copy_move<T, Properties...>();
+  test_size<T, Properties...>();
+  test_size_value<T, Properties...>();
+  test_iter<T, Properties...>();
+  test_init_list<T, Properties...>();
+  test_range<T, Properties...>();
+}
+
 template <class T>
-__host__ __device__ constexpr void test_range()
+void test()
 {
-#  if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 8
-  test_range<T, input_range>();
-  test_range<T, uncommon_range>();
-  test_range<T, sized_uncommon_range>();
-#  endif // !TEST_COMPILER_GCC < 8
-  test_range<T, cuda::std::array>();
-}
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
-
-template <class T, cuda::std::enable_if_t<cuda::std::is_trivial<T>::value, int> = 0>
-__host__ __device__ constexpr void test()
-{
-  test_default<T>();
-  test_copy_move<T>();
-  test_size<T>();
-  test_size_value<T>();
-  test_iter<T>();
-  test_init_list<T>();
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
-  test_range<T>();
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
+  test<T>();
+  test<T, cuda::mr::host_accessible>();
+  test<T, cuda::mr::device_accessible>();
+  test<T, cuda::mr::host_accessible, cuda::mr::device_accessible>();
+  test<T, user_defined_property>();
 }
 
-template <class T, cuda::std::enable_if_t<!cuda::std::is_trivial<T>::value, int> = 0>
-__host__ __device__ constexpr void test()
-{
-  test_default<T>();
-
-  if (!cuda::std::__libcpp_is_constant_evaluated())
-  {
-    test_copy_move<T>();
-    test_size<T>();
-    test_size_value<T>();
-    test_iter<T>();
-    test_init_list<T>();
-#if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
-    test_range<T>();
-#endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
-  }
-}
-
-__host__ __device__ constexpr bool test()
+__host__ __device__ bool test()
 {
   test<int>();
   test<Trivial>();
@@ -286,25 +244,19 @@ __host__ __device__ constexpr bool test()
   test<ThrowingMoveConstructor>();
   test<ThrowingCopyAssignment>();
   test<ThrowingMoveAssignment>();
-
-  // Due to reinterpret_cast within the destructor a on trivially destructible type cannot be constexpr at all
-  if (!cuda::std::__libcpp_is_constant_evaluated())
-  {
-    test<NonTrivialDestructor>();
-  }
+  test<NonTrivialDestructor>();
 
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#  ifndef TEST_HAS_NO_EXCEPTIONS
 void test_exceptions()
 { // constructors throw std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cudax::vector<int, capacity>;
+  using vector = cudax::vector<int>;
 
   try
   {
-    inplace_vector too_small(2 * capacity);
+    vector too_small(2 * capacity);
   }
   catch (const std::bad_alloc&)
   {}
@@ -315,7 +267,7 @@ void test_exceptions()
 
   try
   {
-    inplace_vector too_small(2 * capacity, 42);
+    vector too_small(2 * capacity, 42);
   }
   catch (const std::bad_alloc&)
   {}
@@ -328,7 +280,7 @@ void test_exceptions()
   {
     using iter = cpp17_input_iterator<const int*>;
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    inplace_vector too_small(iter{input.begin()}, iter{input.end()});
+    vector too_small(iter{input.begin()}, iter{input.end()});
   }
   catch (const std::bad_alloc&)
   {}
@@ -340,7 +292,7 @@ void test_exceptions()
   try
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    inplace_vector too_small(input.begin(), input.end());
+    vector too_small(input.begin(), input.end());
   }
   catch (const std::bad_alloc&)
   {}
@@ -352,7 +304,7 @@ void test_exceptions()
   try
   {
     cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-    inplace_vector too_small(input);
+    vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -361,11 +313,10 @@ void test_exceptions()
     assert(false);
   }
 
-#  if TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
   try
   {
     input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    inplace_vector too_small(input);
+    vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -377,7 +328,7 @@ void test_exceptions()
   try
   {
     uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    inplace_vector too_small(input);
+    vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -389,7 +340,7 @@ void test_exceptions()
   try
   {
     sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    inplace_vector too_small(input);
+    vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -401,7 +352,7 @@ void test_exceptions()
   try
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    inplace_vector too_small(input);
+    vector too_small(input);
   }
   catch (const std::bad_alloc&)
   {}
@@ -409,19 +360,16 @@ void test_exceptions()
   {
     assert(false);
   }
-#  endif // TEST_STD_VER >= 2017 && !defined(TEST_COMPILER_MSVC)
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#  endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
   test();
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
-#endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#  ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#  endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }
+#endif

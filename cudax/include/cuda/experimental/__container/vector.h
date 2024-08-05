@@ -313,6 +313,8 @@ public:
   using value_type      = _Tp;
   using reference       = _Tp&;
   using const_reference = const _Tp&;
+  using pointer         = _Tp*;
+  using const_pointer   = const _Tp*;
 
   __vector_base(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size)
       : __base(__mr, __size)
