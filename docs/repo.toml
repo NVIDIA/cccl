@@ -25,13 +25,14 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cub", "thrust", "cccl" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "pycuda" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
+    [ "pycuda", "_build/docs/pycuda/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -249,6 +250,7 @@ doxygen_predefined = [
   "_CCCL_SUPPRESS_DEPRECATED_POP",
   "DOXYGEN_SHOULD_SKIP_THIS",
   "DOXYGEN_ACTIVE",
+  "_LIBCUDACXX_DEPRECATED_IN_CXX11",
   "THRUST_DISABLE_NAMESPACE_MAGIC",
   "THRUST_IGNORE_NAMESPACE_MAGIC_ERROR",
   "THRUST_NAMESPACE_BEGIN=namespace thrust {",
@@ -277,4 +279,84 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../thrust
+"""
+
+[repo_docs.projects.pycuda]
+name = "pycuda"
+docs_root = "pycuda"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+autodoc.mock_imports = [
+    "numba",
+    "pynvjitlink",
+    "cuda.nvrtc",
+    "llvmlite"
+]
+
+enhanced_search_enabled = true
+python_paths = [
+    "${root}/../python/cuda"
+]
+
+[repo_docs.projects.cudax]
+name = "Cudax: Experimental new features"
+docs_root = "cudax"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/cudax"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+enhanced_search_enabled = true
+api_output_directory = "api"
+use_fast_doxygen_conversion = true
+sphinx_generate_doxygen_groups = true
+sphinx_generate_doxygen_pages = true
+sphinx_exclude_patterns = []
+
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+]
+
+doxygen_input = [
+    "../../cudax/include/cuda/experimental/__container/*.h",
+    "../../cudax/include/cuda/experimental/__memory_resource/*.h",
+]
+
+doxygen_predefined = [
+  "_CCCL_DEVICE=",
+  "_CCCL_EXEC_CHECK_DISABLE=",
+  "_CCCL_FORCEINLINE=",
+  "_CCCL_HOST=",
+  "_CCCL_HOST_DEVICE=",
+  "_CCCL_NODISCARD=[[nodiscard]]",
+  "_CCCL_NODISCARD_FRIEND=",
+  "_CCCL_STD_VER=2020",
+  "_CUDA_VMR=cuda::mr",
+  "_CUDA_VSTD=cuda::std",
+  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
+  "_LIBCUDACXX_EAT_REST(x)=",
+  "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+]
+
+# make sure to use ./fetch_imgs.sh
+doxygen_conf_extra = """
+  IMAGE_PATH             = ${config_root}/img
+  DISTRIBUTE_GROUP_DOC   = Yes
+  DOXYFILE_ENCODING      = UTF-8
+  INPUT_ENCODING         = UTF-8
+  EXTENSION_MAPPING      = cuh=c++ cu=c++
+  EXAMPLE_RECURSIVE      = NO
+  EXAMPLE_PATTERNS       = *.cu
+  EXCLUDE_SYMBOLS        = "__*"
+  AUTOLINK_SUPPORT       = YES
 """

@@ -36,8 +36,8 @@ struct __fn
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin()))
-    -> decltype(__c.begin())
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
+    noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
@@ -53,7 +53,7 @@ struct __fn
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto begin = __begin::__fn{};
+_CCCL_GLOBAL_CONSTANT auto begin = __begin::__fn{};
 } // namespace __cpo
 
 namespace __end
@@ -67,8 +67,8 @@ struct __fn
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const noexcept(noexcept(__c.end()))
-    -> decltype(__c.end())
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
+    noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
@@ -84,7 +84,7 @@ struct __fn
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto end = __end::__fn{};
+_CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
 } // namespace __cpo
 
 #if _CCCL_STD_VER >= 2014
@@ -104,7 +104,7 @@ struct __fn
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cbegin = __cbegin::__fn{};
+_CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
 } // namespace __cpo
 
 namespace __cend
@@ -122,7 +122,7 @@ struct __fn
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cend = __cend::__fn{};
+_CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2014

@@ -39,9 +39,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-/**
- * @brief `cuda_pinned_memory_resource` uses cudaMallocHost / cudaFreeHost for allocation/deallocation.
- */
+//! @brief cuda_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 class cuda_pinned_memory_resource
 {
 private:
@@ -57,13 +55,11 @@ public:
     _LIBCUDACXX_ASSERT(__flags_ == __flags, "Unexpected flags passed to cuda_pinned_memory_resource");
   }
 
-  /**
-   * @brief Allocate host memory of size at least \p __bytes.
-   * @param __bytes The size in bytes of the allocation.
-   * @param __alignment The requested alignment of the allocation.
-   * @throw cuda::cuda_error if allocation fails with a CUDA error.
-   * @return Pointer to the newly allocated memory
-   */
+  //! @brief Allocate host memory of size at least \p __bytes.
+  //! @param __bytes The size in bytes of the allocation.
+  //! @param __alignment The requested alignment of the allocation.
+  //! @throw cuda::cuda_error if allocation fails with a CUDA error.
+  //! @return Pointer to the newly allocated memory
   _CCCL_NODISCARD void* allocate(const size_t __bytes,
                                  const size_t __alignment = default_cuda_malloc_host_alignment) const
   {
@@ -78,12 +74,10 @@ public:
     return __ptr;
   }
 
-  /**
-   * @brief Deallocate memory pointed to by \p __ptr.
-   * @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
-   * @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
-   * @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-   */
+  //! @brief Deallocate memory pointed to by \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
+  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
   void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_host_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
@@ -93,32 +87,28 @@ public:
     (void) __alignment;
   }
 
-  /**
-   * @brief Equality comparison with another cuda_pinned_memory_resource
-   * @return Whether both cuda_pinned_memory_resource were constructed with the same flags
-   */
+  //! @brief Equality comparison with another \c cuda_pinned_memory_resource
+  //! @param __other The other \c cuda_pinned_memory_resource
+  //! @return Whether both \c cuda_pinned_memory_resource were constructed with the same flags
   _CCCL_NODISCARD constexpr bool operator==(cuda_pinned_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
 #    if _CCCL_STD_VER <= 2017
-  /**
-   * @brief Equality comparison with another cuda_pinned_memory_resource
-   * @return Whether both cuda_pinned_memory_resource were constructed with different flags
-   */
+  //! @brief Equality comparison with another \c cuda_pinned_memory_resource
+  //! @param __other The other \c cuda_pinned_memory_resource
+  //! @return Whether both \c cuda_pinned_memory_resource were constructed with different flags
   _CCCL_NODISCARD constexpr bool operator!=(cuda_pinned_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  /**
-   * @brief Equality comparison between a cuda_memory_resource and another resource
-   * @param __lhs The cuda_memory_resource
-   * @param __rhs The resource to compare to
-   * @return If the underlying types are equality comparable, returns the result of equality comparison of both
-   * resources. Otherwise, returns false.
-   */
+  //! @brief Equality comparison between a \c cuda_memory_resource and another resource
+  //! @param __lhs The \c cuda_memory_resource
+  //! @param __rhs The resource to compare to
+  //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
+  //! resources. Otherwise, returns false.
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
@@ -127,9 +117,7 @@ public:
         == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    if _CCCL_STD_VER <= 2017
-  /**
-   * @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
-   */
+  //! @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
@@ -137,9 +125,7 @@ public:
     return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
         == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  /**
-   * @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
-   */
+  //! @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
@@ -147,9 +133,7 @@ public:
     return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
         != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  /**
-   * @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
-   */
+  //! @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
@@ -159,18 +143,12 @@ public:
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  /**
-   * @brief Enables the `device_accessible` property
-   */
+  //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(cuda_pinned_memory_resource const&, device_accessible) noexcept {}
-  /**
-   * @brief Enables the `host_accessible` property
-   */
+  //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(cuda_pinned_memory_resource const&, host_accessible) noexcept {}
 
-  /**
-   * @brief Checks whether the passed in alignment is valid
-   */
+  //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
     return __alignment <= default_cuda_malloc_host_alignment && (default_cuda_malloc_host_alignment % __alignment == 0);

@@ -59,7 +59,7 @@ RandomAccessIterator for_each_n(execution_policy<DerivedPolicy>&, RandomAccessIt
   }
 
   // create a wrapped function for f
-  thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f(f);
+  thrust::detail::wrapped_function<UnaryFunction, void> wrapped_f{f};
 
   // use a signed type for the iteration variable or suffer the consequences of warnings
   using DifferenceType    = typename thrust::iterator_difference<RandomAccessIterator>::type;

@@ -13,4 +13,4 @@
 
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
 
-#endif
+#endif // __CUDAX_HIERARCHY___

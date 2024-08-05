@@ -91,13 +91,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test_basic()
 }
 
 #ifndef __CUDACC__
-DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
-  doIncompleteTypeTest(0);
-  doIncompleteTypeTest<IncompleteType, Deleter<IncompleteType>>(0);
-} {
-  doIncompleteTypeTest<IncompleteType[]>(0);
-  doIncompleteTypeTest<IncompleteType[], Deleter<IncompleteType[]>>(0);
-})
+DEFINE_AND_RUN_IS_INCOMPLETE_TEST(
+  {
+    doIncompleteTypeTest(0);
+    doIncompleteTypeTest<IncompleteType, Deleter<IncompleteType>>(0);
+  } {
+    doIncompleteTypeTest<IncompleteType[]>(0);
+    doIncompleteTypeTest<IncompleteType[], Deleter<IncompleteType[]>>(0);
+  })
 #endif // __CUDACC__
 
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()

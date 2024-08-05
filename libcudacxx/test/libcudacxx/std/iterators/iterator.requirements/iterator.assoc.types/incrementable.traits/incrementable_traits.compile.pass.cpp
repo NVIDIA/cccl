@@ -158,7 +158,7 @@ static_assert(!check_has_difference_type<int (&)() noexcept>);
   static_assert(!check_has_difference_type<int (type::*)() cv&>);           \
   static_assert(!check_has_difference_type<int (type::*)() cv & noexcept>); \
   static_assert(!check_has_difference_type<int (type::*)() cv&&>);          \
-  static_assert(!check_has_difference_type < int(type::*)() cv&& noexcept >);
+  static_assert(!check_has_difference_type < int(type::*)() cv && noexcept >);
 
 struct empty
 {};

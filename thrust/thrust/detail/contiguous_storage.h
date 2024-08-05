@@ -102,7 +102,7 @@ public:
 
   _CCCL_HOST_DEVICE void swap(contiguous_storage& x);
 
-  _CCCL_HOST_DEVICE void default_construct_n(iterator first, size_type n);
+  _CCCL_HOST_DEVICE void value_initialize_n(iterator first, size_type n);
 
   _CCCL_HOST_DEVICE void uninitialized_fill_n(iterator first, size_type n, const value_type& value);
 

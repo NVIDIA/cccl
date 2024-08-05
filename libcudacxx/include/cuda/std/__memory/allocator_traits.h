@@ -43,12 +43,12 @@ _CCCL_NV_DIAG_SUPPRESS(1215)
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER <= 2014
-#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY)     \
-    template <class _Tp, class = void>                             \
-    struct NAME : false_type                                       \
-    {};                                                            \
-    template <class _Tp>                                           \
-    struct NAME<_Tp, __void_t<typename _Tp::PROPERTY>> : true_type \
+#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY)   \
+    template <class _Tp, class = void>                           \
+    struct NAME : false_type                                     \
+    {};                                                          \
+    template <class _Tp>                                         \
+    struct NAME<_Tp, void_t<typename _Tp::PROPERTY>> : true_type \
     {}
 
 #else // ^^^ _CCCL_STD_VER <= 2014 ^^^ / vvv _CCCL_STD_VER >= 2017 vvv
@@ -56,7 +56,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
     template <class _Tp, class = void>                         \
     inline constexpr bool NAME##_v = false;                    \
     template <class _Tp>                                       \
-    inline constexpr bool NAME##_v<_Tp, __void_t<typename _Tp::PROPERTY>> = true;
+    inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 #endif // _CCCL_STD_VER >= 2017
 
 // __pointer
@@ -190,7 +190,7 @@ template <class _Tp, class _Up, class = void>
 struct __has_rebind_other : false_type
 {};
 template <class _Tp, class _Up>
-struct __has_rebind_other<_Tp, _Up, __void_t<typename _Tp::template rebind<_Up>::other>> : true_type
+struct __has_rebind_other<_Tp, _Up, void_t<typename _Tp::template rebind<_Up>::other>> : true_type
 {};
 
 template <class _Tp, class _Up, bool = __has_rebind_other<_Tp, _Up>::value>
@@ -291,8 +291,8 @@ __to_raw_pointer(_Pointer __p) noexcept
 }
 #else // ^^^ C++17 ^^^ / vvv C++20 vvv
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY auto __to_raw_pointer(const _Pointer& __p) noexcept
-  -> decltype(pointer_traits<_Pointer>::to_address(__p))
+inline _LIBCUDACXX_INLINE_VISIBILITY auto
+__to_raw_pointer(const _Pointer& __p) noexcept -> decltype(pointer_traits<_Pointer>::to_address(__p))
 {
   return pointer_traits<_Pointer>::to_address(__p);
 }

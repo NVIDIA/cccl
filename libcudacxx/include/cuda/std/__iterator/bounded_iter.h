@@ -62,8 +62,8 @@ struct __bounded_iter
   __bounded_iter(__bounded_iter&&)      = default;
 
   template <class _OtherIterator, class = __enable_if_t<is_convertible<_OtherIterator, _Iterator>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr __bounded_iter(
-    __bounded_iter<_OtherIterator> const& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __bounded_iter(__bounded_iter<_OtherIterator> const& __other) noexcept
       : __current_(__other.__current_)
       , __begin_(__other.__begin_)
       , __end_(__other.__end_)
@@ -83,8 +83,8 @@ private:
   //
   // Since it is non-standard for iterators to have this constructor, __bounded_iter must
   // be created via `_CUDA_VSTD::__make_bounded_iter`.
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit __bounded_iter(
-    _Iterator __current, _Iterator __begin, _Iterator __end)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _CCCL_CONSTEXPR_CXX14 explicit __bounded_iter(_Iterator __current, _Iterator __begin, _Iterator __end)
       : __current_(__current)
       , __begin_(__begin)
       , __end_(__end)

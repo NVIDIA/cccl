@@ -19,6 +19,8 @@ done
 major="$1"
 minor="$2"
 patch="$3"
+pymajor="0"
+pyminor="1"
 
 if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]; then
     echo "Usage: $0 [--dry-run] <major> <minor> <patch>"
@@ -34,6 +36,7 @@ CUB_CMAKE_VERSION_FILE="cub/cub/cmake/cub-config-version.cmake"
 LIBCUDACXX_CMAKE_VERSION_FILE="libcudacxx/lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
 THRUST_CMAKE_VERSION_FILE="thrust/thrust/cmake/thrust-config-version.cmake"
 CUDAX_CMAKE_VERSION_FILE="cudax/lib/cmake/cudax/cudax-config-version.cmake"
+PYCUDA_VERSION_FILE="python/cuda/cuda/cooperative/_version.py"
 
 # Calculated version codes
 new_cccl_version=$((major * 1000000 + minor * 1000 + patch))     # MMMmmmppp
@@ -98,6 +101,8 @@ update_file "$CCCL_CMAKE_VERSION_FILE" "set(CCCL_VERSION_PATCH \([0-9]\+\))" "se
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MAJOR \([0-9]\+\))" "set(cudax_VERSION_MAJOR $major)"
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_MINOR \([0-9]\+\))" "set(cudax_VERSION_MINOR $minor)"
 update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_PATCH \([0-9]\+\))" "set(cudax_VERSION_PATCH $patch)"
+
+update_file "$PYCUDA_VERSION_FILE" "^__version__ = \"\([0-9.]\+\)\"" "__version__ = \"$pymajor.$pyminor.$major.$minor.$patch\""
 
 if [ "$DRY_RUN" = true ]; then
     echo "Dry run completed. No changes made."

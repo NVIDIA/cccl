@@ -187,8 +187,8 @@ public:
   // OtherPointer's system shall be convertible to Tag
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE
-    typename thrust::detail::enable_if_pointer_is_convertible<OtherPointer, pointer, derived_type&>::type
-    operator=(const OtherPointer& other);
+  typename thrust::detail::enable_if_pointer_is_convertible<OtherPointer, pointer, derived_type&>::type
+  operator=(const OtherPointer& other);
 
   // observers
 

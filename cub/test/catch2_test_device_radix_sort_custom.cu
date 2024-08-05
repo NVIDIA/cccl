@@ -54,8 +54,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_des
 // %PARAM% TEST_LAUNCH lid 0:1
 
 using key   = c2h::custom_type_t<c2h::equal_comparable_t,
-                               c2h::lexicographical_less_comparable_t,
-                               c2h::lexicographical_greater_comparable_t>;
+                                 c2h::lexicographical_less_comparable_t,
+                                 c2h::lexicographical_greater_comparable_t>;
 using value = std::size_t;
 
 struct key_decomposer_t

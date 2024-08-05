@@ -62,14 +62,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  */
 class stream_ref
 {
-private:
+protected:
   ::cudaStream_t __stream{0};
 
 public:
   using value_type = ::cudaStream_t;
 
   /**
-   * \brief Constructs a `stream_view` of the "default" CUDA stream.
+   * \brief Constructs a `stream_ref` of the "default" CUDA stream.
    *
    * For behavior of the default stream,
    * \see
@@ -79,11 +79,11 @@ public:
   stream_ref() = default;
 
   /**
-   * \brief Constructs a `stream_view` from a `cudaStream_t` handle.
+   * \brief Constructs a `stream_ref` from a `cudaStream_t` handle.
    *
    * This constructor provides implicit conversion from `cudaStream_t`.
    *
-   * \note: It is the callers responsibilty to ensure the `stream_view` does not
+   * \note: It is the callers responsibilty to ensure the `stream_ref` does not
    * outlive the stream identified by the `cudaStream_t` handle.
    *
    */
@@ -98,13 +98,13 @@ public:
   stream_ref(_CUDA_VSTD::nullptr_t) = delete;
 
   /**
-   * \brief Compares two `stream_view`s for equality
+   * \brief Compares two `stream_ref`s for equality
    *
    * \note Allows comparison with `cudaStream_t` due to implicit conversion to
-   * `stream_view`.
+   * `stream_ref`.
    *
-   * \param lhs The first `stream_view` to compare
-   * \param rhs The second `stream_view` to compare
+   * \param lhs The first `stream_ref` to compare
+   * \param rhs The second `stream_ref` to compare
    * \return true if equal, false if unequal
    */
   _CCCL_NODISCARD_FRIEND constexpr bool operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
@@ -113,13 +113,13 @@ public:
   }
 
   /**
-   * \brief Compares two `stream_view`s for inequality
+   * \brief Compares two `stream_ref`s for inequality
    *
    * \note Allows comparison with `cudaStream_t` due to implicit conversion to
-   * `stream_view`.
+   * `stream_ref`.
    *
-   * \param lhs The first `stream_view` to compare
-   * \param rhs The second `stream_view` to compare
+   * \param lhs The first `stream_ref` to compare
+   * \param rhs The second `stream_ref` to compare
    * \return true if unequal, false if equal
    */
   _CCCL_NODISCARD_FRIEND constexpr bool operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
@@ -164,9 +164,23 @@ public:
         break;
       default:
         ::cudaGetLastError(); // Clear CUDA error state
-        ::cuda::__throw_cuda_error(__result, "Failed to querry stream.");
+        ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
     }
     return true;
+  }
+
+  /**
+   * \brief Queries the priority of the wrapped stream.
+   *
+   * \throws cuda::cuda_error if the query fails.
+   *
+   * \return value representing the priority of the wrapped stream.
+   */
+  _CCCL_NODISCARD int priority() const
+  {
+    int __result = 0;
+    _CCCL_TRY_CUDA_API(::cudaStreamGetPriority, "Failed to get stream priority", get(), &__result);
+    return __result;
   }
 };
 

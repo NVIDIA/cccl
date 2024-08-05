@@ -34,6 +34,8 @@ runs:
         cp -rf ./docs/_build/docs/libcudacxx/latest/* _site/libcudacxx
         mkdir _site/thrust
         cp -rf ./docs/_build/docs/thrust/latest/* _site/thrust
+        mkdir _site/cudax
+        cp -rf ./docs/_build/docs/cudax/latest/* _site/cudax
         ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:

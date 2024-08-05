@@ -53,7 +53,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   using difference_type = typename thrust::iterator_difference<ForwardIterator>::type;
 
@@ -91,7 +91,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   StrictWeakOrdering comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   using difference_type = typename thrust::iterator_difference<ForwardIterator>::type;
 
@@ -131,7 +131,7 @@ _CCCL_HOST_DEVICE bool binary_search(
   ForwardIterator iter = sequential::lower_bound(exec, first, last, val, comp);
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   return iter != last && !wrapped_comp(val, *iter);
 }

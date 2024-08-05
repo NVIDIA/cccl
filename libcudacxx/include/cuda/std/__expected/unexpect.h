@@ -28,7 +28,7 @@ struct unexpect_t
   explicit unexpect_t() = default;
 };
 
-_LIBCUDACXX_CPO_ACCESSIBILITY unexpect_t unexpect{};
+_CCCL_GLOBAL_CONSTANT unexpect_t unexpect{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

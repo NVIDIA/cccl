@@ -199,10 +199,6 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 
 namespace radix
 {
-
-template <class...>
-using void_t = void;
-
 template <class T, class = void>
 struct is_fundamental_type
 {
@@ -210,7 +206,7 @@ struct is_fundamental_type
 };
 
 template <class T>
-struct is_fundamental_type<T, void_t<typename Traits<T>::UnsignedBits>>
+struct is_fundamental_type<T, ::cuda::std::void_t<typename Traits<T>::UnsignedBits>>
 {
   static constexpr bool value = true;
 };
@@ -583,8 +579,8 @@ private:
 public:
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-    bit_ordered_type
-    In(bit_ordered_type key, DecomposerT decomposer = {})
+  bit_ordered_type
+  In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
     _CCCL_IF_CONSTEXPR (IS_DESCENDING)
@@ -596,8 +592,8 @@ public:
 
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-    bit_ordered_type
-    Out(bit_ordered_type key, DecomposerT decomposer = {})
+  bit_ordered_type
+  Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
     _CCCL_IF_CONSTEXPR (IS_DESCENDING)
     {
@@ -609,8 +605,8 @@ public:
 
   template <class DecomposerT = detail::identity_decomposer_t>
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
-    bit_ordered_type
-    DefaultKey(DecomposerT decomposer = {})
+  bit_ordered_type
+  DefaultKey(DecomposerT decomposer = {})
   {
     return IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
   }

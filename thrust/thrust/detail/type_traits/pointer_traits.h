@@ -40,43 +40,10 @@ namespace detail
 template <typename Ptr>
 struct pointer_element;
 
-template <template <typename> class Ptr, typename Arg>
-struct pointer_element<Ptr<Arg>>
+template <template <typename...> class Ptr, typename FirstArg, typename... Args>
+struct pointer_element<Ptr<FirstArg, Args...>>
 {
-  using type = Arg;
-};
-
-template <template <typename, typename> class Ptr, typename Arg1, typename Arg2>
-struct pointer_element<Ptr<Arg1, Arg2>>
-{
-  using type = Arg1;
-};
-
-template <template <typename, typename, typename> class Ptr, typename Arg1, typename Arg2, typename Arg3>
-struct pointer_element<Ptr<Arg1, Arg2, Arg3>>
-{
-  using type = Arg1;
-};
-
-template <template <typename, typename, typename, typename> class Ptr,
-          typename Arg1,
-          typename Arg2,
-          typename Arg3,
-          typename Arg4>
-struct pointer_element<Ptr<Arg1, Arg2, Arg3, Arg4>>
-{
-  using type = Arg1;
-};
-
-template <template <typename, typename, typename, typename, typename> class Ptr,
-          typename Arg1,
-          typename Arg2,
-          typename Arg3,
-          typename Arg4,
-          typename Arg5>
-struct pointer_element<Ptr<Arg1, Arg2, Arg3, Arg4, Arg5>>
-{
-  using type = Arg1;
+  using type = FirstArg;
 };
 
 template <typename T>
@@ -174,8 +141,6 @@ struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::t
   using type = Ptr<T, Tag, typename std::add_lvalue_reference<T>::type, DerivedPtr<T, DerivedPtrTail...>>;
 };
 
-__THRUST_DEFINE_HAS_NESTED_TYPE(has_raw_pointer, raw_pointer)
-
 namespace pointer_traits_detail
 {
 
@@ -190,7 +155,7 @@ struct pointer_raw_pointer_impl<T*>
 };
 
 template <typename Ptr>
-struct pointer_raw_pointer_impl<Ptr, ::cuda::std::__enable_if_t<has_raw_pointer<Ptr>::value>>
+struct pointer_raw_pointer_impl<Ptr, ::cuda::std::void_t<typename Ptr::raw_pointer>>
 {
   using type = typename Ptr::raw_pointer;
 };

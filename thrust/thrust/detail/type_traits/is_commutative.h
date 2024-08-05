@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 NVIDIA Corporation
+ *  Copyright 2024 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,57 +27,11 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/has_nested_type.h>
+#include <thrust/functional.h>
 
 THRUST_NAMESPACE_BEGIN
-
-// forward definitions for is_commutative
-template <typename T>
-struct plus;
-template <typename T>
-struct multiplies;
-template <typename T>
-struct minimum;
-template <typename T>
-struct maximum;
-template <typename T>
-struct logical_or;
-template <typename T>
-struct logical_and;
-template <typename T>
-struct bit_or;
-template <typename T>
-struct bit_and;
-template <typename T>
-struct bit_xor;
-
 namespace detail
 {
-
-// some metafunctions which check for the nested types of the adaptable functions
-
-__THRUST_DEFINE_HAS_NESTED_TYPE(has_result_type, result_type)
-
-__THRUST_DEFINE_HAS_NESTED_TYPE(has_argument_type, argument_type)
-
-__THRUST_DEFINE_HAS_NESTED_TYPE(has_first_argument_type, first_argument_type)
-
-__THRUST_DEFINE_HAS_NESTED_TYPE(has_second_argument_type, second_argument_type)
-
-template <typename AdaptableBinaryFunction>
-struct result_type
-{
-  using type = typename AdaptableBinaryFunction::result_type;
-};
-
-template <typename T>
-struct is_adaptable_unary_function : ::cuda::std::_And<has_result_type<T>, has_argument_type<T>>
-{};
-
-template <typename T>
-struct is_adaptable_binary_function
-    : ::cuda::std::_And<has_result_type<T>, ::cuda::std::_And<has_first_argument_type<T>, has_second_argument_type<T>>>
-{};
 
 template <typename BinaryFunction>
 struct is_commutative : public thrust::detail::false_type

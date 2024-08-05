@@ -83,7 +83,7 @@ struct bsf
   {
     RandomAccessIterator iter = thrust::system::detail::generic::scalar::lower_bound(begin, end, value, comp);
 
-    thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+    thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
     return iter != end && !wrapped_comp(value, *iter);
   }
