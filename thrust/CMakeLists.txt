@@ -76,6 +76,10 @@ include(cmake/ThrustFindThrust.cmake)
 include(cmake/ThrustMultiConfig.cmake)
 include(cmake/ThrustUtilities.cmake)
 
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(THRUST_ENABLE_BENCHMARKS OFF)
+endif()
+
 # Add cache string options for CMAKE_BUILD_TYPE and default to RelWithDebInfo.
 if ("" STREQUAL "${CMAKE_BUILD_TYPE}")
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
