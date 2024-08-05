@@ -8,7 +8,7 @@ using namespace unittest;
 template <typename Tuple>
 struct TuplePlus
 {
-  __host__ __device__ Tuple operator()(Tuple x, Tuple y) const
+  _CCCL_HOST_DEVICE Tuple operator()(Tuple x, Tuple y) const
   {
     using namespace thrust;
     return make_tuple(get<0>(x) + get<0>(y), get<1>(x) + get<1>(y));
@@ -28,7 +28,7 @@ struct TestZipIteratorReduce
     device_vector<T> d_data0 = h_data0;
     device_vector<T> d_data1 = h_data1;
 
-    typedef tuple<T, T> Tuple;
+    using Tuple = tuple<T, T>;
 
     // run on host
     Tuple h_result = reduce(

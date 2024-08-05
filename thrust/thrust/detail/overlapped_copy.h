@@ -95,7 +95,7 @@ RandomAccessIterator2 overlapped_copy(
   RandomAccessIterator1 last,
   RandomAccessIterator2 result)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type;
+  using value_type = typename thrust::iterator_value<RandomAccessIterator1>::type;
 
   // make a temporary copy of [first,last), and copy into it first
   thrust::detail::temporary_array<value_type, DerivedPolicy> temp(exec, first, last);
@@ -108,10 +108,10 @@ template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 RandomAccessIterator2
 overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomAccessIterator2 result)
 {
-  typedef typename thrust::iterator_system<RandomAccessIterator2>::type System1;
-  typedef typename thrust::iterator_system<RandomAccessIterator2>::type System2;
+  using System1 = typename thrust::iterator_system<RandomAccessIterator2>::type;
+  using System2 = typename thrust::iterator_system<RandomAccessIterator2>::type;
 
-  typedef typename thrust::detail::minimum_system<System1, System2>::type System;
+  using System = typename thrust::detail::minimum_system<System1, System2>::type;
 
   // XXX presumes System is default constructible
   System system;

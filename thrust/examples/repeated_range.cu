@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // this example illustrates how to make repeated access to a range of values
 // examples:
 //   repeated_range([0, 1, 2, 3], 1) -> [0, 1, 2, 3]
@@ -19,9 +21,9 @@ template <typename Iterator>
 class repeated_range
 {
 public:
-  typedef typename thrust::iterator_difference<Iterator>::type difference_type;
+  using difference_type = typename thrust::iterator_difference<Iterator>::type;
 
-  struct repeat_functor : public thrust::unary_function<difference_type, difference_type>
+  struct repeat_functor
   {
     difference_type repeats;
 
@@ -35,12 +37,12 @@ public:
     }
   };
 
-  typedef typename thrust::counting_iterator<difference_type> CountingIterator;
-  typedef typename thrust::transform_iterator<repeat_functor, CountingIterator> TransformIterator;
-  typedef typename thrust::permutation_iterator<Iterator, TransformIterator> PermutationIterator;
+  using CountingIterator    = typename thrust::counting_iterator<difference_type>;
+  using TransformIterator   = typename thrust::transform_iterator<repeat_functor, CountingIterator>;
+  using PermutationIterator = typename thrust::permutation_iterator<Iterator, TransformIterator>;
 
   // type of the repeated_range iterator
-  typedef PermutationIterator iterator;
+  using iterator = PermutationIterator;
 
   // construct repeated_range for the range [first,last)
   repeated_range(Iterator first, Iterator last, difference_type repeats)
@@ -78,7 +80,7 @@ int main()
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << std::endl;
 
-  typedef thrust::device_vector<int>::iterator Iterator;
+  using Iterator = thrust::device_vector<int>::iterator;
 
   // create repeated_range with elements repeated twice
   repeated_range<Iterator> twice(data.begin(), data.end(), 2);

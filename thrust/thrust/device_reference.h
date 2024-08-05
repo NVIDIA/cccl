@@ -192,16 +192,16 @@ template <typename T>
 class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
 {
 private:
-  typedef thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>> super_t;
+  using super_t = thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>;
 
 public:
   /*! The type of the value referenced by this type of \p device_reference.
    */
-  typedef typename super_t::value_type value_type;
+  using value_type = typename super_t::value_type;
 
   /*! The type of the expression <tt>&ref</tt>, where <tt>ref</tt> is a \p device_reference.
    */
-  typedef typename super_t::pointer pointer;
+  using pointer = typename super_t::pointer;
 
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,
@@ -234,9 +234,9 @@ public:
    *  <tt>device_reference<const T></tt> from <tt>device_reference<T></tt>.
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE device_reference(
-    const device_reference<OtherT>& other,
-    typename thrust::detail::enable_if_convertible<typename device_reference<OtherT>::pointer, pointer>::type* = 0)
+  _CCCL_HOST_DEVICE
+  device_reference(const device_reference<OtherT>& other,
+                   thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
       : super_t(other)
   {}
 
@@ -298,7 +298,7 @@ public:
   }
 
 // declare these members for the purpose of Doxygenating them
-// they actually exist in a derived-from class
+// they actually exist in a base class
 #if 0
     /*! Address-of operator returns a \p device_ptr pointing to the object
      *  referenced by this \p device_reference. It does not return the
@@ -960,7 +960,7 @@ _CCCL_HOST_DEVICE void swap(device_reference<T>& x, device_reference<T>& y)
 }
 
 // declare these methods for the purpose of Doxygenating them
-// they actually are defined for a derived-from class
+// they actually are defined for a base class
 #if THRUST_DOXYGEN
 /*! Writes to an output stream the value of a \p device_reference.
  *

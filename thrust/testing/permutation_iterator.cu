@@ -11,8 +11,8 @@
 template <class Vector>
 void TestPermutationIteratorSimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector source(8);
   Vector indices(4);
@@ -61,7 +61,7 @@ static_assert(cuda::std::is_trivially_copyable<thrust::permutation_iterator<int*
 template <class Vector>
 void TestPermutationIteratorGather()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector source(8);
   Vector indices(4);
@@ -89,7 +89,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorGather);
 template <class Vector>
 void TestPermutationIteratorScatter()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector source(4, 10);
   Vector indices(4);
@@ -148,8 +148,8 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestMakePermutationIterator);
 template <typename Vector>
 void TestPermutationIteratorReduce()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector source(8);
   Vector indices(4);
@@ -183,11 +183,11 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorReduce);
 
 void TestPermutationIteratorHostDeviceGather()
 {
-  typedef int T;
-  typedef thrust::host_vector<T> HostVector;
-  typedef thrust::host_vector<T> DeviceVector;
-  typedef HostVector::iterator HostIterator;
-  typedef DeviceVector::iterator DeviceIterator;
+  using T              = int;
+  using HostVector     = thrust::host_vector<T>;
+  using DeviceVector   = thrust::host_vector<T>;
+  using HostIterator   = HostVector::iterator;
+  using DeviceIterator = DeviceVector::iterator;
 
   HostVector h_source(8);
   HostVector h_indices(4);
@@ -229,11 +229,11 @@ DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
 
 void TestPermutationIteratorHostDeviceScatter()
 {
-  typedef int T;
-  typedef thrust::host_vector<T> HostVector;
-  typedef thrust::host_vector<T> DeviceVector;
-  typedef HostVector::iterator HostIterator;
-  typedef DeviceVector::iterator DeviceIterator;
+  using T              = int;
+  using HostVector     = thrust::host_vector<T>;
+  using DeviceVector   = thrust::host_vector<T>;
+  using HostIterator   = HostVector::iterator;
+  using DeviceIterator = DeviceVector::iterator;
 
   HostVector h_source(4, 10);
   HostVector h_indices(4);

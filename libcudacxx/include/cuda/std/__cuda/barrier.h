@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/api/owned.h>
-#include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
+#include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
 #include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
 #if defined(_CCCL_CUDA_COMPILER)
@@ -241,6 +241,7 @@ public:
 private:
   _LIBCUDACXX_INLINE_VISIBILITY inline bool __test_wait_sm_80(arrival_token __token) const
   {
+    (void) __token;
     int32_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
@@ -555,17 +556,17 @@ _CCCL_NODISCARD _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token b
                            "Transaction count update cannot exceed 2^20 - 1.");
 
   barrier<thread_scope_block>::arrival_token __token = {};
+  // On architectures pre-sm90, arrive_tx is not supported.
+  // We do not check for the statespace of the barrier here. This is
+  // on purpose. This allows debugging tools like memcheck/racecheck
+  // to detect that we are passing a pointer with the wrong state
+  // space to mbarrier.arrive. If we checked for the state space here,
+  // and __trap() if wrong, then those tools would not be able to help
+  // us in release builds. In debug builds, the error would be caught
+  // by the asserts at the top of this function.
   NV_IF_ELSE_TARGET(
-    // On architectures pre-sm90, arrive_tx is not supported.
     NV_PROVIDES_SM_90,
     (
-      // We do not check for the statespace of the barrier here. This is
-      // on purpose. This allows debugging tools like memcheck/racecheck
-      // to detect that we are passing a pointer with the wrong state
-      // space to mbarrier.arrive. If we checked for the state space here,
-      // and __trap() if wrong, then those tools would not be able to help
-      // us in release builds. In debug builds, the error would be caught
-      // by the asserts at the top of this function.
 
       auto __native_handle = barrier_native_handle(__b); auto __bh = __cvta_generic_to_shared(__native_handle);
       if (__arrive_count_update == 1) {
@@ -609,8 +610,8 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
   // and __trap() if wrong, then those tools would not be able to help
   // us in release builds. In debug builds, the error would be caught
   // by the asserts at the top of this function.
+  // On architectures pre-sm90, arrive_tx is not supported.
   NV_IF_ELSE_TARGET(
-    // On architectures pre-sm90, arrive_tx is not supported.
     NV_PROVIDES_SM_90,
     (auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
      asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
@@ -1058,7 +1059,7 @@ struct __get_size_align
 
 // aligned_size_t<n> overload: return n.
 template <typename T>
-struct __get_size_align<T, _CUDA_VSTD::__void_t<decltype(T::align)>>
+struct __get_size_align<T, _CUDA_VSTD::void_t<decltype(T::align)>>
 {
   static constexpr int align = T::align;
 };

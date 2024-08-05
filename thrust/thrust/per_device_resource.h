@@ -25,7 +25,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/system/detail/adl/per_device_resource.h>
@@ -59,7 +58,7 @@ _CCCL_HOST MR* get_per_device_resource(const thrust::detail::execution_policy_ba
 template <typename T, typename Upstream, typename ExecutionPolicy>
 class per_device_allocator : public thrust::mr::allocator<T, Upstream>
 {
-  typedef thrust::mr::allocator<T, Upstream> base;
+  using base = thrust::mr::allocator<T, Upstream>;
 
 public:
   /*! The \p rebind metafunction provides the type of an \p per_device_allocator instantiated with another type.
@@ -69,9 +68,9 @@ public:
   template <typename U>
   struct rebind
   {
-    /*! The typedef \p other gives the type of the rebound \p per_device_allocator.
+    /*! The alias \p other gives the type of the rebound \p per_device_allocator.
      */
-    typedef per_device_allocator<U, Upstream, ExecutionPolicy> other;
+    using other = per_device_allocator<U, Upstream, ExecutionPolicy>;
   };
 
   /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the

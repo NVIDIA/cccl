@@ -117,27 +117,27 @@ DECLARE_UNITTEST(TestSwapRangesForcedIterator);
 
 struct type_with_swap
 {
-  inline __host__ __device__ type_with_swap()
+  inline _CCCL_HOST_DEVICE type_with_swap()
       : m_x()
       , m_swapped(false)
   {}
 
-  inline __host__ __device__ type_with_swap(int x)
+  inline _CCCL_HOST_DEVICE type_with_swap(int x)
       : m_x(x)
       , m_swapped(false)
   {}
 
-  inline __host__ __device__ type_with_swap(int x, bool s)
+  inline _CCCL_HOST_DEVICE type_with_swap(int x, bool s)
       : m_x(x)
       , m_swapped(s)
   {}
 
-  inline __host__ __device__ type_with_swap(const type_with_swap& other)
+  inline _CCCL_HOST_DEVICE type_with_swap(const type_with_swap& other)
       : m_x(other.m_x)
       , m_swapped(other.m_swapped)
   {}
 
-  inline __host__ __device__ bool operator==(const type_with_swap& other) const
+  inline _CCCL_HOST_DEVICE bool operator==(const type_with_swap& other) const
   {
     return m_x == other.m_x && m_swapped == other.m_swapped;
   }
@@ -148,7 +148,7 @@ struct type_with_swap
   bool m_swapped;
 };
 
-inline __host__ __device__ void swap(type_with_swap& a, type_with_swap& b)
+inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b)
 {
   thrust::swap(a.m_x, b.m_x);
   a.m_swapped = true;

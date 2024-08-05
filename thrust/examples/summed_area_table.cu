@@ -9,11 +9,13 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // This example computes a summed area table using segmented scan
 // http://en.wikipedia.org/wiki/Summed_area_table
 
 // convert a linear index to a linear index in the transpose
-struct transpose_index : public thrust::unary_function<size_t, size_t>
+struct transpose_index
 {
   size_t m, n;
 
@@ -32,7 +34,7 @@ struct transpose_index : public thrust::unary_function<size_t, size_t>
 };
 
 // convert a linear index to a row index
-struct row_index : public thrust::unary_function<size_t, size_t>
+struct row_index
 {
   size_t n;
 

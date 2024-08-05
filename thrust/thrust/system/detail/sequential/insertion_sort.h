@@ -42,7 +42,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
+  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
 
   if (first == last)
   {
@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   for (RandomAccessIterator i = first + 1; i != last; ++i)
   {
@@ -86,8 +86,8 @@ template <typename RandomAccessIterator1, typename RandomAccessIterator2, typena
 _CCCL_HOST_DEVICE void insertion_sort_by_key(
   RandomAccessIterator1 first1, RandomAccessIterator1 last1, RandomAccessIterator2 first2, StrictWeakOrdering comp)
 {
-  typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type1;
-  typedef typename thrust::iterator_value<RandomAccessIterator2>::type value_type2;
+  using value_type1 = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using value_type2 = typename thrust::iterator_value<RandomAccessIterator2>::type;
 
   if (first1 == last1)
   {
@@ -95,7 +95,7 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   }
 
   // wrap comp
-  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp(comp);
+  thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
   RandomAccessIterator1 i1 = first1 + 1;
   RandomAccessIterator2 i2 = first2 + 1;

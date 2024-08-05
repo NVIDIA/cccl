@@ -26,6 +26,7 @@ subprojects=(
   cub
   thrust
   cudax
+  pycuda
 )
 
 # ...and their dependencies:
@@ -35,6 +36,7 @@ declare -A dependencies=(
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
+  [pycuda]="cccl libcudacxx cub thrust cudax"
 )
 
 declare -A project_names=(
@@ -43,21 +45,34 @@ declare -A project_names=(
   [cub]="CUB"
   [thrust]="Thrust"
   [cudax]="CUDA Experimental"
+  [pycuda]="pycuda"
+)
+
+# By default, the project directory is assumed to be the same as the subproject name,
+# but can be overridden here. The `cccl` project is special, and checks for files outside
+# of any subproject directory.
+declare -A project_dirs=(
+  [pycuda]="python/cuda"
 )
 
 # Usage checks:
 for subproject in "${subprojects[@]}"; do
   # Check that the subproject directory exists
-  if [ "$subproject" != "cccl" ] && [ ! -d "$subproject" ]; then
-    echo "Error: Subproject directory '$subproject' does not exist."
-    exit 1
+  if [ "$subproject" != "cccl" ]; then
+    subproject_dir=${project_dirs[$subproject]:-$subproject}
+    if [ ! -d "$subproject_dir" ]; then
+      echo "Error: Subproject '$subproject' directory '$subproject_dir' does not exist."
+      exit 1
+    fi
   fi
 
-  # If the subproject has dependencies, check that they exist (except for "cccl")
+  # If the subproject has dependencies, check that they are valid
   for dependency in ${dependencies[$subproject]}; do
-    if [ "$dependency" != "cccl" ] && [ ! -d "$dependency" ]; then
-      echo "Error: Dependency directory '$dependency' for subproject '$subproject' does not exist."
-      exit 1
+    if [ "$dependency" != "cccl" ]; then
+      if [[ ! " ${subprojects[@]} " =~ " ${dependency} " ]]; then
+        echo "Error: Dependency '$dependency' for subproject '$subproject' does not exist."
+        exit 1
+      fi
     fi
   done
 done
@@ -82,12 +97,23 @@ dirty_files() {
 
 # Return 1 if any files outside of the subproject directories have changed
 inspect_cccl() {
-  subprojs_grep_expr=$(
+  exclusions_grep_expr=$(
+    declare -a exclusions
+    for subproject in "${subprojects[@]}"; do
+      if [[ ${subproject} == "cccl" ]]; then
+        continue
+      fi
+      exclusions+=("${project_dirs[$subproject]:-$subproject}")
+    done
+
+    # Manual exclusions:
+    exclusions+=("docs")
+
     IFS="|"
-    echo "(${subprojects[*]})/"
+    echo "^(${exclusions[*]})/"
   )
 
-  if dirty_files | grep -v -E "${subprojs_grep_expr}" | grep -q "."; then
+  if dirty_files | grep -v -E "${exclusions_grep_expr}" | grep -q "."; then
     return 1
   else
     return 0
@@ -158,7 +184,6 @@ main() {
   echo "::endgroup::"
   echo
 
-
   echo "<details><summary><h3>👃 Inspect Changes</h3></summary>" | tee_to_step_summary
   echo | tee_to_step_summary
 
@@ -179,7 +204,7 @@ main() {
       continue
     fi
 
-    inspect_subdir $subproject
+    inspect_subdir ${project_dirs[$subproject]:-$subproject}
     local dirty=$?
     declare ${subproject^^}_DIRTY=${dirty}
     checkmark="$(get_checkmark ${dirty})"

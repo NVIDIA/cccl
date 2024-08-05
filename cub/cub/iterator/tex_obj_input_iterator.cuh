@@ -114,37 +114,37 @@ public:
   // Required iterator traits
 
   /// My own type
-  typedef TexObjInputIterator self_type;
+  using self_type = TexObjInputIterator;
 
   /// Type to express the result of subtracting one iterator from another
-  typedef OffsetT difference_type;
+  using difference_type = OffsetT;
 
   /// The type of the element the iterator can point to
-  typedef T value_type;
+  using value_type = T;
 
   /// The type of a pointer to an element the iterator can point to
-  typedef T* pointer;
+  using pointer = T*;
 
   /// The type of a reference to an element the iterator can point to
-  typedef T reference;
+  using reference = T;
 
 #if (THRUST_VERSION >= 100700)
   // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
 
   /// The iterator category
-  typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+  using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::device_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
-    reference>::type iterator_category;
+    reference>::type;
 #else
   /// The iterator category
-  typedef std::random_access_iterator_tag iterator_category;
+  using iterator_category = std::random_access_iterator_tag;
 #endif // THRUST_VERSION
 
 private:
   // Largest texture word we can use in device
-  typedef typename UnitWord<T>::TextureWord TextureWord;
+  using TextureWord = typename UnitWord<T>::TextureWord;
 
   // Number of texture words per T
   enum
@@ -160,7 +160,7 @@ private:
 public:
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(NULL)
+      : ptr(nullptr)
       , tex_offset(0)
       , tex_obj(0)
   {}
@@ -193,7 +193,7 @@ public:
     res_desc.res.linear.desc        = channel_desc;
     res_desc.res.linear.sizeInBytes = bytes;
     tex_desc.readMode               = cudaReadModeElementType;
-    return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, NULL));
+    return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, nullptr));
   }
 
   /// Unbind this iterator from its texture reference

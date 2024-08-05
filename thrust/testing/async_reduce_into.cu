@@ -16,7 +16,7 @@
 template <typename T>
 struct custom_plus
 {
-  __host__ __device__ T operator()(T lhs, T rhs) const
+  _CCCL_HOST_DEVICE T operator()(T lhs, T rhs) const
   {
     return lhs + rhs;
   }
@@ -46,7 +46,7 @@ struct custom_plus
       }                                                                                       \
                                                                                               \
       template <typename ForwardIt, typename Sentinel, typename OutputIt>                     \
-      __host__ auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output)         \
+      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& output)       \
         THRUST_DECLTYPE_RETURNS(::thrust::async::reduce_into(__VA_ARGS__))                    \
     };                                                                                        \
     /**/
@@ -56,13 +56,13 @@ struct custom_plus
       NAME, THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), THRUST_PP_EMPTY(), __VA_ARGS__) \
     /**/
 
-#  define DEFINE_SYNC_REDUCE_INVOKER(NAME, ...)                                                                  \
-    template <typename T>                                                                                        \
-    struct NAME                                                                                                  \
-    {                                                                                                            \
-      template <typename ForwardIt, typename Sentinel>                                                           \
-      __host__ auto operator()(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::reduce(__VA_ARGS__)) \
-    };                                                                                                           \
+#  define DEFINE_SYNC_REDUCE_INVOKER(NAME, ...)                                                                    \
+    template <typename T>                                                                                          \
+    struct NAME                                                                                                    \
+    {                                                                                                              \
+      template <typename ForwardIt, typename Sentinel>                                                             \
+      _CCCL_HOST auto operator()(ForwardIt&& first, Sentinel&& last) THRUST_RETURNS(::thrust::reduce(__VA_ARGS__)) \
+    };                                                                                                             \
     /**/
 
 DEFINE_ASYNC_REDUCE_INTO_INVOKER(reduce_into_async_invoker, THRUST_FWD(first), THRUST_FWD(last), THRUST_FWD(output));
@@ -336,7 +336,7 @@ struct test_async_reduce_into
   template <typename T>
   struct tester
   {
-    __host__ void operator()(std::size_t n)
+    _CCCL_HOST void operator()(std::size_t n)
     {
       thrust::host_vector<T> h0(unittest::random_integers<T>(n));
 

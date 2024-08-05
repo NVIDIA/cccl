@@ -91,10 +91,10 @@ template <typename DerivedPolicy, typename InputIterator, typename OutputIterato
 OutputIterator
 copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
-  typedef typename thrust::iterator_traversal<InputIterator>::type traversal1;
-  typedef typename thrust::iterator_traversal<OutputIterator>::type traversal2;
+  using traversal1 = typename thrust::iterator_traversal<InputIterator>::type;
+  using traversal2 = typename thrust::iterator_traversal<OutputIterator>::type;
 
-  typedef typename thrust::detail::minimum_type<traversal1, traversal2>::type traversal;
+  using traversal = typename thrust::detail::minimum_type<traversal1, traversal2>::type;
 
   // dispatch on minimum traversal
   return thrust::system::tbb::detail::dispatch::copy(exec, first, last, result, traversal());
@@ -103,10 +103,10 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
-  typedef typename thrust::iterator_traversal<InputIterator>::type traversal1;
-  typedef typename thrust::iterator_traversal<OutputIterator>::type traversal2;
+  using traversal1 = typename thrust::iterator_traversal<InputIterator>::type;
+  using traversal2 = typename thrust::iterator_traversal<OutputIterator>::type;
 
-  typedef typename thrust::detail::minimum_type<traversal1, traversal2>::type traversal;
+  using traversal = typename thrust::detail::minimum_type<traversal1, traversal2>::type;
 
   // dispatch on minimum traversal
   return thrust::system::tbb::detail::dispatch::copy_n(exec, first, n, result, traversal());

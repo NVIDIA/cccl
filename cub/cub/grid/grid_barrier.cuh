@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 class GridBarrier
 {
 protected:
-  typedef unsigned int SyncFlag;
+  using SyncFlag = unsigned int;
 
   // Counters in global device memory
   SyncFlag* d_sync;
@@ -64,7 +64,7 @@ public:
    * Constructor
    */
   GridBarrier()
-      : d_sync(NULL)
+      : d_sync(nullptr)
   {}
 
   /**
@@ -156,7 +156,7 @@ public:
     if (d_sync)
     {
       retval = CubDebug(cudaFree(d_sync));
-      d_sync = NULL;
+      d_sync = nullptr;
     }
     sync_bytes = 0;
     return retval;

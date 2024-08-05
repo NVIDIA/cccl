@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_copy_assignable.h>
+#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -42,7 +44,7 @@ template <bool... _Preds>
 struct __all_dummy;
 
 template <bool... _Pred>
-using __all = _IsSame<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
+using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
 
 struct __tuple_sfinae_base
 {
@@ -51,7 +53,7 @@ struct __tuple_sfinae_base
   {};
 
   template <class... _Tp, class... _Up>
-  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : _BoolConstant<sizeof...(_Tp) == sizeof...(_Up)>
+  struct __test_size<__tuple_types<_Tp...>, __tuple_types<_Up...>> : bool_constant<sizeof...(_Tp) == sizeof...(_Up)>
   {};
 
   template <template <class, class...> class, class _Tp, class _Up, bool = __test_size<_Tp, _Up>::value>
@@ -145,70 +147,85 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
   using __enable_assign = false_type;
 };
 
-#if _CCCL_STD_VER > 2011
+enum class __smf_availability
+{
+  __trivial,
+  __available,
+  __deleted,
+};
 
-template <bool _CanCopy, bool _CanMove>
-struct __sfinae_ctor_base
+template <bool _CanCopy>
+struct __sfinae_copy_base
 {};
 template <>
-struct __sfinae_ctor_base<false, false>
+struct __sfinae_copy_base<false>
 {
-  __sfinae_ctor_base()                                     = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&)            = delete;
-  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = delete;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
-};
-template <>
-struct __sfinae_ctor_base<true, false>
-{
-  __sfinae_ctor_base()                                     = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&)            = default;
-  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = delete;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
-};
-template <>
-struct __sfinae_ctor_base<false, true>
-{
-  __sfinae_ctor_base()                                     = default;
-  __sfinae_ctor_base(__sfinae_ctor_base const&)            = delete;
-  __sfinae_ctor_base(__sfinae_ctor_base&&)                 = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base const&) = default;
-  __sfinae_ctor_base& operator=(__sfinae_ctor_base&&)      = default;
+  __sfinae_copy_base()                                     = default;
+  __sfinae_copy_base(__sfinae_copy_base const&)            = delete;
+  __sfinae_copy_base(__sfinae_copy_base&&)                 = default;
+  __sfinae_copy_base& operator=(__sfinae_copy_base const&) = default;
+  __sfinae_copy_base& operator=(__sfinae_copy_base&&)      = default;
 };
 
 template <bool _CanCopy, bool _CanMove>
-struct __sfinae_assign_base
+struct __sfinae_move_base : __sfinae_copy_base<_CanCopy>
 {};
-template <>
-struct __sfinae_assign_base<false, false>
+template <bool _CanCopy>
+struct __sfinae_move_base<_CanCopy, false> : __sfinae_copy_base<_CanCopy>
 {
-  __sfinae_assign_base()                                       = default;
-  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
-  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = delete;
+  __sfinae_move_base()                                     = default;
+  __sfinae_move_base(__sfinae_move_base const&)            = default;
+  __sfinae_move_base(__sfinae_move_base&&)                 = delete;
+  __sfinae_move_base& operator=(__sfinae_move_base const&) = default;
+  __sfinae_move_base& operator=(__sfinae_move_base&&)      = default;
 };
-template <>
-struct __sfinae_assign_base<true, false>
+
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
+struct __sfinae_copy_assign_base : __sfinae_move_base<_CanCopy, _CanMove>
+{};
+template <bool _CanCopy, bool _CanMove>
+struct __sfinae_copy_assign_base<_CanCopy, _CanMove, false> : __sfinae_move_base<_CanCopy, _CanMove>
 {
-  __sfinae_assign_base()                                       = default;
-  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
-  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base const&) = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = delete;
+  __sfinae_copy_assign_base()                                            = default;
+  __sfinae_copy_assign_base(__sfinae_copy_assign_base const&)            = default;
+  __sfinae_copy_assign_base(__sfinae_copy_assign_base&&)                 = default;
+  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base const&) = delete;
+  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base&&)      = default;
 };
-template <>
-struct __sfinae_assign_base<false, true>
+
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
+struct __sfinae_move_assign_base : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
+{};
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
+struct __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
+    : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
 {
-  __sfinae_assign_base()                                       = default;
-  __sfinae_assign_base(__sfinae_assign_base const&)            = default;
-  __sfinae_assign_base(__sfinae_assign_base&&)                 = default;
-  __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
-  __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = default;
+  __sfinae_move_assign_base()                                            = default;
+  __sfinae_move_assign_base(__sfinae_move_assign_base const&)            = default;
+  __sfinae_move_assign_base(__sfinae_move_assign_base&&)                 = default;
+  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base const&) = default;
+  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base&&)      = delete;
 };
-#endif // _CCCL_STD_VER > 2011
+
+template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
+using __sfinae_base = __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, _CanMoveAssign>;
+
+// We need to synthesize the copy / move assignment if it would be implicitly deleted as a member of a class
+// In that case _Tp would be copy assignable but _TestSynthesizeAssignment<_Tp> would not
+// This happens e.g for reference types
+template <class _Tp>
+struct _TestSynthesizeAssignment
+{
+  _Tp __dummy;
+};
+
+template <class _Tp>
+struct __must_synthesize_assignment
+    : integral_constant<
+        bool,
+        (_CCCL_TRAIT(is_copy_assignable, _Tp) && !_CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_Tp>))
+          || (_CCCL_TRAIT(is_move_assignable, _Tp) && !_CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_Tp>))>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

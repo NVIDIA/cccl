@@ -5,6 +5,7 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
 struct Functor
 {
   template <class Tuple>

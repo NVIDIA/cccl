@@ -17,7 +17,7 @@ stable_sort_by_key_kernel(ExecutionPolicy exec, Iterator1 keys_first, Iterator1 
 struct make_pair_functor
 {
   template <typename T1, typename T2>
-  __host__ __device__ thrust::pair<T1, T2> operator()(const T1& x, const T2& y)
+  _CCCL_HOST_DEVICE thrust::pair<T1, T2> operator()(const T1& x, const T2& y)
   {
     return thrust::make_pair(x, y);
   } // end operator()()
@@ -27,7 +27,7 @@ template <typename ExecutionPolicy>
 void TestPairStableSortByKeyDevice(ExecutionPolicy exec)
 {
   size_t n = 10000;
-  typedef thrust::pair<int, int> P;
+  using P  = thrust::pair<int, int>;
 
   // host arrays
   thrust::host_vector<int> h_p1 = unittest::random_integers<int>(n);

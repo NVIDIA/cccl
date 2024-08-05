@@ -23,9 +23,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/addressof.h>
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/swap.h>
+
+#include <cuda/std/__type_traits/void_t.h>
 
 #define THRUST_OPTIONAL_VERSION_MAJOR 0
 #define THRUST_OPTIONAL_VERSION_MINOR 2
@@ -38,102 +39,6 @@
 
 #if defined(_CCCL_COMPILER_MSVC) && _MSC_VER == 1900
 #  define THRUST_OPTIONAL_MSVC2015
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && !defined(__clang__))
-#  define THRUST_OPTIONAL_GCC49
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 5 && __GNUC_MINOR__ <= 4 && !defined(__clang__))
-#  define THRUST_OPTIONAL_GCC54
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 5 && __GNUC_MINOR__ <= 5 && !defined(__clang__))
-#  define THRUST_OPTIONAL_GCC55
-#endif
-
-#if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && !defined(__clang__))
-// GCC < 5 doesn't support overloading on const&& for member functions
-#  define THRUST_OPTIONAL_NO_CONSTRR
-
-// GCC < 5 doesn't support some standard C++11 type traits
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) std::has_trivial_copy_constructor<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T)    std::has_trivial_copy_assign<T>::value
-
-// GCC < 5 doesn't provide a way to emulate std::is_trivially_move_*,
-// so don't enable any optimizations that rely on them:
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) false
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T)    false
-
-// This one will be different for GCC 5.7 if it's ever supported
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
-
-// GCC 5 < v < 8 has a bug in is_trivially_copy_constructible which breaks std::vector
-// for non-copyable types
-#elif (defined(__GNUC__) && __GNUC__ < 8 && !defined(__clang__))
-#  ifndef THRUST_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
-#    define THRUST_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
-THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-template <class T>
-struct is_trivially_copy_constructible : std::is_trivially_copy_constructible<T>
-{};
-#    ifdef _GLIBCXX_VECTOR
-template <class T, class A>
-struct is_trivially_copy_constructible<std::vector<T, A>> : std::is_trivially_copy_constructible<T>
-{};
-#    endif
-} // namespace detail
-THRUST_NAMESPACE_END
-#  endif
-
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) thrust::detail::is_trivially_copy_constructible<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T)    std::is_trivially_copy_assignable<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) std::is_trivially_move_constructible<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T)    std::is_trivially_move_assignable<T>::value
-#  define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T)       std::is_trivially_destructible<T>::value
-#else
-
-// To support clang + old libstdc++ without type traits, check for equivalent
-// clang built-ins and use them if present. See note above
-// is_trivially_copyable_impl in
-// thrust/type_traits/is_trivially_relocatable.h for more details.
-
-#  ifndef __has_feature
-#    define __has_feature(x) 0
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_constructible)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) __is_trivially_constructible(T, T const&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) std::is_trivially_copy_constructible<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_assignable)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) __is_trivially_assignable(T&, T const&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) std::is_trivially_copy_assignable<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_constructible)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) __is_trivially_constructible(T, T&&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T) std::is_trivially_move_constructible<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_assignable)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T) __is_trivially_assignable(T&, T&&)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T) std::is_trivially_move_assignable<T>::value
-#  endif
-
-#  if defined(__GLIBCXX__) && __has_feature(is_trivially_destructible)
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) __is_trivially_destructible(T)
-#  else
-#    define THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
-#  endif
-
 #endif
 
 #if _CCCL_STD_VER > 2011
@@ -249,31 +154,20 @@ template <
 #  endif
   typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>,
   int      = 0>
-_CCCL_HOST_DEVICE constexpr auto
-invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
-  THRUST_TRAILING_RETURN(decltype(std::mem_fn(f)(std::forward<Args>(args)...)))
+_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(
+  noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) -> decltype(std::mem_fn(f)(std::forward<Args>(args)...))
 {
   return std::mem_fn(f)(std::forward<Args>(args)...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Fn, typename... Args, typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
-_CCCL_HOST_DEVICE constexpr auto
-invoke(Fn&& f, Args&&... args) noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
-  THRUST_TRAILING_RETURN(decltype(std::forward<Fn>(f)(std::forward<Args>(args)...)))
+_CCCL_HOST_DEVICE constexpr auto invoke(Fn&& f, Args&&... args) noexcept(noexcept(
+  std::forward<Fn>(f)(std::forward<Args>(args)...))) -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...))
 {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
 #endif
-
-// std::void_t from C++17
-template <class...>
-struct voider
-{
-  using type = void;
-};
-template <class... Ts>
-using void_t = typename voider<Ts...>::type;
 
 // Trait for checking if a type is a thrust::optional
 template <class T>
@@ -296,7 +190,8 @@ using get_map_return = optional<fixup_void<invoke_result_t<F, U>>>;
 template <class F, class = void, class... U>
 struct returns_void_impl;
 template <class F, class... U>
-struct returns_void_impl<F, void_t<invoke_result_t<F, U...>>, U...> : std::is_void<invoke_result_t<F, U...>>
+struct returns_void_impl<F, ::cuda::std::void_t<invoke_result_t<F, U...>>, U...>
+    : std::is_void<invoke_result_t<F, U...>>
 {};
 template <class F, class... U>
 using returns_void = returns_void_impl<F, void, U...>;
@@ -560,7 +455,7 @@ struct optional_operations_base : optional_storage_base<T>
 
 // This class manages conditionally having a trivial copy constructor
 // This specialization is for when T is trivially copy constructible
-template <class T, bool = THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T)>
+template <class T, bool = ::cuda::std::is_trivially_copy_constructible<T>::value>
 struct optional_copy_base : optional_operations_base<T>
 {
   using optional_operations_base<T>::optional_operations_base;
@@ -595,7 +490,7 @@ struct optional_copy_base<T, false> : optional_operations_base<T>
   optional_copy_base& operator=(optional_copy_base&& rhs) = default;
 };
 
-template <class T, bool = THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T)>
+template <class T, bool = ::cuda::std::is_trivially_move_constructible<T>::value>
 struct optional_move_base : optional_copy_base<T>
 {
   using optional_copy_base<T>::optional_copy_base;
@@ -630,8 +525,9 @@ struct optional_move_base<T, false> : optional_copy_base<T>
 
 // This class manages conditionally having a trivial copy assignment operator
 template <class T,
-          bool = THRUST_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) && THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T)
-              && THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T)>
+          bool = ::cuda::std::is_trivially_copy_assignable<T>::value
+              && ::cuda::std::is_trivially_copy_constructible<T>::value
+              && ::cuda::std::is_trivially_destructible<T>::value>
 struct optional_copy_assign_base : optional_move_base<T>
 {
   using optional_move_base<T>::optional_move_base;
@@ -660,8 +556,9 @@ struct optional_copy_assign_base<T, false> : optional_move_base<T>
 };
 
 template <class T,
-          bool = THRUST_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) && THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE(T)
-              && THRUST_OPTIONAL_IS_TRIVIALLY_MOVE_ASSIGNABLE(T)>
+          bool = ::cuda::std::is_trivially_destructible<T>::value
+              && ::cuda::std::is_trivially_move_constructible<T>::value
+              && ::cuda::std::is_trivially_move_assignable<T>::value>
 struct optional_move_assign_base : optional_copy_assign_base<T>
 {
   using optional_copy_assign_base<T>::optional_copy_assign_base;
@@ -839,7 +736,7 @@ struct nullopt_t
 /// foo(thrust::nullopt); //pass an empty optional
 /// ```
 #ifdef __CUDA_ARCH__
-__device__ static _LIBCUDACXX_CONSTEXPR_GLOBAL
+__device__ static _CCCL_CONSTEXPR_GLOBAL
 #else
 static constexpr
 #endif // __CUDA_ARCH__
@@ -1054,8 +951,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-    map(F&& f) &
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  map(F&& f) &
   {
     return optional_map_impl(*this, std::forward<F>(f));
   }
@@ -1065,8 +962,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-    map(F&& f) &&
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  map(F&& f) &&
   {
     return optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -2345,8 +2242,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
-    map(F&& f) &
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&>(), std::declval<F&&>()))
+  map(F&& f) &
   {
     return detail::optional_map_impl(*this, std::forward<F>(f));
   }
@@ -2356,8 +2253,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class F>
   _CCCL_HOST_DEVICE
-    THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
-    map(F&& f) &&
+  THRUST_OPTIONAL_CPP11_CONSTEXPR decltype(detail::optional_map_impl(std::declval<optional&&>(), std::declval<F&&>()))
+  map(F&& f) &&
   {
     return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
   }
@@ -2919,7 +2816,7 @@ struct hash<THRUST_NS_QUALIFIER::optional<T>>
       return 0;
     }
 
-    return std::hash<THRUST_NS_QUALIFIER::detail::remove_const_t<T>>()(*o);
+    return std::hash<::cuda::std::__remove_const_t<T>>()(*o);
   }
 };
 } // namespace std

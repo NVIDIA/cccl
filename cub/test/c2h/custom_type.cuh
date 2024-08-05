@@ -131,6 +131,11 @@ public:
   {
     return lhs.key == rhs.key && lhs.val == rhs.val;
   }
+
+  friend __host__ __device__ bool operator!=(const CustomType& lhs, const CustomType& rhs)
+  {
+    return !(lhs == rhs);
+  }
 };
 
 template <class CustomType>

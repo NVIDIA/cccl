@@ -12,9 +12,7 @@
 #ifndef _CUDA_PTX_HELPER_FUNCTIONS_H_
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/cstddef> // size_t
-#include <cuda/std/cstdint> // uint32_t
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,6 +21,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 

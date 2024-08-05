@@ -15,7 +15,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/memory_algorithms.h>
 #include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -275,12 +274,12 @@ allocate_unique(Allocator const& alloc, Args&&... args)
 }
 
 template <typename T, typename Allocator>
-_CCCL_HOST std::unique_ptr<
-  T,
-  uninitialized_allocator_delete<
-    T,
-    typename detail::allocator_traits<typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type>::
-      template rebind_traits<T>::allocator_type>>
+_CCCL_HOST
+std::unique_ptr<T,
+                uninitialized_allocator_delete<
+                  T,
+                  typename detail::allocator_traits<typename std::remove_cv<
+                    typename std::remove_reference<Allocator>::type>::type>::template rebind_traits<T>::allocator_type>>
 uninitialized_allocate_unique(Allocator const& alloc)
 {
   using traits = typename detail::allocator_traits<
@@ -323,12 +322,12 @@ allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 }
 
 template <typename T, typename Allocator, typename Size>
-_CCCL_HOST std::unique_ptr<
-  T[],
-  uninitialized_array_allocator_delete<
-    T,
-    typename detail::allocator_traits<typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type>::
-      template rebind_traits<T>::allocator_type>>
+_CCCL_HOST
+std::unique_ptr<T[],
+                uninitialized_array_allocator_delete<
+                  T,
+                  typename detail::allocator_traits<typename std::remove_cv<
+                    typename std::remove_reference<Allocator>::type>::type>::template rebind_traits<T>::allocator_type>>
 uninitialized_allocate_unique_n(Allocator const& alloc, Size n)
 {
   using traits = typename detail::allocator_traits<

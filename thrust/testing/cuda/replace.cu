@@ -6,7 +6,7 @@
 template <typename T>
 struct less_than_five
 {
-  __host__ __device__ bool operator()(const T& val) const
+  _CCCL_HOST_DEVICE bool operator()(const T& val) const
   {
     return val < 5;
   }
@@ -261,8 +261,8 @@ DECLARE_UNITTEST(TestReplaceCopyIfStencilDeviceDevice);
 
 void TestReplaceCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector data(5);
   data[0] = 1;

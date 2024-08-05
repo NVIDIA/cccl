@@ -1,13 +1,23 @@
+#include <thrust/copy.h>
+#include <thrust/equal.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/reverse_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/limits>
+
+#include <cstdint>
+#include <exception>
 
 #include <unittest/unittest.h>
 
 template <typename T>
 struct my_less
 {
-  __host__ __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs;
   }
@@ -138,3 +148,118 @@ void TestComparisonSortCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestComparisonSortCudaStreams);
+
+template <typename T>
+struct TestRadixSortDispatch
+{
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
+
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
+
+  void operator()() const {}
+};
+// TODO(bgruber): use a single test case with a concatenated key list and a cartesion product with the comparators
+SimpleUnitTest<TestRadixSortDispatch, IntegralTypes> TestRadixSortDispatchIntegralInstance;
+SimpleUnitTest<TestRadixSortDispatch, FloatingPointTypes> TestRadixSortDispatchFPInstance;
+
+/**
+ * Copy of CUB testing utility
+ */
+template <typename UnsignedIntegralKeyT>
+struct index_to_key_value_op
+{
+  static constexpr std::size_t max_key_value =
+    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
+  static constexpr std::size_t lowest_key_value =
+    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+  static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
+                "Calculation of num_distinct_key_values would overflow");
+  static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
+
+  __device__ __host__ UnsignedIntegralKeyT operator()(std::size_t index)
+  {
+    return static_cast<UnsignedIntegralKeyT>(index % num_distinct_key_values);
+  }
+};
+
+/**
+ * Copy of CUB testing utility
+ */
+template <typename UnsignedIntegralKeyT>
+class index_to_expected_key_op
+{
+private:
+  static constexpr std::size_t max_key_value =
+    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
+  static constexpr std::size_t lowest_key_value =
+    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+  static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
+                "Calculation of num_distinct_key_values would overflow");
+  static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
+
+  // item_count / num_distinct_key_values
+  std::size_t expected_count_per_item;
+  // num remainder items: item_count%num_distinct_key_values
+  std::size_t num_remainder_items;
+  // remainder item_count: expected_count_per_item+1
+  std::size_t remainder_item_count;
+
+public:
+  index_to_expected_key_op(std::size_t num_total_items)
+      : expected_count_per_item(num_total_items / num_distinct_key_values)
+      , num_remainder_items(num_total_items % num_distinct_key_values)
+      , remainder_item_count(expected_count_per_item + std::size_t{1ULL})
+  {}
+
+  __device__ __host__ UnsignedIntegralKeyT operator()(std::size_t index)
+  {
+    // The first (num_remainder_items * remainder_item_count) are items that appear once more often than the items that
+    // follow remainder_items_offset
+    std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
+
+    UnsignedIntegralKeyT target_item_index =
+      (index <= remainder_items_offset)
+        ?
+        // This is one of the remainder items
+        static_cast<UnsignedIntegralKeyT>(index / remainder_item_count)
+        :
+        // This is an item that appears exactly expected_count_per_item times
+        static_cast<UnsignedIntegralKeyT>(
+          num_remainder_items + ((index - remainder_items_offset) / expected_count_per_item));
+    return target_item_index;
+  }
+};
+
+void TestSortWithMagnitude(int magnitude)
+{
+  try
+  {
+    const std::size_t num_items = 1ull << magnitude;
+    thrust::device_vector<std::uint8_t> vec(num_items);
+    auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
+    auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<std::uint8_t>{});
+    auto rev_sorted_it = thrust::make_reverse_iterator(key_value_it + num_items);
+    thrust::copy(rev_sorted_it, rev_sorted_it + num_items, vec.begin());
+    thrust::sort(vec.begin(), vec.end());
+    auto expected_result_it = thrust::make_transform_iterator(
+      thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<std::uint8_t>(num_items));
+    const bool ok = thrust::equal(expected_result_it, expected_result_it + num_items, vec.cbegin());
+    ASSERT_EQUAL(ok, true);
+  }
+  catch (std::bad_alloc&)
+  {}
+}
+
+void TestSortWithLargeNumberOfItems()
+{
+  TestSortWithMagnitude(39);
+  TestSortWithMagnitude(32);
+  TestSortWithMagnitude(33);
+}
+DECLARE_UNITTEST(TestSortWithLargeNumberOfItems);

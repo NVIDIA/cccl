@@ -49,24 +49,24 @@ template <typename T, typename Alloc>
 class vector_base
 {
 private:
-  typedef thrust::detail::contiguous_storage<T, Alloc> storage_type;
+  using storage_type = thrust::detail::contiguous_storage<T, Alloc>;
 
 public:
-  // typedefs
-  typedef typename storage_type::value_type value_type;
-  typedef typename storage_type::pointer pointer;
-  typedef typename storage_type::const_pointer const_pointer;
-  typedef typename storage_type::reference reference;
-  typedef typename storage_type::const_reference const_reference;
-  typedef typename storage_type::size_type size_type;
-  typedef typename storage_type::difference_type difference_type;
-  typedef typename storage_type::allocator_type allocator_type;
+  // aliases
+  using value_type      = typename storage_type::value_type;
+  using pointer         = typename storage_type::pointer;
+  using const_pointer   = typename storage_type::const_pointer;
+  using reference       = typename storage_type::reference;
+  using const_reference = typename storage_type::const_reference;
+  using size_type       = typename storage_type::size_type;
+  using difference_type = typename storage_type::difference_type;
+  using allocator_type  = typename storage_type::allocator_type;
 
-  typedef typename storage_type::iterator iterator;
-  typedef typename storage_type::const_iterator const_iterator;
+  using iterator       = typename storage_type::iterator;
+  using const_iterator = typename storage_type::const_iterator;
 
-  typedef thrust::reverse_iterator<iterator> reverse_iterator;
-  typedef thrust::reverse_iterator<const_iterator> const_reverse_iterator;
+  using reverse_iterator       = thrust::reverse_iterator<iterator>;
+  using const_reverse_iterator = thrust::reverse_iterator<const_iterator>;
 
   /*! This constructor creates an empty vector_base.
    */
@@ -77,14 +77,12 @@ public:
    */
   explicit vector_base(const Alloc& alloc);
 
-  /*! This constructor creates a vector_base with default-constructed
-   *  elements.
+  /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
    */
   explicit vector_base(size_type n);
 
-  /*! This constructor creates a vector_base with default-constructed
-   *  elements.
+  /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
    *  \param alloc The allocator to use by this vector_base.
    */
@@ -210,7 +208,7 @@ public:
    *  This method will resize this vector_base to the specified number of
    *  elements. If the number is smaller than this vector_base's current
    *  size this vector_base is truncated, otherwise this vector_base is
-   *  extended and new elements are default constructed.
+   *  extended and new elements are value initialized.
    */
   void resize(size_type new_size);
 
@@ -472,6 +470,9 @@ public:
    */
   allocator_type get_allocator() const;
 
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(vector_base, const_iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(vector_base, const_reverse_iterator);
+
 protected:
   // Our storage
   storage_type m_storage;
@@ -496,7 +497,7 @@ private:
   template <typename ForwardIterator>
   void range_init(ForwardIterator first, ForwardIterator last, thrust::random_access_traversal_tag);
 
-  void default_init(size_type n);
+  void value_init(size_type n);
 
   void fill_init(size_type n, const T& x);
 
@@ -509,7 +510,7 @@ private:
   template <typename InputIteratorOrIntegralType>
   void insert_dispatch(iterator position, InputIteratorOrIntegralType n, InputIteratorOrIntegralType x, true_type);
 
-  // this method appends n default-constructed elements at the end
+  // this method appends n value-initialized elements at the end
   void append(size_type n);
 
   // this method performs insertion from a fill value

@@ -7,7 +7,7 @@
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
+  _CCCL_HOST_DEVICE bool operator()(T x) const
   {
     return ((int) x % 2) == 0;
   }
@@ -16,7 +16,7 @@ struct is_even
 template <typename Vector>
 void TestIsPartitionedSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(4);
   v[0] = 1;
@@ -52,7 +52,7 @@ DECLARE_VECTOR_UNITTEST(TestIsPartitionedSimple);
 template <class Vector>
 void TestIsPartitioned()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   const size_t n = (1 << 16) + 13;
 

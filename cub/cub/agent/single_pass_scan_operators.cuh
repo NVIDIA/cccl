@@ -51,6 +51,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 #include <nv/target>
@@ -122,9 +124,19 @@ enum ScanTileStatus
   SCAN_TILE_INCLUSIVE, // Inclusive tile prefix is available
 };
 
+/**
+ * Enum class used for specifying the memory order that shall be enforced while reading and writing the tile status.
+ */
+enum class MemoryOrder
+{
+  // Uses relaxed loads when reading a tile's status and relaxed stores when updating a tile's status
+  relaxed,
+  // Uses load acquire when reading a tile's status and store release when updating a tile's status
+  acquire_release
+};
+
 namespace detail
 {
-
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
@@ -476,16 +488,60 @@ using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
 
 template <class T>
 using default_delay_constructor_t =
-  cub::detail::conditional_t<Traits<T>::PRIMITIVE, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
+  ::cuda::std::_If<Traits<T>::PRIMITIVE, fixed_delay_constructor_t<350, 450>, default_no_delay_constructor_t>;
 
 template <class T>
 using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
 
 template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
-  detail::conditional_t<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
-                        reduce_by_key_delay_constructor_t<350, 450>,
-                        default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
+  ::cuda::std::_If<(Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16),
+                   reduce_by_key_delay_constructor_t<350, 450>,
+                   default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
+
+/**
+ * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
+ *
+ * @tparam T The ScanTileState's value type
+ * @tparam Order The memory order to be implemented by the ScanTileState
+ */
+template <typename ScanTileStateT, MemoryOrder Order>
+struct tile_state_with_memory_order
+{
+  ScanTileStateT& tile_state;
+  using T          = typename ScanTileStateT::StatusValueT;
+  using StatusWord = typename ScanTileStateT::StatusWord;
+
+  /**
+   * Update the specified tile's inclusive value and corresponding status
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
+  {
+    tile_state.template SetInclusive<Order>(tile_idx, tile_inclusive);
+  }
+
+  /**
+   * Update the specified tile's partial value and corresponding status
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
+  {
+    tile_state.template SetPartial<Order>(tile_idx, tile_partial);
+  }
+
+  /**
+   * Wait for the corresponding tile to become non-invalid
+   */
+  template <class DelayT = detail::default_no_delay_t>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
+  {
+    tile_state.template WaitForValid<DelayT, Order>(tile_idx, status, value, delay);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
+  {
+    return tile_state.template LoadValid<Order>(tile_idx);
+  }
+};
 } // namespace detail
 
 /**
@@ -502,17 +558,16 @@ struct ScanTileState;
 template <typename T>
 struct ScanTileState<T, true>
 {
+  using StatusValueT = T;
+
   // Status word type
-  using StatusWord = cub::detail::conditional_t<
+  using StatusWord = ::cuda::std::_If<
     sizeof(T) == 8,
     unsigned long long,
-    cub::detail::conditional_t<sizeof(T) == 4,
-                               unsigned int,
-                               cub::detail::conditional_t<sizeof(T) == 2, unsigned short, unsigned char>>>;
+    ::cuda::std::_If<sizeof(T) == 4, unsigned int, ::cuda::std::_If<sizeof(T) == 2, unsigned short, unsigned char>>>;
 
   // Unit word type
-  using TxnWord = cub::detail::
-    conditional_t<sizeof(T) == 8, ulonglong2, cub::detail::conditional_t<sizeof(T) == 4, uint2, unsigned int>>;
+  using TxnWord = ::cuda::std::_If<sizeof(T) == 8, ulonglong2, ::cuda::std::_If<sizeof(T) == 4, uint2, unsigned int>>;
 
   // Device word type
   struct TileDescriptor
@@ -532,7 +587,7 @@ struct ScanTileState<T, true>
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
-      : d_tile_descriptors(NULL)
+      : d_tile_descriptors(nullptr)
   {}
 
   /**
@@ -543,7 +598,7 @@ struct ScanTileState<T, true>
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to \p temp_storage_bytes and no work is
+   *   When nullptr, the required allocation size is written to \p temp_storage_bytes and no work is
    * done.
    *
    * @param[in] temp_storage_bytes
@@ -597,9 +652,50 @@ struct ScanTileState<T, true>
     }
   }
 
-  /**
-   * Update the specified tile's inclusive value and corresponding status
-   */
+private:
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
+  StoreStatus(TxnWord* ptr, TxnWord alias)
+  {
+    detail::store_relaxed(ptr, alias);
+  }
+
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
+  StoreStatus(TxnWord* ptr, TxnWord alias)
+  {
+    detail::store_release(ptr, alias);
+  }
+
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), TxnWord>::type
+  LoadStatus(TxnWord* ptr)
+  {
+    return detail::load_relaxed(ptr);
+  }
+
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), TxnWord>::type
+  LoadStatus(TxnWord* ptr)
+  {
+    // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
+  }
+
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::relaxed), void>::type
+  ThreadfenceForLoadAcqPreVolta()
+  {}
+
+  template <MemoryOrder Order>
+  _CCCL_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::enable_if<(Order == MemoryOrder::acquire_release), void>::type
+  ThreadfenceForLoadAcqPreVolta()
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+  }
+
+public:
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     TileDescriptor tile_descriptor;
@@ -609,12 +705,10 @@ struct ScanTileState<T, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status
-   */
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -624,29 +718,32 @@ struct ScanTileState<T, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = detail::default_delay_t<T>>
+  template <class DelayT = detail::default_delay_t<T>, MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay_or_prevent_hoisting = {})
   {
     TileDescriptor tile_descriptor;
 
     {
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
 
     while (WARP_ANY((tile_descriptor.status == SCAN_TILE_INVALID), 0xffffffff))
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = LoadStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     }
+
+    // For pre-Volta and load acquire we emit relaxed loads in LoadStatus and hoist the threadfence here
+    ThreadfenceForLoadAcqPreVolta<Order>();
 
     status = tile_descriptor.status;
     value  = tile_descriptor.value;
@@ -671,6 +768,8 @@ struct ScanTileState<T, true>
 template <typename T>
 struct ScanTileState<T, false>
 {
+  using StatusValueT = T;
+
   // Status word type
   using StatusWord = unsigned int;
 
@@ -687,9 +786,9 @@ struct ScanTileState<T, false>
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
-      : d_tile_status(NULL)
-      , d_tile_partial(NULL)
-      , d_tile_inclusive(NULL)
+      : d_tile_status(nullptr)
+      , d_tile_partial(nullptr)
+      , d_tile_inclusive(nullptr)
   {}
 
   /**
@@ -700,7 +799,7 @@ struct ScanTileState<T, false>
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to \p temp_storage_bytes and no work is
+   *   When nullptr, the required allocation size is written to \p temp_storage_bytes and no work is
    *   done.
    *
    * @param[in] temp_storage_bytes
@@ -766,7 +865,7 @@ struct ScanTileState<T, false>
 
     // Set the necessary size of the blob
     void* allocations[3] = {};
-    return CubDebug(AliasTemporaries(NULL, temp_storage_bytes, allocations, allocation_sizes));
+    return CubDebug(AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes));
   }
 
   /**
@@ -791,6 +890,7 @@ struct ScanTileState<T, false>
   /**
    * Update the specified tile's inclusive value and corresponding status
    */
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
   {
     // Update tile inclusive value
@@ -801,6 +901,7 @@ struct ScanTileState<T, false>
   /**
    * Update the specified tile's partial value and corresponding status
    */
+  template <MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
   {
     // Update tile partial value
@@ -811,7 +912,7 @@ struct ScanTileState<T, false>
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = detail::default_no_delay_t>
+  template <class DelayT = detail::default_no_delay_t, MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
   {
     do
@@ -861,7 +962,7 @@ struct ReduceByKeyScanTileState;
 template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePair<KeyT, ValueT>>
 {
-  typedef ScanTileState<KeyValuePair<KeyT, ValueT>> SuperClass;
+  using SuperClass = ScanTileState<KeyValuePair<KeyT, ValueT>>;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
@@ -889,18 +990,15 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   };
 
   // Status word type
-  using StatusWord = cub::detail::conditional_t<
+  using StatusWord = ::cuda::std::_If<
     STATUS_WORD_SIZE == 8,
     unsigned long long,
-    cub::detail::conditional_t<STATUS_WORD_SIZE == 4,
-                               unsigned int,
-                               cub::detail::conditional_t<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
+    ::cuda::std::
+      _If<STATUS_WORD_SIZE == 4, unsigned int, ::cuda::std::_If<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
 
   // Status word type
-  using TxnWord =
-    cub::detail::conditional_t<TXN_WORD_SIZE == 16,
-                               ulonglong2,
-                               cub::detail::conditional_t<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
+  using TxnWord = ::cuda::std::
+    _If<TXN_WORD_SIZE == 16, ulonglong2, ::cuda::std::_If<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
   struct TileDescriptorBigStatus
@@ -920,14 +1018,14 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
   // Device word type
   using TileDescriptor =
-    cub::detail::conditional_t<sizeof(ValueT) == sizeof(KeyT), TileDescriptorBigStatus, TileDescriptorLittleStatus>;
+    ::cuda::std::_If<sizeof(ValueT) == sizeof(KeyT), TileDescriptorBigStatus, TileDescriptorLittleStatus>;
 
   // Device storage
   TxnWord* d_tile_descriptors;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
-      : d_tile_descriptors(NULL)
+      : d_tile_descriptors(nullptr)
   {}
 
   /**
@@ -937,7 +1035,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    *   Number of tiles
    *
    * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage.  When NULL, the required allocation size
+   *   Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
    *   is written to \p temp_storage_bytes and no work is done.
    *
    * @param[in] temp_storage_bytes
@@ -1006,9 +1104,6 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Update the specified tile's partial value and corresponding status
-   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
   {
     TileDescriptor tile_descriptor;
@@ -1082,7 +1177,7 @@ template <typename T,
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
-  typedef WarpReduce<T, CUB_PTX_WARP_THREADS> WarpReduceT;
+  using WarpReduceT = WarpReduce<T, (1 << (5))>;
 
   // Temporary storage type
   struct _TempStorage
@@ -1098,7 +1193,7 @@ struct TilePrefixCallbackOp
   {};
 
   // Type of status word
-  typedef typename ScanTileStateT::StatusWord StatusWord;
+  using StatusWord = typename ScanTileStateT::StatusWord;
 
   // Fields
   _TempStorage& temp_storage; ///< Reference to a warp-reduction instance
@@ -1158,7 +1253,7 @@ struct TilePrefixCallbackOp
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
     {
-      detail::uninitialized_copy(&temp_storage.block_aggregate, block_aggregate);
+      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
 
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
@@ -1190,9 +1285,9 @@ struct TilePrefixCallbackOp
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
       tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
-      detail::uninitialized_copy(&temp_storage.exclusive_prefix, exclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 
-      detail::uninitialized_copy(&temp_storage.inclusive_prefix, inclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
 
     // Return exclusive_prefix

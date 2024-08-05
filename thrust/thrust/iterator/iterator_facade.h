@@ -257,7 +257,7 @@ class iterator_core_access
   {
     // dispatch the implementation of this method upon whether or not
     // Facade2 is convertible to Facade1
-    return distance_from(f1, f2, typename thrust::detail::is_convertible<Facade2, Facade1>::type());
+    return distance_from(f1, f2, typename ::cuda::std::is_convertible<Facade2, Facade1>::type());
   }
 
   //
@@ -331,11 +331,11 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  typedef typename thrust::detail::remove_const<Value>::type value_type;
+  using value_type = ::cuda::std::__remove_const_t<Value>;
 
   /*! The return type of \p iterator_facade::operator*().
    */
-  typedef Reference reference;
+  using reference = Reference;
 
   /*! The return type of \p iterator_facade's non-existent \c operator->()
    *  member function. Unlike \c boost::iterator_facade, \p iterator_facade
@@ -344,17 +344,17 @@ public:
    *  that these expressions are not allowed. This limitation may be relaxed in a
    *  future version of Thrust.
    */
-  typedef void pointer;
+  using pointer = void;
 
   /*! The type of expressions of the form <tt>x - y</tt> where <tt>x</tt> and <tt>y</tt>
    *  are of type \p iterator_facade.
    */
-  typedef Difference difference_type;
+  using difference_type = Difference;
 
   /*! The type of iterator category of \p iterator_facade.
    */
-  typedef
-    typename thrust::detail::iterator_facade_category<System, Traversal, Value, Reference>::type iterator_category;
+  using iterator_category =
+    typename thrust::detail::iterator_facade_category<System, Traversal, Value, Reference>::type;
 
   /*! \p operator*() dereferences this \p iterator_facade.
    *  \return A reference to the element pointed to by this \p iterator_facade.
@@ -464,7 +464,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -486,7 +487,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -508,7 +510,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -531,7 +534,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -554,7 +558,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -577,7 +582,8 @@ template <typename Derived1,
           typename Traversal2,
           typename Reference2,
           typename Difference2>
-inline _CCCL_HOST_DEVICE
+inline
+  _CCCL_HOST_DEVICE
   // XXX it might be nice to implement this at some point
   // typename enable_if_interoperable<Dr1,Dr2,bool>::type // exposition
   bool
@@ -603,15 +609,15 @@ template <typename Derived1,
           typename Difference2>
 inline _CCCL_HOST_DEVICE
 
-  // divine the type this operator returns
-  typename thrust::detail::distance_from_result<
-    iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
-    iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>::type
+// divine the type this operator returns
+typename thrust::detail::distance_from_result<
+  iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
+  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>::type
 
-  operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
-            iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
+operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
+          iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return iterator_core_access ::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
 }
 
 // Iterator addition

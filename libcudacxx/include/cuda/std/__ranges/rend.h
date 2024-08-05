@@ -48,28 +48,20 @@ void rend(const _Tp&) = delete;
 template <class _Tp>
 concept __member_rend = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   _CUDA_VRANGES::rbegin(__t);
-  {
-    _LIBCUDACXX_AUTO_CAST(__t.rend())
-  } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
+  { _LIBCUDACXX_AUTO_CAST(__t.rend()) } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
 };
 
 template <class _Tp>
 concept __unqualified_rend =
   !__member_rend<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     _CUDA_VRANGES::rbegin(__t);
-    {
-      _LIBCUDACXX_AUTO_CAST(rend(__t))
-    } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
+    { _LIBCUDACXX_AUTO_CAST(rend(__t)) } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
   };
 
 template <class _Tp>
 concept __can_reverse = __can_borrow<_Tp> && !__member_rend<_Tp> && !__unqualified_rend<_Tp> && requires(_Tp&& __t) {
-  {
-    _CUDA_VRANGES::begin(__t)
-  } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
-  {
-    _CUDA_VRANGES::begin(__t)
-  } -> bidirectional_iterator;
+  { _CUDA_VRANGES::begin(__t) } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
+  { _CUDA_VRANGES::begin(__t) } -> bidirectional_iterator;
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -145,7 +137,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto rend = __rend::__fn{};
+_CCCL_GLOBAL_CONSTANT auto rend = __rend::__fn{};
 } // namespace __cpo
 
 // [range.access.crend]
@@ -175,7 +167,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto crend = __crend::__fn{};
+_CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017

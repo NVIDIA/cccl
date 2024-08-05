@@ -40,10 +40,12 @@
 THRUST_NAMESPACE_BEGIN
 
 // forward declarations to WAR circular #includes
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 template <typename>
 class device_ptr;
 template <typename T>
 device_ptr<T> device_malloc(const std::size_t n);
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /*! \addtogroup allocators Allocators
  *  \ingroup memory_management
@@ -66,25 +68,25 @@ class device_malloc_allocator
 {
 public:
   /*! Type of element allocated, \c T. */
-  typedef T value_type;
+  using value_type = T;
 
   /*! Pointer to allocation, \c device_ptr<T>. */
-  typedef device_ptr<T> pointer;
+  using pointer = device_ptr<T>;
 
   /*! \c const pointer to allocation, \c device_ptr<const T>. */
-  typedef device_ptr<const T> const_pointer;
+  using const_pointer = device_ptr<const T>;
 
   /*! Reference to allocated element, \c device_reference<T>. */
-  typedef device_reference<T> reference;
+  using reference = device_reference<T>;
 
   /*! \c const reference to allocated element, \c device_reference<const T>. */
-  typedef device_reference<const T> const_reference;
+  using const_reference = device_reference<const T>;
 
   /*! Type of allocation size, \c std::size_t. */
-  typedef std::size_t size_type;
+  using size_type = std::size_t;
 
   /*! Type of allocation difference, \c pointer::difference_type. */
-  typedef typename pointer::difference_type difference_type;
+  using difference_type = typename pointer::difference_type;
 
   /*! The \p rebind metafunction provides the type of a \p device_malloc_allocator
    *  instantiated with another type.
@@ -94,9 +96,9 @@ public:
   template <typename U>
   struct rebind
   {
-    /*! The typedef \p other gives the type of the rebound \p device_malloc_allocator.
+    /*! The alias \p other gives the type of the rebound \p device_malloc_allocator.
      */
-    typedef device_malloc_allocator<U> other;
+    using other = device_malloc_allocator<U>;
   }; // end rebind
 
   /*! No-argument constructor has no effect. */

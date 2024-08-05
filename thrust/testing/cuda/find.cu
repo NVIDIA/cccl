@@ -12,7 +12,7 @@ struct equal_to_value_pred
       : value(value)
   {}
 
-  __host__ __device__ bool operator()(T v) const
+  _CCCL_HOST_DEVICE bool operator()(T v) const
   {
     return v == value;
   }
@@ -27,7 +27,7 @@ struct not_equal_to_value_pred
       : value(value)
   {}
 
-  __host__ __device__ bool operator()(T v) const
+  _CCCL_HOST_DEVICE bool operator()(T v) const
   {
     return v != value;
   }
@@ -42,7 +42,7 @@ struct less_than_value_pred
       : value(value)
   {}
 
-  __host__ __device__ bool operator()(T v) const
+  _CCCL_HOST_DEVICE bool operator()(T v) const
   {
     return v < value;
   }
@@ -65,7 +65,7 @@ void TestFindDevice(ExecutionPolicy exec)
 
   typename thrust::host_vector<int>::iterator h_iter;
 
-  typedef typename thrust::device_vector<int>::iterator iter_type;
+  using iter_type = typename thrust::device_vector<int>::iterator;
   thrust::device_vector<iter_type> d_result(1);
 
   h_iter = thrust::find(h_data.begin(), h_data.end(), int(0));
@@ -122,7 +122,7 @@ void TestFindIfDevice(ExecutionPolicy exec)
 
   typename thrust::host_vector<int>::iterator h_iter;
 
-  typedef typename thrust::device_vector<int>::iterator iter_type;
+  using iter_type = typename thrust::device_vector<int>::iterator;
   thrust::device_vector<iter_type> d_result(1);
 
   h_iter = thrust::find_if(h_data.begin(), h_data.end(), equal_to_value_pred<int>(0));
@@ -178,7 +178,7 @@ void TestFindIfNotDevice(ExecutionPolicy exec)
 
   typename thrust::host_vector<int>::iterator h_iter;
 
-  typedef typename thrust::device_vector<int>::iterator iter_type;
+  using iter_type = typename thrust::device_vector<int>::iterator;
   thrust::device_vector<iter_type> d_result(1);
 
   h_iter = thrust::find_if_not(h_data.begin(), h_data.end(), not_equal_to_value_pred<int>(0));

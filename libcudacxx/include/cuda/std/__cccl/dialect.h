@@ -90,4 +90,25 @@
 #  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
 #endif // _CCCL_STD_VER <= 2014
 
+// In nvcc prior to 11.3 global variables could not be marked constexpr
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  define _CCCL_CONSTEXPR_GLOBAL const
+#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
+#  define _CCCL_CONSTEXPR_GLOBAL constexpr
+#endif // !_CCCL_CUDACC_BELOW_11_3
+
+// Inline variables are only available from C++17 onwards
+#if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
+#  define _CCCL_INLINE_VAR inline
+#else // ^^^ C++14 ^^^ / vvv C++17 vvv
+#  define _CCCL_INLINE_VAR
+#endif // _CCCL_STD_VER <= 2014
+
+// We need to treat host and device separately
+#if defined(__CUDA_ARCH__)
+#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE _CCCL_CONSTEXPR_GLOBAL
+#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
+#endif // __CUDA_ARCH__
+
 #endif // __CCCL_DIALECT_H

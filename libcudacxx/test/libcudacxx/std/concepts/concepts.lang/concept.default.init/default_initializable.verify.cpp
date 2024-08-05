@@ -20,9 +20,7 @@
 #include "test_macros.h"
 
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(brace_initializable_,
-                             requires() //
-                             (T{}));
+_LIBCUDACXX_CONCEPT_FRAGMENT(brace_initializable_, requires()(T{}));
 
 template <class T>
 _LIBCUDACXX_CONCEPT brace_initializable = _LIBCUDACXX_FRAGMENT(brace_initializable_, T);

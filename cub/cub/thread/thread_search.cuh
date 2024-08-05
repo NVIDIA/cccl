@@ -97,6 +97,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
  * @param[in] val
  *   Search key
  */
+// TODO(bgruber): deprecate once ::cuda::std::lower_bound is made public
 template <typename InputIteratorT, typename OffsetT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
@@ -131,6 +132,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT 
  * @param[in] val
  *   Search key
  */
+// TODO(bgruber): deprecate once ::cuda::std::upper_bound is made public
 template <typename InputIteratorT, typename OffsetT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
@@ -173,7 +175,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
     bool lt;
     NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (lt = val < input[retval + half];),
+                 (lt = __hlt(val, input[retval + half]);),
                  (lt = __half2float(val) < __half2float(input[retval + half]);));
 
     if (lt)
@@ -189,6 +191,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
   return retval;
 }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
 CUB_NAMESPACE_END

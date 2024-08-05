@@ -10,8 +10,8 @@
 template <typename Vector>
 void TestInclusiveScanByKeySimple()
 {
-  typedef typename Vector::value_type T;
-  typedef typename Vector::iterator Iterator;
+  using T        = typename Vector::value_type;
+  using Iterator = typename Vector::iterator;
 
   Vector keys(7);
   Vector vals(7);
@@ -106,7 +106,7 @@ DECLARE_UNITTEST(TestInclusiveScanByKeyDispatchImplicit);
 struct head_flag_predicate
 {
   template <typename T>
-  __host__ __device__ bool operator()(const T&, const T& b)
+  _CCCL_HOST_DEVICE bool operator()(const T&, const T& b)
   {
     return b ? false : true;
   }
@@ -115,7 +115,7 @@ struct head_flag_predicate
 template <typename Vector>
 void TestScanByKeyHeadFlags()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector keys(7);
   Vector vals(7);
@@ -148,7 +148,7 @@ DECLARE_VECTOR_UNITTEST(TestScanByKeyHeadFlags);
 template <typename Vector>
 void TestInclusiveScanByKeyTransformIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector keys(7);
   Vector vals(7);

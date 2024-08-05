@@ -31,10 +31,6 @@ function(cub_add_header_test label definitions)
     cub_clone_target_properties(${headertest_target} ${cub_target})
     cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
 
-    if (CUB_IN_THRUST)
-      thrust_fix_clang_nvcc_build_for(${headertest_target})
-    endif()
-
     add_dependencies(cub.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})
   endforeach()
@@ -46,5 +42,14 @@ set(header_definitions
   "CUB_WRAPPED_NAMESPACE=wrapped_cub")
 cub_add_header_test(base "${header_definitions}")
 
-list(APPEND header_definitions "CUB_DISABLE_BF16_SUPPORT")
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
+  "CCCL_DISABLE_BF16_SUPPORT")
 cub_add_header_test(bf16 "${header_definitions}")
+
+set(header_definitions
+  "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
+  "CUB_WRAPPED_NAMESPACE=wrapped_cub"
+  "CCCL_DISABLE_FP16_SUPPORT")
+cub_add_header_test(half "${header_definitions}")

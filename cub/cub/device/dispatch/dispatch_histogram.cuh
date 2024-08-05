@@ -58,6 +58,10 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/functional>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -97,8 +101,8 @@ CUB_NAMESPACE_BEGIN
  */
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
-  ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
-  ArrayWrapper<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
@@ -111,9 +115,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 #pragma unroll
   for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
-    if (output_bin < num_output_bins_wrapper.array[CHANNEL])
+    if (output_bin < num_output_bins_wrapper[CHANNEL])
     {
-      d_output_histograms_wrapper.array[CHANNEL][output_bin] = 0;
+      d_output_histograms_wrapper[CHANNEL][output_bin] = 0;
     }
   }
 }
@@ -203,12 +207,12 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     SampleIteratorT d_samples,
-    ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
-    ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper,
-    ArrayWrapper<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
-    ArrayWrapper<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper,
-    ArrayWrapper<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op_wrapper,
-    ArrayWrapper<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op_wrapper,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper,
+    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op_wrapper,
+    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op_wrapper,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -234,12 +238,12 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   AgentHistogramT agent(
     temp_storage,
     d_samples,
-    num_output_bins_wrapper.array,
-    num_privatized_bins_wrapper.array,
-    d_output_histograms_wrapper.array,
-    d_privatized_histograms_wrapper.array,
-    output_decode_op_wrapper.array,
-    privatized_decode_op_wrapper.array);
+    num_output_bins_wrapper.__elems_,
+    num_privatized_bins_wrapper.__elems_,
+    d_output_histograms_wrapper.__elems_,
+    d_privatized_histograms_wrapper.__elems_,
+    output_decode_op_wrapper.__elems_,
+    privatized_decode_op_wrapper.__elems_);
 
   // Initialize counters
   agent.InitBinCounters();
@@ -269,9 +273,9 @@ struct dispatch_histogram
   size_t& temp_storage_bytes;
   SampleIteratorT d_samples;
   CounterT** d_output_histograms;
-  int* num_privatized_levels;
+  const int* num_privatized_levels;
   PrivatizedDecodeOpT* privatized_decode_op;
-  int* num_output_levels;
+  const int* num_output_levels;
   OutputDecodeOpT* output_decode_op;
   int max_num_output_bins;
   OffsetT num_row_pixels;
@@ -284,9 +288,9 @@ struct dispatch_histogram
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_privatized_levels[NUM_ACTIVE_CHANNELS],
+    const int num_privatized_levels[NUM_ACTIVE_CHANNELS],
     PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
     OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS],
     int max_num_output_bins,
     OffsetT num_row_pixels,
@@ -397,54 +401,34 @@ struct dispatch_histogram
       // Construct the grid queue descriptor
       GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
-      // Setup array wrapper for histogram channel output (because we can't pass static arrays
-      // as kernel parameters)
-      ArrayWrapper<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper;
-      for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
-      {
-        d_output_histograms_wrapper.array[CHANNEL] = d_output_histograms[CHANNEL];
-      }
+      // Wrap arrays so we can pass them by-value to the kernel
+      ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper;
+      ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op_wrapper;
+      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op_wrapper;
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
 
-      // Setup array wrapper for privatized per-block histogram channel output (because we
-      // can't pass static arrays as kernel parameters)
-      ArrayWrapper<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
-      for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
-      {
-        d_privatized_histograms_wrapper.array[CHANNEL] = (CounterT*) allocations[CHANNEL];
-      }
+      auto* typedAllocations = reinterpret_cast<CounterT**>(allocations);
+      ::cuda::std::copy(
+        d_output_histograms, d_output_histograms + NUM_ACTIVE_CHANNELS, d_output_histograms_wrapper.begin());
+      ::cuda::std::copy(
+        typedAllocations, typedAllocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
+      // TODO(bgruber): we can probably skip copying the function objects when they are empty
+      ::cuda::std::copy(
+        privatized_decode_op, privatized_decode_op + NUM_ACTIVE_CHANNELS, privatized_decode_op_wrapper.begin());
+      ::cuda::std::copy(output_decode_op, output_decode_op + NUM_ACTIVE_CHANNELS, output_decode_op_wrapper.begin());
 
-      // Setup array wrapper for sweep bin transforms (because we can't pass static arrays as
-      // kernel parameters)
-      ArrayWrapper<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op_wrapper;
-      for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
-      {
-        privatized_decode_op_wrapper.array[CHANNEL] = privatized_decode_op[CHANNEL];
-      }
-
-      // Setup array wrapper for aggregation bin transforms (because we can't pass static
-      // arrays as kernel parameters)
-      ArrayWrapper<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op_wrapper;
-      for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
-      {
-        output_decode_op_wrapper.array[CHANNEL] = output_decode_op[CHANNEL];
-      }
-
-      // Setup array wrapper for num privatized bins (because we can't pass static arrays as
-      // kernel parameters)
-      ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
-      for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
-      {
-        num_privatized_bins_wrapper.array[CHANNEL] = num_privatized_levels[CHANNEL] - 1;
-      }
-
-      // Setup array wrapper for num output bins (because we can't pass static arrays as
-      // kernel parameters)
-      ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
-      for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
-      {
-        num_output_bins_wrapper.array[CHANNEL] = num_output_levels[CHANNEL] - 1;
-      }
-
+      auto minus_one = cuda::proclaim_return_type<int>([](int levels) {
+        return levels - 1;
+      });
+      ::cuda::std::transform(
+        num_privatized_levels,
+        num_privatized_levels + NUM_ACTIVE_CHANNELS,
+        num_privatized_bins_wrapper.begin(),
+        minus_one);
+      ::cuda::std::transform(
+        num_output_levels, num_output_levels + NUM_ACTIVE_CHANNELS, num_output_bins_wrapper.begin(), minus_one);
       int histogram_init_block_threads = 256;
 
       int histogram_init_grid_dims =
@@ -579,6 +563,10 @@ template <int NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS>>
 struct DispatchHistogram : SelectedPolicy
 {
+  static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
+  static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,
+                "Active channels must be at most the number of total channels of the input samples");
+
 public:
   //---------------------------------------------------------------------
   // Types and constants
@@ -624,9 +612,9 @@ public:
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
-        cub::detail::conditional_t<std::is_pointer<LevelIteratorT>::value,
-                                   CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                                   LevelIteratorT>;
+        ::cuda::std::_If<std::is_pointer<LevelIteratorT>::value,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
 
       WrappedLevelIteratorT wrapped_levels(d_levels);
 
@@ -660,11 +648,11 @@ public:
     // rule: 2^l * 2^r = 2^(l + r) to determine a sufficiently large type to hold the
     // multiplication result.
     // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
-    using IntArithmeticT = cub::detail::conditional_t< //
+    using IntArithmeticT = ::cuda::std::_If< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
 #if CUB_IS_INT128_ENABLED
-      cub::detail::conditional_t< //
+      ::cuda::std::_If< //
         (::cuda::std::is_same<CommonT, __int128_t>::value || //
          ::cuda::std::is_same<CommonT, __uint128_t>::value), //
         CommonT, //
@@ -678,10 +666,9 @@ public:
     template <typename T>
     using is_integral_excl_int128 =
 #if CUB_IS_INT128_ENABLED
-      cub::detail::conditional_t<
-        ::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
-        ::cuda::std::false_type,
-        ::cuda::std::is_integral<T>>;
+      ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
+                       ::cuda::std::false_type,
+                       ::cuda::std::is_integral<T>>;
 #else
       ::cuda::std::is_integral<T>;
 #endif
@@ -732,12 +719,14 @@ public:
 #ifdef __CUDA_FP16_TYPES_EXIST__
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
+      ScaleT result;
       NV_IF_TARGET(NV_PROVIDES_SM_53,
-                   (return this->ComputeScale(num_levels, max_level, min_level, ::cuda::std::true_type{});),
-                   (return this->ComputeScale(
-                     num_levels, __half2float(max_level), __half2float(min_level), ::cuda::std::true_type{});));
+                   (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
+                   (result.reciprocal = __float2half(
+                      static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
+      return result;
     }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
     // All types but __half:
     template <typename T>
@@ -751,10 +740,10 @@ public:
     {
       NV_IF_TARGET(
         NV_PROVIDES_SM_53,
-        (return sample >= min_level && sample < max_level;),
-        (return this->SampleIsValid(__half2float(sample), __half2float(max_level), __half2float(min_level));));
+        (return __hge(sample, min_level) && __hlt(sample, max_level);),
+        (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
     }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
     /**
      * @brief Bin computation for floating point (and extended floating point) types
@@ -798,10 +787,10 @@ public:
     {
       NV_IF_TARGET(
         NV_PROVIDES_SM_53,
-        (return this->ComputeBin(sample, min_level, scale, ::cuda::std::true_type{});),
+        (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
         (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
     }
-#endif
+#endif // __CUDA_FP16_TYPES_EXIST__
 
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
     MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
@@ -856,6 +845,12 @@ public:
   // Pass-through bin transform operator
   struct PassThruTransform
   {
+// GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
+// bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ == 14
+    char dummy;
+#endif
+
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid)
@@ -876,7 +871,7 @@ public:
    *
    * @param d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to `temp_storage_bytes` and
+   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
    *   no work is done.
    *
    * @param temp_storage_bytes
@@ -922,8 +917,8 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -944,10 +939,10 @@ public:
       }
 
       // Use the search transform op for converting samples to privatized bins
-      typedef SearchTransform<LevelT*> PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = SearchTransform<const LevelT*>;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      typedef PassThruTransform OutputDecodeOpT;
+      using OutputDecodeOpT = PassThruTransform;
 
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
       OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1048,7 +1043,7 @@ public:
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
     int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1078,7 +1073,7 @@ public:
    *
    * @param d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to `temp_storage_bytes` and
+   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
    *   no work is done.
    *
    * @param temp_storage_bytes
@@ -1124,8 +1119,8 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1146,10 +1141,10 @@ public:
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      typedef PassThruTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = PassThruTransform;
 
       // Use the search transform op for converting privatized bins to output bins
-      typedef SearchTransform<LevelT*> OutputDecodeOpT;
+      using OutputDecodeOpT = SearchTransform<const LevelT*>;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1211,8 +1206,8 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1241,7 +1236,7 @@ public:
    *
    * @param d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to
+   *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
    * @param temp_storage_bytes
@@ -1289,9 +1284,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1312,10 +1307,10 @@ public:
       }
 
       // Use the scale transform op for converting samples to privatized bins
-      typedef ScaleTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = ScaleTransform;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      typedef PassThruTransform OutputDecodeOpT;
+      using OutputDecodeOpT = PassThruTransform;
 
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
       OutputDecodeOpT output_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1427,9 +1422,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1460,7 +1455,7 @@ public:
    *
    * @param d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When NULL, the required allocation size is written to `temp_storage_bytes` and
+   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
    *   no work is done.
    *
    * @param temp_storage_bytes
@@ -1508,9 +1503,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
@@ -1531,10 +1526,10 @@ public:
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      typedef PassThruTransform PrivatizedDecodeOpT;
+      using PrivatizedDecodeOpT = PassThruTransform;
 
       // Use the scale transform op for converting privatized bins to output bins
-      typedef ScaleTransform OutputDecodeOpT;
+      using OutputDecodeOpT = ScaleTransform;
 
       int num_privatized_levels[NUM_ACTIVE_CHANNELS];
       PrivatizedDecodeOpT privatized_decode_op[NUM_ACTIVE_CHANNELS]{};
@@ -1596,9 +1591,9 @@ public:
     size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     CounterT* d_output_histograms[NUM_ACTIVE_CHANNELS],
-    int num_output_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
+    const int num_output_levels[NUM_ACTIVE_CHANNELS],
+    const LevelT lower_level[NUM_ACTIVE_CHANNELS],
+    const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,

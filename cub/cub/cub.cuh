@@ -64,6 +64,7 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_histogram.cuh>
 #include <cub/device/device_memcpy.cuh>
+#include <cub/device/device_merge.cuh>
 #include <cub/device/device_merge_sort.cuh>
 #include <cub/device/device_partition.cuh>
 #include <cub/device/device_radix_sort.cuh>
@@ -105,7 +106,6 @@
 #include <cub/iterator/counting_input_iterator.cuh>
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/iterator/tex_obj_input_iterator.cuh>
-#include <cub/iterator/tex_ref_input_iterator.cuh>
 #include <cub/iterator/transform_input_iterator.cuh>
 
 // Util

@@ -102,19 +102,19 @@ public:
   // Required iterator traits
 
   /// My own type
-  typedef CountingInputIterator self_type;
+  using self_type = CountingInputIterator;
 
   /// Type to express the result of subtracting one iterator from another
-  typedef OffsetT difference_type;
+  using difference_type = OffsetT;
 
   /// The type of the element the iterator can point to
-  typedef ValueType value_type;
+  using value_type = ValueType;
 
   /// The type of a pointer to an element the iterator can point to
-  typedef ValueType* pointer;
+  using pointer = ValueType*;
 
   /// The type of a reference to an element the iterator can point to
-  typedef ValueType reference;
+  using reference = ValueType;
 
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  if (THRUST_VERSION >= 100700)

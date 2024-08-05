@@ -1,0 +1,98 @@
+name: "Run Windows Job"
+description: "Run a job on a Windows runner."
+
+inputs:
+  id:
+    description: "A unique identifier."
+    required: true
+  command:
+    description: "The command to run."
+    required: true
+  image:
+    description: "The Docker image to use."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure env
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
+    - name: Get AWS credentials for sccache bucket
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+        aws-region: us-east-2
+        role-duration-seconds: 43200 # 12 hours
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        path: ${{github.event.repository.name}}
+        persist-credentials: false
+    - name: Fetch ${{ inputs.image }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: docker pull ${{ inputs.image }}
+    - name: Prepare paths for docker
+      shell: powershell
+      id: paths
+      run: |
+        echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        cat $env:GITHUB_OUTPUT
+    - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        docker run \
+          --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
+          --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
+          ${{ inputs.image }} \
+          powershell -c "
+            [System.Environment]::SetEnvironmentVariable('AWS_ACCESS_KEY_ID','${{env.AWS_ACCESS_KEY_ID}}');
+            [System.Environment]::SetEnvironmentVariable('AWS_SECRET_ACCESS_KEY','${{env.AWS_SECRET_ACCESS_KEY}}');
+            [System.Environment]::SetEnvironmentVariable('AWS_SESSION_TOKEN','${{env.AWS_SESSION_TOKEN }}');
+            [System.Environment]::SetEnvironmentVariable('SCCACHE_BUCKET','${{env.SCCACHE_BUCKET}}');
+            [System.Environment]::SetEnvironmentVariable('SCCACHE_REGION','${{env.SCCACHE_REGION}}');
+            [System.Environment]::SetEnvironmentVariable('SCCACHE_IDLE_TIMEOUT','${{env.SCCACHE_IDLE_TIMEOUT}}');
+            [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_USE_SSL','${{env.SCCACHE_S3_USE_SSL}}');
+            [System.Environment]::SetEnvironmentVariable('SCCACHE_S3_NO_CREDENTIALS','${{env.SCCACHE_S3_NO_CREDENTIALS}}');
+            git config --global --add safe.directory '${{steps.paths.outputs.MOUNT_REPO}}';
+            ${{inputs.command}}"
+    - name: Prepare job artifacts
+      shell: bash --noprofile --norc -euo pipefail {0}
+      id: done
+      run: |
+        echo "SUCCESS=true" | tee -a "${GITHUB_OUTPUT}"
+
+        result_dir="jobs/${{inputs.id}}"
+        mkdir -p "$result_dir"
+
+        touch "$result_dir/success"
+
+        # Finds a matching file in the repo directory and copies it to the results directory.
+        find_and_copy() {
+          filename="$1"
+          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
+          if [[ -z "$filepath" ]]; then
+            echo "${filename} does not exist in repo directory."
+            return 1
+          fi
+          cp -v "$filepath" "$result_dir"
+        }
+
+        find_and_copy "sccache_stats.json" || true # Ignore failures
+
+        echo "::group::Job artifacts"
+        find "$result_dir" # Tree not available in this image.
+        echo "::endgroup::"
+
+    - name: Upload job artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: jobs-${{inputs.id}}
+        path: jobs
+        compression-level: 0

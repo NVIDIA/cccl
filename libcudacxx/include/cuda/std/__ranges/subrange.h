@@ -78,12 +78,8 @@ concept __pair_like = !is_reference_v<_Tp> && requires(_Tp __t) {
   requires derived_from<tuple_size<_Tp>, integral_constant<size_t, 2>>;
   typename tuple_element_t<0, remove_const_t<_Tp>>;
   typename tuple_element_t<1, remove_const_t<_Tp>>;
-  {
-    _CUDA_VSTD::get<0>(__t)
-  } -> convertible_to<const tuple_element_t<0, _Tp>&>;
-  {
-    _CUDA_VSTD::get<1>(__t)
-  } -> convertible_to<const tuple_element_t<1, _Tp>&>;
+  { _CUDA_VSTD::get<0>(__t) } -> convertible_to<const tuple_element_t<0, _Tp>&>;
+  { _CUDA_VSTD::get<1>(__t) } -> convertible_to<const tuple_element_t<1, _Tp>&>;
 };
 
 template <class _Pair, class _Iter, class _Sent>
@@ -134,13 +130,14 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT __convertible_to_non_slicing = _LIBCUDACXX_FRAGMENT(__convertible_to_non_slicing_, _From, _To);
 
+// We relax the requirement on tuple_size due to a gcc issue
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __pair_like_,
   requires(_Tp __t)(
     requires(!is_reference_v<_Tp>),
     typename(typename tuple_size<_Tp>::type),
-    requires(tuple_size<_Tp>::value == 2), // relaxed because of gcc issues
+    requires(tuple_size<_Tp>::value == 2),
     typename(tuple_element_t<0, remove_const_t<_Tp>>),
     typename(tuple_element_t<1, remove_const_t<_Tp>>),
     requires(convertible_to<decltype(_CUDA_VSTD::get<0>(__t)), const tuple_element_t<0, _Tp>&>),
@@ -257,8 +254,8 @@ public:
   = default;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
   template <class _It = _Iter, enable_if_t<default_initializable<_It>, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange() noexcept(
-    is_nothrow_default_constructible_v<_It>)
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
       : view_interface<subrange<_Iter, _Sent, _Kind>>(){};
 #  endif // _CCCL_STD_VER <= 2017
 
@@ -300,8 +297,8 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(
-    _Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
@@ -316,7 +313,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(copyable<_It>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin() const
   {
     return __begin_;
   }
@@ -328,7 +325,7 @@ public:
     return _CUDA_VSTD::move(__begin_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Sent end() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Sent end() const
   {
     return __end_;
   }
@@ -414,8 +411,8 @@ _CCCL_HOST_DEVICE subrange(_Iter, _Sent) -> subrange<_Iter, _Sent>;
 
 _LIBCUDACXX_TEMPLATE(class _Iter, class _Sent)
 _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Iter> _LIBCUDACXX_AND sentinel_for<_Sent, _Iter>)
-_CCCL_HOST_DEVICE subrange(_Iter, _Sent, make_unsigned_t<iter_difference_t<_Iter>>)
-  -> subrange<_Iter, _Sent, subrange_kind::sized>;
+_CCCL_HOST_DEVICE
+subrange(_Iter, _Sent, make_unsigned_t<iter_difference_t<_Iter>>) -> subrange<_Iter, _Sent, subrange_kind::sized>;
 
 _LIBCUDACXX_TEMPLATE(class _Range)
 _LIBCUDACXX_REQUIRES(borrowed_range<_Range>)
@@ -444,8 +441,8 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int>>
 #  endif // _CCCL_STD_VER <= 2017
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(
-  const subrange<_Iter, _Sent, _Kind>& __subrange)
+_LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
 {
   if constexpr (_Index == 0)
   {

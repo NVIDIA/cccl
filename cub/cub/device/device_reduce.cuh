@@ -59,7 +59,7 @@ CUB_NAMESPACE_BEGIN
 //! a reduction across a sequence of data items residing within
 //! device-accessible memory.
 //!
-//! .. image:: ../img/reduce_logo.png
+//! .. image:: ../../img/reduce_logo.png
 //!     :align: center
 //!
 //! Overview
@@ -125,7 +125,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Reduce(
   //!      d_temp_storage, temp_storage_bytes,
@@ -254,7 +254,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Sum(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
@@ -374,7 +374,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Min(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items);
@@ -503,7 +503,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_argmin, num_items);
   //!
@@ -630,7 +630,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_max, num_items);
   //!
@@ -761,7 +761,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMax(
   //!      d_temp_storage, temp_storage_bytes, d_in, d_argmax, num_items);
@@ -1035,7 +1035,7 @@ struct DeviceReduce
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
@@ -1053,7 +1053,7 @@ struct DeviceReduce
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
+  //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ReduceByKey(
   //!      d_temp_storage, temp_storage_bytes,
@@ -1160,7 +1160,7 @@ struct DeviceReduce
     // Selection op (not used)
 
     // Default == operator
-    typedef Equality EqualityOp;
+    using EqualityOp = Equality;
 
     return DispatchReduceByKey<
       KeysInputIteratorT,

@@ -7,7 +7,7 @@
 template <typename T>
 struct is_equal_div_10_unique
 {
-  __host__ __device__ bool operator()(const T x, const T& y) const
+  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
   }
@@ -66,13 +66,13 @@ __global__ void unique_by_key_kernel(
 template <typename ExecutionPolicy>
 void TestUniqueByKeyDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector keys;
   Vector values;
 
-  typedef thrust::pair<typename Vector::iterator, typename Vector::iterator> iter_pair;
+  using iter_pair = thrust::pair<typename Vector::iterator, typename Vector::iterator>;
   thrust::device_vector<iter_pair> new_last_vec(1);
   iter_pair new_last;
 
@@ -148,13 +148,13 @@ DECLARE_UNITTEST(TestUniqueByKeyDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector keys;
   Vector values;
 
-  typedef thrust::pair<Vector::iterator, Vector::iterator> iter_pair;
+  using iter_pair = thrust::pair<Vector::iterator, Vector::iterator>;
   iter_pair new_last;
 
   // basic test
@@ -256,13 +256,13 @@ __global__ void unique_by_key_copy_kernel(
 template <typename ExecutionPolicy>
 void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector keys;
   Vector values;
 
-  typedef thrust::pair<typename Vector::iterator, typename Vector::iterator> iter_pair;
+  using iter_pair = thrust::pair<typename Vector::iterator, typename Vector::iterator>;
   thrust::device_vector<iter_pair> new_last_vec(1);
   iter_pair new_last;
 
@@ -349,13 +349,13 @@ DECLARE_UNITTEST(TestUniqueCopyByKeyDeviceNoSync);
 template <typename ExecutionPolicy>
 void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector keys;
   Vector values;
 
-  typedef thrust::pair<Vector::iterator, Vector::iterator> iter_pair;
+  using iter_pair = thrust::pair<Vector::iterator, Vector::iterator>;
   iter_pair new_last;
 
   // basic test

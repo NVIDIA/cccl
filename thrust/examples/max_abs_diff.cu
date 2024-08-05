@@ -5,11 +5,13 @@
 #include <cmath>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // this example computes the maximum absolute difference
 // between the elements of two vectors
 
 template <typename T>
-struct abs_diff : public thrust::binary_function<T, T, T>
+struct abs_diff
 {
   __host__ __device__ T operator()(const T& a, const T& b)
   {

@@ -83,7 +83,7 @@ struct atomic_ref : public _CUDA_VSTD::__atomic_ref_impl<_Tp, _Sco>
 
   static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
 
-  _LIBCUDACXX_INLINE_VISIBILITY explicit atomic_ref(_Tp& __ref)
+  _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr atomic_ref(_Tp& __ref)
       : _CUDA_VSTD::__atomic_ref_impl<_Tp, _Sco>(__ref)
   {}
 

@@ -68,11 +68,11 @@ namespace detail
 /**
  * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
  */
-template <bool KeepRejects>
+template <bool KeepRejects, bool MayAlias>
 struct agent_select_if_wrapper_t
 {
   // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
-  // argument following a parameter pack expansion like `AgentSelectIf<Ts..., KeepRejects>`
+  // argument following a parameter pack expansion like `AgentSelectIf<Ts..., KeepRejects, MayAlias>`
   template <typename AgentSelectIfPolicyT,
             typename InputIteratorT,
             typename FlagsInputIteratorT,
@@ -88,7 +88,8 @@ struct agent_select_if_wrapper_t
                              SelectOpT,
                              EqualityOpT,
                              OffsetT,
-                             KeepRejects>
+                             KeepRejects,
+                             MayAlias>
   {
     using AgentSelectIf<AgentSelectIfPolicyT,
                         InputIteratorT,
@@ -97,7 +98,8 @@ struct agent_select_if_wrapper_t
                         SelectOpT,
                         EqualityOpT,
                         OffsetT,
-                        KeepRejects>::AgentSelectIf;
+                        KeepRejects,
+                        MayAlias>::AgentSelectIf;
   };
 };
 } // namespace detail
@@ -182,11 +184,12 @@ template <typename ChainedPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
-          bool KEEP_REJECTS>
+          bool KEEP_REJECTS,
+          bool MayAlias>
 __launch_bounds__(int(
   cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -207,7 +210,7 @@ __launch_bounds__(int(
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -287,8 +290,6 @@ struct DispatchSelectIf : SelectedPolicy
   /******************************************************************************
    * Types and constants
    ******************************************************************************/
-
-  // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
@@ -401,7 +402,7 @@ struct DispatchSelectIf : SelectedPolicy
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+      detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
       InputIteratorT,
       FlagsInputIteratorT,
       SelectedOutputIteratorT,
@@ -570,16 +571,18 @@ struct DispatchSelectIf : SelectedPolicy
 
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceSelectSweepKernel<MaxPolicyT,
-                              InputIteratorT,
-                              FlagsInputIteratorT,
-                              SelectedOutputIteratorT,
-                              NumSelectedIteratorT,
-                              ScanTileStateT,
-                              SelectOpT,
-                              EqualityOpT,
-                              OffsetT,
-                              KEEP_REJECTS>);
+      DeviceSelectSweepKernel<
+        MaxPolicyT,
+        InputIteratorT,
+        FlagsInputIteratorT,
+        SelectedOutputIteratorT,
+        NumSelectedIteratorT,
+        ScanTileStateT,
+        SelectOpT,
+        EqualityOpT,
+        OffsetT,
+        KEEP_REJECTS,
+        MayAlias>);
   }
 
   /**

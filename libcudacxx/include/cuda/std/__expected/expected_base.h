@@ -518,17 +518,24 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
   }
 };
 
-template <class _Tp,
-          class _Err,
-          bool = (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)>
+template <class _Tp, class _Err>
+_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __expected_can_copy_construct =
+  (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)
+    ? __smf_availability::__trivial
+  : (_CCCL_TRAIT(is_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_copy_constructible, _Err)
+    ? __smf_availability::__available
+    : __smf_availability::__deleted;
+
+template <class _Tp, class _Err, __smf_availability = __expected_can_copy_construct<_Tp, _Err>>
 struct __expected_copy : __expected_storage<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
-struct __expected_copy<_Tp, _Err, false> : __expected_storage<_Tp, _Err>
+struct __expected_copy<_Tp, _Err, __smf_availability::__available> : __expected_storage<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
@@ -551,17 +558,35 @@ struct __expected_copy<_Tp, _Err, false> : __expected_storage<_Tp, _Err>
   __expected_copy& operator=(__expected_copy&&)      = default;
 };
 
-template <class _Tp,
-          class _Err,
-          bool = (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_move_constructible, _Err)>
+template <class _Tp, class _Err>
+struct __expected_copy<_Tp, _Err, __smf_availability::__deleted> : __expected_storage<_Tp, _Err>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
+
+  __expected_copy(const __expected_copy&)            = delete;
+  __expected_copy(__expected_copy&&)                 = default;
+  __expected_copy& operator=(const __expected_copy&) = default;
+  __expected_copy& operator=(__expected_copy&&)      = default;
+};
+
+template <class _Tp, class _Err>
+_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __expected_can_move_construct =
+  (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_move_constructible, _Err)
+    ? __smf_availability::__trivial
+  : (_CCCL_TRAIT(is_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_move_constructible, _Err)
+    ? __smf_availability::__available
+    : __smf_availability::__deleted;
+
+template <class _Tp, class _Err, __smf_availability = __expected_can_move_construct<_Tp, _Err>>
 struct __expected_move : __expected_copy<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
-struct __expected_move<_Tp, _Err, false> : __expected_copy<_Tp, _Err>
+struct __expected_move<_Tp, _Err, __smf_availability::__available> : __expected_copy<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 
@@ -585,21 +610,46 @@ struct __expected_move<_Tp, _Err, false> : __expected_copy<_Tp, _Err>
   __expected_move& operator=(__expected_move&&)      = default;
 };
 
-template <class _Tp,
-          class _Err,
-          bool = (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_destructible, _Err)
-              && (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)
-              && (_CCCL_TRAIT(is_trivially_copy_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_copy_assignable, _Err)>
+template <class _Tp, class _Err>
+struct __expected_move<_Tp, _Err, __smf_availability::__deleted> : __expected_copy<_Tp, _Err>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
+
+  __expected_move(const __expected_move&)            = default;
+  __expected_move(__expected_move&&)                 = delete;
+  __expected_move& operator=(const __expected_move&) = default;
+  __expected_move& operator=(__expected_move&&)      = default;
+};
+
+// Need to also check against is_nothrow_move_constructible in the trivial case as that is stupidly in the constraints
+template <class _Tp, class _Err>
+_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __expected_can_copy_assign =
+  (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_destructible, _Err)
+      && (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)
+      && (_CCCL_TRAIT(is_trivially_copy_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_copy_assignable, _Err)
+      && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void)
+          || _CCCL_TRAIT(is_nothrow_move_constructible, _Err))
+    ? __smf_availability::__trivial
+  : (_CCCL_TRAIT(is_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_copy_constructible, _Err)
+      && (_CCCL_TRAIT(is_copy_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_copy_assignable, _Err)
+      && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void)
+          || _CCCL_TRAIT(is_nothrow_move_constructible, _Err))
+    ? __smf_availability::__available
+    : __smf_availability::__deleted;
+
+template <class _Tp, class _Err, __smf_availability = __expected_can_copy_assign<_Tp, _Err>>
 struct __expected_copy_assign : __expected_move<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
-struct __expected_copy_assign<_Tp, _Err, false> : __expected_move<_Tp, _Err>
+struct __expected_copy_assign<_Tp, _Err, __smf_availability::__available> : __expected_move<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 
@@ -636,21 +686,43 @@ struct __expected_copy_assign<_Tp, _Err, false> : __expected_move<_Tp, _Err>
   __expected_copy_assign& operator=(__expected_copy_assign&&) = default;
 };
 
-template <class _Tp,
-          class _Err,
-          bool = (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_destructible, _Err)
-              && (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_move_constructible, _Err)
-              && (_CCCL_TRAIT(is_trivially_move_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
-              && _CCCL_TRAIT(is_trivially_move_assignable, _Err)>
+template <class _Tp, class _Err>
+struct __expected_copy_assign<_Tp, _Err, __smf_availability::__deleted> : __expected_move<_Tp, _Err>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
+
+  __expected_copy_assign(const __expected_copy_assign&)            = default;
+  __expected_copy_assign(__expected_copy_assign&&)                 = default;
+  __expected_copy_assign& operator=(const __expected_copy_assign&) = delete;
+  __expected_copy_assign& operator=(__expected_copy_assign&&)      = default;
+};
+
+template <class _Tp, class _Err>
+_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __expected_can_move_assign =
+  (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_destructible, _Err)
+      && (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_move_constructible, _Err)
+      && (_CCCL_TRAIT(is_trivially_move_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_trivially_move_assignable, _Err)
+    ? __smf_availability::__trivial
+  : (_CCCL_TRAIT(is_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_move_constructible, _Err)
+      && (_CCCL_TRAIT(is_move_assignable, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
+      && _CCCL_TRAIT(is_move_assignable, _Err)
+      && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void)
+          || _CCCL_TRAIT(is_nothrow_move_constructible, _Err))
+    ? __smf_availability::__available
+    : __smf_availability::__deleted;
+
+template <class _Tp, class _Err, __smf_availability = __expected_can_move_assign<_Tp, _Err>>
 struct __expected_move_assign : __expected_copy_assign<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
-struct __expected_move_assign<_Tp, _Err, false> : __expected_copy_assign<_Tp, _Err>
+struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __expected_copy_assign<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
@@ -687,18 +759,15 @@ struct __expected_move_assign<_Tp, _Err, false> : __expected_copy_assign<_Tp, _E
 };
 
 template <class _Tp, class _Err>
-using __expected_sfinae_ctor_base_t =
-  __sfinae_ctor_base<_CCCL_TRAIT(is_copy_constructible, _Tp) && _CCCL_TRAIT(is_copy_constructible, _Err),
-                     _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_constructible, _Err)>;
+struct __expected_move_assign<_Tp, _Err, __smf_availability::__deleted> : __expected_copy_assign<_Tp, _Err>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
-template <class _Tp, class _Err>
-using __expected_sfinae_assign_base_t = __sfinae_assign_base<
-  _CCCL_TRAIT(is_copy_constructible, _Tp) && _CCCL_TRAIT(is_copy_constructible, _Err)
-    && _CCCL_TRAIT(is_copy_assignable, _Tp) && _CCCL_TRAIT(is_copy_assignable, _Err)
-    && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err)),
-  _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_constructible, _Err)
-    && _CCCL_TRAIT(is_move_assignable, _Tp) && _CCCL_TRAIT(is_move_assignable, _Err)
-    && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err))>;
+  __expected_move_assign(const __expected_move_assign&)            = default;
+  __expected_move_assign(__expected_move_assign&&)                 = default;
+  __expected_move_assign& operator=(const __expected_move_assign&) = default;
+  __expected_move_assign& operator=(__expected_move_assign&&)      = delete;
+};
 
 // expected<void, E> base classtemplate <class _Tp, class _Err>
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
@@ -863,7 +932,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 };
 
 template <class _Err>
-struct __expected_copy<void, _Err, false> : __expected_storage<void, _Err>
+struct __expected_copy<void, _Err, __smf_availability::__available> : __expected_storage<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
 
@@ -883,7 +952,7 @@ struct __expected_copy<void, _Err, false> : __expected_storage<void, _Err>
 };
 
 template <class _Err>
-struct __expected_move<void, _Err, false> : __expected_copy<void, _Err>
+struct __expected_move<void, _Err, __smf_availability::__available> : __expected_copy<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, void, _Err);
 
@@ -904,7 +973,7 @@ struct __expected_move<void, _Err, false> : __expected_copy<void, _Err>
 };
 
 template <class _Err>
-struct __expected_copy_assign<void, _Err, false> : __expected_move<void, _Err>
+struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __expected_move<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, void, _Err);
 
@@ -940,7 +1009,7 @@ struct __expected_copy_assign<void, _Err, false> : __expected_move<void, _Err>
 };
 
 template <class _Err>
-struct __expected_move_assign<void, _Err, false> : __expected_copy_assign<void, _Err>
+struct __expected_move_assign<void, _Err, __smf_availability::__available> : __expected_copy_assign<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, void, _Err);
 
@@ -973,15 +1042,6 @@ struct __expected_move_assign<void, _Err, false> : __expected_copy_assign<void, 
     return *this;
   }
 };
-
-template <class _Err>
-using __expected_void_sfinae_ctor_base_t =
-  __sfinae_ctor_base<_CCCL_TRAIT(is_copy_constructible, _Err), _CCCL_TRAIT(is_move_constructible, _Err)>;
-
-template <class _Err>
-using __expected_void_sfinae_assign_base_t =
-  __sfinae_assign_base<_CCCL_TRAIT(is_copy_constructible, _Err) && _CCCL_TRAIT(is_copy_assignable, _Err),
-                       _CCCL_TRAIT(is_move_constructible, _Err) && _CCCL_TRAIT(is_move_assignable, _Err)>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

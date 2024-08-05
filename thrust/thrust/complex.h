@@ -40,10 +40,10 @@
 
 #if THRUST_CPP_DIALECT >= 2011
 #  define THRUST_STD_COMPLEX_REAL(z) \
-    reinterpret_cast<const typename thrust::detail::remove_reference<decltype(z)>::type::value_type(&)[2]>(z)[0]
+    reinterpret_cast<const typename ::cuda::std::__libcpp_remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
 #  define THRUST_STD_COMPLEX_IMAG(z) \
-    reinterpret_cast<const typename thrust::detail::remove_reference<decltype(z)>::type::value_type(&)[2]>(z)[1]
-#  define THRUST_STD_COMPLEX_DEVICE __device__
+    reinterpret_cast<const typename ::cuda::std::__libcpp_remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[1]
+#  define THRUST_STD_COMPLEX_DEVICE _CCCL_DEVICE
 #else
 #  define THRUST_STD_COMPLEX_REAL(z) (z).real()
 #  define THRUST_STD_COMPLEX_IMAG(z) (z).imag()
@@ -175,7 +175,7 @@ struct complex
 public:
   /*! \p value_type is the type of \p complex's real and imaginary parts.
    */
-  typedef T value_type;
+  using value_type = T;
 
   /* --- Constructors --- */
 
@@ -231,7 +231,7 @@ public:
    *
    *  \param z The \p complex to copy from.
    */
-  __host__ THRUST_STD_COMPLEX_DEVICE complex(const std::complex<T>& z);
+  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const std::complex<T>& z);
 
   /*! This converting copy constructor copies from a <tt>std::complex</tt> with
    *  a type that is convertible to this \p complex's \c value_type.
@@ -241,7 +241,7 @@ public:
    *  \tparam U is convertible to \c value_type.
    */
   template <typename U>
-  __host__ THRUST_STD_COMPLEX_DEVICE complex(const std::complex<U>& z);
+  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const std::complex<U>& z);
 
   /* --- Assignment Operators --- */
 
@@ -283,7 +283,7 @@ public:
    *
    *  \param z The \p complex to copy from.
    */
-  __host__ THRUST_STD_COMPLEX_DEVICE complex& operator=(const std::complex<T>& z);
+  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const std::complex<T>& z);
 
   /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
    *  \p complex respectively.
@@ -293,7 +293,7 @@ public:
    *  \tparam U is convertible to \c value_type.
    */
   template <typename U>
-  __host__ THRUST_STD_COMPLEX_DEVICE complex& operator=(const std::complex<U>& z);
+  _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const std::complex<U>& z);
 
   /* --- Compound Assignment Operators --- */
 
@@ -455,7 +455,7 @@ public:
 
   /*! Casts this \p complex to a <tt>std::complex</tt> of the same type.
    */
-  __host__ operator std::complex<T>() const
+  _CCCL_HOST operator std::complex<T>() const
   {
     return std::complex<T>(real(), imag());
   }
@@ -500,8 +500,7 @@ _CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z);
  *  \param theta The phase of the returned \p complex in radians.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-polar(const T0& m, const T1& theta = T1());
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> polar(const T0& m, const T1& theta = T1());
 
 /*! Returns the projection of a \p complex on the Riemann sphere.
  *  For all finite \p complex it returns the argument. For \p complexs
@@ -524,8 +523,7 @@ _CCCL_HOST_DEVICE complex<T> proj(const T& z);
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y);
 
 /*! Adds a scalar to a \p complex number.
  *
@@ -536,8 +534,7 @@ operator+(const complex<T0>& x, const complex<T1>& y);
  *  \param y The scalar.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y);
 
 /*! Adds a \p complex number to a scalar.
  *
@@ -548,8 +545,7 @@ operator+(const complex<T0>& x, const T1& y);
  *  \param y The \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator+(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y);
 
 /*! Subtracts two \p complex numbers.
  *
@@ -560,8 +556,7 @@ operator+(const T0& x, const complex<T1>& y);
  *  \param y The second \p complex (subtrahend).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y);
 
 /*! Subtracts a scalar from a \p complex number.
  *
@@ -572,8 +567,7 @@ operator-(const complex<T0>& x, const complex<T1>& y);
  *  \param y The scalar (subtrahend).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y);
 
 /*! Subtracts a \p complex number from a scalar.
  *
@@ -584,8 +578,7 @@ operator-(const complex<T0>& x, const T1& y);
  *  \param y The \p complex (subtrahend).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator-(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y);
 
 /*! Multiplies two \p complex numbers.
  *
@@ -596,8 +589,7 @@ operator-(const T0& x, const complex<T1>& y);
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator*(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y);
 
 /*! Multiplies a \p complex number by a scalar.
  *
@@ -605,8 +597,7 @@ operator*(const complex<T0>& x, const complex<T1>& y);
  *  \param y The scalar.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator*(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y);
 
 /*! Multiplies a scalar by a \p complex number.
  *
@@ -617,8 +608,7 @@ operator*(const complex<T0>& x, const T1& y);
  *  \param y The \p complex.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator*(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y);
 
 /*! Divides two \p complex numbers.
  *
@@ -629,8 +619,7 @@ operator*(const T0& x, const complex<T1>& y);
  *  \param y The denomimator (divisor).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator/(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
 
 /*! Divides a \p complex number by a scalar.
  *
@@ -641,8 +630,7 @@ operator/(const complex<T0>& x, const complex<T1>& y);
  *  \param y The scalar denomimator (divisor).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator/(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
 
 /*! Divides a scalar by a \p complex number.
  *
@@ -653,8 +641,7 @@ operator/(const complex<T0>& x, const T1& y);
  *  \param y The complex denomimator (divisor).
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-operator/(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);
 
 /* --- Unary Arithmetic operators --- */
 
@@ -707,8 +694,7 @@ _CCCL_HOST_DEVICE complex<T> log10(const complex<T>& z);
  *  \param y The exponent.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
-pow(const complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y);
 
 /*! Returns a \p complex number raised to a scalar.
  *
@@ -719,7 +705,7 @@ pow(const complex<T0>& x, const complex<T1>& y);
  *  \param y The exponent.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type> pow(const complex<T0>& x, const T1& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y);
 
 /*! Returns a scalar raised to a \p complex number.
  *
@@ -730,7 +716,7 @@ _CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type
  *  \param y The exponent.
  */
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type> pow(const T0& x, const complex<T1>& y);
+_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y);
 
 /*! Returns the complex square root of a \p complex number.
  *
@@ -872,7 +858,7 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
  *  \param z The \p complex number to set.
  */
 template <typename T, typename CharT, typename Traits>
-__host__ std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
+_CCCL_HOST std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
 
 /* --- Equality Operators --- */
 
@@ -890,7 +876,7 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y);
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-__host__ THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const std::complex<T1>& y);
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const std::complex<T1>& y);
 
 /*! Returns true if two \p complex numbers are equal and false otherwise.
  *
@@ -898,7 +884,7 @@ __host__ THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const s
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-__host__ THRUST_STD_COMPLEX_DEVICE bool operator==(const std::complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const std::complex<T0>& x, const complex<T1>& y);
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -932,7 +918,7 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y);
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-__host__ THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const std::complex<T1>& y);
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const std::complex<T1>& y);
 
 /*! Returns true if two \p complex numbers are different and false otherwise.
  *
@@ -940,7 +926,7 @@ __host__ THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const s
  *  \param y The second \p complex.
  */
 template <typename T0, typename T1>
-__host__ THRUST_STD_COMPLEX_DEVICE bool operator!=(const std::complex<T0>& x, const complex<T1>& y);
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const std::complex<T0>& x, const complex<T1>& y);
 
 /*! Returns true if the imaginary part of the \p complex number is not zero or
  *  the real part is different from the scalar. Returns false otherwise.

@@ -7,7 +7,7 @@
 template <typename T>
 struct less_div_10
 {
-  __host__ __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE bool operator()(const T& lhs, const T& rhs) const
   {
     return ((int) lhs) / 10 < ((int) rhs) / 10;
   }
@@ -92,8 +92,8 @@ void InitializeSimpleStableKeySortTest(Vector& unsorted_keys, Vector& sorted_key
 void TestMergeSortKeySimple()
 {
 #if 0
-    typedef thrust::device_vector<int> Vector;
-    typedef Vector::value_type T;
+    using Vector = thrust::device_vector<int>;
+    using T = Vector::value_type;
 
     Vector unsorted_keys;
     Vector   sorted_keys;
@@ -113,8 +113,8 @@ DECLARE_UNITTEST(TestMergeSortKeySimple);
 void TestMergeSortKeyValueSimple()
 {
 #if 0
-    typedef thrust::device_vector<int> Vector;
-    typedef Vector::value_type T;
+    using Vector = thrust::device_vector<int>;
+    using T = Vector::value_type;
 
     Vector unsorted_keys, unsorted_values;
     Vector   sorted_keys,   sorted_values;
@@ -135,8 +135,8 @@ DECLARE_UNITTEST(TestMergeSortKeyValueSimple);
 void TestMergeSortStableKeySimple()
 {
 #if 0
-    typedef thrust::device_vector<int> Vector;
-    typedef Vector::value_type T;
+    using Vector = thrust::device_vector<int>;
+    using T = Vector::value_type;
 
     Vector unsorted_keys;
     Vector   sorted_keys;
@@ -225,7 +225,7 @@ template <typename U>
 void TestMergeSortKeyValue(size_t n)
 {
 #if 0
-  typedef key_value<U,U> T;
+  using T = key_value<U,U>;
 
   thrust::host_vector<U> h_keys   = unittest::random_integers<U>(n);
   thrust::host_vector<U> h_values = unittest::random_integers<U>(n);

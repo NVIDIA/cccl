@@ -9,13 +9,13 @@
 template <typename T>
 struct reference
 {
-  typedef T& type;
+  using type = T&;
 };
 
 template <>
 struct reference<void>
 {
-  typedef void type;
+  using type = void;
 };
 
 struct unit
@@ -30,7 +30,7 @@ struct tracked_pointer
                               typename reference<T>::type,
                               std::ptrdiff_t>
 {
-  typedef T* raw_pointer;
+  using raw_pointer = T*;
 
   std::size_t id;
   std::size_t size;
@@ -38,7 +38,7 @@ struct tracked_pointer
   std::size_t offset;
   void* ptr;
 
-  __host__ __device__ explicit tracked_pointer(T* ptr = NULL)
+  _CCCL_HOST_DEVICE explicit tracked_pointer(T* ptr = nullptr)
       : id()
       , size()
       , alignment()
@@ -46,7 +46,7 @@ struct tracked_pointer
       , ptr(ptr)
   {}
 
-  __host__ __device__ ~tracked_pointer() {}
+  _CCCL_HOST_DEVICE ~tracked_pointer() {}
 
   template <typename U>
   operator tracked_pointer<U>() const
@@ -60,40 +60,40 @@ struct tracked_pointer
     return ret;
   }
 
-  __host__ __device__ std::ptrdiff_t distance_to(const tracked_pointer& other) const
+  _CCCL_HOST_DEVICE std::ptrdiff_t distance_to(const tracked_pointer& other) const
   {
     return static_cast<T*>(other.ptr) - static_cast<T*>(ptr);
   }
 
-  __host__ __device__ T* get() const
+  _CCCL_HOST_DEVICE T* get() const
   {
     return static_cast<T*>(ptr);
   }
 
   // globally qualified, because MSVC somehow prefers the name from the dependent base
   // of this class over the `reference` template that's visible in the global namespace of this file...
-  __host__ __device__ typename ::reference<T>::type dereference() const
+  _CCCL_HOST_DEVICE typename ::reference<T>::type dereference() const
   {
     return *get();
   }
 
-  __host__ __device__ void increment()
+  _CCCL_HOST_DEVICE void increment()
   {
     advance(1);
   }
 
-  __host__ __device__ void decrement()
+  _CCCL_HOST_DEVICE void decrement()
   {
     advance(-1);
   }
 
-  __host__ __device__ void advance(std::ptrdiff_t diff)
+  _CCCL_HOST_DEVICE void advance(std::ptrdiff_t diff)
   {
     ptr = get() + diff;
     offset += diff * sizeof(T);
   }
 
-  __host__ __device__ bool equal(const tracked_pointer& other) const
+  _CCCL_HOST_DEVICE bool equal(const tracked_pointer& other) const
   {
     return id == other.id && size == other.size && alignment == other.alignment && offset == other.offset
         && ptr == other.ptr;
@@ -161,7 +161,7 @@ void TestPool()
 
   upstream.id_to_allocate = -1u;
 
-  typedef PoolTemplate<tracked_resource> Pool;
+  using Pool = PoolTemplate<tracked_resource>;
 
   thrust::mr::pool_options opts = Pool::get_default_options();
   opts.cache_oversized          = false;
@@ -251,7 +251,7 @@ void TestPoolCachingOversized()
 
   upstream.id_to_allocate = -1u;
 
-  typedef PoolTemplate<tracked_resource> Pool;
+  using Pool = PoolTemplate<tracked_resource>;
 
   thrust::mr::pool_options opts = Pool::get_default_options();
   opts.cache_oversized          = true;
@@ -356,9 +356,9 @@ DECLARE_UNITTEST(TestSynchronizedPoolCachingOversized);
 template <template <typename> class PoolTemplate>
 void TestGlobalPool()
 {
-  typedef PoolTemplate<thrust::mr::new_delete_resource> Pool;
+  using Pool = PoolTemplate<thrust::mr::new_delete_resource>;
 
-  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != NULL, true);
+  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }
 
 void TestUnsynchronizedGlobalPool()

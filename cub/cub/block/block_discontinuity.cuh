@@ -28,7 +28,7 @@
 
 /**
  * @file
- * The cub::BlockDiscontinuity class provides [<em>collective</em>](index.html#sec0) methods for
+ * The cub::BlockDiscontinuity class provides [<em>collective</em>](../index.html#sec0) methods for
  * flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
  */
 
@@ -84,7 +84,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-//!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+//!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
 //!
 //!        // Allocate shared memory for BlockDiscontinuity
 //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -149,7 +149,7 @@ private:
   }
 
   /// Specialization for when FlagOp has third index param
-  template <typename FlagOp, bool HAS_PARAM = BinaryOpHasIdxParam<T, FlagOp>::HAS_PARAM>
+  template <typename FlagOp, bool HAS_PARAM = BinaryOpHasIdxParam<T, FlagOp>::value>
   struct ApplyOp
   {
     // Apply flag operator
@@ -377,7 +377,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -450,7 +450,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -539,7 +539,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -627,7 +627,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -732,7 +732,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -744,7 +744,7 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
   //!            head_flags, tail_flags, thread_data, cub::Inequality());
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -850,7 +850,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -866,7 +866,7 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
   //!            head_flags, tail_flags, tile_successor_item, thread_data, cub::Inequality());
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -979,7 +979,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -999,7 +999,7 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
   //!            head_flags, tile_predecessor_item, tail_flags, tile_successor_item,
   //!            thread_data, cub::Inequality());
   //!
@@ -1108,7 +1108,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        typedef cub::BlockDiscontinuity<int, 128> BlockDiscontinuity;
+  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
   //!        // Allocate shared memory for BlockDiscontinuity
   //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
@@ -1128,7 +1128,7 @@ public:
   //!        // Collectively compute head and flags for discontinuities in the segment
   //!        int head_flags[4];
   //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(
+  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(
   //!            head_flags, tile_predecessor_item, tail_flags, tile_successor_item,
   //!            thread_data, cub::Inequality());
   //!

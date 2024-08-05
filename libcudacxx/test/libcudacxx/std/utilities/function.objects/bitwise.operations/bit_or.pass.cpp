@@ -51,7 +51,7 @@ int main(int, char**)
   assert(f(0x58D3, 0xEA95) == 0xFAD7);
   assert(f(0x58D3, 0) == 0x58D3);
   assert(f(0xFFFF, 0x58D3) == 0xFFFF);
-#if TEST_STD_VER > 2011
+
   typedef cuda::std::bit_or<> F2;
   const F2 f2 = F2();
   assert(f2(0xEA95, 0xEA95) == 0xEA95);
@@ -73,7 +73,7 @@ int main(int, char**)
   assert(f2(0xFFFF, 0x58D3) == 0xFFFF);
   assert(f2(0xFFFFL, 0x58D3) == 0xFFFF);
   assert(f2(0xFFFF, 0x58D3L) == 0xFFFF);
-
+#if TEST_STD_VER > 2011
   constexpr int foo = cuda::std::bit_or<int>()(0x58D3, 0xEA95);
   static_assert(foo == 0xFAD7, "");
 

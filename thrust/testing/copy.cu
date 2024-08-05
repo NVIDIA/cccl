@@ -19,7 +19,7 @@
 
 void TestCopyFromConstIterator()
 {
-  typedef int T;
+  using T = int;
 
   std::vector<T> v(5);
   v[0] = 0;
@@ -55,7 +55,7 @@ DECLARE_UNITTEST(TestCopyFromConstIterator);
 
 void TestCopyToDiscardIterator()
 {
-  typedef int T;
+  using T = int;
 
   thrust::host_vector<T> h_input(5, 1);
   thrust::device_vector<T> d_input = h_input;
@@ -75,7 +75,7 @@ DECLARE_UNITTEST(TestCopyToDiscardIterator);
 
 void TestCopyToDiscardIteratorZipped()
 {
-  typedef int T;
+  using T = int;
 
   thrust::host_vector<T> h_input(5, 1);
   thrust::device_vector<T> d_input = h_input;
@@ -84,11 +84,11 @@ void TestCopyToDiscardIteratorZipped()
   thrust::device_vector<T> d_output(5);
   thrust::discard_iterator<> reference(5);
 
-  typedef thrust::tuple<thrust::discard_iterator<>, thrust::host_vector<T>::iterator> Tuple1;
-  typedef thrust::tuple<thrust::discard_iterator<>, thrust::device_vector<T>::iterator> Tuple2;
+  using Tuple1 = thrust::tuple<thrust::discard_iterator<>, thrust::host_vector<T>::iterator>;
+  using Tuple2 = thrust::tuple<thrust::discard_iterator<>, thrust::device_vector<T>::iterator>;
 
-  typedef thrust::zip_iterator<Tuple1> ZipIterator1;
-  typedef thrust::zip_iterator<Tuple2> ZipIterator2;
+  using ZipIterator1 = thrust::zip_iterator<Tuple1>;
+  using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
   // copy from host_vector
   ZipIterator1 h_result = thrust::copy(
@@ -112,7 +112,7 @@ DECLARE_UNITTEST(TestCopyToDiscardIteratorZipped);
 template <class Vector>
 void TestCopyMatchingTypes()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -202,7 +202,7 @@ DECLARE_UNITTEST(TestCopyVectorBool);
 template <class Vector>
 void TestCopyListTo()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   // copy from list to Vector
   std::list<T> l;
@@ -246,7 +246,7 @@ DECLARE_VECTOR_UNITTEST(TestCopyListTo);
 template <typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return (x & 1) == 0;
   }
@@ -255,7 +255,7 @@ struct is_even
 template <typename T>
 struct is_true
 {
-  __host__ __device__ bool operator()(T x)
+  _CCCL_HOST_DEVICE bool operator()(T x)
   {
     return x ? true : false;
   }
@@ -264,7 +264,7 @@ struct is_true
 template <typename T>
 struct mod_3
 {
-  __host__ __device__ unsigned int operator()(T x)
+  _CCCL_HOST_DEVICE unsigned int operator()(T x)
   {
     return x % 3;
   }
@@ -273,7 +273,7 @@ struct mod_3
 template <class Vector>
 void TestCopyIfSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -401,7 +401,7 @@ DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfSequence);
 template <class Vector>
 void TestCopyIfStencilSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v(5);
   v[0] = 0;
@@ -469,12 +469,12 @@ struct object_with_non_trivial_ctor
   int field;
   int magic;
 
-  __host__ __device__ object_with_non_trivial_ctor()
+  _CCCL_HOST_DEVICE object_with_non_trivial_ctor()
   {
     magic = MAGIC;
     field = 0;
   }
-  __host__ __device__ object_with_non_trivial_ctor(int f)
+  _CCCL_HOST_DEVICE object_with_non_trivial_ctor(int f)
   {
     magic = MAGIC;
     field = f;
@@ -484,7 +484,7 @@ struct object_with_non_trivial_ctor
 
   // This non-trivial assignment requires that `this` points to initialized
   // memory
-  __host__ __device__ object_with_non_trivial_ctor& operator=(const object_with_non_trivial_ctor& x)
+  _CCCL_HOST_DEVICE object_with_non_trivial_ctor& operator=(const object_with_non_trivial_ctor& x)
   {
     // To really copy over x's field value, require we have magic value set.
     // If copy_if copies to uninitialized bits, the field will rarely be 923390.
@@ -498,7 +498,7 @@ struct object_with_non_trivial_ctor
 
 struct always_true
 {
-  __host__ __device__ bool operator()(const object_with_non_trivial_ctor&)
+  _CCCL_HOST_DEVICE bool operator()(const object_with_non_trivial_ctor&)
   {
     return true;
   };
@@ -552,7 +552,7 @@ DECLARE_UNITTEST(TestCopyIfNonTrivial);
 template <typename Vector>
 void TestCopyCountingIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   thrust::counting_iterator<T> iter(1);
 
@@ -570,7 +570,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyCountingIterator);
 template <typename Vector>
 void TestCopyZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3);
   v1[0] = 1;
@@ -595,7 +595,7 @@ DECLARE_VECTOR_UNITTEST(TestCopyZipIterator);
 template <typename Vector>
 void TestCopyConstantIteratorToZipIterator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3, T(0));
   Vector v2(3, T(0));
@@ -730,31 +730,31 @@ struct only_set_when_expected_it
   long long expected;
   bool* flag;
 
-  __host__ __device__ only_set_when_expected_it operator++() const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator++() const
   {
     return *this;
   }
-  __host__ __device__ only_set_when_expected_it operator*() const
-  {
-    return *this;
-  }
-  template <typename Difference>
-  __host__ __device__ only_set_when_expected_it operator+(Difference) const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator*() const
   {
     return *this;
   }
   template <typename Difference>
-  __host__ __device__ only_set_when_expected_it operator+=(Difference) const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator+(Difference) const
+  {
+    return *this;
+  }
+  template <typename Difference>
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator+=(Difference) const
   {
     return *this;
   }
   template <typename Index>
-  __host__ __device__ only_set_when_expected_it operator[](Index) const
+  _CCCL_HOST_DEVICE only_set_when_expected_it operator[](Index) const
   {
     return *this;
   }
 
-  __device__ void operator=(long long value) const
+  _CCCL_DEVICE void operator=(long long value) const
   {
     if (value == expected)
     {
@@ -776,9 +776,9 @@ struct is_non_const_reference<only_set_when_expected_it> : thrust::true_type
 template <>
 struct iterator_traits<only_set_when_expected_it>
 {
-  typedef long long value_type;
-  typedef only_set_when_expected_it reference;
-  typedef thrust::random_access_device_iterator_tag iterator_category;
+  using value_type        = long long;
+  using reference         = only_set_when_expected_it;
+  using iterator_category = thrust::random_access_device_iterator_tag;
 };
 THRUST_NAMESPACE_END
 

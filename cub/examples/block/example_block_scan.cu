@@ -49,7 +49,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 /// Verbose output
@@ -77,14 +77,14 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
 {
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  typedef BlockLoad<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoadT;
+  using BlockLoadT = BlockLoad<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockStore type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  typedef BlockStore<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_STORE_WARP_TRANSPOSE> BlockStoreT;
+  using BlockStoreT = BlockStore<int, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_STORE_WARP_TRANSPOSE>;
 
   // Specialize BlockScan type for our thread block
-  typedef BlockScan<int, BLOCK_THREADS, ALGORITHM> BlockScanT;
+  using BlockScanT = BlockScan<int, BLOCK_THREADS, ALGORITHM>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -167,9 +167,9 @@ void Test()
   int h_aggregate = Initialize(h_in, h_reference, TILE_SIZE);
 
   // Initialize device arrays
-  int* d_in          = NULL;
-  int* d_out         = NULL;
-  clock_t* d_elapsed = NULL;
+  int* d_in          = nullptr;
+  int* d_out         = nullptr;
+  clock_t* d_elapsed = nullptr;
   cudaMalloc((void**) &d_in, sizeof(int) * TILE_SIZE);
   cudaMalloc((void**) &d_out, sizeof(int) * (TILE_SIZE + 1));
   cudaMalloc((void**) &d_elapsed, sizeof(clock_t));

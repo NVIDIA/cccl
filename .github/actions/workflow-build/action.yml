@@ -5,8 +5,8 @@ inputs:
   workflows:
     description: "Space separated list of workflows in matrix file to run"
     required: true
-  skip_tests:
-    description: "Skip running tests"
+  allow_override:
+    description: "If true, the requested `workflows` will be ignored when a non-empty 'override' workflow exists in the matrix file."
     default: "false"
     required: false
   inspect_changes_script:
@@ -25,18 +25,38 @@ inputs:
     description: "Path to the matrix parser script (default if blank: build-workflow.py from action dir)"
     default: ""
     required: false
+  slack_token:
+    description: "The Slack token to use for notifications. No notifications will be sent if not provided."
+    required: false
+  slack_log:
+    description: "Slack channel ID for verbose notifications."
+    required: false
+  slack_alert:
+    description: "Slack channel ID for alert notifications."
+    required: false
 
 outputs:
   workflow:
-    description: "The dispatchable workflow matrix"
-    value: ${{ steps.build-workflow.outputs.workflow }}
-  workflow_keys:
-    description: "The keys of the parsed workflow"
-    value: ${{ steps.build-workflow.outputs.workflow_keys }}
+    description: "The dispatchable workflows"
+    value: ${{ steps.outputs.outputs.WORKFLOW }}
 
 runs:
   using: "composite"
   steps:
+
+    - name: Send Slack log notification
+      if: ${{inputs.slack_token != '' && inputs.slack_log != '' }}
+      uses: slackapi/slack-github-action@v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
+        WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
+        SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+      with:
+        channel-id: ${{ inputs.slack_log }}
+        slack-message: |
+          Workflow '${{ env.WORKFLOW_TYPE }}' starting...
+
+          Details: ${{ env.SUMMARY_URL }}
 
     - name: Inspect changes
       if: ${{ inputs.inspect_changes_script != '' && inputs.inspect_changes_base_sha != '' }}
@@ -55,16 +75,16 @@ runs:
       id: build-workflow
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
-        skip_tests: ${{ inputs.skip_tests == 'true' && '--skip-tests' || ''}}
-        dirty_projects_flag: ${{ steps.inspect-changes.outputs.dirty_projects != '' && '--dirty-projects' || ''}}
-        dirty_projects: ${{ steps.inspect-changes.outputs.dirty_projects }}
+        allow_override: ${{ inputs.allow_override == 'true' && '--allow-override' || ''}}
+        dirty_projects_flag: ${{ inputs.inspect_changes_script != '' && '--dirty-projects' || ''}}
+        dirty_projects: ${{ inputs.inspect_changes_script != '' && steps.inspect-changes.outputs.dirty_projects || ''}}
         matrix_parser: ${{ inputs.matrix_parser && inputs.matrix_parser || '${GITHUB_ACTION_PATH}/build-workflow.py' }}
       run: |
         echo "Parsing matrix file into a workflow..."
 
         ${{ env.matrix_parser }} ${{ inputs.matrix_file }}           \
             --workflows ${{ inputs.workflows }}                      \
-            ${{ env.skip_tests }}                                    \
+            ${{ env.allow_override }}                                \
             ${{ env.dirty_projects_flag }} ${{ env.dirty_projects }}
 
         echo "::group::Workflow"
@@ -79,17 +99,41 @@ runs:
         cat workflow/job_list.txt
         echo "::endgroup::"
 
-        echo "Setting outputs..."
-        echo "::group::GHA Output: WORKFLOW"
-        printf "WORKFLOW=%s\n" "$(cat workflow/workflow.json | jq -c '.')" | tee -a "${GITHUB_OUTPUT}"
+    - name: Create dispatch workflows
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        "${GITHUB_ACTION_PATH}/prepare-workflow-dispatch.py" workflow/workflow.json
+
+        echo "::group::Dispatch Workflows"
+        cat workflow/dispatch.json
         echo "::endgroup::"
 
-        echo "::group::GHA Output: WORKFLOW_KEYS"
-        printf "WORKFLOW_KEYS=%s\n" "$(cat workflow/workflow_keys.json | jq -c '.')" | tee -a "${GITHUB_OUTPUT}"
+    - name: Set outputs
+      id: outputs
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        echo "::group::GHA Output: WORKFLOW"
+        printf "WORKFLOW=%s\n" "$(cat workflow/dispatch.json | jq -c '.')" | tee -a "${GITHUB_OUTPUT}"
         echo "::endgroup::"
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: workflow
         path: workflow/
+        compression-level: 0
+
+    - name: Send Slack error notification
+      if: ${{ failure() && inputs.slack_token != '' && (inputs.slack_alert != '' || inputs.slack_log != '') }}
+      uses: slackapi/slack-github-action@v1.26.0
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
+        WORKFLOW_TYPE: ${{ github.workflow }} # nightly, weekly, pr, etc.
+        SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        CHANNEL_SEP: ${{ (inputs.slack_log != '' && inputs.slack_alert != '') && ',' || ''}}
+      with:
+        channel-id: '${{ inputs.slack_log }}${{env.CHANNEL_SEP}}${{ inputs.slack_alert }}'
+        slack-message: |
+          Workflow '${{ env.WORKFLOW_TYPE }}' encountered an error while preparing to run.
+
+          Details: ${{ env.SUMMARY_URL }}

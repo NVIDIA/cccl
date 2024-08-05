@@ -29,7 +29,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cpp11_required.h>
 #include <thrust/mr/disjoint_pool.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -52,7 +51,7 @@ namespace mr
  */
 template <typename Upstream, typename Bookkeeper>
 _CCCL_HOST thrust::mr::disjoint_unsynchronized_pool_resource<Upstream, Bookkeeper>&
-tls_disjoint_pool(Upstream* upstream = NULL, Bookkeeper* bookkeeper = NULL)
+tls_disjoint_pool(Upstream* upstream = nullptr, Bookkeeper* bookkeeper = nullptr)
 {
   static thread_local auto adaptor = [&] {
     assert(upstream && bookkeeper);

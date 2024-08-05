@@ -29,10 +29,14 @@
 #include <thrust/detail/range/tail_flags.h>
 #include <thrust/detail/seq.h>
 #include <thrust/detail/temporary_array.h>
+#include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
+#include <thrust/scan.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
+
+#include <cuda/std/__type_traits/void_t.h>
 
 #include <cassert>
 #include <thread>
@@ -56,25 +60,15 @@ inline L divide_ri(const L x, const R y)
   return (x + (y - 1)) / y;
 }
 
-template <typename InputIterator, typename BinaryFunction, typename OutputIterator = void>
+template <typename InputIterator, typename BinaryFunction, typename SFINAE = void>
 struct partial_sum_type
-    : thrust::detail::eval_if<thrust::detail::has_result_type<BinaryFunction>::value,
-                              thrust::detail::result_type<BinaryFunction>,
-                              thrust::detail::eval_if<thrust::detail::is_output_iterator<OutputIterator>::value,
-                                                      thrust::iterator_value<InputIterator>,
-                                                      thrust::iterator_value<OutputIterator>>>
-{};
-
-template <typename InputIterator, typename BinaryFunction>
-struct partial_sum_type<InputIterator, BinaryFunction, void>
-    : thrust::detail::eval_if<thrust::detail::has_result_type<BinaryFunction>::value,
-                              thrust::detail::result_type<BinaryFunction>,
-                              thrust::iterator_value<InputIterator>>
-{};
+{
+  using type = thrust::iterator_value_t<InputIterator>;
+};
 
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate, typename BinaryFunction>
 thrust::pair<InputIterator1,
-             thrust::pair<typename thrust::iterator_value<InputIterator1>::type,
+             thrust::pair<thrust::iterator_value_t<InputIterator1>,
                           typename partial_sum_type<InputIterator2, BinaryFunction>::type>>
 reduce_last_segment_backward(
   InputIterator1 keys_first,
@@ -90,7 +84,7 @@ reduce_last_segment_backward(
   thrust::reverse_iterator<InputIterator1> keys_last_r(keys_first);
   thrust::reverse_iterator<InputIterator2> values_first_r(values_first + n);
 
-  typename thrust::iterator_value<InputIterator1>::type result_key             = *keys_first_r;
+  thrust::iterator_value_t<InputIterator1> result_key                          = *keys_first_r;
   typename partial_sum_type<InputIterator2, BinaryFunction>::type result_value = *values_first_r;
 
   // consume the entirety of the first key's sequence
@@ -111,7 +105,7 @@ template <typename InputIterator1,
           typename BinaryFunction>
 thrust::tuple<OutputIterator1,
               OutputIterator2,
-              typename thrust::iterator_value<InputIterator1>::type,
+              thrust::iterator_value_t<InputIterator1>,
               typename partial_sum_type<InputIterator2, BinaryFunction>::type>
 reduce_by_key_with_carry(
   InputIterator1 keys_first,
@@ -124,8 +118,7 @@ reduce_by_key_with_carry(
 {
   // first, consume the last sequence to produce the carry
   // XXX is there an elegant way to pose this such that we don't need to default construct carry?
-  thrust::pair<typename thrust::iterator_value<InputIterator1>::type,
-               typename partial_sum_type<InputIterator2, BinaryFunction>::type>
+  thrust::pair<thrust::iterator_value_t<InputIterator1>, typename partial_sum_type<InputIterator2, BinaryFunction>::type>
     carry;
 
   thrust::tie(keys_last, carry) =
@@ -156,7 +149,7 @@ template <typename Iterator1,
           typename BinaryFunction>
 struct serial_reduce_by_key_body
 {
-  typedef typename thrust::iterator_difference<Iterator1>::type size_type;
+  using size_type = typename thrust::iterator_difference<Iterator1>::type;
 
   Iterator1 keys_first;
   Iterator2 values_first;
@@ -215,8 +208,8 @@ struct serial_reduce_by_key_body
     Iterator6 my_carry_result  = carry_result + interval_idx;
 
     // consume the rest of the interval with reduce_by_key
-    typedef typename thrust::iterator_value<Iterator1>::type key_type;
-    typedef typename partial_sum_type<Iterator2, BinaryFunction>::type value_type;
+    using key_type   = thrust::iterator_value_t<Iterator1>;
+    using value_type = typename partial_sum_type<Iterator2, BinaryFunction>::type;
 
     // XXX is there a way to pose this so that we don't require default construction of carry?
     thrust::pair<key_type, value_type> carry;
@@ -308,8 +301,8 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  typedef typename thrust::iterator_difference<Iterator1>::type difference_type;
-  difference_type n = keys_last - keys_first;
+  using difference_type = typename thrust::iterator_difference<Iterator1>::type;
+  difference_type n     = keys_last - keys_first;
   if (n == 0)
   {
     return thrust::make_pair(keys_result, values_result);
@@ -360,7 +353,7 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
 
   // do a reduce_by_key serially in each thread
   // the final interval never has a carry by definition, so don't reserve space for it
-  typedef typename reduce_by_key_detail::partial_sum_type<Iterator2, BinaryFunction>::type carry_type;
+  using carry_type = typename reduce_by_key_detail::partial_sum_type<Iterator2, BinaryFunction>::type;
   thrust::detail::temporary_array<carry_type, DerivedPolicy> carries(0, exec, num_intervals - 1);
 
   // force grainsize == 1 with simple_partioner()

@@ -4,6 +4,9 @@ CPMAddPackage("gh:catchorg/Catch2@2.13.9")
 add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
 target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
 
+find_package(Thrust REQUIRED CONFIG)
+thrust_create_target(cudax::Thrust)
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -24,6 +27,9 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
 
   add_executable(${test_target} ${test_sources})
   target_link_libraries(${test_target} PRIVATE ${cn_target} Catch2::Catch2 catch2_main)
+  target_link_libraries(${test_target} PRIVATE ${cn_target} cudax::Thrust)
+  target_compile_options(${test_target} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   cudax_clone_target_properties(${test_target} ${cn_target})
   set_target_properties(${test_target} PROPERTIES
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
@@ -48,8 +54,35 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   # Add tests:
   cudax_add_catch2_test(test_target hierarchy_tests ${cn_target}
-    hierarchy_smoke.cu
-    hierarchy_custom_types.cu
+    hierarchy/hierarchy_smoke.cu
+    hierarchy/hierarchy_custom_types.cu
+  )
+
+  cudax_add_catch2_test(test_target launch_tests ${cn_target}
+    launch/launch_smoke.cu
+    launch/configuration.cu
+  )
+
+  cudax_add_catch2_test(test_target device_tests ${cn_target}
+    device/device_smoke.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+
+  cudax_add_catch2_test(test_target event_tests ${cn_target}
+    event/event_smoke.cu
+  )
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+
+  cudax_add_catch2_test(test_target stream_tests ${cn_target}
+    stream/get_stream.cu
+    stream/stream_smoke.cu
+  )
+
+  cudax_add_catch2_test(test_target misc_tests ${cn_target}
+    utility/driver_api.cu
+  )
+
+  cudax_add_catch2_test(test_target containers ${cn_target}
+    containers/uninitialized_buffer.cu
+  )
 endforeach()

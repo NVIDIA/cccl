@@ -62,13 +62,6 @@
 #  define _LIBCUDACXX_COMPILER_CLANG_CUDA
 #endif
 
-#if defined(__CUDACC__) || defined(_CCCL_CUDA_COMPILER_NVHPC)
-// TODO: Determine if this is necessary, I don't know why we automatically include this in <config>
-#  if defined(__clang__) || defined(__FLT16_MANT_DIG__)
-#    include <cuda_fp16.h>
-#  endif
-#endif
-
 #ifdef __cplusplus
 
 // __config may be included in `extern "C"` contexts, switch back to include <nv/target>
@@ -95,7 +88,9 @@ extern "C++" {
 #  endif
 
 #  if (defined(_CCCL_COMPILER_NVHPC) && defined(__linux__)) || defined(_CCCL_COMPILER_NVRTC)
-#    define __ELF__
+#    ifndef __ELF__
+#      define __ELF__
+#    endif // !__ELF__
 #  endif
 
 #  if defined(__ELF__)
@@ -965,19 +960,17 @@ typedef __char32_t char32_t;
 #    endif
 #  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
+// libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #  ifndef _LIBCUDACXX_HAS_NVFP16
-#    if __has_include(<cuda_fp16.h>)                                                           \
-      && (defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || !defined(_CCCL_CUDACC_BELOW_12_2)) \
-      && (!defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || CUDA_VERSION >= 12020)                  \
-      && (defined(_CCCL_CUDACC) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+#    if defined(_CCCL_HAS_NVFP16) && !defined(_CCCL_CUDACC_BELOW_12_2) \
+      && (defined(_CCCL_CUDA_COMPILER) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
 #      define _LIBCUDACXX_HAS_NVFP16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVFP16
 
+// libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #  ifndef _LIBCUDACXX_HAS_NVBF16
-#    if __has_include(<cuda_bf16.h>)        \
-      && defined(_LIBCUDACXX_HAS_NVFP16)    \
-      && !defined(CUB_DISABLE_BF16_SUPPORT)
+#    if defined(_CCCL_HAS_NVBF16) && !defined(_CCCL_CUDACC_BELOW_12_2)
 #      define _LIBCUDACXX_HAS_NVBF16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVBF16
@@ -1058,8 +1051,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_EXPORTED_FROM_ABI __declspec(dllimport)
 #    endif
 
-#    define _LIBCUDACXX_TYPE_VIS      _LIBCUDACXX_DLL_VIS
-#    define _LIBCUDACXX_FUNC_VIS      _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_DLL_VIS
 #    define _LIBCUDACXX_HIDDEN
 #    define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
@@ -1082,14 +1073,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS inline _LIBCUDACXX_HIDDEN
 #    else
 #      define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-#    endif
-#  endif
-
-#  ifndef _LIBCUDACXX_FUNC_VIS
-#    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#      define _LIBCUDACXX_FUNC_VIS _CCCL_VISIBILITY_DEFAULT
-#    else
-#      define _LIBCUDACXX_FUNC_VIS
 #    endif
 #  endif
 
@@ -1122,8 +1105,8 @@ typedef __char32_t char32_t;
 #  endif
 
 #  ifndef _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
-#    define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_FUNC_VIS
-#  endif
+#    define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY
+#  endif // _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
 
 #  ifndef _LIBCUDACXX_EXCEPTION_ABI
 #    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
@@ -1303,6 +1286,10 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
 #  endif
 
+#  if __check_builtin(make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#    define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#  endif
+
 #  define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) enum class _LIBCUDACXX_ENUM_VIS x
 #  define _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(x)
 
@@ -1449,21 +1436,13 @@ typedef unsigned int char32_t;
 #  endif
 
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
-extern "C" _LIBCUDACXX_FUNC_VIS void
+extern "C" _LIBCUDACXX_INLINE_VISIBILITY void
 __sanitizer_annotate_contiguous_container(const void*, const void*, const void*, const void*);
 #  endif
 
 #  ifndef _LIBCUDACXX_WEAK
 #    define _LIBCUDACXX_WEAK __attribute__((__weak__))
 #  endif
-
-// Redefine some macros for internal use
-#  if defined(__cuda_std__)
-#    undef _LIBCUDACXX_FUNC_VIS
-#    define _LIBCUDACXX_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY
-#    undef _LIBCUDACXX_TYPE_VIS
-#    define _LIBCUDACXX_TYPE_VIS
-#  endif // __cuda_std__
 
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
@@ -1762,19 +1741,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
       _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>
 #  else
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) static_assert(true, "")
-#  endif
-
-#  if (defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ <= 11) \
-    && (defined(__CUDACC_VER_MINOR__) && __CUDACC_VER_MINOR__ <= 2)
-#    define _LIBCUDACXX_CONSTEXPR_GLOBAL const
-#  else
-#    define _LIBCUDACXX_CONSTEXPR_GLOBAL constexpr
-#  endif
-
-#  if defined(__CUDA_ARCH__)
-#    define _LIBCUDACXX_CPO_ACCESSIBILITY _CCCL_DEVICE _LIBCUDACXX_CONSTEXPR_GLOBAL
-#  else
-#    define _LIBCUDACXX_CPO_ACCESSIBILITY _LIBCUDACXX_INLINE_VAR constexpr
 #  endif
 
 // Older nvcc do not handle the constraint of `construct_at` in earlier std modes

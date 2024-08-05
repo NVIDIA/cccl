@@ -67,7 +67,8 @@ CUB_NAMESPACE_BEGIN
 //!
 //!  - ``A`` is an ``m * n`` sparse matrix whose non-zero structure is specified in
 //!    `compressed-storage-row (CSR) format
-//!    <http://en.wikipedia.org/wiki/Sparse_matrix#Compressed_row_Storage_.28CRS_or_CSR.29>`_ (i.e., three arrays:
+//!    <https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)>`_ (i.e., three
+//!    arrays:
 //!    ``values``, ``row_offsets``, and ``column_indices``)
 //!  - ``x`` and ``y`` are dense vectors
 //!
@@ -116,7 +117,7 @@ struct DeviceSpmv
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
-  //!    void*    d_temp_storage = NULL;
+  //!    void*    d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, d_values,
   //!        d_row_offsets, d_column_indices, d_vector_x, d_vector_y,
@@ -139,7 +140,7 @@ struct DeviceSpmv
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage.
-  //!   When NULL, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   When nullptr, the required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation

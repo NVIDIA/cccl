@@ -37,11 +37,13 @@ namespace detail
 // or vice versa
 template <typename FromTag, typename ToTag>
 struct is_retaggable
-    : integral_constant<bool, (is_convertible<FromTag, ToTag>::value || is_convertible<ToTag, FromTag>::value)>
+    : integral_constant<bool,
+                        (::cuda::std::is_convertible<FromTag, ToTag>::value
+                         || ::cuda::std::is_convertible<ToTag, FromTag>::value)>
 {};
 
 template <typename FromTag, typename ToTag, typename Result>
-struct enable_if_retaggable : enable_if<is_retaggable<FromTag, ToTag>::value, Result>
+struct enable_if_retaggable : ::cuda::std::enable_if<is_retaggable<FromTag, ToTag>::value, Result>
 {}; // end enable_if_retaggable
 
 } // namespace detail
@@ -76,10 +78,10 @@ reinterpret_tag(thrust::detail::tagged_iterator<BaseIterator, OtherTag> iter)
 
 template <typename Tag, typename Iterator>
 _CCCL_HOST_DEVICE
-  typename thrust::detail::enable_if_retaggable<typename thrust::iterator_system<Iterator>::type,
-                                                Tag,
-                                                thrust::detail::tagged_iterator<Iterator, Tag>>::type
-  retag(Iterator iter)
+typename thrust::detail::enable_if_retaggable<typename thrust::iterator_system<Iterator>::type,
+                                              Tag,
+                                              thrust::detail::tagged_iterator<Iterator, Tag>>::type
+retag(Iterator iter)
 {
   return reinterpret_tag<Tag>(iter);
 } // end retag()
@@ -104,8 +106,8 @@ retag(thrust::pointer<T, OtherTag> ptr)
 // avoid deeply-nested tagged_iterator
 template <typename Tag, typename BaseIterator, typename OtherTag>
 _CCCL_HOST_DEVICE
-  typename thrust::detail::enable_if_retaggable<OtherTag, Tag, thrust::detail::tagged_iterator<BaseIterator, Tag>>::type
-  retag(thrust::detail::tagged_iterator<BaseIterator, OtherTag> iter)
+typename thrust::detail::enable_if_retaggable<OtherTag, Tag, thrust::detail::tagged_iterator<BaseIterator, Tag>>::type
+retag(thrust::detail::tagged_iterator<BaseIterator, OtherTag> iter)
 {
   return reinterpret_tag<Tag>(iter);
 } // end retag()

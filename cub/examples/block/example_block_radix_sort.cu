@@ -50,7 +50,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 /// Verbose output
@@ -87,10 +87,10 @@ __launch_bounds__(BLOCK_THREADS) __global__
 
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
   // memory to a blocked arrangement)
-  typedef BlockLoad<Key, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoadT;
+  using BlockLoadT = BlockLoad<Key, BLOCK_THREADS, ITEMS_PER_THREAD, BLOCK_LOAD_WARP_TRANSPOSE>;
 
   // Specialize BlockRadixSort type for our thread block
-  typedef BlockRadixSort<Key, BLOCK_THREADS, ITEMS_PER_THREAD> BlockRadixSortT;
+  using BlockRadixSortT = BlockRadixSort<Key, BLOCK_THREADS, ITEMS_PER_THREAD>;
 
   // Shared memory
   __shared__ union TempStorage
@@ -174,9 +174,9 @@ void Test()
   Initialize(h_in, h_reference, TILE_SIZE * g_grid_size, TILE_SIZE);
 
   // Initialize device arrays
-  Key* d_in          = NULL;
-  Key* d_out         = NULL;
-  clock_t* d_elapsed = NULL;
+  Key* d_in          = nullptr;
+  Key* d_out         = nullptr;
+  clock_t* d_elapsed = nullptr;
   CubDebugExit(cudaMalloc((void**) &d_in, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_out, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_elapsed, sizeof(clock_t) * g_grid_size));

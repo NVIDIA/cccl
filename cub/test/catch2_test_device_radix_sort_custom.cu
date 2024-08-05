@@ -54,8 +54,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_des
 // %PARAM% TEST_LAUNCH lid 0:1
 
 using key   = c2h::custom_type_t<c2h::equal_comparable_t,
-                               c2h::lexicographical_less_comparable_t,
-                               c2h::lexicographical_greater_comparable_t>;
+                                 c2h::lexicographical_less_comparable_t,
+                                 c2h::lexicographical_greater_comparable_t>;
 using value = std::size_t;
 
 struct key_decomposer_t
@@ -451,9 +451,6 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
-
-  int* selector = nullptr;
-  cudaMallocHost(&selector, sizeof(int));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);

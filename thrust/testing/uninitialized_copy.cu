@@ -120,19 +120,19 @@ DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
 
 struct CopyConstructTest
 {
-  __host__ __device__ CopyConstructTest()
+  _CCCL_HOST_DEVICE CopyConstructTest()
       : copy_constructed_on_host(false)
       , copy_constructed_on_device(false)
   {}
 
-  __host__ __device__ CopyConstructTest(const CopyConstructTest&)
+  _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (copy_constructed_on_device = true; copy_constructed_on_host = false;),
                  (copy_constructed_on_device = false; copy_constructed_on_host = true;));
   }
 
-  __host__ __device__ CopyConstructTest& operator=(const CopyConstructTest& x)
+  _CCCL_HOST_DEVICE CopyConstructTest& operator=(const CopyConstructTest& x)
   {
     copy_constructed_on_host   = x.copy_constructed_on_host;
     copy_constructed_on_device = x.copy_constructed_on_device;
@@ -147,7 +147,7 @@ struct TestUninitializedCopyNonPODDevice
 {
   void operator()(const size_t)
   {
-    typedef CopyConstructTest T;
+    using T = CopyConstructTest;
 
     thrust::device_vector<T> v1(5), v2(5);
 
@@ -172,7 +172,7 @@ struct TestUninitializedCopyNNonPODDevice
 {
   void operator()(const size_t)
   {
-    typedef CopyConstructTest T;
+    using T = CopyConstructTest;
 
     thrust::device_vector<T> v1(5), v2(5);
 
@@ -197,7 +197,7 @@ struct TestUninitializedCopyNonPODHost
 {
   void operator()(const size_t)
   {
-    typedef CopyConstructTest T;
+    using T = CopyConstructTest;
 
     thrust::host_vector<T> v1(5), v2(5);
 
@@ -222,7 +222,7 @@ struct TestUninitializedCopyNNonPODHost
 {
   void operator()(const size_t)
   {
-    typedef CopyConstructTest T;
+    using T = CopyConstructTest;
 
     thrust::host_vector<T> v1(5), v2(5);
 

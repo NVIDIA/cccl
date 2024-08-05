@@ -7,7 +7,7 @@
 struct make_pair_functor
 {
   template <typename T1, typename T2>
-  __host__ __device__ thrust::pair<T1, T2> operator()(const T1& x, const T2& y)
+  _CCCL_HOST_DEVICE thrust::pair<T1, T2> operator()(const T1& x, const T2& y)
   {
     return thrust::make_pair(x, y);
   } // end operator()()
@@ -18,7 +18,7 @@ struct TestPairStableSortByKey
 {
   void operator()(const size_t n)
   {
-    typedef thrust::pair<T, T> P;
+    using P = thrust::pair<T, T>;
 
     // host arrays
     thrust::host_vector<T> h_p1 = unittest::random_integers<T>(n);

@@ -114,8 +114,8 @@ VariableUnitTest<TestScanDeviceDevice, IntegralTypes> TestScanDeviceDeviceInstan
 
 void TestScanCudaStreams()
 {
-  typedef thrust::device_vector<int> Vector;
-  typedef Vector::value_type T;
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
 
   Vector::iterator iter;
 
@@ -252,7 +252,7 @@ struct const_ref_plus_mod3
       : table(table)
   {}
 
-  __host__ __device__ const T& operator()(T a, T b)
+  _CCCL_HOST_DEVICE const T& operator()(T a, T b)
   {
     return table[(int) (a + b)];
   }

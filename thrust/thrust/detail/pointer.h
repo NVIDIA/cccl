@@ -88,32 +88,34 @@ struct pointer_base
 {
   // void pointers should have no element type
   // note that we remove_cv from the Element type to get the value_type
-  typedef typename thrust::detail::eval_if<thrust::detail::is_void<typename thrust::remove_cvref<Element>::type>::value,
-                                           thrust::detail::identity_<void>,
-                                           thrust::detail::remove_cv<Element>>::type value_type;
+  using value_type =
+    typename thrust::detail::eval_if<::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
+                                     thrust::detail::identity_<void>,
+                                     ::cuda::std::remove_cv<Element>>::type;
 
   // if no Derived type is given, just use pointer
-  typedef typename thrust::detail::eval_if<thrust::detail::is_same<Derived, use_default>::value,
-                                           thrust::detail::identity_<pointer<Element, Tag, Reference, Derived>>,
-                                           thrust::detail::identity_<Derived>>::type derived_type;
+  using derived_type =
+    typename thrust::detail::eval_if<::cuda::std::is_same<Derived, use_default>::value,
+                                     thrust::detail::identity_<pointer<Element, Tag, Reference, Derived>>,
+                                     thrust::detail::identity_<Derived>>::type;
 
   // void pointers should have no reference type
   // if no Reference type is given, just use reference
-  typedef typename thrust::detail::eval_if<
-    thrust::detail::is_void<typename thrust::remove_cvref<Element>::type>::value,
+  using reference_type = typename thrust::detail::eval_if<
+    ::cuda::std::is_void<typename thrust::remove_cvref<Element>::type>::value,
     thrust::detail::identity_<void>,
-    thrust::detail::eval_if<thrust::detail::is_same<Reference, use_default>::value,
+    thrust::detail::eval_if<::cuda::std::is_same<Reference, use_default>::value,
                             thrust::detail::identity_<reference<Element, derived_type>>,
-                            thrust::detail::identity_<Reference>>>::type reference_type;
+                            thrust::detail::identity_<Reference>>>::type;
 
-  typedef thrust::iterator_adaptor<derived_type, // pass along the type of our Derived class to iterator_adaptor
-                                   Element*, // we adapt a raw pointer
-                                   value_type, // the value type
-                                   Tag, // system tag
-                                   thrust::random_access_traversal_tag, // pointers have random access traversal
-                                   reference_type, // pass along our Reference type
-                                   std::ptrdiff_t>
-    type;
+  using type =
+    thrust::iterator_adaptor<derived_type,
+                             Element*,
+                             value_type,
+                             Tag,
+                             thrust::random_access_traversal_tag,
+                             reference_type,
+                             std::ptrdiff_t>;
 }; // end pointer_base
 
 } // namespace detail
@@ -130,9 +132,9 @@ template <typename Element, typename Tag, typename Reference, typename Derived>
 class pointer : public thrust::detail::pointer_base<Element, Tag, Reference, Derived>::type
 {
 private:
-  typedef typename thrust::detail::pointer_base<Element, Tag, Reference, Derived>::type super_t;
+  using super_t = typename thrust::detail::pointer_base<Element, Tag, Reference, Derived>::type;
 
-  typedef typename thrust::detail::pointer_base<Element, Tag, Reference, Derived>::derived_type derived_type;
+  using derived_type = typename thrust::detail::pointer_base<Element, Tag, Reference, Derived>::derived_type;
 
   // friend iterator_core_access to give it access to dereference
   friend class thrust::iterator_core_access;
@@ -144,7 +146,7 @@ private:
   using typename super_t::base_type;
 
 public:
-  typedef typename super_t::base_type raw_pointer;
+  using raw_pointer = typename super_t::base_type;
 
   // constructors
 
@@ -185,8 +187,8 @@ public:
   // OtherPointer's system shall be convertible to Tag
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE
-    typename thrust::detail::enable_if_pointer_is_convertible<OtherPointer, pointer, derived_type&>::type
-    operator=(const OtherPointer& other);
+  typename thrust::detail::enable_if_pointer_is_convertible<OtherPointer, pointer, derived_type&>::type
+  operator=(const OtherPointer& other);
 
   // observers
 

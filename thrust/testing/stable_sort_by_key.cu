@@ -41,7 +41,7 @@ DECLARE_UNITTEST(TestStableSortByKeyDispatchImplicit);
 template <typename T>
 struct less_div_10
 {
-  __host__ __device__ bool operator()(const T& lhs, const T& rhs) const
+  _CCCL_HOST_DEVICE bool operator()(const T& lhs, const T& rhs) const
   {
     return ((int) lhs) / 10 < ((int) rhs) / 10;
   }
@@ -81,7 +81,7 @@ void InitializeSimpleStableKeyValueSortTest(
 template <class Vector>
 void TestStableSortByKeySimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector unsorted_keys, unsorted_values;
   Vector sorted_keys, sorted_values;

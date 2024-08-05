@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "include/host_device.h"
+
 // this example illustrates how to make strided access to a range of values
 // examples:
 //   strided_range([0, 1, 2, 3, 4, 5, 6], 1) -> [0, 1, 2, 3, 4, 5, 6]
@@ -19,9 +21,9 @@ template <typename Iterator>
 class strided_range
 {
 public:
-  typedef typename thrust::iterator_difference<Iterator>::type difference_type;
+  using difference_type = typename thrust::iterator_difference<Iterator>::type;
 
-  struct stride_functor : public thrust::unary_function<difference_type, difference_type>
+  struct stride_functor
   {
     difference_type stride;
 
@@ -35,12 +37,12 @@ public:
     }
   };
 
-  typedef typename thrust::counting_iterator<difference_type> CountingIterator;
-  typedef typename thrust::transform_iterator<stride_functor, CountingIterator> TransformIterator;
-  typedef typename thrust::permutation_iterator<Iterator, TransformIterator> PermutationIterator;
+  using CountingIterator    = typename thrust::counting_iterator<difference_type>;
+  using TransformIterator   = typename thrust::transform_iterator<stride_functor, CountingIterator>;
+  using PermutationIterator = typename thrust::permutation_iterator<Iterator, TransformIterator>;
 
   // type of the strided_range iterator
-  typedef PermutationIterator iterator;
+  using iterator = PermutationIterator;
 
   // construct strided_range for the range [first,last)
   strided_range(Iterator first, Iterator last, difference_type stride)
@@ -82,7 +84,7 @@ int main()
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << std::endl;
 
-  typedef thrust::device_vector<int>::iterator Iterator;
+  using Iterator = thrust::device_vector<int>::iterator;
 
   // create strided_range with indices [0,2,4,6]
   strided_range<Iterator> evens(data.begin(), data.end(), 2);

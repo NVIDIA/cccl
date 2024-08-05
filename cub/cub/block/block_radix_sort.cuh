@@ -28,7 +28,7 @@
 
 /**
  * @file
- * The cub::BlockRadixSort class provides [<em>collective</em>](index.html#sec0) methods for radix
+ * The cub::BlockRadixSort class provides [<em>collective</em>](../index.html#sec0) methods for radix
  * sorting of items partitioned across a CUDA thread block.
  */
 
@@ -58,7 +58,7 @@ CUB_NAMESPACE_BEGIN
 //! BlockRadixSort class provides :ref:`collective <collective-primitives>` methods for sorting
 //! items partitioned across a CUDA thread block using a radix sorting method.
 //!
-//! .. image:: ../img/sorting_logo.png
+//! .. image:: ../../img/sorting_logo.png
 //!     :align: center
 //!
 //! Overview
@@ -142,29 +142,54 @@ CUB_NAMESPACE_BEGIN
 //! @blockcollective{BlockRadixSort}
 //!
 //! The code snippet below illustrates a sort of 512 integer keys that
-//! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+//! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!     #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+//!    .. code-block:: c++
 //!
-//!     __global__ void ExampleKernel(...)
-//!     {
-//!         // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
-//!         typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
 //!
-//!         // Allocate shared memory for BlockRadixSort
-//!         __shared__ typename BlockRadixSort::TempStorage temp_storage;
+//!        __global__ void kernel(...)
+//!        {
+//!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer items each
+//!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
 //!
-//!         // Obtain a segment of consecutive items that are blocked across threads
-//!         int thread_keys[4];
-//!         ...
+//!            // Allocate shared memory for BlockRadixSort
+//!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
 //!
-//!         // Collectively sort the keys
-//!         BlockRadixSort(temp_storage).Sort(thread_keys);
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_keys[4];
+//!            ...
 //!
-//!         ...
+//!            // Collectively sort the keys
+//!            BlockRadixSort(temp_storage).Sort(thread_keys);
+//!
+//!            ...
+//!
+//!    .. code-block:: python
+//!
+//!        import cuda.cooperative.experimental as cudax
+//!        from pynvjitlink import patch
+//!        patch.patch_numba_linker(lto=True)
+//!
+//!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
+//!        block_radix_sort = cudax.block.radix_sort_keys(numba.int32, 128, 4)
+//!        temp_storage_bytes = block_radix_sort.temp_storage_bytes
+//!
+//!        @cuda.jit(link=block_radix_sort.files)
+//!        def kernel():
+//!            Allocate shared memory for radix sort
+//!            temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+//!
+//!            # Obtain a segment of consecutive items that are blocked across threads
+//!            thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+//!            # ...
+//!
+//!            // Collectively sort the keys
+//!            block_radix_sort(temp_storage, thread_keys)
+//!            # ...
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
 //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -174,10 +199,8 @@ CUB_NAMESPACE_BEGIN
 //! Re-using dynamically allocating shared memory
 //! --------------------------------------------------
 //!
-//! The following example under the examples/block folder illustrates usage of
-//! dynamically shared memory with BlockReduce and how to re-purpose
-//! the same memory region:
-//! <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
+//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared memory with
+//! BlockReduce and how to re-purpose the same memory region.
 //!
 //! This example can be easily adapted to the storage required by BlockRadixSort.
 //! @endrst
@@ -250,35 +273,35 @@ private:
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   /// Ascending BlockRadixRank utility type
-  typedef BlockRadixRank<BLOCK_DIM_X,
-                         RADIX_BITS,
-                         false,
-                         MEMOIZE_OUTER_SCAN,
-                         INNER_SCAN_ALGORITHM,
-                         SMEM_CONFIG,
-                         BLOCK_DIM_Y,
-                         BLOCK_DIM_Z>
-    AscendingBlockRadixRank;
+  using AscendingBlockRadixRank =
+    BlockRadixRank<BLOCK_DIM_X,
+                   RADIX_BITS,
+                   false,
+                   MEMOIZE_OUTER_SCAN,
+                   INNER_SCAN_ALGORITHM,
+                   SMEM_CONFIG,
+                   BLOCK_DIM_Y,
+                   BLOCK_DIM_Z>;
 
   /// Descending BlockRadixRank utility type
-  typedef BlockRadixRank<BLOCK_DIM_X,
-                         RADIX_BITS,
-                         true,
-                         MEMOIZE_OUTER_SCAN,
-                         INNER_SCAN_ALGORITHM,
-                         SMEM_CONFIG,
-                         BLOCK_DIM_Y,
-                         BLOCK_DIM_Z>
-    DescendingBlockRadixRank;
+  using DescendingBlockRadixRank =
+    BlockRadixRank<BLOCK_DIM_X,
+                   RADIX_BITS,
+                   true,
+                   MEMOIZE_OUTER_SCAN,
+                   INNER_SCAN_ALGORITHM,
+                   SMEM_CONFIG,
+                   BLOCK_DIM_Y,
+                   BLOCK_DIM_Z>;
 
   /// Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
 
   /// BlockExchange utility type for keys
-  typedef BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchangeKeys;
+  using BlockExchangeKeys = BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// BlockExchange utility type for values
-  typedef BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchangeValues;
+  using BlockExchangeValues = BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   /// Shared memory storage layout type
@@ -582,7 +605,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -631,7 +654,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -641,7 +664,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-bits
@@ -674,9 +697,9 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -698,7 +721,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -708,7 +731,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys
@@ -733,9 +756,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
@@ -766,7 +789,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -828,7 +851,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -838,7 +861,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 pair.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-bits
@@ -874,13 +897,13 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-         ValueT (&values)[ITEMS_PER_THREAD],
-         DecomposerT decomposer,
-         int begin_bit,
-         int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       DecomposerT decomposer,
+       int begin_bit,
+       int end_bit)
   {
     SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>(), decomposer);
   }
@@ -905,7 +928,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -915,7 +938,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs
@@ -943,9 +966,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     Sort(keys, values, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
@@ -961,7 +984,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates a sort of 512 integer keys that
-  //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive keys.
   //!
   //! .. code-block:: c++
@@ -971,7 +994,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1021,7 +1044,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1031,7 +1054,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending-bits
@@ -1064,9 +1087,9 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -1088,7 +1111,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1098,7 +1121,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-descending
@@ -1123,9 +1146,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -1164,8 +1187,8 @@ public:
   //!
   //!    __global__ void ExampleKernel(...)
   //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and
-  //!    values each typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1225,7 +1248,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1235,7 +1258,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 1 pair.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending-bits
@@ -1271,13 +1294,13 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
-                   ValueT (&values)[ITEMS_PER_THREAD],
-                   DecomposerT decomposer,
-                   int begin_bit,
-                   int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
+                 ValueT (&values)[ITEMS_PER_THREAD],
+                 DecomposerT decomposer,
+                 int begin_bit,
+                 int end_bit)
   {
     SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>(), decomposer);
   }
@@ -1302,7 +1325,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1312,7 +1335,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-descending
@@ -1340,9 +1363,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     SortBlocked(
       keys,
@@ -1379,7 +1402,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1430,7 +1453,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1440,7 +1463,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped-bits
@@ -1473,9 +1496,9 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -1498,7 +1521,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1508,7 +1531,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped
@@ -1533,9 +1556,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -1565,7 +1588,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates a sort of 512 integer keys and values that
-  //! are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128
+  //! are initially partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128
   //! threads where each thread owns 4 consecutive pairs.  The final partitioning is striped.
   //!
   //! .. code-block:: c++
@@ -1575,7 +1598,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1631,7 +1654,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1641,7 +1664,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped-bits
@@ -1677,13 +1700,13 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
-                         ValueT (&values)[ITEMS_PER_THREAD],
-                         DecomposerT decomposer,
-                         int begin_bit,
-                         int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                       ValueT (&values)[ITEMS_PER_THREAD],
+                       DecomposerT decomposer,
+                       int begin_bit,
+                       int end_bit)
   {
     SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>(), decomposer);
   }
@@ -1704,7 +1727,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1714,7 +1737,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped
@@ -1742,9 +1765,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     SortBlockedToStriped(
       keys,
@@ -1777,7 +1800,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -1828,7 +1851,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1838,7 +1861,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped-descending-bits
@@ -1871,9 +1894,9 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -1896,7 +1919,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -1906,7 +1929,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive keys. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin keys-striped-descending
@@ -1931,9 +1954,9 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     NullType values[ITEMS_PER_THREAD];
 
@@ -1973,7 +1996,7 @@ public:
   //!    __global__ void ExampleKernel(...)
   //!    {
   //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
   //!        // Allocate shared memory for BlockRadixSort
   //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
@@ -2029,7 +2052,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2039,7 +2062,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 2 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped-descending-bits
@@ -2075,14 +2098,14 @@ public:
   //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescendingBlockedToStriped(
-      KeyT (&keys)[ITEMS_PER_THREAD],
-      ValueT (&values)[ITEMS_PER_THREAD],
-      DecomposerT decomposer,
-      int begin_bit,
-      int end_bit)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescendingBlockedToStriped(
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&values)[ITEMS_PER_THREAD],
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit)
   {
     SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>(), decomposer);
   }
@@ -2103,7 +2126,7 @@ public:
   //! ``custom_t`` type. We do this by providing a decomposer that returns a
   //! tuple of references to relevant members of the key.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin custom-type
@@ -2113,7 +2136,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 2 threads
   //! where each thread owns 3 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_block_radix_sort_custom.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin pairs-striped-descending
@@ -2141,10 +2164,10 @@ public:
   //!   modify members of the key.
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
-    typename ::cuda::std::enable_if< //
-      !::cuda::std::is_convertible<DecomposerT, int>::value>::type
-    SortDescendingBlockedToStriped(
-      KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  typename ::cuda::std::enable_if< //
+    !::cuda::std::is_convertible<DecomposerT, int>::value>::type
+  SortDescendingBlockedToStriped(
+    KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
   {
     SortBlockedToStriped(
       keys,

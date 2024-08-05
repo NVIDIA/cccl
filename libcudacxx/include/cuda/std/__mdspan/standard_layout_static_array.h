@@ -77,12 +77,11 @@ namespace __detail
 
 struct __construct_psa_from_dynamic_exts_values_tag_t
 {};
-_LIBCUDACXX_CPO_ACCESSIBILITY __construct_psa_from_dynamic_exts_values_tag_t
-  __construct_psa_from_dynamic_exts_values_tag;
+_CCCL_GLOBAL_CONSTANT __construct_psa_from_dynamic_exts_values_tag_t __construct_psa_from_dynamic_exts_values_tag;
 
 struct __construct_psa_from_all_exts_values_tag_t
 {};
-_LIBCUDACXX_CPO_ACCESSIBILITY __construct_psa_from_all_exts_values_tag_t __construct_psa_from_all_exts_values_tag;
+_CCCL_GLOBAL_CONSTANT __construct_psa_from_all_exts_values_tag_t __construct_psa_from_all_exts_values_tag;
 
 struct __construct_psa_from_all_exts_array_tag_t
 {};
@@ -202,11 +201,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __construct_psa_from_all_exts_values_tag, __vals...
+          __construct_psa_from_all_exts_values_tag, __vals...
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -218,11 +217,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __construct_psa_from_dynamic_exts_values_tag, __vals...
+          __construct_psa_from_dynamic_exts_values_tag, __vals...
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -233,11 +232,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __vals
+          __vals
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -249,11 +248,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __tag, __vals
+          __tag, __vals
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -265,11 +264,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __tag, __vals
+          __tag, __vals
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -280,11 +279,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __vals
+          __vals
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -296,11 +295,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __tag, __vals
+          __tag, __vals
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -313,11 +312,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __tag, __vals
+          __tag, __vals
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-        )})
+          )})
 #    endif
   {}
 
@@ -329,11 +328,11 @@ struct __standard_layout_psa<_Tag,
 #    else
       : __base_t(__base_t{__next_t(
 #    endif
-        __rhs.__next()
+          __rhs.__next()
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-      }
+        }
 #    else
-          )})
+            )})
 #    endif
   {}
 

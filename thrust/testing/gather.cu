@@ -162,7 +162,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherIfSimple);
 template <typename T>
 struct is_even_gather_if
 {
-  __host__ __device__ bool operator()(const T i) const
+  _CCCL_HOST_DEVICE bool operator()(const T i) const
   {
     return (i % 2) == 0;
   }

@@ -78,17 +78,17 @@ public:
 
   /*! \brief Construct a test class.
    */
-  __host__ __device__ constexpr test_class(int);
+  _CCCL_HOST_DEVICE constexpr test_class(int);
 
   /*! \brief \c test_member_function is a function intended to exercise
    *  and test Doxybook rendering.
    */
-  __host__ __device__ constexpr int test_member_function() = 0;
+  _CCCL_HOST_DEVICE constexpr int test_member_function() = 0;
 
   /*! \brief \c test_virtual_member_function is a function intended to exercise
    *  and test Doxybook rendering.
    */
-  __host__ __device__ virtual int test_virtual_member_function() = 0;
+  _CCCL_HOST_DEVICE virtual int test_virtual_member_function() = 0;
 
   /*! \brief \c test_parameter_overflow_member_function is a function intended
    *  to test Doxybook's rendering of function and template parameters that exceed
@@ -121,7 +121,7 @@ protected:
   /*! \brief \c test_protected_member_function is a function intended to
    *  exercise and test Doxybook rendering.
    */
-  __device__ auto test_protected_member_function();
+  _CCCL_DEVICE auto test_protected_member_function();
 };
 
 /*! \brief \c test_derived_class is a derived class intended to exercise and
@@ -135,12 +135,12 @@ class test_derived_class : test_class<int, double>
 
   double test_derived_member_variable = 3.14; ///< A test member variable.
 
-  typedef double test_typedef;
+  using test_typedef = double;
 
   /*! \brief \c test_derived_member_function is a function intended to exercise
    *  and test Doxybook rendering.
    */
-  __host__ __device__ constexpr double test_derived_member_function(int, int);
+  _CCCL_HOST_DEVICE constexpr double test_derived_member_function(int, int);
 };
 
 /*! \brief \c test_function is a function intended to exercise and test Doxybook

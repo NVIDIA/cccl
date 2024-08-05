@@ -42,7 +42,7 @@ namespace detail
 template <typename Pointer>
 class normal_iterator : public iterator_adaptor<normal_iterator<Pointer>, Pointer>
 {
-  typedef iterator_adaptor<normal_iterator<Pointer>, Pointer> super_t;
+  using super_t = iterator_adaptor<normal_iterator<Pointer>, Pointer>;
 
 public:
   _CCCL_HOST_DEVICE normal_iterator() {}
@@ -53,7 +53,7 @@ public:
 
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE normal_iterator(const normal_iterator<OtherPointer>& other,
-                                    typename thrust::detail::enable_if_convertible<OtherPointer, Pointer>::type* = 0)
+                                    thrust::detail::enable_if_convertible_t<OtherPointer, Pointer>* = 0)
       : super_t(other.base())
   {}
 

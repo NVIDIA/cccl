@@ -47,26 +47,26 @@
 
 CUB_NAMESPACE_BEGIN
 
-// Additional details of the Merge-Path Algorithm can be found in:
-// S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, " Merge Path - Parallel
-// Merging Made Simple", Multithreaded Architectures and Applications (MTAAP)
-// Workshop, IEEE 26th International Parallel & Distributed Processing
-// Symposium (IPDPS), 2012
-template <typename KeyT, typename KeyIteratorT, typename OffsetT, typename BinaryPred>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(
-  KeyIteratorT keys1, KeyIteratorT keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
+// This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
+// * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
+//   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
+//   Symposium (IPDPS), 2012
+// * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
+//   https://arxiv.org/abs/1406.2628
+template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
   OffsetT keys1_end   = (cub::min)(diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
-    OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
-    KeyT key1   = keys1[mid];
-    KeyT key2   = keys2[diag - 1 - mid];
-    bool pred   = binary_pred(key2, key1);
-
-    if (pred)
+    const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
+    // pull copies of the keys before calling binary_pred so proxy references are unwrapped
+    const detail::value_t<KeyIt1> key1 = keys1[mid];
+    const detail::value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
+    if (binary_pred(key2, key1))
     {
       keys1_end = mid;
     }
@@ -78,9 +78,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT MergePath(
   return keys1_begin;
 }
 
-template <typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
-  KeyT* keys_shared,
+  KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
   int keys1_count,
@@ -89,8 +89,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ITEMS_PER_THREAD],
   CompareOp compare_op)
 {
-  int keys1_end = keys1_beg + keys1_count;
-  int keys2_end = keys2_beg + keys2_count;
+  const int keys1_end = keys1_beg + keys1_count;
+  const int keys2_end = keys2_beg + keys2_count;
 
   KeyT key1 = keys_shared[keys1_beg];
   KeyT key2 = keys_shared[keys2_beg];
@@ -98,11 +98,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
 #pragma unroll
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
-    bool p = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-
+    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
     output[item]  = p ? key2 : key1;
     indices[item] = p ? keys2_beg++ : keys1_beg++;
-
     if (p)
     {
       key2 = keys_shared[keys2_beg];
@@ -437,7 +435,7 @@ public:
       int keys1_count = keys1_end - keys1_beg;
       int keys2_count = keys2_end - keys2_beg;
 
-      int partition_diag = MergePath<KeyT>(
+      int partition_diag = MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
@@ -703,7 +701,7 @@ private:
  * __global__ void ExampleKernel(...)
  * {
  *     // Specialize BlockMergeSort for a 1D block of 128 threads owning 4 integer items each
- *     typedef cub::BlockMergeSort<int, 128, 4> BlockMergeSort;
+ *     using BlockMergeSort = cub::BlockMergeSort<int, 128, 4>;
  *
  *     // Allocate shared memory for BlockMergeSort
  *     __shared__ typename BlockMergeSort::TempStorage temp_storage_shuffle;
@@ -723,10 +721,9 @@ private:
  * `{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }`.
  *
  * @par Re-using dynamically allocating shared memory
- * The following example under the examples/block folder illustrates usage of
+ * The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of
  * dynamically shared memory with BlockReduce and how to re-purpose
- * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
+ * the same memory region.
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */

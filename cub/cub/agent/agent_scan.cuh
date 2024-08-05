@@ -50,6 +50,8 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -133,6 +135,8 @@ struct AgentScanPolicy : ScalingType
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
+ * @tparam AccumT
+ *   The type of intermediate accumulator (according to P2322R6)
  */
 template <typename AgentScanPolicyT,
           typename InputIteratorT,
@@ -140,7 +144,8 @@ template <typename AgentScanPolicyT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          bool ForceInclusive = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -157,36 +162,39 @@ struct AgentScan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
-                               CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                               InputIteratorT>;
+    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+                     CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                     InputIteratorT>;
 
   // Constants
   enum
   {
     // Inclusive scan if no init_value type is provided
-    IS_INCLUSIVE     = std::is_same<InitValueT, NullType>::value,
+    HAS_INIT     = !std::is_same<InitValueT, NullType>::value,
+    IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not beeing `NullType`
+                                                // or the ForceInclusive tag to be true for inclusive scan
+                                                // to get picked up.
     BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
     ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD,
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
   };
 
   // Parameterized BlockLoad type
-  typedef BlockLoad<AccumT,
-                    AgentScanPolicyT::BLOCK_THREADS,
-                    AgentScanPolicyT::ITEMS_PER_THREAD,
-                    AgentScanPolicyT::LOAD_ALGORITHM>
-    BlockLoadT;
+  using BlockLoadT =
+    BlockLoad<AccumT,
+              AgentScanPolicyT::BLOCK_THREADS,
+              AgentScanPolicyT::ITEMS_PER_THREAD,
+              AgentScanPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockStore type
-  typedef BlockStore<AccumT,
-                     AgentScanPolicyT::BLOCK_THREADS,
-                     AgentScanPolicyT::ITEMS_PER_THREAD,
-                     AgentScanPolicyT::STORE_ALGORITHM>
-    BlockStoreT;
+  using BlockStoreT =
+    BlockStore<AccumT,
+               AgentScanPolicyT::BLOCK_THREADS,
+               AgentScanPolicyT::ITEMS_PER_THREAD,
+               AgentScanPolicyT::STORE_ALGORITHM>;
 
   // Parameterized BlockScan type
-  typedef BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM> BlockScanT;
+  using BlockScanT = BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
@@ -194,7 +202,7 @@ struct AgentScan
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
-  typedef BlockScanRunningPrefixOp<AccumT, ScanOpT> RunningPrefixCallbackOp;
+  using RunningPrefixCallbackOp = BlockScanRunningPrefixOp<AccumT, ScanOpT>;
 
   // Shared memory type for this thread block
   union _TempStorage
@@ -247,17 +255,39 @@ struct AgentScan
     block_aggregate = scan_op(init_value, block_aggregate);
   }
 
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    AccumT init_value,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    Int2Type<true> /*has_init*/)
+  {
+    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+    block_aggregate = scan_op(init_value, block_aggregate);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTileInclusive(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    InitValueT /*init_value*/,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    Int2Type<false> /*has_init*/)
+
+  {
+    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
+  }
+
   /**
    * Inclusive scan specialization (first tile)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
     AccumT (&items)[ITEMS_PER_THREAD],
-    InitValueT /*init_value*/,
+    InitValueT init_value,
     ScanOpT scan_op,
     AccumT& block_aggregate,
     Int2Type<true> /*is_inclusive*/)
   {
-    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
+    ScanTileInclusive(items, init_value, scan_op, block_aggregate, Int2Type<HAS_INIT>());
   }
 
   /**

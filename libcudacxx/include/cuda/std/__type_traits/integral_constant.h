@@ -47,18 +47,13 @@ typedef integral_constant<bool, true> true_type;
 typedef integral_constant<bool, false> false_type;
 
 template <bool _Val>
-using _BoolConstant _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool, _Val>;
+using _BoolConstant _LIBCUDACXX_DEPRECATED _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool, _Val>;
 
-#if _CCCL_STD_VER > 2011
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;
-#endif
 
-#if _CCCL_STD_VER > 2011
-#  define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
-#else
-#  define _LIBCUDACXX_BOOL_CONSTANT(__b) integral_constant<bool, (__b)>
-#endif
+// deprecated [Since 2.7.0]
+#define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

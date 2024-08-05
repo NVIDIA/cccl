@@ -29,10 +29,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/linear_congruential_engine_discard.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cstdint>
 #include <iostream>
 
 THRUST_NAMESPACE_BEGIN
@@ -125,7 +125,7 @@ public:
   /*! \typedef result_type
    *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
    */
-  typedef UIntType result_type;
+  using result_type = UIntType;
 
   // engine characteristics
 
@@ -143,7 +143,11 @@ public:
 
   /*! The smallest value this \p linear_congruential_engine may potentially produce.
    */
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen breaks on the ternary :shrug:
   static const result_type min = c == 0u ? 1u : 0u;
+#else
+  static const result_type min = 0u;
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /*! The largest value this \p linear_congruential_engine may potentially produce.
    */
@@ -259,7 +263,7 @@ operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIn
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p minstd_rand0
  *        shall produce the value \c 1043618065 .
  */
-typedef linear_congruential_engine<thrust::detail::uint32_t, 16807, 0, 2147483647> minstd_rand0;
+using minstd_rand0 = linear_congruential_engine<std::uint32_t, 16807, 0, 2147483647>;
 
 /*! \typedef minstd_rand
  *  \brief A random number engine with predefined parameters which implements a version of
@@ -267,7 +271,7 @@ typedef linear_congruential_engine<thrust::detail::uint32_t, 16807, 0, 214748364
  *  \note The 10000th consecutive invocation of a default-constructed object of type \p minstd_rand
  *        shall produce the value \c 399268537 .
  */
-typedef linear_congruential_engine<thrust::detail::uint32_t, 48271, 0, 2147483647> minstd_rand;
+using minstd_rand = linear_congruential_engine<std::uint32_t, 48271, 0, 2147483647>;
 
 /*! \} // predefined_random
  */

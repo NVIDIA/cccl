@@ -60,8 +60,8 @@ ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, Forw
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<ForwardIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<ForwardIterator>::type;
 
   System1 system1;
   System2 system2;
@@ -74,8 +74,8 @@ ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterato
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
-  typedef typename thrust::iterator_system<ForwardIterator>::type System2;
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<ForwardIterator>::type;
 
   System1 system1;
   System2 system2;

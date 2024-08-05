@@ -18,13 +18,13 @@ using namespace unittest;
 struct SumThree
 {
   template <typename T1, typename T2, typename T3>
-  __host__ __device__ auto operator()(T1 x, T2 y, T3 z) const THRUST_DECLTYPE_RETURNS(x + y + z)
+  _CCCL_HOST_DEVICE auto operator()(T1 x, T2 y, T3 z) const THRUST_DECLTYPE_RETURNS(x + y + z)
 }; // end SumThree
 
 struct SumThreeTuple
 {
   template <typename Tuple>
-  __host__ __device__ auto operator()(Tuple x) const
+  _CCCL_HOST_DEVICE auto operator()(Tuple x) const
     THRUST_DECLTYPE_RETURNS(thrust::get<0>(x) + thrust::get<1>(x) + thrust::get<2>(x))
 }; // end SumThreeTuple
 
@@ -84,7 +84,7 @@ VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTra
 
 struct RemovePred
 {
-  __host__ __device__ bool operator()(const thrust::tuple<uint32_t, uint32_t>& ele1, const float&)
+  _CCCL_HOST_DEVICE bool operator()(const thrust::tuple<uint32_t, uint32_t>& ele1, const float&)
   {
     return thrust::get<0>(ele1) == thrust::get<1>(ele1);
   }
@@ -116,7 +116,7 @@ SimpleUnitTest<TestZipFunctionMixed, type_list<int, float>> TestZipFunctionMixed
 
 struct NestedFunctionCall
 {
-  __host__ __device__ bool
+  _CCCL_HOST_DEVICE bool
   operator()(const thrust::tuple<uint32_t, thrust::tuple<thrust::tuple<int, int>, thrust::tuple<int, int>>>& idAndPt)
   {
     thrust::tuple<thrust::tuple<int, int>, thrust::tuple<int, int>> ele1 = thrust::get<1>(idAndPt);
@@ -154,7 +154,7 @@ SimpleUnitTest<TestNestedZipFunction, type_list<int, float>> TestNestedZipFuncti
 
 struct SortPred
 {
-  __device__ __forceinline__ bool
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool
   operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a, const thrust::tuple<thrust::tuple<int, int>, int>& b)
   {
     return thrust::get<1>(a) < thrust::get<1>(b);

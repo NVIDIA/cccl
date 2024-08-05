@@ -1,0 +1,95 @@
+{
+  "image": "rapidsai/devcontainers:24.10-cpp-mambaforge-ubuntu22.04",
+  "runArgs": [
+    "--rm",
+    "--name",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-24.10-cuda12.5-conda"
+  ],
+  "hostRequirements": {"gpu": "optional"},
+  "features": {
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:24.10": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
+  ],
+  "containerEnv": {
+    "CI": "${localEnv:CI}",
+    "CUDAARCHS": "70-real",
+    "CUDA_VERSION": "12.5",
+    "DEFAULT_CONDA_ENV": "rapids",
+    "PYTHONSAFEPATH": "1",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_PACKAGE_MANAGER": "conda",
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+    "HISTFILE": "/home/coder/.cache/._bash_history",
+    "LIBCUDF_KERNEL_CACHE_PATH": "/home/coder/cudf/cpp/build/latest/jitify_cache",
+    "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
+    "RAPIDS_cmake_GIT_REPO": "${localEnv:RAPIDS_cmake_GIT_REPO}",
+    "RAPIDS_rmm_GIT_REPO": "${localEnv:RAPIDS_rmm_GIT_REPO}",
+    "RAPIDS_ucxx_GIT_REPO": "${localEnv:RAPIDS_ucxx_GIT_REPO}",
+    "RAPIDS_kvikio_GIT_REPO": "${localEnv:RAPIDS_kvikio_GIT_REPO}",
+    "RAPIDS_cudf_GIT_REPO": "${localEnv:RAPIDS_cudf_GIT_REPO}",
+    "RAPIDS_raft_GIT_REPO": "${localEnv:RAPIDS_raft_GIT_REPO}",
+    "RAPIDS_cuvs_GIT_REPO": "${localEnv:RAPIDS_cuvs_GIT_REPO}",
+    "RAPIDS_cumlprims_mg_GIT_REPO": "${localEnv:RAPIDS_cumlprims_mg_GIT_REPO}",
+    "RAPIDS_cuml_GIT_REPO": "${localEnv:RAPIDS_cuml_GIT_REPO}",
+    "RAPIDS_cugraph_ops_GIT_REPO": "${localEnv:RAPIDS_cugraph_ops_GIT_REPO}",
+    "RAPIDS_wholegraph_GIT_REPO": "${localEnv:RAPIDS_wholegraph_GIT_REPO}",
+    "RAPIDS_cugraph_GIT_REPO": "${localEnv:RAPIDS_cugraph_GIT_REPO}",
+    "RAPIDS_cuspatial_GIT_REPO": "${localEnv:RAPIDS_cuspatial_GIT_REPO}"
+  },
+  "initializeCommand": ["/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,wholegraph,cugraph,cuspatial}"],
+  "postCreateCommand": ["/bin/bash", "-c", "if [ ${CI:-false} = 'false' ]; then . /home/coder/cccl/ci/rapids/post-create-command.sh; fi"],
+  "postAttachCommand": ["/bin/bash", "-c", "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"],
+  "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/rmm,target=/home/coder/rmm,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/kvikio,target=/home/coder/kvikio,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/ucxx,target=/home/coder/ucxx,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cudf,target=/home/coder/cudf,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/raft,target=/home/coder/raft,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cuvs,target=/home/coder/cuvs,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cuml,target=/home/coder/cuml,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/wholegraph,target=/home/coder/wholegraph,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cuspatial,target=/home/coder/cuspatial,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.conda,target=/home/coder/.conda,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind,consistency=consistent"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "augustocdias.tasks-shell-input",
+        "ms-python.flake8",
+        "nvidia.nsight-vscode-edition"
+      ],
+      "files.watcherExclude": {
+        "**/build/**": true,
+        "**/_skbuild/**": true,
+        "**/target/**": true,
+        "/home/coder/.aws/**/*": true,
+        "/home/coder/.cache/**/*": true,
+        "/home/coder/.conda/**/*": true,
+        "/home/coder/.local/share/**/*": true,
+        "/home/coder/.vscode-server/**/*": true
+      },
+      "search.exclude": {
+        "**/build/**": true,
+        "**/_skbuild/**": true,
+        "**/*.code-search": true,
+        "/home/coder/.aws/**/*": true,
+        "/home/coder/.cache/**/*": true,
+        "/home/coder/.conda/**/*": true,
+        "/home/coder/.local/share/**/*": true,
+        "/home/coder/.vscode-server/**/*": true
+      }
+    }
+  }
+}

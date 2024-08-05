@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/cstdint.h>
+#include <cstdint>
 
 // functions to handle memory alignment
 
@@ -37,21 +37,21 @@ namespace util
 {
 
 template <typename T>
-_CCCL_HOST_DEVICE T* align_up(T* ptr, detail::uintptr_t bytes)
+_CCCL_HOST_DEVICE T* align_up(T* ptr, std::uintptr_t bytes)
 {
-  return (T*) (bytes * (((detail::uintptr_t) ptr + (bytes - 1)) / bytes));
+  return (T*) (bytes * (((std::uintptr_t) ptr + (bytes - 1)) / bytes));
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE T* align_down(T* ptr, detail::uintptr_t bytes)
+_CCCL_HOST_DEVICE T* align_down(T* ptr, std::uintptr_t bytes)
 {
-  return (T*) (bytes * (detail::uintptr_t(ptr) / bytes));
+  return (T*) (bytes * (std::uintptr_t(ptr) / bytes));
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE bool is_aligned(T* ptr, detail::uintptr_t bytes = sizeof(T))
+_CCCL_HOST_DEVICE bool is_aligned(T* ptr, std::uintptr_t bytes = sizeof(T))
 {
-  return detail::uintptr_t(ptr) % bytes == 0;
+  return std::uintptr_t(ptr) % bytes == 0;
 }
 
 } // end namespace util

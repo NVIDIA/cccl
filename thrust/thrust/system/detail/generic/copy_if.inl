@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  typedef typename thrust::iterator_traits<InputIterator1>::difference_type difference_type;
+  using difference_type = typename thrust::iterator_traits<InputIterator1>::difference_type;
 
   // empty sequence
   if (first == last)
@@ -134,7 +134,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
   // create an unsigned version of n (we know n is positive from the comparison above)
   // to avoid a warning in the compare below
-  typename thrust::detail::make_unsigned<difference_type>::type unsigned_n(n);
+  ::cuda::std::__make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
   if (sizeof(difference_type) > sizeof(unsigned int)

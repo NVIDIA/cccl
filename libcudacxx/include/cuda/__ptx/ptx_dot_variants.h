@@ -12,7 +12,7 @@
 #ifndef _CUDA_PTX_DOT_VARIANTS_H_
 #define _CUDA_PTX_DOT_VARIANTS_H_
 
-#include <cuda/std/__type_traits/integral_constant.h> // std::integral_constant
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,6 +21,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/integral_constant.h>
 
 /*
  * Public integral constant types and values for ".variant"s:

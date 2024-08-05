@@ -781,7 +781,7 @@ class Configuration(object):
 
             extraflags = []
             if self.cxx.type == 'clang':
-                extraflags = ['-Wno-unknown-cuda-version']
+                extraflags = ['-Wno-unknown-cuda-version', '--no-cuda-version-check']
 
             # Do a check with the user/config flag to ensure that the flag is supported.
             if not self.cxx.hasCompileFlag([stdflag] + extraflags):
@@ -964,6 +964,8 @@ class Configuration(object):
 
     def configure_compile_flags_exceptions(self):
         enable_exceptions = self.get_lit_bool('enable_exceptions', True)
+        nvrtc             = self.get_lit_bool('is_nvrtc', False)
+
         if not enable_exceptions:
             self.config.available_features.add('libcpp-no-exceptions')
             if 'nvhpc' in self.config.available_features:
@@ -976,6 +978,8 @@ class Configuration(object):
                 if self.cxx.type == 'nvcc':
                     self.cxx.compile_flags += ['-Xcompiler']
                 self.cxx.compile_flags += ['-fno-exceptions']
+        elif nvrtc:
+            self.config.available_features.add('libcpp-no-exceptions')
 
     def configure_compile_flags_rtti(self):
         enable_rtti = self.get_lit_bool('enable_rtti', True)

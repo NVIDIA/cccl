@@ -58,12 +58,6 @@ option(THRUST_ENABLE_HEADER_TESTING "Test that all public headers compile." "ON"
 option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
-option(THRUST_INCLUDE_CUB_CMAKE "Build CUB tests and examples. (Requires CUDA)." "OFF")
-
-# Mark this option as advanced for now. We'll revisit this later once the new
-# benchmarks are ready. For now, we just need to expose a way to compile
-# bench.cu from CMake for NVIDIA's internal builds.
-mark_as_advanced(THRUST_ENABLE_BENCHMARKS)
 
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
@@ -71,8 +65,7 @@ mark_as_advanced(THRUST_ENABLE_BENCHMARKS)
 if (NOT (THRUST_ENABLE_HEADER_TESTING OR
          THRUST_ENABLE_TESTING OR
          THRUST_ENABLE_EXAMPLES OR
-         THRUST_ENABLE_BENCHMARKS OR
-         THRUST_INCLUDE_CUB_CMAKE))
+         THRUST_ENABLE_BENCHMARKS))
   return()
 endif()
 
@@ -135,13 +128,4 @@ endif()
 
 if (THRUST_ENABLE_BENCHMARKS)
   add_subdirectory(benchmarks)
-  add_subdirectory(internal/benchmark)
-endif()
-
-if (THRUST_INCLUDE_CUB_CMAKE AND THRUST_CUDA_FOUND)
-  set(CUB_IN_THRUST ON)
-  # CUB's path is specified generically to support both GitHub and Perforce
-  # source tree layouts. The include directory used by cub-config.cmake
-  # for source layouts is the same as the project root.
-  add_subdirectory("${_CUB_INCLUDE_DIR}" dependencies/cub)
 endif()

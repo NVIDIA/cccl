@@ -21,6 +21,7 @@ defaults:
     shell: bash --noprofile --norc -euo pipefail {0}
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 7 * * *' # 7AM UTC, 12AM PST, 3AM EST
 
@@ -36,18 +37,23 @@ jobs:
       contents: read
     outputs:
       workflow: ${{ steps.build-workflow.outputs.workflow }}
-      workflow_keys: ${{ steps.build-workflow.outputs.workflow_keys }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Build workflow
         id: build-workflow
         uses: ./.github/actions/workflow-build
         with:
           workflows: nightly
+          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
+          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
 
-  run-workflow:
+  dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
     needs: build-workflow
     permissions:
       id-token: write
@@ -55,62 +61,93 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow_keys) }}
-    uses: ./.github/workflows/workflow-dispatch.yml
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
-      name: ${{ matrix.name }}
-      jobs: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)[matrix.name]) }}
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
 
-  # This job acts as a sentry and will fail if any leaf job in the workflow tree fails, as
-  # run-workflow always succeeds. Use this job when checking for successful matrix workflow job completion.
+  dispatch-groups-windows-two-stage:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    with:
+      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+
+  dispatch-groups-linux-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+
+  dispatch-groups-windows-standalone:
+    name: ${{ matrix.name }}
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
+    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    with:
+      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+
   verify-workflow:
     name: Verify and summarize workflow results
     if: ${{ always() && !cancelled() }}
     needs:
       - build-workflow
-      - run-workflow
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-windows-two-stage
+      - dispatch-groups-linux-standalone
+      - dispatch-groups-windows-standalone
     permissions:
       contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
+          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
 
-  # Check all other job statuses. This job gates branch protection checks.
-  ci:
-    name: CI
-    # !! Important: This job is used for branch protection checks.
-    # !! Need to use always() instead of !cancelled() because skipped jobs count as success
-    # !! for Github branch protection checks. Yes, really: by default, branch protections
-    # !! can be bypassed by cancelling CI. See NVIDIA/cccl#605.
-    if: ${{ always() }}
-    needs:
-      - verify-workflow
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check results
-        run: |
-          status="success"
 
-          check_result() {
-            name=$1
-            expected=$2
-            result=$3
-
-            echo "Checking if $name job result ('$result') is '$expected'..."
-            if [[ "$result" != "$expected" ]]; then
-              echo "$name job failed"
-
-              status="failed"
-            fi
-          }
-
-          check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
-
-          if [[ "$status" != "success" ]]; then
-            exit 1
-          fi
+  build-rapids:
+    name: Build RAPIDS
+    secrets: inherit
+    permissions:
+      actions: read
+      packages: read
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/build-rapids.yml
+    with:
+      enable_slack_alerts: true

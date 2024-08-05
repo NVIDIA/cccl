@@ -7,8 +7,8 @@
 template <class Vector>
 void TestVectorManipulation(size_t n)
 {
-  typedef typename Vector::iterator Iterator;
-  typedef typename Vector::value_type T;
+  using Iterator = typename Vector::iterator;
+  using T        = typename Vector::value_type;
 
   thrust::host_vector<T> src = unittest::random_samples<T>(n);
   ASSERT_EQUAL(src.size(), n);

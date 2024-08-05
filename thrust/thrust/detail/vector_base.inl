@@ -64,7 +64,7 @@ vector_base<T, Alloc>::vector_base(size_type n)
     : m_storage()
     , m_size(0)
 {
-  default_init(n);
+  value_init(n);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -72,7 +72,7 @@ vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
-  default_init(n);
+  value_init(n);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -212,16 +212,16 @@ void vector_base<T, Alloc>::init_dispatch(IteratorOrIntegralType n, IteratorOrIn
 } // end vector_base::init_dispatch()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::default_init(size_type n)
+void vector_base<T, Alloc>::value_init(size_type n)
 {
   if (n > 0)
   {
     m_storage.allocate(n);
     m_size = n;
 
-    m_storage.default_construct_n(begin(), size());
+    m_storage.value_initialize_n(begin(), size());
   } // end if
-} // end vector_base::default_init()
+} // end vector_base::value_init()
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
@@ -277,7 +277,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
 {
   // check the type of InputIterator: if it's an integral type,
   // we need to interpret this call as (size_type, value_type)
-  typedef thrust::detail::is_integral<InputIterator> Integer;
+  using Integer = ::cuda::std::is_integral<InputIterator>;
 
   init_dispatch(first, last, Integer());
 } // end vector_base::vector_base()
@@ -290,7 +290,7 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, cons
 {
   // check the type of InputIterator: if it's an integral type,
   // we need to interpret this call as (size_type, value_type)
-  typedef thrust::detail::is_integral<InputIterator> Integer;
+  using Integer = ::cuda::std::is_integral<InputIterator>;
 
   init_dispatch(first, last, Integer());
 } // end vector_base::vector_base()
@@ -602,7 +602,7 @@ void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
   // we could have received assign(n, x), so disambiguate on the
   // type of InputIterator
-  typedef typename thrust::detail::is_integral<InputIterator> integral;
+  using integral = typename ::cuda::std::is_integral<InputIterator>;
 
   assign_dispatch(first, last, integral());
 } // end vector_base::assign()
@@ -640,7 +640,7 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 {
   // we could have received insert(position, n, x), so disambiguate on the
   // type of InputIterator
-  typedef typename thrust::detail::is_integral<InputIterator> integral;
+  using integral = typename ::cuda::std::is_integral<InputIterator>;
 
   insert_dispatch(position, first, last, integral());
 } // end vector_base::insert()
@@ -792,7 +792,7 @@ void vector_base<T, Alloc>::append(size_type n)
       // we've got room for all of them
 
       // default construct new elements at the end of the vector
-      m_storage.default_construct_n(end(), n);
+      m_storage.value_initialize_n(end(), n);
 
       // extend the size
       m_size += n;
@@ -822,7 +822,7 @@ void vector_base<T, Alloc>::append(size_type n)
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
         // construct new elements to insert
-        new_storage.default_construct_n(new_end, n);
+        new_storage.value_initialize_n(new_end, n);
         new_end += n;
       } // end try
       catch (...)
@@ -1127,8 +1127,8 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 {
   typename thrust::iterator_difference<InputIterator1>::type n = thrust::distance(first1, last1);
 
-  typedef typename thrust::iterator_system<InputIterator1>::type FromSystem1;
-  typedef typename thrust::iterator_system<InputIterator2>::type FromSystem2;
+  using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
+  using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;
 
   // bring both ranges to the host system
   // note that these copies are no-ops if the range is already convertible to the host system
@@ -1146,11 +1146,11 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
-  typedef typename thrust::iterator_system<InputIterator1>::type system1;
-  typedef typename thrust::iterator_system<InputIterator2>::type system2;
+  using system1 = typename thrust::iterator_system<InputIterator1>::type;
+  using system2 = typename thrust::iterator_system<InputIterator2>::type;
 
   // dispatch on the sameness of the two systems
-  return vector_equal(first1, last1, first2, thrust::detail::is_same<system1, system2>());
+  return vector_equal(first1, last1, first2, ::cuda::std::is_same<system1, system2>());
 }
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>

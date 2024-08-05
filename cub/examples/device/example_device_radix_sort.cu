@@ -50,7 +50,7 @@
 using namespace cub;
 
 //---------------------------------------------------------------------
-// Globals, constants and typedefs
+// Globals, constants and aliases
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;
-  void* d_temp_storage      = NULL;
+  void* d_temp_storage      = nullptr;
 
   CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));

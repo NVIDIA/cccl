@@ -89,8 +89,8 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int> = 0>
 #  endif // _CCCL_STD_VER <= 2017
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(
-  const subrange<_Iter, _Sent, _Kind>& __subrange);
+_LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange);
 
 #  if _CCCL_STD_VER >= 2020
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>

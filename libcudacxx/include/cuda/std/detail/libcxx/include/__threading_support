@@ -56,7 +56,7 @@ _CCCL_PUSH_MACROS
 #  endif
 
 #  if defined(_LIBCUDACXX_HAS_THREAD_LIBRARY_EXTERNAL) || defined(_LIBCUDACXX_BUILDING_THREAD_LIBRARY_EXTERNAL)
-#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_FUNC_VIS
+#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_INLINE_VISIBILITY
 #  else
 #    define _LIBCUDACXX_THREAD_ABI_VISIBILITY inline _LIBCUDACXX_INLINE_VISIBILITY
 #  endif
@@ -76,8 +76,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_POLLING_COUNT 16
 
-_LIBCUDACXX_INLINE_VISIBILITY inline void __libcpp_thread_yield_processor()
-{
+_LIBCUDACXX_INLINE_VISIBILITY inline void __libcpp_thread_yield_processor(){
 #  if defined(__aarch64__)
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :::);)
 #  elif defined(__x86_64__)
@@ -87,11 +86,9 @@ _LIBCUDACXX_INLINE_VISIBILITY inline void __libcpp_thread_yield_processor()
 #  else
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #  endif
-  NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
-}
+  NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)}
 
-_LIBCUDACXX_THREAD_ABI_VISIBILITY
-void __libcpp_thread_yield();
+_LIBCUDACXX_THREAD_ABI_VISIBILITY void __libcpp_thread_yield();
 
 _LIBCUDACXX_THREAD_ABI_VISIBILITY
 void __libcpp_thread_sleep_for(chrono::nanoseconds __ns);
@@ -433,7 +430,7 @@ int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv)
 
 bool __libcpp_semaphore_init(__libcpp_semaphore_t* __sem, int __init)
 {
-  return (*__sem = dispatch_semaphore_create(__init)) != NULL;
+  return (*__sem = dispatch_semaphore_create(__init)) != nullptr;
 }
 
 bool __libcpp_semaphore_destroy(__libcpp_semaphore_t* __sem)
@@ -687,8 +684,7 @@ struct alignas(64) __libcpp_contention_t
 #    endif
 };
 
-_LIBCUDACXX_FUNC_VIS
-__libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
+_LIBCUDACXX_INLINE_VISIBILITY __libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
 
 #  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 

@@ -39,7 +39,7 @@ struct __integer_sequence
   using __to_tuple_indices = __tuple_indices<(_Values + _Sp)...>;
 };
 
-#if !__has_builtin(__make_integer_seq) || defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#ifndef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 
 namespace __detail
 {
@@ -170,9 +170,9 @@ struct __parity<7>
 
 } // namespace __detail
 
-#endif // !__has_builtin(__make_integer_seq) || defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#endif // !_LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 
-#if __has_builtin(__make_integer_seq)
+#ifdef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 template <size_t _Ep, size_t _Sp>
 using __make_indices_imp =
   typename __make_integer_seq<__integer_sequence, size_t, _Ep - _Sp>::template __to_tuple_indices<_Sp>;
@@ -181,8 +181,6 @@ template <size_t _Ep, size_t _Sp>
 using __make_indices_imp = typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
 
 #endif
-
-#if _CCCL_STD_VER > 2011
 
 template <class _Tp, _Tp... _Ip>
 struct _LIBCUDACXX_TEMPLATE_VIS integer_sequence
@@ -198,12 +196,12 @@ struct _LIBCUDACXX_TEMPLATE_VIS integer_sequence
 template <size_t... _Ip>
 using index_sequence = integer_sequence<size_t, _Ip...>;
 
-#  if __has_builtin(__make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#ifdef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = __make_integer_seq<integer_sequence, _Tp, _Ep>;
 
-#  else
+#else // _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 
 template <typename _Tp, _Tp _Np>
 using __make_integer_sequence_unchecked _LIBCUDACXX_NODEBUG_TYPE =
@@ -222,7 +220,7 @@ struct __make_integer_sequence_checked
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = typename __make_integer_sequence_checked<_Tp, _Ep>::type;
 
-#  endif
+#endif // _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 
 template <class _Tp, _Tp _Np>
 using make_integer_sequence = __make_integer_sequence<_Tp, _Np>;
@@ -232,8 +230,6 @@ using make_index_sequence = make_integer_sequence<size_t, _Np>;
 
 template <class... _Tp>
 using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

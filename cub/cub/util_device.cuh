@@ -53,6 +53,7 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__cuda/ensure_current_device.h>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -72,6 +73,7 @@ namespace detail
  * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
  * configurations of a given policy.
  */
+// TODO(bgruber): this should be called something like "override_policy"
 template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
 struct policy_wrapper_t : PolicyT
 {
@@ -104,36 +106,11 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-/**
- * \brief RAII helper which saves the current device and switches to the
- *        specified device on construction and switches to the saved device on
- *        destruction.
- */
-struct SwitchDevice
-{
-private:
-  int const old_device;
-  bool const needs_reset;
 
-public:
-  _CCCL_HOST inline SwitchDevice(int new_device)
-      : old_device(CurrentDevice())
-      , needs_reset(old_device != new_device)
-  {
-    if (needs_reset)
-    {
-      CubDebug(cudaSetDevice(new_device));
-    }
-  }
+//! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
+//! to the saved device on destruction.
+using SwitchDevice = ::cuda::__ensure_current_device;
 
-  _CCCL_HOST inline ~SwitchDevice()
-  {
-    if (needs_reset)
-    {
-      CubDebug(cudaSetDevice(old_device));
-    }
-  }
-};
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**
@@ -155,9 +132,10 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
 
 /**
  * \brief Cache for an arbitrary value produced by a nullary function.
+ * deprecated [Since 2.6.0]
  */
 template <typename T, T (*Function)()>
-struct ValueCache
+struct CUB_DEPRECATED ValueCache
 {
   T const value;
 
@@ -170,13 +148,11 @@ struct ValueCache
   {}
 };
 
-// Host code, only safely usable in C++11 or newer, where thread-safe
-// initialization of static locals is guaranteed.  This is a separate function
-// to avoid defining a local static in a host/device function.
+// Host code. This is a separate function to avoid defining a local static in a host/device function.
 _CCCL_HOST inline int DeviceCountCachedValue()
 {
-  static ValueCache<int, DeviceCountUncached> cache;
-  return cache.value;
+  static int count = DeviceCountUncached();
+  return count;
 }
 
 /**
@@ -211,7 +187,7 @@ struct PerDeviceAttributeCache
   // Each entry starts in the `DeviceEntryEmpty` state, then proceeds to the
   // `DeviceEntryInitializing` state, and then proceeds to the
   // `DeviceEntryReady` state. These are the only state transitions allowed;
-  // e.g. a linear sequence of transitions.
+  // i.e. a linear sequence of transitions.
   enum DeviceEntryStatus
   {
     DeviceEntryEmpty = 0,
@@ -319,7 +295,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  typedef void (*EmptyKernelPtr)();
+  using EmptyKernelPtr        = void (*)();
   EmptyKernelPtr empty_kernel = EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
@@ -372,7 +348,6 @@ _CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
 template <typename Tag>
 _CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
 {
-  // C++11 guarantees that initialization of static locals is thread safe.
   static PerDeviceAttributeCache cache;
   return cache;
 }
@@ -383,17 +358,15 @@ struct SmVersionCacheTag
 {};
 
 /**
- * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
+ * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10).
  *
  * \note This function may cache the result internally.
- *
  * \note This function is thread safe.
  */
 _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 {
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
-    // If this call fails, then we get the error code back in the payload,
-    // which we check with `CubDebug` below.
+    // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
       return PtxVersionUncached(pv, device);
     },
@@ -408,37 +381,23 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 }
 
 /**
- * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
+ * \brief Retrieves the PTX virtual architecture that will be used on the current device (major * 100 + minor * 10).
  *
  * \note This function may cache the result internally.
- *
  * \note This function is thread safe.
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
   cudaError_t result = cudaErrorUnknown;
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (auto const device  = CurrentDevice();
-     auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
-       // If this call fails, then we get the error code back in the payload,
-       // which we check with `CubDebug` below.
-       [=](int& pv) {
-         return PtxVersionUncached(pv, device);
-       },
-       device);
-
-     if (!CubDebug(payload.error)) { ptx_version = payload.attribute; }
-
-     result = payload.error;),
-    ( // NV_IS_DEVICE:
-      result = PtxVersionUncached(ptx_version);));
-
+  NV_IF_TARGET(NV_IS_HOST,
+               (result = PtxVersion(ptx_version, CurrentDevice());),
+               ( // NV_IS_DEVICE:
+                 result = PtxVersionUncached(ptx_version);));
   return result;
 }
 
 /**
- * \brief Retrieves the SM version of \p device (major * 100 + minor * 10)
+ * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int device = CurrentDevice())
 {
@@ -464,10 +423,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
 }
 
 /**
- * \brief Retrieves the SM version of \p device (major * 100 + minor * 10)
+ * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10).
  *
  * \note This function may cache the result internally.
- *
  * \note This function is thread safe.
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
@@ -477,8 +435,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
   NV_IF_TARGET(
     NV_IS_HOST,
     (auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
-       // If this call fails, then we get the error code back in
-       // the payload, which we check with `CubDebug` below.
+       // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
        [=](int& pv) {
          return SmVersionUncached(pv, device);
        },
@@ -565,9 +522,8 @@ CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
 CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
 {
   has_uva           = false;
-  cudaError_t error = cudaSuccess;
   int device        = -1;
-  error             = CubDebug(cudaGetDevice(&device));
+  cudaError_t error = CubDebug(cudaGetDevice(&device));
   if (cudaSuccess != error)
   {
     return error;
@@ -669,20 +625,19 @@ struct KernelConfig
 };
 
 /// Helper for dispatching into a policy chain
-template <int PTX_VERSION, typename PolicyT, typename PrevPolicyT>
+template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
 struct ChainedPolicy
 {
   /// The policy for the active compiler pass
-  using ActivePolicy =
-    cub::detail::conditional_t<(CUB_PTX_ARCH < PTX_VERSION), typename PrevPolicyT::ActivePolicy, PolicyT>;
+  using ActivePolicy = ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
-    if (ptx_version < PTX_VERSION)
+    if (device_ptx_version < PolicyPtxVersion)
     {
-      return PrevPolicyT::Invoke(ptx_version, op);
+      return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
   }
@@ -693,7 +648,7 @@ template <int PTX_VERSION, typename PolicyT>
 struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
 {
   /// The policy for the active compiler pass
-  typedef PolicyT ActivePolicy;
+  using ActivePolicy = PolicyT;
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>

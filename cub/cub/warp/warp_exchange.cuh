@@ -27,7 +27,7 @@
 
 /**
  * @file
- * The cub::WarpExchange class provides [<em>collective</em>](index.html#sec0)
+ * The cub::WarpExchange class provides [<em>collective</em>](../index.html#sec0)
  * methods for rearranging data partitioned across a CUDA warp.
  */
 
@@ -48,6 +48,8 @@
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>
 #include <cub/warp/specializations/warp_exchange_smem.cuh>
 
+#include <cuda/std/type_traits>
+
 CUB_NAMESPACE_BEGIN
 
 enum WarpExchangeAlgorithm
@@ -60,13 +62,13 @@ namespace detail
 {
 template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
 using InternalWarpExchangeImpl =
-  cub::detail::conditional_t<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
-                             WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
-                             WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
+  ::cuda::std::_If<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
+                   WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
+                   WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
 } // namespace detail
 
 /**
- * @brief The WarpExchange class provides [<em>collective</em>](index.html#sec0)
+ * @brief The WarpExchange class provides [<em>collective</em>](../index.html#sec0)
  *        methods for rearranging data partitioned across a CUDA warp.
  *
  * @tparam T
@@ -92,10 +94,10 @@ using InternalWarpExchangeImpl =
  *   partitioning of items across threads (where consecutive items belong to a
  *   single thread).
  * - WarpExchange supports the following types of data exchanges:
- *   - Transposing between [<em>blocked</em>](index.html#sec5sec3) and
- *     [<em>striped</em>](index.html#sec5sec3) arrangements
+ *   - Transposing between [<em>blocked</em>](../index.html#sec5sec3) and
+ *     [<em>striped</em>](../index.html#sec5sec3) arrangements
  *   - Scattering ranked items to a
- *     [<em>striped arrangement</em>](index.html#sec5sec3)
+ *     [<em>striped arrangement</em>](../index.html#sec5sec3)
  *
  * @par A Simple Example
  * @par

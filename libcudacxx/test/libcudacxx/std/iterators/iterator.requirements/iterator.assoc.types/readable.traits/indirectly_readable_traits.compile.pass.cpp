@@ -26,8 +26,7 @@ concept value_type_matches =
 #else
 template <class T>
 _LIBCUDACXX_CONCEPT_FRAGMENT(has_no_value_type_,
-                             requires() //
-                             (typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
+                             requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
 
 template <class T>
 _LIBCUDACXX_CONCEPT has_no_value_type = !_LIBCUDACXX_FRAGMENT(has_no_value_type_, T);

@@ -115,28 +115,10 @@ struct __pair_constraints
   };
 };
 
-// We need to synthesize the copy / move assignment if it would be implicitly deleted as a member of a class
-// In that case _T1 would be copy assignable but _TestSynthesizeAssignment<_T1> would not
-// This happens e.g for reference types
-template <class _T1>
-struct _TestSynthesizeAssignment
-{
-  _T1 __dummy;
-};
-
-template <class _T1, class _T2>
-struct __must_synthesize_assignment
-    : integral_constant<bool,
-                        (_CCCL_TRAIT(is_copy_assignable, _T1) && _CCCL_TRAIT(is_copy_assignable, _T2)
-                         && !(_CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_T1>)
-                              && _CCCL_TRAIT(is_copy_assignable, _TestSynthesizeAssignment<_T2>)))
-                          || (_CCCL_TRAIT(is_move_assignable, _T1) && _CCCL_TRAIT(is_move_assignable, _T2)
-                              && !(_CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_T1>)
-                                   && _CCCL_TRAIT(is_move_assignable, _TestSynthesizeAssignment<_T2>)))>
-{};
-
 // base class to ensure `is_trivially_copyable` when possible
-template <class _T1, class _T2, bool = __must_synthesize_assignment<_T1, _T2>::value>
+template <class _T1,
+          class _T2,
+          bool = __must_synthesize_assignment<_T1>::value || __must_synthesize_assignment<_T2>::value>
 struct __pair_base
 {
   _T1 first;
@@ -563,9 +545,9 @@ operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr common_comparison_category_t<
-  __synth_three_way_result<_T1>,
-  __synth_three_way_result<_T2>>
+_LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_INLINE_VISIBILITY constexpr common_comparison_category_t<__synth_three_way_result<_T1>,
+                                                                     __synth_three_way_result<_T2>>
 operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   if (auto __c = _CUDA_VSTD::__synth_three_way(__x.first, __y.first); __c != 0)
@@ -633,10 +615,10 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
-  swap(pair<_T1, _T2>& __x,
-       pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
+inline _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
+swap(pair<_T1, _T2>& __x,
+     pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
 {
   __x.swap(__y);
 }
@@ -652,9 +634,9 @@ swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
-  make_pair(_T1&& __t1, _T2&& __t2)
+inline _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_CONSTEXPR_CXX14 pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
+make_pair(_T1&& __t1, _T2&& __t2)
 {
   return pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>(
     _CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2));

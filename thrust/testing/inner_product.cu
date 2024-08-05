@@ -10,7 +10,7 @@
 template <class Vector>
 void TestInnerProductSimple()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3);
   Vector v2(3);
@@ -65,7 +65,7 @@ DECLARE_UNITTEST(TestInnerProductDispatchImplicit);
 template <class Vector>
 void TestInnerProductWithOperator()
 {
-  typedef typename Vector::value_type T;
+  using T = typename Vector::value_type;
 
   Vector v1(3);
   Vector v2(3);
@@ -109,7 +109,7 @@ struct only_set_when_both_expected
   long long expected;
   bool* flag;
 
-  __device__ long long operator()(long long x, long long y)
+  _CCCL_DEVICE long long operator()(long long x, long long y)
   {
     if (x == expected && y == expected)
     {

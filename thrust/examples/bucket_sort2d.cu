@@ -9,8 +9,10 @@
 #include <iomanip>
 #include <iostream>
 
+#include "include/host_device.h"
+
 // define a 2d float vector
-typedef thrust::tuple<float, float> vec2;
+using vec2 = thrust::tuple<float, float>;
 
 // return a random vec2 in [0,1)^2
 vec2 make_random_vec2()
@@ -24,7 +26,7 @@ vec2 make_random_vec2()
 
 // hash a point in the unit square to the index of
 // the grid bucket that contains it
-struct point_to_bucket_index : public thrust::unary_function<vec2, unsigned int>
+struct point_to_bucket_index
 {
   unsigned int width; // buckets in the x dimension (grid spacing = 1/width)
   unsigned int height; // buckets in the y dimension (grid spacing = 1/height)

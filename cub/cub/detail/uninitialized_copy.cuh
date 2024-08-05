@@ -47,7 +47,7 @@ namespace detail
 
 #if defined(_NVHPC_CUDA)
 template <typename T, typename U>
-_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
+_CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
 {
   // NVBug 3384810
   new (ptr) T(::cuda::std::forward<U>(val));
@@ -56,15 +56,16 @@ _CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 template <typename T,
           typename U,
           typename ::cuda::std::enable_if<::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
-_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
+_CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
 {
+  // gevtushenko: placement new should work here as well, but the code generated for copy assignment is sometimes better
   *ptr = ::cuda::std::forward<U>(val);
 }
 
 template <typename T,
           typename U,
           typename ::cuda::std::enable_if<!::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
-_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
+_CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
 {
   new (ptr) T(::cuda::std::forward<U>(val));
 }

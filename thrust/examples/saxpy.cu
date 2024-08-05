@@ -7,6 +7,8 @@
 #include <iostream>
 #include <iterator>
 
+#include "include/host_device.h"
+
 // This example illustrates how to implement the SAXPY
 // operation (Y[i] = a * X[i] + Y[i]) using Thrust.
 // The saxpy_slow function demonstrates the most
@@ -16,7 +18,7 @@
 // implements the operation with a single transformation
 // and represents "best practice".
 
-struct saxpy_functor : public thrust::binary_function<float, float, float>
+struct saxpy_functor
 {
   const float a;
 

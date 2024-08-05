@@ -295,12 +295,6 @@
 #  define STATIC_ASSERT_CXX14(Pred) assert(Pred)
 #endif
 
-#if TEST_STD_VER > 2014
-#  define STATIC_ASSERT_CXX17(Pred) static_assert(Pred, "")
-#else
-#  define STATIC_ASSERT_CXX17(Pred) assert(Pred)
-#endif
-
 /* Macros for testing libc++ specific behavior and extensions */
 #if defined(_LIBCUDACXX_VERSION)
 #  define LIBCPP_ASSERT(...)              assert(__VA_ARGS__)
@@ -467,7 +461,7 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  endif // not MSVC
 #endif
 
-#define TEST_CONSTEXPR_GLOBAL _LIBCUDACXX_CONSTEXPR_GLOBAL
+#define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
 #if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000

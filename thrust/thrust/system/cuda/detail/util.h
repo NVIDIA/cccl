@@ -162,7 +162,8 @@ THRUST_HOST_FUNCTION cudaError_t trivial_copy_to_device(Type* dst, Type const* s
 }
 
 template <class Policy, class Type>
-_CCCL_HOST_DEVICE cudaError_t trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t count)
+THRUST_RUNTIME_FUNCTION cudaError_t
+trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t count)
 {
   cudaError_t status = cudaSuccess;
   if (count == 0)
@@ -253,12 +254,12 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
 template <class ValueType, class InputIt, class UnaryOp>
 struct transform_input_iterator_t
 {
-  typedef transform_input_iterator_t self_t;
-  typedef typename iterator_traits<InputIt>::difference_type difference_type;
-  typedef ValueType value_type;
-  typedef void pointer;
-  typedef value_type reference;
-  typedef std::random_access_iterator_tag iterator_category;
+  using self_t            = transform_input_iterator_t;
+  using difference_type   = typename iterator_traits<InputIt>::difference_type;
+  using value_type        = ValueType;
+  using pointer           = void;
+  using reference         = value_type;
+  using iterator_category = std::random_access_iterator_tag;
 
   InputIt input;
   mutable UnaryOp op;
@@ -360,12 +361,12 @@ struct transform_input_iterator_t
 template <class ValueType, class InputIt1, class InputIt2, class BinaryOp>
 struct transform_pair_of_input_iterators_t
 {
-  typedef transform_pair_of_input_iterators_t self_t;
-  typedef typename iterator_traits<InputIt1>::difference_type difference_type;
-  typedef ValueType value_type;
-  typedef void pointer;
-  typedef value_type reference;
-  typedef std::random_access_iterator_tag iterator_category;
+  using self_t            = transform_pair_of_input_iterators_t;
+  using difference_type   = typename iterator_traits<InputIt1>::difference_type;
+  using value_type        = ValueType;
+  using pointer           = void;
+  using reference         = value_type;
+  using iterator_category = std::random_access_iterator_tag;
 
   InputIt1 input1;
   InputIt2 input2;
@@ -489,12 +490,12 @@ struct identity
 template <class T>
 struct counting_iterator_t
 {
-  typedef counting_iterator_t self_t;
-  typedef T difference_type;
-  typedef T value_type;
-  typedef void pointer;
-  typedef T reference;
-  typedef std::random_access_iterator_tag iterator_category;
+  using self_t            = counting_iterator_t;
+  using difference_type   = T;
+  using value_type        = T;
+  using pointer           = void;
+  using reference         = T;
+  using iterator_category = std::random_access_iterator_tag;
 
   T count;
 
