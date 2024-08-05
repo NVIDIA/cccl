@@ -146,6 +146,14 @@ __host__ __device__ void test()
                 "");
   static_assert(!cuda::std::is_trivially_move_assignable<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value,
                 "");
+
+  // Implicit: * If is_trivially_destructible_v<T> is true, then IV has is_trivially_copyable
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::inplace_vector<ThrowingDefaultConstruct, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_copyable<cuda::std::inplace_vector<ThrowingCopyConstructor, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_copyable<cuda::std::inplace_vector<ThrowingMoveConstructor, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_copyable<cuda::std::inplace_vector<ThrowingCopyAssignment, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_copyable<cuda::std::inplace_vector<ThrowingMoveAssignment, 42>>::value, "");
+  static_assert(!cuda::std::is_trivially_copyable<cuda::std::inplace_vector<NonTrivialDestructor, 42>>::value, "");
 }
 
 int main(int, char**)
