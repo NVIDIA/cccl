@@ -54,6 +54,7 @@
 #   IGNORE_DEPRECATED_API         # Silence build warnings about deprecated APIs
 #   IGNORE_DEPRECATED_CPP_DIALECT # Silence build warnings about deprecated compilers and C++ standards
 #   IGNORE_DEPRECATED_CPP_11      # Only silence deprecation warnings for C++11
+#   IGNORE_DEPRECATED_CPP_14      # Only silence deprecation warnings for C++14
 #   IGNORE_DEPRECATED_COMPILER    # Only silence deprecation warnings for old compilers
 #   IGNORE_CUB_VERSION            # Skip configure-time and compile-time CUB version checks
 # )
@@ -118,6 +119,7 @@ function(thrust_create_target target_name)
     IGNORE_DEPRECATED_API
     IGNORE_DEPRECATED_COMPILER
     IGNORE_DEPRECATED_CPP_11
+    IGNORE_DEPRECATED_CPP_14
     IGNORE_DEPRECATED_CPP_DIALECT
   )
   set(keys
@@ -220,6 +222,10 @@ function(thrust_create_target target_name)
 
   if (TCT_IGNORE_DEPRECATED_CPP_11)
     target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_CPP_11")
+  endif()
+
+  if (TCT_IGNORE_DEPRECATED_CPP_14)
+    target_compile_definitions(${target_name} INTERFACE "THRUST_IGNORE_DEPRECATED_CPP_14")
   endif()
 
   if (TCT_IGNORE_DEPRECATED_COMPILER)
