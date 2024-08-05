@@ -344,7 +344,7 @@ def is_windows(matrix_job):
 
 def is_nvhpc(matrix_job):
     host_compiler = get_host_compiler(matrix_job['cxx'])
-    return host_compiler['container_tag'] == == "nvhpc"
+    return host_compiler['container_tag'] == "nvhpc"
 
 
 def generate_dispatch_group_name(matrix_job):
