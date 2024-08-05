@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/experimental/device.cuh>
 
 #include "../hierarchy/testing_common.cuh"

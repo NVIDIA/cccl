@@ -7,7 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 
 #include <cuda/experimental/__utility/driver_api.cuh>
 

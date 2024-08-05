@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/experimental/stream.cuh>
 
 #include "../common/utility.cuh"
