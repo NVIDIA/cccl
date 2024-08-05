@@ -11,6 +11,7 @@
 #ifndef __CUDAX_DEVICE__
 #define __CUDAX_DEVICE__
 
+#include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
