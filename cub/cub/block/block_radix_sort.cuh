@@ -28,7 +28,7 @@
 
 /**
  * @file
- * The cub::BlockRadixSort class provides [<em>collective</em>](index.html#sec0) methods for radix
+ * The cub::BlockRadixSort class provides [<em>collective</em>](../index.html#sec0) methods for radix
  * sorting of items partitioned across a CUDA thread block.
  */
 
@@ -142,7 +142,7 @@ CUB_NAMESPACE_BEGIN
 //! @blockcollective{BlockRadixSort}
 //!
 //! The code snippet below illustrates a sort of 512 integer keys that
-//! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+//! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
 //! .. tab-set-code::
@@ -199,10 +199,8 @@ CUB_NAMESPACE_BEGIN
 //! Re-using dynamically allocating shared memory
 //! --------------------------------------------------
 //!
-//! The following example under the examples/block folder illustrates usage of
-//! dynamically shared memory with BlockReduce and how to re-purpose
-//! the same memory region:
-//! <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
+//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared memory with
+//! BlockReduce and how to re-purpose the same memory region.
 //!
 //! This example can be easily adapted to the storage required by BlockRadixSort.
 //! @endrst
@@ -986,7 +984,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates a sort of 512 integer keys that
-  //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive keys.
   //!
   //! .. code-block:: c++
@@ -1590,7 +1588,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates a sort of 512 integer keys and values that
-  //! are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128
+  //! are initially partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128
   //! threads where each thread owns 4 consecutive pairs.  The final partitioning is striped.
   //!
   //! .. code-block:: c++

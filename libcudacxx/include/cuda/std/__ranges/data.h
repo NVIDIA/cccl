@@ -97,7 +97,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto data = __data::__fn{};
+_CCCL_GLOBAL_CONSTANT auto data = __data::__fn{};
 } // namespace __cpo
 
 // [range.prim.cdata]
@@ -127,7 +127,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-_LIBCUDACXX_CPO_ACCESSIBILITY auto cdata = __cdata::__fn{};
+_CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
 } // namespace __cpo
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017

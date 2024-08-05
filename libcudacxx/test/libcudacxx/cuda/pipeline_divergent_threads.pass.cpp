@@ -11,10 +11,11 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: nvrtc
 
-#include <cuda_pipeline.h>
-
 #include <cuda/pipeline>
 #include <cuda/std/type_traits>
+
+// comes last to take the ABI version
+#include <cuda_pipeline.h>
 
 #include "cuda_space_selector.h"
 #include "test_macros.h"

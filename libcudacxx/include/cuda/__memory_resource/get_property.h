@@ -159,26 +159,6 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
-void get_property();
-
-struct __fn
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Upstream, class _Property>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(const _Upstream& __res, _Property __prop) const
-    noexcept(noexcept(get_property(__res, __prop))) -> decltype(get_property(__res, __prop))
-  {
-    return get_property(__res, __prop);
-  }
-};
-_LIBCUDACXX_END_NAMESPACE_CPO
-
-inline namespace __cpo
-{
-_LIBCUDACXX_CPO_ACCESSIBILITY auto get_property = __get_property::__fn{};
-} // namespace __cpo
-
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  endif // _CCCL_STD_VER >= 2014
