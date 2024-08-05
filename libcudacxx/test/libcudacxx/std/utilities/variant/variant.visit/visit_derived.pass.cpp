@@ -130,8 +130,8 @@ struct EvilVariant2
 
 __host__ __device__ void test_derived_from_variant()
 {
-  auto v1        = MyVariant{42};
-  const auto cv1 = MyVariant{142};
+  auto v1        = MyVariant{short(42)};
+  const auto cv1 = MyVariant{long(142)};
 
   cuda::std::visit(visitor_42{}, v1);
   cuda::std::visit(visitor_142{}, cv1);
