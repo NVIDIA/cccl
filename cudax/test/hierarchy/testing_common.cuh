@@ -155,4 +155,6 @@ void apply_each(const Fn& fn, const Tuple& tuple)
     tuple);
 }
 
+static __global__ void empty_kernel(int i) {}
+
 #endif
