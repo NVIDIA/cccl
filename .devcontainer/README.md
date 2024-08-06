@@ -9,10 +9,10 @@ CCCL uses [Development Containers](https://containers.dev/) to provide consisten
 
 ## Table of Contents
 1. [Quickstart: VSCode on Linux (Recommended)](#vscode)
-2. [Quickstart: VSCode on WSL](#wsl)
+2. [Quickstart: VSCode on WSL (Recommended for Windows)](#wsl)
 3. [Quickstart: Docker on Linux (Manual Approach)](#docker)
 
-## Quickstart: VSCode (Recommended) <a name="vscode"></a>
+## Quickstart: VSCode on Linux (Recommended) <a name="vscode"></a>
 
 ### Prerequisites
 - [Visual Studio Code](https://code.visualstudio.com/)
@@ -46,30 +46,74 @@ CCCL uses [Development Containers](https://containers.dev/) to provide consisten
 
 7. Done! See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
 
-## Quickstart: Using WSL <a name="wsl"></a>
+## Quickstart: VSCode on WSL (Recommended for Windows) <a name="wsl"></a>
 
-> [!NOTE]
-> _Make sure you have the Nvidia driver installed on your Windows host before moving further_. Type in `nvidia-smi` for verification.
+Windows Subsystem for Linux (WSL) enables you to run a Linux environment directly in Windows. 
+This isn't for native Windows development (e.g., compiling with `msvc`), but effectively a more convenient option than setting up a dual-boot Linux/Windows machine.
+Apart from the initial setup of WSL, the process for using CCCL's Dev Containers in WSL is effectively the same as the instructions for Linux, because WSL _is_ Linux.
+
+### Prerequisites
+- Windows OS that supports WSL 2 (Windows 11 or newer)
+- [Windows Subsystem for Linux v2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install) 
+- [Visual Studio Code](https://code.visualstudio.com/) installed on Windows host
+- [VSCode Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) installed on Windows host
+    - Includes [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extensions
+- Docker (in WSL) - Will be installed automatically by Dev Containers extension
+      
+#### GPU Prerequisites (only needed if running tests that require a GPU)
+
+If you have a GPU on your Windows system and you would like to use it for running tests from the Dev Container, you will also need the following:
+- [NVIDIA Driver](https://www.nvidia.com/Download/index.aspx?lang=en-us) installed on Windows host
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) 
+
+For more details see the official NVIDIA [Getting Started with CUDA on WSL guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl-2).
 
 ### Install WSL on your Windows host
-
 Refer to [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/wsl/install) for the full instructions to install WSL2.
-Here is the TL;DR version:
 
+<details>
+  <summary>Click here for the TL;DR version</summary>
 1. Run `Powershell` as an administrator
 ![image](https://github.com/user-attachments/assets/2c985887-ca6c-46bc-9e1b-f235ccfd8513)
 
 2. Install WSL 2 by running:
 ```bash
-wsl --install
+> wsl --install
 ```
 3. Restart your computer
-4. Verify WSL 2 was succesfully installed by opening Powershell again and run
+4. If this is your first time installing WSL, upon restarting, it will prompt you to create a username/password to use inside WSL.
+5. Verify `wsl` was succesfully installed by opening Powershell again and run
 ```bash
-wsl -l -v
+> wsl -l -v
+  NAME      STATE           VERSION
+* Ubuntu    Running         2
 ```
+5. Launch `wsl` and verify your Linux environment
+```
+# In Powershell, start WSL, which will drop you into a terminal session running in Linux
+> wsl
 
-<h3 id="prereqs"> Install prerequisites and VS Code extensions</h3>
+# In the new terminal session, verify your Linux environment by changing to your home directory
+# and displaying the current directory. This should show `/home/*YOUR USER NAME*`
+> cd ~
+> pwd
+/home/jhemstad
+```
+Congratulations! You now have WSL installed and can use it as you would a normal Ubuntu/Linux installation. 
+</details>
+
+### Connect VSCode to WSL 
+
+1. Launch VSCode on your Windows host
+
+2. Connect VSCode to your WSL instance
+- Enter `ctrl + shift + p` to open the command prompt and type "WSL" and click "WSL: Connect to WSL"
+    - If you don't see this option, you need to install the [WSL VSCode Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) (comes with the [Remote Development pack ](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack))
+![image](https://github.com/user-attachments/assets/3e0e6af7-4251-4ce9-9204-589ad7daa12a)
+    - To verify VSCode is connected to WSL, you should see the following in the bottom left corner: ![Shows the WSL: Ubuntu status for a successful connection to WSL.](https://github.com/user-attachments/assets/26dbba61-cc96-4ac3-8200-fdb26a8e4a4b)
+
+
+
 
 4. Launch your WSL/Ubuntu terminal by running `wsl` in Powershell.
 
@@ -104,7 +148,6 @@ then run `sudo systemctl restart docker.service`.
 ### Build CCCL in WSL using Dev Containers
 
 9. Still on your WSL terminal run `git clone https://github.com/NVIDIA/cccl.git`
-
 
 10. Open the CCCL cloned repo in VS Code ( `Ctrl + Shift + P `, select `File: Open Folder...` and select the path where your CCCL clone is located).
 
