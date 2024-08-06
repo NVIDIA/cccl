@@ -11,6 +11,7 @@
 #define CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
 
 #include <cuda/memory_resource>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>

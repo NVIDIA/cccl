@@ -566,18 +566,11 @@ public:
     this->__destroy_from(begin());
   }
 
-  //! @brief Constructs a vector using a memory resource
-  //! @param __mr The memory resource to allocate memory within the vector.
-  //! @note No memory is allocated.
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr)
-      : __buf_(__mr, 0)
-  {}
-
   //! @brief Constructs a vector of size \p __size using a memory resource and value-initializes \p __size elements
   //! @param __mr The memory resource to allocate the vector with.
-  //! @param __size The size of the vector.
+  //! @param __size The size of the vector. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size)
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size = 0)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -597,7 +590,7 @@ public:
   {
     if (__size != 0)
     {
-      this->__uninitialized_fill_n(begin(), __size_, __value);
+      this->__uninitialized_fill_n(begin(), __size, __value);
     }
   }
 

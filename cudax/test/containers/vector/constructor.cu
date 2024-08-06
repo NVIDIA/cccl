@@ -52,21 +52,34 @@ TEMPLATE_TEST_CASE(
   Resource raw_resource{};
   Resource_ref resource{raw_resource};
 
-  SECTION("Construction with zero size")
+  SECTION("Construction with size")
   {
-    { // from resource
+    { // from resource, no alllocation
       const Vector vec{resource};
-      assert(vec.empty());
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
     }
 
-    { // from resource and size no allocation
+    { // from resource and size, no alllocation
       const Vector vec{resource, 0};
-      assert(vec.empty());
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // from resource, size and value, no alllocation
+      const Vector vec{resource, 0, T{42}};
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // from resource and size
+      const Vector vec{resource, 5};
+      CHECK(equal_range(vec, cuda::std::array<T, 5>{T(0), T(0), T(0), T(0), T(0)}));
     }
 
     { // from resource, size and value
-      const Vector vec{resource, 0, T{42}};
-      assert(vec.empty());
+      const Vector vec{resource, 5, T{42}};
+      CHECK(equal_range(vec, cuda::std::array<T, 5>{T(42), T(42), T(42), T(42), T(42)}));
     }
   }
 
@@ -77,14 +90,14 @@ TEMPLATE_TEST_CASE(
     { // can be copy constructed from empty input
       const Vector input{resource, 0};
       Vector vec(input);
-      assert(vec.empty());
+      CHECK(vec.empty());
     }
 
     { // can be copy constructed from non-empty input
       const Vector input{resource, {T(1), T(42), T(1337), T(0)}};
       Vector vec(input);
-      assert(!vec.empty());
-      assert(equal_range(vec, input));
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, input));
     }
   }
 
@@ -95,16 +108,16 @@ TEMPLATE_TEST_CASE(
     { // can be move constructed with empty input
       const Vector input{resource, 0};
       Vector vec(cuda::std::move(input));
-      assert(vec.empty());
-      assert(input.empty());
+      CHECK(vec.empty());
+      CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
       Vector input{resource, {T(1), T(42), T(1337), T(0)}};
       Vector vec(cuda::std::move(input));
-      assert(!vec.empty());
-      assert(input.size() == 4);
-      assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(!vec.empty());
+      CHECK(input.size() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
     }
   }
 #endif
@@ -117,7 +130,7 @@ void test_size()
   using vector = cudax::vector<T, Properties...>;
   { // can be constructed from a size, is empty if zero
     vector vec(0);
-    assert(vec.empty());
+    CHECK(vec.empty());
 #  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
     static_assert(!noexcept(vector(0)), "");
 #  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
@@ -126,8 +139,8 @@ void test_size()
   { // can be constructed from a size, elements are value initialized
     constexpr size_t size{3};
     vector vec(size);
-    assert(!vec.empty());
-    assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
+    CHECK(!vec.empty());
+    CHECK(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
 #  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
     static_assert(!noexcept(vector(3)), "");
 #  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
@@ -140,7 +153,7 @@ void test_size_value()
   using vector = cudax::vector<T, Properties...>;
   { // can be constructed from a size and a const T&, is empty if zero
     vector vec(0, T(42));
-    assert(vec.empty());
+    CHECK(vec.empty());
 #  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
     static_assert(!noexcept(vector(0, T(42))), "");
 #  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
@@ -149,8 +162,8 @@ void test_size_value()
   { // can be constructed from a size and a const T&, elements are copied
     constexpr size_t size{3};
     vector vec(size, T(42));
-    assert(!vec.empty());
-    assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
+    CHECK(!vec.empty());
+    CHECK(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
 #  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
     static_assert(!noexcept(vector(3, T(42))), "");
 #  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
@@ -164,27 +177,27 @@ void test_iter()
   { // can be constructed from two equal input iterators
     using iter = cpp17_input_iterator<const T*>;
     vector vec(iter{input.begin()}, iter{input.begin()});
-    assert(vec.empty());
+    CHECK(vec.empty());
   }
 
   { // can be constructed from two equal forward iterators
     using iter = forward_iterator<const T*>;
     vector vec(iter{input.begin()}, iter{input.begin()});
-    assert(vec.empty());
+    CHECK(vec.empty());
   }
 
   { // can be constructed from two input iterators
     using iter = cpp17_input_iterator<const T*>;
     vector vec(iter{input.begin()}, iter{input.end()});
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
+    CHECK(!vec.empty());
+    CHECK(equal_range(vec, input));
   }
 
   { // can be constructed from two forward iterators
     using iter = forward_iterator<const T*>;
     vector vec(iter{input.begin()}, iter{input.end()});
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
+    CHECK(!vec.empty());
+    CHECK(equal_range(vec, input));
   }
 }
 
@@ -195,14 +208,14 @@ void test_init_list()
   { // can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
     vector vec(input);
-    assert(vec.empty());
+    CHECK(vec.empty());
   }
 
   { // can be constructed from a non-empty initializer_list
     const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
     vector vec(input);
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
+    CHECK(!vec.empty());
+    CHECK(equal_range(vec, input));
   }
 }
 
@@ -212,13 +225,13 @@ void test_range()
   using vector = cudax::vector<T, Properties...>;
   { // can be constructed from an empty range
     vector vec(Range<T, 0>{});
-    assert(vec.empty());
+    CHECK(vec.empty());
   }
 
   { // can be constructed from a non-empty range
     vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
-    assert(!vec.empty());
-    assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    CHECK(!vec.empty());
+    CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
 }
 
@@ -280,7 +293,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -291,7 +304,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -304,7 +317,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -316,7 +329,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -328,7 +341,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -340,7 +353,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -352,7 +365,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -364,7 +377,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 
   try
@@ -376,7 +389,7 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 }
 #  endif // !TEST_HAS_NO_EXCEPTIONS
