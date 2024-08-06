@@ -17,7 +17,7 @@ semantics of standard C++ by default.
 Thread Scopes
 -------------
 
-A **thread scope** specifies the kind of threads that can synchronize with each other using synchronization primitive such
+A **thread scope** specifies the kind of threads that can synchronize with each other using synchronization primitives such
 as :ref:`atomic <libcudacxx-extended-api-synchronization-atomic>` or
 :ref:`barrier <libcudacxx-extended-api-synchronization-barrier>`.
 
