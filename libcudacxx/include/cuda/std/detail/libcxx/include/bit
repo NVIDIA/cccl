@@ -568,7 +568,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR uint32_t __bit_log2(_Tp __t) noexcept
 {
   static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__bit_log2 requires unsigned");
-  return std::numeric_limits<_Tp>::digits - 1 - __countl_zero(__t);
+  return numeric_limits<_Tp>::digits - 1 - __countl_zero(__t);
 }
 
 template <class _Tp>
