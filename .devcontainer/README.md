@@ -53,15 +53,21 @@ CCCL uses [Development Containers](https://containers.dev/) to provide consisten
 
 ### Install WSL on your Windows host
 
-1. Launch a Windows terminal (_e.g. Powershell_) as an administrator.
+Refer to [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/wsl/install) for the full instructions to install WSL2.
+Here is the TL;DR version:
+
+1. Run `Powershell` as an administrator
+![image](https://github.com/user-attachments/assets/2c985887-ca6c-46bc-9e1b-f235ccfd8513)
 
 2. Install WSL 2 by running:
 ```bash
 wsl --install
 ```
-This should probably install Ubuntu distro as a default.
-
-3. Restart your computer and run `wsl -l -v` on a Windows terminal to verify installation.
+3. Restart your computer
+4. Verify WSL 2 was succesfully installed by opening Powershell again and run
+```bash
+wsl -l -v
+```
 
 <h3 id="prereqs"> Install prerequisites and VS Code extensions</h3>
 
