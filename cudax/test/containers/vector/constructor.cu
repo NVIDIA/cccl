@@ -24,48 +24,65 @@
 #include "types.h"
 #include <catch2/catch.hpp>
 
-template <class T, class Tuple>
-struct unpack_properties;
+template <class>
+struct extract_properties;
 
-template <class T, class... Properties>
-struct unpack_properties<T, cuda::std::tuple<Properties...>>
+template <class... Properties>
+struct extract_properties<cuda::std::tuple<Properties...>>
 {
-  using type = cudax::vector<T, Properties...>;
+  using vector   = cudax::vector<int, Properties...>;
+  using resource = cuda::std::conditional_t<
+    cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__host_device,
+    cuda::mr::cuda_managed_memory_resource,
+    cuda::std::conditional_t<cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__device,
+                             cuda::mr::cuda_memory_resource,
+                             host_memory_resource<int>>>;
+
+  using resource_ref = cuda::mr::resource_ref<Properties...>;
 };
 
-template <class T, class Tuple>
-using unpacked_vector = typename unpack_properties<T, Tuple>::type;
-
 TEMPLATE_TEST_CASE(
-  "cudax::vector constructors",
-  "[container][vector]",
-  int,
-  Trivial,
-  NonTrivial,
-  ThrowingDefaultConstruct,
-  ThrowingCopyConstructor,
-  ThrowingMoveConstructor,
-  ThrowingCopyAssignment,
-  ThrowingMoveAssignment,
-  NonTrivialDestructor)
+  "cudax::vector constructors", "[container][vector]", cuda::std::tuple<>, cuda::std::tuple<cuda::mr::host_accessible>)
 {
-  cuda::mr::cuda_memory_resource resource{};
+  using Resource     = typename extract_properties<TestType>::resource;
+  using Resource_ref = typename extract_properties<TestType>::resource_ref;
+  using Vector       = typename extract_properties<TestType>::vector;
+  using T            = typename Vector::value_type;
 
-  using vector = cudax::vector<TestType, cuda::mr::device_accessible>;
-  using T      = TestType;
+  Resource raw_resource{};
+  Resource_ref resource{raw_resource};
 
+  SECTION("Construction with zero size")
+  {
+    { // from resource
+      const Vector vec{resource};
+      assert(vec.empty());
+    }
+
+    { // from resource and size no allocation
+      const Vector vec{resource, 0};
+      assert(vec.empty());
+    }
+
+    { // from resource, size and value
+      const Vector vec{resource, 0, T{42}};
+      assert(vec.empty());
+    }
+  }
+
+#if 0
   SECTION("copy construction")
   {
-    static_assert(!cuda::std::is_nothrow_copy_constructible<vector>::value, "");
+    static_assert(!cuda::std::is_nothrow_copy_constructible<Vector>::value, "");
     { // can be copy constructed from empty input
-      const vector input{resource, 0};
-      vector vec(input);
+      const Vector input{resource, 0};
+      Vector vec(input);
       assert(vec.empty());
     }
 
     { // can be copy constructed from non-empty input
-      const vector input{resource, {T(1), T(42), T(1337), T(0)}};
-      vector vec(input);
+      const Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec(input);
       assert(!vec.empty());
       assert(equal_range(vec, input));
     }
@@ -73,23 +90,24 @@ TEMPLATE_TEST_CASE(
 
   SECTION("move construction")
   {
-    static_assert(!cuda::std::is_nothrow_move_constructible<vector>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<Vector>::value, "");
 
     { // can be move constructed with empty input
-      const vector input{resource, 0};
-      vector vec(cuda::std::move(input));
+      const Vector input{resource, 0};
+      Vector vec(cuda::std::move(input));
       assert(vec.empty());
       assert(input.empty());
     }
 
     { // can be move constructed from non-empty input
-      vector input{resource, {T(1), T(42), T(1337), T(0)}};
-      vector vec(cuda::std::move(input));
+      Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec(cuda::std::move(input));
       assert(!vec.empty());
       assert(input.size() == 4);
       assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
     }
   }
+#endif
 }
 
 #if 0

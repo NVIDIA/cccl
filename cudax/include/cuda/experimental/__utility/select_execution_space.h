@@ -34,7 +34,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_host_accessible =
 
 template <class... _Properties>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_device_accessible =
-  _CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>;
+  (sizeof...(_Properties) != 0) && _CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>;
 
 template <class... _Properties>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_host_device_accessible =

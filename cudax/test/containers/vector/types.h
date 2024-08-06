@@ -10,9 +10,12 @@
 #ifndef CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
 #define CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
 
+#include <cuda/memory_resource>
 #include <cuda/std/array>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
+
+#include <new>
 
 struct Trivial
 {
@@ -566,5 +569,31 @@ namespace cudax = cuda::experimental;
 
 struct user_defined_property
 {};
+
+template <class T>
+struct host_memory_resource
+{
+  void* allocate(std::size_t size, std::size_t)
+  {
+    return new T[size];
+  }
+  void deallocate(void* ptr, std::size_t, std::size_t)
+  {
+    delete[] reinterpret_cast<T*>(ptr);
+  }
+
+  bool operator==(const host_memory_resource&) const
+  {
+    return true;
+  }
+  bool operator!=(const host_memory_resource&) const
+  {
+    return false;
+  }
+
+  friend void get_property(const host_memory_resource&, cuda::mr::host_accessible) {}
+};
+static_assert(cuda::mr::resource<host_memory_resource<int>>, "");
+static_assert(cuda::mr::resource_with<host_memory_resource<int>, cuda::mr::host_accessible>, "");
 
 #endif // CUDAX_TEST_CONTAINER_VECTOR_TYPES_H

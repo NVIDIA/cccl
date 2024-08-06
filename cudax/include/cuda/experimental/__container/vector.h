@@ -666,42 +666,42 @@ public:
   //! be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator begin() noexcept
   {
-    return iterator{this->data()};
+    return iterator{__buf_.data()};
   }
 
   //! @brief Returns an immutable iterator to the first element of the vector. If the vector is empty, the returned
   //! iterator will be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator begin() const noexcept
   {
-    return const_iterator{this->data()};
+    return const_iterator{__buf_.data()};
   }
 
   //! @brief Returns an immutable iterator to the first element of the vector. If the vector is empty, the returned
   //! iterator will be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cbegin() const noexcept
   {
-    return const_iterator{this->data()};
+    return const_iterator{__buf_.data()};
   }
 
   //! @brief Returns an iterator to the element following the last element of the vector. This element acts as a
   //! placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator end() noexcept
   {
-    return iterator{this->data() + __size_};
+    return iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator end() const noexcept
   {
-    return const_iterator{this->data() + __size_};
+    return const_iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cend() const noexcept
   {
-    return const_iterator{this->data() + __size_};
+    return const_iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns a reverse iterator to the first element of the reversed vector. It corresponds to the last element
@@ -753,14 +753,14 @@ public:
   //! will be null.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer data() noexcept
   {
-    return this->data();
+    return __buf_.data();
   }
 
   //! @brief Returns a pointer to the first element of the vector. If the vector has not allocated memory the pointer
   //! will be null.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer data() const noexcept
   {
-    return this->data();
+    return __buf_.data();
   }
   //! @}
 
