@@ -387,7 +387,7 @@ public:
     return *this;
   }
 
-  //! @brief Destroys the \c vector deallocating the storage after destroying all elements
+  //! @brief Destroys the \c vector and deallocates the storage after destroying all elements
   //! @note Does not destroy elements if `is_trivially_destructible_v<_Tp>` holds
   ~__vector_base() noexcept
   {
@@ -461,7 +461,7 @@ public:
   //! @brief Constructs a \c vector of size \p __size using a memory and leaves all elements uninitialized
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector
-  //! @warning This constructor does *NOT* initialize any elements. It is the users responsibility to ensure that the
+  //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, ::cuda::experimental::uninit_t)
@@ -722,7 +722,8 @@ public:
     }
   }
 
-  //! @brief swaps two \c vector
+  //! @brief Swaps the contents of a \c vector with those of \p __other
+  //! @param __other The other \c vector
   _CCCL_HOST_DEVICE void swap(vector& __other) noexcept
   {
     _CUDA_VSTD::swap(this->__buf_, __other.__buf_);
