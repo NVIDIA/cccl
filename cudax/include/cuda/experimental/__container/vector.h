@@ -94,7 +94,7 @@ namespace cuda::experimental
 //! The elements are initialized during construction, if the storage is not user provided through a
 //! :ref:`uninitialized_buffer <cudax-containers-uninitialized-buffer>` with matching properties.
 //!
-//! In addition to being type safe, ``vector`` also takes a set of :ref:`properties
+//! In addition to being type-safe, ``vector`` also takes a set of :ref:`properties
 //! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
 //! at compile time. However, only stateless properties can be forwarded. To use a stateful property,
 //! implement :ref:`get_property(const vector&, Property) <libcudacxx-extended-api-memory-resources-properties>`.
@@ -460,7 +460,7 @@ public:
 
   //! @brief Constructs a \c vector of size \p __size using a memory and leaves all elements uninitialized
   //! @param __mr The memory resource to allocate the vector with.
-  //! @param __size The size of the vector
+  //! @param __size The size of the vector.
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
@@ -468,8 +468,8 @@ public:
       : __base(__mr, __size)
   {}
 
-  //! @brief Constructs a \c vector from a range of input iterators using a memory resource and copy-constructs all
-  //! elements from the range ``[__first, __last)``
+  //! @brief Constructs a \c vector using a memory resource and copy-constructs all elements from the input range
+  //! ``[__first, __last)``
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
@@ -486,8 +486,8 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector from a range of forward iterators using a memory resource and copy-constructs all
-  //! elements from the range ``[__first, __last)``
+  //! @brief Constructs a \c vector using a memory resource and copy-constructs all elements from the forward range
+  //! ``[__first, __last)``
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
@@ -503,10 +503,9 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector from an initializer_list \p __ilist using a memory resource and copy-constructs all
-  //! elements from \p __ilist
+  //! @brief Constructs a \c vector using a memory resource and copy-constructs all elements from \p __ilist
   //! @param __mr The memory resource to allocate the vector with.
-  //! @param __ilist The initializer_list being copied into the vector
+  //! @param __ilist The initializer_list being copied into the vector.
   //! @note If `__ilist.size() == 0` then no memory is allocated
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
       : __base(__mr, __ilist.size())
@@ -665,7 +664,7 @@ public:
   }
 
   //! @brief Changes the size of the \c vector to \p __size and value-initializes new elements
-  //! @param __size The intended size of the \c vector
+  //! @param __size The intended size of the vector.
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it value-initializes new elements
   void resize(const size_t __count) noexcept
   {
@@ -693,8 +692,8 @@ public:
   }
 
   //! @brief Changes the size of the \c vector to \p __size and copy-constructs new elements from \p __value
-  //! @param __size The intended size of the \c vector
-  //! @param __value The element to be copied into the \c vector when growing
+  //! @param __size The intended size of the vector.
+  //! @param __value The element to be copied into the vector when growing.
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it copy-constructs new elements
   //! from \p __value
   void resize(const size_t __count, const _Tp& __value = {}) noexcept
@@ -723,7 +722,7 @@ public:
   }
 
   //! @brief Swaps the contents of a \c vector with those of \p __other
-  //! @param __other The other \c vector
+  //! @param __other The other vector.
   _CCCL_HOST_DEVICE void swap(vector& __other) noexcept
   {
     _CUDA_VSTD::swap(this->__buf_, __other.__buf_);

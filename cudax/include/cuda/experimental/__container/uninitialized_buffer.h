@@ -37,14 +37,14 @@ namespace cuda::experimental
 //! @rst
 //! .. _cudax-containers-uninitialized-buffer:
 //!
-//! Uninitialized type safe memory storage
+//! Uninitialized type-safe memory storage
 //! ---------------------------------------
 //!
 //! ``uninitialized_buffer`` provides a typed buffer allocated from a given :ref:`memory resource
 //! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment and release of the allocation.
 //! The memory is uninitialized, so that a user needs to ensure elements are properly constructed.
 //!
-//! In addition to being type safe, ``uninitialized_buffer`` also takes a set of :ref:`properties
+//! In addition to being type-safe, ``uninitialized_buffer`` also takes a set of :ref:`properties
 //! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
 //! at compile time. However, we can only forward stateless properties. If a user wants to use a stateful one, then they
 //! need to implement :ref:`get_property(const device_buffer&, Property)
