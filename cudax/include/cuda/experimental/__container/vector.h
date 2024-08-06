@@ -110,6 +110,26 @@ namespace cuda::experimental
 template <class _Tp, class... _Properties>
 class vector;
 
+template <class _Base>
+struct _Rollback_change_size
+{
+  using iterator = typename _Base::iterator;
+  _Base* __obj_;
+  iterator& __first_;
+  iterator __current_;
+
+  _CCCL_HOST_DEVICE constexpr _Rollback_change_size(_Base* __obj, iterator& __first, iterator& __current) noexcept
+      : __obj_(__obj)
+      , __first_(__first)
+      , __current_(__current)
+  {}
+
+  _CCCL_HOST_DEVICE void operator()() const noexcept
+  {
+    __obj_->__size_ += static_cast<typename _Base::__size_type>(__current_ - __first_);
+  }
+};
+
 template <class _Derived, _ExecutionSpace>
 struct __vector_access;
 
@@ -300,110 +320,168 @@ public:
 };
 
 template <class _Tp, class... _Properties>
-struct __vector_base
-    : public __vector_access<__vector_base<_Tp, _Properties...>, __select_execution_space<_Properties...>>
+class vector : public __vector_access<vector<_Tp, _Properties...>, __select_execution_space<_Properties...>>
 {
-protected:
+private:
   uninitialized_buffer<_Tp, _Properties...> __buf_;
   size_t __size_ = 0; // initialized to 0 in case initialization of the elements might throw
 
-  using __base = __vector_access<__vector_base<_Tp, _Properties...>, __select_execution_space<_Properties...>>;
-
-public:
-  using value_type      = _Tp;
-  using reference       = _Tp&;
-  using const_reference = const _Tp&;
-  using pointer         = _Tp*;
-  using const_pointer   = const _Tp*;
-
-  __vector_base(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size)
-      : __base(__mr, __size)
-  {}
-
-  //! @brief Copy constructs a \c vector
-  //! @param __other The other vector
-  //! The new vector has capacity of \p __other.size() which is potentially less than \p __other.capacity()
-  __vector_base(const __vector_base& __other)
-      : __base(__other.resource(), __other.size())
+  //! @brief Destroy the elements in the range `[__first, end())` and adopts the size.
+  //! @param __first Iterator to the first element to be destroyed.
+  //! No destructor is run if the `_Tp` is trivially destructible.
+  _CCCL_HOST_DEVICE void __destroy_from(iterator __first) noexcept
   {
-    if (__other.size() != 0)
-    {
-      this->__uninitialized_copy(__other.begin(), __other.end(), this->begin());
-    }
-  }
-
-  //! @brief Move constructs a \c vector
-  //! @param __other The other vector
-  //! The new vector takes ownership of the allocation of \p __other
-  __vector_base(__vector_base&& __other) noexcept
-      : __buf_(_CUDA_VSTD::move(__buf_))
-      , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
-  {}
-
-  //! @brief Copy assignment
-  //! @param __other The other vector
-  //! @note Even if the old vector would have enough storage available, we have to reallocate if the stored memory
-  //! resource is not equal to the new one.
-  __vector_base& operator=(const __vector_base& __other)
-  {
-    // There is sufficient space in the allocation and the resources are compatible
-    if (this->resource() == __other.resource() && this->__size_ >= __other.size())
-    {
-      if (__size_ >= __other.__size_)
-      {
-        const auto __res = _CUDA_VSTD::copy(__other.begin(), __other.end(), this->begin());
-        _CUDA_VSTD::__destroy(__res, this->end());
-      }
-      else
-      {
-        const auto __res = _CUDA_VSTD::copy(__other.begin(), __other.begin() + this->__size_, this->begin());
-        this->__uninitialized_copy(__other.begin() + this->__size_, __other.end(), __res);
-      }
-      return *this;
-    }
-
-    // We need to reallocate and copy. Note we do not change the size of the current vector until the copy is done
-    uninitialized_buffer<_Tp, _Properties...> __new_buf{__other.resource(), __other.__size_};
-    _CUDA_VSTD::uninitialized_copy(__other.begin(), __other.end(), __new_buf.begin());
-
-    // Now that everything is set up bring over the new data
-    _CUDA_VSTD::__destroy(this->begin(), this->end());
-    _CUDA_VSTD::swap(__buf_, __new_buf);
-    this->__size_ = __other.__size_;
-    return *this;
-  }
-
-  //! @brief Move assignment
-  //! @param __other The other vector
-  __vector_base& operator=(__vector_base&& __other) noexcept
-  {
-    if (this == _CUDA_VSTD::addressof(__other))
-    {
-      return *this;
-    }
-
-    _CUDA_VSTD::__destroy(this->begin(), this->end());
-    __buf_        = _CUDA_VSTD::move(__other.__buf_);
-    this->__size_ = __other.__size_;
-    return *this;
-  }
-
-  //! @brief Destroys the \c vector and deallocates the storage after destroying all elements
-  //! @note Does not destroy elements if `is_trivially_destructible_v<_Tp>` holds
-  ~__vector_base() noexcept
-  {
+    const auto __last = end();
     _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
     {
-      _CUDA_VSTD::__destroy(this->begin(), this->end());
+      _CUDA_VSTD::__destroy(__first, __last);
     }
+    this->__size_ -= static_cast<__size_type>(__last - __first);
   }
-};
 
-template <class _Tp, class... _Properties>
-class vector : public __vector_base<_Tp, _Properties...>
-{
-private:
-  using __base = __vector_base<_Tp, _Properties...>;
+  //! @brief Value-initializes the elements in the range `[__first, __last)` and adopts the size.
+  //! @param __first Iterator to the first element to be value-initialized.
+  //! @param __last Iterator to the element after the last element to be value-initialized.
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_HOST_DEVICE void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
+  {
+    iterator __idx = __first;
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+    }
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  //! @brief Value-initializes the elements in the range `[__first, __last)` and adopts the size.
+  //! @param __first Iterator to the first element to be value-initialized.
+  //! @param __last Iterator to the element after the last element to be value-initialized.
+  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_HOST_DEVICE void __uninitialized_value_construct(iterator __first, iterator __last)
+  {
+    iterator __idx = __first;
+    auto __guard   = __make_exception_guard(_Rollback_change_size<vector>{this, __first, __idx});
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
+  //! @param __first Iterator to the first element to be copy-constructed.
+  //! @param __last Iterator to the element after the last element to be copy-constructed.
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_HOST_DEVICE void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
+  {
+    iterator __idx = __first;
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+    }
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
+  //! @param __first Iterator to the first element to be copy-constructed.
+  //! @param __last Iterator to the element after the last element to be copy-constructed.
+  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_HOST_DEVICE void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
+  {
+    iterator __idx = __first;
+    auto __guard   = __make_exception_guard(_Rollback_change_size<vector>{this, __first, __idx});
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @param __first Iterator to the first element to be copied.
+  //! @param __last Iterator to the element after the last element to be copied.
+  //! @param __dest Iterator to the first element to be copy-constructed.
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_HOST_DEVICE void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    iterator __curr = __dest;
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+    }
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+
+  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @param __first Iterator to the first element to be copied.
+  //! @param __last Iterator to the element after the last element to be copied.
+  //! @param __dest Iterator to the first element to be copy-constructed.
+  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_HOST_DEVICE void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
+  {
+    iterator __curr = __dest;
+    auto __guard    = __make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+
+  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @param __first Iterator to the first element to be moved.
+  //! @param __last Iterator to the element after the last element to be moved.
+  //! @param __dest Iterator to the first element to be move-constructed.
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_HOST_DEVICE void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    iterator __curr = __dest;
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+    }
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+
+  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @param __first Iterator to the first element to be moved.
+  //! @param __last Iterator to the element after the last element to be moved.
+  //! @param __dest Iterator to the first element to be move-constructed.
+  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_HOST_DEVICE void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
+  {
+    iterator __curr = __dest;
+    auto __guard    = __make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
 
 public:
   using value_type             = _Tp;
@@ -417,57 +495,133 @@ public:
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = size_t;
 
-  // Delegate to base constructors
-  using __base::__base;
-
   //! @addtogroup construction
   //! @{
-  //! @brief Constructs a \c vector using a memory resource
-  //! @param __mr The memory resource to allocate memory within the vector.
-  //! @note No memory is allocated
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr)
-      : __base(__mr, 0)
-  {}
 
-  //! @brief Constructs a \c vector of size \p __size using a memory resource and value-initializes all elements
-  //! @param __mr The memory resource to allocate the vector with.
-  //! @param __size The size of the vector.
-  //! @note If `__size == 0` then no memory is allocated
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size)
-      : __base(__mr, __size)
+  //! @brief Copy-constructs a vector
+  //! @param __other The other vector.
+  //! The new vector has capacity of \p __other.size() which is potentially less than \p __other.capacity().
+  //! @note No memory is allocated if \p __other is empty
+  vector(const vector& __other)
+      : __buf_(__other.resource(), __other.size())
   {
-    if (__size != 0)
+    if (__other.size() != 0)
     {
-      this->__uninitialized_default_construct_n(this->begin(), __size);
+      this->__uninitialized_copy(__other.begin(), __other.end(), begin());
     }
   }
 
-  //! @brief Constructs a \c vector of size \p __size using a memory resource and copy-constructs all elements from
+  //! @brief Move-constructs a vector
+  //! @param __other The other vector.
+  //! The new vector takes ownership of the allocation of \p __other and resets the other vector.
+  vector(vector&& __other) noexcept
+      : __buf_(_CUDA_VSTD::move(__buf_))
+      , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
+  {}
+
+  //! @brief Copy-assigns a vector
+  //! @param __other The other vector.
+  //! @note Even if the old vector would have enough storage available, we have to reallocate if the stored memory
+  //! resource is not equal to the new one. In that case no memory is allocated if \p __other is empty.
+  vector& operator=(const vector& __other)
+  {
+    // There is sufficient space in the allocation and the resources are compatible
+    if (resource() == __other.resource() && __size_ >= __other.size())
+    {
+      if (__size_ >= __other.__size_)
+      {
+        const auto __res = _CUDA_VSTD::copy(__other.begin(), __other.end(), begin());
+        this->__destroy_from(__res);
+      }
+      else
+      {
+        const auto __res = _CUDA_VSTD::copy(__other.begin(), __other.begin() + __size_, begin());
+        this->__uninitialized_copy(__other.begin() + __size_, __other.end(), __res);
+      }
+      return *this;
+    }
+
+    // We need to reallocate and copy. Note we do not change the size of the current vector until the copy is done
+    uninitialized_buffer<_Tp, _Properties...> __new_buf{__other.resource(), __other.__size_};
+    _CUDA_VSTD::uninitialized_copy(__other.begin(), __other.end(), __new_buf.begin());
+
+    // Now that everything is set up bring over the new data
+    clear();
+    _CUDA_VSTD::swap(__buf_, __new_buf);
+
+    // The above call to destroy has set the size of this vector to 0 so we need set it correctly
+    __size_ = __other.__size_;
+    return *this;
+  }
+
+  //! @brief Move assignment
+  //! @param __other The other vector.
+  //! Clears the vector and swaps the contents with \p __other.
+  vector& operator=(vector&& __other) noexcept
+  {
+    if (this == _CUDA_VSTD::addressof(__other))
+    {
+      return *this;
+    }
+
+    clear();
+    _CUDA_VSTD::swap(*this, __other);
+    return *this;
+  }
+
+  //! @brief Destroys the \c vector and deallocates the storage after destroying all elements
+  //! @note Does not destroy elements if `is_trivially_destructible_v<_Tp>` holds.
+  ~vector() noexcept
+  {
+    this->__destroy_from(begin());
+  }
+
+  //! @brief Constructs a vector using a memory resource
+  //! @param __mr The memory resource to allocate memory within the vector.
+  //! @note No memory is allocated.
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr)
+      : __buf_(__mr, 0)
+  {}
+
+  //! @brief Constructs a vector of size \p __size using a memory resource and value-initializes \p __size elements
+  //! @param __mr The memory resource to allocate the vector with.
+  //! @param __size The size of the vector.
+  //! @note If `__size == 0` then no memory is allocated.
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size)
+      : __buf_(__mr, __size)
+  {
+    if (__size != 0)
+    {
+      this->__uninitialized_default_construct_n(begin(), __size);
+    }
+  }
+
+  //! @brief Constructs a vector of size \p __size using a memory resource and copy-constructs \p __size elements from
   //! \p __value
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector.
   //! @param __value The value all elements are copied from.
-  //! @note If `__size == 0` then no memory is allocated
+  //! @note If `__size == 0` then no memory is allocated.
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, const _Tp& __value)
-      : __base(__mr, __size)
+      : __buf_(__mr, __size)
   {
     if (__size != 0)
     {
-      this->__uninitialized_fill_n(this->begin(), this->__size_, __value);
+      this->__uninitialized_fill_n(begin(), __size_, __value);
     }
   }
 
-  //! @brief Constructs a \c vector of size \p __size using a memory and leaves all elements uninitialized
+  //! @brief Constructs a vector of size \p __size using a memory and leaves all elements uninitialized
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector.
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, ::cuda::experimental::uninit_t)
-      : __base(__mr, __size)
+      : __buf_(__mr, __size)
   {}
 
-  //! @brief Constructs a \c vector using a memory resource and copy-constructs all elements from the input range
+  //! @brief Constructs a vector using a memory resource and copy-constructs all elements from the input range
   //! ``[__first, __last)``
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __first The start of the input sequence.
@@ -477,7 +631,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _Iter __first, _Iter __last)
-      : __base(__mr, 0)
+      : __buf_(__mr, 0)
   {
     for (; __first != __last; ++__first)
     {
@@ -485,7 +639,7 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector using a memory resource and copy-constructs all elements from the forward range
+  //! @brief Constructs a vector using a memory resource and copy-constructs all elements from the forward range
   //! ``[__first, __last)``
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __first The start of the input sequence.
@@ -494,24 +648,24 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _Iter __first, _Iter __last)
-      : __base(__mr, static_cast<size_t>(_CUDA_VSTD::distance(__first, __last)))
+      : __buf_(__mr, static_cast<size_t>(_CUDA_VSTD::distance(__first, __last)))
   {
-    if (this->__size_ != 0)
+    if (__size_ != 0)
     {
-      this->__uninitialized_copy(__first, __last, this->begin());
+      this->__uninitialized_copy(__first, __last, begin());
     }
   }
 
-  //! @brief Constructs a \c vector using a memory resource and copy-constructs all elements from \p __ilist
+  //! @brief Constructs a vector using a memory resource and copy-constructs all elements from \p __ilist
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __ilist The initializer_list being copied into the vector.
   //! @note If `__ilist.size() == 0` then no memory is allocated
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
-      : __base(__mr, __ilist.size())
+      : __buf_(__mr, __ilist.size())
   {
-    if (this->__size_ != 0)
+    if (__size_ != 0)
     {
-      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), this->begin());
+      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), begin());
     }
   }
   //! @}
@@ -543,21 +697,21 @@ public:
   //! placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator end() noexcept
   {
-    return iterator{this->data() + this->__size_};
+    return iterator{this->data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator end() const noexcept
   {
-    return const_iterator{this->data() + this->__size_};
+    return const_iterator{this->data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cend() const noexcept
   {
-    return const_iterator{this->data() + this->__size_};
+    return const_iterator{this->data() + __size_};
   }
 
   //! @brief Returns a reverse iterator to the first element of the reversed vector. It corresponds to the last element
@@ -625,19 +779,19 @@ public:
   //! @brief Returns the current number of elements stored in the vector
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t size() const noexcept
   {
-    return this->__size_;
+    return __size_;
   }
 
   //! @brief Returns true if the vector is empty
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool empty() const noexcept
   {
-    return this->__size_ == 0;
+    return __size_ == 0;
   }
 
   //! @brief Returns the capacity of the current allocation of the vector
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t capacity() const noexcept
   {
-    return this->__size_;
+    return __size_;
   }
 
   //! @rst
@@ -655,11 +809,7 @@ public:
   //! @brief Destroys all elements in the \c vector and sets the size to 0
   _CCCL_HOST_DEVICE void clear() noexcept
   {
-    _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
-    {
-      _CUDA_VSTD::__destroy(this->begin(), this->end());
-    }
-    this->__size_ = 0;
+    this->__destroy_from(begin());
   }
 
   //! @brief Changes the size of the \c vector to \p __size and value-initializes new elements
@@ -667,25 +817,22 @@ public:
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it value-initializes new elements
   void resize(const size_t __count) noexcept
   {
-    if (__count < this->__size_)
+    if (__count < __size_)
     {
-      _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
-      {
-        _CUDA_VSTD::__destroy(this->begin() + __count, this->end());
-      }
+      this->__destroy_from(begin() + __count);
     }
     else
     {
       if (__count < this->capacity())
       {
-        this->__uninitialized_value_construct_n(end(), __count - this->__size_);
+        this->__uninitialized_value_construct_n(end(), __count - __size_);
       }
       else
       {
-        uninitialized_buffer<_Tp, _Properties...> __new_buf{this->resource(), __count};
-        this->__uninitialized_value_construct_n(__new_buf.begin() + this->__size_, __count - this->__size_);
-        this->__uninitialized_move(this->begin(), this->end(), __new_buf.begin());
-        _CUDA_VSTD::swap(this->__buf_, __new_buf);
+        uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __count};
+        this->__uninitialized_value_construct_n(__new_buf.begin() + __size_, __count - __size_);
+        this->__uninitialized_move(begin(), end(), __new_buf.begin());
+        _CUDA_VSTD::swap(__buf_, __new_buf);
       }
     }
   }
@@ -697,35 +844,33 @@ public:
   //! from \p __value
   void resize(const size_t __count, const _Tp& __value = {}) noexcept
   {
-    if (__count < this->__size_)
+    if (__count < __size_)
     {
-      _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
-      {
-        _CUDA_VSTD::__destroy(this->begin() + __count, this->end());
-      }
+      this->__destroy_from(begin() + __count);
     }
     else
     {
       if (__count < this->capacity())
       {
-        this->__uninitialized_fill_n(end(), __count - this->__size_, __value);
+        this->__uninitialized_fill_n(end(), __count - __size_, __value);
       }
       else
       {
-        uninitialized_buffer<_Tp, _Properties...> __new_buf{this->resource(), __count};
-        this->__uninitialized_fill_n(__new_buf.begin() + this->__size_, __count - this->__size_, __value);
-        this->__uninitialized_move(this->begin(), this->end(), __new_buf.begin());
-        _CUDA_VSTD::swap(this->__buf_, __new_buf);
+        uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __count};
+        this->__uninitialized_fill_n(__new_buf.begin() + __size_, __count - __size_, __value);
+        _CUDA_VSTD::__uninitialized_move(begin(), end(), __new_buf.begin());
+        _CUDA_VSTD::__destroy(begin(), end());
+        _CUDA_VSTD::swap(__buf_, __new_buf);
       }
     }
   }
 
-  //! @brief Swaps the contents of a \c vector with those of \p __other
-  //! @param __other The other vector.
+  //! @brief Swaps the contents of a vector with those of \p __other
+  //! @param __other The other vector..
   _CCCL_HOST_DEVICE void swap(vector& __other) noexcept
   {
-    _CUDA_VSTD::swap(this->__buf_, __other.__buf_);
-    _CUDA_VSTD::swap(this->__size_, __other._size);
+    _CUDA_VSTD::swap(__buf_, __other.__buf_);
+    _CUDA_VSTD::swap(__size_, __other._size);
   }
   //! @}
 
