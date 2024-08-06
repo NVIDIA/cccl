@@ -26,9 +26,9 @@ namespace std {
 
   // 23.20.2, rotating
   template<class T>
-    constexpr T rotl(T x, unsigned int s) noexcept; // C++20
+    constexpr T rotl(T x, uint32_t s) noexcept; // C++20
   template<class T>
-    constexpr T rotr(T x, unsigned int s) noexcept; // C++20
+    constexpr T rotr(T x, uint32_t s) noexcept; // C++20
 
   // 23.20.3, counting
   template<class T>
@@ -166,165 +166,83 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __fallback_po
 
 #ifndef _CCCL_COMPILER_MSVC
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned __x) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_ctz(uint32_t __x) noexcept
 {
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE, (return (!__x) ? sizeof(unsigned) * 8 : __ffs(__x) - 1;), (return __builtin_ctz(__x);))
+      NV_IS_DEVICE, (return (!__x) ? sizeof(uint32_t) * 8 : __ffs(__x) - 1;), (return __builtin_ctz(__x);))
   }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __binary_ctz32(static_cast<uint64_t>(__x), 0);
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_ctz(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_ctz(unsigned long __x) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_ctz(uint64_t __x) noexcept
 {
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE, (return (!__x) ? sizeof(unsigned long) * 8 : __ffsll(__x) - 1;), (return __builtin_ctzl(__x);))
+      NV_IS_DEVICE, (return (!__x) ? sizeof(uint64_t) * 8 : __ffsll(__x) - 1;), (return __builtin_ctz(__x);))
   }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __binary_ctz64(static_cast<uint64_t>(__x));
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_ctzl(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_ctz(unsigned long long __x) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(uint32_t __x) noexcept
 {
-// For whatever reason __builtin_ctzll does not compile although it should
-#  if 1 // def _CCCL_COMPILER_NVRTC
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-  if (!__libcpp_is_constant_evaluated())
-  {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return (!__x) ? sizeof(unsigned long long) * 8 : __ffsll(__x) - 1;),
-                      (return __builtin_ctzll(__x);))
-  }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
-  return __binary_ctz64(static_cast<uint64_t>(__x));
-#  else // 0
-  return __builtin_ctzll(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(unsigned __x) noexcept
-{
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clz(__x);), (return __builtin_clz(__x);))
   }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __binary_clz32(static_cast<uint64_t>(__x), 0);
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_clz(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(unsigned long __x) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(uint64_t __x) noexcept
 {
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-  if (!__libcpp_is_constant_evaluated())
-  {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clzll(__x);), (return __builtin_clzl(__x);))
-  }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
-  return __binary_clz64(static_cast<uint64_t>(__x));
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_clzl(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(unsigned long long __x) noexcept
-{
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clzll(__x);), (return __builtin_clzll(__x);))
   }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __binary_clz64(static_cast<uint64_t>(__x));
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_clzll(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(unsigned __x) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(uint32_t __x) noexcept
 {
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popc(__x);), (return __builtin_popcount(__x);))
   }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __fallback_popc64(static_cast<uint64_t>(__x));
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_popcount(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(unsigned long __x) noexcept
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(uint64_t __x) noexcept
 {
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-  if (!__libcpp_is_constant_evaluated())
-  {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popcll(__x);), (return __builtin_popcountl(__x);))
-  }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
-  return __fallback_popc64(static_cast<uint64_t>(__x));
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_popcountl(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(unsigned long long __x) noexcept
-{
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3))
-#    if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popcll(__x);), (return __builtin_popcountll(__x);))
   }
-#    endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
-
+#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __fallback_popc64(static_cast<uint64_t>(__x));
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  return __builtin_popcountll(__x);
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 #else // _CCCL_COMPILER_MSVC
 
 // Precondition:  __x != 0
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x)
 {
-  static_assert(sizeof(unsigned) == sizeof(unsigned long), "");
-  static_assert(sizeof(unsigned long) == 4, "");
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
-    unsigned long __where = 0;
+    uint32_t __where = 0;
     if (_BitScanForward(&__where, __x))
     {
       return static_cast<int>(__where);
@@ -336,18 +254,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned __x)
   return __binary_ctz32(static_cast<uint64_t>(__x), 0);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned long __x)
-{
-  static_assert(sizeof(unsigned long) == sizeof(unsigned), "");
-  return __libcpp_ctz(static_cast<unsigned>(__x));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned long long __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x)
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
-    unsigned long __where = 0;
+    uint32_t __where = 0;
 #    if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
     if (_BitScanForward64(&__where, __x))
     {
@@ -355,11 +267,11 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned long lo
     }
 #    else
     // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
-    if (_BitScanForward(&__where, static_cast<unsigned long>(__x)))
+    if (_BitScanForward(&__where, static_cast<uint32_t>(__x)))
     {
       return static_cast<int>(__where);
     }
-    if (_BitScanForward(&__where, static_cast<unsigned long>(__x >> 32)))
+    if (_BitScanForward(&__where, static_cast<uint32_t>(__x >> 32)))
     {
       return static_cast<int>(__where + 32);
     }
@@ -372,14 +284,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(unsigned long lo
 }
 
 // Precondition:  __x != 0
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(unsigned __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint32_t __x)
 {
-  static_assert(sizeof(unsigned) == sizeof(unsigned long), "");
-  static_assert(sizeof(unsigned long) == 4, "");
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
-    unsigned long __where = 0;
+    uint32_t __where = 0;
     if (_BitScanReverse(&__where, __x))
     {
       return static_cast<int>(31 - __where);
@@ -391,18 +301,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(unsigned __x)
   return __binary_clz32(static_cast<uint64_t>(__x), 0);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(unsigned long __x)
-{
-  static_assert(sizeof(unsigned) == sizeof(unsigned long), "");
-  return __libcpp_clz(static_cast<unsigned>(__x));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(unsigned long long __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint64_t __x)
 {
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
-    unsigned long __where = 0;
+    uint32_t __where = 0;
 #    if defined(_LIBCUDACXX_HAS_BITSCAN64)
     if (_BitScanReverse64(&__where, __x))
     {
@@ -410,11 +314,11 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(unsigned long lo
     }
 #    else
     // Win32 doesn't have _BitScanReverse64 so emulate it with two 32 bit calls.
-    if (_BitScanReverse(&__where, static_cast<unsigned long>(__x >> 32)))
+    if (_BitScanReverse(&__where, static_cast<uint32_t>(__x >> 32)))
     {
       return static_cast<int>(63 - (__where + 32));
     }
-    if (_BitScanReverse(&__where, static_cast<unsigned long>(__x)))
+    if (_BitScanReverse(&__where, static_cast<uint32_t>(__x)))
     {
       return static_cast<int>(63 - __where);
     }
@@ -426,9 +330,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(unsigned long lo
   return __binary_clz64(static_cast<uint64_t>(__x));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(unsigned __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(uint32_t __x)
 {
-  static_assert(sizeof(unsigned) == 4, "");
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
@@ -439,22 +342,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(unsigned __
   return __fallback_popc64(static_cast<uint64_t>(__x));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(unsigned long __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(uint64_t __x)
 {
-  static_assert(sizeof(unsigned long) == 4, "");
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
-  if (!__libcpp_is_constant_evaluated())
-  {
-    return static_cast<int>(__popcnt(__x));
-  }
-#  endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
-
-  return __fallback_popc64(static_cast<uint64_t>(__x));
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(unsigned long long __x)
-{
-  static_assert(sizeof(unsigned long long) == 8, "");
 #  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
@@ -468,7 +357,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(unsigned lo
 #endif // _CCCL_COMPILER_MSVC
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR _Tp __rotl(_Tp __t, unsigned int __cnt) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR _Tp __rotl(_Tp __t, uint32_t __cnt) noexcept
 {
   static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
   using __nlt = numeric_limits<_Tp>;
@@ -479,7 +368,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR _Tp __rotl(_Tp __t, unsi
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR _Tp __rotr(_Tp __t, unsigned int __cnt) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR _Tp __rotr(_Tp __t, uint32_t __cnt) noexcept
 {
   static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned");
   using __nlt = numeric_limits<_Tp>;
@@ -494,34 +383,33 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __countr_zero(_Tp __t) noexcept;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
 __countr_zero_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_ctz(static_cast<unsigned int>(__t));
+  return __libcpp_ctz(static_cast<uint32_t>(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
 __countr_zero_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_ctz(static_cast<unsigned long long>(__t));
+  return __libcpp_ctz(static_cast<uint64_t>(__t));
 }
 
-template <typename _Tp, int _St = sizeof(_Tp) / sizeof(unsigned long long)>
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
 struct __countr_zero_rsh_impl
 {
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __short_circuit(_Tp __t, int __cur, int __count)
   {
     // Stops processing early if non-zero
-    return (__cur == numeric_limits<unsigned long long>::digits)
+    return (__cur == numeric_limits<uint64_t>::digits)
            ? __countr_zero_rsh_impl<_Tp, _St - 1>::__count(__t, __cur + __count)
            : __cur + __count;
   }
 
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __count(_Tp __t, int __count)
   {
-    return __short_circuit(
-      __t >> numeric_limits<unsigned long long>::digits, __countr_zero(static_cast<unsigned long long>(__t)), __count);
+    return __short_circuit(__t >> numeric_limits<uint64_t>::digits, __countr_zero(static_cast<uint64_t>(__t)), __count);
   }
 };
 
@@ -530,12 +418,12 @@ struct __countr_zero_rsh_impl<_Tp, 1>
 {
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __count(_Tp __t, int __count)
   {
-    return __count + __countr_zero(static_cast<unsigned long long>(__t));
+    return __count + __countr_zero(static_cast<uint64_t>(__t));
   }
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
 __countr_zero_dispatch(_Tp __t) noexcept
 {
   return __countr_zero_rsh_impl<_Tp>::__count(__t, 0);
@@ -554,28 +442,26 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __countl_zero(_Tp __t) noexcept;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
 __countl_zero_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_clz(static_cast<unsigned int>(__t))
-       - (numeric_limits<unsigned int>::digits - numeric_limits<_Tp>::digits);
+  return __libcpp_clz(static_cast<uint32_t>(__t)) - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
 __countl_zero_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_clz(static_cast<unsigned long long>(__t))
-       - (numeric_limits<unsigned long long>::digits - numeric_limits<_Tp>::digits);
+  return __libcpp_clz(static_cast<uint64_t>(__t)) - (numeric_limits<uint64_t>::digits - numeric_limits<_Tp>::digits);
 }
 
-template <typename _Tp, int _St = sizeof(_Tp) / sizeof(unsigned long long)>
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
 struct __countl_zero_rotl_impl
 {
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __short_circuit(_Tp __t, int __cur)
   {
     // This stops processing early if the current word is not empty
-    return (__cur == numeric_limits<unsigned long long>::digits)
+    return (__cur == numeric_limits<uint64_t>::digits)
            ? __cur + __countl_zero_rotl_impl<_Tp, _St - 1>::__count(__t)
            : __cur;
   }
@@ -583,12 +469,12 @@ struct __countl_zero_rotl_impl
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __countl_iter(_Tp __t)
   {
     // After rotating pass result of clz to another step for processing
-    return __short_circuit(__t, __countl_zero(static_cast<unsigned long long>(__t)));
+    return __short_circuit(__t, __countl_zero(static_cast<uint64_t>(__t)));
   }
 
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __count(_Tp __t)
   {
-    return __countl_iter(__rotl(__t, numeric_limits<unsigned long long>::digits));
+    return __countl_iter(__rotl(__t, numeric_limits<uint64_t>::digits));
   }
 };
 
@@ -597,12 +483,12 @@ struct __countl_zero_rotl_impl<_Tp, 1>
 {
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __count(_Tp __t)
   {
-    return __countl_zero(static_cast<unsigned long long>(__rotl(__t, numeric_limits<unsigned long long>::digits)));
+    return __countl_zero(static_cast<uint64_t>(__rotl(__t, numeric_limits<uint64_t>::digits)));
   }
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
 __countl_zero_dispatch(_Tp __t) noexcept
 {
   return __countl_zero_rotl_impl<_Tp>::__count(__t);
@@ -630,26 +516,26 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __countr_one(_Tp __t
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) <= sizeof(unsigned int), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
 __popcount_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_popcount(static_cast<unsigned int>(__t));
+  return __libcpp_popcount(static_cast<uint32_t>(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) == sizeof(unsigned long long), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
 __popcount_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_popcount(static_cast<unsigned long long>(__t));
+  return __libcpp_popcount(static_cast<uint64_t>(__t));
 }
 
-template <typename _Tp, int _St = sizeof(_Tp) / sizeof(unsigned long long)>
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
 struct __popcount_rsh_impl
 {
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __count(_Tp __t)
   {
-    return __popcount_rsh_impl<_Tp, _St - 1>::__count(__t >> numeric_limits<unsigned long long>::digits)
-         + __libcpp_popcount(static_cast<unsigned long long>(__t));
+    return __popcount_rsh_impl<_Tp, _St - 1>::__count(__t >> numeric_limits<uint64_t>::digits)
+         + __libcpp_popcount(static_cast<uint64_t>(__t));
   }
 };
 
@@ -658,12 +544,12 @@ struct __popcount_rsh_impl<_Tp, 1>
 {
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __count(_Tp __t)
   {
-    return __libcpp_popcount(static_cast<unsigned long long>(__t));
+    return __libcpp_popcount(static_cast<uint64_t>(__t));
   }
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<(sizeof(_Tp) > sizeof(unsigned long long)), int>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
 __popcount_dispatch(_Tp __t) noexcept
 {
   return __popcount_rsh_impl<_Tp>::__count(__t);
@@ -679,7 +565,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __popcount(_Tp __t) 
 
 // integral log base 2
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR unsigned __bit_log2(_Tp __t) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR uint32_t __bit_log2(_Tp __t) noexcept
 {
   static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__bit_log2 requires unsigned");
   return std::numeric_limits<_Tp>::digits - 1 - __countl_zero(__t);
@@ -693,25 +579,16 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR bool __has_single_bit(_T
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) >= sizeof(unsigned), _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) >= sizeof(uint32_t), _Tp>
 __ceil2(_Tp __t) noexcept
 {
-  // const unsigned __n = numeric_limits<_Tp>::digits - countl_zero((_Tp)(__t - 1u));
-  // _LIBCUDACXX_DEBUG_ASSERT(__libcpp_is_constant_evaluated() || __n != numeric_limits<_Tp>::digits, "Bad input to
-  // ceil2");
   return _Tp{1} << (numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)));
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) < sizeof(unsigned), _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<sizeof(_Tp) < sizeof(uint32_t), _Tp>
 __ceil2(_Tp __t) noexcept
 {
-  // const unsigned __n = numeric_limits<_Tp>::digits - countl_zero((_Tp)(__t - 1u));
-  // _LIBCUDACXX_DEBUG_ASSERT(__libcpp_is_constant_evaluated() || __n != numeric_limits<_Tp>::digits, "Bad input to
-  // ceil2");
-
-  // const unsigned __extra = numeric_limits<unsigned>::digits  - numeric_limits<_Tp>::digits;
-  // const unsigned __retVal = 1u << (__n + __extra);
   return (_Tp) ((1u << ((numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)))
                         + (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits)))
                 >> (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits));
@@ -719,7 +596,7 @@ __ceil2(_Tp __t) noexcept
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
-rotl(_Tp __t, unsigned int __cnt) noexcept
+rotl(_Tp __t, uint32_t __cnt) noexcept
 {
   return __rotl(__t, __cnt);
 }
@@ -727,7 +604,7 @@ rotl(_Tp __t, unsigned int __cnt) noexcept
 // rotr
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
-rotr(_Tp __t, unsigned int __cnt) noexcept
+rotr(_Tp __t, uint32_t __cnt) noexcept
 {
   return __rotr(__t, __cnt);
 }

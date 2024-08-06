@@ -46,21 +46,28 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
+__host__ __device__ inline void assert_countr_zero(const volatile T val, int expected)
+{
+  auto v = val;
+  assert(cuda::std::countr_zero(v) == expected);
+}
+
+template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::countr_zero(T(0))));
   ASSERT_NOEXCEPT(cuda::std::countr_zero(T(0)));
 
-  assert(cuda::std::countr_zero(T(121)) == 0);
-  assert(cuda::std::countr_zero(T(122)) == 1);
-  assert(cuda::std::countr_zero(T(123)) == 0);
-  assert(cuda::std::countr_zero(T(124)) == 2);
-  assert(cuda::std::countr_zero(T(125)) == 0);
-  assert(cuda::std::countr_zero(T(126)) == 1);
-  assert(cuda::std::countr_zero(T(127)) == 0);
-  assert(cuda::std::countr_zero(T(128)) == 7);
-  assert(cuda::std::countr_zero(T(129)) == 0);
-  assert(cuda::std::countr_zero(T(130)) == 1);
+  assert_countr_zero(T(121), 0);
+  assert_countr_zero(T(122), 1);
+  assert_countr_zero(T(123), 0);
+  assert_countr_zero(T(124), 2);
+  assert_countr_zero(T(125), 0);
+  assert_countr_zero(T(126), 1);
+  assert_countr_zero(T(127), 0);
+  assert_countr_zero(T(128), 7);
+  assert_countr_zero(T(129), 0);
+  assert_countr_zero(T(130), 1);
 }
 
 int main(int, char**)
