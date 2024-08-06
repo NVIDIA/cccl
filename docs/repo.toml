@@ -30,6 +30,7 @@ project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_co
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "cudax", "_build/docs/cudax/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
     [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
@@ -350,6 +351,9 @@ doxygen_predefined = [
   "_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR=DOXYGEN_SHOULD_SKIP_THIS",
   "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
   "_LIBCUDACXX_CPO_ACCESSIBILITY=inline",
+  "_LIBCUDACXX_TEMPLATE(x)=template<x, ",
+  "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::__enable_if_t<x, int> = 0>",
+  "_LIBCUDACXX_AND=&&",
 ]
 
 # make sure to use ./fetch_imgs.sh
