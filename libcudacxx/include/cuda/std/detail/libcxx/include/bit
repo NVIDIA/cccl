@@ -168,69 +168,69 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __fallback_po
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_ctz(uint32_t __x) noexcept
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE, (return (!__x) ? sizeof(uint32_t) * 8 : __ffs(__x) - 1;), (return __builtin_ctz(__x);))
   }
-#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // (_CCCL_STD_VER >= 2014)
   return __binary_ctz32(static_cast<uint64_t>(__x), 0);
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_ctz(uint64_t __x) noexcept
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE, (return (!__x) ? sizeof(uint64_t) * 8 : __ffsll(__x) - 1;), (return __builtin_ctz(__x);))
   }
-#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // (_CCCL_STD_VER >= 2014)
   return __binary_ctz64(static_cast<uint64_t>(__x));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(uint32_t __x) noexcept
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clz(__x);), (return __builtin_clz(__x);))
   }
-#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // (_CCCL_STD_VER >= 2014)
   return __binary_clz32(static_cast<uint64_t>(__x), 0);
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_clz(uint64_t __x) noexcept
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clzll(__x);), (return __builtin_clzll(__x);))
   }
-#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // (_CCCL_STD_VER >= 2014)
   return __binary_clz64(static_cast<uint64_t>(__x));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(uint32_t __x) noexcept
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popc(__x);), (return __builtin_popcount(__x);))
   }
-#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // (_CCCL_STD_VER >= 2014)
   return __fallback_popc64(static_cast<uint64_t>(__x));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popcount(uint64_t __x) noexcept
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  if (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popcll(__x);), (return __builtin_popcountll(__x);))
   }
-#  endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
+#  endif // (_CCCL_STD_VER >= 2014)
   return __fallback_popc64(static_cast<uint64_t>(__x));
 }
 
@@ -239,7 +239,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR int __libcpp_popc
 // Precondition:  __x != 0
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x)
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
+#  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
     uint32_t __where = 0;
@@ -256,7 +256,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x)
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
+#  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
     uint32_t __where = 0;
@@ -286,7 +286,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x)
 // Precondition:  __x != 0
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint32_t __x)
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
+#  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
     uint32_t __where = 0;
@@ -303,7 +303,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint32_t __x)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint64_t __x)
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
+#  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
     uint32_t __where = 0;
@@ -332,7 +332,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint64_t __x)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(uint32_t __x)
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
+#  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
     return static_cast<int>(__popcnt(__x));
@@ -344,7 +344,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(uint32_t __
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popcount(uint64_t __x)
 {
-#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(__CUDA_ARCH__)
+#  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
     return static_cast<int>(__popcnt64(__x));
