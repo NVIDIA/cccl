@@ -1,7 +1,7 @@
 .. _cccl-python-libraries:
 
-CCCL Python Libraries
-=====================
+CUDA Python Core Libraries
+==========================
 
 .. toctree::
    :hidden:

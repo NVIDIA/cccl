@@ -1,7 +1,7 @@
 .. _cccl-cpp-libraries:
 
-CCCL C++ Libraries
-==================
+CUDA C++ Core Libraries
+=======================
 
 .. toctree::
    :hidden:
