@@ -36,8 +36,21 @@
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 namespace cuda::experimental
 {
-
-template <class _Tp, bool _IsConst, _ExecutionSpace _Space>
+//! @rst
+//! .. _cudax-containers-heterogeneous-iterator:
+//!
+//! Type safe iterator over heterogeneous memory
+//! ---------------------------------------------
+//!
+//! ``heterogeneous_iterator`` provides a type safe access over heterogeneous memory. Depening on whether the memory is
+//! tagged as host-accessible and / or device-accessible the iterator restricts memory access.
+//! All operations that do not require memory access are always available on host and device.
+//!
+//! @endrst
+//! @tparam _Tp The underlying type of the elements the \c heterogeneous_iterator points at.
+//! @tparam _IsConst Boolean, if false the \c heterogeneous_iterator allows mutating the element pointed to.
+//! @tparam _Properties The properties that the \c heterogeneous_iterator is tagged with.
+template <class _Tp, bool _IsConst, class... _Properties>
 class heterogeneous_iterator;
 
 // We restrict all accessors of the iterator based on the execution space
@@ -63,21 +76,21 @@ public:
       : __ptr_(__ptr)
   {}
 
-  //! @brief Dereference a heterogeneous_iterator
+  //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
   _CCCL_NODISCARD _CCCL_HOST constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
-  //! @brief Operator arrow on a heterogeneous_iterator
+  //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
   _CCCL_NODISCARD _CCCL_HOST constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
 
-  //! @brief Dereference a heterogeneous_iterator
+  //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference of the \p __count th element after the one the iterator points to
   _CCCL_NODISCARD _CCCL_HOST constexpr reference operator[](const difference_type __count) const noexcept
@@ -88,7 +101,7 @@ public:
 private:
   pointer __ptr_ = nullptr;
 
-  template <class, bool, _ExecutionSpace>
+  template <class, bool, class...>
   friend class heterogeneous_iterator;
 
   template <class>
@@ -114,21 +127,21 @@ public:
       : __ptr_(__ptr)
   {}
 
-  //! @brief Dereference a heterogeneous_iterator
+  //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
   _CCCL_NODISCARD _CCCL_DEVICE constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
-  //! @brief Operator arrow on a heterogeneous_iterator
+  //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
   _CCCL_NODISCARD _CCCL_DEVICE constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
 
-  //! @brief Dereference a heterogeneous_iterator
+  //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference of the \p __count th element after the one the iterator points to
   _CCCL_NODISCARD _CCCL_DEVICE constexpr reference operator[](const difference_type __count) const noexcept
@@ -139,7 +152,7 @@ public:
 private:
   pointer __ptr_ = nullptr;
 
-  template <class, bool, _ExecutionSpace>
+  template <class, bool, class...>
   friend class heterogeneous_iterator;
 
   template <class>
@@ -165,21 +178,21 @@ public:
       : __ptr_(__ptr)
   {}
 
-  //! @brief Dereference a heterogeneous_iterator
+  //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
-  //! @brief Operator arrow on a heterogeneous_iterator
+  //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
 
-  //! @brief Dereference a heterogeneous_iterator
+  //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference to the `__count` element after the one the iterator points to
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator[](const difference_type __count) const noexcept
@@ -190,15 +203,16 @@ public:
 private:
   pointer __ptr_ = nullptr;
 
-  template <class, bool, _ExecutionSpace>
+  template <class, bool, class...>
   friend class heterogeneous_iterator;
 
   template <class>
   friend struct pointer_traits;
 };
 
-template <class _Tp, bool _IsConst, _ExecutionSpace _Space>
-class heterogeneous_iterator : public __heterogeneous_iterator_access<_Tp, _IsConst, _Space>
+template <class _Tp, bool _IsConst, class... _Properties>
+class heterogeneous_iterator
+    : public __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>
 {
   template <class>
   friend struct pointer_traits;
@@ -215,12 +229,13 @@ public:
 
   heterogeneous_iterator() = default;
 
-  //! @brief Construct a heterogeneous_iterator from a pointer to the underlying memory
+  //! @brief Construct a \c heterogeneous_iterator from a pointer to the underlying memory
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator(pointer __ptr) noexcept
       : __heterogeneous_iterator_access<_Tp, _IsConst, _Space>(__ptr)
   {}
 
-  //! @brief Converting constructor from a mutable iterator to a non-mutable one
+  //! @brief Construcs an immutable \c heterogeneous_iterator from a mutable one
+  //! @param __other The mutable \c heterogeneous_iterator
   _LIBCUDACXX_TEMPLATE(bool _OtherConst)
   _LIBCUDACXX_REQUIRES((_OtherConst != _IsConst) _LIBCUDACXX_AND _IsConst)
   _CCCL_HOST_DEVICE explicit constexpr heterogeneous_iterator(
@@ -228,7 +243,7 @@ public:
       : __heterogeneous_iterator_access<_Tp, _IsConst, _Space>(__other.__ptr_)
   {}
 
-  //! @brief Increment of a heterogeneous_iterator
+  //! @brief Increment of a \c heterogeneous_iterator
   //! @return The heterogeneous_iterator pointing to the next element
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator& operator++() noexcept
   {
@@ -236,7 +251,7 @@ public:
     return *this;
   }
 
-  //! @brief Post-increment of a heterogeneous_iterator
+  //! @brief Post-increment of a \c heterogeneous_iterator
   //! @return A copy of the heterogeneous_iterator pointing to the next element
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator operator++(int) noexcept
   {
@@ -245,7 +260,7 @@ public:
     return __temp;
   }
 
-  //! @brief Decrement of a heterogeneous_iterator
+  //! @brief Decrement of a \c heterogeneous_iterator
   //! @return The heterogeneous_iterator pointing to the previous element
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator& operator--() noexcept
   {
@@ -253,7 +268,7 @@ public:
     return *this;
   }
 
-  //! @brief Post-decrement of a heterogeneous_iterator
+  //! @brief Post-decrement of a \c heterogeneous_iterator
   //! @return A copy of the heterogeneous_iterator pointing to the previous element
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator operator--(int) noexcept
   {
@@ -262,8 +277,8 @@ public:
     return __temp;
   }
 
-  //! @brief Advance a heterogeneous_iterator
-  //! @param __count The number of elements to advance
+  //! @brief Advance a \c heterogeneous_iterator
+  //! @param __count The number of elements to advance.
   //! @return The heterogeneous_iterator advanced by \p __count
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator& operator+=(const difference_type __count) noexcept
   {
@@ -271,8 +286,8 @@ public:
     return *this;
   }
 
-  //! @brief Advance a heterogeneous_iterator
-  //! @param __count The number of elements to advance
+  //! @brief Advance a \c heterogeneous_iterator
+  //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by \p __count
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr heterogeneous_iterator operator+(const difference_type __count) noexcept
   {
@@ -281,9 +296,9 @@ public:
     return __temp;
   }
 
-  //! @brief Advance a heterogeneous_iterator
-  //! @param __count The number of elements to advance
-  //! @param __other A heterogeneous_iterator
+  //! @brief Advance a \c heterogeneous_iterator
+  //! @param __count The number of elements to advance.
+  //! @param __other A heterogeneous_iterator.
   //! @return \p __other advanced by \p __count
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr heterogeneous_iterator
   operator+(const difference_type __count, heterogeneous_iterator __other) noexcept
@@ -292,8 +307,8 @@ public:
     return __other;
   }
 
-  //! @brief Advance a heterogeneous_iterator by the negative value of \p __count
-  //! @param __count The number of elements to advance
+  //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
+  //! @param __count The number of elements to advance.
   //! @return The heterogeneous_iterator advanced by the negative value of \p __count
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator& operator-=(const difference_type __count) noexcept
   {
@@ -301,8 +316,8 @@ public:
     return *this;
   }
 
-  //! @brief Advance a heterogeneous_iterator by the negative value of \p __count
-  //! @param __count The number of elements to advance
+  //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
+  //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by the negative value of \p __count
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr heterogeneous_iterator operator-(const difference_type __count) noexcept
   {
@@ -312,7 +327,7 @@ public:
   }
 
   //! @brief Distance between two heterogeneous_iterator
-  //! @param __other The other heterogeneous_iterator
+  //! @param __other The other heterogeneous_iterator.
   //! @return The distance between the two elements the heterogeneous_iterator point to
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr difference_type operator-(const heterogeneous_iterator& __other) noexcept
   {
@@ -320,8 +335,8 @@ public:
   }
 
   //! @brief Equality comparison between two heterogeneous_iterator
-  //! @param __lhs A heterogeneous_iterator
-  //! @param __rhs Another heterogeneous_iterator
+  //! @param __lhs A heterogeneous_iterator.
+  //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if both heterogeneous_iterator point to the same element
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr bool
   operator==(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
@@ -330,8 +345,8 @@ public:
   }
 #  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison between two heterogeneous_iterator
-  //! @param __lhs A heterogeneous_iterator
-  //! @param __rhs Another heterogeneous_iterator
+  //! @param __lhs A heterogeneous_iterator.
+  //! @param __rhs Another heterogeneous_iterator.
   //! @return false, if both heterogeneous_iterator point to the same element
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr bool
   operator!=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
@@ -348,8 +363,8 @@ public:
   }
 #  else // ^^^ _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ /  vvv !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
   //! @brief Less then relation between two heterogeneous_iterator
-  //! @param __lhs A heterogeneous_iterator
-  //! @param __rhs Another heterogeneous_iterator
+  //! @param __lhs A heterogeneous_iterator.
+  //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then the address of the one pointed to
   //! by \p __rhs
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr bool
@@ -358,8 +373,8 @@ public:
     return __lhs.__ptr_ < __rhs.__ptr_;
   }
   //! @brief Less equal relation between two heterogeneous_iterator
-  //! @param __lhs A heterogeneous_iterator
-  //! @param __rhs Another heterogeneous_iterator
+  //! @param __lhs A heterogeneous_iterator.
+  //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then or equal to the address of the one
   //! pointed to by \p __rhs
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr bool
@@ -368,8 +383,8 @@ public:
     return __lhs.__ptr_ <= __rhs.__ptr_;
   }
   //! @brief Greater then relation between two heterogeneous_iterator
-  //! @param __lhs A heterogeneous_iterator
-  //! @param __rhs Another heterogeneous_iterator
+  //! @param __lhs A heterogeneous_iterator.
+  //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then the address of the one
   //! pointed to by \p __rhs
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr bool
@@ -378,8 +393,8 @@ public:
     return __lhs.__ptr_ > __rhs.__ptr_;
   }
   //! @brief Greater equal relation between two heterogeneous_iterator
-  //! @param __lhs A heterogeneous_iterator
-  //! @param __rhs Another heterogeneous_iterator
+  //! @param __lhs A heterogeneous_iterator.
+  //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then or equal to the address of the
   //! one pointed to by \p __rhs
   _CCCL_NODISCARD_FRIEND _CCCL_HOST_DEVICE constexpr bool
@@ -403,7 +418,7 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst
   using difference_type = _CUDA_VSTD::ptrdiff_t;
 
   //! @brief Retrieve the address of the element pointed at by an heterogeneous_iterator
-  //! @param __iter A heterogeneous_iterator
+  //! @param __iter A heterogeneous_iterator.
   //! @return A pointer to the element pointed to by the heterogeneous_iterator
   _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr element_type* to_address(const pointer __iter) noexcept
   {

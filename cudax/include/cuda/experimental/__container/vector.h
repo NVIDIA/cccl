@@ -81,6 +81,35 @@
 //! @file The \c vector class provides a container of contiguous memory
 namespace cuda::experimental
 {
+
+//! @rst
+//! .. _cudax-containers-vector:
+//!
+//! vector
+//! -------
+//!
+//! ``vector`` is a container that provides resizable typed storage allocated from a given :ref:`memory resource
+//! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment, release and growth of the allocation.
+//! The elements are initialized during construction, if the storage is not user provided through a
+//! :ref:`uninitialized_buffer <cudax-containers-uninitialized-buffer>` with matching properties.
+//!
+//! In addition to being type-safe, ``vector`` also takes a set of :ref:`properties
+//! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
+//! at compile time. However, only stateless properties can be forwarded. To use a stateful property,
+//! implement :ref:`get_property(const vector&, Property) <libcudacxx-extended-api-memory-resources-properties>`.
+//!
+//! .. warning::
+//!
+//!    ``vector`` stores a reference to the provided memory :ref:`memory resource
+//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's responsibility to ensure the lifetime of
+//!    the resource exceeds the lifetime of the vector.
+//!
+//! @endrst
+//! @tparam _Tp the type to be stored in the buffer
+//! @tparam _Properties... The properties the allocated memory satisfies
+template <class _Tp, class... _Properties>
+class vector;
+
 template <class _Derived, _ExecutionSpace>
 struct __vector_access;
 
@@ -370,31 +399,6 @@ public:
   }
 };
 
-//! @rst
-//! .. _cudax-containers-vector:
-//!
-//! vector
-//! -------
-//!
-//! ``vector`` is a container that provides resizable typed storage allocated from a given :ref:`memory resource
-//! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment, release and growth of the allocation.
-//! The elements are initialized during construction, if the storage is not user provided through a
-//! :ref:`uninitialized_buffer <cudax-containers-uninitialized-buffer>` with matching properties.
-//!
-//! In addition to being type-safe, ``vector`` also takes a set of :ref:`properties
-//! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
-//! at compile time. However, only stateless properties can be forwarded. To use a stateful property,
-//! implement :ref:`get_property(const vector&, Property) <libcudacxx-extended-api-memory-resources-properties>`.
-//!
-//! .. warning::
-//!
-//!    ``vector`` stores a reference to the provided memory :ref:`memory resource
-//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's responsibility to ensure the lifetime of
-//!    the resource exceeds the lifetime of the vector.
-//!
-//! @endrst
-//! @tparam _Tp the type to be stored in the buffer
-//! @tparam _Properties... The properties the allocated memory satisfies
 template <class _Tp, class... _Properties>
 class vector : public __vector_base<_Tp, _Properties...>
 {
@@ -407,8 +411,8 @@ public:
   using const_reference        = const _Tp&;
   using pointer                = _Tp*;
   using const_pointer          = const _Tp*;
-  using iterator               = heterogeneous_iterator<_Tp, false, __select_execution_space<_Properties...>>;
-  using const_iterator         = heterogeneous_iterator<_Tp, true, __select_execution_space<_Properties...>>;
+  using iterator               = heterogeneous_iterator<_Tp, false, _Properties...>;
+  using const_iterator         = heterogeneous_iterator<_Tp, true, _Properties...>;
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = size_t;

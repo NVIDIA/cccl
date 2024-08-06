@@ -8,6 +8,7 @@ Containers library
    :maxdepth: 1
 
    ${repo_docs_api_path}/class*uninitialized__buffer*
+   ${repo_docs_api_path}/class*heterogeneous__iterator*
    ${repo_docs_api_path}/class*experimental*vector*
 
 The headers of the container library provide facilities to store elements on the heap. They are heavily inspired by the
@@ -23,6 +24,9 @@ annotations are checked by the type system.
 
    * - :ref:`<cuda/experimental/buffer> <cudax-containers-uninitialized-buffer>`
      - Facilities providing uninitialized *heterogeneous* storage satisfying a set of properties
+     - cudax 2.7.0 / CCCL 2.7.0
+   * - :ref:`<cuda/experimental/vector> <cudax-containers-heterogeneous-iterator>`
+     - Iterator providing type safe iteration and memory access through a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
    * - :ref:`<cuda/experimental/vector> <cudax-containers-vector>`
      - High level containers, that provide *heterogeneous* storage satisfying a set of properties

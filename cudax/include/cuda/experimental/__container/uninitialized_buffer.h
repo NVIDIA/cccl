@@ -57,7 +57,7 @@ namespace cuda::experimental
 //!    the resource exceeds the lifetime of the buffer.
 //!
 //! @endrst
-//! @tparam _T the type to be stored in the buffer
+//! @tparam _Tp the type to be stored in the buffer
 //! @tparam _Properties... The properties the allocated memory satisfies
 template <class _Tp, class... _Properties>
 class uninitialized_buffer
