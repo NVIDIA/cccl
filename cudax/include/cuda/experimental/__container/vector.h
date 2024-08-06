@@ -48,6 +48,7 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/__ranges/size.h>
+#include <cuda/std/__ranges/unwrap_end.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -108,204 +109,7 @@ namespace cuda::experimental
 //! @tparam _Tp the type to be stored in the buffer
 //! @tparam _Properties... The properties the allocated memory satisfies
 template <class _Tp, class... _Properties>
-class vector;
-
-template <class _Base>
-struct _Rollback_change_size
-{
-  using iterator = typename _Base::iterator;
-  _Base* __obj_;
-  iterator& __first_;
-  iterator __current_;
-
-  _CCCL_HOST_DEVICE constexpr _Rollback_change_size(_Base* __obj, iterator& __first, iterator& __current) noexcept
-      : __obj_(__obj)
-      , __first_(__first)
-      , __current_(__current)
-  {}
-
-  _CCCL_HOST_DEVICE void operator()() const noexcept
-  {
-    __obj_->__size_ += static_cast<typename _Base::size_t>(__current_ - __first_);
-  }
-};
-
-template <class _Derived, _ExecutionSpace>
-struct __vector_access;
-
-template <class _Derived>
-struct __vector_access<_Derived, _ExecutionSpace::__host>
-{
-private:
-  _CCCL_NODISCARD _CCCL_HOST constexpr _Derived& __derived() noexcept
-  {
-    return static_cast<_Derived&>(*this);
-  }
-
-  _CCCL_NODISCARD _CCCL_HOST constexpr _Derived const& __derived() const noexcept
-  {
-    return static_cast<_Derived const&>(*this);
-  }
-
-public:
-  //! @addtogroup access
-  //! @{
-  //! @brief Returns a reference to the \p __n 'th element of the vector
-  //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) operator[](const size_t __n) noexcept
-  {
-    return *(__derived().data() + __n);
-  }
-
-  //! @brief Returns a reference to the \p __n 'th element of the vector
-  //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) operator[](const size_t __n) const noexcept
-  {
-    return *(__derived().data() + __n);
-  }
-
-  //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) first() noexcept
-  {
-    return *__derived().data();
-  }
-
-  //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) first() const noexcept
-  {
-    return *__derived().data();
-  }
-
-  //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) back() noexcept
-  {
-    return *(__derived().data() + __derived().size() - 1);
-  }
-
-  //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) back() const noexcept
-  {
-    return *(__derived().data() + __derived().size() - 1);
-  }
-  //! @}
-};
-
-template <class _Derived>
-struct __vector_access<_Derived, _ExecutionSpace::__device>
-{
-private:
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr _Derived& __derived() noexcept
-  {
-    return static_cast<_Derived&>(*this);
-  }
-
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr _Derived const& __derived() const noexcept
-  {
-    return static_cast<_Derived const&>(*this);
-  }
-
-public:
-  //! @addtogroup access
-  //! @{
-  //! @brief Returns a reference to the \p __n 'th element of the vector
-  //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) operator[](const size_t __n) noexcept
-  {
-    return *(__derived().data() + __n);
-  }
-
-  //! @brief Returns a reference to the \p __n 'th element of the vector
-  //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) operator[](const size_t __n) const noexcept
-  {
-    return *(__derived().data() + __n);
-  }
-
-  //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) first() noexcept
-  {
-    return *__derived().data();
-  }
-
-  //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) first() const noexcept
-  {
-    return *__derived().data();
-  }
-
-  //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) back() noexcept
-  {
-    return *(__derived().data() + __derived().size() - 1);
-  }
-
-  //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) back() const noexcept
-  {
-    return *(__derived().data() + __derived().size() - 1);
-  }
-  //! @}
-};
-
-template <class _Derived>
-struct __vector_access<_Derived, _ExecutionSpace::__host_device>
-{
-private:
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr _Derived& __derived() noexcept
-  {
-    return static_cast<_Derived&>(*this);
-  }
-
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr _Derived const& __derived() const noexcept
-  {
-    return static_cast<_Derived const&>(*this);
-  }
-
-public:
-  //! @addtogroup access
-  //! @{
-  //! @brief Returns a reference to the \p __n 'th element of the vector
-  //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) operator[](const size_t __n) noexcept
-  {
-    return *(__derived().data() + __n);
-  }
-
-  //! @brief Returns a reference to the \p __n 'th element of the vector
-  //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) operator[](const size_t __n) const noexcept
-  {
-    return *(__derived().data() + __n);
-  }
-
-  //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) first() noexcept
-  {
-    return *__derived().data();
-  }
-
-  //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) first() const noexcept
-  {
-    return *__derived().data();
-  }
-
-  //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) back() noexcept
-  {
-    return *(__derived().data() + __derived().size() - 1);
-  }
-
-  //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) back() const noexcept
-  {
-    return *(__derived().data() + __derived().size() - 1);
-  }
-  //! @}
-};
-
-template <class _Tp, class... _Properties>
-class vector : public __vector_access<vector<_Tp, _Properties...>, __select_execution_space<_Properties...>>
+class vector
 {
 public:
   using value_type             = _Tp;
@@ -318,10 +122,31 @@ public:
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = size_t;
+  using __resource_ref         = _CUDA_VMR::resource_ref<_Properties...>;
 
 private:
   uninitialized_buffer<_Tp, _Properties...> __buf_;
   size_t __size_ = 0; // initialized to 0 in case initialization of the elements might throw
+
+  //! @brief In can an exception is thrown adjusts the size of the vector so that the previously constructed elements
+  //! are accounted for
+  struct _Adopt_size
+  {
+    vector* __obj_;
+    iterator& __first_;
+    iterator __current_;
+
+    _CCCL_HOST_DEVICE constexpr _Adopt_size(vector* __obj, iterator& __first, iterator& __current) noexcept
+        : __obj_(__obj)
+        , __first_(__first)
+        , __current_(__current)
+    {}
+
+    _CCCL_HOST_DEVICE void operator()() const noexcept
+    {
+      __obj_->__size_ += static_cast<size_t>(__current_ - __first_);
+    }
+  };
 
   //! @brief Destroy the elements in the range `[__first, end())` and adopts the size.
   //! @param __first Iterator to the first element to be destroyed.
@@ -333,7 +158,7 @@ private:
     {
       _CUDA_VSTD::__destroy(__first, __last);
     }
-    this->__size_ -= static_cast<size_t>(__last - __first);
+    __size_ -= static_cast<size_t>(__last - __first);
   }
 
   //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
@@ -348,7 +173,7 @@ private:
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
     }
-    this->__size_ += __count;
+    __size_ += __count;
   }
 
   //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
@@ -361,13 +186,13 @@ private:
   {
     size_t __count       = 0;
     iterator __old_first = __first;
-    auto __guard = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __old_first, __first});
+    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __old_first, __first});
     for (; __count != __size; ++__first, (void) ++__count)
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
     }
     __guard.__complete();
-    this->__size_ += __count;
+    __size_ += __count;
   }
 
   //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
@@ -383,7 +208,7 @@ private:
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
     }
-    this->__size_ += __count;
+    __size_ += __count;
   }
 
   //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
@@ -397,13 +222,13 @@ private:
   {
     size_t __count       = 0;
     iterator __old_first = __first;
-    auto __guard = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __old_first, __first});
+    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __old_first, __first});
     for (; __count != __size; ++__first, (void) ++__count)
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
     }
     __guard.__complete();
-    this->__size_ += __count;
+    __size_ += __count;
   }
 
   //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -419,7 +244,7 @@ private:
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
-    this->__size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_t>(__curr - __dest);
   }
 
   //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -432,13 +257,13 @@ private:
   _CCCL_HOST_DEVICE void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
+    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
     __guard.__complete();
-    this->__size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_t>(__curr - __dest);
   }
 
   //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -458,7 +283,7 @@ private:
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
-    this->__size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_t>(__curr - __dest);
   }
 
   //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -471,7 +296,7 @@ private:
   _CCCL_HOST_DEVICE void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
+    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -481,7 +306,7 @@ private:
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
     __guard.__complete();
-    this->__size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_t>(__curr - __dest);
   }
 
 public:
@@ -536,7 +361,7 @@ public:
     _CUDA_VSTD::uninitialized_copy(__other.begin(), __other.end(), __new_buf.begin());
 
     // Now that everything is set up bring over the new data
-    clear();
+    this->clear();
     _CUDA_VSTD::swap(__buf_, __new_buf);
 
     // The above call to destroy has set the size of this vector to 0 so we need set it correctly
@@ -554,7 +379,7 @@ public:
       return *this;
     }
 
-    clear();
+    this->clear();
     _CUDA_VSTD::swap(*this, __other);
     return *this;
   }
@@ -570,7 +395,7 @@ public:
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size = 0)
+  vector(__resource_ref __mr, const size_t __size = 0)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -585,7 +410,7 @@ public:
   //! @param __size The size of the vector.
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, const _Tp& __value)
+  vector(__resource_ref __mr, const size_t __size, const _Tp& __value)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -600,7 +425,7 @@ public:
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, ::cuda::experimental::uninit_t)
+  vector(__resource_ref __mr, const size_t __size, ::cuda::experimental::uninit_t)
       : __buf_(__mr, __size)
   {}
 
@@ -613,7 +438,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _Iter __first, _Iter __last)
+  vector(__resource_ref __mr, _Iter __first, _Iter __last)
       : __buf_(__mr, 0)
   {
     for (; __first != __last; ++__first)
@@ -630,12 +455,12 @@ public:
   //! @note If `__first == __last` then no memory is allocated
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _Iter __first, _Iter __last)
+  vector(__resource_ref __mr, _Iter __first, _Iter __last)
       : __buf_(__mr, static_cast<size_t>(_CUDA_VSTD::distance(__first, __last)))
   {
-    if (__size_ != 0)
+    if (__buf_.size() > 0)
     {
-      this->__uninitialized_copy(__first, __last, begin());
+      this->__uninitialized_copy(__first, __last, __unchecked_begin());
     }
   }
 
@@ -643,14 +468,55 @@ public:
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __ilist The initializer_list being copied into the vector.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+  vector(__resource_ref __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
       : __buf_(__mr, __ilist.size())
   {
-    if (__size_ != 0)
+    if (__buf_.size() > 0)
     {
       this->__uninitialized_copy(__ilist.begin(), __ilist.end(), begin());
     }
   }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  vector(__resource_ref __mr, _Range&& __range)
+      : __buf_(__mr, 0)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(_CUDA_VRANGES::iter_move(__first));
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  vector(__resource_ref __mr, _Range&& __range)
+      : __buf_(__mr, static_cast<size_t>(_CUDA_VRANGES::size(__range)))
+  {
+    if (__buf_.size() > 0)
+    {
+      this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), begin());
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  vector(__resource_ref __mr, _Range&& __range)
+      : __buf_(__mr,
+               static_cast<size_t>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))))
+  {
+    if (__buf_.size() > 0)
+    {
+      this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), begin());
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   //! @}
 
   //! @addtogroup iterators
@@ -755,6 +621,76 @@ public:
   {
     return __buf_.data();
   }
+
+  //! @brief Returns a pointer to the first element of the vector. If the vector is empty, the returned
+  //! pointer will be null.
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer __unchecked_begin() noexcept
+  {
+    return __buf_.data();
+  }
+
+  //! @brief Returns a const pointer to the first element of the vector. If the vector is empty, the returned
+  //! pointer will be null.
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer __unchecked_begin() const noexcept
+  {
+    return __buf_.data();
+  }
+
+  //! @brief Returns a pointer to the element following the last element of the vector. This element acts as a
+  //! placeholder; attempting to access it results in undefined behavior.
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer __unchecked_end() noexcept
+  {
+    return __buf_.data() + __size_;
+  }
+
+  //! @brief Returns a const pointer to the element following the last element of the vector. This element acts as
+  //! a placeholder; attempting to access it results in undefined behavior.
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer __unchecked_end() const noexcept
+  {
+    return __buf_.data() + __size_;
+  }
+
+  //! @}
+
+  //! @addtogroup access
+  //! @{
+  //! @brief Returns a reference to the \p __n 'th element of the vector
+  //! @param __n The index of the element we want to access
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator[](const size_t __n) noexcept
+  {
+    return begin()[__n];
+  }
+
+  //! @brief Returns a reference to the \p __n 'th element of the vector
+  //! @param __n The index of the element we want to access
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference operator[](const size_t __n) const noexcept
+  {
+    return begin()[__n];
+  }
+
+  //! @brief Returns a reference to the first element of the vector
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference first() noexcept
+  {
+    return begin()[0];
+  }
+
+  //! @brief Returns a reference to the first element of the vector
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference first() const noexcept
+  {
+    return begin()[0];
+  }
+
+  //! @brief Returns a reference to the last element of the vector
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference back() noexcept
+  {
+    return begin()[__size_ - 1];
+  }
+
+  //! @brief Returns a reference to the last element of the vector
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference back() const noexcept
+  {
+    return begin()[__size_ - 1];
+  }
   //! @}
 
   //! @addtogroup capacity
@@ -789,6 +725,428 @@ public:
 
   //! @addtogroup modification
   //! @{
+
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, const _Tp& __value)
+  {
+    return emplace(__cpos, __value);
+  }
+
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _Tp&& __value)
+  {
+    return emplace(__cpos, _CUDA_VSTD::move(__value));
+  }
+
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
+  {
+    const iterator __pos = (iterator) __cpos;
+    const iterator __end = end();
+    if (size() + __count > __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos < begin() || __end < __pos)
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, size_type, T)");
+    }
+
+    if (__count == 0)
+    {
+      return __pos;
+    }
+
+    if (__pos == __end)
+    {
+      this->__uninitialized_fill(__end, __end + __count, __value);
+      return __pos;
+    }
+
+    const iterator __middle = __pos + __count;
+    if (__end <= __middle)
+    { // all existing elements are pushed into uninitialized storage
+      this->__uninitialized_fill(__end, __middle, __value);
+      this->__uninitialized_move(__pos, __end, __middle);
+      _CUDA_VSTD::fill(__pos, __end, __value);
+    }
+    else
+    { // some elements get copied into existing storage
+      this->__uninitialized_move(__end - __count, __end, __end);
+      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
+      _CUDA_VSTD::fill(__pos, __middle, __value);
+    }
+
+    return __pos;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(
+    !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
+  {
+    // add all new elements to the back then rotate
+    const iterator __old_end = end();
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+
+    const iterator __pos = (iterator) __cpos;
+    _CUDA_VSTD::rotate(__pos, __old_end, end());
+    return __pos;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
+  {
+    const iterator __pos = (iterator) __cpos;
+    const iterator __end = end();
+    const auto __count   = _CUDA_VSTD::distance(__first, __last);
+    if (size() + __count > __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos < begin() || __end < __pos)
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, Iter, Iter)");
+    }
+
+    if (__count == 0)
+    {
+      return __pos;
+    }
+
+    if (__pos == __end)
+    {
+      this->__uninitialized_copy(__first, __last, __end);
+      return __pos;
+    }
+
+    const iterator __middle = __pos + __count;
+    const auto __to_copy    = __end - __pos;
+    if (__end <= __middle)
+    { // all existing elements are pushed into uninitialized storage
+      _Iter __imiddle = _CUDA_VSTD::next(__first, __to_copy);
+      this->__uninitialized_copy(__imiddle, __last, __end);
+      this->__uninitialized_move(__pos, __end, __middle);
+      _CUDA_VSTD::copy(__first, __imiddle, __pos);
+    }
+    else
+    { // all new elements get copied into existing storage
+      this->__uninitialized_move(__end - __count, __end, __end);
+      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
+      _CUDA_VSTD::copy(__first, __last, __pos);
+    }
+
+    return __pos;
+  }
+
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+  {
+    const iterator __pos = (iterator) __cpos;
+    const iterator __end = end();
+    const auto __count   = __ilist.size();
+    if (size() + __count > __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos < begin() || __end < __pos)
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, initializer_list)");
+    }
+
+    if (__count == 0)
+    {
+      return __pos;
+    }
+
+    if (__pos == __end)
+    {
+      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), __end);
+      return __pos;
+    }
+
+    const iterator __middle = __pos + __count;
+    const auto __to_copy    = __end - __pos;
+    if (__end <= __middle)
+    { // all existing elements are pushed into uninitialized storage
+      auto __imiddel = __ilist.begin() + __to_copy;
+      this->__uninitialized_copy(__imiddel, __ilist.end(), __end);
+      this->__uninitialized_move(__pos, __end, __middle);
+      _CUDA_VSTD::copy(__ilist.begin(), __imiddel, __pos);
+    }
+    else
+    { // all new elements get copied into existing storage
+      this->__uninitialized_move(__end - __count, __end, __end);
+      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
+      _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), __pos);
+    }
+
+    return __pos;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_HOST_DEVICE constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  {
+    // add all new elements to the back then rotate
+    auto __first             = _CUDA_VRANGES::begin(__range);
+    auto __last              = _CUDA_VRANGES::end(__range);
+    const iterator __old_end = end();
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+
+    const iterator __pos = (iterator) __cpos;
+    _CUDA_VSTD::rotate(__pos, __old_end, end());
+    return __pos;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _CCCL_HOST_DEVICE constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    return insert(__cpos, __first, _CUDA_VRANGES::__unwrap_end(__range));
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_HOST_DEVICE constexpr void append_range(_Range&& __range)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _CCCL_HOST_DEVICE constexpr void append_range(_Range&& __range)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    insert(end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  template <class... _Args>
+  _CCCL_HOST_DEVICE constexpr iterator emplace(const_iterator __cpos, _Args&&... __args)
+  {
+    const iterator __pos = (iterator) __cpos;
+    const iterator __end = end();
+    if (size() == __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos < begin() || __end < __pos)
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::emplace(const_iterator, Args...)");
+    }
+
+    if (__pos == __end)
+    {
+      unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+    }
+    else
+    {
+      _Tp __temp{_CUDA_VSTD::forward<_Args>(__args)...};
+      unchecked_emplace_back(_CUDA_VSTD::move(*(__end - 1)));
+      _CUDA_VSTD::move_backward(__pos, __end - 1, __end);
+      *__pos = _CUDA_VSTD::move(__temp);
+    }
+
+    return __pos;
+  }
+
+  template <class... _Args>
+  _CCCL_HOST_DEVICE constexpr reference emplace_back(_Args&&... __args)
+  {
+    if (size() == __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    return unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+  }
+
+  _CCCL_HOST_DEVICE constexpr reference push_back(const _Tp& __value)
+  {
+    if (size() == __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    return unchecked_emplace_back(__value);
+  }
+
+  _CCCL_HOST_DEVICE constexpr reference push_back(_Tp&& __value)
+  {
+    if (size() == __buf_.size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    return unchecked_emplace_back(_CUDA_VSTD::move(__value));
+  }
+
+  template <class... _Args>
+  _CCCL_HOST_DEVICE constexpr pointer
+  try_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
+  {
+    if (size() == __buf_.size())
+    {
+      return nullptr;
+    }
+
+    return _CUDA_VSTD::addressof(unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...));
+  }
+
+  _CCCL_HOST_DEVICE constexpr pointer
+  try_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
+  {
+    if (size() == __buf_.size())
+    {
+      return nullptr;
+    }
+
+    return _CUDA_VSTD::addressof(unchecked_emplace_back(__value));
+  }
+
+  _CCCL_HOST_DEVICE constexpr pointer
+  try_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  {
+    if (size() == __buf_.size())
+    {
+      return nullptr;
+    }
+
+    return _CUDA_VSTD::addressof(unchecked_emplace_back(_CUDA_VSTD::move(__value)));
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
+  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
+    for (; size() != __buf_.size() && __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+    return __first;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
+  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  {
+    const auto __capacity = __buf_.size() - size();
+    const auto __size     = _CUDA_VRANGES::size(__range);
+    const auto __diff     = __size < __capacity ? __size : __capacity;
+
+    auto __first  = _CUDA_VRANGES::begin(__range);
+    auto __middle = _CUDA_VRANGES::next(__first, __diff);
+    this->__uninitialized_move(__first, __middle, end());
+    return __middle;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
+  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  {
+    const auto __capacity = static_cast<ptrdiff_t>(__buf_.size() - size());
+    auto __first          = _CUDA_VRANGES::begin(__range);
+    const auto __size = static_cast<ptrdiff_t>(_CUDA_VRANGES::distance(__first, _CUDA_VRANGES::__unwrap_end(__range)));
+    const ptrdiff_t __diff = __size < __capacity ? __size : __capacity;
+
+    auto __middle = _CUDA_VRANGES::next(__first, __diff);
+    this->__uninitialized_move(__first, __middle, end());
+    return __middle;
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  template <class... _Args>
+  _CCCL_HOST_DEVICE constexpr reference
+  unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
+  {
+    auto __final = _CUDA_VSTD::__construct_at(__unchecked_end(), _CUDA_VSTD::forward<_Args>(__args)...);
+    ++__size_;
+    return *__final;
+  }
+
+  _CCCL_HOST_DEVICE constexpr reference
+  unchecked_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
+  {
+    return unchecked_emplace_back(__value);
+  }
+
+  _CCCL_HOST_DEVICE constexpr reference
+  unchecked_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  {
+    return unchecked_emplace_back(_CUDA_VSTD::move(__value));
+  }
+
+  _CCCL_HOST_DEVICE constexpr void pop_back() noexcept
+  {
+    const auto __end = end();
+    this->__destroy(__end - 1, __end);
+  }
+
+  _CCCL_HOST_DEVICE constexpr iterator
+  erase(const_iterator __cpos) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
+  {
+    const iterator __pos = (iterator) __cpos;
+    const iterator __end = end();
+    if (__pos == __end)
+    {
+      return __pos;
+    }
+
+    if (size() == 0 || __pos < begin() || __end < __pos)
+    {
+      _CUDA_VSTD_NOVERSION::terminate();
+    }
+
+    _CUDA_VSTD::move(__pos + 1, __end, __pos);
+    this->__destroy(__end - 1, __end);
+    return __pos;
+  }
+
+  _CCCL_HOST_DEVICE constexpr iterator erase(const_iterator __cfirst, const_iterator __clast) noexcept(
+    _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
+  {
+    const iterator __first = (iterator) __cfirst;
+    const iterator __last  = (iterator) __clast;
+    const iterator __end   = end();
+    if (__first == __last)
+    {
+      return __last;
+    }
+
+    if (__first < begin() || __end < __last)
+    {
+      _CUDA_VSTD_NOVERSION::terminate();
+    }
+
+    const auto __new_end = _CUDA_VSTD::move(__last, __end, __first);
+    this->__destroy(__new_end, __end);
+    return __first;
+  }
+
   //! @brief Destroys all elements in the \c vector and sets the size to 0
   _CCCL_HOST_DEVICE void clear() noexcept
   {

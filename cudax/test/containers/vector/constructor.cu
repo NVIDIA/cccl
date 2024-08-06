@@ -52,7 +52,7 @@ TEMPLATE_TEST_CASE(
   Resource raw_resource{};
   Resource_ref resource{raw_resource};
 
-  SECTION("Construction with size")
+  SECTION("Construction with explicit size")
   {
     { // from resource, no alllocation
       const Vector vec{resource};
@@ -74,15 +74,120 @@ TEMPLATE_TEST_CASE(
 
     { // from resource and size
       const Vector vec{resource, 5};
+      CHECK(vec.capacity() == 5);
       CHECK(equal_range(vec, cuda::std::array<T, 5>{T(0), T(0), T(0), T(0), T(0)}));
     }
 
     { // from resource, size and value
       const Vector vec{resource, 5, T{42}};
+      CHECK(vec.capacity() == 5);
       CHECK(equal_range(vec, cuda::std::array<T, 5>{T(42), T(42), T(42), T(42), T(42)}));
     }
   }
 
+  SECTION("Construction from iterators")
+  {
+    const cuda::std::array<T, 4> input{T(1), T(42), T(1337), T(0)};
+    { // can be constructed from two equal input iterators
+      using iter = cpp17_input_iterator<const T*>;
+      Vector vec(resource, iter{input.begin()}, iter{input.begin()});
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // can be constructed from two equal forward iterators
+      using iter = forward_iterator<const T*>;
+      Vector vec(resource, iter{input.begin()}, iter{input.begin()});
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+#if 0 // Implement growing
+    { // can be constructed from two input iterators
+      using iter = cpp17_input_iterator<const T*>;
+      Vector vec(resource, iter{input.begin()}, iter{input.end()});
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+#endif // Implement growing
+
+    { // can be constructed from two forward iterators
+      using iter = forward_iterator<const T*>;
+      Vector vec(resource, iter{input.begin()}, iter{input.end()});
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+  }
+
+  SECTION("Construction from range")
+  {
+    { // can be constructed from an empty input range
+      Vector vec(resource, input_range<T, 0>{});
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+#if 0 // Implement growing
+    { // can be constructed from a non-empty input range
+      Vector vec(resource, input_range<T, 4>{T(1), T(42), T(1337), T(0)});
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    }
+#endif // Implement growing
+
+    { // can be constructed from an empty uncommon forward range
+      Vector vec(resource, uncommon_range<T, 0>{});
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // can be constructed from a non-empty uncommon forward range
+      Vector vec(resource, uncommon_range<T, 4>{T(1), T(42), T(1337), T(0)});
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    }
+
+    { // can be constructed from an empty sized uncommon forward range
+      Vector vec(resource, sized_uncommon_range<T, 0>{});
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // can be constructed from a non-empty sized uncommon forward range
+      Vector vec(resource, sized_uncommon_range<T, 4>{T(1), T(42), T(1337), T(0)});
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    }
+
+    { // can be constructed from an empty random access range
+      Vector vec(resource, cuda::std::array<T, 0>{});
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // can be constructed from a non-empty random access range
+      Vector vec(resource, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)});
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+    }
+  }
+
+  SECTION("Construction from initializer_list")
+  {
+    { // can be constructed from an empty initializer_list
+      const cuda::std::initializer_list<T> input{};
+      Vector vec(resource, input);
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // can be constructed from a non-empty initializer_list
+      const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
+      Vector vec(resource, input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+  }
 #if 0
   SECTION("copy construction")
   {
@@ -124,112 +229,18 @@ TEMPLATE_TEST_CASE(
 }
 
 #if 0
-template <class T, class... Properties>
-void test_size()
-{
-  using vector = cudax::vector<T, Properties...>;
-  { // can be constructed from a size, is empty if zero
-    vector vec(0);
-    CHECK(vec.empty());
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(vector(0)), "");
-#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
-  }
-
-  { // can be constructed from a size, elements are value initialized
-    constexpr size_t size{3};
-    vector vec(size);
-    CHECK(!vec.empty());
-    CHECK(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(vector(3)), "");
-#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
-  }
-}
-
-template <class T, class... Properties>
-void test_size_value()
-{
-  using vector = cudax::vector<T, Properties...>;
-  { // can be constructed from a size and a const T&, is empty if zero
-    vector vec(0, T(42));
-    CHECK(vec.empty());
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(vector(0, T(42))), "");
-#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
-  }
-
-  { // can be constructed from a size and a const T&, elements are copied
-    constexpr size_t size{3};
-    vector vec(size, T(42));
-    CHECK(!vec.empty());
-    CHECK(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
-    static_assert(!noexcept(vector(3, T(42))), "");
-#  endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
-  }
-}
-
-template <class T, class... Properties>
-void test_iter()
-{
-  using vector = cudax::vector<T, Properties...>;
-  { // can be constructed from two equal input iterators
-    using iter = cpp17_input_iterator<const T*>;
-    vector vec(iter{input.begin()}, iter{input.begin()});
-    CHECK(vec.empty());
-  }
-
-  { // can be constructed from two equal forward iterators
-    using iter = forward_iterator<const T*>;
-    vector vec(iter{input.begin()}, iter{input.begin()});
-    CHECK(vec.empty());
-  }
-
-  { // can be constructed from two input iterators
-    using iter = cpp17_input_iterator<const T*>;
-    vector vec(iter{input.begin()}, iter{input.end()});
-    CHECK(!vec.empty());
-    CHECK(equal_range(vec, input));
-  }
-
-  { // can be constructed from two forward iterators
-    using iter = forward_iterator<const T*>;
-    vector vec(iter{input.begin()}, iter{input.end()});
-    CHECK(!vec.empty());
-    CHECK(equal_range(vec, input));
-  }
-}
-
-template <class T, class... Properties>
-void test_init_list()
-{
-  using vector = cudax::vector<T, Properties...>;
-  { // can be constructed from an empty initializer_list
-    cuda::std::initializer_list<T> input{};
-    vector vec(input);
-    CHECK(vec.empty());
-  }
-
-  { // can be constructed from a non-empty initializer_list
-    const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    vector vec(input);
-    CHECK(!vec.empty());
-    CHECK(equal_range(vec, input));
-  }
-}
 
 template <class T, template <class, size_t> class Range, class... Properties>
 void test_range()
 {
   using vector = cudax::vector<T, Properties...>;
   { // can be constructed from an empty range
-    vector vec(Range<T, 0>{});
+    Vector vec(Range<T, 0>{});
     CHECK(vec.empty());
   }
 
   { // can be constructed from a non-empty range
-    vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
+    Vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
     CHECK(!vec.empty());
     CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
