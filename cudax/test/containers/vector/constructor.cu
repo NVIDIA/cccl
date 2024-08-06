@@ -188,7 +188,6 @@ TEMPLATE_TEST_CASE(
       CHECK(equal_range(vec, input));
     }
   }
-#if 0
   SECTION("copy construction")
   {
     static_assert(!cuda::std::is_nothrow_copy_constructible<Vector>::value, "");
@@ -219,199 +218,131 @@ TEMPLATE_TEST_CASE(
 
     { // can be move constructed from non-empty input
       Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+
+      // ensure that we steal the data
+      const auto* allocation = input.data();
       Vector vec(cuda::std::move(input));
-      CHECK(!vec.empty());
-      CHECK(input.size() == 4);
+      CHECK(vec.capacity() == 4);
+      CHECK(vec.data() == allocation);
+      CHECK(input.capacity() == 0);
+      CHECK(input.data() == nullptr);
       CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
     }
   }
-#endif
-}
 
-#if 0
-
-template <class T, template <class, size_t> class Range, class... Properties>
-void test_range()
-{
-  using vector = cudax::vector<T, Properties...>;
-  { // can be constructed from an empty range
-    Vector vec(Range<T, 0>{});
-    CHECK(vec.empty());
-  }
-
-  { // can be constructed from a non-empty range
-    Vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
-    CHECK(!vec.empty());
-    CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
-  }
-}
-
-template <class T, class... Properties>
-void test_range()
-{
-  test_range<T, input_range, Properties...>();
-  test_range<T, uncommon_range, Properties...>();
-  test_range<T, sized_uncommon_range, Properties...>();
-  test_range<T, cuda::std::array, Properties...>();
-}
-
-template <class T, class... Properties>
-void test()
-{
-  test_copy_move<T, Properties...>();
-  test_size<T, Properties...>();
-  test_size_value<T, Properties...>();
-  test_iter<T, Properties...>();
-  test_init_list<T, Properties...>();
-  test_range<T, Properties...>();
-}
-
-template <class T>
-void test()
-{
-  test<T>();
-  test<T, cuda::mr::host_accessible>();
-  test<T, cuda::mr::device_accessible>();
-  test<T, cuda::mr::host_accessible, cuda::mr::device_accessible>();
-  test<T, user_defined_property>();
-}
-
-__host__ __device__ bool test()
-{
-  test<int>();
-  test<Trivial>();
-  test<NonTrivial>();
-  test<ThrowingDefaultConstruct>();
-  test<ThrowingCopyConstructor>();
-  test<ThrowingMoveConstructor>();
-  test<ThrowingCopyAssignment>();
-  test<ThrowingMoveAssignment>();
-  test<NonTrivialDestructor>();
-
-  return true;
-}
-
+#if 0 // Implement exception handling
 #  ifndef TEST_HAS_NO_EXCEPTIONS
-void test_exceptions()
-{ // constructors throw std::bad_alloc
-  using vector = cudax::vector<int>;
+  SECTION("Exception handling throwing bad_alloc")
+  {
+    using vector = cudax::vector<int>;
 
-  try
-  {
-    vector too_small(2 * capacity);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      vector too_small(2 * capacity);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    vector too_small(2 * capacity, 42);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      vector too_small(2 * capacity, 42);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    using iter = cpp17_input_iterator<const int*>;
-    cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vector too_small(iter{input.begin()}, iter{input.end()});
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      using iter = cpp17_input_iterator<const int*>;
+      cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
+      vector too_small(iter{input.begin()}, iter{input.end()});
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vector too_small(input.begin(), input.end());
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
+      vector too_small(input.begin(), input.end());
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-    vector too_small(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
+      vector too_small(input);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    vector too_small(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
+      vector too_small(input);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    vector too_small(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
+      vector too_small(input);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    vector too_small(input);
-  }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
+    try
+    {
+      sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
+      vector too_small(input);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
 
-  try
-  {
-    cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    vector too_small(input);
+    try
+    {
+      cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
+      vector too_small(input);
+    }
+    catch (const std::bad_alloc&)
+    {}
+    catch (...)
+    {
+      CHECK(false);
+    }
   }
-  catch (const std::bad_alloc&)
-  {}
-  catch (...)
-  {
-    CHECK(false);
-  }
-}
 #  endif // !TEST_HAS_NO_EXCEPTIONS
-
-int main(int, char**)
-{
-  test();
-
-#  ifndef TEST_HAS_NO_EXCEPTIONS
-  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#  endif // !TEST_HAS_NO_EXCEPTIONS
-  return 0;
+#endif // 0
 }
-#endif

@@ -121,12 +121,16 @@ public:
   using const_iterator         = heterogeneous_iterator<_Tp, true, _Properties...>;
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
-  using size_type              = size_t;
+  using size_type              = _CUDA_VSTD::size_t;
   using __resource_ref         = _CUDA_VMR::resource_ref<_Properties...>;
+
+  // Doxygen cannot handle the macro expansions
+  template <class _Range>
+  static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _Tp>;
 
 private:
   uninitialized_buffer<_Tp, _Properties...> __buf_;
-  size_t __size_ = 0; // initialized to 0 in case initialization of the elements might throw
+  size_type __size_ = 0; // initialized to 0 in case initialization of the elements might throw
 
   //! @brief In can an exception is thrown adjusts the size of the vector so that the previously constructed elements
   //! are accounted for
@@ -144,7 +148,7 @@ private:
 
     _CCCL_HOST_DEVICE void operator()() const noexcept
     {
-      __obj_->__size_ += static_cast<size_t>(__current_ - __first_);
+      __obj_->__size_ += static_cast<size_type>(__current_ - __first_);
     }
   };
 
@@ -158,7 +162,7 @@ private:
     {
       _CUDA_VSTD::__destroy(__first, __last);
     }
-    __size_ -= static_cast<size_t>(__last - __first);
+    __size_ -= static_cast<size_type>(__last - __first);
   }
 
   //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
@@ -166,9 +170,9 @@ private:
   //! @param __size The number of elements to be value-initialized.
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
   _LIBCUDACXX_REQUIRES(_IsNothrow)
-  _CCCL_HOST_DEVICE void __uninitialized_value_construct_n(iterator __first, const size_t __size) noexcept
+  _CCCL_HOST_DEVICE void __uninitialized_value_construct_n(iterator __first, const size_type __size) noexcept
   {
-    size_t __count = 0;
+    size_type __count = 0;
     for (; __count != __size; ++__first, (void) ++__count)
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
@@ -182,9 +186,9 @@ private:
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
   _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  _CCCL_HOST_DEVICE void __uninitialized_value_construct_n(iterator __first, const size_t __size)
+  _CCCL_HOST_DEVICE void __uninitialized_value_construct_n(iterator __first, const size_type __size)
   {
-    size_t __count       = 0;
+    size_type __count    = 0;
     iterator __old_first = __first;
     auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __old_first, __first});
     for (; __count != __size; ++__first, (void) ++__count)
@@ -201,9 +205,9 @@ private:
   //! @param __value The element to be copied.
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
   _LIBCUDACXX_REQUIRES(_IsNothrow)
-  _CCCL_HOST_DEVICE void __uninitialized_fill_n(iterator __first, const size_t __size, const _Tp& __value) noexcept
+  _CCCL_HOST_DEVICE void __uninitialized_fill_n(iterator __first, const size_type __size, const _Tp& __value) noexcept
   {
-    size_t __count = 0;
+    size_type __count = 0;
     for (; __count != __size; ++__first, (void) ++__count)
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
@@ -218,9 +222,9 @@ private:
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
   _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  _CCCL_HOST_DEVICE void __uninitialized_fill_n(iterator __first, const size_t __size, const _Tp& __value)
+  _CCCL_HOST_DEVICE void __uninitialized_fill_n(iterator __first, const size_type __size, const _Tp& __value)
   {
-    size_t __count       = 0;
+    size_type __count    = 0;
     iterator __old_first = __first;
     auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __old_first, __first});
     for (; __count != __size; ++__first, (void) ++__count)
@@ -244,7 +248,7 @@ private:
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
-    __size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_type>(__curr - __dest);
   }
 
   //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -263,7 +267,7 @@ private:
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
     __guard.__complete();
-    __size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_type>(__curr - __dest);
   }
 
   //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -283,7 +287,7 @@ private:
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
-    __size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_type>(__curr - __dest);
   }
 
   //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -306,7 +310,7 @@ private:
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
     __guard.__complete();
-    __size_ += static_cast<size_t>(__curr - __dest);
+    __size_ += static_cast<size_type>(__curr - __dest);
   }
 
 public:
@@ -330,7 +334,7 @@ public:
   //! @param __other The other vector.
   //! The new vector takes ownership of the allocation of \p __other and resets the other vector.
   vector(vector&& __other) noexcept
-      : __buf_(_CUDA_VSTD::move(__buf_))
+      : __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
   {}
 
@@ -369,7 +373,7 @@ public:
     return *this;
   }
 
-  //! @brief Move assignment
+  //! @brief Move-assigns a vector
   //! @param __other The other vector.
   //! Clears the vector and swaps the contents with \p __other.
   vector& operator=(vector&& __other) noexcept
@@ -395,7 +399,7 @@ public:
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
-  vector(__resource_ref __mr, const size_t __size = 0)
+  vector(__resource_ref __mr, const size_type __size = 0)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -410,7 +414,7 @@ public:
   //! @param __size The size of the vector.
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
-  vector(__resource_ref __mr, const size_t __size, const _Tp& __value)
+  vector(__resource_ref __mr, const size_type __size, const _Tp& __value)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -425,7 +429,7 @@ public:
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
-  vector(__resource_ref __mr, const size_t __size, ::cuda::experimental::uninit_t)
+  vector(__resource_ref __mr, const size_type __size, ::cuda::experimental::uninit_t)
       : __buf_(__mr, __size)
   {}
 
@@ -456,7 +460,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
   vector(__resource_ref __mr, _Iter __first, _Iter __last)
-      : __buf_(__mr, static_cast<size_t>(_CUDA_VSTD::distance(__first, __last)))
+      : __buf_(__mr, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)))
   {
     if (__buf_.size() > 0)
     {
@@ -479,8 +483,7 @@ public:
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   vector(__resource_ref __mr, _Range&& __range)
       : __buf_(__mr, 0)
   {
@@ -492,11 +495,12 @@ public:
     }
   }
 
+#    ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates the overloads
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::sized_range<_Range>)
   vector(__resource_ref __mr, _Range&& __range)
-      : __buf_(__mr, static_cast<size_t>(_CUDA_VRANGES::size(__range)))
+      : __buf_(__mr, static_cast<size_type>(_CUDA_VRANGES::size(__range)))
   {
     if (__buf_.size() > 0)
     {
@@ -505,17 +509,19 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(
+    !_CUDA_VRANGES::sized_range<_Range>))
   vector(__resource_ref __mr, _Range&& __range)
-      : __buf_(__mr,
-               static_cast<size_t>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))))
+      : __buf_(
+          __mr,
+          static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))))
   {
     if (__buf_.size() > 0)
     {
       this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), begin());
     }
   }
+#    endif // DOXYGEN_SHOULD_SKIP_THIS
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   //! @}
 
@@ -656,14 +662,14 @@ public:
   //! @{
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator[](const size_t __n) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator[](const size_type __n) noexcept
   {
     return begin()[__n];
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference operator[](const size_t __n) const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference operator[](const size_type __n) const noexcept
   {
     return begin()[__n];
   }
@@ -696,7 +702,7 @@ public:
   //! @addtogroup capacity
   //! @{
   //! @brief Returns the current number of elements stored in the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t size() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
   {
     return __size_;
   }
@@ -708,7 +714,7 @@ public:
   }
 
   //! @brief Returns the capacity of the current allocation of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t capacity() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type capacity() const noexcept
   {
     return __size_;
   }
@@ -886,8 +892,7 @@ public:
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _CCCL_HOST_DEVICE constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
@@ -904,18 +909,18 @@ public:
     return __pos;
   }
 
+#    ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   _CCCL_HOST_DEVICE constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     return insert(__cpos, __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
+#    endif // DOXYGEN_SHOULD_SKIP_THIS
 
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _CCCL_HOST_DEVICE constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
@@ -926,14 +931,15 @@ public:
     }
   }
 
+#    ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   _CCCL_HOST_DEVICE constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     insert(end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
+#    endif // DOXYGEN_SHOULD_SKIP_THIS
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class... _Args>
@@ -997,8 +1003,10 @@ public:
   }
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE constexpr pointer
-  try_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
+  _CCCL_HOST_DEVICE constexpr pointer try_emplace_back(_Args&&... __args)
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
+    noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
+#  endif // DOXYGEN_SHOULD_SKIP_THIS
   {
     if (size() == __buf_.size())
     {
@@ -1008,8 +1016,10 @@ public:
     return _CUDA_VSTD::addressof(unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...));
   }
 
-  _CCCL_HOST_DEVICE constexpr pointer
-  try_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
+  _CCCL_HOST_DEVICE constexpr pointer try_push_back(const _Tp& __value)
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
+    noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
+#  endif // DOXYGEN_SHOULD_SKIP_THIS
   {
     if (size() == __buf_.size())
     {
@@ -1019,8 +1029,10 @@ public:
     return _CUDA_VSTD::addressof(unchecked_emplace_back(__value));
   }
 
-  _CCCL_HOST_DEVICE constexpr pointer
-  try_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  _CCCL_HOST_DEVICE constexpr pointer try_push_back(_Tp&& __value)
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
+    noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+#  endif // DOXYGEN_SHOULD_SKIP_THIS
   {
     if (size() == __buf_.size())
     {
@@ -1032,8 +1044,7 @@ public:
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   {
@@ -1046,9 +1057,10 @@ public:
     return __first;
   }
 
+#    ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::sized_range<_Range>)
   _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   {
@@ -1063,8 +1075,8 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(
+    !_CUDA_VRANGES::sized_range<_Range>))
   _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   {
@@ -1077,25 +1089,32 @@ public:
     this->__uninitialized_move(__first, __middle, end());
     return __middle;
   }
+#    endif // DOXYGEN_SHOULD_SKIP_THIS
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE constexpr reference
-  unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
+  _CCCL_HOST_DEVICE constexpr reference unchecked_emplace_back(_Args&&... __args)
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
+    noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
+#  endif // DOXYGEN_SHOULD_SKIP_THIS
   {
     auto __final = _CUDA_VSTD::__construct_at(__unchecked_end(), _CUDA_VSTD::forward<_Args>(__args)...);
     ++__size_;
     return *__final;
   }
 
-  _CCCL_HOST_DEVICE constexpr reference
-  unchecked_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
+  _CCCL_HOST_DEVICE constexpr reference unchecked_push_back(const _Tp& __value)
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
+    noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
+#  endif // DOXYGEN_SHOULD_SKIP_THIS
   {
     return unchecked_emplace_back(__value);
   }
 
-  _CCCL_HOST_DEVICE constexpr reference
-  unchecked_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+  _CCCL_HOST_DEVICE constexpr reference unchecked_push_back(_Tp&& __value)
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
+    noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
+#  endif // DOXYGEN_SHOULD_SKIP_THIS
   {
     return unchecked_emplace_back(_CUDA_VSTD::move(__value));
   }
@@ -1156,7 +1175,7 @@ public:
   //! @brief Changes the size of the \c vector to \p __size and value-initializes new elements
   //! @param __size The intended size of the vector.
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it value-initializes new elements
-  void resize(const size_t __count) noexcept
+  void resize(const size_type __count) noexcept
   {
     if (__count < __size_)
     {
@@ -1183,7 +1202,7 @@ public:
   //! @param __value The element to be copied into the vector when growing.
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it copy-constructs new elements
   //! from \p __value
-  void resize(const size_t __count, const _Tp& __value = {}) noexcept
+  void resize(const size_type __count, const _Tp& __value = {}) noexcept
   {
     if (__count < __size_)
     {
