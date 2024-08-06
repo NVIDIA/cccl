@@ -137,11 +137,39 @@ struct spin_until_80
   }
 };
 
+struct empty_kernel
+{
+  __device__ void operator()() const noexcept {}
+};
+
 /// A kernel that takes a callable object and invokes it with a set of arguments
 template <class Fn, class... Args>
 __global__ void invokernel(Fn fn, Args... args)
 {
   fn(args...);
+}
+
+inline int count_driver_stack()
+{
+  if (cudax::detail::driver::ctxGetCurrent() != nullptr)
+  {
+    auto ctx    = cudax::detail::driver::ctxPop();
+    auto result = 1 + count_driver_stack();
+    cudax::detail::driver::ctxPush(ctx);
+    return result;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+inline void empty_driver_stack()
+{
+  while (cudax::detail::driver::ctxGetCurrent() != nullptr)
+  {
+    cudax::detail::driver::ctxPop();
+  }
 }
 
 } // namespace test

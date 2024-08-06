@@ -42,7 +42,7 @@ public:
   //!
   //! @throws cuda_error if the event creation fails.
   explicit timed_event(stream_ref __stream, flags __flags = flags::none)
-      : event(static_cast<unsigned int>(__flags))
+      : event(__stream, static_cast<unsigned int>(__flags))
   {
     record(__stream);
   }
