@@ -97,14 +97,13 @@ namespace cuda::experimental
 //! In addition to being type safe, ``vector`` also takes a set of :ref:`properties
 //! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
 //! at compile time. However, only stateless properties can be forwarded. To use a stateful property,
-//! implement :ref:`get_property(const vector&, Property)
-//! <libcudacxx-extended-api-memory-resources-properties>`.
+//! implement :ref:`get_property(const vector&, Property) <libcudacxx-extended-api-memory-resources-properties>`.
 //!
 //! .. warning::
 //!
 //!    ``vector`` stores a reference to the provided memory :ref:`memory resource
-//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's responsibility to ensure the lifetime of the
-//!    resource exceeds the lifetime of the vector.
+//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's responsibility to ensure the lifetime of
+//!    the resource exceeds the lifetime of the vector.
 //!
 //! @endrst
 
@@ -424,14 +423,14 @@ public:
 
   //! @addtogroup construction
   //! @{
-  //! @brief Constructs an empty \c vector from a memory resource
+  //! @brief Constructs a \c vector using a memory resource
   //! @param __mr The memory resource to allocate memory within the vector.
   //! @note No memory is allocated
   vector(_CUDA_VMR::resource_ref<_Properties...> __mr)
       : __base(__mr, 0)
   {}
 
-  //! @brief Constructs a \c vector of size \p __size from a memory resource and value-initializes all elements
+  //! @brief Constructs a \c vector of size \p __size using a memory resource and value-initializes all elements
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector.
   //! @note If `__size == 0` then no memory is allocated
@@ -444,16 +443,7 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector with a given size
-  //! @param __mr The memory resource to allocate the vector with.
-  //! @param __size The size of the vector
-  //! @warning This constructor does *NOT* initialize any elements. It is the users responsibility to ensure that the
-  //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
-  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, ::cuda::experimental::uninit_t)
-      : __base(__mr, __size)
-  {}
-
-  //! @brief Constructs a \c vector of size \p __size from a memory resource and copy constructs its elements from
+  //! @brief Constructs a \c vector of size \p __size using a memory resource and copy-constructs all elements from
   //! \p __value
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector.
@@ -468,7 +458,18 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector from a range of input iterators
+  //! @brief Constructs a \c vector of size \p __size using a memory and leaves all elements uninitialized
+  //! @param __mr The memory resource to allocate the vector with.
+  //! @param __size The size of the vector
+  //! @warning This constructor does *NOT* initialize any elements. It is the users responsibility to ensure that the
+  //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
+  //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
+  vector(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __size, ::cuda::experimental::uninit_t)
+      : __base(__mr, __size)
+  {}
+
+  //! @brief Constructs a \c vector from a range of input iterators using a memory resource and copy-constructs all
+  //! elements from the range ``[__first, __last)``
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
@@ -485,7 +486,8 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector from a range of forward iterators
+  //! @brief Constructs a \c vector from a range of forward iterators using a memory resource and copy-constructs all
+  //! elements from the range ``[__first, __last)``
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
@@ -501,7 +503,8 @@ public:
     }
   }
 
-  //! @brief Constructs a \c vector from an initializer_list
+  //! @brief Constructs a \c vector from an initializer_list \p __ilist using a memory resource and copy-constructs all
+  //! elements from \p __ilist
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __ilist The initializer_list being copied into the vector
   //! @note If `__ilist.size() == 0` then no memory is allocated
@@ -513,90 +516,106 @@ public:
       this->__uninitialized_copy(__ilist.begin(), __ilist.end(), this->begin());
     }
   }
-
   //! @}
 
   //! @addtogroup iterators
   //! @{
-  //! @brief Returns an iterator to the first element of the vector. If the vector is empty, the returned iterator will be equal to end().
+  //! @brief Returns an iterator to the first element of the vector. If the vector is empty, the returned iterator will
+  //! be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator begin() noexcept
   {
     return iterator{this->data()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable iterator to the first element of the vector. If the vector is empty, the returned
+  //! iterator will be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator begin() const noexcept
   {
     return const_iterator{this->data()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable iterator to the first element of the vector. If the vector is empty, the returned
+  //! iterator will be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cbegin() const noexcept
   {
     return const_iterator{this->data()};
   }
 
-  //! @brief Returns an iterator to the element following the last element of the vector. This element acts as a placeholder; attempting to access it results in undefined behavior. 
+  //! @brief Returns an iterator to the element following the last element of the vector. This element acts as a
+  //! placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator end() noexcept
   {
     return iterator{this->data() + this->__size_};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
+  //! a placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator end() const noexcept
   {
     return const_iterator{this->data() + this->__size_};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
+  //! a placeholder; attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cend() const noexcept
   {
     return const_iterator{this->data() + this->__size_};
   }
 
-  //! @brief Returns a reverse iterator to the first element of the reversed vector. It corresponds to the last element of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
+  //! @brief Returns a reverse iterator to the first element of the reversed vector. It corresponds to the last element
+  //! of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{end()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable reverse iterator to the first element of the reversed vector. It corresponds to the
+  //! last element of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable reverse iterator to the first element of the reversed vector. It corresponds to the
+  //! last element of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
 
-  //! @brief Returns a reverse iterator to the element following the last element of the reversed vector. It corresponds to the element preceding the first element of the non-reversed vector. This element acts as a placeholder, attempting to access it results in undefined behavior.
+  //! @brief Returns a reverse iterator to the element following the last element of the reversed vector. It corresponds
+  //! to the element preceding the first element of the non-reversed vector. This element acts as a placeholder,
+  //! attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator{begin()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed vector. It
+  //! corresponds to the element preceding the first element of the non-reversed vector. This element acts as a
+  //! placeholder, attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed vector. It
+  //! corresponds to the element preceding the first element of the non-reversed vector. This element acts as a
+  //! placeholder, attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns a pointer to the first element of the vector. If the vector has not allocated memory the pointer
+  //! will be null.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer data() noexcept
   {
     return this->data();
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns a pointer to the first element of the vector. If the vector has not allocated memory the pointer
+  //! will be null.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer data() const noexcept
   {
     return this->data();
@@ -605,7 +624,7 @@ public:
 
   //! @addtogroup capacity
   //! @{
-  //! @brief Returns the size of the vector
+  //! @brief Returns the current number of elements stored in the vector
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t size() const noexcept
   {
     return this->__size_;
@@ -617,7 +636,7 @@ public:
     return this->__size_ == 0;
   }
 
-  //! @brief Returns the capacity of the vector
+  //! @brief Returns the capacity of the current allocation of the vector
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t capacity() const noexcept
   {
     return this->__size_;
@@ -635,6 +654,7 @@ public:
 
   //! @addtogroup modification
   //! @{
+  //! @brief Destroys all elements in the \c vector and sets the size to 0
   _CCCL_HOST_DEVICE void clear() noexcept
   {
     _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
@@ -644,6 +664,39 @@ public:
     this->__size_ = 0;
   }
 
+  //! @brief Changes the size of the \c vector to \p __size and value-initializes new elements
+  //! @param __size The intended size of the \c vector
+  //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it value-initializes new elements
+  void resize(const size_t __count) noexcept
+  {
+    if (__count < this->__size_)
+    {
+      _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
+      {
+        _CUDA_VSTD::__destroy(this->begin() + __count, this->end());
+      }
+    }
+    else
+    {
+      if (__count < this->capacity())
+      {
+        this->__uninitialized_value_construct_n(end(), __count - this->__size_);
+      }
+      else
+      {
+        uninitialized_buffer<_Tp, _Properties...> __new_buf{this->resource(), __count};
+        this->__uninitialized_value_construct_n(__new_buf.begin() + this->__size_, __count - this->__size_);
+        this->__uninitialized_move(this->begin(), this->end(), __new_buf.begin());
+        _CUDA_VSTD::swap(this->__buf_, __new_buf);
+      }
+    }
+  }
+
+  //! @brief Changes the size of the \c vector to \p __size and copy-constructs new elements from \p __value
+  //! @param __size The intended size of the \c vector
+  //! @param __value The element to be copied into the \c vector when growing
+  //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it copy-constructs new elements
+  //! from \p __value
   void resize(const size_t __count, const _Tp& __value = {}) noexcept
   {
     if (__count < this->__size_)
@@ -655,7 +708,7 @@ public:
     }
     else
     {
-      if (__count < this->__size_)
+      if (__count < this->capacity())
       {
         this->__uninitialized_fill_n(end(), __count - this->__size_, __value);
       }
@@ -663,14 +716,13 @@ public:
       {
         uninitialized_buffer<_Tp, _Properties...> __new_buf{this->resource(), __count};
         this->__uninitialized_fill_n(__new_buf.begin() + this->__size_, __count - this->__size_, __value);
-        this->__uninitialized_move(begin(), end(), __new_buf.begin());
-        this->__buf_ = _CUDA_VSTD::move(__new_buf);
+        this->__uninitialized_move(this->begin(), this->end(), __new_buf.begin());
+        _CUDA_VSTD::swap(this->__buf_, __new_buf);
       }
     }
-    this->__size_ = __count;
-    return;
   }
 
+  //! @brief swaps two \c vector
   _CCCL_HOST_DEVICE void swap(vector& __other) noexcept
   {
     _CUDA_VSTD::swap(this->__buf_, __other.__buf_);
