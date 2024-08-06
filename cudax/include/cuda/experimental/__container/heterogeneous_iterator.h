@@ -98,7 +98,7 @@ public:
     return *(__ptr_ + __count);
   }
 
-private:
+protected:
   pointer __ptr_ = nullptr;
 
   template <class, bool, class...>
@@ -149,7 +149,7 @@ public:
     return *(__ptr_ + __count);
   }
 
-private:
+protected:
   pointer __ptr_ = nullptr;
 
   template <class, bool, class...>
@@ -200,7 +200,7 @@ public:
     return *(__ptr_ + __count);
   }
 
-private:
+protected:
   pointer __ptr_ = nullptr;
 
   template <class, bool, class...>
@@ -214,6 +214,7 @@ template <class _Tp, bool _IsConst, class... _Properties>
 class heterogeneous_iterator
     : public __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>
 {
+private:
   template <class>
   friend struct pointer_traits;
 
@@ -231,7 +232,7 @@ public:
 
   //! @brief Construct a \c heterogeneous_iterator from a pointer to the underlying memory
   _CCCL_HOST_DEVICE constexpr heterogeneous_iterator(pointer __ptr) noexcept
-      : __heterogeneous_iterator_access<_Tp, _IsConst, _Space>(__ptr)
+      : __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>(__ptr)
   {}
 
   //! @brief Construcs an immutable \c heterogeneous_iterator from a mutable one
@@ -239,8 +240,8 @@ public:
   _LIBCUDACXX_TEMPLATE(bool _OtherConst)
   _LIBCUDACXX_REQUIRES((_OtherConst != _IsConst) _LIBCUDACXX_AND _IsConst)
   _CCCL_HOST_DEVICE explicit constexpr heterogeneous_iterator(
-    heterogeneous_iterator<_Tp, _OtherConst, _Space> __other) noexcept
-      : __heterogeneous_iterator_access<_Tp, _IsConst, _Space>(__other.__ptr_)
+    heterogeneous_iterator<_Tp, _OtherConst, _Properties...> __other) noexcept
+      : __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>(__other.__ptr_)
   {}
 
   //! @brief Increment of a \c heterogeneous_iterator
@@ -289,7 +290,8 @@ public:
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by \p __count
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr heterogeneous_iterator operator+(const difference_type __count) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr heterogeneous_iterator
+  operator+(const difference_type __count) const noexcept
   {
     heterogeneous_iterator __temp = *this;
     __temp += __count;
@@ -319,7 +321,8 @@ public:
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by the negative value of \p __count
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr heterogeneous_iterator operator-(const difference_type __count) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr heterogeneous_iterator
+  operator-(const difference_type __count) const noexcept
   {
     heterogeneous_iterator __temp = *this;
     __temp -= __count;
@@ -329,7 +332,8 @@ public:
   //! @brief Distance between two heterogeneous_iterator
   //! @param __other The other heterogeneous_iterator.
   //! @return The distance between the two elements the heterogeneous_iterator point to
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr difference_type operator-(const heterogeneous_iterator& __other) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr difference_type
+  operator-(const heterogeneous_iterator& __other) const noexcept
   {
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
   }
@@ -410,10 +414,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Here be dragons: We need to ensure that the iterator can work with legacy interfaces that take a pointer.
 // This will obviously eat all of our execution checks
-template <class _Tp, bool _IsConst, ::cuda::experimental::_ExecutionSpace _Space>
-struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst, _Space>>
+template <class _Tp, bool _IsConst, class... _Properties>
+struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst, _Properties...>>
 {
-  using pointer         = ::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst, _Space>;
+  using pointer         = ::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst, _Properties...>;
   using element_type    = __maybe_const<_IsConst, typename pointer::value_type>;
   using difference_type = _CUDA_VSTD::ptrdiff_t;
 

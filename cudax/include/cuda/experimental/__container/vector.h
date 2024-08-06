@@ -126,7 +126,7 @@ struct _Rollback_change_size
 
   _CCCL_HOST_DEVICE void operator()() const noexcept
   {
-    __obj_->__size_ += static_cast<typename _Base::__size_type>(__current_ - __first_);
+    __obj_->__size_ += static_cast<typename _Base::size_t>(__current_ - __first_);
   }
 };
 
@@ -148,47 +148,42 @@ private:
   }
 
 public:
-  using reference       = typename _Derived::reference;
-  using const_reference = typename _Derived::const_reference;
-  using pointer         = typename _Derived::pointer;
-  using const_pointer   = typename _Derived::const_pointer;
-
   //! @addtogroup access
   //! @{
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST constexpr reference operator[](const size_t __n) noexcept
+  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) operator[](const size_t __n) noexcept
   {
     return *(__derived().data() + __n);
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST constexpr const_reference operator[](const size_t __n) const noexcept
+  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) operator[](const size_t __n) const noexcept
   {
     return *(__derived().data() + __n);
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr reference first() noexcept
+  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) first() noexcept
   {
     return *__derived().data();
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr const_reference first() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) first() const noexcept
   {
     return *__derived().data();
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr reference back() noexcept
+  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) back() noexcept
   {
     return *(__derived().data() + __derived().size() - 1);
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST constexpr const_reference back() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST constexpr decltype(auto) back() const noexcept
   {
     return *(__derived().data() + __derived().size() - 1);
   }
@@ -210,47 +205,42 @@ private:
   }
 
 public:
-  using reference       = typename _Derived::reference;
-  using const_reference = typename _Derived::const_reference;
-  using pointer         = typename _Derived::pointer;
-  using const_pointer   = typename _Derived::const_pointer;
-
   //! @addtogroup access
   //! @{
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr reference operator[](const size_t __n) noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) operator[](const size_t __n) noexcept
   {
     return *(__derived().data() + __n);
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr const_reference operator[](const size_t __n) const noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) operator[](const size_t __n) const noexcept
   {
     return *(__derived().data() + __n);
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr reference first() noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) first() noexcept
   {
     return *__derived().data();
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr const_reference first() const noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) first() const noexcept
   {
     return *__derived().data();
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr reference back() noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) back() noexcept
   {
     return *(__derived().data() + __derived().size() - 1);
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr const_reference back() const noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr decltype(auto) back() const noexcept
   {
     return *(__derived().data() + __derived().size() - 1);
   }
@@ -272,47 +262,42 @@ private:
   }
 
 public:
-  using reference       = typename _Derived::reference;
-  using const_reference = typename _Derived::const_reference;
-  using pointer         = typename _Derived::pointer;
-  using const_pointer   = typename _Derived::const_pointer;
-
   //! @addtogroup access
   //! @{
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator[](const size_t __n) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) operator[](const size_t __n) noexcept
   {
     return *(__derived().data() + __n);
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference operator[](const size_t __n) const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) operator[](const size_t __n) const noexcept
   {
     return *(__derived().data() + __n);
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference first() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) first() noexcept
   {
     return *__derived().data();
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference first() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) first() const noexcept
   {
     return *__derived().data();
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference back() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) back() noexcept
   {
     return *(__derived().data() + __derived().size() - 1);
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference back() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr decltype(auto) back() const noexcept
   {
     return *(__derived().data() + __derived().size() - 1);
   }
@@ -322,6 +307,18 @@ public:
 template <class _Tp, class... _Properties>
 class vector : public __vector_access<vector<_Tp, _Properties...>, __select_execution_space<_Properties...>>
 {
+public:
+  using value_type             = _Tp;
+  using reference              = _Tp&;
+  using const_reference        = const _Tp&;
+  using pointer                = _Tp*;
+  using const_pointer          = const _Tp*;
+  using iterator               = heterogeneous_iterator<_Tp, false, _Properties...>;
+  using const_iterator         = heterogeneous_iterator<_Tp, true, _Properties...>;
+  using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
+  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
+  using size_type              = size_t;
+
 private:
   uninitialized_buffer<_Tp, _Properties...> __buf_;
   size_t __size_ = 0; // initialized to 0 in case initialization of the elements might throw
@@ -336,80 +333,84 @@ private:
     {
       _CUDA_VSTD::__destroy(__first, __last);
     }
-    this->__size_ -= static_cast<__size_type>(__last - __first);
+    this->__size_ -= static_cast<size_t>(__last - __first);
   }
 
-  //! @brief Value-initializes the elements in the range `[__first, __last)` and adopts the size.
+  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
   //! @param __first Iterator to the first element to be value-initialized.
-  //! @param __last Iterator to the element after the last element to be value-initialized.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  //! @param __size The number of elements to be value-initialized.
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
   _LIBCUDACXX_REQUIRES(_IsNothrow)
-  _CCCL_HOST_DEVICE void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
+  _CCCL_HOST_DEVICE void __uninitialized_value_construct_n(iterator __first, const size_t __size) noexcept
   {
-    iterator __idx = __first;
-    for (; __idx != __last; ++__idx)
+    size_t __count = 0;
+    for (; __count != __size; ++__first, (void) ++__count)
     {
-      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
     }
-    this->__size_ += static_cast<__size_type>(__last - __first);
+    this->__size_ += __count;
   }
 
-  //! @brief Value-initializes the elements in the range `[__first, __last)` and adopts the size.
+  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
   //! @param __first Iterator to the first element to be value-initialized.
-  //! @param __last Iterator to the element after the last element to be value-initialized.
+  //! @param __size The number of elements to be value-initialized.
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
   _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  _CCCL_HOST_DEVICE void __uninitialized_value_construct(iterator __first, iterator __last)
+  _CCCL_HOST_DEVICE void __uninitialized_value_construct_n(iterator __first, const size_t __size)
   {
-    iterator __idx = __first;
-    auto __guard   = __make_exception_guard(_Rollback_change_size<vector>{this, __first, __idx});
-    for (; __idx != __last; ++__idx)
+    size_t __count       = 0;
+    iterator __old_first = __first;
+    auto __guard = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __old_first, __first});
+    for (; __count != __size; ++__first, (void) ++__count)
     {
-      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
     }
     __guard.__complete();
-    this->__size_ += static_cast<__size_type>(__last - __first);
+    this->__size_ += __count;
   }
 
   //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
   //! @param __first Iterator to the first element to be copy-constructed.
-  //! @param __last Iterator to the element after the last element to be copy-constructed.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  //! @param __size The number of elements to be copy-constructed.
+  //! @param __value The element to be copied.
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
   _LIBCUDACXX_REQUIRES(_IsNothrow)
-  _CCCL_HOST_DEVICE void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
+  _CCCL_HOST_DEVICE void __uninitialized_fill_n(iterator __first, const size_t __size, const _Tp& __value) noexcept
   {
-    iterator __idx = __first;
-    for (; __idx != __last; ++__idx)
+    size_t __count = 0;
+    for (; __count != __size; ++__first, (void) ++__count)
     {
-      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
     }
-    this->__size_ += static_cast<__size_type>(__last - __first);
+    this->__size_ += __count;
   }
 
   //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
   //! @param __first Iterator to the first element to be copy-constructed.
-  //! @param __last Iterator to the element after the last element to be copy-constructed.
+  //! @param __size The number of elements to be copy-constructed.
+  //! @param __value The element to be copied.
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
   _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  _CCCL_HOST_DEVICE void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
+  _CCCL_HOST_DEVICE void __uninitialized_fill_n(iterator __first, const size_t __size, const _Tp& __value)
   {
-    iterator __idx = __first;
-    auto __guard   = __make_exception_guard(_Rollback_change_size<vector>{this, __first, __idx});
-    for (; __idx != __last; ++__idx)
+    size_t __count       = 0;
+    iterator __old_first = __first;
+    auto __guard = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __old_first, __first});
+    for (; __count != __size; ++__first, (void) ++__count)
     {
-      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
     }
     __guard.__complete();
-    this->__size_ += static_cast<__size_type>(__last - __first);
+    this->__size_ += __count;
   }
 
   //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
   //! @param __first Iterator to the first element to be copied.
   //! @param __last Iterator to the element after the last element to be copied.
   //! @param __dest Iterator to the first element to be copy-constructed.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
   _LIBCUDACXX_REQUIRES(_IsNothrow)
   _CCCL_HOST_DEVICE void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
@@ -418,7 +419,7 @@ private:
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
-    this->__size_ += static_cast<__size_type>(__curr - __dest);
+    this->__size_ += static_cast<size_t>(__curr - __dest);
   }
 
   //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -426,25 +427,25 @@ private:
   //! @param __last Iterator to the element after the last element to be copied.
   //! @param __dest Iterator to the first element to be copy-constructed.
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
   _LIBCUDACXX_REQUIRES((!_IsNothrow))
   _CCCL_HOST_DEVICE void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = __make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
+    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
     }
     __guard.__complete();
-    this->__size_ += static_cast<__size_type>(__curr - __dest);
+    this->__size_ += static_cast<size_t>(__curr - __dest);
   }
 
   //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
   //! @param __first Iterator to the first element to be moved.
   //! @param __last Iterator to the element after the last element to be moved.
   //! @param __dest Iterator to the first element to be move-constructed.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   _LIBCUDACXX_REQUIRES(_IsNothrow)
   _CCCL_HOST_DEVICE void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
@@ -457,7 +458,7 @@ private:
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
-    this->__size_ += static_cast<__size_type>(__curr - __dest);
+    this->__size_ += static_cast<size_t>(__curr - __dest);
   }
 
   //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
@@ -465,12 +466,12 @@ private:
   //! @param __last Iterator to the element after the last element to be moved.
   //! @param __dest Iterator to the first element to be move-constructed.
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   _LIBCUDACXX_REQUIRES((!_IsNothrow))
   _CCCL_HOST_DEVICE void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = __make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
+    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Rollback_change_size<vector>{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -480,21 +481,10 @@ private:
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
     __guard.__complete();
-    this->__size_ += static_cast<__size_type>(__curr - __dest);
+    this->__size_ += static_cast<size_t>(__curr - __dest);
   }
 
 public:
-  using value_type             = _Tp;
-  using reference              = _Tp&;
-  using const_reference        = const _Tp&;
-  using pointer                = _Tp*;
-  using const_pointer          = const _Tp*;
-  using iterator               = heterogeneous_iterator<_Tp, false, _Properties...>;
-  using const_iterator         = heterogeneous_iterator<_Tp, true, _Properties...>;
-  using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
-  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
-  using size_type              = size_t;
-
   //! @addtogroup construction
   //! @{
 
@@ -592,7 +582,7 @@ public:
   {
     if (__size != 0)
     {
-      this->__uninitialized_default_construct_n(begin(), __size);
+      this->__uninitialized_value_construct_n(begin(), __size);
     }
   }
 
@@ -800,7 +790,7 @@ public:
   //! @endrst
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
   {
-    return this->__mr_;
+    return __buf_.resource();
   }
   //! @}
 
