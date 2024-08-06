@@ -236,6 +236,8 @@ struct __dev_attr<::cudaDevAttrMemoryPoolSupportedHandleTypes> //
   static constexpr type win32_kmt             = ::cudaMemHandleTypeWin32Kmt;
 #if CUDART_VERSION >= 12040
   static constexpr type fabric = ::cudaMemHandleTypeFabric;
+#else
+  static constexpr type fabric = 0x8;
 #endif
 };
 #if CUDART_VERSION >= 12020
