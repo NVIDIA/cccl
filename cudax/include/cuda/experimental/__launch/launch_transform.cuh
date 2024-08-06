@@ -66,9 +66,9 @@ struct __launch_transform_result
 template <typename _Arg>
 struct __launch_transform_result<
   _Arg,
-  _CUDA_VSTD::void_t<typename __launch_transform_direct_result_t<_Arg>::__launch_transform_result>>
+  _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__launch_transform_result>>
 {
-  using type = typename __launch_transform_direct_result_t<_Arg>::__launch_transform_result;
+  using type = typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__launch_transform_result;
 };
 
 template <typename _Arg>

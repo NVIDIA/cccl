@@ -11,6 +11,16 @@
 #ifndef __CUDAX_DETAIL_UTILITY_H
 #define __CUDAX_DETAIL_UTILITY_H
 
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 namespace cuda::experimental
 {
 namespace detail
@@ -18,7 +28,7 @@ namespace detail
 struct __ignore
 {
   template <typename... Args>
-  constexpr __ignore(Args&&...) noexcept
+  _CCCL_HOST_DEVICE constexpr __ignore(Args&&...) noexcept
   {}
 };
 } // namespace detail
