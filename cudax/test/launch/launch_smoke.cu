@@ -104,6 +104,44 @@ struct dynamic_smem_span
   }
 };
 
+struct launch_transform_to_int_convertible
+{
+  int value_;
+
+  struct int_convertible
+  {
+    cudaStream_t stream_;
+    int value_;
+
+    int_convertible(cudaStream_t stream, int value) noexcept
+        : stream_(stream)
+        , value_(value)
+    {
+      CHECK_FALSE(kernel_run_proof);
+    }
+
+    int_convertible(int_convertible&&) = delete;
+
+    ~int_convertible() noexcept
+    {
+      CUDART(cudaStreamSynchronize(stream_));
+      CHECK(kernel_run_proof);
+    }
+
+    using __launch_transform_result = int;
+
+    explicit operator int() const
+    {
+      return value_;
+    }
+  };
+
+  friend int_convertible __cudax_launch_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self)
+  {
+    return int_convertible(stream.get(), self.value_);
+  }
+};
+
 // Needs a separe function for Windows extended lambda
 void launch_smoke_test()
 {
@@ -127,9 +165,13 @@ void launch_smoke_test()
         check_kernel_run(stream);
         cudax::launch(stream, dims_or_conf, kernel_int_argument, 1);
         check_kernel_run(stream);
+        cudax::launch(stream, dims_or_conf, kernel_int_argument, launch_transform_to_int_convertible{1});
+        check_kernel_run(stream);
         cudax::launch(stream, dims_or_conf, functor_int_argument(), dummy);
         check_kernel_run(stream);
         cudax::launch(stream, dims_or_conf, functor_int_argument(), 1);
+        check_kernel_run(stream);
+        cudax::launch(stream, dims_or_conf, functor_int_argument(), launch_transform_to_int_convertible{1});
         check_kernel_run(stream);
 
         cudax::launch(stream, dims_or_conf, kernel_int_argument, 1U);
@@ -150,10 +192,14 @@ void launch_smoke_test()
       check_kernel_run(stream);
       cudax::launch(stream, config, functor_instance, ::cuda::std::move(grid_size));
       check_kernel_run(stream);
+      cudax::launch(stream, config, functor_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(stream);
 
       cudax::launch(stream, config, kernel_instance, grid_size);
       check_kernel_run(stream);
       cudax::launch(stream, config, kernel_instance, ::cuda::std::move(grid_size));
+      check_kernel_run(stream);
+      cudax::launch(stream, config, kernel_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(stream);
 
       cudax::launch(stream, config, functor_instance, static_cast<unsigned int>(grid_size));
@@ -171,10 +217,14 @@ void launch_smoke_test()
       check_kernel_run(stream);
       cudax::launch(stream, dimensions, functor_instance, ::cuda::std::move(grid_size));
       check_kernel_run(stream);
+      cudax::launch(stream, dimensions, functor_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(stream);
 
       cudax::launch(stream, dimensions, kernel_instance, grid_size);
       check_kernel_run(stream);
       cudax::launch(stream, dimensions, kernel_instance, ::cuda::std::move(grid_size));
+      check_kernel_run(stream);
+      cudax::launch(stream, dimensions, kernel_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(stream);
 
       cudax::launch(stream, dimensions, functor_instance, static_cast<unsigned int>(grid_size));

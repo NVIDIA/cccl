@@ -13,6 +13,16 @@
 
 namespace cuda::experimental
 {
+namespace detail
+{
+struct __ignore
+{
+  template <typename... Args>
+  constexpr __ignore(Args&&...) noexcept
+  {}
+};
+} // namespace detail
+
 struct uninit_t
 {
   explicit uninit_t() = default;
