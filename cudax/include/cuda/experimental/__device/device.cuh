@@ -52,6 +52,20 @@ struct __emplace_device
 class device : public device_ref
 {
 public:
+  struct attrs;
+
+  //! @brief For a given attribute, returns the type of the attribute value.
+  //!
+  //! @par Example
+  //! @code
+  //! using threads_per_block_t = device::attr_result_t<device::attrs::max_threads_per_block>;
+  //! static_assert(std::is_same_v<threads_per_block_t, int>);
+  //! @endcode
+  //!
+  //! @sa device::attrs
+  template <::cudaDeviceAttr _Attr>
+  using attr_result_t = typename detail::__dev_attr<_Attr>::type;
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 #  if defined(_CCCL_COMPILER_MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
@@ -90,6 +104,9 @@ private:
   mutable CUcontext __primary_ctx = nullptr;
   mutable CUdevice __device{};
   mutable ::std::once_flag __init_once;
+
+  // TODO: put a mutable thread-safe (or thread_local) cache of device
+  // properties here.
 
   explicit constexpr device(int __id) noexcept
       : device_ref(__id)

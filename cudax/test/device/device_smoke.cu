@@ -177,7 +177,7 @@ TEST_CASE("Smoke", "[device]")
                             ::cudaGPUDirectRDMAWritesOrdering>();
     ::test_device_attribute<device::attrs::memory_pool_supported_handle_types,
                             ::cudaDevAttrMemoryPoolSupportedHandleTypes,
-                            unsigned int>();
+                            ::cudaMemAllocationHandleType>();
     ::test_device_attribute<device::attrs::deferred_mapping_cuda_array_supported,
                             ::cudaDevAttrDeferredMappingCudaArraySupported,
                             bool>();
@@ -223,6 +223,30 @@ TEST_CASE("Smoke", "[device]")
       CUDAX_REQUIRE((ordering == device::attrs::gpu_direct_rdma_writes_ordering.none || //
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.owner || //
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.all_devices));
+    }
+
+    SECTION("memory_pool_supported_handle_types")
+    {
+      STATIC_REQUIRE(::cudaMemHandleTypeNone == device::attrs::memory_pool_supported_handle_types.none);
+      STATIC_REQUIRE(::cudaMemHandleTypePosixFileDescriptor
+                     == device::attrs::memory_pool_supported_handle_types.posix_file_descriptor);
+      STATIC_REQUIRE(::cudaMemHandleTypeWin32 == device::attrs::memory_pool_supported_handle_types.win32);
+      STATIC_REQUIRE(::cudaMemHandleTypeWin32Kmt == device::attrs::memory_pool_supported_handle_types.win32_kmt);
+#if CUDART_VERSION >= 12040
+      STATIC_REQUIRE(::cudaMemHandleTypeFabric == 0x8);
+      STATIC_REQUIRE(::cudaMemHandleTypeFabric == device::attrs::memory_pool_supported_handle_types.fabric);
+#else
+      STATIC_REQUIRE(0x8 == device::attrs::memory_pool_supported_handle_types.fabric);
+#endif
+
+      constexpr int all_handle_types =
+        device::attrs::memory_pool_supported_handle_types.none
+        | device::attrs::memory_pool_supported_handle_types.posix_file_descriptor
+        | device::attrs::memory_pool_supported_handle_types.win32
+        | device::attrs::memory_pool_supported_handle_types.win32_kmt
+        | device::attrs::memory_pool_supported_handle_types.fabric;
+      auto handle_types = device_ref(0).attr(device::attrs::memory_pool_supported_handle_types);
+      CUDAX_REQUIRE(handle_types <= all_handle_types);
     }
 
 #if CUDART_VERSION >= 12020
