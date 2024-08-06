@@ -96,14 +96,14 @@ namespace cuda::experimental
 //!
 //! In addition to being type safe, ``vector`` also takes a set of :ref:`properties
 //! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
-//! at compile time. However, we can only forward stateless properties. If a user wants to use a stateful one, then they
-//! need to implement :ref:`get_property(const vector&, Property)
+//! at compile time. However, only stateless properties can be forwarded. To use a stateful property,
+//! implement :ref:`get_property(const vector&, Property)
 //! <libcudacxx-extended-api-memory-resources-properties>`.
 //!
 //! .. warning::
 //!
 //!    ``vector`` stores a reference to the provided memory :ref:`memory resource
-//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the users resposibility to ensure the lifetime of the
+//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's responsibility to ensure the lifetime of the
 //!    resource exceeds the lifetime of the vector.
 //!
 //! @endrst
@@ -518,7 +518,7 @@ public:
 
   //! @addtogroup iterators
   //! @{
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns an iterator to the first element of the vector. If the vector is empty, the returned iterator will be equal to end().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator begin() noexcept
   {
     return iterator{this->data()};
@@ -536,7 +536,7 @@ public:
     return const_iterator{this->data()};
   }
 
-  //! @brief Returns pointer to the end of the vector
+  //! @brief Returns an iterator to the element following the last element of the vector. This element acts as a placeholder; attempting to access it results in undefined behavior. 
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator end() noexcept
   {
     return iterator{this->data() + this->__size_};
@@ -554,7 +554,7 @@ public:
     return const_iterator{this->data() + this->__size_};
   }
 
-  //! @brief Returns pointer to the start of the vector
+  //! @brief Returns a reverse iterator to the first element of the reversed vector. It corresponds to the last element of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{end()};
@@ -572,7 +572,7 @@ public:
     return const_reverse_iterator{end()};
   }
 
-  //! @brief Returns pointer to the end of the vector
+  //! @brief Returns a reverse iterator to the element following the last element of the reversed vector. It corresponds to the element preceding the first element of the non-reversed vector. This element acts as a placeholder, attempting to access it results in undefined behavior.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator{begin()};
@@ -678,7 +678,7 @@ public:
   }
   //! @}
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently brocken
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
   //! @brief Forwards the passed properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)

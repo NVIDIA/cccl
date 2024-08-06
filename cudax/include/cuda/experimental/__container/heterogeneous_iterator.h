@@ -33,7 +33,7 @@
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-//! @file The \c heterogeneous_iterator class provides a iterator that provides typed execution space safety.
+//! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 namespace cuda::experimental
 {
 
