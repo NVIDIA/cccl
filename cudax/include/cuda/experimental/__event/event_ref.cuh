@@ -30,6 +30,8 @@
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
 
+#include <cuda/experimental/__utility/driver_api.cuh>
+
 namespace cuda::experimental
 {
 class event;
@@ -74,7 +76,8 @@ public:
   {
     assert(__event_ != nullptr);
     assert(__stream.get() != nullptr);
-    _CCCL_TRY_CUDA_API(::cudaEventRecord, "Failed to record CUDA event", __event_, __stream.get());
+    // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
+    detail::driver::eventRecord(__event_, __stream.get());
   }
 
   //! @brief Waits until all the work in the stream prior to the record of the

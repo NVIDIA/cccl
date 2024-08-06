@@ -29,6 +29,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE ${cn_target} Catch2::Catch2 catch2_main)
   target_link_libraries(${test_target} PRIVATE ${cn_target} cudax::Thrust)
   target_compile_options(${test_target} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
+  target_compile_options(${test_target} PRIVATE "-DLIBCUDACXX_ENABLE_EXCEPTIONS")
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   cudax_clone_target_properties(${test_target} ${cn_target})
   set_target_properties(${test_target} PROPERTIES
@@ -63,7 +64,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     launch/configuration.cu
   )
 
-  Cudax_add_catch2_test(test_target device_tests ${cn_target}
+  cudax_add_catch2_test(test_target device_tests ${cn_target}
     device/device_smoke.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
@@ -80,6 +81,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target misc_tests ${cn_target}
     utility/driver_api.cu
+    utility/ensure_current_device.cu
   )
 
   cudax_add_catch2_test(test_target containers ${cn_target}

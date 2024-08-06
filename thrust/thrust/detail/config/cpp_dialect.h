@@ -39,9 +39,12 @@
 // - THRUST_IGNORE_DEPRECATED_CPP_11:
 //   Ignore deprecation warnings when compiling with C++11. C++03 and outdated
 //   compilers will still issue warnings.
+// - THRUST_IGNORE_DEPRECATED_CPP_14:
+//   Ignore deprecation warnings when compiling with C++14. C++03 and outdated
+//   compilers will still issue warnings.
 // - THRUST_IGNORE_DEPRECATED_COMPILER
 //   Ignore deprecation warnings when using deprecated compilers. Compiling
-//   with C++03 and C++11 will still issue warnings.
+//   with C++03, C++11 and C++14 will still issue warnings.
 
 // Check for the CUB opt-outs as well:
 #if !defined(THRUST_IGNORE_DEPRECATED_CPP_DIALECT) && defined(CUB_IGNORE_DEPRECATED_CPP_DIALECT)
@@ -56,6 +59,7 @@
 
 #ifdef THRUST_IGNORE_DEPRECATED_CPP_DIALECT
 #  define THRUST_IGNORE_DEPRECATED_CPP_11
+#  define THRUST_IGNORE_DEPRECATED_CPP_14
 #  ifndef THRUST_IGNORE_DEPRECATED_COMPILER
 #    define THRUST_IGNORE_DEPRECATED_COMPILER
 #  endif
@@ -84,7 +88,6 @@
 
 #ifndef THRUST_IGNORE_DEPRECATED_COMPILER
 
-// clang-format off
 // Compiler checks:
 #  if defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION < 50000
 THRUST_COMPILER_DEPRECATION(GCC 5.0);
@@ -92,10 +95,10 @@ THRUST_COMPILER_DEPRECATION(GCC 5.0);
 THRUST_COMPILER_DEPRECATION(Clang 7.0);
 #  elif defined(_CCCL_COMPILER_MSVC) && THRUST_MSVC_VERSION < 1910
 // <2017. Hard upgrade message:
-THRUST_COMPILER_DEPRECATION(MSVC 2019 (19.20/16.0/14.20));
+THRUST_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
 #  elif defined(_CCCL_COMPILER_MSVC) && THRUST_MSVC_VERSION < 1920
 // >=2017, <2019. Soft deprecation message:
-THRUST_COMPILER_DEPRECATION_SOFT(MSVC 2019 (19.20/16.0/14.20), MSVC 2017);
+THRUST_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 #  endif
 
 #endif // THRUST_IGNORE_DEPRECATED_COMPILER
@@ -105,12 +108,14 @@ THRUST_COMPILER_DEPRECATION_SOFT(MSVC 2019 (19.20/16.0/14.20), MSVC 2017);
 // Dialect checks:
 #  if _CCCL_STD_VER < 2011
 // <C++11. Hard upgrade message:
-THRUST_COMPILER_DEPRECATION(C++14);
+THRUST_COMPILER_DEPRECATION(C++ 17);
 #  elif _CCCL_STD_VER == 2011 && !defined(THRUST_IGNORE_DEPRECATED_CPP_11)
 // =C++11. Soft upgrade message:
-THRUST_COMPILER_DEPRECATION_SOFT(C++14, C++11);
+THRUST_COMPILER_DEPRECATION_SOFT(C++ 17, C++ 11);
+#  elif _CCCL_STD_VER == 2014 && !defined(THRUST_IGNORE_DEPRECATED_CPP_14)
+// =C++14. Soft upgrade message:
+THRUST_COMPILER_DEPRECATION_SOFT(C++ 17, C++ 14);
 #  endif
-// clang-format on
 
 #endif // THRUST_IGNORE_DEPRECATED_DIALECT
 
