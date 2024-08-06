@@ -54,6 +54,32 @@ public:
     return __id_;
   }
 
+  //! @brief Compares two `device_ref`s for equality
+  //!
+  //! @note Allows comparison with `int` due to implicit conversion to
+  //! `device_ref`.
+  //!
+  //! @param __lhs The first `device_ref` to compare
+  //! @param __rhs The second `device_ref` to compare
+  //! @return true if `lhs` and `rhs` refer to the same device ordinal
+  _CCCL_NODISCARD_FRIEND constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  {
+    return __lhs.__id_ == __rhs.__id_;
+  }
+
+  //! @brief Compares two `device_ref`s for inequality
+  //!
+  //! @note Allows comparison with `int` due to implicit conversion to
+  //! `device_ref`.
+  //!
+  //! @param __lhs The first `device_ref` to compare
+  //! @param __rhs The second `device_ref` to compare
+  //! @return true if `lhs` and `rhs` refer to different device ordinal
+  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  {
+    return __lhs.__id_ != __rhs.__id_;
+  }
+
   //! @brief Retrieve the specified attribute for the device
   //!
   //! @param __attr The attribute to query. See `device::attrs` for the available
