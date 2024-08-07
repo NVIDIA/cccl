@@ -70,6 +70,7 @@
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/initializer_list>
+#include <cuda/std/limits>
 
 #include <cuda/experimental/__container/heterogeneous_iterator.h>
 #include <cuda/experimental/__container/uninitialized_buffer.h>
@@ -78,6 +79,8 @@
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+
+_CCCL_PUSH_MACROS
 
 //! @file The \c vector class provides a container of contiguous memory
 namespace cuda::experimental
@@ -122,6 +125,7 @@ public:
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = _CUDA_VSTD::size_t;
+  using difference_type        = _CUDA_VSTD::ptrdiff_t;
   using __resource_ref         = _CUDA_VMR::resource_ref<_Properties...>;
 
   // Doxygen cannot handle the macro expansions
@@ -431,6 +435,7 @@ public:
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
   vector(__resource_ref __mr, const size_type __size, ::cuda::experimental::uninit_t)
       : __buf_(__mr, __size)
+      , __size_(__size)
   {}
 
   //! @brief Constructs a vector using a memory resource and copy-constructs all elements from the input range
@@ -701,27 +706,33 @@ public:
 
   //! @addtogroup capacity
   //! @{
-  //! @brief Returns the current number of elements stored in the vector
+  //! @brief Returns the current number of elements stored in the vector.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
   {
     return __size_;
   }
 
-  //! @brief Returns true if the vector is empty
+  //! @brief Returns true if the vector is empty.
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }
 
-  //! @brief Returns the capacity of the current allocation of the vector
+  //! @brief Returns the capacity of the current allocation of the vector..
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type capacity() const noexcept
   {
-    return __size_;
+    return static_cast<size_type>(__buf_.size());
+  }
+
+  //! @brief Returns the maximal size of the vector.
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type max_size() const noexcept
+  {
+    return static_cast<size_type>((_CUDA_VSTD::numeric_limits<difference_type>::max)());
   }
 
   //! @rst
   //! Returns the :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` used to allocate
-  //! the buffer
+  //! the buffer.
   //! @endrst
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
   {
@@ -1246,6 +1257,8 @@ template <class _Tp>
 using device_vector = vector<_Tp, _CUDA_VMR::device_accessible>;
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

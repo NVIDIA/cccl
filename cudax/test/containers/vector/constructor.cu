@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -23,23 +21,6 @@
 
 #include "types.h"
 #include <catch2/catch.hpp>
-
-template <class>
-struct extract_properties;
-
-template <class... Properties>
-struct extract_properties<cuda::std::tuple<Properties...>>
-{
-  using vector   = cudax::vector<int, Properties...>;
-  using resource = cuda::std::conditional_t<
-    cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__host_device,
-    cuda::mr::cuda_managed_memory_resource,
-    cuda::std::conditional_t<cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__device,
-                             cuda::mr::cuda_memory_resource,
-                             host_memory_resource<int>>>;
-
-  using resource_ref = cuda::mr::resource_ref<Properties...>;
-};
 
 TEMPLATE_TEST_CASE(
   "cudax::vector constructors", "[container][vector]", cuda::std::tuple<>, cuda::std::tuple<cuda::mr::host_accessible>)

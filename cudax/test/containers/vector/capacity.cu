@@ -7,80 +7,124 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
+#include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/vector>
 
 #include "types.h"
+#include <catch2/catch.hpp>
 
-template <class T>
-__host__ __device__ constexpr void test()
+TEMPLATE_TEST_CASE(
+  "cudax::vector capacity",
+  "[container][vector]",
+  cuda::std::tuple<>,
+  cuda::std::tuple<cuda::mr::host_accessible>,
+  cuda::std::tuple<cuda::mr::device_accessible>,
+  (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cudax::vector<T, max_capacity>;
-  inplace_vector range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-  const inplace_vector const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
+  using Resource     = typename extract_properties<TestType>::resource;
+  using Resource_ref = typename extract_properties<TestType>::resource_ref;
+  using Vector       = typename extract_properties<TestType>::vector;
+  using T            = typename Vector::value_type;
+  using size_type    = typename Vector::size_type;
 
-  const auto empty = range.empty();
-  static_assert(cuda::std::is_same<decltype(empty), const bool>::value, "");
-  assert(!empty);
+  Resource raw_resource{};
+  Resource_ref resource{raw_resource};
 
-  const auto const_empty = const_range.empty();
-  static_assert(cuda::std::is_same<decltype(const_empty), const bool>::value, "");
-  assert(!const_empty);
-
-  const auto size = range.size();
-  static_assert(cuda::std::is_same<decltype(size), const typename inplace_vector::size_type>::value, "");
-  assert(size == 6);
-
-  const auto const_size = const_range.size();
-  static_assert(cuda::std::is_same<decltype(const_size), const typename inplace_vector::size_type>::value, "");
-  assert(const_size == 6);
-
-  const auto max_size = range.max_size();
-  static_assert(cuda::std::is_same<decltype(max_size), const typename inplace_vector::size_type>::value, "");
-  assert(max_size == max_capacity);
-
-  const auto const_max_size = const_range.max_size();
-  static_assert(cuda::std::is_same<decltype(const_max_size), const typename inplace_vector::size_type>::value, "");
-  assert(const_max_size == max_capacity);
-
-  const auto capacity = range.capacity();
-  static_assert(cuda::std::is_same<decltype(capacity), const typename inplace_vector::size_type>::value, "");
-  assert(capacity == max_capacity);
-
-  const auto const_capacity = const_range.capacity();
-  static_assert(cuda::std::is_same<decltype(const_capacity), const typename inplace_vector::size_type>::value, "");
-  assert(const_capacity == max_capacity);
-}
-
-__host__ __device__ constexpr bool test()
-{
-  test<int>();
-  test<Trivial>();
-
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  SECTION("cudax::vector::empty")
   {
-    test<NonTrivial>();
-    test<NonTrivialDestructor>();
-    test<ThrowingDefaultConstruct>();
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().empty()), bool>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().empty()), bool>);
+
+    { // Works without allocation
+      Vector vec{resource, 0};
+      CHECK(vec.empty());
+      CHECK(cuda::std::as_const(vec).empty());
+    }
+
+    { // Works with allocation and after clear
+      Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      CHECK(!vec.empty());
+      CHECK(!cuda::std::as_const(vec).empty());
+
+      vec.clear();
+      CHECK(vec.empty());
+      CHECK(cuda::std::as_const(vec).empty());
+    }
   }
 
-  return true;
-}
+  SECTION("cudax::vector::size")
+  {
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().size()), size_type>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().size()), size_type>);
 
-int main(int, char**)
-{
-  test();
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
-#endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+    { // Works without allocation
+      Vector vec{resource, 0};
+      CHECK(vec.size() == 0);
+      CHECK(cuda::std::as_const(vec).size() == 0);
+    }
 
-  return 0;
+    { // Works with allocation and after clear
+      Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      CHECK(vec.size() == 42);
+      CHECK(cuda::std::as_const(vec).size() == 42);
+
+      vec.clear();
+      CHECK(vec.size() == 0);
+      CHECK(cuda::std::as_const(vec).size() == 0);
+    }
+  }
+
+  SECTION("cudax::vector::capacity")
+  {
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().capacity()), size_type>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().capacity()), size_type>);
+
+    { // Works without allocation
+      Vector vec{resource, 0};
+      CHECK(vec.capacity() == 0);
+      CHECK(cuda::std::as_const(vec).capacity() == 0);
+    }
+
+    { // Works with allocation and does noth change from clear
+      Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      CHECK(vec.capacity() == 42);
+      CHECK(cuda::std::as_const(vec).capacity() == 42);
+
+      vec.clear();
+      CHECK(vec.capacity() == 42);
+      CHECK(cuda::std::as_const(vec).capacity() == 42);
+    }
+  }
+
+  SECTION("cudax::vector::max_size")
+  {
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().max_size()), size_type>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().max_size()), size_type>);
+
+    constexpr size_t max_size =
+      static_cast<size_type>((cuda::std::numeric_limits<typename Vector::difference_type>::max)());
+    { // Works without allocation
+      Vector vec{resource, 0};
+      CHECK(vec.max_size() == max_size);
+      CHECK(cuda::std::as_const(vec).max_size() == max_size);
+    }
+
+    { // Works with allocation and does noth change from clear
+      Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      CHECK(vec.max_size() == max_size);
+      CHECK(cuda::std::as_const(vec).max_size() == max_size);
+
+      vec.clear();
+      CHECK(vec.max_size() == max_size);
+      CHECK(cuda::std::as_const(vec).max_size() == max_size);
+    }
+  }
 }

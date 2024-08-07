@@ -597,4 +597,22 @@ struct host_memory_resource
 static_assert(cuda::mr::resource<host_memory_resource<int>>, "");
 static_assert(cuda::mr::resource_with<host_memory_resource<int>, cuda::mr::host_accessible>, "");
 
+// helper class as we need to pass the properties in a tuple to the catch tests
+template <class>
+struct extract_properties;
+
+template <class... Properties>
+struct extract_properties<cuda::std::tuple<Properties...>>
+{
+  using vector   = cudax::vector<int, Properties...>;
+  using resource = cuda::std::conditional_t<
+    cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__host_device,
+    cuda::mr::cuda_managed_memory_resource,
+    cuda::std::conditional_t<cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__device,
+                             cuda::mr::cuda_memory_resource,
+                             host_memory_resource<int>>>;
+
+  using resource_ref = cuda::mr::resource_ref<Properties...>;
+};
+
 #endif // CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
