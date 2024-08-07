@@ -103,9 +103,6 @@ protected:
 
   template <class, bool, class...>
   friend class heterogeneous_iterator;
-
-  template <class>
-  friend struct pointer_traits;
 };
 
 template <class _Tp, bool _IsConst>
@@ -154,9 +151,6 @@ protected:
 
   template <class, bool, class...>
   friend class heterogeneous_iterator;
-
-  template <class>
-  friend struct pointer_traits;
 };
 
 template <class _Tp, bool _IsConst>
@@ -205,19 +199,12 @@ protected:
 
   template <class, bool, class...>
   friend class heterogeneous_iterator;
-
-  template <class>
-  friend struct pointer_traits;
 };
 
 template <class _Tp, bool _IsConst, class... _Properties>
 class heterogeneous_iterator
     : public __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>
 {
-private:
-  template <class>
-  friend struct pointer_traits;
-
 public:
 #  if _CCCL_STD_VER >= 2014
   using iterator_concept = _CUDA_VSTD::contiguous_iterator_tag;
@@ -407,6 +394,11 @@ public:
     return __lhs.__ptr_ >= __rhs.__ptr_;
   }
 #  endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+
+  _CCCL_HOST_DEVICE constexpr pointer __unwrap() const noexcept
+  {
+    return this->__ptr_;
+  }
 };
 } // namespace cuda::experimental
 
@@ -426,7 +418,7 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _IsConst
   //! @return A pointer to the element pointed to by the heterogeneous_iterator
   _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr element_type* to_address(const pointer __iter) noexcept
   {
-    return _CUDA_VSTD::to_address(__iter.__ptr_);
+    return _CUDA_VSTD::to_address(__iter.__unwrap());
   }
 };
 

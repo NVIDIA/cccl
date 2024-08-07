@@ -562,7 +562,7 @@ static_assert(cuda::std::ranges::sized_range<sized_uncommon_range<int, 4>>);
 
 // Helper function to compare two ranges
 template <class Range1, class Range2>
-__host__ __device__ constexpr bool equal_range(const Range1& range1, const Range2& range2)
+constexpr bool equal_range(const Range1& range1, const Range2& range2)
 {
   return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
 }
@@ -598,6 +598,35 @@ struct host_memory_resource
 static_assert(cuda::mr::resource<host_memory_resource<int>>, "");
 static_assert(cuda::mr::resource_with<host_memory_resource<int>, cuda::mr::host_accessible>, "");
 
+// Resource that wraps another resource so that we can check code path that need to reallocate
+template <class... Properties>
+struct memory_resource_wrapper
+{
+  cuda::mr::resource_ref<Properties...> ref_;
+
+  void* allocate(std::size_t size, std::size_t alignment)
+  {
+    return ref_.allocate(size, alignment);
+  }
+  void deallocate(void* ptr, std::size_t size, std::size_t alignment)
+  {
+    ref_.deallocate(ptr, size, alignment);
+  }
+
+  bool operator==(const memory_resource_wrapper&) const
+  {
+    return true;
+  }
+  bool operator!=(const memory_resource_wrapper&) const
+  {
+    return false;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class Property)
+  _LIBCUDACXX_REQUIRES(cuda::std::_One_of<Property, Properties...>)
+  friend void get_property(const memory_resource_wrapper&, Property) noexcept {}
+};
+
 // helper class as we need to pass the properties in a tuple to the catch tests
 template <class>
 struct extract_properties;
@@ -612,6 +641,7 @@ struct extract_properties<cuda::std::tuple<Properties...>>
     cuda::std::conditional_t<cudax::__select_execution_space<Properties...> == cudax::_ExecutionSpace::__device,
                              cuda::mr::cuda_memory_resource,
                              host_memory_resource<int>>>;
+  using other_resource = memory_resource_wrapper<Properties...>;
 
   using resource_ref   = cuda::mr::resource_ref<Properties...>;
   using iterator       = cudax::heterogeneous_iterator<int, false, Properties...>;

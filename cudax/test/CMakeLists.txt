@@ -89,7 +89,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/uninitialized_buffer.cu
     # containers/vector/access.cu
     # containers/vector/assign.cu
-    # containers/vector/assignment.cu
+    containers/vector/assignment.cu
     containers/vector/capacity.cu
     # containers/vector/comparison.cu
     containers/vector/constructor.cu

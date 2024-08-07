@@ -7,222 +7,328 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: c++11
-
+#include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/vector>
 
-#include <stdexcept>
-
 #include "types.h"
+#include <catch2/catch.hpp>
 
-template <class T>
-__host__ __device__ constexpr void test_copy()
+// TODO: only device accessible resource
+TEMPLATE_TEST_CASE("cudax::vector assignment",
+                   "[container][vector]",
+                   cuda::std::tuple<>,
+                   cuda::std::tuple<cuda::mr::host_accessible>,
+                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
-  // Zero capacity inplace_vector is nothrow_copy_assignable
-  static_assert(cuda::std::is_nothrow_copy_assignable<cudax::vector<T, 0>>::value, "");
-  static_assert(cuda::std::is_nothrow_copy_assignable<cudax::vector<T, 42>>::value
-                  == cuda::std::conjunction<cuda::std::is_nothrow_copy_constructible<T>,
-                                            cuda::std::is_nothrow_copy_assignable<T>>::value,
-                "");
+  using Resource      = typename extract_properties<TestType>::resource;
+  using Resource_ref  = typename extract_properties<TestType>::resource_ref;
+  using OtherResource = typename extract_properties<TestType>::other_resource;
+  using Vector        = typename extract_properties<TestType>::vector;
+  using T             = typename Vector::value_type;
+  using size_type     = typename Vector::size_type;
 
-  { // inplace_vector<T, 0> can be copy assigned
-    const cudax::vector<T, 0> input{};
-    cudax::vector<T, 0> no_capacity{};
-    no_capacity = input;
-    assert(no_capacity.empty());
-  }
+  using iterator       = typename extract_properties<TestType>::iterator;
+  using const_iterator = typename extract_properties<TestType>::const_iterator;
 
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be copy assigned an empty input
-    const inplace_vector input{};
-    inplace_vector vec{};
-    vec = input;
-    assert(vec.empty());
-  }
+  using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
+  using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
-  { // inplace_vector<T, N> can be copy assigned an empty input, shrinking
-    const inplace_vector input{};
-    inplace_vector vec{T(1), T(42), T(1337), T(0)};
-    vec = input;
-    assert(vec.empty());
-  }
+  Resource raw_resource{};
+  Resource_ref resource{raw_resource};
 
-  { // inplace_vector<T, N> can be copy assigned a non-empty input, growing from empty
-    const inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec{};
-    vec = input;
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-
-  { // inplace_vector<T, N> can be copy assigned a non-empty input, shrinking
-    const inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
-    vec = input;
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-
-  { // inplace_vector<T, N> can be copy assigned a non-empty input, growing
-    const inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec{T(0), T(42)};
-    vec = input;
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-}
-
-template <class T>
-__host__ __device__ constexpr void test_move()
-{
-  // Zero capacity inplace_vector is nothrow_move_assignable
-  static_assert(cuda::std::is_nothrow_move_assignable<cudax::vector<T, 0>>::value, "");
-  static_assert(cuda::std::is_nothrow_move_assignable<cudax::vector<T, 42>>::value
-                  == cuda::std::conjunction<cuda::std::is_nothrow_move_constructible<T>,
-                                            cuda::std::is_nothrow_move_assignable<T>>::value,
-                "");
-
-  { // inplace_vector<T, 0> can be move assigned
-    cudax::vector<T, 0> input{};
-    cudax::vector<T, 0> no_capacity{};
-    no_capacity = cuda::std::move(input);
-    assert(no_capacity.empty());
-    assert(input.empty());
-  }
-
-  using inplace_vector = cudax::vector<T, 42>;
-  { // inplace_vector<T, N> can be move assigned an empty input
-    inplace_vector input{};
-    inplace_vector vec{};
-    vec = cuda::std::move(input);
-    assert(vec.empty());
-    assert(input.empty());
-  }
-
-  { // inplace_vector<T, N> can be move assigned an empty input, shrinking
-    inplace_vector input{};
-    inplace_vector vec{T(1), T(42), T(1337), T(0)};
-    vec = cuda::std::move(input);
-    assert(vec.empty());
-    assert(input.empty());
-  }
-
-  const cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
-  { // inplace_vector<T, N> can be move assigned a non-empty input, growing from empty
-    inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec{};
-    vec = cuda::std::move(input);
-    assert(!vec.empty());
-    assert(input.size() == 4);
-    assert(equal_range(vec, expected));
-  }
-
-  { // inplace_vector<T, N> can be move assigned a non-empty input, shrinking
-    inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
-    vec = cuda::std::move(input);
-    assert(!vec.empty());
-    assert(input.size() == 4);
-    assert(equal_range(vec, expected));
-  }
-
-  { // inplace_vector<T, N> can be move assigned a non-empty input, growing
-    inplace_vector input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec{T(0), T(42)};
-    vec = cuda::std::move(input);
-    assert(!vec.empty());
-    assert(input.size() == 4);
-    assert(equal_range(vec, expected));
-  }
-}
-
-template <class T>
-__host__ __device__ constexpr void test_init_list()
-{
-  { // inplace_vector<T, 0> can be assigned an empty initializer_list
-    const cuda::std::initializer_list<T> input{};
-    cudax::vector<T, 0> vec{};
-    vec = input;
-    assert(vec.empty());
-  }
-
-  using inplace_vector = cudax::vector<T, 42>;
-  const cuda::std::initializer_list<T> empty_input{};
-  { // inplace_vector<T, N> can be assigned an empty initializer_list
-    inplace_vector vec{};
-    vec = empty_input;
-    assert(vec.empty());
-  }
-
-  { // inplace_vector<T, N> can be assigned an empty initializer_list, shrinking
-    inplace_vector vec{T(1), T(42), T(1337), T(0)};
-    vec = empty_input;
-    assert(vec.empty());
-  }
-
-  const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-  { // inplace_vector<T, N> can be assigned a non-empty initializer_list, from empty
-    inplace_vector vec{};
-    vec = input;
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-
-  { // inplace_vector<T, N> can be assigned a non-empty initializer_list, shrinking
-    inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
-    vec = input;
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-
-  { // inplace_vector<T, N> can be assigned a non-empty initializer_list, growing from non empty
-    inplace_vector vec{T(0), T(42)};
-    vec = input;
-    assert(!vec.empty());
-    assert(equal_range(vec, input));
-  }
-}
-
-template <class T>
-__host__ __device__ constexpr void test()
-{
-  test_copy<T>();
-  test_move<T>();
-  test_init_list<T>();
-}
-
-__host__ __device__ constexpr bool test()
-{
-  test<int>();
-  test<Trivial>();
-
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  SECTION("cudax::vector copy-assignment")
   {
-    test<NonTrivial>();
-    test<NonTrivialDestructor>();
-    test<ThrowingDefaultConstruct>();
-    test<ThrowingCopyConstructor>();
-    test<ThrowingMoveConstructor>();
-    test<ThrowingCopyAssignment>();
-    test<ThrowingMoveAssignment>();
+    { // Can be copy-assigned an empty input
+      const Vector input{resource};
+      Vector vec{resource};
+      vec = input;
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+    { // Can be copy-assigned an empty input, shrinking
+      const Vector input{resource};
+      Vector vec{resource, 4};
+      vec = input;
+      CHECK(vec.empty());
+      CHECK(vec.data() != nullptr);
+    }
+
+    { // Can be copy-assigned a non-empty input, shrinking
+      const Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, {T(0), T(42), T(1337), T(42), T(5)}};
+      vec = input;
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, input));
+    }
+
+    { // Can be copy-assigned an non-empty input growing from empty no reallocation
+      const Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 42};
+      vec.clear();
+      vec = input;
+      CHECK(vec.capacity() == 42);
+      CHECK(equal_range(vec, input));
+    }
+
+    { // Can be copy-assigned an non-empty input growing from non-empty no reallocation
+      const Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 42};
+      vec.resize(2);
+      vec = input;
+      CHECK(vec.capacity() == 42);
+      CHECK(equal_range(vec, input));
+    }
+
+#if 0 // Implement growing
+    { // Can be copy-assigned a non-empty input, growing from empty with reallocation
+      const Vector input{T(1), T(42), T(1337), T(0)};
+      Vector vec{};
+      vec = input;
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+
+    { // Can be copy-assigned a non-empty input, growing with reallocation
+      const Vector input{T(1), T(42), T(1337), T(0)};
+      Vector vec{resource, 42};
+      vec = input;
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+#endif // Implement growing
   }
 
-  return true;
+  SECTION("cudax::vector copy-assignment different resource")
+  {
+    OtherResource other_resource{resource};
+    { // Can be copy-assigned an empty input
+      const Vector input{other_resource};
+      Vector vec{resource};
+      vec = input;
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // Can be copy-assigned an empty input, shrinking
+      const Vector input{other_resource};
+      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      vec = input;
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // Can be copy-assigned a non-empty input, shrinking
+      const Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, {T(0), T(42), T(1337), T(42), T(5)}};
+      vec = input;
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+
+    { // Can be copy-assigned an non-empty input growing from empty without capacity
+      const Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource};
+      vec = input;
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+
+    { // Can be copy-assigned an non-empty input growing from empty with capacity
+      const Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 42};
+      vec.clear();
+      vec = input;
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+
+    { // Can be copy-assigned an non-empty input growing from non-empty
+      const Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, {T(0), T(42)}};
+      vec.resize(2);
+      vec = input;
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, input));
+    }
+  }
+
+  SECTION("cudax::vector move-assignment")
+  {
+    { // Can be move-assigned an empty input
+      Vector input{resource};
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+
+      Vector vec{resource};
+      vec = cuda::std::move(input);
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned an empty input, shrinking
+      Vector input{resource};
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+
+      Vector vec{resource, 4};
+      vec = cuda::std::move(input);
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned a non-empty input, shrinking
+      Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, {T(0), T(42), T(1337), T(42), T(5)}};
+      vec = cuda::std::move(input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned an non-empty input growing from empty
+      Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource};
+      vec = cuda::std::move(input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned an non-empty input growing from non-empty
+      Vector input{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 42};
+      vec.resize(2);
+      vec = cuda::std::move(input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+  }
+
+  SECTION("cudax::vector copy-assignment different resource")
+  {
+    OtherResource other_resource{resource};
+    { // Can be move-assigned an empty input
+      Vector input{other_resource};
+      Vector vec{resource};
+      vec = cuda::std::move(input);
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+    { // Can be move-assigned an empty input, shrinking
+      Vector input{other_resource};
+      Vector vec{resource, 4};
+      vec = cuda::std::move(input);
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned a non-empty input, shrinking
+      Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, {T(0), T(42), T(1337), T(42), T(5)}};
+      vec = cuda::std::move(input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned an non-empty input growing from empty
+      Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource};
+      vec = cuda::std::move(input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+
+    { // Can be move-assigned an non-empty input growing from non-empty
+      Vector input{other_resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 42};
+      vec.resize(2);
+      vec = cuda::std::move(input);
+      CHECK(vec.capacity() == 4);
+      CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+      CHECK(input.empty());
+      CHECK(input.data() == nullptr);
+    }
+  }
+
+  SECTION("cudax::vector assignment initializer_list")
+  {
+    const cuda::std::initializer_list<T> empty_input{};
+    { // Can be assigned an empty initializer_list
+      Vector vec{resource};
+      vec = empty_input;
+      CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
+    }
+
+    { // Can be assigned an empty initializer_list, shrinking
+      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      auto* old_ptr = vec.data();
+      vec           = empty_input;
+      CHECK(vec.empty());
+      CHECK(vec.data() == old_ptr);
+    }
+
+    const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
+#if 0 // Implement growing
+    { // Can be assigned a non-empty initializer_list, from empty
+      Vector vec{resource};
+      vec = input;
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, input));
+    }
+#endif // Implement growing
+
+    { // Can be assigned a non-empty initializer_list, shrinking
+      Vector vec{resource, {T(0), T(42), T(1337), T(42), T(5)}};
+      vec = input;
+      CHECK(!vec.empty());
+      CHECK(vec.capacity() == 5);
+      CHECK(equal_range(vec, input));
+    }
+
+#if 0 // Implement growing
+    { // Can be assigned a non-empty initializer_list, growing from non empty
+      Vector vec{resource, {T(0), T(42)}};
+      vec = input;
+      CHECK(!vec.empty());
+      CHECK(equal_range(vec, input));
+    }
+#endif // Implement growing
+  }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if 0
+
+#  ifndef TEST_HAS_NO_EXCEPTIONS
 void test_exceptions()
 { // assignment throws std::bad_alloc
   constexpr size_t capacity = 4;
-  using inplace_vector      = cudax::vector<int, capacity>;
-  inplace_vector too_small{};
+  using Vector              = cudax::vector<int, capacity>;
+  Vector too_small{};
 
   try
   {
@@ -233,20 +339,21 @@ void test_exceptions()
   {}
   catch (...)
   {
-    assert(false);
+    CHECK(false);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#  endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
   test();
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");
-#endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#  endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#  ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#  endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }
+#endif
