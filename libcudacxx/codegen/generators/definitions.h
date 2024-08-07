@@ -13,11 +13,10 @@
 
 #include <map>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <fmt/format.h>
-
-#include <type_traits>
 
 enum class Mmio
 {
