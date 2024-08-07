@@ -7,77 +7,87 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
+#include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
-#include <cuda/std/iterator>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/vector>
 
 #include "types.h"
+#include <catch2/catch.hpp>
 
-template <class T>
-__host__ __device__ constexpr void test()
+TEMPLATE_TEST_CASE(
+  "cudax::vector swap",
+  "[container][vector]",
+  cuda::std::tuple<>,
+  cuda::std::tuple<cuda::mr::host_accessible>,
+  cuda::std::tuple<cuda::mr::device_accessible>,
+  (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
-  { // inplace_vector<T, 0> can be swapped
-    using inplace_vector = cudax::vector<T, 0>;
-    inplace_vector empty{};
-    empty.swap(empty);
-    static_assert(noexcept(empty.swap(empty)), "");
-    swap(empty, empty);
-    static_assert(noexcept(swap(empty, empty)), "");
-  }
+  using Resource     = typename extract_properties<TestType>::resource;
+  using Resource_ref = typename extract_properties<TestType>::resource_ref;
+  using Vector       = typename extract_properties<TestType>::vector;
+  using T            = typename Vector::value_type;
+  using size_type    = typename Vector::size_type;
 
-  { // inplace_vector<T, N> can be swapped
-    using inplace_vector = cudax::vector<T, 42>;
-    const cuda::std::initializer_list<T> expected_left{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-    const cuda::std::initializer_list<T> expected_right{T(0), T(42), T(1337), T(42), T(5), T(-42)};
+  Resource raw_resource{};
+  Resource_ref resource{raw_resource};
+  STATIC_REQUIRE(
+    cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().swap(cuda::std::declval<Vector&>())), void>);
+  STATIC_REQUIRE(
+    cuda::std::is_same_v<decltype(swap(cuda::std::declval<Vector&>(), cuda::std::declval<Vector&>())), void>);
+  STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().swap(cuda::std::declval<Vector&>())));
+  STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Vector&>(), cuda::std::declval<Vector&>())));
 
-    inplace_vector left(expected_left);
-    inplace_vector right(expected_right);
+  // Note we do not care about the elements just the sizes
+  Vector vec_small{resource, 5, cudax::uninit};
 
-    left.swap(right);
-    constexpr bool nothrow_swap =
-      cuda::std::is_nothrow_swappable<T>::value && cuda::std::is_nothrow_move_constructible<T>::value;
-    static_assert(noexcept(left.swap(right)) == nothrow_swap, "");
-    assert(equal_range(left, expected_right));
-    assert(equal_range(right, expected_left));
-
-    swap(left, right);
-#if !defined(TEST_COMPILER_MSVC_2017)
-    static_assert(noexcept(swap(left, right)) == nothrow_swap, "");
-#endif // !TEST_COMPILER_MSVC_2017
-    assert(equal_range(left, expected_left));
-    assert(equal_range(right, expected_right));
-  }
-}
-
-__host__ __device__ constexpr bool test()
-{
-  test<int>();
-  test<Trivial>();
-
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  SECTION("Can swap vector")
   {
-    test<NonTrivial>();
-    test<NonTrivialDestructor>();
-    test<ThrowingDefaultConstruct>();
-    test<ThrowingMoveConstructor>();
-    test<ThrowingSwap>();
+    Vector vec_large{resource, 42, cudax::uninit};
+
+    CHECK(vec_large.capacity() == 42);
+    CHECK(vec_small.capacity() == 5);
+    CHECK(vec_large.size() == 42);
+    CHECK(vec_small.size() == 5);
+
+    vec_large.swap(vec_small);
+    CHECK(vec_small.capacity() == 42);
+    CHECK(vec_large.capacity() == 5);
+    CHECK(vec_small.size() == 42);
+    CHECK(vec_large.size() == 5);
+
+    swap(vec_large, vec_small);
+    CHECK(vec_large.capacity() == 42);
+    CHECK(vec_small.capacity() == 5);
+    CHECK(vec_large.size() == 42);
+    CHECK(vec_small.size() == 5);
   }
 
-  return true;
-}
+  SECTION("Can swap vector without allocation")
+  {
+    Vector vec_no_allocation{resource, 0, cudax::uninit};
 
-int main(int, char**)
-{
-  test();
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
-#endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+    CHECK(vec_no_allocation.capacity() == 0);
+    CHECK(vec_small.capacity() == 5);
+    CHECK(vec_no_allocation.size() == 0);
+    CHECK(vec_small.size() == 5);
 
-  return 0;
+    vec_no_allocation.swap(vec_small);
+    CHECK(vec_small.capacity() == 0);
+    CHECK(vec_no_allocation.capacity() == 5);
+    CHECK(vec_small.size() == 0);
+    CHECK(vec_no_allocation.size() == 5);
+
+    swap(vec_no_allocation, vec_small);
+    CHECK(vec_no_allocation.capacity() == 0);
+    CHECK(vec_small.capacity() == 5);
+    CHECK(vec_no_allocation.size() == 0);
+    CHECK(vec_small.size() == 5);
+  }
 }

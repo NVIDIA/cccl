@@ -98,6 +98,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     # containers/vector/iterators.cu
     # containers/vector/properties.cu
     # containers/vector/resize.cu
-    # containers/vector/swap.cu
+    containers/vector/swap.cu
   )
 endforeach()
