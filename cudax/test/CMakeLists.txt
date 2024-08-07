@@ -95,7 +95,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/vector/constructor.cu
     # containers/vector/emplace.cu
     # containers/vector/insert.cu
-    # containers/vector/iterators.cu
+    containers/vector/iterators.cu
     # containers/vector/properties.cu
     # containers/vector/resize.cu
     containers/vector/swap.cu

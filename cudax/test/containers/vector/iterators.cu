@@ -7,99 +7,191 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: c++11
-
+#include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/vector>
 
 #include "types.h"
+#include <catch2/catch.hpp>
 
-template <class T>
-__host__ __device__ constexpr void test()
+TEMPLATE_TEST_CASE(
+  "cudax::vector iterators",
+  "[container][vector]",
+  cuda::std::tuple<>,
+  cuda::std::tuple<cuda::mr::host_accessible>,
+  cuda::std::tuple<cuda::mr::device_accessible>,
+  (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
-  using inplace_vector = cudax::vector<T, 42>;
-  inplace_vector range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
-  const inplace_vector const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
+  using Resource     = typename extract_properties<TestType>::resource;
+  using Resource_ref = typename extract_properties<TestType>::resource_ref;
+  using Vector       = typename extract_properties<TestType>::vector;
+  using T            = typename Vector::value_type;
+  using size_type    = typename Vector::size_type;
 
-  const auto begin = range.begin();
-  static_assert(cuda::std::is_same<decltype(begin), const typename inplace_vector::iterator>::value, "");
-  assert(*begin == T(1));
+  using iterator       = typename extract_properties<TestType>::iterator;
+  using const_iterator = typename extract_properties<TestType>::const_iterator;
 
-  const auto cbegin = range.cbegin();
-  static_assert(cuda::std::is_same<decltype(cbegin), const typename inplace_vector::const_iterator>::value, "");
-  assert(*cbegin == T(1));
+  using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
+  using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
-  const auto const_begin = const_range.begin();
-  static_assert(cuda::std::is_same<decltype(const_begin), const typename inplace_vector::const_iterator>::value, "");
-  assert(*const_begin == T(0));
+  Resource raw_resource{};
+  Resource_ref resource{raw_resource};
 
-  const auto end = range.end();
-  static_assert(cuda::std::is_same<decltype(end), const typename inplace_vector::iterator>::value, "");
-  assert(*cuda::std::prev(end) == T(-1));
-
-  const auto cend = range.cend();
-  static_assert(cuda::std::is_same<decltype(cend), const typename inplace_vector::const_iterator>::value, "");
-  assert(*cuda::std::prev(cend) == T(-1));
-
-  const auto const_end = const_range.end();
-  static_assert(cuda::std::is_same<decltype(const_end), const typename inplace_vector::const_iterator>::value, "");
-  assert(*cuda::std::prev(const_end) == T(-42));
-
-  const auto rbegin = range.rbegin();
-  static_assert(cuda::std::is_same<decltype(rbegin), const typename inplace_vector::reverse_iterator>::value, "");
-  assert(*rbegin == T(-1));
-
-  const auto crbegin = range.crbegin();
-  static_assert(cuda::std::is_same<decltype(crbegin), const typename inplace_vector::const_reverse_iterator>::value,
-                "");
-  assert(*crbegin == T(-1));
-
-  const auto const_rbegin = const_range.rbegin();
-  static_assert(
-    cuda::std::is_same<decltype(const_rbegin), const typename inplace_vector::const_reverse_iterator>::value, "");
-  assert(*const_rbegin == T(-42));
-
-  const auto rend = range.rend();
-  static_assert(cuda::std::is_same<decltype(rend), const typename inplace_vector::reverse_iterator>::value, "");
-  assert(*cuda::std::prev(rend) == T(1));
-
-  const auto crend = range.crend();
-  static_assert(cuda::std::is_same<decltype(crend), const typename inplace_vector::const_reverse_iterator>::value, "");
-  assert(*cuda::std::prev(crend) == T(1));
-
-  const auto const_rend = const_range.rend();
-  static_assert(cuda::std::is_same<decltype(const_rend), const typename inplace_vector::const_reverse_iterator>::value,
-                "");
-  assert(*cuda::std::prev(const_rend) == T(0));
-}
-
-__host__ __device__ constexpr bool test()
-{
-  test<int>();
-  test<Trivial>();
-
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  SECTION("cudax::vector::begin/end properties")
   {
-    test<NonTrivial>();
-    test<NonTrivialDestructor>();
-    test<ThrowingDefaultConstruct>();
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().begin()), iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().begin()), const_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().cbegin()), const_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().begin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().begin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().cbegin()));
+
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().end()), iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().end()), const_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().cend()), const_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().end()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().end()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().cend()));
   }
 
-  return true;
-}
+  SECTION("cudax::vector::begin/end no allocation")
+  {
+    Vector vec{resource, 0};
+    CHECK(vec.begin() == iterator{nullptr});
+    CHECK(cuda::std::as_const(vec).begin() == const_iterator{nullptr});
+    CHECK(vec.cbegin() == const_iterator{nullptr});
 
-int main(int, char**)
-{
-  test();
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
-#endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+    CHECK(vec.end() == iterator{nullptr});
+    CHECK(cuda::std::as_const(vec).end() == const_iterator{nullptr});
+    CHECK(vec.cend() == const_iterator{nullptr});
 
-  return 0;
+    CHECK(vec.begin() == vec.end());
+    CHECK(cuda::std::as_const(vec).begin() == cuda::std::as_const(vec).end());
+    CHECK(vec.cbegin() == vec.cend());
+  }
+
+  SECTION("cudax::vector::begin/end with allocation")
+  {
+    Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    // begin points to the element at data()
+    CHECK(vec.begin() == iterator{vec.data()});
+    CHECK(cuda::std::as_const(vec).begin() == const_iterator{vec.data()});
+    CHECK(vec.cbegin() == const_iterator{vec.data()});
+
+    // end points to the element at data() + 42
+    CHECK(vec.end() == iterator{vec.data() + 42});
+    CHECK(cuda::std::as_const(vec).end() == const_iterator{vec.data() + 42});
+    CHECK(vec.cend() == const_iterator{vec.data() + 42});
+
+    // begin and end are not equal
+    CHECK(vec.begin() != vec.end());
+    CHECK(cuda::std::as_const(vec).begin() != cuda::std::as_const(vec).end());
+    CHECK(vec.cbegin() != vec.cend());
+  }
+
+  SECTION("cudax::vector::begin/end with allocation after clear")
+  {
+    Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    auto* ptr = vec.data();
+    vec.clear();
+    CHECK(vec.data() == ptr);
+
+    // begin points to the element at data
+    CHECK(vec.begin() == iterator{ptr});
+    CHECK(cuda::std::as_const(vec).begin() == const_iterator{ptr});
+    CHECK(vec.cbegin() == const_iterator{ptr});
+
+    // end points to the element at data()
+    CHECK(vec.end() == iterator{vec.data()});
+    CHECK(cuda::std::as_const(vec).end() == const_iterator{vec.data()});
+    CHECK(vec.cend() == const_iterator{vec.data()});
+
+    // begin and end are now equal
+    CHECK(vec.begin() == vec.end());
+    CHECK(cuda::std::as_const(vec).begin() == cuda::std::as_const(vec).end());
+    CHECK(vec.cbegin() == vec.cend());
+  }
+
+  SECTION("cudax::vector::rbegin/rend properties")
+  {
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().rbegin()), reverse_iterator>);
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().rbegin()), const_reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().crbegin()), const_reverse_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().rbegin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().rbegin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().crbegin()));
+
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().rend()), reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().rend()), const_reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().crend()), const_reverse_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().rend()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().rend()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().crend()));
+  }
+
+  SECTION("cudax::vector::rbegin/rend no allocation")
+  {
+    Vector vec{resource, 0};
+    CHECK(vec.rbegin() == reverse_iterator{iterator{nullptr}});
+    CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
+    CHECK(vec.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
+
+    CHECK(vec.rend() == reverse_iterator{iterator{nullptr}});
+    CHECK(cuda::std::as_const(vec).rend() == const_reverse_iterator{const_iterator{nullptr}});
+    CHECK(vec.crend() == const_reverse_iterator{const_iterator{nullptr}});
+
+    CHECK(vec.rbegin() == vec.rend());
+    CHECK(cuda::std::as_const(vec).rbegin() == cuda::std::as_const(vec).rend());
+    CHECK(vec.crbegin() == vec.crend());
+  }
+
+  SECTION("cudax::vector::rbegin/rend with allocation")
+  {
+    Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    // rbegin points to the element at data() + 42
+    CHECK(vec.rbegin() == reverse_iterator{iterator{vec.data() + 42}});
+    CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{vec.data() + 42}});
+    CHECK(vec.crbegin() == const_reverse_iterator{const_iterator{vec.data() + 42}});
+
+    // rend points to the element at data()
+    CHECK(vec.rend() == reverse_iterator{iterator{vec.data()}});
+    CHECK(cuda::std::as_const(vec).rend() == const_reverse_iterator{const_iterator{vec.data()}});
+    CHECK(vec.crend() == const_reverse_iterator{const_iterator{vec.data()}});
+
+    // begin and end are not equal
+    CHECK(vec.rbegin() != vec.rend());
+    CHECK(cuda::std::as_const(vec).rbegin() != cuda::std::as_const(vec).rend());
+    CHECK(vec.crbegin() != vec.crend());
+  }
+
+  SECTION("cudax::vector::begin/end with allocation after clear")
+  {
+    Vector vec{resource, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    auto* ptr = vec.data();
+    vec.clear();
+    CHECK(vec.data() == ptr);
+
+    // rbegin points to the element at data
+    CHECK(vec.rbegin() == reverse_iterator{iterator{ptr}});
+    CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{ptr}});
+    CHECK(vec.crbegin() == const_reverse_iterator{const_iterator{ptr}});
+
+    // rend points to the element at data()
+    CHECK(vec.rend() == reverse_iterator{iterator{ptr}});
+    CHECK(cuda::std::as_const(vec).rend() == const_reverse_iterator{const_iterator{ptr}});
+    CHECK(vec.crend() == const_reverse_iterator{const_iterator{ptr}});
+
+    // begin and end are now equal
+    CHECK(vec.rbegin() == vec.rend());
+    CHECK(cuda::std::as_const(vec).rbegin() == cuda::std::as_const(vec).rend());
+    CHECK(vec.crbegin() == vec.crend());
+  }
 }

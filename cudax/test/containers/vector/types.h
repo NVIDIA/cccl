@@ -613,7 +613,9 @@ struct extract_properties<cuda::std::tuple<Properties...>>
                              cuda::mr::cuda_memory_resource,
                              host_memory_resource<int>>>;
 
-  using resource_ref = cuda::mr::resource_ref<Properties...>;
+  using resource_ref   = cuda::mr::resource_ref<Properties...>;
+  using iterator       = cudax::heterogeneous_iterator<int, false, Properties...>;
+  using const_iterator = cudax::heterogeneous_iterator<int, true, Properties...>;
 };
 
 #endif // CUDAX_TEST_CONTAINER_VECTOR_TYPES_H
