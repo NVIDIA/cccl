@@ -79,7 +79,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x)
 #  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
-    uint32_t __where = 0;
+    unsigned long __where = 0;
     if (_BitScanForward(&__where, __x))
     {
       return static_cast<int>(__where);
@@ -96,7 +96,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x)
 #  if !defined(__CUDA_ARCH__)
   if (!__libcpp_is_constant_evaluated())
   {
-    uint32_t __where = 0;
+    unsigned long __where = 0;
 #    if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
     if (_BitScanForward64(&__where, __x))
     {
