@@ -679,7 +679,7 @@ class Bench:
             result[subbench] = {}
             for rt_point in values_to_space(rt_values[subbench]):
                 workload_point = list(ct_workload_point) + list(rt_point)
-                cmd = [bench_path] + [f'-a "{param}"' for param in workload_point]
+                cmd = [bench_path, '-b', subbench] + [f'-a "{param}"' for param in workload_point]
                 result[subbench][' '.join(workload_point)] = ' '.join(cmd)
         return result
 
