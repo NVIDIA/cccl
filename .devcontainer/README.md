@@ -51,9 +51,9 @@ VSCode offers the most convenient experience with Dev Containers due to its tigh
 6. (Optional) Authenticate with GitHub
    - After container startup, you will be asked if you would like to authenticate with GitHub. This is for access to CCCL's distributed `sccache` storage. If you are not an NVIDIA employee, you can safely ignore this step. For more information, see the [`sccache`](#sccache) section below.
 
-8. Once initialized, the local `cccl/` directory is mirrored into the container to ensure any changes are persistent.
+7. Once initialized, the local `cccl/` directory is mirrored into the container to ensure any changes are persistent.
 
-9. Done! See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
+8. Done! See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
 
 ### (Optional) Authenticate with GitHub for `sccache` <a name="sccache"></a>
 
