@@ -108,7 +108,7 @@ TEST_CASE("Stream get device", "[stream]")
   cudax::stream dev0_stream(cudax::device_ref{0});
   CUDAX_REQUIRE(dev0_stream.device() == 0);
 
-  cudaSetDevice(cudax::devices.size() - 1);
+  cudaSetDevice(static_cast<int>(cudax::devices.size() - 1));
   cudaStream_t stream_handle;
   CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
