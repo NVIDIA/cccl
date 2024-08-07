@@ -138,10 +138,22 @@ $ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --de
 $ sudo apt-get update
 $ sudo apt-get install -y nvidia-container-toolkit
 ```
+
+Then configure Docker to use the `nvidia-container-toolkit`:
+```bash
+$ sudo nvidia-ctk runtime configure --runtime=docker
+$ sudo systemctl restart docker
+```
+
+7. (Optional) Verify your GPU is available inside WSL 
+Use `nvidia-smi` inside of WSL to verify that your GPU is correctly configured and available from inside the container.
+If not, verify that the NVIDIA GPU driver is correctly installed on your Windows host and `nvidia-container-toolkit` was successfully installed inside of WSL. 
+```bash
+$ nvidia-smi
+```
 </details>
 
 ### Connect VSCode to WSL 
-
 1. Launch VSCode on your Windows host
 
 2. Connect VSCode to your WSL instance
@@ -151,22 +163,6 @@ $ sudo apt-get install -y nvidia-container-toolkit
     - To verify VSCode is connected to WSL, you should see the following in the bottom left corner: ![Shows the WSL: Ubuntu status for a successful connection to WSL.](https://github.com/user-attachments/assets/26dbba61-cc96-4ac3-8200-fdb26a8e4a4b)
  
 3. VSCode is now attached to WSL and it is equivalent to running in a native Linux environment. You can now proceed as described in the [section above](#vscode-devcontainer-steps). 
-
-
-9. Open `/etc/docker/daemon.json` from within your WSL system (if the file does not exist, create it) and add the following:
-
-```json
-{
-    "runtimes": {
-        "nvidia": {
-            "path": "nvidia-container-runtime",
-            "runtimeArgs": []
-        }
-    }
-}
-```
-
-then run `sudo systemctl restart docker.service`.
 
 ## Quickstart: Docker (Manual Approach) <a name="docker"></a>
 
