@@ -10,7 +10,7 @@
 
 #include <cuda/experimental/device.cuh>
 
-#include "../hierarchy/testing_common.cuh"
+#include "../common/testing.cuh"
 #include "cuda/std/__type_traits/is_same.h"
 
 namespace

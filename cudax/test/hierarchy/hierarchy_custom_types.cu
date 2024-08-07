@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-#include "testing_common.cuh"
+#include "../common/host_device.cuh"
 #include <cooperative_groups.h>
 
 struct custom_level : public cudax::hierarchy_level
@@ -25,7 +25,7 @@ struct custom_level_dims : public cudax::level_dimensions<Level, Dims>
 {
   int dummy;
   constexpr custom_level_dims()
-      : cudax::level_dimensions<Level, Dims>() {};
+      : cudax::level_dimensions<Level, Dims>(){};
 };
 
 struct custom_level_test

@@ -14,7 +14,7 @@
 #include <cuda/experimental/launch.cuh>
 #undef cudaLaunchKernelEx
 
-#include "../hierarchy/testing_common.cuh"
+#include "../common/host_device.cuh"
 
 static cudaLaunchConfig_t expectedConfig;
 static bool replacementCalled = false;
