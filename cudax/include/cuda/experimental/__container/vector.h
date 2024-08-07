@@ -132,15 +132,15 @@ private:
   uninitialized_buffer<_Tp, _Properties...> __buf_;
   size_type __size_ = 0; // initialized to 0 in case initialization of the elements might throw
 
-  //! @brief In can an exception is thrown adjusts the size of the vector so that the previously constructed elements
+  //! @brief If an exception is thrown, adjusts the size of the vector so that the previously constructed elements
   //! are accounted for
-  struct _Adopt_size
+  struct _Adjust_size
   {
     vector* __obj_;
     iterator& __first_;
     iterator __current_;
 
-    _CCCL_HOST_DEVICE constexpr _Adopt_size(vector* __obj, iterator& __first, iterator& __current) noexcept
+    _CCCL_HOST_DEVICE constexpr _Adjust_size(vector* __obj, iterator& __first, iterator& __current) noexcept
         : __obj_(__obj)
         , __first_(__first)
         , __current_(__current)
@@ -152,7 +152,7 @@ private:
     }
   };
 
-  //! @brief Destroy the elements in the range `[__first, end())` and adopts the size.
+  //! @brief Destroy the elements in the range `[__first, end())` and adjusts the size.
   //! @param __first Iterator to the first element to be destroyed.
   //! No destructor is run if the `_Tp` is trivially destructible.
   _CCCL_HOST_DEVICE void __destroy_from(iterator __first) noexcept
@@ -165,7 +165,7 @@ private:
     __size_ -= static_cast<size_type>(__last - __first);
   }
 
-  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
+  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adjusts the size.
   //! @param __first Iterator to the first element to be value-initialized.
   //! @param __size The number of elements to be value-initialized.
   _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
@@ -180,7 +180,7 @@ private:
     __size_ += __count;
   }
 
-  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adopts the size.
+  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adjusts the size.
   //! @param __first Iterator to the first element to be value-initialized.
   //! @param __size The number of elements to be value-initialized.
   //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
@@ -190,7 +190,7 @@ private:
   {
     size_type __count    = 0;
     iterator __old_first = __first;
-    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __old_first, __first});
+    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __old_first, __first});
     for (; __count != __size; ++__first, (void) ++__count)
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
@@ -199,7 +199,7 @@ private:
     __size_ += __count;
   }
 
-  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
+  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adjusts the size.
   //! @param __first Iterator to the first element to be copy-constructed.
   //! @param __size The number of elements to be copy-constructed.
   //! @param __value The element to be copied.
@@ -215,7 +215,7 @@ private:
     __size_ += __count;
   }
 
-  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adopts the size.
+  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adjusts the size.
   //! @param __first Iterator to the first element to be copy-constructed.
   //! @param __size The number of elements to be copy-constructed.
   //! @param __value The element to be copied.
@@ -226,7 +226,7 @@ private:
   {
     size_type __count    = 0;
     iterator __old_first = __first;
-    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __old_first, __first});
+    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __old_first, __first});
     for (; __count != __size; ++__first, (void) ++__count)
     {
       ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
@@ -235,7 +235,7 @@ private:
     __size_ += __count;
   }
 
-  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
   //! @param __first Iterator to the first element to be copied.
   //! @param __last Iterator to the element after the last element to be copied.
   //! @param __dest Iterator to the first element to be copy-constructed.
@@ -251,7 +251,7 @@ private:
     __size_ += static_cast<size_type>(__curr - __dest);
   }
 
-  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
   //! @param __first Iterator to the first element to be copied.
   //! @param __last Iterator to the element after the last element to be copied.
   //! @param __dest Iterator to the first element to be copy-constructed.
@@ -261,7 +261,7 @@ private:
   _CCCL_HOST_DEVICE void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __dest, __curr});
+    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
@@ -270,7 +270,7 @@ private:
     __size_ += static_cast<size_type>(__curr - __dest);
   }
 
-  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
   //! @param __first Iterator to the first element to be moved.
   //! @param __last Iterator to the element after the last element to be moved.
   //! @param __dest Iterator to the first element to be move-constructed.
@@ -290,7 +290,7 @@ private:
     __size_ += static_cast<size_type>(__curr - __dest);
   }
 
-  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adopts the size.
+  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
   //! @param __first Iterator to the first element to be moved.
   //! @param __last Iterator to the element after the last element to be moved.
   //! @param __dest Iterator to the first element to be move-constructed.
@@ -300,7 +300,7 @@ private:
   _CCCL_HOST_DEVICE void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
-    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adopt_size{this, __dest, __curr});
+    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
