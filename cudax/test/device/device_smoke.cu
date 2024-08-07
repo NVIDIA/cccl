@@ -39,8 +39,10 @@ TEST_CASE("Smoke", "[device]")
   {
     CUDAX_REQUIRE(device_ref{0} == device_ref{0});
     CUDAX_REQUIRE(device_ref{0} == 0);
+    CUDAX_REQUIRE(0 == device_ref{0});
     CUDAX_REQUIRE(device_ref{1} != device_ref{0});
     CUDAX_REQUIRE(device_ref{1} != 2);
+    CUDAX_REQUIRE(1 != device_ref{2});
   }
 
   SECTION("Attributes")
