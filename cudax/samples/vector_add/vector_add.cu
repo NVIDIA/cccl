@@ -49,14 +49,14 @@ namespace cudax = cuda::experimental;
 
 namespace thrust
 {
-template <class T, class Alloc>
-::cuda::std::span<T> __prelaunch(::cuda::stream_ref, ::thrust::device_vector<T, Alloc>& v)
+template <typename _Ty, typename _Alloc>
+::cuda::std::span<_Ty> __cudax_launch_transform(::cuda::stream_ref, ::thrust::device_vector<_Ty, _Alloc>& v)
 {
   return {v.data().get(), v.size()};
 }
 
-template <class T, class Alloc>
-::cuda::std::span<const T> __prelaunch(::cuda::stream_ref, const ::thrust::device_vector<T, Alloc>& v)
+template <typename _Ty, typename _Alloc>
+::cuda::std::span<const _Ty> __cudax_launch_transform(::cuda::stream_ref, const ::thrust::device_vector<_Ty, _Alloc>& v)
 {
   return {v.data().get(), v.size()};
 }
@@ -68,57 +68,6 @@ namespace cuda::experimental
 using ::cuda::std::span;
 using ::thrust::device_vector;
 using ::thrust::host_vector;
-
-namespace detail
-{
-struct __ignore
-{
-  template <typename... Args>
-  constexpr __ignore(Args&&...) noexcept
-  {}
-};
-} // namespace detail
-
-namespace __prelaunch_
-{
-template <class Arg>
-Arg&& __prelaunch(detail::__ignore, Arg&& arg) noexcept
-{
-  return std::forward<Arg>(arg);
-}
-
-template <typename Arg>
-using __prelaunch_t = decltype(__prelaunch(std::declval<stream_ref>(), std::declval<Arg>()));
-
-struct __fn
-{
-  template <typename Arg>
-  __prelaunch_t<Arg> operator()(stream_ref stream, Arg&& arg) const noexcept
-  {
-    // Intentionally unqualified call to __prelaunch to allow ADL
-    return __prelaunch(stream, std::forward<Arg>(arg));
-  }
-};
-} // namespace __prelaunch_
-
-inline constexpr __prelaunch_::__fn __prelaunch{};
-
-template <typename... ExpArgs, typename... ActArgs, typename... Levels>
-void launch_ex(
-  ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs...), ActArgs&&... args)
-{
-  static_assert(sizeof...(ExpArgs) == sizeof...(ActArgs), "Number of expected and actual arguments must match");
-
-  cudaError_t status = [&](auto&&... args) {
-    return detail::launch_impl(
-      stream, kernel_config(dims), kernel, static_cast<ExpArgs>(static_cast<decltype(args)>(args))...);
-  }(__prelaunch(stream, std::forward<ActArgs>(args))...);
-
-  if (status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
-  }
-}
 } // namespace cuda::experimental
 
 /**
@@ -179,7 +128,7 @@ int main(void)
 
   // Launch the vectorAdd kernel
   printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-  cudax::launch_ex(stream, dims, vectorAdd, d_A, d_B, d_C);
+  cudax::launch(stream, dims, vectorAdd, d_A, d_B, d_C);
 
   // Copy the results from the device vector d_C back to the host vector h_C.
   printf("Copy output data from the CUDA device to the host memory\n");

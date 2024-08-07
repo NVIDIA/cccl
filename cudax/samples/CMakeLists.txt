@@ -21,7 +21,6 @@ project(CUDAX_SAMPLES CUDA)
 # For more information, see https://github.com/cpm-cmake/CPM.cmake
 include(cmake/CPM.cmake)
 
-
 # We define these as variables so they can be overriden in CI to pull from a PR instead of CCCL `main`
 # In your project, these variables are unncessary and you can just use the values directly
 set(CCCL_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository to fetch CCCL from")
@@ -41,6 +40,7 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
+set_property(TARGET vector_add PROPERTY CXX_STANDARD 17)
 target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include)
 
 # "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
