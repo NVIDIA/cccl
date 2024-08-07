@@ -132,7 +132,7 @@ struct launch_transform_to_int_convertible
       CHECK(kernel_run_proof);
     }
 
-    using __launch_transform_result = int;
+    using __as_kernel_arg = int;
 
     // This is the value that will be passed to the kernel
     explicit operator int() const

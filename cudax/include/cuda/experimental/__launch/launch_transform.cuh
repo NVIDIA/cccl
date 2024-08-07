@@ -27,7 +27,9 @@
 #include <cuda/experimental/__detail/utility.cuh>
 
 #if _CCCL_STD_VER >= 2017
-namespace cuda::experimental::detail
+namespace cuda::experimental
+{
+namespace detail
 {
 // Types should define overloads of __cudax_launch_transform that are find-able
 // by ADL in order to customize how cudax::launch handles that type. The
@@ -56,24 +58,26 @@ struct __fn
 };
 
 template <typename _Arg, typename _Enable = void>
-struct __launch_transform_result
+struct __as_kernel_arg
 {
   using type = _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>;
 };
 
 template <typename _Arg>
-struct __launch_transform_result<
+struct __as_kernel_arg<
   _Arg,
-  _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__launch_transform_result>>
+  _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__as_kernel_arg>>
 {
-  using type = typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__launch_transform_result;
+  using type = typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__as_kernel_arg;
 };
 
-template <typename _Arg>
-using __launch_transform_result_t = typename __launch_transform_result<_Arg>::type;
-
 _CCCL_GLOBAL_CONSTANT __fn __launch_transform{};
-} // namespace cuda::experimental::detail
+} // namespace detail
+
+template <typename _Arg>
+using as_kernel_arg_t = typename detail::__as_kernel_arg<_Arg>::type;
+
+} // namespace cuda::experimental
 
 #endif // _CCCL_STD_VER >= 2017
 #endif // !_CUDAX__LAUNCH_LAUNCH_TRANSFORM
