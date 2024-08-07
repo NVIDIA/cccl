@@ -282,11 +282,10 @@ TEST_CASE("global devices vector", "[device]")
   CUDAX_REQUIRE(cudax::devices.size() == static_cast<size_t>(cudax::devices.end() - cudax::devices.begin()));
 
   CUDAX_REQUIRE(0 == cudax::devices[0].get());
-  CUDAX_REQUIRE(0 == cudax::devices[0]);
   CUDAX_REQUIRE(cudax::device_ref{0} == cudax::devices[0]);
 
   CUDAX_REQUIRE(0 == (*cudax::devices.begin()).get());
-  CUDAX_REQUIRE(0 == *cudax::devices.begin());
+  CUDAX_REQUIRE(cudax::device_ref{0} == *cudax::devices.begin());
 
   CUDAX_REQUIRE(0 == cudax::devices.begin()->get());
   CUDAX_REQUIRE(0 == cudax::devices.begin()[0].get());
@@ -294,7 +293,6 @@ TEST_CASE("global devices vector", "[device]")
   if (cudax::devices.size() > 1)
   {
     CUDAX_REQUIRE(1 == cudax::devices[1].get());
-    CUDAX_REQUIRE(0 != cudax::devices[1]);
     CUDAX_REQUIRE(cudax::device_ref{0} != cudax::devices[1].get());
 
     CUDAX_REQUIRE(1 == (*std::next(cudax::devices.begin())).get());

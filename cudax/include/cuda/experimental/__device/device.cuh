@@ -117,6 +117,14 @@ private:
   device(const device&)            = delete;
   device& operator=(device&&)      = delete;
   device& operator=(const device&) = delete;
+
+  friend bool operator==(const device& __lhs, int __rhs) = delete;
+  friend bool operator==(int __lhs, const device& __rhs) = delete;
+
+#if _CCCL_STD_VER <= 2017
+  friend bool operator!=(const device& __lhs, int __rhs) = delete;
+  friend bool operator!=(int __lhs, const device& __rhs) = delete;
+#endif // _CCCL_STD_VER <= 2017
 };
 
 namespace detail
