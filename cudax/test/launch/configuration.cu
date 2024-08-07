@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 // Test translation of launch function arguments to cudaLaunchConfig_t sent to cudaLaunchKernelEx internally
 // We replace cudaLaunchKernelEx with a test function here through a macro to intercept the cudaLaunchConfig_t
 #define cudaLaunchKernelEx cudaLaunchKernelExTestReplacement

@@ -215,6 +215,7 @@
       "displayName": "CUB: C++14",
       "inherits": "cub-base",
       "cacheVariables": {
+        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "CUB_ENABLE_DIALECT_CPP14": true
       }
     },
@@ -265,6 +266,7 @@
       "displayName": "Thrust: C++14",
       "inherits": "thrust-base",
       "cacheVariables": {
+        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true
       }
     },
