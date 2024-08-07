@@ -33,7 +33,7 @@ namespace cuda::experimental
 //! @brief RAII helper which on construction sets the current device to the specified one or one a
 //! stream was created under. It sets the state back on destruction.
 //!
-struct __ensure_current_device
+struct [[maybe_unused]] __ensure_current_device
 {
   //! @brief Construct a new `__ensure_current_device` object and switch to the specified
   //!        device.
