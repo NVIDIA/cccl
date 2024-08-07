@@ -97,7 +97,7 @@ public:
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`.
   //! @note Only allocates memory when \p __count > 0
-  uninitialized_buffer(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __count)
+  _CCCL_HOST_DEVICE uninitialized_buffer(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __count)
       : __mr_(__mr)
       , __count_(__count)
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__get_allocation_size(__count_)))
@@ -109,7 +109,7 @@ public:
   //! @brief Move-constructs a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
   //! Takes ownership of the allocation in \p __other and resets it
-  uninitialized_buffer(uninitialized_buffer&& __other) noexcept
+  _CCCL_HOST_DEVICE uninitialized_buffer(uninitialized_buffer&& __other) noexcept
       : __mr_(__other.__mr_)
       , __count_(__other.__count_)
       , __buf_(__other.__buf_)
@@ -121,7 +121,7 @@ public:
   //! @brief Move-assings a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
   //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
-  uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept
+  _CCCL_HOST_DEVICE uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept
   {
     if (this == _CUDA_VSTD::addressof(__other))
     {
@@ -143,7 +143,7 @@ public:
   //! @brief Destroys an \c uninitialized_buffer deallocates the buffer
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
-  ~uninitialized_buffer()
+  _CCCL_HOST_DEVICE ~uninitialized_buffer()
   {
     if (__buf_)
     {
@@ -182,15 +182,6 @@ public:
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
   {
     return __mr_;
-  }
-
-  //! @brief Swaps the contents with those of another \c uninitialized_buffer
-  //! @param __other The other \c uninitialized_buffer.
-  _CCCL_HOST_DEVICE constexpr void swap(uninitialized_buffer& __other) noexcept
-  {
-    _CUDA_VSTD::swap(__mr_, __other.__mr_);
-    _CUDA_VSTD::swap(__count_, __other.__count_);
-    _CUDA_VSTD::swap(__buf_, __other.__buf_);
   }
 
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
