@@ -144,7 +144,7 @@ private:
     iterator& __first_;
     iterator __current_;
 
-    _CCCL_HOST_DEVICE _Adjust_size(vector* __obj, iterator& __first, iterator& __current) noexcept
+    _CCCL_HOST_DEVICE constexpr _Adjust_size(vector* __obj, iterator& __first, iterator& __current) noexcept
         : __obj_(__obj)
         , __first_(__first)
         , __current_(__current)
@@ -325,7 +325,7 @@ public:
   //! @param __other The other vector.
   //! The new vector has capacity of \p __other.size() which is potentially less than \p __other.capacity().
   //! @note No memory is allocated if \p __other is empty
-  _CCCL_HOST_DEVICE vector(const vector& __other)
+  vector(const vector& __other)
       : __buf_(__other.resource(), __other.size())
   {
     if (__other.size() != 0)
@@ -337,7 +337,7 @@ public:
   //! @brief Move-constructs a vector
   //! @param __other The other vector.
   //! The new vector takes ownership of the allocation of \p __other and resets the other vector.
-  _CCCL_HOST_DEVICE vector(vector&& __other) noexcept
+  vector(vector&& __other) noexcept
       : __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
   {}
@@ -346,7 +346,7 @@ public:
   //! @param __other The other vector.
   //! @note Even if the old vector would have enough storage available, we have to reallocate if the stored memory
   //! resource is not equal to the new one. In that case no memory is allocated if \p __other is empty.
-  _CCCL_HOST_DEVICE vector& operator=(const vector& __other)
+  vector& operator=(const vector& __other)
   {
     // There is sufficient space in the allocation and the resources are compatible
     if (resource() == __other.resource() && __size_ >= __other.size())
@@ -380,7 +380,7 @@ public:
   //! @brief Move-assigns a vector
   //! @param __other The other vector.
   //! Clears the vector and swaps the contents with \p __other.
-  _CCCL_HOST_DEVICE vector& operator=(vector&& __other) noexcept
+  vector& operator=(vector&& __other) noexcept
   {
     if (this == _CUDA_VSTD::addressof(__other))
     {
@@ -394,7 +394,7 @@ public:
 
   //! @brief Destroys the \c vector and deallocates the storage after destroying all elements
   //! @note Does not destroy elements if `is_trivially_destructible_v<_Tp>` holds.
-  _CCCL_HOST_DEVICE ~vector() noexcept
+  ~vector() noexcept
   {
     this->__destroy_from(begin());
   }
@@ -403,7 +403,7 @@ public:
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, const size_type __size = 0)
+  vector(__resource_ref __mr, const size_type __size = 0)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -418,7 +418,7 @@ public:
   //! @param __size The size of the vector.
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, const size_type __size, const _Tp& __value)
+  vector(__resource_ref __mr, const size_type __size, const _Tp& __value)
       : __buf_(__mr, __size)
   {
     if (__size != 0)
@@ -433,7 +433,7 @@ public:
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, const size_type __size, ::cuda::experimental::uninit_t)
+  vector(__resource_ref __mr, const size_type __size, ::cuda::experimental::uninit_t)
       : __buf_(__mr, __size)
       , __size_(__size)
   {}
@@ -447,7 +447,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, _Iter __first, _Iter __last)
+  vector(__resource_ref __mr, _Iter __first, _Iter __last)
       : __buf_(__mr, 0)
   {
     for (; __first != __last; ++__first)
@@ -464,7 +464,7 @@ public:
   //! @note If `__first == __last` then no memory is allocated
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, _Iter __first, _Iter __last)
+  vector(__resource_ref __mr, _Iter __first, _Iter __last)
       : __buf_(__mr, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)))
   {
     if (__buf_.size() > 0)
@@ -477,7 +477,7 @@ public:
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __ilist The initializer_list being copied into the vector.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+  vector(__resource_ref __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
       : __buf_(__mr, __ilist.size())
   {
     if (__buf_.size() > 0)
@@ -489,7 +489,7 @@ public:
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, _Range&& __range)
+  vector(__resource_ref __mr, _Range&& __range)
       : __buf_(__mr, 0)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
@@ -504,7 +504,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND
                          _CUDA_VRANGES::sized_range<_Range>)
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, _Range&& __range)
+  vector(__resource_ref __mr, _Range&& __range)
       : __buf_(__mr, static_cast<size_type>(_CUDA_VRANGES::size(__range)))
   {
     if (__buf_.size() > 0)
@@ -516,7 +516,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(
     !_CUDA_VRANGES::sized_range<_Range>))
-  _CCCL_HOST_DEVICE vector(__resource_ref __mr, _Range&& __range)
+  vector(__resource_ref __mr, _Range&& __range)
       : __buf_(
           __mr,
           static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))))
@@ -534,63 +534,63 @@ public:
   //! @{
   //! @brief Returns an iterator to the first element of the vector. If the vector is empty, the returned iterator will
   //! be equal to end().
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE iterator begin() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator begin() noexcept
   {
     return iterator{__buf_.data()};
   }
 
   //! @brief Returns an immutable iterator to the first element of the vector. If the vector is empty, the returned
   //! iterator will be equal to end().
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_iterator begin() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator begin() const noexcept
   {
     return const_iterator{__buf_.data()};
   }
 
   //! @brief Returns an immutable iterator to the first element of the vector. If the vector is empty, the returned
   //! iterator will be equal to end().
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_iterator cbegin() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cbegin() const noexcept
   {
     return const_iterator{__buf_.data()};
   }
 
   //! @brief Returns an iterator to the element following the last element of the vector. This element acts as a
   //! placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE iterator end() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr iterator end() noexcept
   {
     return iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_iterator end() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator end() const noexcept
   {
     return const_iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_iterator cend() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_iterator cend() const noexcept
   {
     return const_iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns a reverse iterator to the first element of the reversed vector. It corresponds to the last element
   //! of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE reverse_iterator rbegin() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{end()};
   }
 
   //! @brief Returns an immutable reverse iterator to the first element of the reversed vector. It corresponds to the
   //! last element of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reverse_iterator rbegin() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
 
   //! @brief Returns an immutable reverse iterator to the first element of the reversed vector. It corresponds to the
   //! last element of the non-reversed vector. If the vector is empty, the returned iterator is equal to rend().
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reverse_iterator crbegin() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
@@ -598,7 +598,7 @@ public:
   //! @brief Returns a reverse iterator to the element following the last element of the reversed vector. It corresponds
   //! to the element preceding the first element of the non-reversed vector. This element acts as a placeholder,
   //! attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE reverse_iterator rend() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator{begin()};
   }
@@ -606,7 +606,7 @@ public:
   //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed vector. It
   //! corresponds to the element preceding the first element of the non-reversed vector. This element acts as a
   //! placeholder, attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reverse_iterator rend() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
@@ -614,49 +614,49 @@ public:
   //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed vector. It
   //! corresponds to the element preceding the first element of the non-reversed vector. This element acts as a
   //! placeholder, attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reverse_iterator crend() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
 
   //! @brief Returns a pointer to the first element of the vector. If the vector has not allocated memory the pointer
   //! will be null.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer data() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer data() noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a pointer to the first element of the vector. If the vector has not allocated memory the pointer
   //! will be null.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_pointer data() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer data() const noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a pointer to the first element of the vector. If the vector is empty, the returned
   //! pointer will be null.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer __unchecked_begin() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer __unchecked_begin() noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a const pointer to the first element of the vector. If the vector is empty, the returned
   //! pointer will be null.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_pointer __unchecked_begin() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer __unchecked_begin() const noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a pointer to the element following the last element of the vector. This element acts as a
   //! placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer __unchecked_end() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr pointer __unchecked_end() noexcept
   {
     return __buf_.data() + __size_;
   }
 
   //! @brief Returns a const pointer to the element following the last element of the vector. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_pointer __unchecked_end() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_pointer __unchecked_end() const noexcept
   {
     return __buf_.data() + __size_;
   }
@@ -667,38 +667,38 @@ public:
   //! @{
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE reference operator[](const size_type __n) noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference operator[](const size_type __n) noexcept
   {
     return begin()[__n];
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the vector
   //! @param __n The index of the element we want to access
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reference operator[](const size_type __n) const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference operator[](const size_type __n) const noexcept
   {
     return begin()[__n];
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE reference first() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference first() noexcept
   {
     return begin()[0];
   }
 
   //! @brief Returns a reference to the first element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reference first() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference first() const noexcept
   {
     return begin()[0];
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE reference back() noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr reference back() noexcept
   {
     return begin()[__size_ - 1];
   }
 
   //! @brief Returns a reference to the last element of the vector
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE const_reference back() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr const_reference back() const noexcept
   {
     return begin()[__size_ - 1];
   }
@@ -707,25 +707,25 @@ public:
   //! @addtogroup capacity
   //! @{
   //! @brief Returns the current number of elements stored in the vector.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE size_type size() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
   {
     return __size_;
   }
 
   //! @brief Returns true if the vector is empty.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE bool empty() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }
 
-  //! @brief Returns the capacity of the current allocation of the vector.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE size_type capacity() const noexcept
+  //! @brief Returns the capacity of the current allocation of the vector..
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type capacity() const noexcept
   {
     return static_cast<size_type>(__buf_.size());
   }
 
   //! @brief Returns the maximal size of the vector.
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE size_type max_size() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type max_size() const noexcept
   {
     return static_cast<size_type>((_CUDA_VSTD::numeric_limits<difference_type>::max)());
   }
@@ -743,17 +743,17 @@ public:
   //! @addtogroup modification
   //! @{
 
-  _CCCL_HOST_DEVICE iterator insert(const_iterator __cpos, const _Tp& __value)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, const _Tp& __value)
   {
     return emplace(__cpos, __value);
   }
 
-  _CCCL_HOST_DEVICE iterator insert(const_iterator __cpos, _Tp&& __value)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _Tp&& __value)
   {
     return emplace(__cpos, _CUDA_VSTD::move(__value));
   }
 
-  _CCCL_HOST_DEVICE iterator insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
   {
     const iterator __pos = (iterator) __cpos;
     const iterator __end = end();
@@ -797,7 +797,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
-  _CCCL_HOST_DEVICE iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
     // add all new elements to the back then rotate
     const iterator __old_end = end();
@@ -813,7 +813,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
-  _CCCL_HOST_DEVICE iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
     const iterator __pos = (iterator) __cpos;
     const iterator __end = end();
@@ -857,7 +857,7 @@ public:
     return __pos;
   }
 
-  _CCCL_HOST_DEVICE iterator insert(const_iterator __cpos, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+  _CCCL_HOST_DEVICE constexpr iterator insert(const_iterator __cpos, _CUDA_VSTD::initializer_list<_Tp> __ilist)
   {
     const iterator __pos = (iterator) __cpos;
     const iterator __end = end();
@@ -904,7 +904,7 @@ public:
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
-  _CCCL_HOST_DEVICE iterator insert_range(const_iterator __cpos, _Range&& __range)
+  _CCCL_HOST_DEVICE constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
     auto __first             = _CUDA_VRANGES::begin(__range);
@@ -923,7 +923,7 @@ public:
 #    ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
-  _CCCL_HOST_DEVICE iterator insert_range(const_iterator __cpos, _Range&& __range)
+  _CCCL_HOST_DEVICE constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     return insert(__cpos, __first, _CUDA_VRANGES::__unwrap_end(__range));
@@ -932,7 +932,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
-  _CCCL_HOST_DEVICE void append_range(_Range&& __range)
+  _CCCL_HOST_DEVICE constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     auto __last  = _CUDA_VRANGES::end(__range);
@@ -945,7 +945,7 @@ public:
 #    ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
-  _CCCL_HOST_DEVICE void append_range(_Range&& __range)
+  _CCCL_HOST_DEVICE constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     insert(end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
@@ -954,7 +954,7 @@ public:
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE iterator emplace(const_iterator __cpos, _Args&&... __args)
+  _CCCL_HOST_DEVICE constexpr iterator emplace(const_iterator __cpos, _Args&&... __args)
   {
     const iterator __pos = (iterator) __cpos;
     const iterator __end = end();
@@ -983,7 +983,7 @@ public:
   }
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE reference emplace_back(_Args&&... __args)
+  _CCCL_HOST_DEVICE constexpr reference emplace_back(_Args&&... __args)
   {
     if (size() == __buf_.size())
     {
@@ -993,7 +993,7 @@ public:
     return unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _CCCL_HOST_DEVICE reference push_back(const _Tp& __value)
+  _CCCL_HOST_DEVICE constexpr reference push_back(const _Tp& __value)
   {
     if (size() == __buf_.size())
     {
@@ -1003,7 +1003,7 @@ public:
     return unchecked_emplace_back(__value);
   }
 
-  _CCCL_HOST_DEVICE reference push_back(_Tp&& __value)
+  _CCCL_HOST_DEVICE constexpr reference push_back(_Tp&& __value)
   {
     if (size() == __buf_.size())
     {
@@ -1014,7 +1014,7 @@ public:
   }
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE pointer try_emplace_back(_Args&&... __args)
+  _CCCL_HOST_DEVICE constexpr pointer try_emplace_back(_Args&&... __args)
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
     noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -1027,7 +1027,7 @@ public:
     return _CUDA_VSTD::addressof(unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...));
   }
 
-  _CCCL_HOST_DEVICE pointer try_push_back(const _Tp& __value)
+  _CCCL_HOST_DEVICE constexpr pointer try_push_back(const _Tp& __value)
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
     noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -1040,7 +1040,7 @@ public:
     return _CUDA_VSTD::addressof(unchecked_emplace_back(__value));
   }
 
-  _CCCL_HOST_DEVICE pointer try_push_back(_Tp&& __value)
+  _CCCL_HOST_DEVICE constexpr pointer try_push_back(_Tp&& __value)
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
     noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -1056,7 +1056,7 @@ public:
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
-  _CCCL_HOST_DEVICE _CUDA_VRANGES::iterator_t<_Range>
+  _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   {
     auto __first = _CUDA_VRANGES::begin(__range);
@@ -1072,7 +1072,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND
                          _CUDA_VRANGES::sized_range<_Range>)
-  _CCCL_HOST_DEVICE _CUDA_VRANGES::iterator_t<_Range>
+  _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   {
     const auto __capacity = __buf_.size() - size();
@@ -1088,7 +1088,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(
     !_CUDA_VRANGES::sized_range<_Range>))
-  _CCCL_HOST_DEVICE _CUDA_VRANGES::iterator_t<_Range>
+  _CCCL_HOST_DEVICE constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
   {
     const auto __capacity = static_cast<ptrdiff_t>(__buf_.size() - size());
@@ -1104,7 +1104,7 @@ public:
 #  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE reference unchecked_emplace_back(_Args&&... __args)
+  _CCCL_HOST_DEVICE constexpr reference unchecked_emplace_back(_Args&&... __args)
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
     noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, _Tp, _Args...))
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -1114,7 +1114,7 @@ public:
     return *__final;
   }
 
-  _CCCL_HOST_DEVICE reference unchecked_push_back(const _Tp& __value)
+  _CCCL_HOST_DEVICE constexpr reference unchecked_push_back(const _Tp& __value)
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
     noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -1122,7 +1122,7 @@ public:
     return unchecked_emplace_back(__value);
   }
 
-  _CCCL_HOST_DEVICE reference unchecked_push_back(_Tp&& __value)
+  _CCCL_HOST_DEVICE constexpr reference unchecked_push_back(_Tp&& __value)
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen breaks with the noexcept
     noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -1130,13 +1130,13 @@ public:
     return unchecked_emplace_back(_CUDA_VSTD::move(__value));
   }
 
-  _CCCL_HOST_DEVICE void pop_back() noexcept
+  _CCCL_HOST_DEVICE constexpr void pop_back() noexcept
   {
     const auto __end = end();
     this->__destroy(__end - 1, __end);
   }
 
-  _CCCL_HOST_DEVICE iterator
+  _CCCL_HOST_DEVICE constexpr iterator
   erase(const_iterator __cpos) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
   {
     const iterator __pos = (iterator) __cpos;
@@ -1156,7 +1156,7 @@ public:
     return __pos;
   }
 
-  _CCCL_HOST_DEVICE iterator erase(const_iterator __cfirst, const_iterator __clast) noexcept(
+  _CCCL_HOST_DEVICE constexpr iterator erase(const_iterator __cfirst, const_iterator __clast) noexcept(
     _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
   {
     const iterator __first = (iterator) __cfirst;
@@ -1186,7 +1186,7 @@ public:
   //! @brief Changes the size of the \c vector to \p __size and value-initializes new elements
   //! @param __size The intended size of the vector.
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it value-initializes new elements
-  _CCCL_HOST_DEVICE void resize(const size_type __count) noexcept
+  void resize(const size_type __count) noexcept
   {
     if (__count < __size_)
     {
@@ -1213,7 +1213,7 @@ public:
   //! @param __value The element to be copied into the vector when growing.
   //! If `__size < vec.size()` then it destroys all superfluous elements. Otherwise, it copy-constructs new elements
   //! from \p __value
-  _CCCL_HOST_DEVICE void resize(const size_type __count, const _Tp& __value = {}) noexcept
+  void resize(const size_type __count, const _Tp& __value = {}) noexcept
   {
     if (__count < __size_)
     {
@@ -1237,21 +1237,11 @@ public:
   }
 
   //! @brief Swaps the contents of a vector with those of \p __other
-  //! @param __other The other vector.
+  //! @param __other The other vector..
   _CCCL_HOST_DEVICE void swap(vector& __other) noexcept
   {
-    uninitialized_buffer<_Tp, _Properties...> __temp(_CUDA_VSTD::move(__other.__buf_));
-    __other.__buf_ = _CUDA_VSTD::move(__buf_);
-    __buf_         = _CUDA_VSTD::move(__temp);
-    _CUDA_VSTD::swap(__size_, __other.__size_);
-  }
-
-  //! @brief Swaps the contents of two vectors
-  //! @param __lhs One vector.
-  //! @param __rhs The other vector.
-  _CCCL_HOST_DEVICE friend void swap(vector& __lhs, vector& __rhs) noexcept
-  {
-    __lhs.swap(__rhs);
+    _CUDA_VSTD::swap(__buf_, __other.__buf_);
+    _CUDA_VSTD::swap(__size_, __other._size);
   }
   //! @}
 
