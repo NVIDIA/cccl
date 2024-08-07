@@ -35,16 +35,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_clz(uint32_t __x) noexcept
 {
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (return __binary_clz32(static_cast<uint64_t>(__x), 0);), // no device constexpr builtins
-               (return __builtin_clz(__x);))
+#  if defined(__CUDA_ARCH__)
+  return __binary_clz32(static_cast<uint64_t>(__x), 0); // no device constexpr builtins
+#  else
+  return __builtin_clz(__x);
+#  endif
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_clz(uint64_t __x) noexcept
 {
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (return __binary_clz64(__x);), // no device constexpr builtins
-               (return __builtin_clzll(__x);))
+#  if defined(__CUDA_ARCH__)
+  return __binary_clz64(__x); // no device constexpr builtins
+#  else
+  return __builtin_clzll(__x);
+#  endif
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint32_t __x) noexcept

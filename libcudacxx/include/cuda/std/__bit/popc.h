@@ -35,16 +35,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint32_t __x) noexcept
 {
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (return __fallback_popc64(static_cast<uint64_t>(__x));), // no device constexpr builtins
-               (return __builtin_popcount(__x);))
+#  if defined(__CUDA_ARCH__)
+  return __fallback_popc64(static_cast<uint64_t>(__x)); // no device constexpr builtins
+#  else
+  return __builtin_popcount(__x);
+#  endif
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint64_t __x) noexcept
 {
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (return __fallback_popc64(__x);), // no device constexpr builtins
-               (return __builtin_popcountll(__x);))
+#  if defined(__CUDA_ARCH__)
+  return __fallback_popc64(static_cast<uint64_t>(__x)); // no device constexpr builtins
+#  else
+  return __builtin_popcountll(__x);
+#  endif
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x) noexcept
