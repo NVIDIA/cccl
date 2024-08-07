@@ -26,6 +26,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   set(test_sources ${ARGN})
 
   add_executable(${test_target} ${test_sources})
+  target_include_directories(${test_target} PRIVATE "common")
   target_link_libraries(${test_target} PRIVATE ${cn_target} Catch2::Catch2 catch2_main)
   target_link_libraries(${test_target} PRIVATE ${cn_target} cudax::Thrust)
   target_compile_options(${test_target} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")

@@ -11,8 +11,8 @@
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include "../common/utility.cuh"
 #include <catch2/catch.hpp>
+#include <utility.cuh>
 
 constexpr auto one_thread_dims = cudax::make_hierarchy(cudax::block_dims<1>(), cudax::grid_dims<1>());
 

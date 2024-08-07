@@ -11,7 +11,7 @@
 
 #include <cuda/experimental/launch.cuh>
 
-#include "../common/testing.cuh"
+#include <testing.cuh>
 
 __managed__ bool kernel_run_proof = false;
 
