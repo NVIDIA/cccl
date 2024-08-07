@@ -48,18 +48,18 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/grid/grid_queue.cuh>
+#include <cub/iterator/constant_input_iterator.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
-#include <cub/iterator/constant_input_iterator.cuh>
 
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cstdio>
 #include <iterator>
-#include <thrust/iterator/counting_iterator.h>
 
 #include <nv/target>
 
@@ -68,48 +68,33 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-// derive OffsetIteratorT from iterator_adaptor
-template<typename Iterator, typename OffsetItT>
-  class OffsetIteratorT
-    : public thrust::iterator_adaptor<
-        OffsetIteratorT<Iterator, OffsetItT>, // the first template parameter is the name of the iterator we're creating
-        Iterator                   // the second template parameter is the name of the iterator we're adapting
-                                   // we can use the default for the additional template parameters
-      >
+template <typename Iterator, typename OffsetItT>
+class OffsetIteratorT : public thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
 {
-  public:
-    // shorthand for the name of the iterator_adaptor we're deriving from
-    using super_t = thrust::iterator_adaptor<
-      OffsetIteratorT<Iterator, OffsetItT>,
-      Iterator
-    >;
+public:
+  using super_t = thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
 
-    __host__ __device__
-    OffsetIteratorT(const Iterator &x, OffsetItT offset_it) : super_t(x), begin(x), offset_it(offset_it) {}
+  __host__ __device__ OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
+      : super_t(it)
+      , offset_it(offset_it)
+  {}
 
-    // befriend thrust::iterator_core_access to allow it access to the private interface below
-    friend class thrust::iterator_core_access;
+  // befriend thrust::iterator_core_access to allow it access to the private interface below
+  friend class thrust::iterator_core_access;
 
-  private:
+private:
+  OffsetItT offset_it;
 
-    // used to keep track of where we began
-    const Iterator begin;
-
-    OffsetItT offset_it;
-
-    // it is private because only thrust::iterator_core_access needs access to it
-    __host__ __device__
-    typename super_t::reference dereference() const
-    {
-      //return *(begin + (this->base() - begin) / n);
-      return *(this->base() + (*offset_it));
-    }
+  __host__ __device__ typename super_t::reference dereference() const
+  {
+    return *(this->base() + (*offset_it));
+  }
 };
 
-template<typename Iterator, typename OffsetItT>
-OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator &x, OffsetItT offset_it)
+template <typename Iterator, typename OffsetItT>
+OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
 {
-  return OffsetIteratorT<Iterator, OffsetItT>{x, offset_it};
+  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
 }
 
 /**
@@ -464,8 +449,8 @@ struct DispatchSelectIf : SelectedPolicy
     constexpr int tile_size         = block_threads * items_per_thread;
 
     // OffsetT uint32_t or larger than 4 B => specialized path
-    int num_tiles                   = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
-    const auto vsmem_size           = num_tiles * VsmemHelperT::vsmem_per_block;
+    int num_tiles         = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+    const auto vsmem_size = num_tiles * VsmemHelperT::vsmem_per_block;
 
     do
     {
@@ -556,7 +541,7 @@ struct DispatchSelectIf : SelectedPolicy
       scan_grid_size.y = cub::DivideAndRoundUp(num_tiles, max_dim_x);
       scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
-      std::uint64_t *d_selected_offset = reinterpret_cast<std::uint64_t *>(allocations[2]);
+      std::uint64_t* d_selected_offset = reinterpret_cast<std::uint64_t*>(allocations[2]);
       cudaMemsetAsync(d_selected_offset, 0, sizeof(*d_selected_offset), stream);
 
 // Log select_if_kernel configuration
