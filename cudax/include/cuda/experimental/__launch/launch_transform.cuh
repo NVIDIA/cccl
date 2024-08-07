@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
@@ -37,7 +36,7 @@ namespace cuda::experimental::detail
 // argument to make this overload less preferred than other overloads that take
 // a stream_ref as the first argument.
 template <typename _Arg>
-_Arg&& __cudax_launch_transform(__ignore, _Arg&& __arg) noexcept
+_CCCL_NODISCARD constexpr _Arg&& __cudax_launch_transform(__ignore, _Arg&& __arg) noexcept
 {
   return _CUDA_VSTD::forward<_Arg>(__arg);
 }
@@ -49,8 +48,7 @@ using __launch_transform_direct_result_t =
 struct __fn
 {
   template <typename _Arg>
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE __launch_transform_direct_result_t<_Arg>
-  operator()(::cuda::stream_ref __stream, _Arg&& __arg) const
+  _CCCL_NODISCARD __launch_transform_direct_result_t<_Arg> operator()(::cuda::stream_ref __stream, _Arg&& __arg) const
   {
     // This call is unqualified to allow ADL
     return __cudax_launch_transform(__stream, _CUDA_VSTD::forward<_Arg>(__arg));

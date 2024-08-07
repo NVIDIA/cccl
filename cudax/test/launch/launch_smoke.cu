@@ -117,26 +117,32 @@ struct launch_transform_to_int_convertible
         : stream_(stream)
         , value_(value)
     {
+      // Check that the constructor runs before the kernel is launched
       CHECK_FALSE(kernel_run_proof);
     }
 
+    // Immovable to ensure that __launch_transform doesn't copy the returned
+    // object
     int_convertible(int_convertible&&) = delete;
 
     ~int_convertible() noexcept
     {
+      // Check that the destructor runs after the kernel is launched
       CUDART(cudaStreamSynchronize(stream_));
       CHECK(kernel_run_proof);
     }
 
     using __launch_transform_result = int;
 
+    // This is the value that will be passed to the kernel
     explicit operator int() const
     {
       return value_;
     }
   };
 
-  friend int_convertible __cudax_launch_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self)
+  _CCCL_NODISCARD_FRIEND int_convertible
+  __cudax_launch_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);
   }
