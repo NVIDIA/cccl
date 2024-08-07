@@ -43,6 +43,8 @@ TEMPLATE_TEST_CASE(
   {
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().empty()), bool>);
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().empty()), bool>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().empty()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().empty()));
 
     { // Works without allocation
       Vector vec{resource, 0};
@@ -65,6 +67,8 @@ TEMPLATE_TEST_CASE(
   {
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().size()), size_type>);
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().size()), size_type>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().size()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().size()));
 
     { // Works without allocation
       Vector vec{resource, 0};
@@ -87,6 +91,8 @@ TEMPLATE_TEST_CASE(
   {
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().capacity()), size_type>);
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().capacity()), size_type>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().capacity()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().capacity()));
 
     { // Works without allocation
       Vector vec{resource, 0};
@@ -109,6 +115,8 @@ TEMPLATE_TEST_CASE(
   {
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().max_size()), size_type>);
     STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().max_size()), size_type>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().max_size()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().max_size()));
 
     constexpr size_t max_size =
       static_cast<size_type>((cuda::std::numeric_limits<typename Vector::difference_type>::max)());
