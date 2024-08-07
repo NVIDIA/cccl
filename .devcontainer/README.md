@@ -5,7 +5,7 @@
 
 # CCCL Dev Containers
 
-CCCL uses [Dev Containers](https://containers.dev/) to provide consistent and convenient development environments for both local development and for CI. 
+CCCL uses [Dev Containers](https://containers.dev/) to provide consistent and convenient development environments for both local development and for CI.
 
 VSCode offers the most convenient experience with Dev Containers due to its tight native integration, however, our containers are also fully usable without VSCode by leveraging Docker directly.
 
@@ -24,7 +24,7 @@ VSCode offers the most convenient experience with Dev Containers due to its tigh
 #### GPU Prerequisites (only needed for executing tests that require a GPU)
 - Supported NVIDIA GPU
 - [NVIDIA Driver](https://www.nvidia.com/Download/index.aspx?lang=en-us)
-- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) 
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 
 ### Steps <a name="vscode-devcontainer-steps"></a>
 
@@ -71,13 +71,13 @@ For more information about the sccache configuration and authentication, see the
 
 ## Quickstart: VSCode on WSL (Recommended for Windows) <a name="wsl"></a>
 
-Windows Subsystem for Linux (WSL) enables you to run a Linux environment directly in Windows. 
+Windows Subsystem for Linux (WSL) enables you to run a Linux environment directly in Windows.
 This isn't for native Windows development (e.g., compiling with `msvc`), but effectively a more convenient option than setting up a dual-boot Linux/Windows machine.
 Apart from the initial setup of WSL, the process for using CCCL's Dev Containers in WSL is effectively the same as the instructions for Linux, because WSL _is_ Linux.
 
 ### Prerequisites
 - Windows OS that supports WSL 2 (Windows 11 or newer)
-- [Windows Subsystem for Linux v2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install) 
+- [Windows Subsystem for Linux v2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Visual Studio Code](https://code.visualstudio.com/) (installed on Windows host)
 - [VSCode Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) (installed on Windows host)
     - Includes [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) extensions
@@ -87,7 +87,7 @@ Apart from the initial setup of WSL, the process for using CCCL's Dev Containers
 - Supported NVIDIA GPU
 - [NVIDIA Driver](https://www.nvidia.com/Download/index.aspx?lang=en-us) (installed on Windows host)
 - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (**installed inside WSL**)
-      
+
 For more details see the official NVIDIA [Getting Started with CUDA on WSL guide](https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl-2).
 
 ### Install WSL on your Windows host
@@ -122,13 +122,13 @@ Refer to [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/w
 /home/jhemstad
 ```
 
-Congratulations! You now have WSL installed and can use it as you would a normal Ubuntu/Linux installation. 
+Congratulations! You now have WSL installed and can use it as you would a normal Ubuntu/Linux installation.
 This is sufficient for *building* CCCL's tests, if you have a GPU on your system and you would like to use it to run the tests, continue below:
 
 6. (Optional) Install `nvidia-container-toolkit`
 See [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installing-with-apt) for full instructions.
 
-**Important:** `nvidia-container-toolkit` needs to be installed inside WSL (not on the Windows host). The following commands should be run within the Linux environment. 
+**Important:** `nvidia-container-toolkit` needs to be installed inside WSL (not on the Windows host). The following commands should be run within the Linux environment.
 
 ```bash
 $ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
@@ -145,15 +145,15 @@ $ sudo nvidia-ctk runtime configure --runtime=docker
 $ sudo systemctl restart docker
 ```
 
-7. (Optional) Verify your GPU is available inside WSL 
+7. (Optional) Verify your GPU is available inside WSL
 Use `nvidia-smi` inside of WSL to verify that your GPU is correctly configured and available from inside the container.
-If not, verify that the NVIDIA GPU driver is correctly installed on your Windows host and `nvidia-container-toolkit` was successfully installed inside of WSL. 
+If not, verify that the NVIDIA GPU driver is correctly installed on your Windows host and `nvidia-container-toolkit` was successfully installed inside of WSL.
 ```bash
 $ nvidia-smi
 ```
 </details>
 
-### Connect VSCode to WSL 
+### Connect VSCode to WSL
 1. Launch VSCode on your Windows host
 
 2. Connect VSCode to your WSL instance
@@ -161,14 +161,14 @@ $ nvidia-smi
     - If you don't see this option, you need to install the [WSL VSCode Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) (comes with the [Remote Development pack ](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack))
 ![image](https://github.com/user-attachments/assets/3e0e6af7-4251-4ce9-9204-589ad7daa12a)
     - To verify VSCode is connected to WSL, you should see the following in the bottom left corner: ![Shows the WSL: Ubuntu status for a successful connection to WSL.](https://github.com/user-attachments/assets/26dbba61-cc96-4ac3-8200-fdb26a8e4a4b)
- 
-3. VSCode is now attached to WSL and it is equivalent to running in a native Linux environment. You can now proceed as described in the [section above](#vscode-devcontainer-steps). 
+
+3. VSCode is now attached to WSL and it is equivalent to running in a native Linux environment. You can now proceed as described in the [section above](#vscode-devcontainer-steps).
 
 ## Quickstart: Docker (Manual Approach) <a name="docker"></a>
 
 ### Prerequisites
 - [Docker](https://docs.docker.com/engine/install/)
-  
+
 #### GPU Prerequisites (only needed for executing tests that require a GPU)
 - Supported NVIDIA GPU
 - [NVIDIA Driver](https://www.nvidia.com/Download/index.aspx?lang=en-us)
@@ -230,4 +230,3 @@ Click the badge above or [click here](https://codespaces.new/NVIDIA/cccl?quickst
 For more information, see the `.devcontainer/make_devcontainers.sh --help` message.
 
 **Note**: When adding or updating supported environments, modify `matrix.yaml` and then rerun this script to synchronize the `devcontainer` configurations.
-
