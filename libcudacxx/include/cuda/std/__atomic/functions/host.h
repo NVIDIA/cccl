@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -108,30 +109,6 @@ inline bool __atomic_compare_exchange_weak_host(
     __atomic_order_to_int(__success),
     __atomic_failure_order_to_int(__failure));
 }
-
-template <typename _Tp>
-struct __atomic_ptr_skip
-{
-  static constexpr auto __skip = 1;
-};
-
-template <typename _Tp>
-struct __atomic_ptr_skip<_Tp*>
-{
-  static constexpr auto __skip = sizeof(_Tp);
-};
-
-// FIXME: Haven't figured out what the spec says about using arrays with
-// atomic_fetch_add. Force a failure rather than creating bad behavior.
-template <typename _Tp>
-struct __atomic_ptr_skip<_Tp[]>
-{};
-template <typename _Tp, int n>
-struct __atomic_ptr_skip<_Tp[n]>
-{};
-
-template <typename _Tp>
-using __atomic_ptr_skip_t = __atomic_ptr_skip<__remove_cvref_t<_Tp>>;
 
 template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
 inline __remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)

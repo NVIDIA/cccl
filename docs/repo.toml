@@ -25,14 +25,14 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "pycuda" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
-    [ "pycuda", "_build/docs/pycuda/latest" ],
+    [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -281,9 +281,9 @@ doxygen_conf_extra = """
   STRIP_FROM_PATH        = ../../thrust
 """
 
-[repo_docs.projects.pycuda]
-name = "pycuda"
-docs_root = "pycuda"
+[repo_docs.projects.cuda_cooperative]
+name = "cuda.cooperative"
+docs_root = "cuda_cooperative"
 logo = "../img/logo.png"
 
 repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
