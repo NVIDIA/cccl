@@ -38,37 +38,16 @@
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda_runtime.h>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cuda/std/span>
 
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
+
+#include "vector.cuh"
+
 namespace cudax = cuda::experimental;
-
-namespace thrust
-{
-template <typename _Ty, typename _Alloc>
-::cuda::std::span<_Ty> __cudax_launch_transform(::cuda::stream_ref, ::thrust::device_vector<_Ty, _Alloc>& v)
-{
-  return {v.data().get(), v.size()};
-}
-
-template <typename _Ty, typename _Alloc>
-::cuda::std::span<const _Ty> __cudax_launch_transform(::cuda::stream_ref, const ::thrust::device_vector<_Ty, _Alloc>& v)
-{
-  return {v.data().get(), v.size()};
-}
-} // namespace thrust
-
-// Cheating for now by using thrust's device_vector and host_vector
-namespace cuda::experimental
-{
-using ::cuda::std::span;
-using ::thrust::device_vector;
-using ::thrust::host_vector;
-} // namespace cuda::experimental
+using cudax::in;
+using cudax::out;
 
 /**
  * CUDA Kernel Device code
@@ -90,6 +69,7 @@ __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B
  * Host main routine
  */
 int main(void)
+try
 {
   // A CUDA stream on which to execute the vector addition kernel
   cudax::stream stream;
@@ -99,27 +79,16 @@ int main(void)
   printf("[Vector addition of %d elements]\n", numElements);
 
   // Allocate the host vectors
-  cudax::host_vector<float> h_A(numElements); // input
-  cudax::host_vector<float> h_B(numElements); // input
-  cudax::host_vector<float> h_C(numElements); // output
+  cudax::vector<float> A(numElements); // input
+  cudax::vector<float> B(numElements); // input
+  cudax::vector<float> C(numElements); // output
 
   // Initialize the host input vectors
   for (int i = 0; i < numElements; ++i)
   {
-    h_A[i] = rand() / (float) RAND_MAX;
-    h_B[i] = rand() / (float) RAND_MAX;
+    A[i] = rand() / (float) RAND_MAX;
+    B[i] = rand() / (float) RAND_MAX;
   }
-
-  // Allocate the device vectors
-  cudax::device_vector<float> d_A(numElements); // input
-  cudax::device_vector<float> d_B(numElements); // input
-  cudax::device_vector<float> d_C(numElements); // output
-
-  // Copy the host input vectors A and B in host memory to the device input
-  // vectors in device memory
-  printf("Copy input data from the host memory to the CUDA device\n");
-  d_A = h_A;
-  d_B = h_B;
 
   // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
@@ -128,16 +97,17 @@ int main(void)
 
   // Launch the vectorAdd kernel
   printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-  cudax::launch(stream, dims, vectorAdd, d_A, d_B, d_C);
+  cudax::launch(stream, dims, vectorAdd, in(A), in(B), out(C));
 
-  // Copy the results from the device vector d_C back to the host vector h_C.
-  printf("Copy output data from the CUDA device to the host memory\n");
-  h_C = d_C;
+  // printf("waiting for the stream to finish\n");
+  //  Wait for all the work on the stream to complete
+  // stream.wait();
 
+  printf("veryfying the results\n");
   // Verify that the result vector is correct
   for (int i = 0; i < numElements; ++i)
   {
-    if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)
+    if (fabs(A[i] + B[i] - C[i]) > 1e-5)
     {
       fprintf(stderr, "Result verification failed at element %d!\n", i);
       exit(EXIT_FAILURE);
@@ -148,4 +118,12 @@ int main(void)
 
   printf("Done\n");
   return 0;
+}
+catch (const std::exception& e)
+{
+  printf("caught an exception: \"%s\"\n", e.what());
+}
+catch (...)
+{
+  printf("caught an unknown exception\n");
 }
