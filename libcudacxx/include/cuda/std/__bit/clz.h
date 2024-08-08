@@ -79,7 +79,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint64_t __x) no
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint32_t __x)
 {
 #  if !defined(__CUDA_ARCH__)
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     unsigned long __where = 0;
     if (_BitScanReverse(&__where, __x))
@@ -96,7 +96,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint32_t __x)
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_clz(uint64_t __x)
 {
 #  if !defined(__CUDA_ARCH__)
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     unsigned long __where = 0;
 #    if defined(_LIBCUDACXX_HAS_BITSCAN64)

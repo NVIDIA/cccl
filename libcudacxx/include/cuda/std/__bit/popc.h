@@ -77,7 +77,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint64_t __x) n
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x)
 {
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt(__x));))
   }
@@ -87,7 +87,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint64_t __x)
 {
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt64(__x));))
   }
