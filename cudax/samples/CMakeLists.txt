@@ -41,17 +41,23 @@ endif()
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
 
+# CUDAX requires C++17 or later:
+set_target_properties(vector_add PROPERTIES CXX_STANDARD 17)
+target_compile_definitions(vector_add PRIVATE LIBCUDACXX_ENABLE_EXCEPTIONS)
+target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
+
 # "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, etc.
 target_link_libraries(vector_add PRIVATE CCCL::CCCL)
 
-# CUDAX requires C++17 or later:
-set_target_properties(vector_add PROPERTIES CXX_STANDARD 17)
-# cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
-# __cplusplus to be defined for this to work:
-target_compile_options(vector_add PRIVATE $<$<CXX_COMPILER_ID:MSVC>:"/Zc:__cplusplus">)
-target_compile_definitions(vector_add PRIVATE LIBCUDACXX_ENABLE_EXCEPTIONS)
-target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
+  # __cplusplus to be defined for this to work:
+  target_compile_options(vector_add PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
+  )
+endif()
 
 # This is only relevant for internal testing and not needed by end users.
 include(CTest)
