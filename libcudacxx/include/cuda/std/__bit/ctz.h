@@ -54,7 +54,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_ctz(uint64_t __x)
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE, (return (!__x) ? (sizeof(uint32_t) * 8) : (__ffs(__x) - 1);), (return __builtin_ctz(__x);))
@@ -66,7 +66,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x) no
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(
       NV_IS_DEVICE, (return (!__x) ? (sizeof(uint64_t) * 8) : (__ffsll(__x) - 1);), (return __builtin_ctzll(__x);))

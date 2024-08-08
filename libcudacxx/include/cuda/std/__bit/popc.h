@@ -54,7 +54,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint64_t
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popc(__x);), (return __builtin_popcount(__x);))
   }
@@ -65,7 +65,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x) n
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint64_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_is_constant_evaluated())
+  if (!__libcpp_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popcll(__x);), (return __builtin_popcountll(__x);))
   }
