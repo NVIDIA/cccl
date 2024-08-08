@@ -53,7 +53,7 @@ target_link_libraries(vector_add PRIVATE CCCL::CCCL)
 if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
   # __cplusplus to be defined for this to work:
-  target_compile_options(vector_add PRIVATE
+  target_compile_options(vector_add PUBLIC
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
   )
