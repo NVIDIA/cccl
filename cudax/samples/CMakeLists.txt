@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(CUDAX_SAMPLES CUDA)
+project(CUDAX_SAMPLES CUDA CXX)
 
 # This example uses the CMake Package Manager (CPM) to simplify fetching CCCL from GitHub
 # For more information, see https://github.com/cpm-cmake/CPM.cmake
@@ -42,7 +42,7 @@ endif()
 add_executable(vector_add vector_add/vector_add.cu)
 
 # CUDAX requires C++17 or later:
-set_target_properties(vector_add PROPERTIES CXX_STANDARD 17)
+target_compile_features(vector_add PUBLIC cxx_std_17)
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
 target_include_directories(vector_add PUBLIC ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
 
