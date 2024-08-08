@@ -41,6 +41,7 @@ endif()
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
 set_property(TARGET vector_add PROPERTY CXX_STANDARD 17)
+target_compile_definitions(vector_add PRIVATE LIBCUDACXX_ENABLE_EXCEPTIONS)
 target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include)
 
 # "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
