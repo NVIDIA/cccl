@@ -13,7 +13,7 @@
 #include <cuda/experimental/event.cuh>
 #include <cuda/experimental/launch.cuh>
 
-#include "../common/utility.cuh"
+#include <utility.cuh>
 
 namespace driver = cuda::experimental::detail::driver;
 

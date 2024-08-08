@@ -10,9 +10,8 @@
 
 #include <cuda/experimental/event.cuh>
 
-#include "../common/utility.cuh"
-#include "../hierarchy/testing_common.cuh"
 #include <catch2/catch.hpp>
+#include <utility.cuh>
 
 namespace
 {

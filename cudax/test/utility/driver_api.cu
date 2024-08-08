@@ -10,7 +10,7 @@
 
 #include <cuda/experimental/__utility/driver_api.cuh>
 
-#include "../hierarchy/testing_common.cuh"
+#include <testing.cuh>
 
 TEST_CASE("Call each driver api", "[utility]")
 {
