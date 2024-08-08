@@ -111,8 +111,8 @@ public:
   //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
   //! `event_ref`.
   //!
-  //! @param lhs The first `event_ref` to compare
-  //! @param rhs The second `event_ref` to compare
+  //! @param __lhs The first `event_ref` to compare
+  //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same `cudaEvent_t` object.
   _CCCL_NODISCARD_FRIEND constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
   {
@@ -124,8 +124,8 @@ public:
   //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
   //! `event_ref`.
   //!
-  //! @param lhs The first `event_ref` to compare
-  //! @param rhs The second `event_ref` to compare
+  //! @param __lhs The first `event_ref` to compare
+  //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different `cudaEvent_t` objects.
   _CCCL_NODISCARD_FRIEND constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
   {

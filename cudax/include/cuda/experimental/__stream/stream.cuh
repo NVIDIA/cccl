@@ -161,6 +161,19 @@ struct stream : stream_ref
     wait(__tmp);
   }
 
+  //! @brief Get device under which this stream was created.
+  //!
+  //! @throws cuda_error if device check fails
+  device_ref device() const
+  {
+    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
+    // lower to CUDART for this instead
+    __ensure_current_device __dev_setter(*this);
+    int result;
+    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &result);
+    return result;
+  }
+
   //! @brief Construct an `stream` object from a native `cudaStream_t` handle.
   //!
   //! @param __handle The native handle

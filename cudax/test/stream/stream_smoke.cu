@@ -102,3 +102,15 @@ TEST_CASE("Stream priority", "[stream]")
   cudax::stream stream(0, priority);
   CUDAX_REQUIRE(stream.priority() == priority);
 }
+
+TEST_CASE("Stream get device", "[stream]")
+{
+  cudax::stream dev0_stream(cudax::device_ref{0});
+  CUDAX_REQUIRE(dev0_stream.device() == 0);
+
+  cudaSetDevice(static_cast<int>(cudax::devices.size() - 1));
+  cudaStream_t stream_handle;
+  CUDART(cudaStreamCreate(&stream_handle));
+  auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
+  CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cudax::devices.end()));
+}

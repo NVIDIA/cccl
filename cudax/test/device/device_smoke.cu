@@ -35,6 +35,16 @@ TEST_CASE("Smoke", "[device]")
   using cudax::device;
   using cudax::device_ref;
 
+  SECTION("Compare")
+  {
+    CUDAX_REQUIRE(device_ref{0} == device_ref{0});
+    CUDAX_REQUIRE(device_ref{0} == 0);
+    CUDAX_REQUIRE(0 == device_ref{0});
+    CUDAX_REQUIRE(device_ref{1} != device_ref{0});
+    CUDAX_REQUIRE(device_ref{1} != 2);
+    CUDAX_REQUIRE(1 != device_ref{2});
+  }
+
   SECTION("Attributes")
   {
     ::test_device_attribute<device::attrs::max_threads_per_block, ::cudaDevAttrMaxThreadsPerBlock, int>();
@@ -272,13 +282,19 @@ TEST_CASE("global devices vector", "[device]")
   CUDAX_REQUIRE(cudax::devices.size() == static_cast<size_t>(cudax::devices.end() - cudax::devices.begin()));
 
   CUDAX_REQUIRE(0 == cudax::devices[0].get());
+  CUDAX_REQUIRE(cudax::device_ref{0} == cudax::devices[0]);
+
   CUDAX_REQUIRE(0 == (*cudax::devices.begin()).get());
+  CUDAX_REQUIRE(cudax::device_ref{0} == *cudax::devices.begin());
+
   CUDAX_REQUIRE(0 == cudax::devices.begin()->get());
   CUDAX_REQUIRE(0 == cudax::devices.begin()[0].get());
 
   if (cudax::devices.size() > 1)
   {
     CUDAX_REQUIRE(1 == cudax::devices[1].get());
+    CUDAX_REQUIRE(cudax::device_ref{0} != cudax::devices[1].get());
+
     CUDAX_REQUIRE(1 == (*std::next(cudax::devices.begin())).get());
     CUDAX_REQUIRE(1 == std::next(cudax::devices.begin())->get());
     CUDAX_REQUIRE(1 == cudax::devices.begin()[1].get());
