@@ -49,6 +49,16 @@ namespace cudax = cuda::experimental;
 using cudax::in;
 using cudax::out;
 
+namespace cuda::experimental
+{
+template <int _ThreadsPerBlock>
+constexpr auto distribute(int numElements) noexcept
+{
+  int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
+  return cudax::make_hierarchy(cudax::grid_dims(blocksPerGrid), cudax::block_dims<_ThreadsPerBlock>());
+}
+} // namespace cuda::experimental
+
 /**
  * CUDA Kernel Device code
  *
@@ -92,11 +102,10 @@ try
 
   // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
-  int blocksPerGrid             = (numElements + threadsPerBlock - 1) / threadsPerBlock;
-  auto dims = cudax::make_hierarchy(cudax::grid_dims(blocksPerGrid), cudax::block_dims<threadsPerBlock>());
+  auto dims                     = cudax::distribute<threadsPerBlock>(numElements);
 
   // Launch the vectorAdd kernel
-  printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
+  printf("CUDA kernel launch with %d blocks of %d threads\n", dims.count(cudax::block, cudax::grid), threadsPerBlock);
   cudax::launch(stream, dims, vectorAdd, in(A), in(B), out(C));
 
   printf("waiting for the stream to finish\n");
