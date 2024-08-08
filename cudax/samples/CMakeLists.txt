@@ -28,9 +28,9 @@ set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
 CPMAddPackage(
-    NAME CCCL
-    GITHUB_REPOSITORY ${CCCL_REPOSITORY}
-    GIT_TAG ${CCCL_TAG}
+  NAME CCCL
+  GITHUB_REPOSITORY ${CCCL_REPOSITORY}
+  GIT_TAG ${CCCL_TAG}
 )
 
 # Default to building for the GPU on the current system
@@ -43,12 +43,12 @@ add_executable(vector_add vector_add/vector_add.cu)
 
 # CUDAX requires C++17 or later:
 set_target_properties(vector_add PROPERTIES CXX_STANDARD 17)
-target_compile_definitions(vector_add PRIVATE LIBCUDACXX_ENABLE_EXCEPTIONS)
-target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
+target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
+target_include_directories(vector_add PUBLIC ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
 
 # "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, etc.
-target_link_libraries(vector_add PRIVATE CCCL::CCCL)
+target_link_libraries(vector_add PUBLIC CCCL::CCCL)
 
 if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require

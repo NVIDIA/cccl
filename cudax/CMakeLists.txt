@@ -11,7 +11,7 @@ if (cudax_TOPLEVEL_PROJECT)
   cmake_minimum_required(VERSION 3.21)
 endif()
 
-project(cudax LANGUAGES CUDA)
+project(cudax LANGUAGES CUDA CXX)
 
 option(cudax_ENABLE_INSTALL_RULES "Enable installation of CUDA Experimental." ${cudax_TOPLEVEL_PROJECT})
 if (cudax_ENABLE_INSTALL_RULES)
