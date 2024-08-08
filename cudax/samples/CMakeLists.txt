@@ -40,9 +40,13 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
-set_property(TARGET vector_add PROPERTY CXX_STANDARD 17)
+# CUDAX requires C++17 or later:
+set_target_properties(vector_add PROPERTIES CXX_STANDARD 17)
+# cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
+# __cplusplus to be defined for this to work:
+target_compile_options(vector_add PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:"/Zc:__cplusplus">)
 target_compile_definitions(vector_add PRIVATE LIBCUDACXX_ENABLE_EXCEPTIONS)
-target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include  ${CMAKE_SOURCE_DIR}/vector_add)
+target_include_directories(vector_add PRIVATE ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
 
 # "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, etc.
