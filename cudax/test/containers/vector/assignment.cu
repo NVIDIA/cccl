@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -33,13 +34,6 @@ TEMPLATE_TEST_CASE("cudax::vector assignment",
   using OtherResource = typename extract_properties<TestType>::other_resource;
   using Vector        = typename extract_properties<TestType>::vector;
   using T             = typename Vector::value_type;
-  using size_type     = typename Vector::size_type;
-
-  using iterator       = typename extract_properties<TestType>::iterator;
-  using const_iterator = typename extract_properties<TestType>::const_iterator;
-
-  using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
-  using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
   Resource raw_resource{};
   Resource_ref resource{raw_resource};
