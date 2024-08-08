@@ -322,6 +322,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       , stream(stream)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchUniqueByKey(
     void* d_temp_storage,
@@ -348,6 +349,7 @@ struct DispatchUniqueByKey : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif
 
   /******************************************************************************
    * Dispatch entrypoints
@@ -629,6 +631,7 @@ struct DispatchUniqueByKey : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -657,6 +660,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       num_items,
       stream);
   }
+#endif
 };
 
 CUB_NAMESPACE_END

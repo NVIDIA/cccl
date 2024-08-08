@@ -543,6 +543,7 @@ struct DeviceRleDispatch
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -568,6 +569,7 @@ struct DeviceRleDispatch
       num_items,
       stream);
   }
+#endif
 };
 
 CUB_NAMESPACE_END

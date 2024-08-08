@@ -1036,6 +1036,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1066,6 +1067,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif
 
   /**
    * Dispatch routine for HistogramRange, specialized for 8-bit sample types
@@ -1200,6 +1202,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1230,6 +1233,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif
 
   /**
    * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
@@ -1416,6 +1420,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -1448,6 +1453,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif
 
   /**
    * Dispatch routine for HistogramEven, specialized for 8-bit sample types
@@ -1586,6 +1592,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1617,6 +1624,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif
 };
 
 CUB_NAMESPACE_END

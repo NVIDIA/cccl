@@ -452,6 +452,7 @@ struct DispatchThreeWayPartitionIf
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -482,6 +483,7 @@ struct DispatchThreeWayPartitionIf
       num_items,
       stream);
   }
+#endif
 };
 
 CUB_NAMESPACE_END

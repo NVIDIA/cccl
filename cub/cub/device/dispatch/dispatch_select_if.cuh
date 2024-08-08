@@ -656,6 +656,7 @@ struct DispatchSelectIf : SelectedPolicy
     return CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -684,6 +685,7 @@ struct DispatchSelectIf : SelectedPolicy
       num_items,
       stream);
   }
+#endif
 };
 
 CUB_NAMESPACE_END

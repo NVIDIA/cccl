@@ -893,6 +893,7 @@ struct DispatchSpmv
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename Spmv1ColKernelT,
             typename SpmvSearchKernelT,
             typename SpmvKernelT,
@@ -928,6 +929,7 @@ struct DispatchSpmv
       spmv_config,
       segment_fixup_config);
   }
+#endif
 
   /**
    * @brief Internal dispatch routine for computing a device-wide reduction
@@ -988,6 +990,7 @@ struct DispatchSpmv
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -1000,6 +1003,7 @@ struct DispatchSpmv
 
     return Dispatch(d_temp_storage, temp_storage_bytes, spmv_params, stream);
   }
+#endif
 };
 
 CUB_NAMESPACE_END

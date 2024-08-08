@@ -1131,6 +1131,7 @@ struct DispatchSegmentedSort : SelectedPolicy
       , stream(stream)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedSort(
     void* d_temp_storage,
@@ -1157,6 +1158,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
@@ -1438,6 +1440,7 @@ struct DispatchSegmentedSort : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -1466,6 +1469,7 @@ struct DispatchSegmentedSort : SelectedPolicy
       is_overwrite_okay,
       stream);
   }
+#endif
 
 private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)
