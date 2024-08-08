@@ -111,7 +111,7 @@ TEMPLATE_TEST_CASE(
 
 #if 0 // Implement growing
     { // can be constructed from a non-empty input range
-      Vector vec(resource, input_range<T, 4>{T(1), T(42), T(1337), T(0)});
+      Vector vec(resource, input_range<T, 4>{{T(1), T(42), T(1337), T(0)}});
       CHECK(!vec.empty());
       CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
     }
@@ -124,7 +124,7 @@ TEMPLATE_TEST_CASE(
     }
 
     { // can be constructed from a non-empty uncommon forward range
-      Vector vec(resource, uncommon_range<T, 4>{T(1), T(42), T(1337), T(0)});
+      Vector vec(resource, uncommon_range<T, 4>{{T(1), T(42), T(1337), T(0)}});
       CHECK(!vec.empty());
       CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
     }
@@ -136,7 +136,7 @@ TEMPLATE_TEST_CASE(
     }
 
     { // can be constructed from a non-empty sized uncommon forward range
-      Vector vec(resource, sized_uncommon_range<T, 4>{T(1), T(42), T(1337), T(0)});
+      Vector vec(resource, sized_uncommon_range<T, 4>{{T(1), T(42), T(1337), T(0)}});
       CHECK(!vec.empty());
       CHECK(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
     }
