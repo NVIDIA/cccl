@@ -226,7 +226,7 @@ public:
   //! @param __other The mutable \c heterogeneous_iterator
   _LIBCUDACXX_TEMPLATE(bool _OtherConst)
   _LIBCUDACXX_REQUIRES((_OtherConst != _IsConst) _LIBCUDACXX_AND _IsConst)
-  _CCCL_HOST_DEVICE explicit constexpr heterogeneous_iterator(
+  _CCCL_HOST_DEVICE constexpr heterogeneous_iterator(
     heterogeneous_iterator<_Tp, _OtherConst, _Properties...> __other) noexcept
       : __heterogeneous_iterator_access<_Tp, _IsConst, __select_execution_space<_Properties...>>(__other.__ptr_)
   {}
@@ -398,6 +398,13 @@ public:
   _CCCL_HOST_DEVICE constexpr pointer __unwrap() const noexcept
   {
     return this->__ptr_;
+  }
+
+  _LIBCUDACXX_TEMPLATE(bool _IsConst2 = _IsConst)
+  _LIBCUDACXX_REQUIRES(_IsConst2)
+  _CCCL_HOST_DEVICE constexpr heterogeneous_iterator<_Tp, false, _Properties...> __to_mutable() const noexcept
+  {
+    return heterogeneous_iterator<_Tp, false, _Properties...>{const_cast<_Tp*>(this->__ptr_)};
   }
 };
 } // namespace cuda::experimental
