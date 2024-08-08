@@ -29,8 +29,7 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/utility.cuh>
-
-#include "param_kind.cuh"
+#include <cuda/experimental/__launch/param_kind.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
