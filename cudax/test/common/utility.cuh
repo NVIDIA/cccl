@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef __COMMON_UTILITY_H__
+#define __COMMON_UTILITY_H__
+
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
@@ -18,8 +21,7 @@
 
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-// TODO unify the common testing header
-#include "../hierarchy/testing_common.cuh"
+#include "testing.cuh"
 
 namespace
 {
@@ -174,3 +176,4 @@ inline void empty_driver_stack()
 
 } // namespace test
 } // namespace
+#endif // __COMMON_UTILITY_H__
