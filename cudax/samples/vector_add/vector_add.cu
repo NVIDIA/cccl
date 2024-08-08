@@ -99,9 +99,8 @@ try
   printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
   cudax::launch(stream, dims, vectorAdd, in(A), in(B), out(C));
 
-  // printf("waiting for the stream to finish\n");
-  //  Wait for all the work on the stream to complete
-  // stream.wait();
+  printf("waiting for the stream to finish\n");
+  stream.wait();
 
   printf("veryfying the results\n");
   // Verify that the result vector is correct
