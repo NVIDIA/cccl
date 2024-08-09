@@ -32,7 +32,7 @@ CPMAddPackage(
   GITHUB_REPOSITORY ${CCCL_REPOSITORY}
   GIT_TAG ${CCCL_TAG}
   GIT_SHALLOW ON
-  OPTIONS "CMAKE_CXX_STANDARD 17"
+  OPTIONS "CMAKE_CXX_STANDARD 20"
 )
 
 # Default to building for the GPU on the current system
@@ -44,7 +44,7 @@ endif()
 add_executable(vector_add vector_add/vector_add.cu)
 
 # CUDAX requires C++17 or later:
-target_compile_features(vector_add PUBLIC cxx_std_17)
+target_compile_features(vector_add PUBLIC cxx_std_20)
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
 target_include_directories(vector_add PUBLIC ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
 
