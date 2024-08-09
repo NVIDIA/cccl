@@ -42,6 +42,7 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
+target_compile_features(vector_add PUBLIC cxx_std_20)
 
 # "Links" the CCCL::cudax CMake target to the `vector_add` executable. This
 # configures everything needed to use CCCL's headers, including setting up
