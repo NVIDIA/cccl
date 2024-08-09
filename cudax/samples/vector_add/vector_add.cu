@@ -49,16 +49,6 @@ namespace cudax = cuda::experimental;
 using cudax::in;
 using cudax::out;
 
-namespace cuda::experimental
-{
-template <int _ThreadsPerBlock>
-constexpr auto distribute(int numElements) noexcept
-{
-  int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
-  return cudax::make_hierarchy(cudax::grid_dims(blocksPerGrid), cudax::block_dims<_ThreadsPerBlock>());
-}
-} // namespace cuda::experimental
-
 /**
  * CUDA Kernel Device code
  *

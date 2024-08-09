@@ -29,7 +29,8 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__launch/param_kind.cuh>
+
+#include "param_kind.cuh"
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -89,7 +90,7 @@ private:
   }
 
   template <detail::__param_kind _Kind>
-  class __action : private detail::__immovable
+  class __action //: private detail::__immovable
   {
     using __cv_vector = ::cuda::std::__maybe_const<_Kind == detail::__param_kind::_in, vector>;
 
@@ -100,6 +101,8 @@ private:
     {
       __v_.sync_host_to_device(__str_, _Kind);
     }
+
+    __action(__action&&) = delete;
 
     ~__action()
     {
