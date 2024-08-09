@@ -512,3 +512,13 @@ TEST_CASE("Trivially constructable", "[hierarchy]")
   // static_assert(std::is_trivially_copyable_v<decltype(cudax::std::make_tuple(cudax::block_dims<256>(),
   // cudax::grid_dims<256>()))>);
 }
+
+TEST_CASE("cudax::distribute", "[hierarchy]")
+{
+  int numElements               = 50000;
+  constexpr int threadsPerBlock = 256;
+  auto dims                     = cudax::distribute<threadsPerBlock>(numElements);
+
+  CUDAX_REQUIRE(dims.count(cudax::thread, cudax::block) == 256);
+  CUDAX_REQUIRE(dims.count(cudax::block, cudax::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
+}
