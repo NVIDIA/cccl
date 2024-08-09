@@ -16,6 +16,10 @@
 #  define _CCCL_COMPILER_ICC_LLVM
 #elif defined(__INTEL_COMPILER)
 #  define _CCCL_COMPILER_ICC
+#  ifndef CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
+#    warning \
+      "Support for the Intel C++ Compiler Classic is deprecated and will eventually be removed. Define CCCL_SUPPRESS_ICC_DEPRECATION_WARNING to suppress this warning"
+#  endif // CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC
 #elif defined(__clang__)
