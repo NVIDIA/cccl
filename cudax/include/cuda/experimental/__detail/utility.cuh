@@ -25,11 +25,22 @@ namespace cuda::experimental
 {
 namespace detail
 {
-struct __ignore
+// This is a helper type that can be used to ignore function arguments.
+struct [[maybe_unused]] __ignore
 {
-  template <typename... Args>
-  _CCCL_HOST_DEVICE constexpr __ignore(Args&&...) noexcept
+  __ignore() = default;
+
+  template <typename _Arg>
+  _CCCL_HOST_DEVICE constexpr __ignore(_Arg&&) noexcept
   {}
+};
+
+// Classes can inherit from this type to become immovable.
+struct __immovable
+{
+  __immovable()                         = default;
+  __immovable(__immovable&&)            = delete;
+  __immovable& operator=(__immovable&&) = delete;
 };
 } // namespace detail
 
@@ -38,7 +49,7 @@ struct uninit_t
   explicit uninit_t() = default;
 };
 
-inline constexpr uninit_t uninit{};
+_CCCL_GLOBAL_CONSTANT uninit_t uninit{};
 } // namespace cuda::experimental
 
 #endif // __CUDAX_DETAIL_UTILITY_H

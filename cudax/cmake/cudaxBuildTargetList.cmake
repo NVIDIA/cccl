@@ -176,6 +176,7 @@ function(cudax_build_target_list)
   file(GLOB_RECURSE all_sources
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
     "${cudax_SOURCE_DIR}/include/cuda/experimental/*.hpp"
+    "${cudax_SOURCE_DIR}/include/cuda/experimental/*.cuh"
   )
   add_custom_target(cudax.all SOURCES ${all_sources})
 

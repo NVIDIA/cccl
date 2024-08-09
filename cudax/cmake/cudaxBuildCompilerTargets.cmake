@@ -9,7 +9,7 @@
 include("${cudax_SOURCE_DIR}/cmake/AppendOptionIfAvailable.cmake")
 
 function(cudax_build_compiler_targets)
-  set(cxx_compile_definitions)
+  set(cxx_compile_definitions LIBCUDACXX_ENABLE_EXCEPTIONS)
   set(cxx_compile_options)
   set(cuda_compile_options)
 
