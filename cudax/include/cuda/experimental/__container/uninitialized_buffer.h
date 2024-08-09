@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/swap.h>
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
@@ -37,14 +38,14 @@ namespace cuda::experimental
 //! @rst
 //! .. _cudax-containers-uninitialized-buffer:
 //!
-//! Uninitialized type safe memory storage
+//! Uninitialized type-safe memory storage
 //! ---------------------------------------
 //!
 //! ``uninitialized_buffer`` provides a typed buffer allocated from a given :ref:`memory resource
 //! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment and release of the allocation.
 //! The memory is uninitialized, so that a user needs to ensure elements are properly constructed.
 //!
-//! In addition to being type safe, ``uninitialized_buffer`` also takes a set of :ref:`properties
+//! In addition to being type-safe, ``uninitialized_buffer`` also takes a set of :ref:`properties
 //! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
 //! at compile time. However, we can only forward stateless properties. If a user wants to use a stateful one, then they
 //! need to implement :ref:`get_property(const device_buffer&, Property)
@@ -57,7 +58,7 @@ namespace cuda::experimental
 //!    the resource exceeds the lifetime of the buffer.
 //!
 //! @endrst
-//! @tparam _T the type to be stored in the buffer
+//! @tparam _Tp the type to be stored in the buffer
 //! @tparam _Properties... The properties the allocated memory satisfies
 template <class _Tp, class... _Properties>
 class uninitialized_buffer
@@ -90,7 +91,8 @@ public:
   using pointer    = _Tp*;
   using size_type  = size_t;
 
-  //! @brief Constructs a \c uninitialized_buffer, allocating sufficient storage for \p __count elements through \p __mr
+  //! @brief Constructs a \c uninitialized_buffer and allocates sufficient storage for \p __count elements through
+  //! \p __mr
   //! @param __mr The memory resource to allocate the buffer with.
   //! @param __count The desired size of the buffer.
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
@@ -105,8 +107,9 @@ public:
   uninitialized_buffer(const uninitialized_buffer&)            = delete;
   uninitialized_buffer& operator=(const uninitialized_buffer&) = delete;
 
-  //! @brief Move construction
+  //! @brief Move-constructs a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
+  //! Takes ownership of the allocation in \p __other and resets it
   uninitialized_buffer(uninitialized_buffer&& __other) noexcept
       : __mr_(__other.__mr_)
       , __count_(__other.__count_)
@@ -116,8 +119,9 @@ public:
     __other.__buf_   = nullptr;
   }
 
-  //! @brief Move assignment
+  //! @brief Move-assings a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
+  //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
   uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept
   {
     if (this == _CUDA_VSTD::addressof(__other))
@@ -129,15 +133,14 @@ public:
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
     }
-    __mr_            = __other.__mr_;
-    __count_         = __other.__count_;
-    __buf_           = __other.__buf_;
-    __other.__count_ = 0;
-    __other.__buf_   = nullptr;
+
+    __mr_    = __other.__mr_;
+    __count_ = _CUDA_VSTD::exchange(__other.__count_, 0);
+    __buf_   = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_buffer deallocating the buffer
+  //! @brief Destroys an \c uninitialized_buffer deallocates the buffer
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   ~uninitialized_buffer()
@@ -148,25 +151,25 @@ public:
     }
   }
 
-  //! @brief Returns an aligned pointer to the buffer
+  //! @brief Returns an aligned pointer to the first element in the allocation
   _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer begin() const noexcept
   {
     return __get_data();
   }
 
-  //! @brief Returns an aligned pointer to end of the buffer
+  //! @brief Returns an aligned pointer to the element after the last element in the allocation
   _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer end() const noexcept
   {
     return __get_data() + __count_;
   }
 
-  //! @brief Returns an aligned pointer to the buffer
+  //! @brief Returns an aligned pointer to the first element in the allocation
   _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer data() const noexcept
   {
     return __get_data();
   }
 
-  //! @brief Returns the size of the buffer
+  //! @brief Returns the size of the allocation
   _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
   {
     return __count_;
@@ -190,7 +193,7 @@ public:
     _CUDA_VSTD::swap(__buf_, __other.__buf_);
   }
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently brocken
+#  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
   //! @brief Forwards the passed Properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
