@@ -62,8 +62,8 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
   # __cplusplus to be defined for this to work:
   target_compile_options(vector_add PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>:"/Zc:__cplusplus /Zc:preprocessor">
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler="/Zc:__cplusplus /Zc:preprocessor">
+    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus /Zc:preprocessor>
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus /Zc:preprocessor>
   )
 endif()
 
