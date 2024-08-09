@@ -24,6 +24,7 @@
 #if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__concepts/all_of.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
 #  include <cuda/std/__concepts/same_as.h>
