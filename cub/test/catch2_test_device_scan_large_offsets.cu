@@ -35,33 +35,12 @@
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
-// TODO(elstehle) replace with DeviceScan interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceScan algorithm for different offset types
-template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename OffsetT>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_scan_wrapper(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  ScanOpT scan_op,
-  InitValueT init_value,
-  OffsetT num_items,
-  cudaStream_t stream = 0)
-{
-  using init_value_t = cub::detail::InputValue<InitValueT>;
-  init_value_t init_value_wrapper{init_value};
-
-  return cub::DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, init_value_t, OffsetT>::Dispatch(
-    d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value_wrapper, num_items, stream);
-}
-
-DECLARE_LAUNCH_WRAPPER(dispatch_scan_wrapper, dispatch_exclusive_scan);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-// TODO(elstehle) replace with actual offset types, once https://github.com/NVIDIA/cccl/issues/50 is addresed
 // List of offset types to be used for testing large number of items
-using offset_types = c2h::type_list<std::int64_t, std::uint64_t, std::int32_t, std::uint32_t>;
+using offset_types = c2h::type_list<std::uint32_t, std::uint64_t>;
 
 template <typename ItemT>
 struct expected_sum_op
@@ -106,12 +85,12 @@ try
   offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
   offset_t num_items_min =
     num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
-  // TODO(elstehle) remove single-item size, once https://github.com/NVIDIA/cccl/issues/50 is addresed
-  offset_t num_items =
-    GENERATE_COPY(values({num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1)}),
-                  take(2, random(num_items_min, num_items_max)));
+  offset_t num_items = GENERATE_COPY(
+    values(
+      {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
+    take(2, random(num_items_min, num_items_max)));
 
-  // Prepare input
+  // Prepare input (generate a series of: 0, 1, 2, ..., <segment_size-1>,  0, 1, 2, ..., <segment_size-1>, 0, 1, ...)
   constexpr index_t segment_size = 1000;
   auto index_it                  = thrust::make_counting_iterator(index_t{});
   auto items_it                  = thrust::make_transform_iterator(index_it, mod_op<item_t>{segment_size});
@@ -120,8 +99,12 @@ try
   c2h::device_vector<item_t> d_items_out(num_items);
   auto d_items_out_it = thrust::raw_pointer_cast(d_items_out.data());
 
+  c2h::device_vector<item_t> d_initial_value(1);
+  d_initial_value[0]     = item_t{};
+  auto future_init_value = cub::FutureValue<item_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+
   // Run test
-  dispatch_exclusive_scan(items_it, d_items_out_it, op_t{}, item_t{}, num_items);
+  device_exclusive_scan(items_it, d_items_out_it, op_t{}, future_init_value, num_items);
 
   // Ensure that we created the correct output
   auto expected_out_it =
