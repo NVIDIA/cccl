@@ -48,12 +48,14 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/grid/grid_queue.cuh>
+#include <cub/iterator/constant_input_iterator.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
 
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cstdio>
@@ -65,6 +67,36 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+
+template <typename Iterator, typename OffsetItT>
+class OffsetIteratorT : public thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
+{
+public:
+  using super_t = thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
+
+  __host__ __device__ OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
+      : super_t(it)
+      , offset_it(offset_it)
+  {}
+
+  // befriend thrust::iterator_core_access to allow it access to the private interface below
+  friend class thrust::iterator_core_access;
+
+private:
+  OffsetItT offset_it;
+
+  __host__ __device__ typename super_t::reference dereference() const
+  {
+    return *(this->base() + (*offset_it));
+  }
+};
+
+template <typename Iterator, typename OffsetItT>
+OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(const Iterator& it, OffsetItT offset_it)
+{
+  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
+}
+
 /**
  * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
  */
@@ -415,8 +447,10 @@ struct DispatchSelectIf : SelectedPolicy
     constexpr auto block_threads    = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
     constexpr auto items_per_thread = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
     constexpr int tile_size         = block_threads * items_per_thread;
-    int num_tiles                   = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
-    const auto vsmem_size           = num_tiles * VsmemHelperT::vsmem_per_block;
+
+    // OffsetT uint32_t or larger than 4 B => specialized path
+    int num_tiles         = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+    const auto vsmem_size = num_tiles * VsmemHelperT::vsmem_per_block;
 
     do
     {
@@ -429,7 +463,7 @@ struct DispatchSelectIf : SelectedPolicy
       }
 
       // Specify temporary storage allocation requirements
-      size_t allocation_sizes[2] = {0ULL, vsmem_size};
+      size_t allocation_sizes[3] = {0ULL, vsmem_size, sizeof(std::uint64_t)};
 
       // bytes needed for tile status descriptors
       error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
@@ -439,7 +473,7 @@ struct DispatchSelectIf : SelectedPolicy
       }
 
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
-      void* allocations[2] = {};
+      void* allocations[3] = {};
 
       error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
@@ -507,6 +541,9 @@ struct DispatchSelectIf : SelectedPolicy
       scan_grid_size.y = cub::DivideAndRoundUp(num_tiles, max_dim_x);
       scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
+      std::uint64_t* d_selected_offset = reinterpret_cast<std::uint64_t*>(allocations[2]);
+      cudaMemsetAsync(d_selected_offset, 0, sizeof(*d_selected_offset), stream);
+
 // Log select_if_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       {
@@ -535,9 +572,9 @@ struct DispatchSelectIf : SelectedPolicy
       // Invoke select_if_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
         .doit(select_if_kernel,
-              d_in,
-              d_flags,
-              d_selected_out,
+              detail::make_offset_iterator(d_in, ConstantInputIterator<std::uint64_t>(0)),
+              detail::make_offset_iterator(d_flags, ConstantInputIterator<std::uint64_t>(0)),
+              detail::make_offset_iterator(d_selected_out, d_selected_offset),
               d_num_selected_out,
               tile_status,
               select_op,
@@ -573,9 +610,9 @@ struct DispatchSelectIf : SelectedPolicy
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
       DeviceSelectSweepKernel<
         MaxPolicyT,
-        InputIteratorT,
-        FlagsInputIteratorT,
-        SelectedOutputIteratorT,
+        detail::OffsetIteratorT<InputIteratorT, ConstantInputIterator<std::uint64_t>>,
+        detail::OffsetIteratorT<FlagsInputIteratorT, ConstantInputIterator<std::uint64_t>>,
+        detail::OffsetIteratorT<SelectedOutputIteratorT, std::uint64_t*>,
         NumSelectedIteratorT,
         ScanTileStateT,
         SelectOpT,
