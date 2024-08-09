@@ -303,6 +303,7 @@ struct layout_stride
       /* requires */ (
         // MSVC 19.32 does not like using index_type here, requires the typename _Extents::index_type
         // error C2641: cannot deduce template arguments for '_CUDA_VSTD::layout_stride::mapping'
+        // _LIBCUDACXX_REQUIRES hits the same bug
         _CCCL_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type)
         && _CCCL_TRAIT(
           _CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)))

@@ -72,10 +72,9 @@ struct default_accessor
 
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr default_accessor() noexcept = default;
 
-  __MDSPAN_TEMPLATE_REQUIRES(class _OtherElementType,
-                             /* requires */ (_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[])))
-  __MDSPAN_INLINE_FUNCTION
-  constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
+  _LIBCUDACXX_TEMPLATE(class _OtherElementType)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  __MDSPAN_INLINE_FUNCTION constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
 
   __MDSPAN_INLINE_FUNCTION
   constexpr data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
