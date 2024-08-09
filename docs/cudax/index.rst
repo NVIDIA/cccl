@@ -8,6 +8,7 @@ CUDA Experimental
    :maxdepth: 3
 
    container
+   memory_resource
    ${repo_docs_api_path}/cudax_api
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
@@ -15,6 +16,7 @@ However, any feature within this library has important use cases and we encourag
 
 Specifically, ``cudax`` provides:
    - :ref:`uninitialized storage <cudax-containers-uninitialized-buffer>`
+   - :ref:`stream ordered memory resources <cudax-memory-resource-async>`
    - dimensions description functionality
 
 Stability Guarantees
