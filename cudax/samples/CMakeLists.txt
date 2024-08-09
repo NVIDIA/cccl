@@ -46,7 +46,7 @@ add_executable(vector_add vector_add/vector_add.cu)
 # "Links" the CCCL::cudax CMake target to the `vector_add` executable. This
 # configures everything needed to use CCCL's headers, including setting up
 # include paths, compiler flags, etc.
-target_link_libraries(vector_add PUBLIC CCCL::cudax CCCL::Thrust INTERFACE cudax.compiler_interface)
+target_link_libraries(vector_add PUBLIC CCCL::cudax CCCL::Thrust CCCL::libcudacxx INTERFACE cudax.compiler_interface)
 
 # TODO: These are temporary until the main branch catches up with the latest changes
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
