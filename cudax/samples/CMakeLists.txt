@@ -63,7 +63,7 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # __cplusplus to be defined for this to work:
   target_compile_options(vector_add PRIVATE
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus /Zc:preprocessor>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus /Zc:preprocessor>
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus -Xcompiler=/Zc:preprocessor>
   )
 endif()
 
