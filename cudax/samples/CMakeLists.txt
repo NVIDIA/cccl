@@ -32,7 +32,7 @@ CPMAddPackage(
   GITHUB_REPOSITORY ${CCCL_REPOSITORY}
   GIT_TAG ${CCCL_TAG}
   GIT_SHALLOW ON
-  OPTIONS "CMAKE_CXX_STANDARD 20"
+  OPTIONS "CCCL_ENABLE_UNSTABLE ON"
 )
 
 # Default to building for the GPU on the current system
@@ -43,23 +43,14 @@ endif()
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
 
-# CUDAX requires C++17 or later:
-target_compile_features(vector_add PUBLIC cxx_std_20)
+# TODO: These are temporary until the main branch catches up with the latest changes
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
-target_include_directories(vector_add PUBLIC ${CMAKE_SOURCE_DIR}/../include ${CMAKE_SOURCE_DIR}/vector_add)
+target_include_directories(vector_add PUBLIC ${CMAKE_CURRENT_LIST_DIR}/../include)
 
-# "Links" the CCCL Cmake target to the `vector_add` executable. This configures everything needed to use
-# CCCL headers, including setting up include paths, compiler flags, etc.
-target_link_libraries(vector_add PUBLIC CCCL::CCCL)
-
-if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
-  # __cplusplus to be defined for this to work:
-  target_compile_options(vector_add PUBLIC
-    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
-  )
-endif()
+# "Links" the CCCL::cudax CMake target to the `vector_add` executable. This
+# configures everything needed to use CCCL's headers, including setting up
+# include paths, compiler flags, etc.
+target_link_libraries(vector_add PUBLIC CCCL::cudax)
 
 # This is only relevant for internal testing and not needed by end users.
 include(CTest)
