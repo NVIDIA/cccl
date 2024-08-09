@@ -265,147 +265,15 @@
         requires REQ /**/
 #  else
 #    define __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) , typename _CUDA_VSTD::enable_if<(REQ), int>::type = 0 >
-#    define __MDSPAN_FUNCTION_REQUIRES(PAREN_PREQUALS, FNAME, PAREN_PARAMS, QUALS, REQ)                             \
-      __MDSPAN_TEMPLATE_REQUIRES(                                                                                   \
-        class __function_requires_ignored = void, (_CUDA_VSTD::is_void<__function_requires_ignored>::value && REQ)) \
+#    define __MDSPAN_FUNCTION_REQUIRES(PAREN_PREQUALS, FNAME, PAREN_PARAMS, QUALS, REQ)   \
+      _LIBCUDACXX_TEMPLATE(class __function_requires_ignored = void)                      \
+      _LIBCUDACXX_REQUIRES(_CUDA_VSTD::is_void<__function_requires_ignored>::value&& REQ) \
       __MDSPAN_PP_REMOVE_PARENS(PAREN_PREQUALS) FNAME PAREN_PARAMS QUALS /**/
 #  endif
 
-#  if defined(__MDSPAN_COMPILER_MSVC)
-#    define __MDSPAN_TEMPLATE_REQUIRES(...)                                                                        \
-      __MDSPAN_PP_CAT(__MDSPAN_PP_CAT(__MDSPAN_TEMPLATE_REQUIRES_, __MDSPAN_PP_COUNT(__VA_ARGS__))(__VA_ARGS__), ) \
-      /**/
-#  else
-#    define __MDSPAN_TEMPLATE_REQUIRES(...)                                                                       \
-      __MDSPAN_PP_EVAL(__MDSPAN_PP_CAT(__MDSPAN_TEMPLATE_REQUIRES_, __MDSPAN_PP_COUNT(__VA_ARGS__)), __VA_ARGS__) \
-      /**/
-#  endif
-
-#  define __MDSPAN_TEMPLATE_REQUIRES_2(TP1, REQ)      template <TP1 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_3(TP1, TP2, REQ) template <TP1, TP2 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_4(TP1, TP2, TP3, REQ) \
-    template <TP1, TP2, TP3 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_5(TP1, TP2, TP3, TP4, REQ) \
-    template <TP1, TP2, TP3, TP4 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_6(TP1, TP2, TP3, TP4, TP5, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_7(TP1, TP2, TP3, TP4, TP5, TP6, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_8(TP1, TP2, TP3, TP4, TP5, TP6, TP7, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_9(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_10(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_11(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_12(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_13(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_14(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_15(TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, REQ) \
-    template <TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_16(                                                  \
-    TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, REQ) \
-    template <TP1,                                                                        \
-              TP2,                                                                        \
-              TP3,                                                                        \
-              TP4,                                                                        \
-              TP5,                                                                        \
-              TP6,                                                                        \
-              TP7,                                                                        \
-              TP8,                                                                        \
-              TP9,                                                                        \
-              TP10,                                                                       \
-              TP11,                                                                       \
-              TP12,                                                                       \
-              TP13,                                                                       \
-              TP14,                                                                       \
-              TP15 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_17(                                                        \
-    TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TP16, REQ) \
-    template <TP1,                                                                              \
-              TP2,                                                                              \
-              TP3,                                                                              \
-              TP4,                                                                              \
-              TP5,                                                                              \
-              TP6,                                                                              \
-              TP7,                                                                              \
-              TP8,                                                                              \
-              TP9,                                                                              \
-              TP10,                                                                             \
-              TP11,                                                                             \
-              TP12,                                                                             \
-              TP13,                                                                             \
-              TP14,                                                                             \
-              TP15,                                                                             \
-              TP16 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_18(                                                              \
-    TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TP16, TP17, REQ) \
-    template <TP1,                                                                                    \
-              TP2,                                                                                    \
-              TP3,                                                                                    \
-              TP4,                                                                                    \
-              TP5,                                                                                    \
-              TP6,                                                                                    \
-              TP7,                                                                                    \
-              TP8,                                                                                    \
-              TP9,                                                                                    \
-              TP10,                                                                                   \
-              TP11,                                                                                   \
-              TP12,                                                                                   \
-              TP13,                                                                                   \
-              TP14,                                                                                   \
-              TP15,                                                                                   \
-              TP16,                                                                                   \
-              TP17 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_19(                                                                    \
-    TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TP16, TP17, TP18, REQ) \
-    template <TP1,                                                                                          \
-              TP2,                                                                                          \
-              TP3,                                                                                          \
-              TP4,                                                                                          \
-              TP5,                                                                                          \
-              TP6,                                                                                          \
-              TP7,                                                                                          \
-              TP8,                                                                                          \
-              TP9,                                                                                          \
-              TP10,                                                                                         \
-              TP11,                                                                                         \
-              TP12,                                                                                         \
-              TP13,                                                                                         \
-              TP14,                                                                                         \
-              TP15,                                                                                         \
-              TP16,                                                                                         \
-              TP17,                                                                                         \
-              TP18 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-#  define __MDSPAN_TEMPLATE_REQUIRES_20(                                                                          \
-    TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TP16, TP17, TP18, TP19, REQ) \
-    template <TP1,                                                                                                \
-              TP2,                                                                                                \
-              TP3,                                                                                                \
-              TP4,                                                                                                \
-              TP5,                                                                                                \
-              TP6,                                                                                                \
-              TP7,                                                                                                \
-              TP8,                                                                                                \
-              TP9,                                                                                                \
-              TP10,                                                                                               \
-              TP11,                                                                                               \
-              TP12,                                                                                               \
-              TP13,                                                                                               \
-              TP14,                                                                                               \
-              TP15,                                                                                               \
-              TP16,                                                                                               \
-              TP17,                                                                                               \
-              TP18,                                                                                               \
-              TP19 __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) /**/
-
-#  define __MDSPAN_INSTANTIATE_ONLY_IF_USED                                                           \
-    __MDSPAN_TEMPLATE_REQUIRES(class __instantiate_only_if_used_tparam = void,                        \
-                               (_CCCL_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam))) \
+#  define __MDSPAN_INSTANTIATE_ONLY_IF_USED                                                   \
+    _LIBCUDACXX_TEMPLATE(class __instantiate_only_if_used_tparam = void)                      \
+    _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam)) \
     /**/
 
 // </editor-fold> end Concept emulation }}}1
