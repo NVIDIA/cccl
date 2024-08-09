@@ -128,8 +128,9 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class OtherExtents)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
-    __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0)) __MDSPAN_INLINE_FUNCTION constexpr mapping(
-      cuda::std::layout_stride::mapping<OtherExtents> const& other) // NOLINT(google-explicit-constructor)
+  __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
+  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+    cuda::std::layout_stride::mapping<OtherExtents> const& other) // NOLINT(google-explicit-constructor)
       : __extents(other.extents())
   {
     /*
