@@ -251,35 +251,6 @@
 //==============================================================================
 
 //==============================================================================
-// <editor-fold desc="Concept emulation"> {{{1
-
-// These compatibility macros don't help with partial ordering, but they should do the trick
-// for what we need to do with concepts in mdspan
-#  ifdef __MDSPAN_USE_CONCEPTS
-#    define __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) \
-      >                                        \
-          requires REQ
-#    define __MDSPAN_FUNCTION_REQUIRES(PAREN_PREQUALS, FNAME, PAREN_PARAMS, QUALS, REQ) \
-      __MDSPAN_PP_REMOVE_PARENS(PAREN_PREQUALS)                                         \
-      FNAME PAREN_PARAMS QUALS                                                          \
-        requires REQ /**/
-#  else
-#    define __MDSPAN_CLOSE_ANGLE_REQUIRES(REQ) , typename _CUDA_VSTD::enable_if<(REQ), int>::type = 0 >
-#    define __MDSPAN_FUNCTION_REQUIRES(PAREN_PREQUALS, FNAME, PAREN_PARAMS, QUALS, REQ)   \
-      _LIBCUDACXX_TEMPLATE(class __function_requires_ignored = void)                      \
-      _LIBCUDACXX_REQUIRES(_CUDA_VSTD::is_void<__function_requires_ignored>::value&& REQ) \
-      __MDSPAN_PP_REMOVE_PARENS(PAREN_PREQUALS) FNAME PAREN_PARAMS QUALS /**/
-#  endif
-
-#  define __MDSPAN_INSTANTIATE_ONLY_IF_USED                                                   \
-    _LIBCUDACXX_TEMPLATE(class __instantiate_only_if_used_tparam = void)                      \
-    _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_void, __instantiate_only_if_used_tparam)) \
-    /**/
-
-// </editor-fold> end Concept emulation }}}1
-//==============================================================================
-
-//==============================================================================
 // <editor-fold desc="Return type deduction"> {{{1
 
 #  if __MDSPAN_USE_RETURN_TYPE_DEDUCTION
