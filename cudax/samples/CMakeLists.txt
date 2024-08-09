@@ -46,7 +46,14 @@ add_executable(vector_add vector_add/vector_add.cu)
 # "Links" the CCCL::cudax CMake target to the `vector_add` executable. This
 # configures everything needed to use CCCL's headers, including setting up
 # include paths, compiler flags, etc.
-target_link_libraries(vector_add PUBLIC CCCL::cudax CCCL::Thrust CCCL::libcudacxx INTERFACE cudax.compiler_interface)
+target_link_libraries(vector_add
+  PUBLIC
+    CCCL::cudax
+    CCCL::CCCL
+    CCCL::Thrust
+    CCCL::libcudacxx
+  INTERFACE cudax.compiler_interface
+)
 
 # TODO: These are temporary until the main branch catches up with the latest changes
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
@@ -55,8 +62,8 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
   # __cplusplus to be defined for this to work:
   target_compile_options(vector_add PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
+    $<$<COMPILE_LANGUAGE:CXX>:"/Zc:__cplusplus /Zc:preprocessor">
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler="/Zc:__cplusplus /Zc:preprocessor">
   )
 endif()
 
