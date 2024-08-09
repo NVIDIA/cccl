@@ -299,7 +299,14 @@ namespace __smart_sort
 template <class Key, class CompareOp>
 using can_use_primitive_sort = ::cuda::std::integral_constant<
   bool,
-  ::cuda::std::is_arithmetic<Key>::value
+  (::cuda::std::is_arithmetic<Key>::value
+#  ifdef _CCCL_HAS_NVFP16
+   || ::cuda::std::is_same<Key, __half>::value
+#  endif
+#  ifdef _CCCL_HAS_NVBF16
+   || ::cuda::std::is_same<Key, __nv_bfloat16>::value
+#  endif
+   )
     && (::cuda::std::is_same<CompareOp, thrust::less<Key>>::value
         || ::cuda::std::is_same<CompareOp, ::cuda::std::less<Key>>::value
         || ::cuda::std::is_same<CompareOp, thrust::less<void>>::value
