@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/cstdint>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 #include <cuda/std/detail/libcxx/include/cstring>
 
@@ -48,6 +49,13 @@ template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
 {
+  // This is a pessimisation, but there's no way to do the code path detection correctly before GCC 9.0.
+  // __builtin_memmove is also illegal in constexpr there, so... just always assume we are constant evaluated,
+  // and let the optimizer *maybe* recover some of the perf.
+#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+  return false;
+#endif
+
   if (__libcpp_is_constant_evaluated())
   {
     return false;
@@ -66,6 +74,35 @@ __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
   }
 }
 
+template <class _Tp, class _Up>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+__constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
+{
+  while (__first != __last)
+  {
+    if (__first == __needle)
+    {
+      return true;
+    }
+    ++__first;
+  }
+  return false;
+}
+
+template <class _Tp, class _Up>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+__constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
+{
+  _LIBCUDACXX_UNUSED_VAR(__last);
+#if __has_builtin(__builtin_constant_p) || defined(_CCCL_COMPILER_GCC)
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return __builtin_constant_p(__first < __needle) && __first < __needle;),
+                    (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
+#else
+  return __constexpr_tail_overlap_fallback(__first, __needle, __last);
+#endif
+}
+
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
@@ -81,9 +118,20 @@ __copy(_Tp* __first, _Tp* __last, _Up* __result)
     {
       return {__last, __result + __n};
     }
-    for (ptrdiff_t __i = 0; __i < __n; ++__i)
+    if ((!__libcpp_is_constant_evaluated() && __first < __result)
+        || __constexpr_tail_overlap(__first, __result, __last))
     {
-      *(__result + __i) = *(__first + __i);
+      for (ptrdiff_t __i = __n; __i > 0; --__i)
+      {
+        *(__result + __i - 1) = *(__first + __i - 1);
+      }
+    }
+    else
+    {
+      for (ptrdiff_t __i = 0; __i < __n; ++__i)
+      {
+        *(__result + __i) = *(__first + __i);
+      }
     }
   }
   return {__last, __result + __n};

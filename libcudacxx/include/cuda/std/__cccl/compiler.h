@@ -78,6 +78,9 @@
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000)
 #  define _CCCL_CUDACC_BELOW_11_3
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000
+#if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000)
+#  define _CCCL_CUDACC_BELOW_11_4
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000)
 #  define _CCCL_CUDACC_BELOW_11_8
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
