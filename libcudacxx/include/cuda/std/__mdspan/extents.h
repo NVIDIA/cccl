@@ -251,10 +251,10 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherIndexType, size_t... _OtherExtents)
   _LIBCUDACXX_REQUIRES(
     /* multi-stage check to protect from invalid pack expansion when sizes don't match? */
-    decltype(__detail::__check_compatible_extents(
+    (decltype(__detail::__check_compatible_extents(
       integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
       _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
-      _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value)
+      _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value))
   __MDSPAN_INLINE_FUNCTION
   __MDSPAN_CONDITIONAL_EXPLICIT(
     (((_Extents != dynamic_extent) && (_OtherExtents == dynamic_extent)) || ...)

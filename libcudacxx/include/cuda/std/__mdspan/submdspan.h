@@ -529,8 +529,7 @@ _LIBCUDACXX_REQUIRES(
       (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
        || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
        || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
-      _LIBCUDACXX_AND sizeof...(_SliceSpecs)
-  == _EXT::rank())
+      _LIBCUDACXX_AND(sizeof...(_SliceSpecs) == _EXT::rank()))
 __MDSPAN_INLINE_FUNCTION
 __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
   (constexpr submdspan(mdspan<_ET, _EXT, _LP, _AP> const& __src, _SliceSpecs... __slices) noexcept),

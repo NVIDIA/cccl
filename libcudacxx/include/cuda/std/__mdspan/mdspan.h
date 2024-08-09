@@ -310,10 +310,8 @@ public:
 
 #  if !__MDSPAN_USE_BRACKET_OPERATOR
   _LIBCUDACXX_TEMPLATE(class _Index)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Index, index_type)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Index)
-                           _LIBCUDACXX_AND extents_type::rank()
-                       == 1)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Index, index_type) _LIBCUDACXX_AND _CCCL_TRAIT(
+    _CUDA_VSTD::is_nothrow_constructible, index_type, _Index) _LIBCUDACXX_AND(extents_type::rank() == 1))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator[](_Index __idx) const
   {
@@ -323,11 +321,10 @@ public:
 
 #  if __MDSPAN_USE_PAREN_OPERATOR
   _LIBCUDACXX_TEMPLATE(class... _SizeTypes)
-  _LIBCUDACXX_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
-      _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(
-        _CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */) _LIBCUDACXX_AND extents_type::rank()
-    == sizeof...(_SizeTypes))
+  _LIBCUDACXX_REQUIRES(__MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SizeTypes, index_type) /* && ... */)
+                         _LIBCUDACXX_AND __MDSPAN_FOLD_AND(
+                           _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
+                           _LIBCUDACXX_AND(extents_type::rank() == sizeof...(_SizeTypes)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator()(_SizeTypes... __indices) const
   {
