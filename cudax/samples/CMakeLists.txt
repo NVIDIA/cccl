@@ -31,6 +31,8 @@ CPMAddPackage(
   NAME CCCL
   GITHUB_REPOSITORY ${CCCL_REPOSITORY}
   GIT_TAG ${CCCL_TAG}
+  GIT_SHALLOW ON
+  OPTIONS "CMAKE_CXX_STANDARD 17"
 )
 
 # Default to building for the GPU on the current system
