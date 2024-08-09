@@ -41,7 +41,7 @@
 // * The NVTX3 C API is available in CTK
 // * NVTX is not explicitly disabled
 // * C++14 is availabl for cuda::std::optional
-#if __has_include(<nvtx3/nvToolsExt.h> ) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014
+#if __has_include(<nvtx3/nvToolsExt.h> ) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014 &&(!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
 // Include our NVTX3 C++ wrapper if not available from the CTK
 #  if __has_include(<nvtx3/nvtx3.hpp>) // TODO(bgruber): replace by a check for the first CTK version shipping the header
 #    include <nvtx3/nvtx3.hpp>

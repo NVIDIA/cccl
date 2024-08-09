@@ -77,10 +77,18 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const vola
 namespace __is_convertible_imp
 {
 
-_CCCL_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
+#if defined(_CCCL_COMPILER_NVHPC) // We need to separately suppress the warning for both nvcc and nvhpc
+#pragma diag_suppress volatile_func_param_deprecated
+#endif // !_CCCL_COMPILER_NVHPC
+
+_CCCL_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY void __test_convert(_Tp);
-_CCCL_NV_DIAG_DEFAULT(3013) // a volatile function parameter is deprecated
+_CCCL_NV_DIAG_DEFAULT(volatile_func_param_deprecated)
+
+#if defined(_CCCL_COMPILER_NVHPC) // We need to separately suppress the warning for both nvcc and nvhpc
+#pragma diag_default volatile_func_param_deprecated
+#endif // !_CCCL_COMPILER_NVHPC
 
 template <class _From, class _To, class = void>
 struct __is_convertible_test : public false_type

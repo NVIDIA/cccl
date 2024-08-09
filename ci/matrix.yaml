@@ -16,7 +16,7 @@ workflows:
     # Current CTK
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16']}
-    - {jobs: ['build'], std: 'all', cxx: ['intel', 'msvc2019']}
+    - {jobs: ['build'], std: 'all', cxx: ['intel', 'msvc2019', 'nvhpc']}
     - {jobs: ['test'],  std: 'all', cxx: ['gcc13', 'clang17', 'msvc2022']}
     # Modded builds:
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
@@ -37,6 +37,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['gcc12'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc12', 'clang16'], cpu: 'arm64'}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['intel']}
+    - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang16']}
@@ -161,6 +162,12 @@ host_compilers:
     exe: icpc
     versions:
       2023.2.0: { stds: [11, 14, 17,   ] }
+  nvhpc:
+    name: 'NVHPC'
+    container_tag: 'nvhpc'
+    exe: nvc++
+    versions:
+      24.5: { stds: [11, 14, 17, 20 ] }
 
 # Jobs support the following properties:
 #

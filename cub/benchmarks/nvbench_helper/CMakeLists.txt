@@ -1,5 +1,10 @@
 # Fetch nvbench
-CPMAddPackage("gh:NVIDIA/nvbench#main")
+
+CPMAddPackage(
+    NAME NVBench
+    OPTIONS "NVBench_ENABLE_CUPTI NO" "NVBench_ENABLE_NVML NO"
+    GITHUB_REPOSITORY "nvidia/nvbench"
+    GIT_TAG "main")
 
 add_library(nvbench_helper OBJECT nvbench_helper/nvbench_helper.cuh
                                   nvbench_helper/nvbench_helper.cu)
