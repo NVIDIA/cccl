@@ -354,7 +354,7 @@ struct DeviceRleDispatch
               init_grid_size,
               INIT_KERNEL_THREADS,
               (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -415,7 +415,7 @@ struct DeviceRleDispatch
               (long long) stream,
               items_per_thread,
               device_rle_kernel_sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke device_rle_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
@@ -569,7 +569,7 @@ struct DeviceRleDispatch
       num_items,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

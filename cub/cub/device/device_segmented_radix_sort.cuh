@@ -299,7 +299,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~N`` auxiliary storage required)
@@ -506,7 +506,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~2N`` auxiliary storage required).
@@ -717,7 +717,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~N`` auxiliary storage required).
@@ -928,7 +928,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
   //! @name Keys-only
@@ -1122,7 +1122,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~N`` auxiliary storage required).
@@ -1319,7 +1319,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~2N`` auxiliary storage required).
@@ -1509,7 +1509,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~N`` auxiliary storage required).
@@ -1704,7 +1704,7 @@ public:
       end_bit,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
 };

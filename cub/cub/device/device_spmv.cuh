@@ -238,7 +238,7 @@ struct DeviceSpmv
       num_nonzeros,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
 };

@@ -283,7 +283,7 @@ public:
 
     return SubtractLeftCopy(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
@@ -411,7 +411,7 @@ public:
 
     return SubtractLeft(d_temp_storage, temp_storage_bytes, d_input, num_items, difference_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
@@ -559,7 +559,7 @@ public:
 
     return SubtractRightCopy(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
@@ -676,7 +676,7 @@ public:
 
     return SubtractRight(d_temp_storage, temp_storage_bytes, d_input, num_items, difference_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

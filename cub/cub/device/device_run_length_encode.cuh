@@ -250,7 +250,7 @@ struct DeviceRunLengthEncode
     return Encode<InputIteratorT, UniqueOutputIteratorT, LengthsOutputIteratorT, NumRunsOutputIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_unique_out, d_counts_out, d_num_runs_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Enumerates the starting offsets and lengths of all non-trivial runs
@@ -406,7 +406,7 @@ struct DeviceRunLengthEncode
     return NonTrivialRuns<InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, NumRunsOutputIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_offsets_out, d_lengths_out, d_num_runs_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

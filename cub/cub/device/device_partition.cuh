@@ -224,7 +224,7 @@ struct DevicePartition
     return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Uses the ``select_op`` functor to split the corresponding items from ``d_in`` into
@@ -387,7 +387,7 @@ struct DevicePartition
     return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   template <bool IS_DESCENDING,
@@ -703,7 +703,7 @@ public:
       select_second_part_op,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

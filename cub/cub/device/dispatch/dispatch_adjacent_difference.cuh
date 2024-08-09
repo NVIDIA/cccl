@@ -190,7 +190,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /// Invocation
   template <typename ActivePolicyT>
@@ -252,7 +252,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
                 init_grid_size,
                 init_block_size,
                 reinterpret_cast<long long>(stream));
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, init_block_size, 0, stream)
           .doit(DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
@@ -282,7 +282,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
               num_tiles,
               AdjacentDifferencePolicyT::BLOCK_THREADS,
               reinterpret_cast<long long>(stream));
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
@@ -372,7 +372,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
     return Dispatch(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

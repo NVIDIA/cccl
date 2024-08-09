@@ -306,7 +306,7 @@ public:
       initial_value,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
@@ -439,7 +439,7 @@ public:
     return Sum<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
@@ -580,7 +580,7 @@ public:
     return Min<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
@@ -750,7 +750,7 @@ public:
     return ArgMin<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
@@ -885,7 +885,7 @@ public:
     return Max<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
@@ -1058,7 +1058,7 @@ public:
     return ArgMax<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

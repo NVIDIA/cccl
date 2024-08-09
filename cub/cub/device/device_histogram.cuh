@@ -233,7 +233,7 @@ struct DeviceHistogram
       num_samples,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
@@ -417,7 +417,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
@@ -620,7 +620,7 @@ struct DeviceHistogram
       num_pixels,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of
@@ -872,7 +872,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
   //! @name Custom bin ranges
@@ -1017,7 +1017,7 @@ struct DeviceHistogram
     return HistogramRange(
       d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_samples, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
@@ -1186,7 +1186,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
@@ -1369,7 +1369,7 @@ struct DeviceHistogram
     return MultiHistogramRange(
       d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_pixels, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
@@ -1608,7 +1608,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //@}  end member group
 };

@@ -467,7 +467,7 @@ struct DispatchSelectIf : SelectedPolicy
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog(
         "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke scan_init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -530,7 +530,7 @@ struct DispatchSelectIf : SelectedPolicy
                 items_per_thread,
                 range_select_sm_occupancy);
       }
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke select_if_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
@@ -685,7 +685,7 @@ struct DispatchSelectIf : SelectedPolicy
       num_items,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

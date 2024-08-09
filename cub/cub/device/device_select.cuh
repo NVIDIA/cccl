@@ -221,7 +221,7 @@ struct DeviceSelect
     return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively compact the items in `d_data``.
@@ -358,7 +358,7 @@ struct DeviceSelect
     return Flagged<IteratorT, FlagIterator, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
@@ -516,7 +516,7 @@ struct DeviceSelect
     return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Uses the ``select_op`` functor to selectively compact items in ``d_data``.
@@ -665,7 +665,7 @@ struct DeviceSelect
     return If<IteratorT, NumSelectedIteratorT, SelectOp>(
       d_temp_storage, temp_storage_bytes, d_data, d_num_selected_out, num_items, select_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively copy the
@@ -1028,7 +1028,7 @@ struct DeviceSelect
     return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
@@ -1367,7 +1367,7 @@ struct DeviceSelect
       num_items,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

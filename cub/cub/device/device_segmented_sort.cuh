@@ -333,7 +333,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -530,7 +530,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -720,7 +720,7 @@ public:
     return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -911,7 +911,7 @@ public:
     return SortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into ascending order. Approximately
@@ -1076,7 +1076,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into descending order.
@@ -1241,7 +1241,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into ascending order.
@@ -1399,7 +1399,7 @@ public:
     return StableSortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into descending order.
@@ -1556,7 +1556,7 @@ public:
     return StableSortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -1788,7 +1788,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -2016,7 +2016,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -2240,7 +2240,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // Internal version without NVTX range
@@ -2463,7 +2463,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
@@ -2654,7 +2654,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
@@ -2845,7 +2845,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
@@ -3038,7 +3038,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
@@ -3230,7 +3230,7 @@ public:
       d_end_offsets,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
 };

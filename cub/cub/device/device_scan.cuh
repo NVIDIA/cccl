@@ -210,7 +210,7 @@ struct DeviceScan
     return ExclusiveSum<InputIteratorT, OutputIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum in-place.
@@ -299,7 +299,7 @@ struct DeviceScan
 
     return ExclusiveSum<IteratorT>(d_temp_storage, temp_storage_bytes, d_data, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -448,7 +448,7 @@ struct DeviceScan
     return ExclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -573,7 +573,7 @@ struct DeviceScan
     return ExclusiveScan<IteratorT, ScanOpT, InitValueT>(
       d_temp_storage, temp_storage_bytes, d_data, scan_op, init_value, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -734,7 +734,7 @@ struct DeviceScan
     return ExclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, InitValueIterT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -862,7 +862,7 @@ struct DeviceScan
     return ExclusiveScan<IteratorT, ScanOpT, InitValueT, InitValueIterT>(
       d_temp_storage, temp_storage_bytes, d_data, scan_op, init_value, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
   //! @name Inclusive scans
@@ -977,7 +977,7 @@ struct DeviceScan
     return InclusiveSum<InputIteratorT, OutputIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum in-place.
@@ -1065,7 +1065,7 @@ struct DeviceScan
 
     return InclusiveSum<IteratorT>(d_temp_storage, temp_storage_bytes, d_data, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -1299,7 +1299,7 @@ struct DeviceScan
     return InclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -1412,7 +1412,7 @@ struct DeviceScan
 
     return InclusiveScan<IteratorT, ScanOpT>(d_temp_storage, temp_storage_bytes, d_data, scan_op, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum-by-key with key equality
@@ -1571,7 +1571,7 @@ struct DeviceScan
     return ExclusiveSumByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, EqualityOpT>(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan-by-key using the
@@ -1790,7 +1790,7 @@ struct DeviceScan
       equality_op,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
@@ -1943,7 +1943,7 @@ struct DeviceScan
     return InclusiveSumByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, EqualityOpT>(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
@@ -2130,7 +2130,7 @@ struct DeviceScan
     return InclusiveScanByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, ScanOpT, EqualityOpT>(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, scan_op, num_items, equality_op, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
 };

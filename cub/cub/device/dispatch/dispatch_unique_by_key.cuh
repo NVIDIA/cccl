@@ -349,7 +349,7 @@ struct DispatchUniqueByKey : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /******************************************************************************
    * Dispatch entrypoints
@@ -427,7 +427,7 @@ struct DispatchUniqueByKey : SelectedPolicy
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -490,7 +490,7 @@ struct DispatchUniqueByKey : SelectedPolicy
                 items_per_thread,
                 scan_sm_occupancy);
       }
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke select_if_kernel
       error =
@@ -660,7 +660,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       num_items,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

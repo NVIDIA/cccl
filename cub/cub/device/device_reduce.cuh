@@ -223,7 +223,7 @@ struct DeviceReduce
     return Reduce<InputIteratorT, OutputIteratorT, ReductionOpT, T>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
@@ -345,7 +345,7 @@ struct DeviceReduce
 
     return Sum<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
@@ -471,7 +471,7 @@ struct DeviceReduce
 
     return Min<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
@@ -606,7 +606,7 @@ struct DeviceReduce
 
     return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
@@ -730,7 +730,7 @@ struct DeviceReduce
 
     return Max<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``)
@@ -869,7 +869,7 @@ struct DeviceReduce
 
     return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Fuses transform and reduce operations
@@ -1234,7 +1234,7 @@ struct DeviceReduce
       num_items,
       stream);
   }
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END
