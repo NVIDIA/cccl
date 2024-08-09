@@ -42,7 +42,6 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
-target_compile_features(vector_add PUBLIC cxx_std_20)
 
 # "Links" the CCCL::cudax CMake target to the `vector_add` executable. This
 # configures everything needed to use CCCL's headers, including setting up
@@ -60,6 +59,9 @@ target_link_libraries(vector_add
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
 
 if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # mdspan on windows only works in C++20 mode
+  target_compile_features(vector_add PUBLIC cxx_std_20)
+
   # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
   # __cplusplus to be defined for this to work:
   target_compile_options(vector_add PRIVATE
