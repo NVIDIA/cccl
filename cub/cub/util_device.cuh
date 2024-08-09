@@ -633,13 +633,64 @@ struct ChainedPolicy
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Invoke(int device_ptx_version, FunctorT& op, ::cuda::std::true_type = {})
   {
     if (device_ptx_version < PolicyPtxVersion)
     {
-      return PrevPolicyT::Invoke(device_ptx_version, op);
+      // only continue traversing if the lowest architecture we are compiling for is smaller than the current policy
+      // TODO(bgruber): replace dispatching by if constexpr in C++17
+      constexpr bool test_next_arch =
+#ifdef __CUDA_ARCH_LIST__
+        get_first({__CUDA_ARCH_LIST__}) < PolicyPtxVersion;
+#else
+        true;
+#endif
+      return PrevPolicyT::Invoke(device_ptx_version, op, ::cuda::std::bool_constant<test_next_arch>{});
     }
+
+    // only invoke the function object for ptx versions smaller/equal to the largest architecture we are compiling for
+    // TODO(bgruber): replace dispatching by if constexpr in C++17
+    constexpr bool invoke_current_policy =
+#ifdef __CUDA_ARCH_LIST__
+      PolicyPtxVersion <= get_last({__CUDA_ARCH_LIST__});
+#else
+      true;
+#endif
+    {
+      return DoInvoke(op, ::cuda::std::bool_constant<invoke_current_policy>{});
+    }
+    _LIBCUDACXX_UNREACHABLE();
+  }
+
+  template <std::size_t N>
+  CUB_RUNTIME_FUNCTION static constexpr int get_first(const int (&a)[N])
+  {
+    return a[0];
+  }
+
+  template <std::size_t N>
+  CUB_RUNTIME_FUNCTION static constexpr int get_last(const int (&a)[N])
+  {
+    return a[N - 1];
+  }
+
+  template <typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int, FunctorT&, ::cuda::std::false_type)
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+
+  template <typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DoInvoke(FunctorT& op, ::cuda::std::true_type)
+  {
     return op.template Invoke<PolicyT>();
+  }
+
+  template <typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DoInvoke(FunctorT&, ::cuda::std::false_type)
+  {
+    _LIBCUDACXX_UNREACHABLE();
   }
 };
 
@@ -652,9 +703,16 @@ struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
 
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int /*ptx_version*/, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Invoke(int /*ptx_version*/, FunctorT& op, ::cuda::std::true_type = {})
   {
     return op.template Invoke<PolicyT>();
+  }
+
+  template <typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int, FunctorT&, ::cuda::std::false_type)
+  {
+    _LIBCUDACXX_UNREACHABLE();
   }
 };
 

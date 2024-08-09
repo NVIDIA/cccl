@@ -87,3 +87,65 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   REQUIRE(ptx_version == kernel_cuda_arch);
   REQUIRE(host_ptx_version == kernel_cuda_arch);
 }
+
+#ifdef __CUDA_ARCH_LIST__
+// We list policies for all virtual architectures that __CUDA_ARCH_LIST__ can contain, so the actual architectures the
+// tests are compiled for should match to one of those
+struct policy_hub
+{
+#  define GEN_POLICY(cur, prev)                                             \
+    struct policy##cur : cub::ChainedPolicy<cur, policy##cur, policy##prev> \
+    {                                                                       \
+      static constexpr int value = cur;                                     \
+    }
+  // for the list of supported architectures, see libcudacxx/include/nv/target
+  GEN_POLICY(350, 350);
+  GEN_POLICY(370, 350);
+  GEN_POLICY(500, 370);
+  GEN_POLICY(520, 500);
+  GEN_POLICY(530, 520);
+  GEN_POLICY(600, 530);
+  GEN_POLICY(610, 600);
+  GEN_POLICY(620, 610);
+  GEN_POLICY(700, 620);
+  GEN_POLICY(720, 700);
+  GEN_POLICY(750, 720);
+  GEN_POLICY(800, 750);
+  GEN_POLICY(860, 800);
+  GEN_POLICY(870, 860);
+  GEN_POLICY(890, 870);
+  GEN_POLICY(900, 890);
+  GEN_POLICY(1000, 900);
+  // add more policies here when new architectures emerge
+  GEN_POLICY(2000, 1000); // non-existing architecture, just to test pruning
+#  undef GEN_POLICY
+
+  using max_policy = policy2000;
+};
+
+// Check that selected is one of arches
+template <int selected, int... arch_list>
+struct check
+{
+  static_assert(::cuda::std::_Or<::cuda::std::bool_constant<selected == arch_list>...>::value, "");
+  using type = cudaError_t;
+};
+
+struct Closure
+{
+  // We need to fail template instantiation if ActivePolicy::value is not one from the __CUDA_ARCH_LIST__
+  template <typename ActivePolicy>
+  _CCCL_HOST_DEVICE auto Invoke() const -> typename check<ActivePolicy::value, __CUDA_ARCH_LIST__>::type
+  {
+    return cudaSuccess;
+  }
+};
+
+CUB_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__", "[util][dispatch]")
+{
+  int ptx_version = 0;
+  cub::PtxVersion(ptx_version);
+  Closure c;
+  policy_hub::max_policy::Invoke(ptx_version, c);
+}
+#endif
