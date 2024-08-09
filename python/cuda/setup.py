@@ -25,6 +25,10 @@ ver = __version__
 del __version__
 
 
+with open("README.md") as f:
+    long_description = f.read()
+
+
 class CustomBuildCommand(build_py):
     def run(self):
         self.run_command('package_cccl')
@@ -62,6 +66,8 @@ setup(
     name="cuda-cooperative",
     version=ver,
     description="Experimental Core Library for CUDA Python",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="NVIDIA Corporation",
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
@@ -85,5 +91,7 @@ setup(
         'build_py': CustomBuildCommand,
         'bdist_wheel': CustomWheelBuild,
     },
-    include_package_data=True
+    include_package_data=True,
+    license="Apache-2.0 with LLVM exception",
+    license_files = ('../../LICENSE',),
 )
