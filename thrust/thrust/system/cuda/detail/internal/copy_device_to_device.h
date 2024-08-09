@@ -50,6 +50,10 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+// Need a forward declaration here to work around a cyclic include, since "cuda/detail/transform.h" includes this header
+template <class Derived, class InputIt, class OutputIt, class TransformOp>
+OutputIt THRUST_FUNCTION
+transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
 
 namespace __copy
 {
