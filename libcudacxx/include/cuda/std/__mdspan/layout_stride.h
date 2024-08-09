@@ -519,7 +519,7 @@ struct layout_stride
     _LIBCUDACXX_REQUIRES(
       __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> _LIBCUDACXX_AND(
         extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-        _LIBCUDACXX_AND _StridedLayoutMapping::is_always_strided())
+        _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
     __MDSPAN_INLINE_FUNCTION friend constexpr bool
     operator!=(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
