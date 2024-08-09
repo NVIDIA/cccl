@@ -51,6 +51,15 @@ target_link_libraries(vector_add PUBLIC CCCL::cudax CCCL::Thrust INTERFACE cudax
 # TODO: These are temporary until the main branch catches up with the latest changes
 target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
 
+if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
+  # __cplusplus to be defined for this to work:
+  target_compile_options(vector_add PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
+  )
+endif()
+
 # This is only relevant for internal testing and not needed by end users.
 include(CTest)
 enable_testing()
