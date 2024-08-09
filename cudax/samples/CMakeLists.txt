@@ -43,14 +43,14 @@ endif()
 # Creates a cmake executable target for the main program
 add_executable(vector_add vector_add/vector_add.cu)
 
-# TODO: These are temporary until the main branch catches up with the latest changes
-target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
-target_include_directories(vector_add PUBLIC ${CMAKE_CURRENT_LIST_DIR}/../include)
-
 # "Links" the CCCL::cudax CMake target to the `vector_add` executable. This
 # configures everything needed to use CCCL's headers, including setting up
 # include paths, compiler flags, etc.
-target_link_libraries(vector_add PUBLIC CCCL::cudax)
+target_link_libraries(vector_add PUBLIC CCCL::cudax INTERFACE cudax.compiler_interface)
+
+# TODO: These are temporary until the main branch catches up with the latest changes
+target_compile_definitions(vector_add PUBLIC LIBCUDACXX_ENABLE_EXCEPTIONS)
+target_include_directories(vector_add AFTER PUBLIC ${CMAKE_CURRENT_LIST_DIR}/../include)
 
 # This is only relevant for internal testing and not needed by end users.
 include(CTest)
