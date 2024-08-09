@@ -609,6 +609,7 @@ struct DispatchReduce : SelectedPolicy
       , transform_op(transform_op)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(
     void* d_temp_storage,
@@ -633,6 +634,7 @@ struct DispatchReduce : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
@@ -673,7 +675,7 @@ struct DispatchReduce : SelectedPolicy
               ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
               (long long) stream,
               ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke single_reduce_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -795,7 +797,7 @@ struct DispatchReduce : SelectedPolicy
               (long long) stream,
               ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD,
               reduce_config.sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke DeviceReduceKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -823,7 +825,7 @@ struct DispatchReduce : SelectedPolicy
               ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
               (long long) stream,
               ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke DeviceReduceSingleTileKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -977,6 +979,7 @@ struct DispatchReduce : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -993,6 +996,7 @@ struct DispatchReduce : SelectedPolicy
 
     return Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 /**
@@ -1151,6 +1155,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
       , ptx_version(ptx_version)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(
     void* d_temp_storage,
@@ -1179,6 +1184,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //---------------------------------------------------------------------------
   // Chained policy invocation
@@ -1231,7 +1237,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
               (long long) stream,
               ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
               segmented_reduce_config.sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke DeviceReduceKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -1379,6 +1385,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -1407,6 +1414,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
       init,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

@@ -440,7 +440,7 @@ struct dispatch_histogram
               histogram_init_grid_dims,
               histogram_init_block_threads,
               (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke histogram_init_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -464,7 +464,7 @@ struct dispatch_histogram
               (long long) stream,
               pixels_per_thread,
               histogram_sweep_sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke histogram_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
@@ -657,9 +657,9 @@ public:
          ::cuda::std::is_same<CommonT, __uint128_t>::value), //
         CommonT, //
         uint64_t> //
-#else
+#else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
       uint64_t
-#endif
+#endif // !CUB_IS_INT128_ENABLED
       >;
 
     // Alias template that excludes __[u]int128 from the integral types
@@ -669,9 +669,9 @@ public:
       ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
                        ::cuda::std::false_type,
                        ::cuda::std::is_integral<T>>;
-#else
+#else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
       ::cuda::std::is_integral<T>;
-#endif
+#endif // !CUB_IS_INT128_ENABLED
 
     union ScaleT
     {
@@ -1036,6 +1036,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1066,6 +1067,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /**
    * Dispatch routine for HistogramRange, specialized for 8-bit sample types
@@ -1200,6 +1202,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1230,6 +1233,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /**
    * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
@@ -1416,6 +1420,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -1448,6 +1453,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /**
    * Dispatch routine for HistogramEven, specialized for 8-bit sample types
@@ -1586,6 +1592,7 @@ public:
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1617,6 +1624,7 @@ public:
       stream,
       is_byte_sample);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

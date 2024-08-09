@@ -548,7 +548,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
             static_cast<int>(blocks_in_grid),
             LargeSegmentPolicyT::BLOCK_THREADS,
             (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
       blocks_in_grid, LargeSegmentPolicyT::BLOCK_THREADS, 0, stream)
@@ -596,7 +596,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
             static_cast<int>(small_and_medium_blocks_in_grid),
             SmallAndMediumPolicyT::BLOCK_THREADS,
             (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
       small_and_medium_blocks_in_grid, SmallAndMediumPolicyT::BLOCK_THREADS, 0, stream)
@@ -1131,6 +1131,7 @@ struct DispatchSegmentedSort : SelectedPolicy
       , stream(stream)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedSort(
     void* d_temp_storage,
@@ -1157,6 +1158,7 @@ struct DispatchSegmentedSort : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
@@ -1438,6 +1440,7 @@ struct DispatchSegmentedSort : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -1466,6 +1469,7 @@ struct DispatchSegmentedSort : SelectedPolicy
       is_overwrite_okay,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)
@@ -1651,7 +1655,7 @@ private:
             (long long) stream,
             LargeSegmentPolicyT::ITEMS_PER_THREAD,
             LargeSegmentPolicyT::RADIX_BITS);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     // Invoke fallback kernel
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
