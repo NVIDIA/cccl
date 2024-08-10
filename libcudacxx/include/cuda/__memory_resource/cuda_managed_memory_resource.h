@@ -80,7 +80,7 @@ public:
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to cuda_memory_resource::deallocate.");
+                       "Invalid alignment passed to cuda_managed_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFree, "cuda_managed_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
@@ -102,8 +102,8 @@ public:
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c cuda_memory_resource and another resource
-  //! @param __lhs The \c cuda_memory_resource
+  //! @brief Equality comparison between a \c cuda_managed_memory_resource and another resource
+  //! @param __lhs The \c cuda_managed_memory_resource
   //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.

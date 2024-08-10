@@ -66,6 +66,13 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>
 static_assert(cuda::mr::async_resource_with<async_resource<AccessibilityType::Device>, cuda::mr::device_accessible>,
               "");
 
+// test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
+struct derived_resource : cuda::mr::cuda_memory_resource
+{
+  using cuda::mr::cuda_memory_resource::cuda_memory_resource;
+};
+static_assert(cuda::mr::resource<derived_resource>, "");
+
 // Ensure that we can only
 
 void test()
