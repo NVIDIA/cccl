@@ -32,17 +32,7 @@ namespace cuda::experimental
 namespace detail
 {
 // Types should define overloads of __cudax_launch_transform that are find-able
-// by ADL in order to customize how cudax::launch handles that type. The
-// overload below, which simply returns the argument unmodified, is the overload
-// that gets chosen if no other overload matches. It takes __ignore as the first
-// argument to make this overload less preferred than other overloads that take
-// a stream_ref as the first argument.
-template <typename _Arg>
-_CCCL_NODISCARD constexpr _Arg&& __cudax_launch_transform(__ignore, _Arg&& __arg) noexcept
-{
-  return _CUDA_VSTD::forward<_Arg>(__arg);
-}
-
+// by ADL in order to customize how cudax::launch handles that type.
 template <typename _Arg>
 using __launch_transform_direct_result_t =
   decltype(__cudax_launch_transform(::cuda::stream_ref{}, _CUDA_VSTD::declval<_Arg>()));
@@ -50,25 +40,35 @@ using __launch_transform_direct_result_t =
 struct __fn
 {
   template <typename _Arg>
-  _CCCL_NODISCARD __launch_transform_direct_result_t<_Arg> operator()(::cuda::stream_ref __stream, _Arg&& __arg) const
+  _CCCL_NODISCARD decltype(auto) operator()(::cuda::stream_ref __stream, _Arg&& __arg) const
   {
-    // This call is unqualified to allow ADL
-    return __cudax_launch_transform(__stream, _CUDA_VSTD::forward<_Arg>(__arg));
+    if constexpr (::cuda::std::_IsValidExpansion<__launch_transform_direct_result_t, _Arg>::value)
+    {
+      // This call is unqualified to allow ADL
+      return __cudax_launch_transform(__stream, _CUDA_VSTD::forward<_Arg>(__arg));
+    }
+    else
+    {
+      return _CUDA_VSTD::forward<_Arg>(__arg);
+    }
   }
 };
+
+template <typename _Arg>
+using __launch_transform_result_t = decltype(__fn{}(::cuda::stream_ref{}, _CUDA_VSTD::declval<_Arg>()));
 
 template <typename _Arg, typename _Enable = void>
 struct __as_kernel_arg
 {
-  using type = _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>;
+  using type = _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>;
 };
 
 template <typename _Arg>
 struct __as_kernel_arg<
   _Arg,
-  _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__as_kernel_arg>>
+  _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>::__as_kernel_arg>>
 {
-  using type = typename _CUDA_VSTD::decay_t<__launch_transform_direct_result_t<_Arg>>::__as_kernel_arg;
+  using type = typename _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>::__as_kernel_arg;
 };
 
 _CCCL_GLOBAL_CONSTANT __fn __launch_transform{};
