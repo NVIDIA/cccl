@@ -15,7 +15,7 @@ function(thrust_configure_multiconfig)
     # Handle dialect options:
     foreach (dialect IN LISTS THRUST_CPP_DIALECT_OPTIONS)
       set(default_value OFF)
-      if (dialect EQUAL 14) # Default to just 14 on:
+      if (dialect EQUAL 17) # Default to just 17 on:
         set(default_value ON)
       endif()
       option(THRUST_MULTICONFIG_ENABLE_DIALECT_CPP${dialect}
@@ -112,7 +112,7 @@ function(thrust_configure_multiconfig)
       set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE STRING)
     endif()
 
-    set(THRUST_CPP_DIALECT 14
+    set(THRUST_CPP_DIALECT 17
       CACHE STRING "The C++ standard to target: ${THRUST_CPP_DIALECT_OPTIONS}"
     )
     set_property(CACHE THRUST_CPP_DIALECT
