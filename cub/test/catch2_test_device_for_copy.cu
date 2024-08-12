@@ -29,6 +29,7 @@
 // above header needs to be included first
 
 #include <cub/device/device_for.cuh>
+#include <cub/iterator/counting_input_iterator.cuh>
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -184,5 +185,25 @@ CUB_TEST("Device for each n works with unaligned vectors", "[for_copy][device]",
   const auto num_of_once_marked_items =
     static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
+  REQUIRE(num_of_once_marked_items == num_items);
+}
+
+CUB_TEST("Device for each works with couting iterator", "[for][device]")
+{
+  using offset_t               = int;
+  constexpr offset_t max_items = 5000000;
+  constexpr offset_t min_items = 1;
+  const offset_t num_items     = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+
+  const auto it = cub::CountingInputIterator<int>{0};
+  c2h::device_vector<int> counts(num_items);
+  device_for_each_copy(it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())});
+
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
 }
