@@ -308,7 +308,7 @@ private:
   pointer const ptr;
 
   // `thrust::detail::is_wrapped_reference` is a trait that indicates whether
-  // a type is a fancy reference. It detects such types by loooking for a
+  // a type is a fancy reference. It detects such types by looking for a
   // nested `wrapped_reference_hint` type.
   struct wrapped_reference_hint
   {};
