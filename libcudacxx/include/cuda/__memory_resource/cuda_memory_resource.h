@@ -34,6 +34,7 @@
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__cuda/ensure_current_device.h>
 #  include <cuda/std/__new/bad_alloc.h>
+#  include <cuda/stream_ref>
 
 #  if _CCCL_STD_VER >= 2014
 
@@ -81,14 +82,60 @@ public:
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const
+  void
+  deallocate(void* __ptr, const size_t __bytes, const size_t __alignment = default_cuda_malloc_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
                        "Invalid alignment passed to cuda_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFree, "cuda_memory_resource::deallocate failed", __ptr);
+    (void) __bytes;
     (void) __alignment;
   }
+
+#    if CUDART_VERSION >= 11020
+  //! @brief Asynchronously allocate device memory of size at least \p __bytes
+  //! on stream \c __stream.
+  //!
+  //! The allocation comes from the memory pool associated with the device of
+  //! \c __stream.
+  //!
+  //! @param __bytes The size in bytes of the allocation.
+  //! @param __alignment The requested alignment of the allocation.
+  //! @param __stream The stream establishing the stream ordering contract and
+  //!        the memory pool to allocate from.
+  //! @throw cuda::cuda_error of the returned error code
+  //! @return Pointer to the newly allocated memory
+  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const size_t __alignment, stream_ref __stream) const
+  {
+    // We need to ensure that the provided alignment matches the minimal provided alignment
+    if (!__is_valid_alignment(__alignment))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    void* __ptr{nullptr};
+    _CCCL_TRY_CUDA_API(
+      ::cudaMallocAsync, "Failed to allocate memory with cudaMallocAsync.", &__ptr, __bytes, __stream.get());
+    return __ptr;
+  }
+
+  //! @brief Asynchronously deallocate memory pointed to by \p __ptr .
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
+  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
+  //! @param __stream The stream establishing the stream ordering contract.
+  void deallocate_async(
+    void* __ptr, const size_t __bytes, const size_t __alignment, ::cuda::stream_ref __stream) const noexcept
+  {
+    // We need to ensure that the provided alignment matches the minimal provided alignment
+    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
+                       "Invalid alignment passed to cuda_memory_resource::deallocate.");
+    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "cudaFreeAsync failed", __ptr, __stream.get());
+    (void) __bytes;
+    (void) __alignment;
+  }
+#    endif // CUDART_VERSION >= 11020
 
   //! @brief Equality comparison with another \c cuda_memory_resource
   //! @param __other The other \c cuda_memory_resource
@@ -152,6 +199,7 @@ public:
   }
 };
 static_assert(resource_with<cuda_memory_resource, device_accessible>, "");
+static_assert(async_resource_with<cuda_memory_resource, device_accessible>, "");
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

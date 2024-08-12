@@ -30,19 +30,22 @@ void ensure_device_ptr(void* ptr)
 
 void test()
 {
+#if CUDART_VERSION >= 11020
   cuda::mr::cuda_memory_resource res{};
 
+  ::cudaStream_t stream{};
+
   { // allocate / deallocate
-    auto* ptr = res.allocate(42);
+    auto* ptr = res.allocate_async(42, cuda::mr::default_cuda_malloc_alignment, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_device_ptr(ptr);
 
-    res.deallocate(ptr, 42);
+    res.deallocate_async(ptr, 42, cuda::mr::default_cuda_malloc_alignment, stream);
   }
 
   { // allocate / deallocate with alignment
     constexpr size_t desired_alignment = 64;
-    auto* ptr                          = res.allocate(42, desired_alignment);
+    auto* ptr                          = res.allocate_async(42, desired_alignment, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_device_ptr(ptr);
 
@@ -53,13 +56,13 @@ void test()
     res.deallocate(ptr, 42, desired_alignment);
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#  ifndef TEST_HAS_NO_EXCEPTIONS
   { // allocate with too small alignment
     while (true)
     {
       try
       {
-        auto* ptr = res.allocate(5, 42);
+        auto* ptr = res.allocate_async(5, 42, stream);
         unused(ptr);
       }
       catch (const std::bad_alloc&)
@@ -75,7 +78,7 @@ void test()
     {
       try
       {
-        auto* ptr = res.allocate(5, 1337);
+        auto* ptr = res.allocate_async(5, 1337, stream);
         unused(ptr);
       }
       catch (const std::bad_alloc&)
@@ -85,7 +88,8 @@ void test()
       assert(false);
     }
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#  endif // TEST_HAS_NO_EXCEPTIONS
+#endif // CUDART_VERSION >= 11020
 }
 
 int main(int, char**)
