@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/fallbacks.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
@@ -32,6 +31,23 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_COMPILER_MSVC)
+
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc8(uint64_t __x)
+{
+  return static_cast<int>((__x * 0x0101010101010101) >> 56);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc16(uint64_t __x)
+{
+  return __fallback_popc8((__x + (__x >> 4)) & 0x0f0f0f0f0f0f0f0f);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc32(uint64_t __x)
+{
+  return __fallback_popc16((__x & 0x3333333333333333) + ((__x >> 2) & 0x3333333333333333));
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc64(uint64_t __x)
+{
+  return __fallback_popc32(__x - ((__x >> 1) & 0x5555555555555555));
+}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint32_t __x) noexcept
 {

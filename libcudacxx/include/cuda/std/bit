@@ -10,49 +10,6 @@
 #ifndef _CUDA_STD_BIT
 #define _CUDA_STD_BIT
 
-/*
-    bit synopsis
-
-namespace std {
-
-  template <class T>
-    constexpr bool has_single_bit(T x) noexcept; // C++20
-  template <class T>
-    constexpr T bit_ceil(T x);                   // C++20
-  template <class T>
-    constexpr T bit_floor(T x) noexcept;         // C++20
-  template <class T>
-    constexpr T bit_width(T x) noexcept;         // C++20
-
-  // 23.20.2, rotating
-  template<class T>
-    constexpr T rotl(T x, uint32_t s) noexcept; // C++20
-  template<class T>
-    constexpr T rotr(T x, uint32_t s) noexcept; // C++20
-
-  // 23.20.3, counting
-  template<class T>
-    constexpr int countl_zero(T x) noexcept;  // C++20
-  template<class T>
-    constexpr int countl_one(T x) noexcept;   // C++20
-  template<class T>
-    constexpr int countr_zero(T x) noexcept;  // C++20
-  template<class T>
-    constexpr int countr_one(T x) noexcept;   // C++20
-  template<class T>
-    constexpr int popcount(T x) noexcept;     // C++20
-
-  // 20.15.9, endian
-  enum class endian {
-    little = see below,        // C++20
-    big = see below,           // C++20
-    native = see below         // C++20
-};
-
-} // namespace std
-
-*/
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

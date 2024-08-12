@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/fallbacks.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
@@ -32,6 +31,31 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_COMPILER_MSVC)
+
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz2(uint64_t __x, int __c)
+{
+  return !!(~__x & 0x2) ^ __c;
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz4(uint64_t __x, int __c)
+{
+  return __binary_clz2(__x >> 2 * !!(__x & 0xC), __c + 2 * !(__x & 0xC));
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz8(uint64_t __x, int __c)
+{
+  return __binary_clz4(__x >> 4 * !!(__x & 0xF0), __c + 4 * !(__x & 0xF0));
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz16(uint64_t __x, int __c)
+{
+  return __binary_clz8(__x >> 8 * !!(__x & 0xFF00), __c + 8 * !(__x & 0xFF00));
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz32(uint64_t __x, int __c)
+{
+  return __binary_clz16(__x >> 16 * !!(__x & 0xFFFF0000), __c + 16 * !(__x & 0xFFFF0000));
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz64(uint64_t __x)
+{
+  return __binary_clz32(__x >> 32 * !!(__x & 0xFFFFFFFF00000000), 32 * !(__x & 0xFFFFFFFF00000000));
+}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_clz(uint32_t __x) noexcept
 {
