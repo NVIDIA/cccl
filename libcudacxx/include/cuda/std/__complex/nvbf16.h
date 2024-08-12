@@ -90,6 +90,15 @@ public:
       : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
   {}
 
+  template <class _Up,
+            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
+            __enable_if_t<!_CCCL_TRAIT(is_constructible, value_type, _Up)
+                            && (_CCCL_TRAIT(is_same, _Up, float) || _CCCL_TRAIT(is_same, _Up, double)),
+                          int>                                                              = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
+      : __repr_(__float2bfloat16(__c.real()), __float2bfloat16(__c.imag()))
+  {}
+
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const value_type& __re)
   {
     __repr_.x = __re;
@@ -155,24 +164,24 @@ public:
 
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const value_type& __re)
   {
-    __repr_.x += __re;
+    __repr_.x = __hadd(__repr_.x, __re);
     return *this;
   }
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const value_type& __re)
   {
-    __repr_.x -= __re;
+    __repr_.x = __hsub(__repr_.x, __re);
     return *this;
   }
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const value_type& __re)
   {
-    __repr_.x *= __re;
-    __repr_.y *= __re;
+    __repr_.x = __hmul(__repr_.x, __re);
+    __repr_.y = __hmul(__repr_.y, __re);
     return *this;
   }
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const value_type& __re)
   {
-    __repr_.x /= __re;
-    __repr_.y /= __re;
+    __repr_.x = __hdiv(__repr_.x, __re);
+    __repr_.y = __hdiv(__repr_.y, __re);
     return *this;
   }
 
@@ -197,7 +206,7 @@ public:
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
-  return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
+  return _CUDA_VSTD::atan2(__int2bfloat16_rn(0), __re);
 }
 
 // We have performance issues with some trigonometric functions with __nv_bfloat16
