@@ -56,7 +56,7 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ inline void assert_countr_zero(T val, int expected)
 {
-  auto v = val;
+  volatile auto v = val;
   assert(cuda::std::countr_zero(v) == expected);
 }
 

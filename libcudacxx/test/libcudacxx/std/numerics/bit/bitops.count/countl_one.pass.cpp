@@ -57,7 +57,7 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ inline void assert_countl_one(T val, int expected)
 {
-  auto v = val;
+  volatile auto v = val;
   assert(cuda::std::countl_one(v) == expected);
 }
 
