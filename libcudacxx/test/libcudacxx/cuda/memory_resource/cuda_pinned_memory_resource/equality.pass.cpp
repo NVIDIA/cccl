@@ -56,6 +56,13 @@ struct async_resource : public resource<Accessibilty>
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
+// test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
+struct derived_pinned_resource : cuda::mr::cuda_pinned_memory_resource
+{
+  using cuda::mr::cuda_pinned_memory_resource::cuda_pinned_memory_resource;
+};
+static_assert(cuda::mr::resource<derived_pinned_resource>, "");
+
 void test()
 {
   cuda::mr::cuda_pinned_memory_resource first{};
