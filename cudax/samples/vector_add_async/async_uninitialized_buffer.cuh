@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -63,8 +63,8 @@ private:
     if (__self.__alloc_stream_ != __launch_stream)
     {
       // Record an event on the allocation stream and wait on it in the launch
-      // stream. TODO: The need to create an owning stream here temporary until
-      // stream_ref has a way to wait on an event.
+      // stream. TODO: The need to create an owning stream here is a temporary
+      // work-around until stream_ref has a way to wait on an event.
       auto __launch_stream2 = stream::from_native_handle(__launch_stream.get());
       __launch_stream2.wait(__self.__alloc_stream_); // BUGBUG potentially throwing
       (void) __launch_stream2.release();
@@ -176,7 +176,7 @@ public:
     _CUDA_VSTD::swap(__alloc_stream_, __other.__alloc_stream_);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently brocken
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
   //! @brief Forwards the passed Properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(

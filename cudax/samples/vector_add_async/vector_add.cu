@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+/* Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -116,7 +116,7 @@ try
   std::printf("waiting for the stream to finish\n");
   stream.wait();
 
-  std::printf("veryfying the results\n");
+  std::printf("verifying the results\n");
   // Verify that the result vector is correct
   for (int i = 0; i < numElements; ++i)
   {
@@ -135,8 +135,10 @@ try
 catch (const std::exception& e)
 {
   std::printf("caught an exception: \"%s\"\n", e.what());
+  return -1;
 }
 catch (...)
 {
   std::printf("caught an unknown exception\n");
+  return -2;
 }
