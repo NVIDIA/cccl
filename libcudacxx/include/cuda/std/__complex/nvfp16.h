@@ -223,21 +223,21 @@ public:
 
 template <> // complex<float>
 template <> // complex<__half>
-_LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__half>& __c)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__half>& __c)
     : __re_(__half2float(__c.real()))
     , __im_(__half2float(__c.imag()))
 {}
 
 template <> // complex<double>
 template <> // complex<__half>
-_LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__half>& __c)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__half>& __c)
     : __re_(__half2float(__c.real()))
     , __im_(__half2float(__c.imag()))
 {}
 
 template <> // complex<float>
 template <> // complex<__half>
-_LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const complex<__half>& __c)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const complex<__half>& __c)
 {
   __re_ = __half2float(__c.real());
   __im_ = __half2float(__c.imag());
@@ -246,7 +246,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const co
 
 template <> // complex<double>
 template <> // complex<__half>
-_LIBCUDACXX_INLINE_VISIBILITY complex<double>& complex<double>::operator=(const complex<__half>& __c)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>& complex<double>::operator=(const complex<__half>& __c)
 {
   __re_ = __half2float(__c.real());
   __im_ = __half2float(__c.imag());
