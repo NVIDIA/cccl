@@ -41,7 +41,7 @@ struct all_overloads
 namespace postfix_args
 {
 
-template <typename value_type, typename alternate_binary_op = thrust::maximum<>>
+template <typename alternate_binary_op = thrust::maximum<>>
 struct all_overloads
 {
   using postfix_args_type = std::tuple< // List any extra arg overloads:

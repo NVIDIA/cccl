@@ -119,8 +119,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT             = cub::detail::InputValue<InitValueT>;
-  using AccumT                  = cub::detail::accumulator_t<ScanOp, InitValueT, cub::detail::value_t<InputIt>>;
+  using InputValueT = cub::detail::InputValue<InitValueT>;
+  using AccumT      = typename ::cuda::std::__accumulator_t<ScanOp, cub::detail::value_t<InputIt>, InitValueT>;
   constexpr bool ForceInclusive = true;
 
   using Dispatch32 =
@@ -240,7 +240,6 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 // Thrust API entry points
 //-------------------------
 
-_CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename ScanOp>
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy,

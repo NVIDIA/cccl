@@ -33,6 +33,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/tbb/detail/scan.h>
 
+#include <cuda/std/__functional/invoke.h>
+
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_scan.h>
 
@@ -350,7 +352,8 @@ OutputIterator inclusive_scan(
   using namespace thrust::detail;
 
   // Use the input iterator's value type per https://wg21.link/P0571
-  using ValueType = InitialValueType;
+  using ValueType = typename ::cuda::std::
+    __accumulator_t<BinaryFunction, typename ::cuda::std::iterator_traits<InputIterator>::value_type, InitialValueType>;
 
   using Size = typename thrust::iterator_difference<InputIterator>::type;
   Size n     = thrust::distance(first, last);
