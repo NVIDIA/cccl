@@ -218,15 +218,15 @@ __host__ __device__ constexpr void test_init_list()
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
-    inplace_vector vec(input);
+    inplace_vector vec{};
     assert(vec.empty());
   }
 
   { // inplace_vector<T, N> can be constructed from a non-empty initializer_list
-    cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
-    inplace_vector vec(input);
+    cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
+    inplace_vector vec({T(1), T(42), T(1337), T(0)});
     assert(!vec.empty());
-    assert(equal_range(vec, input));
+    assert(equal_range(vec, expected));
   }
 }
 

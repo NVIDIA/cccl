@@ -168,26 +168,26 @@ __host__ __device__ constexpr void test_init_list()
     assert(vec.empty());
   }
 
-  cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
+  cuda::std::array<T, 4> expected{T(1), T(42), T(1337), T(0)};
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, from empty
     inplace_vector vec{};
-    vec = input;
+    vec = {T(1), T(42), T(1337), T(0)};
     assert(!vec.empty());
-    assert(equal_range(vec, input));
+    assert(equal_range(vec, expected));
   }
 
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, shrinking
     inplace_vector vec{T(0), T(42), T(1337), T(42), T(5)};
-    vec = input;
+    vec = {T(1), T(42), T(1337), T(0)};
     assert(!vec.empty());
-    assert(equal_range(vec, input));
+    assert(equal_range(vec, expected));
   }
 
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, growing from non empty
     inplace_vector vec{T(0), T(42)};
-    vec = input;
+    vec = {T(1), T(42), T(1337), T(0)};
     assert(!vec.empty());
-    assert(equal_range(vec, input));
+    assert(equal_range(vec, expected));
   }
 }
 

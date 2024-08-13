@@ -206,17 +206,17 @@ __host__ __device__ constexpr void test()
   }
 
   { // inplace_vector<T, N>::assign(initializer_list), shrinking
-    cuda::std::initializer_list<T> expected = {T(42), T(42)};
+    cuda::std::array<T, 2> expected{T(42), T(42)};
     inplace_vector vec{T(1), T(42), T(1337), T(0)};
-    vec.assign(expected);
+    vec.assign({T(42), T(42)});
     assert(!vec.empty());
     assert(equal_range(vec, expected));
   }
 
   { // inplace_vector<T, N>::assign(initializer_list), growing
-    cuda::std::initializer_list<T> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
+    cuda::std::array<T, 6> expected{T(42), T(1), T(42), T(1337), T(0), T(42)};
     inplace_vector vec{T(1), T(42), T(1337), T(0)};
-    vec.assign(expected);
+    vec.assign({T(42), T(1), T(42), T(1337), T(0), T(42)});
     assert(!vec.empty());
     assert(equal_range(vec, expected));
   }
