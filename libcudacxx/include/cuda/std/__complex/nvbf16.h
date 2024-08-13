@@ -123,15 +123,6 @@ public:
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY operator complex<float>() const
-  {
-    return complex<float>{__bfloat162float(__repr_.x), __bfloat162float(__repr_.y)};
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY operator complex<double>() const
-  {
-    return complex<double>{__bfloat162float(__repr_.x), __bfloat162float(__repr_.y)};
-  }
-
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const value_type& __re)
   {
     __repr_.x = __re;
