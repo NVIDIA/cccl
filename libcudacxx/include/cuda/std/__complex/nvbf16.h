@@ -56,15 +56,6 @@ struct __type_to_vector<__nv_bfloat16>
   using __type = __nv_bfloat162;
 };
 
-// This is a workaround against the user defining macros __CUDA_NO_BFLOAT16_CONVERSIONS__ __CUDA_NO_BFLOAT16_OPERATORS__
-template <>
-struct __complex_can_implicitly_construct<float, __nv_bfloat16> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<double, __nv_bfloat16> : true_type
-{};
-
 template <>
 struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
 {
@@ -231,6 +222,15 @@ public:
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
 };
+
+// This is a workaround against the user defining macros __CUDA_NO_BFLOAT16_CONVERSIONS__ __CUDA_NO_BFLOAT16_OPERATORS__
+template <>
+struct __complex_can_implicitly_construct<float, __nv_bfloat16> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<double, __nv_bfloat16> : true_type
+{};
 
 template <> // complex<float>
 template <> // complex<__half>

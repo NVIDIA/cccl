@@ -53,15 +53,6 @@ struct __type_to_vector<__half>
   using __type = __half2;
 };
 
-// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
-template <>
-struct __complex_can_implicitly_construct<float, __half> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<double, __half> : true_type
-{};
-
 template <>
 struct __libcpp_complex_overload_traits<__half, false, false>
 {
@@ -220,6 +211,15 @@ public:
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
 };
+
+// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
+template <>
+struct __complex_can_implicitly_construct<float, __half> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<double, __half> : true_type
+{};
 
 template <> // complex<float>
 template <> // complex<__half>
