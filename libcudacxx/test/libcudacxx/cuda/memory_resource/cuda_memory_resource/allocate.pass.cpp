@@ -47,7 +47,8 @@ void test()
     ensure_device_ptr(ptr);
 
     // also check the alignment
-    const auto alignment = reinterpret_cast<cuda::std::uintptr_t>(ptr);
+    const auto address   = reinterpret_cast<cuda::std::uintptr_t>(ptr);
+    const auto alignment = address & (~address + 1ULL);
     assert(alignment >= desired_alignment);
     res.deallocate(ptr, 42, desired_alignment);
   }
