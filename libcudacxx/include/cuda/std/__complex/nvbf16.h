@@ -239,7 +239,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__nv_bfloat1
     , __im_(__bfloat162float(__c.imag()))
 {}
 
-template <> // complex<float>
+template <> // complex<double>
 template <> // complex<__half>
 _LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(__bfloat162float(__c.real()))
@@ -255,7 +255,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const co
   return *this;
 }
 
-template <> // complex<float>
+template <> // complex<double>
 template <> // complex<__nv_bfloat16>
 _LIBCUDACXX_INLINE_VISIBILITY complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
 {
