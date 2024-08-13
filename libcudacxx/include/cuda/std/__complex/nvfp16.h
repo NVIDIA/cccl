@@ -53,6 +53,15 @@ struct __type_to_vector<__half>
   using __type = __half2;
 };
 
+// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
+template <>
+struct __complex_can_implicitly_construct<float, __half> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<double, __half> : true_type
+{};
+
 template <>
 struct __libcpp_complex_overload_traits<__half, false, false>
 {
@@ -87,13 +96,11 @@ public:
       : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
   {}
 
-  template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<!_CCCL_TRAIT(is_constructible, value_type, _Up)
-                            && (_CCCL_TRAIT(is_same, _Up, float) || _CCCL_TRAIT(is_same, _Up, double)),
-                          int>                                                              = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c)
       : __repr_(__float2half(__c.real()), __float2half(__c.imag()))
+  {}
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c)
+      : __repr_(__double2half(__c.real()), __double2half(__c.imag()))
   {}
 
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const value_type& __re)
@@ -108,6 +115,19 @@ public:
   {
     __repr_.x = __c.real();
     __repr_.y = __c.imag();
+    return *this;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<float>& __c)
+  {
+    __repr_.x = __float2half(__c.real());
+    __repr_.y = __float2half(__c.imag());
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<double>& __c)
+  {
+    __repr_.x = __double2half(__c.real());
+    __repr_.y = __double2half(__c.imag());
     return *this;
   }
 
@@ -200,6 +220,38 @@ public:
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
 };
+
+template <> // complex<float>
+template <> // complex<__half>
+_LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__half>& __c)
+    : __re_(__half2float(__c.real()))
+    , __im_(__half2float(__c.imag()))
+{}
+
+template <> // complex<float>
+template <> // complex<__half>
+_LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__half>& __c)
+    : __re_(__half2float(__c.real()))
+    , __im_(__half2float(__c.imag()))
+{}
+
+template <> // complex<float>
+template <> // complex<__half>
+_LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const complex<__half>& __c)
+{
+  __re_ = __half2float(__c.real());
+  __im_ = __half2float(__c.imag());
+  return *this;
+}
+
+template <> // complex<float>
+template <> // complex<__half>
+_LIBCUDACXX_INLINE_VISIBILITY complex<double>& complex<double>::operator=(const complex<__half>& __c)
+{
+  __re_ = __half2float(__c.real());
+  __im_ = __half2float(__c.imag());
+  return *this;
+}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 {

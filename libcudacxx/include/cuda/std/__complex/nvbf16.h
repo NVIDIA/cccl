@@ -56,6 +56,15 @@ struct __type_to_vector<__nv_bfloat16>
   using __type = __nv_bfloat162;
 };
 
+// This is a workaround against the user defining macros __CUDA_NO_BFLOAT16_CONVERSIONS__ __CUDA_NO_BFLOAT16_OPERATORS__
+template <>
+struct __complex_can_implicitly_construct<float, __nv_bfloat16> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<double, __nv_bfloat16> : true_type
+{};
+
 template <>
 struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
 {
@@ -90,14 +99,20 @@ public:
       : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
   {}
 
-  template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<!_CCCL_TRAIT(is_constructible, value_type, _Up)
-                            && (_CCCL_TRAIT(is_same, _Up, float) || _CCCL_TRAIT(is_same, _Up, double)),
-                          int>                                                              = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c)
       : __repr_(__float2bfloat16(__c.real()), __float2bfloat16(__c.imag()))
   {}
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c)
+      : __repr_(__double2bfloat16(__c.real()), __double2bfloat16(__c.imag()))
+  {}
+  _LIBCUDACXX_INLINE_VISIBILITY operator complex<float>() const
+  {
+    return complex<float>{__bfloat162float(__repr_.x), __bfloat162float(__repr_.y)};
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY operator complex<double>() const
+  {
+    return complex<double>{__bfloat162float(__repr_.x), __bfloat162float(__repr_.y)};
+  }
 
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const value_type& __re)
   {
@@ -111,6 +126,19 @@ public:
   {
     __repr_.x = __c.real();
     __repr_.y = __c.imag();
+    return *this;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<float>& __c)
+  {
+    __repr_.x = __float2bfloat16(__c.real());
+    __repr_.y = __float2bfloat16(__c.imag());
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<double>& __c)
+  {
+    __repr_.x = __double2bfloat16(__c.real());
+    __repr_.y = __double2bfloat16(__c.imag());
     return *this;
   }
 
@@ -203,6 +231,38 @@ public:
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
 };
+
+template <> // complex<float>
+template <> // complex<__half>
+_LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__nv_bfloat16>& __c)
+    : __re_(__bfloat162float(__c.real()))
+    , __im_(__bfloat162float(__c.imag()))
+{}
+
+template <> // complex<float>
+template <> // complex<__half>
+_LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__nv_bfloat16>& __c)
+    : __re_(__bfloat162float(__c.real()))
+    , __im_(__bfloat162float(__c.imag()))
+{}
+
+template <> // complex<float>
+template <> // complex<__nv_bfloat16>
+_LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const complex<__nv_bfloat16>& __c)
+{
+  __re_ = __bfloat162float(__c.real());
+  __im_ = __bfloat162float(__c.imag());
+  return *this;
+}
+
+template <> // complex<float>
+template <> // complex<__nv_bfloat16>
+_LIBCUDACXX_INLINE_VISIBILITY complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
+{
+  __re_ = __bfloat162float(__c.real());
+  __im_ = __bfloat162float(__c.imag());
+  return *this;
+}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 {

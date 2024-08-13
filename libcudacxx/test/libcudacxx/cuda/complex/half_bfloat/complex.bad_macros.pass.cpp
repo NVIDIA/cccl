@@ -11,6 +11,8 @@
 #define __CUDA_NO_HALF_OPERATORS__       1
 #define __CUDA_NO_BFLOAT16_CONVERSIONS__ 1
 #define __CUDA_NO_BFLOAT16_OPERATORS__   1
+#define __CUDA_NO_HALF2_OPERATORS__      1
+#define __CUDA_NO_BFLOAT162_OPERATORS__  1
 
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
@@ -22,10 +24,8 @@ __host__ __device__ void test_assignment(cuda::std::complex<U> v = {})
 {
   cuda::std::complex<T> converting(v);
 
-  /* TODO: Fix assignment when the macros above are defined
-    cuda::std::complex<T> assigning{};
-    assigning = v;
-  */
+  cuda::std::complex<T> assigning{};
+  assigning = v;
 }
 
 __host__ __device__ void test()

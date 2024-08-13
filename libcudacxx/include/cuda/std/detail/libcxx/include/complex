@@ -310,24 +310,6 @@ public:
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
-  template <class _Up,
-            __enable_if_t<!_CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_same, _Up, __half), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr complex(const complex<_Up>& __c)
-      : __re_(__half2float(__c.real()))
-      , __im_(__half2float(__c.imag()))
-  {}
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-  template <class _Up,
-            __enable_if_t<!_CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_same, _Up, __nv_bfloat16), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr complex(const complex<_Up>& __c)
-      : __re_(__bfloat162float(__c.real()))
-      , __im_(__bfloat162float(__c.imag()))
-  {}
-#endif // _LIBCUDACXX_HAS_NVBF16
-
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const value_type& __re)
   {
     __re_ = __re;
