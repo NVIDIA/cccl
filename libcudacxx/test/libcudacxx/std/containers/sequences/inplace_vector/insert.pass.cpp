@@ -149,7 +149,7 @@ __host__ __device__ constexpr void test()
   }
 
   const cuda::std::array<T, 5> expected{T(0), T(42), T(3), T(1337), T(5)};
-  const cuda::std::initializer_list<T> input{T(42), T(3), T(1337)};
+  cuda::std::initializer_list<T> input{T(42), T(3), T(1337)};
   { // inplace_vector<T, N>::insert(iter, iter, iter), input iterators
     using iter         = cpp17_input_iterator<const T*>;
     inplace_vector vec = {T(0), T(5)};

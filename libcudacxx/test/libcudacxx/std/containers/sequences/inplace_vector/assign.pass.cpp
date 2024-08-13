@@ -78,21 +78,21 @@ __host__ __device__ constexpr void test()
 
   { // inplace_vector<T, 0>::assign(iter, iter), with input iterators
     using iter = cpp17_input_iterator<const T*>;
-    const cuda::std::initializer_list<T> input{};
+    cuda::std::initializer_list<T> input{};
     cuda::std::inplace_vector<T, 0> vec{};
     vec.assign(iter{input.begin()}, iter{input.end()});
     assert(vec.empty());
   }
 
   { // inplace_vector<T, 0>::assign(iter, iter), with forward iterators
-    const cuda::std::initializer_list<T> input{};
+    cuda::std::initializer_list<T> input{};
     cuda::std::inplace_vector<T, 0> vec{};
     vec.assign(input.begin(), input.end());
     assert(vec.empty());
   }
 
   { // inplace_vector<T, 0>::assign(initializer_list)
-    const cuda::std::initializer_list<T> input{};
+    cuda::std::initializer_list<T> input{};
     cuda::std::inplace_vector<T, 0> vec{};
     vec.assign(input);
     assert(vec.empty());
@@ -192,21 +192,21 @@ __host__ __device__ constexpr void test()
   }
 
   { // inplace_vector<T, N>::assign(initializer_list), empty range
-    const cuda::std::initializer_list<T> expected = {};
+    cuda::std::initializer_list<T> expected = {};
     inplace_vector vec{};
     vec.assign(expected);
     assert(vec.empty());
   }
 
   { // inplace_vector<T, N>::assign(initializer_list), shrinking to empty
-    const cuda::std::initializer_list<T> expected = {};
+    cuda::std::initializer_list<T> expected = {};
     inplace_vector vec{T(1), T(42), T(1337), T(0)};
     vec.assign(expected);
     assert(vec.empty());
   }
 
   { // inplace_vector<T, N>::assign(initializer_list), shrinking
-    const cuda::std::initializer_list<T> expected = {T(42), T(42)};
+    cuda::std::initializer_list<T> expected = {T(42), T(42)};
     inplace_vector vec{T(1), T(42), T(1337), T(0)};
     vec.assign(expected);
     assert(!vec.empty());
@@ -214,7 +214,7 @@ __host__ __device__ constexpr void test()
   }
 
   { // inplace_vector<T, N>::assign(initializer_list), growing
-    const cuda::std::initializer_list<T> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
+    cuda::std::initializer_list<T> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
     inplace_vector vec{T(1), T(42), T(1337), T(0)};
     vec.assign(expected);
     assert(!vec.empty());

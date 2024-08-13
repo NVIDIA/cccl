@@ -148,14 +148,14 @@ template <class T>
 __host__ __device__ constexpr void test_init_list()
 {
   { // inplace_vector<T, 0> can be assigned an empty initializer_list
-    const cuda::std::initializer_list<T> input{};
+    cuda::std::initializer_list<T> input{};
     cuda::std::inplace_vector<T, 0> vec{};
     vec = input;
     assert(vec.empty());
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
-  const cuda::std::initializer_list<T> empty_input{};
+  cuda::std::initializer_list<T> empty_input{};
   { // inplace_vector<T, N> can be assigned an empty initializer_list
     inplace_vector vec{};
     vec = empty_input;
@@ -168,7 +168,7 @@ __host__ __device__ constexpr void test_init_list()
     assert(vec.empty());
   }
 
-  const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
+  cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0)};
   { // inplace_vector<T, N> can be assigned a non-empty initializer_list, from empty
     inplace_vector vec{};
     vec = input;
