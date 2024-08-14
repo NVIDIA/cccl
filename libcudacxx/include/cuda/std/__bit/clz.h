@@ -30,8 +30,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_COMPILER_MSVC)
-
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz2(uint64_t __x, int __c)
 {
   return !!(~__x & 0x2) ^ __c;
@@ -56,6 +54,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_clz64(uint64_t __x)
 {
   return __binary_clz32(__x >> 32 * !!(__x & 0xFFFFFFFF00000000), 32 * !(__x & 0xFFFFFFFF00000000));
 }
+
+#if !defined(_CCCL_COMPILER_MSVC)
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_clz(uint32_t __x) noexcept
 {
