@@ -178,10 +178,10 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
 
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[smem_len];
-  __shared__ barrier bar;
+  __shared__ barrier* bar;
   if (threadIdx.x == 0)
   {
-    init(&bar, blockDim.x);
+    init(bar, blockDim.x);
   }
   __syncthreads();
 
@@ -190,14 +190,14 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   if (threadIdx.x == 0)
   {
     // Fastest moving coordinate first.
-    cp_tensor_global_to_shared(global_tensor_map, smem_coord, smem_buffer, bar);
-    token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
+    cp_tensor_global_to_shared(global_tensor_map, smem_coord, smem_buffer, *bar);
+    token = cuda::device::barrier_arrive_tx(*bar, 1, sizeof(smem_buffer));
   }
   else
   {
-    token = bar.arrive();
+    token = bar->arrive();
   }
-  bar.wait(cuda::std::move(token));
+  bar->wait(cuda::std::move(token));
 
   // Check smem
   for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
