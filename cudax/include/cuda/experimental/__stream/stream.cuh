@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 namespace cuda::experimental
 {
@@ -51,7 +52,7 @@ struct stream : stream_ref
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
   {
-    __scoped_device dev_setter(__dev);
+    [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamDefault, __priority);
   }
@@ -89,7 +90,9 @@ struct stream : stream_ref
   {
     if (__stream != detail::invalid_stream)
     {
-      [[maybe_unused]] auto status = ::cudaStreamDestroy(__stream);
+      // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
+      // Alternative would be to store the device and push/pop here
+      [[maybe_unused]] auto status = detail::driver::streamDestroy(__stream);
     }
   }
 
@@ -139,21 +142,36 @@ struct stream : stream_ref
   void wait(event_ref __ev) const
   {
     assert(__ev.get() != nullptr);
-    _CCCL_TRY_CUDA_API(::cudaStreamWaitEvent, "Failed to make a stream wait for an event", get(), __ev.get());
+    // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
+    detail::driver::streamWaitEvent(get(), __ev.get());
   }
 
-  //! @brief Make all future work submitted into this stream depend on completion of all work from the specified stream
+  //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
+  //! stream
   //!
   //! @param __other Stream that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
   void wait(stream_ref __other) const
   {
-    // TODO consider an optimization to not create an event every time and instead have one persistent event or one per
-    // stream
-    assert(__stream.get() != detail::invalid_stream);
+    // TODO consider an optimization to not create an event every time and instead have one persistent event or one
+    // per stream
+    assert(__stream != detail::invalid_stream);
     event __tmp(__other);
     wait(__tmp);
+  }
+
+  //! @brief Get device under which this stream was created.
+  //!
+  //! @throws cuda_error if device check fails
+  device_ref device() const
+  {
+    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
+    // lower to CUDART for this instead
+    __ensure_current_device __dev_setter(*this);
+    int result;
+    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &result);
+    return result;
   }
 
   //! @brief Construct an `stream` object from a native `cudaStream_t` handle.

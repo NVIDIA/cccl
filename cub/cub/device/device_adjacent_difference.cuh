@@ -267,6 +267,7 @@ public:
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT, typename NumItemsT = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeftCopy(
     void* d_temp_storage,
@@ -282,6 +283,7 @@ public:
 
     return SubtractLeftCopy(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
@@ -394,6 +396,7 @@ public:
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename RandomAccessIteratorT, typename DifferenceOpT, typename NumItemsT = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeft(
     void* d_temp_storage,
@@ -408,6 +411,7 @@ public:
 
     return SubtractLeft(d_temp_storage, temp_storage_bytes, d_input, num_items, difference_op, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
@@ -539,6 +543,7 @@ public:
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT, typename NumItemsT = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractRightCopy(
     void* d_temp_storage,
@@ -554,6 +559,7 @@ public:
 
     return SubtractRightCopy(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
@@ -655,6 +661,7 @@ public:
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename RandomAccessIteratorT, typename DifferenceOpT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED static CUB_RUNTIME_FUNCTION cudaError_t SubtractRight(
     void* d_temp_storage,
@@ -669,6 +676,7 @@ public:
 
     return SubtractRight(d_temp_storage, temp_storage_bytes, d_input, num_items, difference_op, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

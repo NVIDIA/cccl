@@ -54,6 +54,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     "#include <cub/block/block_radix_sort.cuh>                                                   \n"
     "#include <cub/block/block_reduce.cuh>                                                       \n"
     "#include <cub/block/block_scan.cuh>                                                         \n"
+    "#include <cub/device/dispatch/kernels/reduce.cuh>                                           \n"
     "                                                                                            \n"
     "extern \"C\" __global__ void kernel(int *ptr, int *errors)                                  \n"
     "{                                                                                           \n"

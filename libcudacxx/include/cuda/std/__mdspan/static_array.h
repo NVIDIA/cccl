@@ -162,21 +162,17 @@ public:
   {}
 
   __MDSPAN_INLINE_FUNCTION constexpr explicit __partially_static_array_impl(
-    _CUDA_VSTD::array<_Tp, sizeof...(_Idxs)> const& __vals) noexcept
+    array<_Tp, sizeof...(_Idxs)> const& __vals) noexcept
       : __partially_static_array_impl(__construct_psa_from_all_exts_values_tag, _CUDA_VSTD::get<_Idxs>(__vals)...)
   {}
 
-  // clang-format off
-  __MDSPAN_FUNCTION_REQUIRES(
-    (__MDSPAN_INLINE_FUNCTION constexpr explicit),
-    __partially_static_array_impl,
-    (_CUDA_VSTD::array<_Tp, __size_dynamic> const &__vals), noexcept,
-    /* requires */
-      (sizeof...(_Idxs) != __size_dynamic)
-  ): __partially_static_array_impl(
-       __construct_psa_from_dynamic_exts_values_tag,
-       _CUDA_VSTD::get<_IdxsDynamicIdxs>(__vals)...) {}
-  // clang-format on
+  _LIBCUDACXX_TEMPLATE(bool _SizeMatches = (sizeof...(_Idxs) != __size_dynamic))
+  _LIBCUDACXX_REQUIRES(_SizeMatches)
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __partially_static_array_impl(
+    array<_Tp, __size_dynamic> const& __vals) noexcept
+    __partially_static_array_impl(__construct_psa_from_dynamic_exts_values_tag,
+                                  _CUDA_VSTD::get<_IdxsDynamicIdxs>(__vals)...)
+  {}
 
   template <class _Up,
             class _static_u,

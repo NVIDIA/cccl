@@ -1,6 +1,6 @@
-.. _pycudax-module:
+.. _cuda_cooperative-module:
 
-CUDA
+CUDA Cooperative
 ==================================================
 
 .. warning::

@@ -7,11 +7,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
+
 #include <cuda/experimental/device.cuh>
 
-#include "../hierarchy/testing_common.cuh"
 #include "cuda/std/__type_traits/is_same.h"
+#include <testing.cuh>
 
 namespace
 {
@@ -34,6 +34,16 @@ TEST_CASE("Smoke", "[device]")
 {
   using cudax::device;
   using cudax::device_ref;
+
+  SECTION("Compare")
+  {
+    CUDAX_REQUIRE(device_ref{0} == device_ref{0});
+    CUDAX_REQUIRE(device_ref{0} == 0);
+    CUDAX_REQUIRE(0 == device_ref{0});
+    CUDAX_REQUIRE(device_ref{1} != device_ref{0});
+    CUDAX_REQUIRE(device_ref{1} != 2);
+    CUDAX_REQUIRE(1 != device_ref{2});
+  }
 
   SECTION("Attributes")
   {
@@ -177,7 +187,7 @@ TEST_CASE("Smoke", "[device]")
                             ::cudaGPUDirectRDMAWritesOrdering>();
     ::test_device_attribute<device::attrs::memory_pool_supported_handle_types,
                             ::cudaDevAttrMemoryPoolSupportedHandleTypes,
-                            unsigned int>();
+                            ::cudaMemAllocationHandleType>();
     ::test_device_attribute<device::attrs::deferred_mapping_cuda_array_supported,
                             ::cudaDevAttrDeferredMappingCudaArraySupported,
                             bool>();
@@ -225,6 +235,30 @@ TEST_CASE("Smoke", "[device]")
                      ordering == device::attrs::gpu_direct_rdma_writes_ordering.all_devices));
     }
 
+    SECTION("memory_pool_supported_handle_types")
+    {
+      STATIC_REQUIRE(::cudaMemHandleTypeNone == device::attrs::memory_pool_supported_handle_types.none);
+      STATIC_REQUIRE(::cudaMemHandleTypePosixFileDescriptor
+                     == device::attrs::memory_pool_supported_handle_types.posix_file_descriptor);
+      STATIC_REQUIRE(::cudaMemHandleTypeWin32 == device::attrs::memory_pool_supported_handle_types.win32);
+      STATIC_REQUIRE(::cudaMemHandleTypeWin32Kmt == device::attrs::memory_pool_supported_handle_types.win32_kmt);
+#if CUDART_VERSION >= 12040
+      STATIC_REQUIRE(::cudaMemHandleTypeFabric == 0x8);
+      STATIC_REQUIRE(::cudaMemHandleTypeFabric == device::attrs::memory_pool_supported_handle_types.fabric);
+#else
+      STATIC_REQUIRE(0x8 == device::attrs::memory_pool_supported_handle_types.fabric);
+#endif
+
+      constexpr int all_handle_types =
+        device::attrs::memory_pool_supported_handle_types.none
+        | device::attrs::memory_pool_supported_handle_types.posix_file_descriptor
+        | device::attrs::memory_pool_supported_handle_types.win32
+        | device::attrs::memory_pool_supported_handle_types.win32_kmt
+        | device::attrs::memory_pool_supported_handle_types.fabric;
+      auto handle_types = device_ref(0).attr(device::attrs::memory_pool_supported_handle_types);
+      CUDAX_REQUIRE(handle_types <= all_handle_types);
+    }
+
 #if CUDART_VERSION >= 12020
     SECTION("numa_config")
     {
@@ -236,5 +270,47 @@ TEST_CASE("Smoke", "[device]")
                      config == device::attrs::numa_config.numa_node));
     }
 #endif
+  }
+}
+
+TEST_CASE("global devices vector", "[device]")
+{
+  CUDAX_REQUIRE(cudax::devices.size() > 0);
+  CUDAX_REQUIRE(cudax::devices.begin() != cudax::devices.end());
+  CUDAX_REQUIRE(cudax::devices.begin() == cudax::devices.begin());
+  CUDAX_REQUIRE(cudax::devices.end() == cudax::devices.end());
+  CUDAX_REQUIRE(cudax::devices.size() == static_cast<size_t>(cudax::devices.end() - cudax::devices.begin()));
+
+  CUDAX_REQUIRE(0 == cudax::devices[0].get());
+  CUDAX_REQUIRE(cudax::device_ref{0} == cudax::devices[0]);
+
+  CUDAX_REQUIRE(0 == (*cudax::devices.begin()).get());
+  CUDAX_REQUIRE(cudax::device_ref{0} == *cudax::devices.begin());
+
+  CUDAX_REQUIRE(0 == cudax::devices.begin()->get());
+  CUDAX_REQUIRE(0 == cudax::devices.begin()[0].get());
+
+  if (cudax::devices.size() > 1)
+  {
+    CUDAX_REQUIRE(1 == cudax::devices[1].get());
+    CUDAX_REQUIRE(cudax::device_ref{0} != cudax::devices[1].get());
+
+    CUDAX_REQUIRE(1 == (*std::next(cudax::devices.begin())).get());
+    CUDAX_REQUIRE(1 == std::next(cudax::devices.begin())->get());
+    CUDAX_REQUIRE(1 == cudax::devices.begin()[1].get());
+
+    CUDAX_REQUIRE(cudax::devices.size() - 1 == (*std::prev(cudax::devices.end())).get());
+    CUDAX_REQUIRE(cudax::devices.size() - 1 == std::prev(cudax::devices.end())->get());
+    CUDAX_REQUIRE(cudax::devices.size() - 1 == cudax::devices.end()[-1].get());
+  }
+
+  try
+  {
+    [[maybe_unused]] const cudax::device& dev = cudax::devices.at(cudax::devices.size());
+    CUDAX_REQUIRE(false); // should not get here
+  }
+  catch (const std::out_of_range&)
+  {
+    CUDAX_REQUIRE(true); // expected
   }
 }

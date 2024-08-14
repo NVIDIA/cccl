@@ -162,7 +162,8 @@ THRUST_HOST_FUNCTION cudaError_t trivial_copy_to_device(Type* dst, Type const* s
 }
 
 template <class Policy, class Type>
-_CCCL_HOST_DEVICE cudaError_t trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t count)
+THRUST_RUNTIME_FUNCTION cudaError_t
+trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t count)
 {
   cudaError_t status = cudaSuccess;
   if (count == 0)

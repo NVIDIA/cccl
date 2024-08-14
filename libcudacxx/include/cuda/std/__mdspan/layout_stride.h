@@ -93,8 +93,8 @@ struct layout_right
 namespace __detail
 {
 template <class _Layout, class _Mapping>
-constexpr bool __is_mapping_of =
-  _CUDA_VSTD::is_same<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>::value;
+_LIBCUDACXX_INLINE_VAR constexpr bool __is_mapping_of =
+  is_same<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>::value;
 
 #  if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
 template <class _Mp>
@@ -298,17 +298,13 @@ struct layout_stride
     __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept               = default;
     __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
 
-    __MDSPAN_TEMPLATE_REQUIRES(
+    // nvcc cannot deduce this constructor when using _LIBCUDACXX_REQUIRES
+    template <
       class _IntegralTypes,
-      /* requires */ (
-        // MSVC 19.32 does not like using index_type here, requires the typename _Extents::index_type
-        // error C2641: cannot deduce template arguments for '_CUDA_VSTD::layout_stride::mapping'
-        _CCCL_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type)
-        && _CCCL_TRAIT(
-          _CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)))
-    __MDSPAN_INLINE_FUNCTION
-    constexpr mapping(extents_type const& __e,
-                      _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
+      enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
+      enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
+    __MDSPAN_INLINE_FUNCTION constexpr mapping(
+      extents_type const& __e, _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
@@ -331,17 +327,13 @@ struct layout_stride
        */
     }
 
-    __MDSPAN_TEMPLATE_REQUIRES(
+    // nvcc cannot deduce this constructor when using _LIBCUDACXX_REQUIRES
+    template <
       class _IntegralTypes,
-      /* requires */ (
-        // MSVC 19.32 does not like using index_type here, requires the typename _Extents::index_type
-        // error C2641: cannot deduce template arguments for '_CUDA_VSTD::layout_stride::mapping'
-        _CCCL_TRAIT(_CUDA_VSTD::is_convertible, const remove_const_t<_IntegralTypes>&, typename _Extents::index_type)
-        && _CCCL_TRAIT(
-          _CUDA_VSTD::is_nothrow_constructible, typename _Extents::index_type, const remove_const_t<_IntegralTypes>&)))
-    __MDSPAN_INLINE_FUNCTION
-    constexpr mapping(extents_type const& __e,
-                      _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
+      enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
+      enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
+    __MDSPAN_INLINE_FUNCTION constexpr mapping(
+      extents_type const& __e, _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
@@ -365,25 +357,25 @@ struct layout_stride
     }
 
 #  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
-    __MDSPAN_TEMPLATE_REQUIRES(
-      class _StridedLayoutMapping,
-      /* requires */ (
-        _CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
-        && __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-        && _StridedLayoutMapping::is_always_unique() && _StridedLayoutMapping::is_always_strided()))
+    _LIBCUDACXX_TEMPLATE(class _StridedLayoutMapping)
+    _LIBCUDACXX_REQUIRES(
+      _CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
+        _LIBCUDACXX_AND __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
+          _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_unique())
+            _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
 #  else
     template <class _StridedLayoutMapping>
       requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
-               && _CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
+               && _CCCL_TRAIT(is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
                && _StridedLayoutMapping::is_always_unique() && _StridedLayoutMapping::is_always_strided())
 #  endif
     __MDSPAN_CONDITIONAL_EXPLICIT(
-      (!_CUDA_VSTD::is_convertible<typename _StridedLayoutMapping::extents_type, extents_type>::value)
+      (!is_convertible<typename _StridedLayoutMapping::extents_type, extents_type>::value)
       && (__detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
           || __detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
           || __detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>) ) // needs two () due to comma
-    __MDSPAN_INLINE_FUNCTION constexpr mapping(
-      _StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
+    __MDSPAN_INLINE_FUNCTION
+    constexpr mapping(_StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
@@ -440,12 +432,11 @@ struct layout_stride
       return __span_size;
     }
 
-    __MDSPAN_TEMPLATE_REQUIRES(
-      class... _Indices,
-      /* requires */ (
-        sizeof...(_Indices) == _Extents::rank()
-        && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type) /*&& ...*/)
-        && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices) /*&& ...*/)))
+    _LIBCUDACXX_TEMPLATE(class... _Indices)
+    _LIBCUDACXX_REQUIRES(
+      (sizeof...(_Indices) == _Extents::rank())
+        _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _Indices, index_type) /*&& ...*/)
+          _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _Indices) /*&& ...*/))
     __MDSPAN_FORCE_INLINE_FUNCTION
     constexpr index_type operator()(_Indices... __idxs) const noexcept
     {
@@ -480,8 +471,8 @@ struct layout_stride
       return true;
     }
 
-    __MDSPAN_TEMPLATE_REQUIRES(class _Ext = _Extents,
-                               /* requires */ (_Ext::rank() > 0))
+    _LIBCUDACXX_TEMPLATE(class _Ext = _Extents)
+    _LIBCUDACXX_REQUIRES((_Ext::rank() > 0))
     __MDSPAN_INLINE_FUNCTION
     constexpr index_type stride(rank_type __r) const noexcept
     {
@@ -489,11 +480,11 @@ struct layout_stride
     }
 
 #  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
-    __MDSPAN_TEMPLATE_REQUIRES(
-      class _StridedLayoutMapping,
-      /* requires */ (__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-                      && (extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-                      && _StridedLayoutMapping::is_always_strided()))
+    _LIBCUDACXX_TEMPLATE(class _StridedLayoutMapping)
+    _LIBCUDACXX_REQUIRES(
+      __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> _LIBCUDACXX_AND(
+        extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
+        _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
 #  else
     template<class _StridedLayoutMapping>
     requires(
@@ -515,30 +506,30 @@ struct layout_stride
     }
 
     // This one is not technically part of the proposal. Just here to make implementation a bit more optimal hopefully
-    __MDSPAN_TEMPLATE_REQUIRES(class _OtherExtents,
-                               /* requires */ ((extents_type::rank() == _OtherExtents::rank())))
-    __MDSPAN_INLINE_FUNCTION
-    friend constexpr bool operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
+    _LIBCUDACXX_TEMPLATE(class _OtherExtents)
+    _LIBCUDACXX_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
+    __MDSPAN_INLINE_FUNCTION friend constexpr bool
+    operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
     {
       return __impl::_eq_impl(__lhs, __rhs);
     }
 
 #  if !__MDSPAN_HAS_CXX_20
-    __MDSPAN_TEMPLATE_REQUIRES(
-      class _StridedLayoutMapping,
-      /* requires */ (__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-                      && (extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-                      && _StridedLayoutMapping::is_always_strided()))
-    __MDSPAN_INLINE_FUNCTION
-    friend constexpr bool operator!=(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
+    _LIBCUDACXX_TEMPLATE(class _StridedLayoutMapping)
+    _LIBCUDACXX_REQUIRES(
+      __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> _LIBCUDACXX_AND(
+        extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
+        _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
+    __MDSPAN_INLINE_FUNCTION friend constexpr bool
+    operator!=(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
       return not(__x == __y);
     }
 
-    __MDSPAN_TEMPLATE_REQUIRES(class _OtherExtents,
-                               /* requires */ ((extents_type::rank() == _OtherExtents::rank())))
-    __MDSPAN_INLINE_FUNCTION
-    friend constexpr bool operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
+    _LIBCUDACXX_TEMPLATE(class _OtherExtents)
+    _LIBCUDACXX_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
+    __MDSPAN_INLINE_FUNCTION friend constexpr bool
+    operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
     {
       return __impl::_not_eq_impl(__lhs, __rhs);
     }

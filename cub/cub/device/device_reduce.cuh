@@ -205,6 +205,7 @@ struct DeviceReduce
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), reduction_op, init, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
     void* d_temp_storage,
@@ -222,6 +223,7 @@ struct DeviceReduce
     return Reduce<InputIteratorT, OutputIteratorT, ReductionOpT, T>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
@@ -328,6 +330,7 @@ struct DeviceReduce
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
@@ -342,6 +345,7 @@ struct DeviceReduce
 
     return Sum<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
@@ -452,6 +456,7 @@ struct DeviceReduce
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
@@ -466,6 +471,7 @@ struct DeviceReduce
 
     return Min<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
@@ -585,6 +591,7 @@ struct DeviceReduce
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
@@ -599,6 +606,7 @@ struct DeviceReduce
 
     return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
@@ -707,6 +715,7 @@ struct DeviceReduce
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
@@ -721,6 +730,7 @@ struct DeviceReduce
 
     return Max<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``)
@@ -844,6 +854,7 @@ struct DeviceReduce
       d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
@@ -858,6 +869,7 @@ struct DeviceReduce
 
     return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Fuses transform and reduce operations
@@ -1183,6 +1195,7 @@ struct DeviceReduce
                          stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeysInputIteratorT,
             typename UniqueOutputIteratorT,
             typename ValuesInputIteratorT,
@@ -1221,6 +1234,7 @@ struct DeviceReduce
       num_items,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END
