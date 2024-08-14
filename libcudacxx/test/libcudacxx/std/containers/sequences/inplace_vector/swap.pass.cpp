@@ -38,8 +38,8 @@ __host__ __device__ constexpr void test()
     cuda::std::array<T, 6> expected_left{T(1), T(1337), T(42), T(12), T(0), T(-1)};
     cuda::std::array<T, 5> expected_right{T(0), T(42), T(1337), T(42), T(5)};
 
-    inplace_vector left(expected_left);
-    inplace_vector right(expected_right);
+    inplace_vector left{T(1), T(1337), T(42), T(12), T(0), T(-1)};
+    inplace_vector right{T(0), T(42), T(1337), T(42), T(5)};
 
     left.swap(right);
     constexpr bool nothrow_swap =
