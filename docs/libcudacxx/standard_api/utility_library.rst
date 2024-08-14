@@ -29,7 +29,7 @@ the information about the individual features for details.
      - Availability
    * - :ref:`libcudacxx-standard-api-utility-bitset`
      - Fixed-size sequence of bits
-     - CCCL to be released / CUDA to be released
+     - CCCL 2.8.0
    * - :ref:`libcudacxx-standard-api-utility-expected`
      - Optional value with error channel
      - CCCL 2.3.0 / CUDA 12.4

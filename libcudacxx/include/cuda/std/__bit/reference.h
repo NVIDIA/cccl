@@ -1098,8 +1098,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
-    return __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>(
-      __seg_, __storage_type(1) << __ctz_);
+    return reference(__seg_, __storage_type(1) << __ctz_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bit_iterator& operator++()
