@@ -57,7 +57,7 @@ __device__ void test(int base_i, int base_j)
   CUtensorMap* global_tensor_map = reinterpret_cast<CUtensorMap*>(&global_fake_tensor_map);
 
   // SETUP: fill global memory buffer
-  for (int i = threadIdx.x; i < gmem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(gmem_len); i += blockDim.x)
   {
     gmem_tensor[i] = i;
   }
