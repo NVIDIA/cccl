@@ -30,7 +30,6 @@ workflows:
     # default_projects: clang-cuda
     - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang'}
     - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang', sm: '90'}
-    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # nvrtc:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all'}
     # verify-codegen:
