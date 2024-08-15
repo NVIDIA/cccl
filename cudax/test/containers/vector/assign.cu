@@ -16,15 +16,19 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/vector>
+#include <cuda/experimental/vector.cuh>
 
 #include <stdexcept>
 
+#include "helper.h"
 #include "types.h"
 #include <catch2/catch.hpp>
 
-TEMPLATE_TEST_CASE(
-  "cudax::vector assign", "[container][vector]", cuda::std::tuple<>, cuda::std::tuple<cuda::mr::host_accessible>)
+TEMPLATE_TEST_CASE("cudax::vector assign",
+                   "[container][vector]",
+                   cuda::std::tuple<cuda::mr::host_accessible>,
+                   cuda::std::tuple<cuda::mr::device_accessible>,
+                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
   using Resource     = typename extract_properties<TestType>::resource;
   using Resource_ref = typename extract_properties<TestType>::resource_ref;
@@ -44,32 +48,32 @@ TEMPLATE_TEST_CASE(
     }
 
     { // cudax::vector::assign_range with an empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 10, T(-2)};
       vec.assign_range(input_range<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign_range with a non-empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(input_range<T, 2>{{T(42), T(42)}});
+      Vector vec{resource, 10, T(-2)};
+      vec.assign_range(input_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 2>{T(42), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(input_range<T, 6>{{T(42), T(1), T(42), T(1337), T(0), T(42)}});
+      Vector vec{resource, 4, T(-2)};
+      vec.assign_range(input_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing, no reallocation
-      Vector vec{resource, 42, T{5}};
+      Vector vec{resource, 10, T(-2)};
       vec.resize(2);
-      vec.assign_range(input_range<T, 6>{{T(42), T(1), T(42), T(1337), T(0), T(42)}});
+      vec.assign_range(input_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
   }
 
@@ -83,32 +87,32 @@ TEMPLATE_TEST_CASE(
     }
 
     { // cudax::vector::assign_range with an empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 10, T(-2)};
       vec.assign_range(uncommon_range<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign_range with a non-empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(uncommon_range<T, 2>{{T(42), T(42)}});
+      Vector vec{resource, 10, T(-2)};
+      vec.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 2>{T(42), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(uncommon_range<T, 6>{{T(42), T(1), T(42), T(1337), T(0), T(42)}});
+      Vector vec{resource, 4, T(-2)};
+      vec.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing, no reallocation
-      Vector vec{resource, 42, T{5}};
+      Vector vec{resource, 10, T(-2)};
       vec.resize(2);
-      vec.assign_range(uncommon_range<T, 6>{{T(42), T(1), T(42), T(1337), T(0), T(42)}});
+      vec.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
   }
 
@@ -122,32 +126,32 @@ TEMPLATE_TEST_CASE(
     }
 
     { // cudax::vector::assign_range with an empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 10, T(-2)};
       vec.assign_range(sized_uncommon_range<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign_range with a non-empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(sized_uncommon_range<T, 2>{{T(42), T(42)}});
+      Vector vec{resource, 10, T(-2)};
+      vec.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 2>{T(42), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(sized_uncommon_range<T, 6>{{T(42), T(1), T(42), T(1337), T(0), T(42)}});
+      Vector vec{resource, 4, T(-2)};
+      vec.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing, no reallocation
-      Vector vec{resource, 42, T{5}};
+      Vector vec{resource, 10, T(-2)};
       vec.resize(2);
-      vec.assign_range(sized_uncommon_range<T, 6>{{T(42), T(1), T(42), T(1337), T(0), T(42)}});
+      vec.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
   }
 
@@ -161,32 +165,32 @@ TEMPLATE_TEST_CASE(
     }
 
     { // cudax::vector::assign_range with an empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 10, T(-2)};
       vec.assign_range(cuda::std::array<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign_range with a non-empty input, shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(cuda::std::array<T, 2>{T(42), T(42)});
+      Vector vec{resource, 10, T(-2)};
+      vec.assign_range(cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 2>{T(42), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign_range(cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)});
+      Vector vec{resource, 4, T(-2)};
+      vec.assign_range(cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign_range with a non-empty input, growing, no reallocation
-      Vector vec{resource, 42, T{5}};
+      Vector vec{resource, 10, T(-2)};
       vec.resize(2);
-      vec.assign_range(cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)});
+      vec.assign_range(cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(1), T(42), T(1337), T(0), T(42)}));
+      CHECK(equal_range(vec));
     }
   }
 
@@ -200,128 +204,120 @@ TEMPLATE_TEST_CASE(
     }
 
     { // cudax::vector::assign(count, const T&), shrinking to empty
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 10, T(-2)};
       vec.assign(0, T(42));
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign(count, const T&), shrinking
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 10, T(-2)};
       vec.assign(2, T(42));
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 2>{T(42), T(42)}));
+      CHECK(equal_size_value(vec, 2, T(42)));
     }
 
     { // cudax::vector::assign(count, const T&), growing
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
+      Vector vec{resource, 4, T(-2)};
       vec.assign(6, T(42));
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(42), T(42), T(42), T(42), T(42), T(42)}));
+      CHECK(equal_size_value(vec, 6, T{42}));
     }
   }
 
   SECTION("cudax::vector::assign(iter, iter) input iterators")
   {
-    using iter = cpp17_input_iterator<const T*>;
+    const cuda::std::array<T, 6> input = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
+    using iter                         = cpp17_input_iterator<const T*>;
     { // cudax::vector::assign(iter, iter), with input iterators empty range
-      const cuda::std::array<T, 0> expected = {};
       Vector vec{resource};
-      vec.assign(iter{expected.begin()}, iter{expected.end()});
+      vec.assign(iter{input.begin()}, iter{input.begin()});
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // cudax::vector::assign(iter, iter), with input iterators shrink to empty range
-      const cuda::std::array<T, 0> expected = {};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(iter{expected.begin()}, iter{expected.end()});
+      Vector vec{resource, 4, T(-2)};
+      vec.assign(iter{input.begin()}, iter{input.begin()});
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign(iter, iter), with input iterators shrinking
-      const cuda::std::array<T, 2> expected = {T(42), T(42)};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(iter{expected.begin()}, iter{expected.end()});
+      Vector vec{resource, 10, T(-2)};
+      vec.assign(iter{input.begin()}, iter{input.end()});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, expected));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign(iter, iter), with input iterators growing
-      const cuda::std::array<T, 6> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(iter{expected.begin()}, iter{expected.end()});
+      Vector vec{resource, 4, T(-2)};
+      vec.assign(iter{input.begin()}, iter{input.end()});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, expected));
+      CHECK(equal_range(vec));
     }
   }
 
   SECTION("cudax::vector::assign(iter, iter) forward iterators")
   {
+    const cuda::std::array<T, 6> input = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
     { // cudax::vector::assign(iter, iter), with forward iterators empty range
-      const cuda::std::array<T, 0> expected = {};
       Vector vec{resource};
-      vec.assign(expected.begin(), expected.end());
+      vec.assign(input.begin(), input.begin());
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // cudax::vector::assign(iter, iter), with forward iterators shrinking to empty
-      const cuda::std::array<T, 0> expected = {};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(expected.begin(), expected.end());
+      Vector vec{resource, 10, T(-2)};
+      vec.assign(input.begin(), input.begin());
       CHECK(vec.empty());
       CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign(iter, iter), with forward iterators shrinking
-      const cuda::std::array<T, 2> expected = {T(42), T(42)};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(expected.begin(), expected.end());
+      Vector vec{resource, 10, T(-2)};
+      vec.assign(input.begin(), input.end());
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, expected));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign(iter, iter), with forward iterators growing
-      const cuda::std::array<T, 6> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(expected.begin(), expected.end());
+      Vector vec{resource, 4, T(-2)};
+      vec.assign(input.begin(), input.end());
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, expected));
+      CHECK(equal_range(vec));
     }
   }
 
   SECTION("cudax::vector::assign(initializer_list)")
   {
     { // cudax::vector::assign(initializer_list), empty range
-      const cuda::std::initializer_list<T> expected = {};
       Vector vec{resource};
-      vec.assign(expected);
+      vec.assign(cuda::std::initializer_list<T>{});
       CHECK(vec.empty());
+      CHECK(vec.data() == nullptr);
     }
 
     { // cudax::vector::assign(initializer_list), shrinking to empty
-      const cuda::std::initializer_list<T> expected = {};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(expected);
+      Vector vec{resource, 10, T(-2)};
+      vec.assign(cuda::std::initializer_list<T>{});
       CHECK(vec.empty());
+      CHECK(vec.data() != nullptr);
     }
 
     { // cudax::vector::assign(initializer_list), shrinking
-      const cuda::std::initializer_list<T> expected = {T(42), T(42)};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(expected);
+      Vector vec{resource, 10, T(-2)};
+      vec.assign(cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, expected));
+      CHECK(equal_range(vec));
     }
 
     { // cudax::vector::assign(initializer_list), growing
-      const cuda::std::initializer_list<T> expected = {T(42), T(1), T(42), T(1337), T(0), T(42)};
-      Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
-      vec.assign(expected);
+      Vector vec{resource, 4, T(-2)};
+      vec.assign(cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec, expected));
+      CHECK(equal_range(vec));
     }
   }
 

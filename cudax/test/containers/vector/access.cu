@@ -16,15 +16,18 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/vector>
+#include <cuda/experimental/vector.cuh>
 
 #include <stdexcept>
 
+#include "helper.h"
 #include "types.h"
 #include <catch2/catch.hpp>
 
-TEMPLATE_TEST_CASE(
-  "cudax::vector access", "[container][vector]", cuda::std::tuple<>, cuda::std::tuple<cuda::mr::host_accessible>)
+TEMPLATE_TEST_CASE("cudax::vector access",
+                   "[container][vector]",
+                   cuda::std::tuple<cuda::mr::host_accessible>,
+                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
   using Resource        = typename extract_properties<TestType>::resource;
   using Resource_ref    = typename extract_properties<TestType>::resource_ref;
@@ -46,13 +49,13 @@ TEMPLATE_TEST_CASE(
     {
       Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
       auto& res = vec[2];
-      CHECK(res == T(1337));
-      CHECK(cuda::std::addressof(res) - vec.data() == 2);
-      res = T(4);
+      CHECK(compare_value<Vector::__is_host_only>(res, T(1337)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(res) - vec.data()) == 2);
+      assign_value<Vector::__is_host_only>(res, T(4));
 
       auto& const_res = cuda::std::as_const(vec)[2];
-      CHECK(const_res == T(4));
-      CHECK(cuda::std::addressof(const_res) - vec.data() == 2);
+      CHECK(compare_value<Vector::__is_host_only>(const_res, T(4)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - vec.data()) == 2);
     }
   }
 
@@ -64,12 +67,12 @@ TEMPLATE_TEST_CASE(
     {
       Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
       auto& res = vec.first();
-      CHECK(res == T(1));
+      CHECK(compare_value<Vector::__is_host_only>(res, T(1)));
       CHECK(cuda::std::addressof(res) == vec.data());
-      res = T(4);
+      assign_value<Vector::__is_host_only>(res, T(4));
 
       auto& const_res = cuda::std::as_const(vec).first();
-      CHECK(const_res == T(4));
+      CHECK(compare_value<Vector::__is_host_only>(const_res, T(4)));
       CHECK(cuda::std::addressof(const_res) == vec.data());
     }
   }
@@ -82,13 +85,13 @@ TEMPLATE_TEST_CASE(
     {
       Vector vec{resource, {T(1), T(42), T(1337), T(0)}};
       auto& res = vec.back();
-      CHECK(res == T(0));
-      CHECK(cuda::std::addressof(res) - vec.data() == (vec.size() - 1));
-      res = T(4);
+      CHECK(compare_value<Vector::__is_host_only>(res, T(0)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(res) - vec.data()) == (vec.size() - 1));
+      assign_value<Vector::__is_host_only>(res, T(4));
 
       auto& const_res = cuda::std::as_const(vec).back();
-      CHECK(const_res == T(4));
-      CHECK(cuda::std::addressof(const_res) - vec.data() == (vec.size() - 1));
+      CHECK(compare_value<Vector::__is_host_only>(const_res, T(4)));
+      CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - vec.data()) == (vec.size() - 1));
     }
   }
 

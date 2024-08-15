@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX__UTILITY_SELECT_EXECUTION_SPACE_H
-#define __CUDAX__UTILITY_SELECT_EXECUTION_SPACE_H
+#ifndef __CUDAX__UTILITY_SELECT_EXECUTION_SPACE
+#define __CUDAX__UTILITY_SELECT_EXECUTION_SPACE
 
 #include <cuda/std/detail/__config>
 
@@ -45,4 +45,4 @@ _CCCL_INLINE_VAR constexpr _ExecutionSpace __select_execution_space =
 
 #endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
-#endif //__CUDAX__UTILITY_SELECT_EXECUTION_SPACE_H
+#endif //__CUDAX__UTILITY_SELECT_EXECUTION_SPACE
