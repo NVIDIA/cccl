@@ -16,18 +16,17 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/vector>
+#include <cuda/experimental/vector.cuh>
 
+#include "helper.h"
 #include "types.h"
 #include <catch2/catch.hpp>
 
-TEMPLATE_TEST_CASE(
-  "cudax::vector iterators",
-  "[container][vector]",
-  cuda::std::tuple<>,
-  cuda::std::tuple<cuda::mr::host_accessible>,
-  cuda::std::tuple<cuda::mr::device_accessible>,
-  (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
+TEMPLATE_TEST_CASE("cudax::vector iterators",
+                   "[container][vector]",
+                   cuda::std::tuple<cuda::mr::host_accessible>,
+                   cuda::std::tuple<cuda::mr::device_accessible>,
+                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
   using Resource     = typename extract_properties<TestType>::resource;
   using Resource_ref = typename extract_properties<TestType>::resource_ref;

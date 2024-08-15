@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX__CONTAINERS_VECTOR_H
-#define __CUDAX__CONTAINERS_VECTOR_H
+#ifndef __CUDAX__CONTAINERS_VECTOR
+#define __CUDAX__CONTAINERS_VECTOR
 
 #include <cuda/std/detail/__config>
 
@@ -19,6 +19,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/copy.h>
+#include <thrust/equal.h>
+#include <thrust/execution_policy.h>
+#include <thrust/fill.h>
+#include <thrust/for_each.h>
+#include <thrust/remove.h>
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource_ref.h>
@@ -42,6 +49,7 @@
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__new/launder.h>
@@ -57,13 +65,10 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__type_traits/is_trivial.h>
-#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/__type_traits/is_trivially_move_assignable.h>
-#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -72,13 +77,11 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/limits>
 
-#include <cuda/experimental/__container/heterogeneous_iterator.h>
-#include <cuda/experimental/__container/uninitialized_buffer.h>
+#include <cuda/experimental/__container/heterogeneous_iterator.cuh>
+#include <cuda/experimental/__container/uninitialized_buffer.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__utility/select_execution_space.h>
-
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
-  && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__utility/select_execution_space.cuh>
 
 _CCCL_PUSH_MACROS
 
@@ -125,195 +128,272 @@ public:
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
   using size_type              = _CUDA_VSTD::size_t;
   using difference_type        = _CUDA_VSTD::ptrdiff_t;
-  using __resource_ref         = _CUDA_VMR::resource_ref<_Properties...>;
 
-  // Doxygen cannot handle the macro expansions
-  template <class _Range>
-  static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _Tp>;
+  using __buffer   = ::cuda::experimental::uninitialized_buffer<_Tp, _Properties...>;
+  using __resource = ::cuda::experimental::mr::any_resource<_Properties...>;
 
-private:
-  uninitialized_buffer<_Tp, _Properties...> __buf_;
-  size_type __size_ = 0; // initialized to 0 in case initialization of the elements might throw
+  template <class, class...>
+  friend class vector;
 
-  //! @brief If an exception is thrown, adjusts the size of the vector so that the previously constructed elements
-  //! are accounted for
-  struct _Adjust_size
+  // For now we require trivially copyable type to simplify the implementation
+  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_trivially_copyable, _Tp),
+                "cuda::experimental::vector requires T to be trivially copyable.");
+
+  //! @brief Convenience shortcut to detect the execution space of the vector
+  static constexpr bool __is_host_only = __select_execution_space<_Properties...> == _ExecutionSpace::__host;
+
+  //! @brief Copies range [__src, ...) into __dest with a hole of __count elements after __pos
+  //! [__src, ..., __src + __pos, undefined, ..., undefined, __src + __pos, ...)
+  struct __copy_segmented_op
   {
-    vector* __obj_;
-    iterator& __first_;
-    iterator __current_;
+    const _Tp* __src_;
+    _Tp* __dest_;
+    size_type __pos_;
+    size_type __count_;
 
-    constexpr _Adjust_size(vector* __obj, iterator& __first, iterator& __current) noexcept
-        : __obj_(__obj)
-        , __first_(__first)
-        , __current_(__current)
+    constexpr __copy_segmented_op(const _Tp* __src, _Tp* __dest, size_type __pos, size_type __count) noexcept
+        : __src_(__src)
+        , __dest_(__dest)
+        , __pos_(__pos)
+        , __count_(__count)
     {}
 
-    void operator()() const noexcept
+    _CCCL_DEVICE void operator()(_Tp& __elem) const noexcept
     {
-      __obj_->__size_ += static_cast<size_type>(__current_ - __first_);
+      const auto __idx = _CUDA_VSTD::addressof(__elem) - __dest_;
+      if (__idx < __pos_) // copy first __pos elements from __src
+      {
+        __elem = *(__src_ + __idx);
+      }
+      else if (__idx >= __pos_ + __count_) // copy final elements from __src again
+      {
+        __elem = *(__src_ + __idx - __count_);
+      }
     }
   };
 
-  //! @brief Destroy the elements in the range `[__first, end())` and adjusts the size.
-  //! @param __first Iterator to the first element to be destroyed.
-  //! No destructor is run if `_Tp` is trivially destructible.
-  void __destroy_from(iterator __first) noexcept
+private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::vector must contain at least one execution space property!");
+
+  __buffer __buf_;
+  size_type __size_ = 0; // initialized to 0 in case initialization of the elements might throw
+
+  //! @brief Helper to check container is compatible with this vector
+  template <class _Range>
+  static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _Tp>;
+
+  //! @brief Helper to check whether a different vector still statisfies all properties of this one
+  template <class... _OtherProperties>
+  static constexpr bool __properties_match =
+    !_CCCL_TRAIT(_CUDA_VSTD::is_same,
+                 _CUDA_VSTD::__make_type_set<_Properties...>,
+                 _CUDA_VSTD::__make_type_set<_OtherProperties...>)
+    && _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+
+  //! @brief Helper to check whether a vector matches but is not the same type
+
+  //! @brief Helper to determine what cudaMemcpyKind we need to copy data from another vector with different
+  template <class... _OtherProperties>
+  static constexpr cudaMemcpyKind __transfer_kind =
+    __select_execution_space<_OtherProperties...> == _ExecutionSpace::__host
+      ? (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice)
+      : (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice);
+
+  //! @brief Copies data from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in the same memory
+  //! space
+  //! @param __first Pointer to the start of the input segment.
+  //! @param __last Pointer to the end of the input segment.
+  //! @param __dest Pointer to the start of the output segment.
+  //! @returns Pointer equal to `__dest + __count`
+  static pointer __copy_same(const_pointer __first, const_pointer __last, pointer __dest)
   {
-    const auto __last = end();
-    _CCCL_IF_CONSTEXPR (!_CCCL_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp))
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      _CUDA_VSTD::__destroy(__first, __last);
+      return _CUDA_VSTD::copy(__first, __last, __dest);
     }
-    __size_ -= static_cast<size_type>(__last - __first);
+    else
+    {
+      const auto __count = static_cast<size_t>(__last - __first);
+      _CCCL_TRY_CUDA_API(
+        ::cudaMemcpy, "failed to copy data", __dest, __first, sizeof(_Tp) * __count, ::cudaMemcpyDeviceToDevice);
+      return __dest + __count;
+    }
   }
 
-  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adjusts the size.
-  //! @param __first Iterator to the first element to be value-initialized.
-  //! @param __size The number of elements to be value-initialized.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
-  void __uninitialized_value_construct_n(iterator __first, const size_type __size) noexcept
+  //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in
+  //! the different memory spaces
+  //! @param __first Pointer to the start of the input segment.
+  //! @param __last Pointer to the end of the input segment.
+  //! @param __dest Pointer to the start of the output segment.
+  //! @param __count The number of elements to be copied.
+  template <class _Iter, cudaMemcpyKind __kind = cudaMemcpyHostToDevice>
+  static void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
-    size_type __count = 0;
-    for (; __count < __size; ++__first, (void) ++__count)
+    _CCCL_IF_CONSTEXPR (__kind == cudaMemcpyHostToHost)
     {
-      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
+      _CUDA_VSTD::copy(__first, __last, __dest);
     }
-    __size_ += __size;
+    _CCCL_ELSE_IF_CONSTEXPR (!_CUDA_VSTD::contiguous_iterator<_Iter>)
+    { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
+      // This should only ever happen when passing in data from host t0 device
+      static_assert(__kind == cudaMemcpyHostToDevice, "Invalid use case");
+      auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
+      _CUDA_VSTD::copy(__first, __last, __temp);
+      _CCCL_TRY_CUDA_API(::cudaMemcpy, "failed to copy data", __dest, __temp, sizeof(_Tp) * __count, __kind);
+      _CUDA_VSTD::return_temporary_buffer(__temp);
+    }
+    else
+    {
+      (void) __last;
+      _CCCL_TRY_CUDA_API(
+        ::cudaMemcpy, "failed to copy data", __dest, _CUDA_VSTD::to_address(__first), sizeof(_Tp) * __count, __kind);
+    }
   }
 
-  //! @brief Value-initializes the elements in the range `[__first, __first + __count)` and adjusts the size.
-  //! @param __first Iterator to the first element to be value-initialized.
-  //! @param __size The number of elements to be value-initialized.
-  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_default_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  void __uninitialized_value_construct_n(iterator __first, const size_type __size)
+  //! @brief Creates a gap in the current memory of size \p __count at position \p __pos
+  //! @param __pos Pointer to the first element to be moved.
+  //! @param __count The size of the empty space.
+  //! Depending on the available memory this might need to reallocate. Furthermore, if this executes on device then we
+  //! need temporary storage because we want to work in parallel.
+  void __create_gap(size_type __pos, size_type __count)
   {
-    size_type __count    = 0;
-    iterator __old_first = __first;
-    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __old_first, __first});
-    for (; __count < __size; ++__first, (void) ++__count)
-    {
-      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp();
+    pointer __first            = __unwrapped_begin();
+    pointer __end              = __unwrapped_end();
+    pointer __middle           = __first + __pos;
+    const size_type __new_size = __size_ + __count;
+    if (capacity() - __size_ < __count)
+    { // need to reallocate
+      __buffer __new_buf{__buf_.get_resource(), __new_size};
+      _CCCL_IF_CONSTEXPR (__is_host_only)
+      {
+        _CUDA_VSTD::copy(__first, __middle, __new_buf.begin());
+        _CUDA_VSTD::copy(__middle, __end, __new_buf.begin() + __pos + __count);
+      }
+      else
+      {
+        thrust::for_each(thrust::device,
+                         __new_buf.begin(),
+                         __new_buf.end(),
+                         __copy_segmented_op{__first, __new_buf.begin(), __pos, __count});
+      }
+      __buf_.__swap_allocations(__new_buf);
     }
-    __guard.__complete();
-    __size_ += __size;
+    else if (__pos != __size_)
+    { // need to create space in the middle
+      _CCCL_IF_CONSTEXPR (__is_host_only)
+      {
+        _CUDA_VSTD::move_backward(__middle, __end, __end + __count);
+      }
+      else
+      { // on device we need temporary storage
+        __buffer __temp_buf{__buf_.get_resource(), static_cast<size_type>(__size_ - __pos)};
+        this->__copy_same(__middle, __end, __temp_buf.begin());
+        this->__copy_same(__temp_buf.begin(), __temp_buf.end(), __middle + __count);
+      }
+    }
   }
 
-  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adjusts the size.
-  //! @param __first Iterator to the first element to be copy-constructed.
-  //! @param __size The number of elements to be copy-constructed.
-  //! @param __value The element to be copied.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
-  void __uninitialized_fill_n(iterator __first, const size_type __size, const _Tp& __value) noexcept
+  //! @brief Rotates elements from `[__first, __middle)` after `[__middle, __last)`.
+  //! @param __first Pointer to the start of the first segment.
+  //! @param __middle Pointer to the end of the first segment.
+  //! @param __last Pointer to the end of the second segment.
+  void __rotate(pointer __first, pointer __middle, pointer __last)
   {
-    size_type __count = 0;
-    for (; __count < __size; ++__first, (void) ++__count)
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
+      _CUDA_VSTD::rotate(__first, __middle, __last);
     }
-    __size_ += __size;
+    else
+    { // on device we need temp storage
+      const auto __size = static_cast<size_type>(__last - __first);
+      __buffer __temp_buf{__buf_.get_resource(), __size};
+      pointer __tail = this->__copy_same(__middle, __last, __temp_buf.begin());
+      this->__copy_same(__first, __middle, __tail);
+      this->__copy_same(__temp_buf.begin(), __temp_buf.end(), __first);
+    }
   }
 
-  //! @brief Copy-constructs the elements in the range `[__first, __last)` from \p __value and adjusts the size.
-  //! @param __first Iterator to the first element to be copy-constructed.
-  //! @param __size The number of elements to be copy-constructed.
-  //! @param __value The element to be copied.
-  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  void __uninitialized_fill_n(iterator __first, const size_type __size, const _Tp& __value)
+  //! @brief Value-initializes elements in the range `[__first, __first + __count)`.
+  //! @param __first Pointer to the first element to be initialized.
+  //! @param __count The number of elements to be initialized.
+  static void __value_initialize_n(pointer __first, size_type __count)
   {
-    size_type __count    = 0;
-    iterator __old_first = __first;
-    auto __guard         = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __old_first, __first});
-    for (; __count < __size; ++__first, (void) ++__count)
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      ::new (_CUDA_VSTD::__voidify(*__first)) _Tp(__value);
+      _CUDA_VSTD::fill_n(__first, __count, _Tp());
     }
-    __guard.__complete();
-    __size_ += __size;
+    else
+    {
+      thrust::fill_n(thrust::device, __first, __count, _Tp());
+    }
   }
 
-  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
-  //! @param __first Iterator to the first element to be copied.
-  //! @param __last Iterator to the element after the last element to be copied.
-  //! @param __dest Iterator to the first element to be copy-constructed.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
-  void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
+  //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
+  //! @param __first Pointer to the first element to be initialized.
+  //! @param __count The number of elements to be initialized.
+  static void __fill_n(pointer __first, size_type __count, const _Tp& __value)
   {
-    iterator __curr = __dest;
-    for (; __first != __last; ++__curr, (void) ++__first)
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+      _CUDA_VSTD::fill_n(__first, __count, __value);
     }
-    __size_ += static_cast<size_type>(__curr - __dest);
+    else
+    {
+      thrust::fill_n(thrust::device, __first, __count, __value);
+    }
   }
 
-  //! @brief Copy-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
-  //! @param __first Iterator to the first element to be copied.
-  //! @param __last Iterator to the element after the last element to be copied.
-  //! @param __dest Iterator to the first element to be copy-constructed.
-  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
+  //! @brief Removes elements within the sequence `[__first, __last)` that are equal to \p __value.
+  //! @param __first Pointer to the start of the sequence.
+  //! @param __last Pointer to the end of the sequence.
+  //! @param __value The element to be removed.
+  static pointer __remove_value(pointer __first, pointer __last, const _Tp& __value)
   {
-    iterator __curr = __dest;
-    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __dest, __curr});
-    for (; __first != __last; ++__curr, (void) ++__first)
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+      return _CUDA_VSTD::remove(__first, __last, __value);
     }
-    __guard.__complete();
-    __size_ += static_cast<size_type>(__curr - __dest);
+    else
+    {
+      return thrust::remove(thrust::device, __first, __last, __value);
+    }
   }
 
-  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
-  //! @param __first Iterator to the first element to be moved.
-  //! @param __last Iterator to the element after the last element to be moved.
-  //! @param __dest Iterator to the first element to be move-constructed.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
-  void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
+  //! @brief Removes elements within the sequence `[__first, __last)` that are satisfy \p __pred.
+  //! @param __first Pointer to the start of the sequence.
+  //! @param __last Pointer to the end of the sequence.
+  //! @param __pred The predicate to select elements for removal.
+  template <class _Predicate>
+  static pointer __remove_pred(pointer __first, pointer __last, _Predicate __pred)
   {
-    iterator __curr = __dest;
-    for (; __first != __last; ++__curr, (void) ++__first)
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-#  if _CCCL_STD_VER >= 2017
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
-#  endif // _CCCL_STD_VER <= 2014
+      return _CUDA_VSTD::remove_if(__first, __last, __pred);
     }
-    __size_ += static_cast<size_type>(__curr - __dest);
+    else
+    {
+      return thrust::remove_if(thrust::device, __first, __last, __pred);
+    }
   }
 
-  //! @brief Move-constructs the elements after \p __dest from the range `[__first, __last)` and adjusts the size.
-  //! @param __first Iterator to the first element to be moved.
-  //! @param __last Iterator to the element after the last element to be moved.
-  //! @param __dest Iterator to the first element to be move-constructed.
-  //! If an exception is thrown it updates the size so that all constructed elements are accounted for.
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
-  void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
+  //! @brief Equality-compares elements from the sequence `[__first1, __last1)` with those of sequence
+  //! `[__first2, __last2)`.
+  //! @param __first1 Pointer to the start of the first sequence.
+  //! @param __last1 Pointer to the end of the first sequence.
+  //! @param __first2 Pointer to the start of the second sequence.
+  //! @param __last2 Pointer to the end of the second sequence.
+  static bool __equality(const_pointer __first1, const_pointer __last1, const_pointer __first2, const_pointer __last2)
   {
-    iterator __curr = __dest;
-    auto __guard    = _CUDA_VSTD::__make_exception_guard(_Adjust_size{this, __dest, __curr});
-    for (; __first != __last; ++__curr, (void) ++__first)
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-#  if _CCCL_STD_VER >= 2017
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
-#  endif // _CCCL_STD_VER <= 2014
+      return _CUDA_VSTD::equal(__first1, __last1, __first2, __last2);
     }
-    __guard.__complete();
-    __size_ += static_cast<size_type>(__curr - __dest);
+    else
+    {
+      return ((__last1 - __first1) == (__last2 - __first2))
+          && thrust::equal(thrust::device, __first1, __last1, __first2);
+    }
   }
 
 public:
@@ -325,11 +405,12 @@ public:
   //! The new vector has capacity of \p __other.size() which is potentially less than \p __other.capacity().
   //! @note No memory is allocated if \p __other is empty
   vector(const vector& __other)
-      : __buf_(__other.resource(), __other.__size_)
+      : __buf_(__other.get_resource(), __other.__size_)
+      , __size_(__other.__size_)
   {
     if (__other.__size_ != 0)
     {
-      this->__uninitialized_copy(__other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin());
+      this->__copy_same(__other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin());
     }
   }
 
@@ -341,104 +422,49 @@ public:
       , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
   {}
 
-  //! @brief Copy-assigns a vector
+  //! @brief Copy-constructs from a vector with matching properties
   //! @param __other The other vector.
-  //! @note Even if the old vector would have enough storage available, we may have to reallocate if the stored memory
-  //! resource is not equal to the new one. In that case no memory is allocated if \p __other is empty.
-  vector& operator=(const vector& __other)
+  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
+  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
+  explicit vector(const vector<_Tp, _OtherProperties...>& __other)
+      : __buf_(__other.get_resource(), __other.__size_)
+      , __size_(__other.__size_)
   {
-    // There is sufficient space in the allocation and the resources are compatible
-    if (resource() == __other.resource() && capacity() >= __other.__size_)
+    if (__other.__size_ != 0)
     {
-      if (__size_ >= __other.__size_)
-      {
-        const auto __res =
-          _CUDA_VSTD::copy(__other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin());
-        this->__destroy_from(__res);
-      }
-      else
-      {
-        const auto __res =
-          _CUDA_VSTD::copy(__other.__unwrapped_begin(), __other.__unwrapped_begin() + __size_, __unwrapped_begin());
-        this->__uninitialized_copy(__other.__unwrapped_begin() + __size_, __other.__unwrapped_end(), __res);
-      }
-      return *this;
+      this->__copy_cross<const_pointer, __transfer_kind<_OtherProperties...>>(
+        __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
     }
-
-    // We need to reallocate and copy. Note we do not change the size of the current vector until the copy is done
-    uninitialized_buffer<_Tp, _Properties...> __new_buf{__other.resource(), __other.__size_};
-    _CUDA_VSTD::uninitialized_copy(__other.__unwrapped_begin(), __other.__unwrapped_end(), __new_buf.begin());
-
-    // Now that everything is set up bring over the new data
-    this->clear();
-    __buf_ = _CUDA_VSTD::move(__new_buf);
-
-    // The above call to destroy has set the size of this vector to 0 so we need set it correctly
-    __size_ = __other.__size_;
-    return *this;
   }
 
-  //! @brief Move-assigns a vector
+  //! @brief Move-constructs from a vector with matching properties
   //! @param __other The other vector.
-  //! Clears the vector and swaps the contents with \p __other.
-  vector& operator=(vector&& __other) noexcept
-  {
-    if (this == _CUDA_VSTD::addressof(__other))
-    {
-      return *this;
-    }
+  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
+  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
+  explicit vector(vector<_Tp, _OtherProperties...>&& __other) noexcept
+      : __buf_(_CUDA_VSTD::move(__other.__buf_))
+      , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
+  {}
 
-    this->clear();
-    __buf_  = _CUDA_VSTD::move(__other.__buf_);
-    __size_ = _CUDA_VSTD::exchange(__other.__size_, 0);
-    return *this;
-  }
-
-  //! @brief Assigns an initializer_list to a vector, replacing its content with that of the initializer_list
-  //! @param __ilist The initializer_list to be assigned
-  vector& operator=(_CUDA_VSTD::initializer_list<_Tp> __ilist)
-  {
-    const auto __count = __ilist.size();
-    if (__count <= __size_)
-    {
-      const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), begin());
-      this->__destroy_from(__new_end);
-      return *this;
-    }
-
-    if (capacity() < __count)
-    {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __count};
-      _CUDA_VSTD::uninitialized_copy(__ilist.begin(), __ilist.end(), __new_buf.begin());
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_  = _CUDA_VSTD::move(__new_buf);
-      __size_ = __count;
-    }
-    else
-    {
-      _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + __size_, __unwrapped_begin());
-      this->__uninitialized_copy(__ilist.begin() + __size_, __ilist.end(), __unwrapped_end());
-    }
-    return *this;
-  }
-
-  //! @brief Destroys the \c vector and deallocates the storage after destroying all elements
-  //! @note Does not destroy elements if `is_trivially_destructible_v<_Tp>` holds.
-  ~vector() noexcept
-  {
-    this->__destroy_from(__unwrapped_begin());
-  }
+  //! @brief Constructs an empty vector using a memory resource
+  //! @param __mr The memory resource to allocate the vector with.
+  //! @note No memory is allocated.
+  vector(__resource __mr)
+      : __buf_(_CUDA_VSTD::move(__mr), 0)
+      , __size_(0)
+  {}
 
   //! @brief Constructs a vector of size \p __size using a memory resource and value-initializes \p __size elements
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __size The size of the vector. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
-  vector(__resource_ref __mr, const size_type __size = 0)
-      : __buf_(__mr, __size)
+  explicit vector(__resource __mr, const size_type __size)
+      : __buf_(_CUDA_VSTD::move(__mr), __size)
+      , __size_(__size)
   {
     if (__size != 0)
     {
-      this->__uninitialized_value_construct_n(__unwrapped_begin(), __size);
+      this->__value_initialize_n(__unwrapped_begin(), __size);
     }
   }
 
@@ -448,12 +474,13 @@ public:
   //! @param __size The size of the vector.
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
-  vector(__resource_ref __mr, const size_type __size, const _Tp& __value)
-      : __buf_(__mr, __size)
+  explicit vector(__resource __mr, const size_type __size, const _Tp& __value)
+      : __buf_(_CUDA_VSTD::move(__mr), __size)
+      , __size_(__size)
   {
     if (__size != 0)
     {
-      this->__uninitialized_fill_n(__unwrapped_begin(), __size, __value);
+      this->__fill_n(__unwrapped_begin(), __size, __value);
     }
   }
 
@@ -463,8 +490,8 @@ public:
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
   //! At the destruction of the \c vector all elements in the range `[vec.begin(), vec.end())` will be destroyed.
-  vector(__resource_ref __mr, const size_type __size, ::cuda::experimental::uninit_t)
-      : __buf_(__mr, __size)
+  explicit vector(__resource __mr, const size_type __size, ::cuda::experimental::uninit_t)
+      : __buf_(_CUDA_VSTD::move(__mr), __size)
       , __size_(__size)
   {}
 
@@ -477,8 +504,8 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
-  vector(__resource_ref __mr, _Iter __first, _Iter __last)
-      : __buf_(__mr, 0)
+  vector(__resource __mr, _Iter __first, _Iter __last)
+      : __buf_(_CUDA_VSTD::move(__mr), 0)
   {
     for (; __first != __last; ++__first)
     {
@@ -494,12 +521,13 @@ public:
   //! @note If `__first == __last` then no memory is allocated
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
-  vector(__resource_ref __mr, _Iter __first, _Iter __last)
-      : __buf_(__mr, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)))
+  vector(__resource __mr, _Iter __first, _Iter __last)
+      : __buf_(_CUDA_VSTD::move(__mr), static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)))
+      , __size_(__buf_.size())
   {
-    if (capacity() > 0)
+    if (__size_ > 0)
     {
-      this->__uninitialized_copy(__first, __last, __unwrapped_begin());
+      this->__copy_cross(__first, __last, __unwrapped_begin(), __size_);
     }
   }
 
@@ -507,12 +535,13 @@ public:
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __ilist The initializer_list being copied into the vector.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  vector(__resource_ref __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
-      : __buf_(__mr, __ilist.size())
+  vector(__resource __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+      : __buf_(_CUDA_VSTD::move(__mr), __ilist.size())
+      , __size_(__buf_.size())
   {
-    if (capacity() > 0)
+    if (__size_ > 0)
     {
-      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), __unwrapped_begin());
+      this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __size_);
     }
   }
 
@@ -522,8 +551,8 @@ public:
   //! @note If `__range.size() == 0` then no memory is allocated. May allocate multiple times in case of input ranges.
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
-  vector(__resource_ref __mr, _Range&& __range)
-      : __buf_(__mr, 0)
+  vector(__resource __mr, _Range&& __range)
+      : __buf_(_CUDA_VSTD::move(__mr), 0)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     auto __last  = _CUDA_VRANGES::end(__range);
@@ -533,7 +562,7 @@ public:
     }
   }
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates the overloads
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates the overloads
   //! @brief Constructs a vector using a memory resource and an input range
   //! @param __mr The memory resource to allocate the vector with.
   //! @param __range The input range to be moved into the vector.
@@ -541,31 +570,133 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND
                          _CUDA_VRANGES::sized_range<_Range>)
-  vector(__resource_ref __mr, _Range&& __range)
-      : __buf_(__mr, static_cast<size_type>(_CUDA_VRANGES::size(__range)))
+  vector(__resource __mr, _Range&& __range)
+      : __buf_(_CUDA_VSTD::move(__mr), static_cast<size_type>(_CUDA_VRANGES::size(__range)))
+      , __size_(__buf_.size())
   {
-    if (capacity() > 0)
+    if (__size_ > 0)
     {
-      this->__uninitialized_move(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin());
+      this->__copy_cross(
+        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(
     !_CUDA_VRANGES::sized_range<_Range>))
-  vector(__resource_ref __mr, _Range&& __range)
+  vector(__resource __mr, _Range&& __range)
       : __buf_(
           __mr,
           static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))))
+      , __size_(__buf_.size())
   {
-    if (capacity() > 0)
+    if (__size_ > 0)
     {
-      this->__uninitialized_move(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin());
+      this->__copy_cross(
+        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_SHOULD_SKIP_THIS
+  //! @}
+
+  //! @addtogroup assignment
+  //! @{
+
+  //! @brief Copy-assigns a vector
+  //! @param __other The other vector.
+  //! @note Even if the old vector would have enough storage available, we may have to reallocate if the stored memory
+  //! resource is not equal to the new one. In that case no memory is allocated if \p __other is empty.
+  vector& operator=(const vector& __other)
+  {
+    // There is sufficient space in the allocation and the resources are compatible
+    if (get_resource() == __other.get_resource() && capacity() >= __other.__size_)
+    {
+      this->__copy_same(__other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin());
+    }
+    else
+    { // We need to reallocate and copy. Note we do not change the size of the current vector until the copy is done
+      __buffer __new_buf{__other.get_resource(), __other.__size_};
+      this->__copy_same(__other.__unwrapped_begin(), __other.__unwrapped_end(), __new_buf.begin());
+      __buf_.__swap_allocations(__new_buf);
+    }
+
+    __size_ = __other.__size_;
+    return *this;
+  }
+
+  //! @brief Move-assigns a vector
+  //! @param __other The other vector.
+  //! Clears the vector and swaps the contents with \p __other.
+  vector& operator=(vector&& __other) noexcept
+  {
+    if (this == _CUDA_VSTD::addressof(__other))
+    {
+      return *this;
+    }
+
+    __buf_  = _CUDA_VSTD::move(__other.__buf_);
+    __size_ = _CUDA_VSTD::exchange(__other.__size_, 0);
+    return *this;
+  }
+
+  //! @brief Assigns an initializer_list to a vector, replacing its content with that of the initializer_list
+  //! @param __ilist The initializer_list to be assigned
+  vector& operator=(_CUDA_VSTD::initializer_list<_Tp> __ilist)
+  {
+    const auto __count = __ilist.size();
+    if (capacity() < __count)
+    {
+      __buffer __new_buf{get_resource(), __count};
+      this->__copy_cross(__ilist.begin(), __ilist.end(), __new_buf.begin(), __count);
+      __buf_.__swap_allocations(__new_buf);
+    }
+    else
+    {
+      this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __count);
+    }
+    __size_ = __count;
+    return *this;
+  }
+
+  //! @brief Copy-assigns from a different vector
+  //! @param __other The other vector.
+  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
+  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
+  vector& operator=(const vector<_Tp, _OtherProperties...>& __other)
+  {
+    const auto __count = __other.size();
+    if (capacity() < __count)
+    {
+      __buffer __new_buf{get_resource(), __count};
+      this->__copy_cross<const_pointer, __transfer_kind<_OtherProperties...>>(
+        __other.__unwrapped_begin(), __other.__unwrapped_end(), __new_buf.begin(), __count);
+      __buf_.__swap_allocations(__new_buf);
+    }
+    else
+    {
+      this->__copy_cross<const_pointer, __transfer_kind<_OtherProperties...>>(
+        __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __count);
+    }
+    __size_ = __count;
+    return *this;
+  }
+
+  //! @brief Move-assigns from a different vector
+  //! @param __other The other vector.
+  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
+  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
+  vector& operator=(vector<_Tp, _OtherProperties...>&& __other)
+  {
+    if (this == reinterpret_cast<vector*>(_CUDA_VSTD::addressof(__other)))
+    {
+      return *this;
+    }
+
+    __buf_  = _CUDA_VSTD::move(__other.__buf_);
+    __size_ = _CUDA_VSTD::exchange(__other.__size_, 0);
+    return *this;
+  }
+
   //! @}
 
   //! @addtogroup iterators
@@ -769,12 +900,12 @@ public:
   }
 
   //! @rst
-  //! Returns the :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` used to allocate
-  //! the buffer.
+  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
+  //! that holds the memory resource used to allocate the vector
   //! @endrst
-  _CCCL_NODISCARD _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD const __resource& get_resource() const noexcept
   {
-    return __buf_.resource();
+    return __buf_.get_resource();
   }
   //! @}
 
@@ -788,26 +919,15 @@ public:
   {
     if (capacity() < __count)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __count};
-      _CUDA_VSTD::uninitialized_fill_n(__new_buf.data(), __count, __value);
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_  = _CUDA_VSTD::move(__new_buf);
-      __size_ = __count;
-      return;
-    }
-
-    const pointer __begin = __unwrapped_begin();
-    const pointer __end   = __unwrapped_end();
-    if (__count < __size_)
-    {
-      _CUDA_VSTD::fill(__begin, __begin + __count, __value);
-      this->__destroy_from(__begin + __count);
+      __buffer __new_buf{__buf_.get_resource(), __count};
+      this->__fill_n(__new_buf.begin(), __count, __value);
+      __buf_.__swap_allocations(__new_buf);
     }
     else
     {
-      _CUDA_VSTD::fill(__begin, __end, __value);
-      this->__uninitialized_fill_n(__end, __count - __size_, __value);
+      this->__fill_n(__unwrapped_begin(), __count, __value);
     }
+    __size_ = __count;
   }
 
   //! @brief Replaces the content of the vector with the sequence `[__first, __last)`
@@ -820,17 +940,7 @@ public:
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
   void assign(_Iter __first, _Iter __last)
   {
-    pointer __end = __unwrapped_end();
-    for (pointer __current = __unwrapped_begin(); __current != __end; ++__current, (void) ++__first)
-    {
-      if (__first == __last)
-      {
-        this->__destroy_from(__current);
-        return;
-      }
-      *__current = *__first;
-    }
-
+    __size_ = 0;
     for (; __first != __last; ++__first)
     {
       emplace_back(*__first);
@@ -848,25 +958,15 @@ public:
     const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
     if (capacity() < __count)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __count};
-      _CUDA_VSTD::uninitialized_copy(__first, __last, __new_buf.data());
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_  = _CUDA_VSTD::move(__new_buf);
-      __size_ = __count;
-      return;
-    }
-
-    if (__count < __size_)
-    {
-      const iterator __new_end = _CUDA_VSTD::copy(__first, __last, __unwrapped_begin());
-      this->__destroy_from(__new_end);
+      __buffer __new_buf{__buf_.get_resource(), __count};
+      this->__copy_cross(__first, __last, __new_buf.begin(), __count);
+      __buf_.__swap_allocations(__new_buf);
     }
     else
     {
-      _Iter __middle = _CUDA_VSTD::next(__first, __size_);
-      _CUDA_VSTD::copy(__first, __middle, __unwrapped_begin());
-      this->__uninitialized_copy(__middle, __last, __unwrapped_end());
+      this->__copy_cross(__first, __last, __unwrapped_begin(), __count);
     }
+    __size_ = __count;
   }
 
   //! @brief Replaces the content of the vector with the initializer_list \p __ilist
@@ -877,24 +977,15 @@ public:
     const auto __count = static_cast<size_type>(__ilist.size());
     if (capacity() < __count)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __count};
-      _CUDA_VSTD::uninitialized_copy(__ilist.begin(), __ilist.end(), __new_buf.data());
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_  = _CUDA_VSTD::move(__new_buf);
-      __size_ = __count;
-      return;
-    }
-
-    if (__count < __size_)
-    {
-      const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), begin());
-      this->__destroy_from(__new_end);
+      __buffer __new_buf{__buf_.get_resource(), __count};
+      this->__copy_cross(__ilist.begin(), __ilist.end(), __new_buf.begin(), __count);
+      __buf_.__swap_allocations(__new_buf);
     }
     else
     {
-      _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + __size_, __unwrapped_begin());
-      this->__uninitialized_copy(__ilist.begin() + __size_, __ilist.end(), __unwrapped_end());
+      this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __count);
     }
+    __size_ = __count;
   }
 
   //! @brief Replaces the content of the vector with the range \p __range
@@ -907,24 +998,14 @@ public:
   {
     auto __first      = _CUDA_VRANGES::begin(__range);
     const auto __last = _CUDA_VRANGES::end(__range);
-    pointer __end     = __unwrapped_end();
-    for (pointer __current = __unwrapped_begin(); __current != __end; ++__current, (void) ++__first)
-    {
-      if (__first == __last)
-      {
-        this->__destroy_from(__current);
-        return;
-      }
-      *__current = *__first;
-    }
-
+    this->clear();
     for (; __first != __last; ++__first)
     {
       emplace_back(*__first);
     }
   }
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates the overloads
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates the overloads
   //! @brief Replaces the content of the vector with the range \p __range
   //! @param __range The range to be copied into this vector.
   //! @note Neither frees not allocates memory if `__range.size() == 0`.
@@ -936,27 +1017,12 @@ public:
     const auto __size = _CUDA_VRANGES::size(__range);
     if (capacity() < __size)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __size};
-      _CUDA_VSTD::uninitialized_copy(_CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __new_buf.data());
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_  = _CUDA_VSTD::move(__new_buf);
-      __size_ = __size;
-      return;
+      __buffer __new_buf{__buf_.get_resource(), __size};
+      __buf_.__swap_allocations(__new_buf);
     }
 
-    const auto __first = _CUDA_VRANGES::begin(__range);
-    const auto __last  = _CUDA_VRANGES::__unwrap_end(__range);
-    if (static_cast<size_type>(__size) < __size_)
-    {
-      const iterator __new_end = _CUDA_VSTD::copy(__first, __last, __unwrapped_begin());
-      this->__destroy_from(__new_end);
-    }
-    else
-    {
-      const auto __middle = _CUDA_VSTD::next(__first, __size_);
-      _CUDA_VSTD::copy(__first, __middle, __unwrapped_begin());
-      this->__uninitialized_copy(__middle, __last, __unwrapped_end());
-    }
+    this->__copy_cross(_CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
+    __size_ = __size;
   }
 
   //! @brief Replaces the content of the vector with the range \p __range
@@ -972,27 +1038,14 @@ public:
     const auto __size  = static_cast<size_type>(_CUDA_VRANGES::distance(__first, __last));
     if (capacity() < __size)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __size};
-      _CUDA_VSTD::uninitialized_copy(__first, __last, __new_buf.data());
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_  = _CUDA_VSTD::move(__new_buf);
-      __size_ = __size;
-      return;
+      __buffer __new_buf{__buf_.get_resource(), __size};
+      __buf_.__swap_allocations(__new_buf);
     }
 
-    if (__size < __size_)
-    {
-      const iterator __new_end = _CUDA_VSTD::copy(__first, __last, __unwrapped_begin());
-      this->__destroy_from(__new_end);
-    }
-    else
-    {
-      const auto __middle = _CUDA_VSTD::next(__first, __size_);
-      _CUDA_VSTD::copy(__first, __middle, __unwrapped_begin());
-      this->__uninitialized_copy(__middle, __last, __unwrapped_end());
-    }
+    this->__copy_cross(__first, __last, __unwrapped_begin(), __size);
+    __size_ = __size;
   }
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_SHOULD_SKIP_THIS
   //! @}
 
   //! @addtogroup modification
@@ -1024,51 +1077,21 @@ public:
   //! @return Iterator to the current position of the first new element.
   iterator insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
   {
-    const size_type __pos = __cpos - cbegin();
+    const auto __pos = static_cast<size_type>(__cpos - cbegin());
     if (__size_ + 1 < __pos)
     {
-      _CUDA_VSTD::__throw_out_of_range("vector::insert(const_iterator, size_type, T)");
+      _CUDA_VSTD::__throw_out_of_range("vector::insert(const_iterator, size, value)");
     }
+
     if (__count == 0)
     {
       return begin() + __pos;
     }
 
-    if (capacity() - __size_ < __count)
-    {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __size_ + __count};
-      _CUDA_VSTD::uninitialized_fill_n(__new_buf.data() + __pos, __count, __value);
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_begin() + __pos, __new_buf.data());
-      _CUDA_VSTD::uninitialized_move(
-        __unwrapped_begin() + __pos, __unwrapped_begin() + __size_, __new_buf.data() + __pos + __count);
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_ = _CUDA_VSTD::move(__new_buf);
-      __size_ += __count;
-      return begin() + __pos;
-    }
-
-    const iterator __res = begin() + __pos;
-    const iterator __end = end();
-    if (__pos == __size_)
-    {
-      this->__uninitialized_fill_n(__end, __count, __value);
-      return __res;
-    }
-
-    const iterator __middle = __res + __count;
-    if (__end <= __middle)
-    { // all existing elements are pushed into uninitialized storage
-      this->__uninitialized_fill(__end, __middle, __value);
-      this->__uninitialized_move(__res, __end, __middle);
-      _CUDA_VSTD::fill(__pos, __end, __value);
-    }
-    else
-    { // some elements get copied into existing storage
-      this->__uninitialized_move(__end - __count, __end, __end);
-      _CUDA_VSTD::move_backward(__res, __end - __count, __end);
-      _CUDA_VSTD::fill(__res, __middle, __value);
-    }
-    return __res;
+    this->__create_gap(__pos, __count);
+    this->__fill_n(__unwrapped_begin() + __pos, __count, __value);
+    __size_ += __count;
+    return begin() + __pos;
   }
 
   //! @brief Inserts copies of the sequence `[__first, __last)]` at position \p __cpos. Elements after \p __cpos are
@@ -1083,7 +1106,7 @@ public:
     !_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value))
   iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
-    const size_type __pos = __cpos - cbegin();
+    const auto __pos = static_cast<size_type>(__cpos - cbegin());
     if (__size_ + 1 < __pos)
     {
       _CUDA_VSTD::__throw_out_of_range("vector::insert(const_iterator, Iter, Iter)");
@@ -1103,7 +1126,7 @@ public:
 
     if (__old_size != __pos)
     {
-      _CUDA_VSTD::rotate(__unwrapped_begin() + __pos, __unwrapped_begin() + __old_size, __unwrapped_end());
+      this->__rotate(__unwrapped_begin() + __pos, __unwrapped_begin() + __old_size, __unwrapped_end());
     }
     return begin() + __pos;
   }
@@ -1118,7 +1141,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
   iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
-    const size_type __pos = __cpos - cbegin();
+    const auto __pos = static_cast<size_type>(__cpos - cbegin());
     if (__size_ + 1 < __pos)
     {
       _CUDA_VSTD::__throw_out_of_range("vector::insert(const_iterator, Iter, Iter)");
@@ -1129,44 +1152,11 @@ public:
       return begin() + __pos;
     }
 
-    const auto __count = _CUDA_VSTD::distance(__first, __last);
-    if (capacity() < __count)
-    {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __size_ + __count};
-      _CUDA_VSTD::uninitialized_copy(__first, __last, __new_buf.data() + __pos);
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_begin() + __pos, __new_buf.data());
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin() + __pos, __unwrapped_end(), __new_buf.data() + __pos + __count);
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_ = _CUDA_VSTD::move(__new_buf);
-      __size_ += __count;
-      return begin() + __pos;
-    }
-
-    const iterator __res = begin() + __pos;
-    const iterator __end = end();
-    if (__pos == __size_)
-    {
-      this->__uninitialized_copy(__first, __last, __end);
-      return __res;
-    }
-
-    const iterator __middle   = __res + __count;
-    const size_type __to_copy = __size_ - __pos;
-    if (__end <= __middle)
-    { // all existing elements are pushed into uninitialized storage
-      _Iter __imiddle = _CUDA_VSTD::next(__first, __to_copy);
-      this->__uninitialized_copy(__imiddle, __last, __end);
-      this->__uninitialized_move(__res, __end, __middle);
-      _CUDA_VSTD::copy(__first, __imiddle, __res);
-    }
-    else
-    { // all new elements get copied into existing storage
-      this->__uninitialized_move(__end - __count, __end, __end);
-      _CUDA_VSTD::move_backward(__res, __end - __count, __end);
-      _CUDA_VSTD::copy(__first, __last, __res);
-    }
-
-    return __res;
+    const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
+    this->__create_gap(__pos, __count);
+    this->__copy_cross(__first, __last, __unwrapped_begin() + __pos, __count);
+    __size_ += __count;
+    return begin() + __pos;
   }
 
   //! @brief Inserts an initializer_list at position \p __cpos. Elements after \p __cpos are shifted to the back.
@@ -1175,55 +1165,7 @@ public:
   //! @return Iterator to the current position of the first new element.
   iterator insert(const_iterator __cpos, _CUDA_VSTD::initializer_list<_Tp> __ilist)
   {
-    const size_type __pos = __cpos - cbegin();
-    if (__size_ + 1 < __pos)
-    {
-      _CUDA_VSTD::__throw_out_of_range("vector::insert(const_iterator, initializer_list)");
-    }
-
-    const auto __count = __ilist.size();
-    if (__count == 0)
-    {
-      return __pos;
-    }
-
-    if (capacity() < __count)
-    {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{__buf_.resource(), __size_ + __count};
-      _CUDA_VSTD::uninitialized_copy(__ilist.begin(), __ilist.end(), __new_buf.data() + __pos);
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_begin() + __pos, __new_buf.data());
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin() + __pos, __unwrapped_end(), __new_buf.data() + __pos + __count);
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_ = _CUDA_VSTD::move(__new_buf);
-      __size_ += __count;
-      return begin() + __pos;
-    }
-
-    const iterator __res = begin() + __pos;
-    const iterator __end = end();
-    if (__pos == __size_)
-    {
-      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), __end);
-      return __res;
-    }
-
-    const iterator __middle   = __res + __count;
-    const size_type __to_copy = __size_ - __pos;
-    if (__end <= __middle)
-    { // all existing elements are pushed into uninitialized storage
-      auto __imiddel = __ilist.begin() + __to_copy;
-      this->__uninitialized_copy(__imiddel, __ilist.end(), __end);
-      this->__uninitialized_move(__pos, __end, __middle);
-      _CUDA_VSTD::copy(__ilist.begin(), __imiddel, __pos);
-    }
-    else
-    { // all new elements get copied into existing storage
-      this->__uninitialized_move(__end - __count, __end, __end);
-      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
-      _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), __pos);
-    }
-
-    return __pos;
+    return insert(__cpos, __ilist.begin(), __ilist.end());
   }
 
   //! @brief Inserts a sequence \p __range at position \p __cpos. Elements after \p __cpos are shifted to the back.
@@ -1235,7 +1177,7 @@ public:
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
   iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
-    const size_type __pos = __cpos - cbegin();
+    const auto __pos = static_cast<size_type>(__cpos - cbegin());
     if (__size_ + 1 < __pos)
     {
       _CUDA_VSTD::__throw_out_of_range("vector::insert(const_iterator, Iter, Iter)");
@@ -1257,12 +1199,12 @@ public:
 
     if (__old_size != __pos)
     {
-      _CUDA_VSTD::rotate(__unwrapped_begin() + __pos, __unwrapped_begin() + __old_size, __unwrapped_end());
+      this->__rotate(__unwrapped_begin() + __pos, __unwrapped_begin() + __old_size, __unwrapped_end());
     }
     return begin() + __pos;
   }
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   //! @brief Inserts a sequence \p __range at position \p __cpos. Elements after \p __cpos are shifted to the back.
   //! @param __cpos Iterator to the position at which the sequence is inserted.
   //! @param __range The range containing the elements to be inserted.
@@ -1271,10 +1213,9 @@ public:
   _LIBCUDACXX_REQUIRES(__compatible_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
   iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
-    auto __first = _CUDA_VRANGES::begin(__range);
     return insert(__cpos, _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range));
   }
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @brief Appends a sequence \p __range at the end of the vector.
   //! @param __range The range containing the elements to be appended.
@@ -1291,7 +1232,7 @@ public:
     }
   }
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen conflates both overloads
   //! @brief Appends a sequence \p __range at the end of the vector.
   //! @param __range The range containing the elements to be appended.
   _LIBCUDACXX_TEMPLATE(class _Range)
@@ -1300,7 +1241,7 @@ public:
   {
     insert(end(), _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range));
   }
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @brief Constructs a new element at position \p __cpos. Elements after \p __cpos are shifted to the back.
   //! @param __cpos Iterator to the position at which the new element is constructed.
@@ -1309,39 +1250,25 @@ public:
   template <class... _Args>
   iterator emplace(const_iterator __cpos, _Args&&... __args)
   {
-    const size_type __pos = __cpos - cbegin();
+    const auto __pos = static_cast<size_type>(__cpos - cbegin());
     if (__size_ < __pos)
     {
       _CUDA_VSTD::__throw_out_of_range("vector::emplace(const_iterator, Args...)");
     }
 
-    if (__size_ == capacity())
+    this->__create_gap(__pos, 1);
+    pointer __middle = __unwrapped_begin() + __pos;
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size_ + 1};
-      _CUDA_VSTD::__construct_at(__new_buf.data() + __pos, _CUDA_VSTD::forward<_Args>(__args)...);
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_begin() + __pos, __new_buf.data());
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin() + __pos, __unwrapped_end(), __new_buf.data() + __pos + 1);
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_ = _CUDA_VSTD::move(__new_buf);
-      ++__size_;
-      return begin() + __pos;
-    }
-
-    if (__pos == __size_)
-    {
-      emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+      _CUDA_VSTD::__construct_at(__middle, _CUDA_VSTD::forward<_Args>(__args)...);
     }
     else
     {
-      const pointer __middle = __unwrapped_begin() + __pos;
-      const pointer __end    = __unwrapped_end();
       _Tp __temp{_CUDA_VSTD::forward<_Args>(__args)...};
-      emplace_back(_CUDA_VSTD::move(*(__end - 1)));
-      _CUDA_VSTD::move_backward(__middle, __end - 1, __end);
-      *__middle = _CUDA_VSTD::move(__temp);
+      this->__copy_cross(_CUDA_VSTD::addressof(__temp), _CUDA_VSTD::addressof(__temp) + 1, __middle, 1);
     }
-
-    return begin() + __pos;
+    ++__size_;
+    return __middle;
   }
 
   //! @brief Constructs a new element at the end of the vector.
@@ -1350,18 +1277,17 @@ public:
   template <class... _Args>
   reference emplace_back(_Args&&... __args)
   {
-    if (__size_ == capacity())
+    this->__create_gap(__size_, 1);
+    pointer __final = __unwrapped_end();
+    _CCCL_IF_CONSTEXPR (__is_host_only)
     {
-      uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size_ + 1};
-      _CUDA_VSTD::__construct_at(__new_buf.data() + __size_, _CUDA_VSTD::forward<_Args>(__args)...);
-      _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_end(), __new_buf.data());
-      _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-      __buf_ = _CUDA_VSTD::move(__new_buf);
-      ++__size_;
-      return back();
+      _CUDA_VSTD::__construct_at(__final, _CUDA_VSTD::forward<_Args>(__args)...);
     }
-
-    auto __final = _CUDA_VSTD::__construct_at(__unwrapped_end(), _CUDA_VSTD::forward<_Args>(__args)...);
+    else
+    {
+      _Tp __temp{_CUDA_VSTD::forward<_Args>(__args)...};
+      this->__copy_cross(_CUDA_VSTD::addressof(__temp), _CUDA_VSTD::addressof(__temp) + 1, __final, 1);
+    }
     ++__size_;
     return *__final;
   }
@@ -1385,7 +1311,7 @@ public:
   //! @brief Removes the last element of the vector.
   void pop_back() noexcept
   {
-    this->__destroy_from(--end());
+    --__size_;
   }
 
   //! @brief Removes the element pointed to by \p __cpos. All elements after \p __cpos are moved to the front.
@@ -1393,22 +1319,7 @@ public:
   //! @return Iterator to the new element at \p __cpos.
   iterator erase(const_iterator __cpos) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
   {
-    const size_type __pos = __cpos - cbegin();
-    if (__pos == __size_)
-    {
-      return begin() + __pos;
-    }
-
-    if (__size_ == 0 || __size_ < __pos)
-    {
-      _CUDA_VSTD_NOVERSION::terminate();
-    }
-
-    const pointer __middle = __unwrapped_begin() + __pos;
-    const pointer __end    = __unwrapped_end();
-    _CUDA_VSTD::move(__middle + 1, __end, __middle);
-    this->__destroy_from(__end - 1);
-    return __middle;
+    return erase(__cpos, __cpos + 1);
   }
 
   //! @brief Removes the elements between \p __cfirst and \p __clast. All elements after \p __clast are moved to the
@@ -1419,22 +1330,22 @@ public:
   iterator erase(const_iterator __cfirst,
                  const_iterator __clast) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
   {
-    const iterator __first = __cfirst.__to_mutable();
-    const iterator __last  = __clast.__to_mutable();
-    const iterator __end   = end();
-    if (__first == __last)
+    const auto __pos = static_cast<size_type>(__cfirst - cbegin());
+    if (__cfirst == __clast)
     {
-      return __last;
+      return begin() + __pos;
     }
 
-    if (__first < begin() || __end < __last)
+    const auto __count = static_cast<size_type>(__clast - __cfirst);
+    if (__size_ == 0 || __size_ < __pos || __size_ < __pos + __count)
     {
       _CUDA_VSTD_NOVERSION::terminate();
     }
 
-    const auto __new_end = _CUDA_VSTD::move(__last, __end, __first);
-    this->__destroy_from(__new_end);
-    return __first;
+    pointer __middle = __unwrapped_begin() + __pos;
+    this->__rotate(__middle, __middle + __count, __unwrapped_end());
+    __size_ -= __count;
+    return __middle;
   }
 
   // [containers.sequences.vector.erasure]
@@ -1444,8 +1355,8 @@ public:
   size_type __erase(const _Tp& __value) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
   {
     const pointer __old_end = __unwrapped_end();
-    const pointer __new_end = _CUDA_VSTD::remove(__unwrapped_begin(), __old_end, __value);
-    this->__destroy_from(__new_end);
+    const pointer __new_end = this->__remove_value(__unwrapped_begin(), __old_end, __value);
+    __size_ -= static_cast<size_type>(__old_end - __new_end);
     return static_cast<size_type>(__old_end - __new_end);
   }
 
@@ -1456,15 +1367,15 @@ public:
   size_type __erase_if(_Pred __pred) noexcept(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_assignable, _Tp))
   {
     const pointer __old_end = __unwrapped_end();
-    const pointer __new_end = _CUDA_VSTD::remove_if(__unwrapped_begin(), __old_end, _CUDA_VSTD::move(__pred));
-    this->__destroy_from(__new_end);
+    const pointer __new_end = this->__remove_pred(__unwrapped_begin(), __old_end, _CUDA_VSTD::move(__pred));
+    __size_ -= static_cast<size_type>(__old_end - __new_end);
     return static_cast<size_type>(__old_end - __new_end);
   }
 
   //! @brief Destroys all elements in the \c vector and sets the size to 0
   void clear() noexcept
   {
-    this->__destroy_from(__unwrapped_begin());
+    __size_ = 0;
   }
 
   //! @brief Provides sufficient storage for \p __count elements in the \c vector without creating any new elements
@@ -1477,9 +1388,9 @@ public:
       return;
     }
 
-    uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size};
-    _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_end(), __new_buf.data());
-    __buf_ = _CUDA_VSTD::move(__new_buf);
+    __buffer __new_buf{get_resource(), __size};
+    this->__copy_same(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
+    __buf_.__swap_allocations(__new_buf);
   }
 
   //! @brief Changes the size of the \c vector to \p __size and value-initializes new elements
@@ -1489,26 +1400,23 @@ public:
   {
     if (__size <= __size_)
     {
-      this->__destroy_from(__unwrapped_begin() + __size);
+      // nothing to do
     }
     else
     {
       if (__size <= capacity())
       {
-        this->__uninitialized_value_construct_n(end(), __size - __size_);
+        this->__value_initialize_n(__unwrapped_end(), __size - __size_);
       }
       else
       {
-        // We rely on begin / end in the uninitialized_move call, but if use the internal
-        // __uninitialized_value_construct_n then we have already adopted the size so classic algorithm here, because we
-        // have not moved anything over yet
-        uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size};
-        _CUDA_VSTD::uninitialized_value_construct_n(__new_buf.begin() + __size_, __size - __size_);
-        _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
-        __buf_  = _CUDA_VSTD::move(__new_buf);
-        __size_ = __size;
+        __buffer __new_buf{get_resource(), __size};
+        this->__value_initialize_n(__new_buf.begin() + __size_, __size - __size_);
+        this->__copy_same(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
+        __buf_.__swap_allocations(__new_buf);
       }
     }
+    __size_ = __size;
   }
 
   //! @brief Changes the size of the \c vector to \p __size and copy-constructs new elements from \p __value
@@ -1520,27 +1428,26 @@ public:
   {
     if (__size <= __size_)
     {
-      this->__destroy_from(__unwrapped_begin() + __size);
+      // nothing to do
     }
     else
     {
       if (__size <= capacity())
       {
-        this->__uninitialized_fill_n(end(), __size - __size_, __value);
+        this->__fill_n(__unwrapped_end(), __size - __size_, __value);
       }
       else
       {
         // We rely on begin / end in the uninitialized_move call, but if use the internal
         // uninitialized_fill_n then we have already adopted the size so classic algorithm here, because we
         // have not moved anything over yet
-        uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size};
-        _CUDA_VSTD::uninitialized_fill_n(__new_buf.begin() + __size_, __size - __size_, __value);
-        _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
-        _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-        __buf_  = _CUDA_VSTD::move(__new_buf);
-        __size_ = __size;
+        __buffer __new_buf{get_resource(), __size};
+        this->__copy_same(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
+        this->__fill_n(__new_buf.begin() + __size_, __size - __size_, __value);
+        __buf_.__swap_allocations(__new_buf);
       }
     }
+    __size_ = __size;
   }
 
   //! @brief Changes the size of the \c vector to \p __size and leaves new elements uninitialized
@@ -1551,19 +1458,18 @@ public:
   {
     if (__size <= __size_)
     {
-      this->__destroy_from(__unwrapped_begin() + __size);
+      // nothing to do
     }
     else
     {
       if (capacity() < __size)
       {
-        uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size};
-        _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
-        _CUDA_VSTD::__destroy(__unwrapped_begin(), __unwrapped_end());
-        __buf_ = _CUDA_VSTD::move(__new_buf);
+        __buffer __new_buf{get_resource(), __size};
+        this->__copy_same(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
+        __buf_.__swap_allocations(__new_buf);
       }
-      __size_ = __size;
     }
+    __size_ = __size;
   }
 
   //! @brief Reallocates the storage, so that `vec.capacity() == vec.size()`
@@ -1575,18 +1481,16 @@ public:
       return;
     }
 
-    uninitialized_buffer<_Tp, _Properties...> __new_buf{resource(), __size_};
-    _CUDA_VSTD::uninitialized_move(__unwrapped_begin(), __unwrapped_end(), __new_buf.data());
-    __buf_ = _CUDA_VSTD::move(__new_buf);
+    __buffer __new_buf{get_resource(), __size_};
+    this->__copy_same(__unwrapped_begin(), __unwrapped_end(), __new_buf.begin());
+    __buf_.__swap_allocations(__new_buf);
   }
 
   //! @brief Swaps the contents of a vector with those of \p __other
   //! @param __other The other vector.
   void swap(vector& __other) noexcept
   {
-    uninitialized_buffer<_Tp, _Properties...> __temp(_CUDA_VSTD::move(__other.__buf_));
-    __other.__buf_ = _CUDA_VSTD::move(__buf_);
-    __buf_         = _CUDA_VSTD::move(__temp);
+    __buf_.swap(__other.__buf_);
     _CUDA_VSTD::swap(__size_, __other.__size_);
   }
 
@@ -1610,10 +1514,10 @@ public:
   operator==(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
     __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
   {
-    return _CUDA_VSTD::equal(
+    return vector::__equality(
       __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
   }
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   //! @brief Compares two vectors for inequality
   //! @param __lhs One vector.
   //! @param __rhs The other vector.
@@ -1622,71 +1526,19 @@ public:
   operator!=(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
     __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
   {
-    return !_CUDA_VSTD::equal(
+    return !vector::__equality(
       __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
   }
-#  endif // _CCCL_STD_VER <= 2017
-
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-  _CCCL_NODISCARD_FRIEND constexpr __synth_three_way_result_t<_Tp>
-  operator<=>(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::lexicographical_compare_three_way(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    return _CUDA_VSTD::lexicographical_compare_three_way(
-      __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
-  }
-#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
-  //! @brief lexicographically compares two vectors
-  //! @param __lhs One vector.
-  //! @param __rhs The other vector.
-  //! @return true, if \p __lhs compares lexicographically less than \p __rhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool
-  operator<(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::lexicographical_compare(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    return _CUDA_VSTD::lexicographical_compare(
-      __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
-  }
-  //! @brief lexicographically compares two vectors
-  //! @param __lhs One vector.
-  //! @param __rhs The other vector.
-  //! @return true, if \p __rhs compares lexicographically less than \p __hhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool
-  operator>(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::lexicographical_compare(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    return __rhs < __lhs;
-  }
-  //! @brief lexicographically compares two vectors
-  //! @param __lhs One vector.
-  //! @param __rhs The other vector.
-  //! @return false, if \p __rhs compares lexicographically less than \p __lhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool
-  operator<=(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::lexicographical_compare(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    return !(__rhs < __lhs);
-  }
-  //! @brief lexicographically compares two vectors
-  //! @param __lhs One vector.
-  //! @param __rhs The other vector.
-  //! @return false, if \p __lhs compares lexicographically less than \p __rhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool
-  operator>=(const vector& __lhs, const vector& __rhs) noexcept(noexcept(_CUDA_VSTD::lexicographical_compare(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    return !(__lhs < __rhs);
-  }
-#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _CCCL_STD_VER <= 2017
 
   //! @}
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
   //! @brief Forwards the passed properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
   friend void get_property(const vector&, _Property) noexcept {}
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 // [containers.sequences.inplace.vector.erasure]
@@ -1719,6 +1571,4 @@ using device_vector = vector<_Tp, _CUDA_VMR::device_accessible>;
 
 _CCCL_POP_MACROS
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
-#endif //__CUDAX__CONTAINERS_VECTOR_H
+#endif //__CUDAX__CONTAINERS_VECTOR

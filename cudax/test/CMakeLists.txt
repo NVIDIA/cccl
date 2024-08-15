@@ -91,6 +91,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/vector/capacity.cu
     containers/vector/comparison.cu
     containers/vector/constructor.cu
+    containers/vector/conversion.cu
     containers/vector/emplace.cu
     containers/vector/insert.cu
     containers/vector/iterators.cu

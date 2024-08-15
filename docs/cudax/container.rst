@@ -26,9 +26,9 @@ annotations are checked by the type system.
    * - :ref:`<cuda/experimental/buffer.cuh> <cudax-containers-uninitialized-buffer>`
      - Facilities providing uninitialized *heterogeneous* potentially stream ordered storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
-   * - :ref:`<cuda/experimental/vector> <cudax-containers-heterogeneous-iterator>`
+   * - :ref:`<cuda/experimental/vector.cuh> <cudax-containers-heterogeneous-iterator>`
      - Iterator providing type safe iteration and memory access through a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
-   * - :ref:`<cuda/experimental/vector> <cudax-containers-vector>`
+   * - :ref:`<cuda/experimental/vector.cuh> <cudax-containers-vector>`
      - High level containers, that provide *heterogeneous* storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
