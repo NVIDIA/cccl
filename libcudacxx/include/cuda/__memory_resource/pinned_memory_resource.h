@@ -39,8 +39,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-//! @brief cuda_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
-class cuda_pinned_memory_resource
+//! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
+class pinned_memory_resource
 {
 private:
   unsigned int __flags_ = cudaHostAllocDefault;
@@ -49,10 +49,10 @@ private:
     cudaHostAllocDefault | cudaHostAllocPortable | cudaHostAllocMapped | cudaHostAllocWriteCombined;
 
 public:
-  constexpr cuda_pinned_memory_resource(const unsigned int __flags = cudaHostAllocDefault) noexcept
+  constexpr pinned_memory_resource(const unsigned int __flags = cudaHostAllocDefault) noexcept
       : __flags_(__flags & __available_flags)
   {
-    _LIBCUDACXX_ASSERT(__flags_ == __flags, "Unexpected flags passed to cuda_pinned_memory_resource");
+    _LIBCUDACXX_ASSERT(__flags_ == __flags, "Unexpected flags passed to pinned_memory_resource");
   }
 
   //! @brief Allocate host memory of size at least \p __bytes.
@@ -82,71 +82,67 @@ public:
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to cuda_pinned_memory_resource::deallocate.");
-    _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "cuda_pinned_memory_resource::deallocate failed", __ptr);
+                       "Invalid alignment passed to pinned_memory_resource::deallocate.");
+    _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "pinned_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
 
-  //! @brief Equality comparison with another \c cuda_pinned_memory_resource
-  //! @param __other The other \c cuda_pinned_memory_resource
-  //! @return Whether both \c cuda_pinned_memory_resource were constructed with the same flags
-  _CCCL_NODISCARD constexpr bool operator==(cuda_pinned_memory_resource const& __other) const noexcept
+  //! @brief Equality comparison with another \c pinned_memory_resource
+  //! @param __other The other \c pinned_memory_resource
+  //! @return Whether both \c pinned_memory_resource were constructed with the same flags
+  _CCCL_NODISCARD constexpr bool operator==(pinned_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @brief Equality comparison with another \c cuda_pinned_memory_resource
-  //! @param __other The other \c cuda_pinned_memory_resource
-  //! @return Whether both \c cuda_pinned_memory_resource were constructed with different flags
-  _CCCL_NODISCARD constexpr bool operator!=(cuda_pinned_memory_resource const& __other) const noexcept
+  //! @brief Equality comparison with another \c pinned_memory_resource
+  //! @param __other The other \c pinned_memory_resource
+  //! @return Whether both \c pinned_memory_resource were constructed with different flags
+  _CCCL_NODISCARD constexpr bool operator!=(pinned_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c cuda_pinned_memory_resource and another resource
-  //! @param __lhs The \c cuda_pinned_memory_resource
+  //! @brief Equality comparison between a \c pinned_memory_resource and another resource
+  //! @param __lhs The \c pinned_memory_resource
   //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
-        == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
+  //! @copydoc pinned_memory_resource::operator<_Resource>==(pinned_memory_resource const&, _Resource const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
-        == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
+  //! @copydoc pinned_memory_resource::operator<_Resource>==(pinned_memory_resource const&, _Resource const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(cuda_pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
-        != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc cuda_pinned_memory_resource::operator<_Resource>==(cuda_pinned_memory_resource const&, _Resource const&)
+  //! @copydoc pinned_memory_resource::operator<_Resource>==(pinned_memory_resource const&, _Resource const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_pinned_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_pinned_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_pinned_memory_resource&>(__lhs)}
-        != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(cuda_pinned_memory_resource const&, device_accessible) noexcept {}
+  friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(cuda_pinned_memory_resource const&, host_accessible) noexcept {}
+  friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
@@ -154,8 +150,11 @@ public:
     return __alignment <= default_cuda_malloc_host_alignment && (default_cuda_malloc_host_alignment % __alignment == 0);
   }
 };
-static_assert(resource_with<cuda_pinned_memory_resource, device_accessible>, "");
-static_assert(resource_with<cuda_pinned_memory_resource, host_accessible>, "");
+static_assert(resource_with<pinned_memory_resource, device_accessible>, "");
+static_assert(resource_with<pinned_memory_resource, host_accessible>, "");
+
+// For backward compatability
+using cuda_pinned_memory_resource _LIBCUDACXX_DEPRECATED = pinned_memory_resource;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

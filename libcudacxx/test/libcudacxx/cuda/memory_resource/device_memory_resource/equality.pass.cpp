@@ -40,9 +40,16 @@ struct resource
   {
     return false;
   }
+
+  template <AccessibilityType Accessibilty2                                         = Accessibilty,
+            cuda::std::enable_if_t<Accessibilty2 == AccessibilityType::Device, int> = 0>
+  friend void get_property(const resource&, cuda::mr::device_accessible) noexcept
+  {}
 };
 static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
+static_assert(!cuda::mr::resource_with<resource<AccessibilityType::Host>, cuda::mr::device_accessible>, "");
 static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::resource_with<resource<AccessibilityType::Device>, cuda::mr::device_accessible>, "");
 
 template <AccessibilityType Accessibilty>
 struct async_resource : public resource<Accessibilty>
@@ -54,32 +61,40 @@ struct async_resource : public resource<Accessibilty>
   void deallocate_async(void*, size_t, size_t, cuda::stream_ref) {}
 };
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>, "");
+static_assert(!cuda::mr::async_resource_with<async_resource<AccessibilityType::Host>, cuda::mr::device_accessible>, "");
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
+static_assert(cuda::mr::async_resource_with<async_resource<AccessibilityType::Device>, cuda::mr::device_accessible>,
+              "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cuda::mr::cuda_pinned_memory_resource
+struct derived_resource : cuda::mr::device_memory_resource
 {
-  using cuda::mr::cuda_pinned_memory_resource::cuda_pinned_memory_resource;
+  using cuda::mr::device_memory_resource::device_memory_resource;
 };
-static_assert(cuda::mr::resource<derived_pinned_resource>, "");
+static_assert(cuda::mr::resource<derived_resource>, "");
+
+// Ensure that we can only
 
 void test()
 {
-  cuda::mr::cuda_pinned_memory_resource first{};
-  { // comparison against a plain cuda_pinned_memory_resource
-    cuda::mr::cuda_pinned_memory_resource second{cudaHostAllocDefault};
+  cuda::mr::device_memory_resource first{};
+  { // comparison against a plain device_memory_resource
+    cuda::mr::device_memory_resource second{};
     assert(first == second);
     assert(!(first != second));
   }
 
-  { // comparison against a plain cuda_pinned_memory_resource with a different flag set
-    cuda::mr::cuda_pinned_memory_resource second{cudaHostAllocPortable};
-    assert(!(first == second));
-    assert((first != second));
+  { // comparison against a device_memory_resource wrapped inside a resource_ref<device_accessible>
+    cuda::mr::device_memory_resource second{};
+    cuda::mr::resource_ref<cuda::mr::device_accessible> second_ref{second};
+    assert(first == second_ref);
+    assert(!(first != second_ref));
+    assert(second_ref == first);
+    assert(!(second_ref != first));
   }
 
-  { // comparison against a cuda_pinned_memory_resource wrapped inside a resource_ref<>
-    cuda::mr::cuda_pinned_memory_resource second{};
+  { // comparison against a device_memory_resource wrapped inside a resource_ref<>
+    cuda::mr::device_memory_resource second{};
     cuda::mr::resource_ref<> second_ref{second};
     assert(first == second_ref);
     assert(!(first != second_ref));
@@ -87,7 +102,7 @@ void test()
     assert(!(second_ref != first));
   }
 
-  { // comparison against a different resource through resource_ref
+  { // comparison against a different resource
     resource<AccessibilityType::Host> host_resource{};
     resource<AccessibilityType::Device> device_resource{};
     assert(!(first == host_resource));
@@ -104,13 +119,15 @@ void test()
   { // comparison against a different resource through resource_ref
     async_resource<AccessibilityType::Host> host_async_resource{};
     async_resource<AccessibilityType::Device> device_async_resource{};
-    assert(!(first == host_async_resource));
-    assert(first != host_async_resource);
+    cuda::mr::resource_ref<> host_ref{host_async_resource};
+    cuda::mr::resource_ref<> device_ref{device_async_resource};
+    assert(!(first == host_ref));
+    assert(first != host_ref);
     assert(!(first == device_async_resource));
     assert(first != device_async_resource);
 
-    assert(!(host_async_resource == first));
-    assert(host_async_resource != first);
+    assert(!(host_ref == first));
+    assert(host_ref != first);
     assert(!(device_async_resource == first));
     assert(device_async_resource != first);
   }

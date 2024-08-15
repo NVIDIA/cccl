@@ -57,29 +57,29 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cuda::mr::cuda_managed_memory_resource
+struct derived_managed_resource : cuda::mr::managed_memory_resource
 {
-  using cuda::mr::cuda_managed_memory_resource::cuda_managed_memory_resource;
+  using cuda::mr::managed_memory_resource::managed_memory_resource;
 };
 static_assert(cuda::mr::resource<derived_managed_resource>, "");
 
 void test()
 {
-  cuda::mr::cuda_managed_memory_resource first{};
-  { // comparison against a plain cuda_managed_memory_resource
-    cuda::mr::cuda_managed_memory_resource second{};
+  cuda::mr::managed_memory_resource first{};
+  { // comparison against a plain managed_memory_resource
+    cuda::mr::managed_memory_resource second{};
     assert(first == second);
     assert(!(first != second));
   }
 
-  { // comparison against a plain cuda_managed_memory_resource with a different flag set
-    cuda::mr::cuda_managed_memory_resource second{cudaMemAttachHost};
+  { // comparison against a plain managed_memory_resource with a different flag set
+    cuda::mr::managed_memory_resource second{cudaMemAttachHost};
     assert(!(first == second));
     assert((first != second));
   }
 
-  { // comparison against a cuda_managed_memory_resource wrapped inside a resource_ref<>
-    cuda::mr::cuda_managed_memory_resource second{};
+  { // comparison against a managed_memory_resource wrapped inside a resource_ref<>
+    cuda::mr::managed_memory_resource second{};
     assert(first == cuda::mr::resource_ref<>{second});
     assert(!(first != cuda::mr::resource_ref<>{second}));
     assert(cuda::mr::resource_ref<>{second} == first);

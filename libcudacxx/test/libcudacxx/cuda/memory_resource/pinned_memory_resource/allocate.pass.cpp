@@ -19,38 +19,33 @@
 
 #include "test_macros.h"
 
-void ensure_device_ptr(void* ptr)
+void ensure_pinned_host_ptr(void* ptr)
 {
   assert(ptr != nullptr);
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   assert(status == cudaSuccess);
-  assert(attributes.type == cudaMemoryTypeDevice);
+  assert((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != nullptr));
 }
 
-void test()
+void test(const unsigned int flag)
 {
-  cuda::mr::cuda_memory_resource res{};
+  cuda::mr::pinned_memory_resource res{flag};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-    ensure_device_ptr(ptr);
+    ensure_pinned_host_ptr(ptr);
 
     res.deallocate(ptr, 42);
   }
 
   { // allocate / deallocate with alignment
-    constexpr size_t desired_alignment = 64;
-    auto* ptr                          = res.allocate(42, desired_alignment);
+    auto* ptr = res.allocate(42, 4);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-    ensure_device_ptr(ptr);
+    ensure_pinned_host_ptr(ptr);
 
-    // also check the alignment
-    const auto address   = reinterpret_cast<cuda::std::uintptr_t>(ptr);
-    const auto alignment = address & (~address + 1ULL);
-    assert(alignment >= desired_alignment);
-    res.deallocate(ptr, 42, desired_alignment);
+    res.deallocate(ptr, 42, 4);
   }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
@@ -86,6 +81,14 @@ void test()
     }
   }
 #endif // TEST_HAS_NO_EXCEPTIONS
+}
+
+void test()
+{
+  test(cudaHostAllocDefault);
+  test(cudaHostAllocPortable);
+  test(cudaHostAllocMapped);
+  test(cudaHostAllocWriteCombined);
 }
 
 int main(int, char**)
