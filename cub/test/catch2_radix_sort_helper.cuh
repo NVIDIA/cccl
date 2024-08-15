@@ -444,7 +444,7 @@ std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> segmented_radix_sort
 }
 
 template <typename OffsetT>
-struct offset_scan_op_t
+struct radix_offset_scan_op_t
 {
   OffsetT num_items;
 
@@ -468,5 +468,5 @@ void generate_segment_offsets(c2h::seed_t seed, c2h::device_vector<OffsetT>& off
     offsets.end(),
     offsets.begin(),
     OffsetT{0},
-    offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
+    radix_offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
 }

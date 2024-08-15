@@ -24,11 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
 #include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_radix_sort.cuh> // DispatchSegmentedRadixSort
 #include <cub/util_type.cuh>
 
 #include <thrust/functional.h>
@@ -46,11 +46,50 @@
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
+// TODO replace with DeviceSegmentedRadixSort::If interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
+// Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset types
+template <bool IS_DESCENDING, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_radix_sort_wrapper(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  const KeyT* d_keys_in,
+  KeyT* d_keys_out,
+  NumItemsT num_items,
+  NumItemsT num_segments,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  int begin_bit       = 0,
+  int end_bit         = sizeof(KeyT) * 8,
+  cudaStream_t stream = 0)
+{
+  cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+  cub::DoubleBuffer<cub::NullType> d_values;
+  return cub::DispatchSegmentedRadixSort<
+    IS_DESCENDING,
+    KeyT,
+    cub::NullType,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT, //
+    NumItemsT>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_keys,
+                         d_values,
+                         num_items,
+                         num_segments,
+                         d_begin_offsets,
+                         d_end_offsets,
+                         begin_bit,
+                         end_bit,
+                         false,
+                         stream);
+}
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
-
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<true>, dispatch_segmented_radix_sort_descending);
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<false>, dispatch_segmented_radix_sort);
 // %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
 
 // TODO:
@@ -455,5 +494,57 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
       end_bit<key_t>());
   }
 
+  REQUIRE((ref_keys == out_keys) == true);
+}
+
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: 64-bit num. items and num. segments",
+         "[keys][segmented][radix][sort][device]")
+{
+  using key_t    = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using offset_t = cuda::std::int64_t; // the test requires ~30 GB GPU memory including temporary buffer size
+
+  constexpr std::size_t min_num_items = std::size_t{1} << 31;
+  constexpr std::size_t max_num_items = min_num_items + (std::size_t{1} << 20);
+  constexpr int num_key_seeds         = 1;
+  constexpr int num_segment_seeds     = 1;
+  const std::size_t num_items         = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
+  const std::size_t num_segments      = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
+  const bool is_descending            = GENERATE(false, true);
+  CAPTURE(num_items, num_segments, is_descending);
+
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<offset_t> offsets(num_segments + 1);
+  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+
+  if (is_descending)
+  {
+    dispatch_segmented_radix_sort_descending(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      // Mix pointers/iterators for segment info to test using different iterable types:
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1,
+      begin_bit<key_t>(),
+      end_bit<key_t>());
+  }
+  else
+  {
+    dispatch_segmented_radix_sort(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      // Mix pointers/iterators for segment info to test using different iterable types:
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1,
+      begin_bit<key_t>(),
+      end_bit<key_t>());
+  }
+  // compoute the reference only if the routine is able to terminate correctly
+  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, offsets);
   REQUIRE((ref_keys == out_keys) == true);
 }
