@@ -20,6 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__container/vector.h>
+#include <cuda/experimental/__container/vector.cuh>
 
 #endif //_CUDA_VECTOR

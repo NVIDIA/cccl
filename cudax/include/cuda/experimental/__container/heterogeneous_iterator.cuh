@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR_H
-#define __CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR_H
+#ifndef __CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR
+#define __CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__utility/select_execution_space.h>
+#include <cuda/experimental/__utility/select_execution_space.cuh>
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
@@ -432,4 +432,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
-#endif //__CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR_H
+#endif //__CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR

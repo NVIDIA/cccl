@@ -16,15 +16,19 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/vector>
+#include <cuda/experimental/vector.cuh>
 
 #include <stdexcept>
 
+#include "helper.h"
 #include "types.h"
 #include <catch2/catch.hpp>
 
-TEMPLATE_TEST_CASE(
-  "cudax::vector emplace", "[container][vector]", cuda::std::tuple<>, cuda::std::tuple<cuda::mr::host_accessible>)
+TEMPLATE_TEST_CASE("cudax::vector emplace",
+                   "[container][vector]",
+                   cuda::std::tuple<cuda::mr::host_accessible>,
+                   cuda::std::tuple<cuda::mr::device_accessible>,
+                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
 {
   using Resource     = typename extract_properties<TestType>::resource;
   using Resource_ref = typename extract_properties<TestType>::resource_ref;
@@ -42,36 +46,37 @@ TEMPLATE_TEST_CASE(
       Vector vec     = {resource};
       const auto res = vec.emplace(vec.begin(), 3);
       static_assert(cuda::std::is_same<decltype(res), const iterator>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
+      CHECK(equal_size_value(vec, 1, T(3)));
       CHECK(res == vec.begin());
     }
 
     { // cudax::vector::emplace(const_iter, args...), empty with allocation
-      Vector vec = {resource, {T(0), T(1), T(2), T(4), T(5)}};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec.clear();
       auto old_begin = vec.begin();
       const auto res = vec.emplace(old_begin, 3);
       static_assert(cuda::std::is_same<decltype(res), const iterator>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
+      CHECK(equal_size_value(vec, 1, T(3)));
       CHECK(res == old_begin);
     }
 
     { // cudax::vector::emplace(const_iter, args...), sufficient capacity
-      Vector vec = {resource, {T(0), T(1), T(2), T(4), T(5)}};
-      vec.resize(4);
+      Vector vec = {resource, {T(1), T(42), T(0), T(12), T(-1), T(1337)}};
+      vec.resize(5);
       auto old_begin = vec.begin();
-      const auto res = vec.emplace(old_begin + 3, 3);
+      const auto res = vec.emplace(old_begin + 2, 1337);
       static_assert(cuda::std::is_same<decltype(res), const iterator>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 5>{T(0), T(1), T(2), T(3), T(4)}));
-      CHECK(res == old_begin + 3);
+      CHECK(equal_range(vec));
+      CHECK(res == old_begin + 2);
     }
 
     { // cudax::vector::emplace(const_iter, args...), growing
-      Vector vec     = {resource, {T(0), T(1), T(2), T(4)}};
-      const auto res = vec.emplace(vec.cbegin() + 3, 3);
+      Vector vec     = {resource, {T(1), T(42), T(0), T(12), T(-1)}};
+      auto old_begin = vec.begin();
+      const auto res = vec.emplace(old_begin + 2, 1337);
       static_assert(cuda::std::is_same<decltype(res), const iterator>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 5>{T(0), T(1), T(2), T(3), T(4)}));
-      CHECK(res == vec.cbegin() + 3);
+      CHECK(equal_range(vec));
+      CHECK(res == vec.cbegin() + 2);
     }
   }
 
@@ -81,34 +86,34 @@ TEMPLATE_TEST_CASE(
       Vector vec         = {resource};
       decltype(auto) res = vec.emplace_back(3);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
-      CHECK(res == vec.back());
+      CHECK(equal_size_value(vec, 1, T(3)));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back())); // cannot compare values for device only
     }
 
     { // cudax::vector::emplace_back(args...), empty with allocation
-      Vector vec = {resource, {T(0), T(1), T(2), T(4), T(5)}};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec.clear();
       decltype(auto) res = vec.emplace_back(3);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
-      CHECK(res == vec.back());
+      CHECK(equal_size_value(vec, 1, T(3)));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back())); // cannot compare values for device only
     }
 
     { // cudax::vector::emplace_back(args...), sufficient capacity
-      Vector vec = {resource, {T(0), T(1), T(2), T(3), T(4), T(5)}};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(42)}};
       vec.resize(5);
-      decltype(auto) res = vec.emplace_back(5);
+      decltype(auto) res = vec.emplace_back(-1);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(0), T(1), T(2), T(3), T(4), T(5)}));
-      CHECK(res == vec.back());
+      CHECK(equal_range(vec));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back())); // cannot compare values for device only
     }
 
     { // cudax::vector::emplace_back(args...), growing
-      Vector vec         = {resource, {T(0), T(1), T(2), T(3), T(4)}};
-      decltype(auto) res = vec.emplace_back(5);
+      Vector vec         = {resource, {T(1), T(42), T(1337), T(0), T(12)}};
+      decltype(auto) res = vec.emplace_back(-1);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(0), T(1), T(2), T(3), T(4), T(5)}));
-      CHECK(res == vec.back());
+      CHECK(equal_range(vec));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back())); // cannot compare values for device only
     }
   }
 
@@ -119,37 +124,37 @@ TEMPLATE_TEST_CASE(
       Vector vec         = {resource};
       decltype(auto) res = vec.push_back(input);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
-      CHECK(res == vec.back());
+      CHECK(equal_size_value(vec, 1, T(3)));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
 
     { // cudax::vector::push_back(const T&), empty with allocation
       const T input{3};
-      Vector vec = {resource, {T(0), T(1), T(2), T(4), T(5)}};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(42)}};
       vec.clear();
       decltype(auto) res = vec.push_back(input);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
-      CHECK(res == vec.back());
+      CHECK(equal_size_value(vec, 1, T(3)));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
 
     { // cudax::vector::push_back(const T&), sufficient capacity
-      const T input{5};
-      Vector vec = {resource, {T(0), T(1), T(2), T(3), T(4), T(5)}};
+      const T input{-1};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(42)}};
       vec.resize(5);
       decltype(auto) res = vec.push_back(input);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(0), T(1), T(2), T(3), T(4), T(5)}));
-      CHECK(res == vec.back());
+      CHECK(equal_range(vec));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
 
     { // cudax::vector::push_back(const T&), growing
-      const T input{5};
-      Vector vec         = {resource, {T(0), T(1), T(2), T(3), T(4)}};
+      const T input{-1};
+      Vector vec         = {resource, {T(1), T(42), T(1337), T(0), T(12)}};
       decltype(auto) res = vec.push_back(input);
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(0), T(1), T(2), T(3), T(4), T(5)}));
-      CHECK(res == vec.back());
+      CHECK(equal_range(vec));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
   }
 
@@ -159,34 +164,34 @@ TEMPLATE_TEST_CASE(
       Vector vec         = {resource};
       decltype(auto) res = vec.push_back(T{3});
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
-      CHECK(res == vec.back());
+      CHECK(equal_size_value(vec, 1, T(3)));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
 
     { // cudax::vector::push_back(T&&), empty with allocation
-      Vector vec = {resource, {T(0), T(1), T(2), T(4), T(5)}};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec.clear();
       decltype(auto) res = vec.push_back(T{3});
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 1>{3}));
-      CHECK(res == vec.back());
+      CHECK(equal_size_value(vec, 1, T(3)));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
 
     { // cudax::vector::push_back(T&&), sufficient capacity
-      Vector vec = {resource, {T(0), T(1), T(2), T(3), T(4), T(5)}};
+      Vector vec = {resource, {T(1), T(42), T(1337), T(0), T(12), T(42)}};
       vec.resize(5);
-      decltype(auto) res = vec.push_back(T{5});
+      decltype(auto) res = vec.push_back(T{-1});
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(0), T(1), T(2), T(3), T(4), T(5)}));
-      CHECK(res == vec.back());
+      CHECK(equal_range(vec));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
 
     { // cudax::vector::push_back(T&&), growing
-      Vector vec         = {resource, {T(0), T(1), T(2), T(3), T(4)}};
-      decltype(auto) res = vec.push_back(T{5});
+      Vector vec         = {resource, {T(1), T(42), T(1337), T(0), T(12)}};
+      decltype(auto) res = vec.push_back(T{-1});
       static_assert(cuda::std::is_same<decltype(res), reference>::value, "");
-      CHECK(equal_range(vec, cuda::std::array<T, 6>{T(0), T(1), T(2), T(3), T(4), T(5)}));
-      CHECK(res == vec.back());
+      CHECK(equal_range(vec));
+      CHECK(cuda::std::addressof(res) == cuda::std::addressof(vec.back()));
     }
   }
 
