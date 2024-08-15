@@ -15,7 +15,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
-using resource = cuda::mr::cuda_memory_resource;
+using resource = cuda::mr::device_memory_resource;
 static_assert(!cuda::std::is_trivial<resource>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<resource>::value, "");
 static_assert(cuda::std::is_trivially_copy_constructible<resource>::value, "");

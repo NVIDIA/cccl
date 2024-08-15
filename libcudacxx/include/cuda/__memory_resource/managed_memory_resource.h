@@ -38,8 +38,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-//! @brief \c cuda_managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
-class cuda_managed_memory_resource
+//! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
+class managed_memory_resource
 {
 private:
   unsigned int __flags_ = cudaMemAttachGlobal;
@@ -47,10 +47,10 @@ private:
   static constexpr unsigned int __available_flags = cudaMemAttachGlobal | cudaMemAttachHost;
 
 public:
-  constexpr cuda_managed_memory_resource(const unsigned int __flags = cudaMemAttachGlobal) noexcept
+  constexpr managed_memory_resource(const unsigned int __flags = cudaMemAttachGlobal) noexcept
       : __flags_(__flags & __available_flags)
   {
-    _LIBCUDACXX_ASSERT(__flags_ == __flags, "Unexpected flags passed to cuda_managed_memory_resource");
+    _LIBCUDACXX_ASSERT(__flags_ == __flags, "Unexpected flags passed to managed_memory_resource");
   }
 
   //! @brief Allocate CUDA unified memory of size at least \p __bytes.
@@ -80,74 +80,70 @@ public:
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to cuda_managed_memory_resource::deallocate.");
-    _CCCL_ASSERT_CUDA_API(::cudaFree, "cuda_managed_memory_resource::deallocate failed", __ptr);
+                       "Invalid alignment passed to managed_memory_resource::deallocate.");
+    _CCCL_ASSERT_CUDA_API(::cudaFree, "managed_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
 
-  //! @brief Equality comparison with another \c cuda_managed_memory_resource
-  //! @param __other The other \c cuda_managed_memory_resource
-  //! @return Whether both \c cuda_managed_memory_resource were constructed with the same flags
-  _CCCL_NODISCARD constexpr bool operator==(cuda_managed_memory_resource const& __other) const noexcept
+  //! @brief Equality comparison with another \c managed_memory_resource
+  //! @param __other The other \c managed_memory_resource
+  //! @return Whether both \c managed_memory_resource were constructed with the same flags
+  _CCCL_NODISCARD constexpr bool operator==(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @brief Inequality comparison with another \c cuda_managed_memory_resource
-  //! @param __other The other \c cuda_managed_memory_resource
-  //! @return Whether both \c cuda_managed_memory_resource were constructed with different flags
-  _CCCL_NODISCARD constexpr bool operator!=(cuda_managed_memory_resource const& __other) const noexcept
+  //! @brief Inequality comparison with another \c managed_memory_resource
+  //! @param __other The other \c managed_memory_resource
+  //! @return Whether both \c managed_memory_resource were constructed with different flags
+  _CCCL_NODISCARD constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c cuda_managed_memory_resource and another resource
-  //! @param __lhs The \c cuda_managed_memory_resource
+  //! @brief Equality comparison between a \c managed_memory_resource and another resource
+  //! @param __lhs The \c managed_memory_resource
   //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(cuda_managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_managed_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_managed_memory_resource&>(__lhs)}
-        == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @copydoc cuda_managed_memory_resource::operator<_Resource>==(cuda_managed_memory_resource const&, _Resource
+  //! @copydoc managed_memory_resource::operator<_Resource>==(managed_memory_resource const&, _Resource
   //! const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_managed_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_managed_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, managed_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_managed_memory_resource&>(__lhs)}
-        == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc cuda_managed_memory_resource::operator<_Resource>==(cuda_managed_memory_resource const&, _Resource
+  //! @copydoc managed_memory_resource::operator<_Resource>==(managed_memory_resource const&, _Resource
   //! const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(cuda_managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_managed_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_managed_memory_resource&>(__lhs)}
-        != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc cuda_managed_memory_resource::operator<_Resource>==(cuda_managed_memory_resource const&, _Resource
+  //! @copydoc managed_memory_resource::operator<_Resource>==(managed_memory_resource const&, _Resource
   //! const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_managed_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_managed_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, managed_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_managed_memory_resource&>(__lhs)}
-        != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(cuda_managed_memory_resource const&, device_accessible) noexcept {}
+  friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(cuda_managed_memory_resource const&, host_accessible) noexcept {}
+  friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
@@ -155,8 +151,11 @@ public:
     return __alignment <= default_cuda_malloc_alignment && (default_cuda_malloc_alignment % __alignment == 0);
   }
 };
-static_assert(resource_with<cuda_managed_memory_resource, device_accessible>, "");
-static_assert(resource_with<cuda_managed_memory_resource, host_accessible>, "");
+static_assert(resource_with<managed_memory_resource, device_accessible>, "");
+static_assert(resource_with<managed_memory_resource, host_accessible>, "");
+
+// For backward compatability
+using cuda_managed_memory_resource _LIBCUDACXX_DEPRECATED = managed_memory_resource;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

@@ -39,20 +39,20 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-//! @brief cuda_memory_resource uses `cudaMalloc` / `cudaFree` for allocation / deallocation.
+//! @brief device_memory_resource uses `cudaMalloc` / `cudaFree` for allocation / deallocation.
 //! By default uses device 0 to allocate memory
-class cuda_memory_resource
+class device_memory_resource
 {
 private:
   int __device_id_{0};
 
 public:
-  //! @brief default constructs a cuda_memory_resource allocating memory on device 0
-  cuda_memory_resource() = default;
+  //! @brief default constructs a device_memory_resource allocating memory on device 0
+  device_memory_resource() = default;
 
-  //! @brief default constructs a cuda_memory_resource allocating memory on device \p __device_id
+  //! @brief default constructs a device_memory_resource allocating memory on device \p __device_id
   //! @param __device_id The id of the device we are allocating memory on
-  constexpr cuda_memory_resource(const int __device_id) noexcept
+  constexpr device_memory_resource(const int __device_id) noexcept
       : __device_id_(__device_id)
   {}
 
@@ -85,65 +85,65 @@ public:
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to cuda_memory_resource::deallocate.");
-    _CCCL_ASSERT_CUDA_API(::cudaFree, "cuda_memory_resource::deallocate failed", __ptr);
+                       "Invalid alignment passed to device_memory_resource::deallocate.");
+    _CCCL_ASSERT_CUDA_API(::cudaFree, "device_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
 
-  //! @brief Equality comparison with another \c cuda_memory_resource
-  //! @param __other The other \c cuda_memory_resource
+  //! @brief Equality comparison with another \c device_memory_resource
+  //! @param __other The other \c device_memory_resource
   //! @return true, if both resources hold the same device id
-  _CCCL_NODISCARD constexpr bool operator==(cuda_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator==(device_memory_resource const& __other) const noexcept
   {
     return __device_id_ == __other.__device_id_;
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @brief Inequality comparison with another \c cuda_memory_resource
-  //! @param __other The other \c cuda_memory_resource
+  //! @brief Inequality comparison with another \c device_memory_resource
+  //! @param __other The other \c device_memory_resource
   //! @return true, if both resources hold different device id's
-  _CCCL_NODISCARD constexpr bool operator!=(cuda_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator!=(device_memory_resource const& __other) const noexcept
   {
     return __device_id_ != __other.__device_id_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c cuda_memory_resource and another resource
-  //! @param __lhs The \c cuda_memory_resource
+  //! @brief Equality comparison between a \c device_memory_resource and another resource
+  //! @param __lhs The \c device_memory_resource
   //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<device_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<device_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
+  //! @copydoc device_memory_resource::operator==<_Resource>(device_memory_resource const&, _Resource const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<device_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<device_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
+  //! @copydoc device_memory_resource::operator==<_Resource>(device_memory_resource const&, _Resource const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<device_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<device_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
+  //! @copydoc device_memory_resource::operator==<_Resource>(device_memory_resource const&, _Resource const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<device_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<device_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #    endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(cuda_memory_resource const&, device_accessible) noexcept {}
+  friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
@@ -151,7 +151,10 @@ public:
     return __alignment <= default_cuda_malloc_alignment && (default_cuda_malloc_alignment % __alignment == 0);
   }
 };
-static_assert(resource_with<cuda_memory_resource, device_accessible>, "");
+static_assert(resource_with<device_memory_resource, device_accessible>, "");
+
+// For backward compatability
+using cuda_memory_resource _LIBCUDACXX_DEPRECATED = device_memory_resource;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

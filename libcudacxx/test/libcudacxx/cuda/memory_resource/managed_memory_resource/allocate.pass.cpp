@@ -19,23 +19,23 @@
 
 #include "test_macros.h"
 
-void ensure_pinned_host_ptr(void* ptr)
+void ensure_managed_ptr(void* ptr)
 {
   assert(ptr != nullptr);
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   assert(status == cudaSuccess);
-  assert((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != nullptr));
+  assert(attributes.type == cudaMemoryTypeManaged);
 }
 
 void test(const unsigned int flag)
 {
-  cuda::mr::cuda_pinned_memory_resource res{flag};
+  cuda::mr::managed_memory_resource res{flag};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-    ensure_pinned_host_ptr(ptr);
+    ensure_managed_ptr(ptr);
 
     res.deallocate(ptr, 42);
   }
@@ -43,7 +43,7 @@ void test(const unsigned int flag)
   { // allocate / deallocate with alignment
     auto* ptr = res.allocate(42, 4);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-    ensure_pinned_host_ptr(ptr);
+    ensure_managed_ptr(ptr);
 
     res.deallocate(ptr, 42, 4);
   }
@@ -85,10 +85,8 @@ void test(const unsigned int flag)
 
 void test()
 {
-  test(cudaHostAllocDefault);
-  test(cudaHostAllocPortable);
-  test(cudaHostAllocMapped);
-  test(cudaHostAllocWriteCombined);
+  test(cudaMemAttachGlobal);
+  test(cudaMemAttachHost);
 }
 
 int main(int, char**)
