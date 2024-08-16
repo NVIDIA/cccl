@@ -32,6 +32,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__memory/voidify.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -46,7 +47,6 @@
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/detail/libcxx/include/new>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

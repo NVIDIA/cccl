@@ -30,6 +30,7 @@
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/builtin_new_allocator.h>
 #include <cuda/std/__memory/compressed_pair.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -47,7 +48,6 @@
 #include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/detail/libcxx/include/__functional_base>
-#include <cuda/std/detail/libcxx/include/new>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
