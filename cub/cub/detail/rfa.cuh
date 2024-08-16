@@ -969,12 +969,12 @@ public:
 template <typename FloatType = float, typename std::enable_if<std::is_floating_point<FloatType>::value>::type* = nullptr>
 struct rfa_float_transform_t
 {
-  _CCCL_DEVICE FloatType operator()(FloatType accum)
+  _CCCL_HOST _CCCL_DEVICE FloatType operator()(FloatType accum)
   {
     return accum;
   }
 
-  _CCCL_DEVICE FloatType operator()(ReproducibleFloatingAccumulator<FloatType> accum)
+  _CCCL_HOST _CCCL_DEVICE FloatType operator()(ReproducibleFloatingAccumulator<FloatType> accum)
   {
     return accum.conv();
   }
