@@ -175,7 +175,6 @@ using bitwise_atomic_testers =
 
 void kernel_invoker()
 {
-  // todo
   validate_pinned<signed char, arithmetic_atomic_testers>();
   validate_pinned<signed short, arithmetic_atomic_testers>();
   validate_pinned<signed int, arithmetic_atomic_testers>();
