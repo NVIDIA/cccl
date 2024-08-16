@@ -34,8 +34,8 @@
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
 
-// TODO replace with DeviceSegmentedRadixSort::If interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset types
+// TODO replace with DeviceSegmentedSort::If interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
+// Temporary wrapper that allows specializing the DeviceSegmentedSort algorithm for different offset types
 template <bool IS_DESCENDING, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sort_wrapper(
   void* d_temp_storage,
@@ -232,7 +232,7 @@ CUB_TEST("DeviceSegmentedSortKeys: 64-bit num. items and num. segments", "[keys]
 
   if (is_descending)
   {
-    dispatch_segmented_sort(
+    dispatch_segmented_sort_descending(
       thrust::raw_pointer_cast(in_keys.data()),
       thrust::raw_pointer_cast(out_keys.data()),
       static_cast<offset_t>(num_items),

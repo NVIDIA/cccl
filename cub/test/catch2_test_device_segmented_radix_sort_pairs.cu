@@ -343,8 +343,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: 64-bit num. items and num. segmen
   constexpr int num_segment_seeds     = 1;
   const std::size_t num_items         = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
   const std::size_t num_segments      = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
-
-  const bool is_descending = GENERATE(false, true);
+  const bool is_descending            = GENERATE(false, true);
   CAPTURE(num_items, num_segments, is_descending);
 
   c2h::device_vector<key_t> in_keys(num_items);
@@ -354,8 +353,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: 64-bit num. items and num. segmen
   c2h::gen(CUB_SEED(num_value_seeds), in_values);
   generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
-  // Initialize the output vectors by copying the inputs since not all items
-  // may belong to a segment.
+  // Initialize the output vectors by copying the inputs since not all items may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
   c2h::device_vector<value_t> out_values(in_values);
 
