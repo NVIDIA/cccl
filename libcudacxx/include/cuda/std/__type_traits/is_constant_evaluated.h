@@ -12,6 +12,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/detail/libcxx/include/__config"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -32,10 +34,18 @@ inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_is_constant_evaluat
 {
   return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
 }
+inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_default_is_constant_evaluated() noexcept
+{
+  return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
+}
 #else // ^^^ _LIBCUDACXX_IS_CONSTANT_EVALUATED ^^^ / vvv !_LIBCUDACXX_IS_CONSTANT_EVALUATED vvv
 inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_is_constant_evaluated() noexcept
 {
   return false;
+}
+inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_default_is_constant_evaluated() noexcept
+{
+  return true;
 }
 #endif // !_LIBCUDACXX_IS_CONSTANT_EVALUATED
 
