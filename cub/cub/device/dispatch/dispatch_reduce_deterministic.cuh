@@ -81,45 +81,45 @@ using AccumT = cub::detail::accumulator_t<ReductionOpT, InitT, cub::detail::valu
 template <typename OutputIteratorT, typename InputIteratorT>
 using InitT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
 
-template <typename FloatType = float, typename std::enable_if_t<std::is_floating_point_v<FloatType>>* = nullptr>
+template <typename FloatType = float, typename std::enable_if<std::is_floating_point<FloatType>::value>::type* = nullptr>
 struct deterministic_sum_t
 {
   using DeterministicAcc = detail::rfa_detail::ReproducibleFloatingAccumulator<FloatType>;
 
-  __host__ __device__ DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
     acc += f;
     return acc;
   }
 
-  __host__ __device__ DeterministicAcc operator()(DeterministicAcc acc, float4 f)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, float4 f)
   {
     acc += f;
     return acc;
   }
 
-  __host__ __device__ DeterministicAcc operator()(DeterministicAcc acc, double4 f)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, double4 f)
   {
     acc += f;
     return acc;
   }
 
-  __host__ __device__ DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  __host__ __device__ DeterministicAcc operator()(float4 f, DeterministicAcc acc)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(float4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  __host__ __device__ DeterministicAcc operator()(double4 f, DeterministicAcc acc)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(double4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  __host__ __device__ DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
+  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
   {
     DeterministicAcc rtn = lhs;
     rtn += rhs;

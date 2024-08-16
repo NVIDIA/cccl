@@ -59,7 +59,6 @@ struct policy_hub_t
 
     // SingleTilePolicy
     using SingleTilePolicy = DeterministicReducePolicy;
-
   };
 
   using MaxPolicy = Policy350;
