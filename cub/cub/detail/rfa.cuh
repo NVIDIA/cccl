@@ -160,15 +160,11 @@ struct RFA_bins
 //!
 //!@param ftype Floating-point data type; either `float` or `double
 //!@param FOLD  The fold, uses 3 by default.
-template <class ftype_, int FOLD_ = 3, typename std::enable_if<std::is_floating_point<ftype_>::value>::type* = nullptr>
+template <class ftype_, int FOLD = 3, typename std::enable_if<std::is_floating_point<ftype_>::value>::type* = nullptr>
 class alignas(2 * sizeof(ftype_)) ReproducibleFloatingAccumulator
 {
 public:
   using ftype = ftype_;
-  enum
-  {
-    FOLD = FOLD_
-  };
 
 private:
   array<ftype, 2 * FOLD> data = {0};
@@ -208,7 +204,7 @@ private:
   /// Return a binned floating-point bin
   _CCCL_HOST _CCCL_DEVICE inline ftype binned_bins(int index) const
   {
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (
         // clang-format off
