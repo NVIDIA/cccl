@@ -43,7 +43,7 @@ static inline _CCCL_DEVICE void
 __cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
   uint32_t* __aligned     = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
-  const uint32_t __offset = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * (sizeof(_Type) * 8);
+  const uint32_t __offset = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * 8;
 
   uint32_t __value = 0;
 
