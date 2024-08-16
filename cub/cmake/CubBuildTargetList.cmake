@@ -40,12 +40,12 @@ set(CUB_CPP_DIALECT_OPTIONS
 )
 
 define_property(TARGET PROPERTY _CUB_DIALECT
-  BRIEF_DOCS "A target's C++ dialect: 11, 14, or 17."
-  FULL_DOCS "A target's C++ dialect: 11, 14, or 17."
+  BRIEF_DOCS "A target's C++ dialect: 11, 14, 17 or 20."
+  FULL_DOCS "A target's C++ dialect: 11, 14, 17 or 20."
 )
 define_property(TARGET PROPERTY _CUB_PREFIX
-  BRIEF_DOCS "A prefix describing the config, eg. 'cub.cpp14'."
-  FULL_DOCS "A prefix describing the config, eg. 'cub.cpp14'."
+  BRIEF_DOCS "A prefix describing the config, eg. 'cub.cpp17'."
+  FULL_DOCS "A prefix describing the config, eg. 'cub.cpp17'."
 )
 
 function(cub_set_target_properties target_name dialect prefix)
@@ -134,7 +134,7 @@ function(cub_build_target_list)
   foreach (dialect IN LISTS CUB_CPP_DIALECT_OPTIONS)
     # Create CMake options:
     set(default_value OFF)
-    if (dialect EQUAL 14) # Default to just 14 on:
+    if (dialect EQUAL 17) # Default to just 17 on:
       set(default_value ON)
     endif()
     option(CUB_ENABLE_DIALECT_CPP${dialect}

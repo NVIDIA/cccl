@@ -44,6 +44,8 @@ struct __thread_scope_thread_tag
 {};
 struct __thread_scope_block_tag
 {};
+struct __thread_scope_cluster_tag
+{};
 struct __thread_scope_device_tag
 {};
 struct __thread_scope_system_tag

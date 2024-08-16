@@ -206,6 +206,7 @@ struct DeviceHistogram
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     void* d_temp_storage,
@@ -232,6 +233,7 @@ struct DeviceHistogram
       num_samples,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
@@ -384,6 +386,7 @@ struct DeviceHistogram
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     void* d_temp_storage,
@@ -414,6 +417,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
@@ -584,6 +588,7 @@ struct DeviceHistogram
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
@@ -615,6 +620,7 @@ struct DeviceHistogram
       num_pixels,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of
@@ -830,6 +836,7 @@ struct DeviceHistogram
       is_byte_sample);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
@@ -865,6 +872,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
   //! @name Custom bin ranges
@@ -991,6 +999,7 @@ struct DeviceHistogram
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     void* d_temp_storage,
@@ -1008,6 +1017,7 @@ struct DeviceHistogram
     return HistogramRange(
       d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_samples, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
@@ -1147,6 +1157,7 @@ struct DeviceHistogram
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     void* d_temp_storage,
@@ -1175,6 +1186,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
@@ -1334,6 +1346,7 @@ struct DeviceHistogram
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
@@ -1356,6 +1369,7 @@ struct DeviceHistogram
     return MultiHistogramRange(
       d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_pixels, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
@@ -1560,6 +1574,7 @@ struct DeviceHistogram
       is_byte_sample);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <int NUM_CHANNELS,
             int NUM_ACTIVE_CHANNELS,
             typename SampleIteratorT,
@@ -1593,6 +1608,7 @@ struct DeviceHistogram
       row_stride_bytes,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //@}  end member group
 };

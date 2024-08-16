@@ -330,6 +330,7 @@ struct DispatchScan : SelectedPolicy
       , ptx_version(ptx_version)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(
     void* d_temp_storage,
@@ -354,6 +355,7 @@ struct DispatchScan : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
@@ -426,7 +428,7 @@ struct DispatchScan : SelectedPolicy
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -478,7 +480,7 @@ struct DispatchScan : SelectedPolicy
                 (long long) stream,
                 Policy::ITEMS_PER_THREAD,
                 scan_sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         // Invoke scan_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
@@ -591,6 +593,7 @@ struct DispatchScan : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -607,6 +610,7 @@ struct DispatchScan : SelectedPolicy
 
     return Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

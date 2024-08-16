@@ -42,12 +42,14 @@ set(header_definitions
   "CUB_WRAPPED_NAMESPACE=wrapped_cub")
 cub_add_header_test(base "${header_definitions}")
 
+# Check that BF16 support can be disabled
 set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
   "CCCL_DISABLE_BF16_SUPPORT")
 cub_add_header_test(bf16 "${header_definitions}")
 
+# Check that half support can be disabled
 set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"

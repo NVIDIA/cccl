@@ -839,6 +839,32 @@ constexpr auto hierarchy_add_level(const hierarchy_dimensions_fragment<Unit, Lev
   return hierarchy & ::cuda::std::forward<NewLevel>(level);
 }
 
+/**
+ * @brief A shorthand for creating a hierarchy of CUDA threads by evenly
+ * distributing elements among blocks and threads.
+ *
+ * @par Snippet
+ * @code
+ * #include <cudax/hierarchy_dimensions.cuh>
+ * using namespace cuda::experimental;
+ *
+ * constexpr int threadsPerBlock = 256;
+ * auto dims = distribute<threadsPerBlock>(numElements);
+ *
+ * // Equivalent to:
+ * constexpr int threadsPerBlock = 256;
+ * int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+ * auto dims = make_hierarchy(grid_dims(blocksPerGrid), block_dims<threadsPerBlock>());
+ * @endcode
+ */
+template <int _ThreadsPerBlock>
+constexpr auto distribute(int numElements) noexcept
+{
+  int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
+  return ::cuda::experimental::make_hierarchy(
+    ::cuda::experimental::grid_dims(blocksPerGrid), ::cuda::experimental::block_dims<_ThreadsPerBlock>());
+}
+
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
 #endif // _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS

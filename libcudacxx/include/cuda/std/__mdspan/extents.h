@@ -248,16 +248,13 @@ public:
   __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr extents() noexcept = default;
 
   // Converting constructor
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _OtherIndexType,
-    size_t... _OtherExtents,
-    /* requires */
-    (
-      /* multi-stage check to protect from invalid pack expansion when sizes don't match? */
-      decltype(__detail::__check_compatible_extents(
-        integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
-        _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
-        _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value))
+  _LIBCUDACXX_TEMPLATE(class _OtherIndexType, size_t... _OtherExtents)
+  _LIBCUDACXX_REQUIRES(
+    /* multi-stage check to protect from invalid pack expansion when sizes don't match? */
+    (decltype(__detail::__check_compatible_extents(
+      integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
+      _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
+      _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value))
   __MDSPAN_INLINE_FUNCTION
   __MDSPAN_CONDITIONAL_EXPLICIT(
     (((_Extents != dynamic_extent) && (_OtherExtents == dynamic_extent)) || ...)
@@ -287,23 +284,23 @@ public:
   }
 
 #  ifdef __NVCC__
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class... _Integral,
-    /* requires */ (
-      // TODO: check whether the other version works with newest NVCC, doesn't with 11.4
-      // NVCC seems to pick up rank_dynamic from the wrong extents type???
-      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) &&
-      // NVCC chokes on the fold thingy here so wrote the workaround
-      ((sizeof...(_Integral) == __detail::__count_dynamic_extents<_Extents...>::val)
-       || (sizeof...(_Integral) == sizeof...(_Extents)))))
+  _LIBCUDACXX_TEMPLATE(class... _Integral)
+  _LIBCUDACXX_REQUIRES(
+    // TODO: check whether the other version works with newest NVCC, doesn't with 11.4
+    // NVCC seems to pick up rank_dynamic from the wrong extents type???
+    __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
+      _LIBCUDACXX_AND __MDSPAN_FOLD_AND(
+        _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */) _LIBCUDACXX_AND
+    // NVCC chokes on the fold thingy here so wrote the workaround
+    ((sizeof...(_Integral) == __detail::__count_dynamic_extents<_Extents...>::val)
+     || (sizeof...(_Integral) == sizeof...(_Extents))))
 #  else
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class... _Integral,
-    /* requires */ (
-      __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
-      && __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
-      && ((sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank()))))
+  _LIBCUDACXX_TEMPLATE(class... _Integral)
+  _LIBCUDACXX_REQUIRES(
+    __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
+      _LIBCUDACXX_AND __MDSPAN_FOLD_AND(
+        _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
+        _LIBCUDACXX_AND((sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank())))
 #  endif
   __MDSPAN_INLINE_FUNCTION
   explicit constexpr extents(_Integral... __exts) noexcept
@@ -337,21 +334,16 @@ public:
 #  ifdef __NVCC__
   // NVCC seems to pick up rank_dynamic from the wrong extents type???
   // NVCC chokes on the fold thingy here so wrote the workaround
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _IndexType,
-    size_t _Np,
-    /* requires */
-    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
-     && ((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents)))))
+  _LIBCUDACXX_TEMPLATE(class _IndexType, size_t _Np)
+  _LIBCUDACXX_REQUIRES(
+    _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+      _LIBCUDACXX_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+        _LIBCUDACXX_AND((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents))))
 #  else
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _IndexType,
-    size_t _Np,
-    /* requires */
-    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
-     && (_Np == rank() || _Np == rank_dynamic())))
+  _LIBCUDACXX_TEMPLATE(class _IndexType, size_t _Np)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+                         _LIBCUDACXX_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+                           _LIBCUDACXX_AND(_Np == rank() || _Np == rank_dynamic()))
 #  endif
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   __MDSPAN_INLINE_FUNCTION
@@ -386,21 +378,16 @@ public:
 #  ifdef __NVCC__
   // NVCC seems to pick up rank_dynamic from the wrong extents type???
   // NVCC chokes on the fold thingy here so wrote the workaround
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _IndexType,
-    size_t _Np,
-    /* requires */
-    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
-     && ((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents)))))
+  _LIBCUDACXX_TEMPLATE(class _IndexType, size_t _Np)
+  _LIBCUDACXX_REQUIRES(
+    _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+      _LIBCUDACXX_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+        _LIBCUDACXX_AND((_Np == __detail::__count_dynamic_extents<_Extents...>::val) || (_Np == sizeof...(_Extents))))
 #  else
-  __MDSPAN_TEMPLATE_REQUIRES(
-    class _IndexType,
-    size_t _Np,
-    /* requires */
-    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
-     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
-     && (_Np == rank() || _Np == rank_dynamic())))
+  _LIBCUDACXX_TEMPLATE(class _IndexType, size_t _Np)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _IndexType, index_type)
+                         _LIBCUDACXX_AND _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _IndexType)
+                           _LIBCUDACXX_AND(_Np == rank() || _Np == rank_dynamic()))
 #  endif
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
   __MDSPAN_INLINE_FUNCTION

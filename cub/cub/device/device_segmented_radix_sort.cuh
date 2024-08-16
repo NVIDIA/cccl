@@ -264,6 +264,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
@@ -298,6 +299,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~N`` auxiliary storage required)
@@ -473,6 +475,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
@@ -503,6 +506,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~2N`` auxiliary storage required).
@@ -678,6 +682,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
@@ -712,6 +717,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~N`` auxiliary storage required).
@@ -891,6 +897,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
@@ -921,6 +928,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
   //! @name Keys-only
@@ -1083,6 +1091,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
@@ -1113,6 +1122,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~N`` auxiliary storage required).
@@ -1280,6 +1290,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
@@ -1308,6 +1319,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~2N`` auxiliary storage required).
@@ -1466,6 +1478,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
@@ -1496,6 +1509,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~N`` auxiliary storage required).
@@ -1661,6 +1675,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
@@ -1689,6 +1704,7 @@ public:
       end_bit,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
 };

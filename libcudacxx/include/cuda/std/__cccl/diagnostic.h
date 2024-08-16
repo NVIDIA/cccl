@@ -32,13 +32,23 @@
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
-#elif defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_ICC)
+#  define _CCCL_DIAG_SUPPRESS_ICC(str)
+#elif defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_DIAG_PUSH _Pragma("GCC diagnostic push")
 #  define _CCCL_DIAG_POP  _Pragma("GCC diagnostic pop")
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
 #  define _CCCL_DIAG_SUPPRESS_GCC(str) _Pragma(_CCCL_TOSTRING(GCC diagnostic ignored str))
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_ICC(str)
+#elif defined(_CCCL_COMPILER_ICC)
+#  define _CCCL_DIAG_PUSH _Pragma("GCC diagnostic push")
+#  define _CCCL_DIAG_POP  _Pragma("GCC diagnostic pop")
+#  define _CCCL_DIAG_SUPPRESS_CLANG(str)
+#  define _CCCL_DIAG_SUPPRESS_GCC(str) _Pragma(_CCCL_TOSTRING(GCC diagnostic ignored str))
+#  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
+#  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_ICC(str) _Pragma(_CCCL_TOSTRING(warning disable str))
 #elif defined(_CCCL_COMPILER_NVHPC)
 #  define _CCCL_DIAG_PUSH _Pragma("diagnostic push")
 #  define _CCCL_DIAG_POP  _Pragma("diagnostic pop")
@@ -46,6 +56,7 @@
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str) _Pragma(_CCCL_TOSTRING(diag_suppress str))
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #elif defined(_CCCL_COMPILER_MSVC)
 #  define _CCCL_DIAG_PUSH __pragma(warning(push))
 #  define _CCCL_DIAG_POP  __pragma(warning(pop))
@@ -53,6 +64,7 @@
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str) __pragma(warning(disable : str))
+#  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #else
 #  define _CCCL_DIAG_PUSH
 #  define _CCCL_DIAG_POP
@@ -60,6 +72,7 @@
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
+#  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #endif
 
 // Convenient shortcuts to silence common warnings
@@ -94,7 +107,10 @@
 #    if defined(_CCCL_COMPILER_MSVC)
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) __pragma(_CCCL_TOSTRING(nv_diag_suppress _WARNING))
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  __pragma(_CCCL_TOSTRING(nv_diag_default _WARNING))
-#    else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#    elif defined(_CCCL_COMPILER_ICC) // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_ICCvvv
+#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _Pragma(_CCCL_TOSTRING(nv_diag_suppress _WARNING))
+#      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _Pragma(_CCCL_TOSTRING(nv_diag_default _WARNING))
+#    else // ^^^ _CCCL_COMPILER_ICC^^^ / vvv !_CCCL_COMPILER_{MSVC,ICC} vvv
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) \
         _Pragma(_CCCL_TOSTRING(nv_diagnostic push)) _Pragma(_CCCL_TOSTRING(nv_diag_suppress _WARNING))
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING) _Pragma(_CCCL_TOSTRING(nv_diagnostic pop))

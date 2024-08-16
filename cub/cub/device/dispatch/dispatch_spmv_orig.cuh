@@ -631,7 +631,7 @@ struct DispatchSpmv
                 blocks_in_grid,
                 threads_in_block,
                 (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
         error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(blocks_in_grid, threads_in_block, 0, stream)
                   .doit(spmv_empty_matrix_kernel, spmv_params);
 
@@ -668,7 +668,7 @@ struct DispatchSpmv
                 degen_col_kernel_grid_size,
                 degen_col_kernel_block_size,
                 (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         // Invoke spmv_search_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -795,7 +795,7 @@ struct DispatchSpmv
                 search_grid_size,
                 search_block_size,
                 (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         // Invoke spmv_search_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(search_grid_size, search_block_size, 0, stream)
@@ -825,7 +825,7 @@ struct DispatchSpmv
               (long long) stream,
               spmv_config.items_per_thread,
               spmv_sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke spmv_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(spmv_grid_size, spmv_config.block_threads, 0, stream)
@@ -863,7 +863,7 @@ struct DispatchSpmv
                 (long long) stream,
                 segment_fixup_config.items_per_thread,
                 segment_fixup_sm_occupancy);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         // Invoke segment_fixup_kernel
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
@@ -893,6 +893,7 @@ struct DispatchSpmv
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename Spmv1ColKernelT,
             typename SpmvSearchKernelT,
             typename SpmvKernelT,
@@ -928,6 +929,7 @@ struct DispatchSpmv
       spmv_config,
       segment_fixup_config);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /**
    * @brief Internal dispatch routine for computing a device-wide reduction
@@ -988,6 +990,7 @@ struct DispatchSpmv
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -1000,6 +1003,7 @@ struct DispatchSpmv
 
     return Dispatch(d_temp_storage, temp_storage_bytes, spmv_params, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

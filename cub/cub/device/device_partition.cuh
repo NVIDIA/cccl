@@ -206,6 +206,7 @@ struct DevicePartition
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
@@ -223,6 +224,7 @@ struct DevicePartition
     return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Uses the ``select_op`` functor to split the corresponding items from ``d_in`` into
@@ -367,6 +369,7 @@ struct DevicePartition
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
@@ -384,6 +387,7 @@ struct DevicePartition
     return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   template <bool IS_DESCENDING,
@@ -656,6 +660,7 @@ public:
       stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename InputIteratorT,
             typename FirstOutputIteratorT,
             typename SecondOutputIteratorT,
@@ -698,6 +703,7 @@ public:
       select_second_part_op,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

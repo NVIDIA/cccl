@@ -8,12 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
-#include "../common/utility.cuh"
 #include <catch2/catch.hpp>
+#include <utility.cuh>
 
 constexpr auto one_thread_dims = cudax::make_hierarchy(cudax::block_dims<1>(), cudax::grid_dims<1>());
 
@@ -102,4 +101,16 @@ TEST_CASE("Stream priority", "[stream]")
   auto priority = cudax::stream::default_priority - 1;
   cudax::stream stream(0, priority);
   CUDAX_REQUIRE(stream.priority() == priority);
+}
+
+TEST_CASE("Stream get device", "[stream]")
+{
+  cudax::stream dev0_stream(cudax::device_ref{0});
+  CUDAX_REQUIRE(dev0_stream.device() == 0);
+
+  cudaSetDevice(static_cast<int>(cudax::devices.size() - 1));
+  cudaStream_t stream_handle;
+  CUDART(cudaStreamCreate(&stream_handle));
+  auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
+  CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cudax::devices.end()));
 }
