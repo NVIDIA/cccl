@@ -144,7 +144,27 @@ using __atomic_cuda_deduce_arithmetic =
                       __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>>;
 
 template <class _Type>
-using __atomic_cuda_deduce_minmax = __atomic_cuda_deduce_arithmetic<_Type>;
+using __atomic_cuda_deduce_minmax =
+  _If<_CCCL_TRAIT(is_floating_point, _Type),
+      _If<sizeof(_Type) == 4,
+          __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
+          __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+      _If<_CCCL_TRAIT(is_signed, _Type),
+          _If<sizeof(_Type) == 1,
+              __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>,
+              _If<sizeof(_Type) == 2,
+                  __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>,
+                  _If<sizeof(_Type) == 4,
+                      __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
+                      __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>>>, // atom.min|max.s64
+                                                                                              // supported
+          _If<sizeof(_Type) == 1,
+              __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>,
+              _If<sizeof(_Type) == 2,
+                  __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>,
+                  _If<sizeof(_Type) == 4,
+                      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
+                      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>>;
 
 template <class _Type>
 using __atomic_enable_if_native_bitwise = bool;
