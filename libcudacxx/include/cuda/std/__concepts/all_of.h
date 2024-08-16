@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___CONCEPTS_ALL_OF_H
 #define _LIBCUDACXX___CONCEPTS_ALL_OF_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/is_same.h"
+#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

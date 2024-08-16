@@ -11,9 +11,7 @@
 #ifndef __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
 #define __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
 
-#include <cuda/std/detail/__config>
-
-#include "cuda_ptx_generated.h"
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

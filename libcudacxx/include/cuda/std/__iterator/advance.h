@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_ADVANCE_H
 #define _LIBCUDACXX___ITERATOR_ADVANCE_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,12 +23,12 @@
 
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

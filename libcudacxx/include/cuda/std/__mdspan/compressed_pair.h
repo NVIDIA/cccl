@@ -44,7 +44,7 @@
 #ifndef _LIBCUDACXX___MDSPAN_COMPRESSED_PAIR_HPP
 #define _LIBCUDACXX___MDSPAN_COMPRESSED_PAIR_HPP
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

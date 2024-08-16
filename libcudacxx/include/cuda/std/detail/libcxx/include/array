@@ -109,7 +109,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 
 */
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -123,6 +123,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/lexicographical_compare.h>
 #include <cuda/std/__algorithm/swap_ranges.h>
+#include <cuda/std/__internal/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -140,7 +141,6 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstdlib>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 

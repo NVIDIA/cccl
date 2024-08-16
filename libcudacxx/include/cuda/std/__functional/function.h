@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 #define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,6 +25,8 @@
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__internal/assert.h>
+#include <cuda/std/__internal/debug.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_destructor.h>
 #include <cuda/std/__memory/allocator_traits.h>
@@ -44,8 +46,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/detail/libcxx/include/__functional_base>
 #include <cuda/std/detail/libcxx/include/new>
 #include <cuda/std/tuple>

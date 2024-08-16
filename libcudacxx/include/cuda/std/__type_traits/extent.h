@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_EXTENT_H
 #define _LIBCUDACXX___TYPE_TRAITS_EXTENT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

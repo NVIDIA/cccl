@@ -11,7 +11,7 @@
 #ifndef _CUDA_CMATH
 #define _CUDA_CMATH
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/debug.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cmath>
-#include <cuda/std/detail/libcxx/include/__debug>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

@@ -1,58 +1,17 @@
-// -*- C++ -*-
-//===-------------------------- __string ----------------------------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___STRING
-#define _LIBCUDACXX___STRING
+#ifndef _LIBCUDACXX___INTERNAL_STRING_H
+#define _LIBCUDACXX___INTERNAL_STRING_H
 
-/*
-    string synopsis
-
-namespace std
-{
-
-template <class charT>
-struct char_traits
-{
-    typedef charT     char_type;
-    typedef ...       int_type;
-    typedef streamoff off_type;
-    typedef streampos pos_type;
-    typedef mbstate_t state_type;
-
-    static constexpr void assign(char_type& c1, const char_type& c2) noexcept;
-    static constexpr bool eq(char_type c1, char_type c2) noexcept;
-    static constexpr bool lt(char_type c1, char_type c2) noexcept;
-
-    static constexpr int    compare(const char_type* s1, const char_type* s2, size_t n);
-    static constexpr size_t length(const char_type* s);
-    static constexpr const char_type*
-                            find(const char_type* s, size_t n, const char_type& a);
-    static char_type*       move(char_type* s1, const char_type* s2, size_t n);
-    static char_type*       copy(char_type* s1, const char_type* s2, size_t n);
-    static char_type*       assign(char_type* s, size_t n, char_type a);
-
-    static constexpr int_type  not_eof(int_type c) noexcept;
-    static constexpr char_type to_char_type(int_type c) noexcept;
-    static constexpr int_type  to_int_type(char_type c) noexcept;
-    static constexpr bool      eq_int_type(int_type c1, int_type c2) noexcept;
-    static constexpr int_type  eof() noexcept;
-};
-
-template <> struct char_traits<char>;
-template <> struct char_traits<wchar_t>;
-template <> struct char_traits<char8_t>;  // c++20
-
-}  // std
-
-*/
-
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -69,8 +28,8 @@ template <> struct char_traits<char8_t>;  // c++20
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/search.h>
 #include <cuda/std/__fwd/string.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__debug>
+#include <cuda/std/__internal/assert.h> // all public C++ headers provide the assertion handler
+#include <cuda/std/__internal/debug.h>
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
 _CCCL_PUSH_MACROS
@@ -1243,4 +1202,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
 
-#endif // _LIBCUDACXX___STRING
+#endif // _LIBCUDACXX___INTERNAL_STRING_H

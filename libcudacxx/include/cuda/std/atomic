@@ -12,7 +12,7 @@
 
 // clang-format off
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <atomic> is not supported on this single threaded system

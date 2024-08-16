@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
 #define _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

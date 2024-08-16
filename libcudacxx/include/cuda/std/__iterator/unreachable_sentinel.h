@@ -12,7 +12,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H
 #define _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

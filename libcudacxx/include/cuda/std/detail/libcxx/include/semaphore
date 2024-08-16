@@ -45,7 +45,7 @@ using binary_semaphore = counting_semaphore<1>;
 
 */
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -55,9 +55,9 @@ using binary_semaphore = counting_semaphore<1>;
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/atomic>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 
 _CCCL_PUSH_MACROS

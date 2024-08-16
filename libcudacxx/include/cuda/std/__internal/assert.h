@@ -1,17 +1,17 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ASSERT
-#define _LIBCUDACXX___ASSERT
+#ifndef _LIBCUDACXX___INTERNAL_ASSERT_H
+#define _LIBCUDACXX___INTERNAL_ASSERT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__verbose_abort>
+#include <cuda/std/__internal/verbose_abort.h>
 
 // This is for backwards compatibility with code that might have been enabling
 // assertions through the Debug mode previously.
@@ -63,4 +63,4 @@
 #  define _LIBCUDACXX_ASSERT(expression, message) ((void) 0)
 #endif
 
-#endif // _LIBCUDACXX___ASSERT
+#endif // _LIBCUDACXX___INTERNAL_ASSERT_H

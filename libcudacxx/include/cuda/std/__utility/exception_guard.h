@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H
 #define _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

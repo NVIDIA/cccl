@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_CONFIG
-#define _LIBCUDACXX_CONFIG
+#ifndef __cuda_std__
+#define __cuda_std__
 
 #include <cuda/__cccl_config>
 
@@ -20,6 +20,29 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#define _LIBCUDACXX_CUDA_API_VERSION       CCCL_VERSION
+#define _LIBCUDACXX_CUDA_API_VERSION_MAJOR CCCL_MAJOR_VERSION
+#define _LIBCUDACXX_CUDA_API_VERSION_MINOR CCCL_MINOR_VERSION
+#define _LIBCUDACXX_CUDA_API_VERSION_PATCH CCCL_PATCH_VERSION
+
+#ifndef _LIBCUDACXX_CUDA_ABI_VERSION_LATEST
+#  define _LIBCUDACXX_CUDA_ABI_VERSION_LATEST 4
+#endif
+
+#ifdef _LIBCUDACXX_CUDA_ABI_VERSION
+#  if _LIBCUDACXX_CUDA_ABI_VERSION != 2 && _LIBCUDACXX_CUDA_ABI_VERSION != 3 && _LIBCUDACXX_CUDA_ABI_VERSION != 4
+#    error Unsupported libcu++ ABI version requested. Please define _LIBCUDACXX_CUDA_ABI_VERSION to either 2 or 3.
+#  endif
+#else
+#  define _LIBCUDACXX_CUDA_ABI_VERSION _LIBCUDACXX_CUDA_ABI_VERSION_LATEST
+#endif
+
+#ifdef _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION
+#  if _LIBCUDACXX_PIPELINE_ASSUMED_ABI_VERSION != _LIBCUDACXX_CUDA_ABI_VERSION
+#    error cuda_pipeline.h has assumed a different libcu++ ABI version than provided by this library. To fix this, please include a libcu++ header before including cuda_pipeline.h, or upgrade to a version of the toolkit this version of libcu++ shipped in.
+#  endif
+#endif
 
 #if defined(_CCCL_COMPILER_ICC_LLVM)
 #  define _LIBCUDACXX_COMPILER_ICC_LLVM
@@ -1785,4 +1808,4 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 
 #endif // __cplusplus
 
-#endif // _LIBCUDACXX_CONFIG
+#endif // __cuda_std__

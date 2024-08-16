@@ -1,17 +1,17 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___DEBUG
-#define _LIBCUDACXX___DEBUG
+#ifndef _LIBCUDACXX___INTERNAL_DEBUG_H
+#define _LIBCUDACXX___INTERNAL_DEBUG_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if defined(_LIBCUDACXX_ENABLE_DEBUG_MODE) && !defined(_LIBCUDACXX_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY)
 #  define _LIBCUDACXX_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY
@@ -285,4 +285,4 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 inline void __debug_db_inval
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___DEBUG
+#endif // _LIBCUDACXX___INTERNAL_DEBUG_H

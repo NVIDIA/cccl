@@ -9,7 +9,7 @@
 #ifndef _LIBCUDACXX___EXPECTED_EXPECTED_H
 #define _LIBCUDACXX___EXPECTED_EXPECTED_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +24,7 @@
 #include <cuda/std/__expected/expected_base.h>
 #include <cuda/std/__expected/unexpect.h>
 #include <cuda/std/__expected/unexpected.h>
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conjunction.h>
@@ -60,7 +61,6 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 #include <cuda/std/initializer_list>
 

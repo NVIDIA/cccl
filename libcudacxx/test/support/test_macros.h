@@ -93,7 +93,7 @@
 #  define TEST_COMPILER_EDG
 #elif defined(_NVHPC_CUDA)
 #  define TEST_COMPILER_NVHPC_CUDA
-#elif defined(__CUDA__) && defined(_LIBCUDACXX_COMPILER_CLANG)
+#elif defined(__CUDA__) && defined(_CCCL_COMPILER_CLANG)
 #  define TEST_COMPILER_CLANG_CUDA
 #endif
 

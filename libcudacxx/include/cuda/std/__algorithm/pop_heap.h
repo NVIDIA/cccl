@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_POP_HEAP_H
 #define _LIBCUDACXX___ALGORITHM_POP_HEAP_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,11 +25,11 @@
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/push_heap.h>
 #include <cuda/std/__algorithm/sift_down.h>
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

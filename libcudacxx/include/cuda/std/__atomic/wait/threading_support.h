@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX_THREADING_SUPPORT
 #define _LIBCUDACXX_THREADING_SUPPORT
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__functional/hash.h>
+#include <cuda/std/__internal/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/chrono>
 #include <cuda/std/climits>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
 _CCCL_PUSH_MACROS

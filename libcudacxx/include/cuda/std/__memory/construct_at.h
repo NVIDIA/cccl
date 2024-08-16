@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
 #define _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
@@ -36,7 +37,6 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #ifdef _CCCL_CUDA_COMPILER_CLANG
 #  include <new>

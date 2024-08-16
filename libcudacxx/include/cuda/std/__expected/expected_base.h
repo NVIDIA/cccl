@@ -9,7 +9,7 @@
 #ifndef _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H
 #define _LIBCUDACXX___EXPECTED_EXPECTED_BASE_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,6 +22,7 @@
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/unexpect.h>
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
@@ -49,7 +50,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if _CCCL_STD_VER > 2011
 

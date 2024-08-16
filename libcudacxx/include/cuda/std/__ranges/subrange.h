@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___RANGES_SUBRANGE_H
 #define _LIBCUDACXX___RANGES_SUBRANGE_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,6 +27,7 @@
 #include <cuda/std/__concepts/different_from.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/subrange.h>
+#include <cuda/std/__internal/assert.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
@@ -50,7 +51,6 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)

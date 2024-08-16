@@ -12,7 +12,7 @@
 #ifndef _CUDA_PTX_CP_ASYNC_BULK_COMMIT_GROUP_H_
 #define _CUDA_PTX_CP_ASYNC_BULK_COMMIT_GROUP_H_
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

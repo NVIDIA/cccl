@@ -1,17 +1,17 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___AVAILABILITY
-#define _LIBCUDACXX___AVAILABILITY
+#ifndef _LIBCUDACXX___INTERNAL_AVAILABILITY_H
+#define _LIBCUDACXX___INTERNAL_AVAILABILITY_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -305,4 +305,4 @@
 #  define _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS  _LIBCUDACXX_AVAILABILITY_BAD_VARIANT_ACCESS
 #endif
 
-#endif // _LIBCUDACXX___AVAILABILITY
+#endif // _LIBCUDACXX___INTERNAL_AVAILABILITY_H

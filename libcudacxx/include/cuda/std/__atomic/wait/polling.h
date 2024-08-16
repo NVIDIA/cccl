@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___ATOMIC_WAIT_POLLING_H
 #define _LIBCUDACXX___ATOMIC_WAIT_POLLING_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,7 +24,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-#include <cuda/std/detail/libcxx/include/__threading_support>
+#include <cuda/std/__atomic/wait/threading_support.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

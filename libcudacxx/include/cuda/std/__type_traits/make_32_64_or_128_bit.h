@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_MAKE_32_64_OR_128_BIT_H
 #define _LIBCUDACXX___TYPE_TRAITS_MAKE_32_64_OR_128_BIT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

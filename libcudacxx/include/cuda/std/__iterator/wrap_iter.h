@@ -11,7 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_WRAP_ITER_H
 #define _LIBCUDACXX___ITERATOR_WRAP_ITER_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__internal/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/debug.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/detail/libcxx/include/__debug>
 
 #ifndef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 #  if defined(_LIBCUDACXX_DEBUG)
