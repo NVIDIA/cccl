@@ -106,7 +106,6 @@ template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_e
 static inline _CCCL_DEVICE void
 __cuda_atomic_store(_Type* __ptr, _Type __val, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
-  printf("%s\r\n", __PRETTY_FUNCTION__);
   // Store requires cas on 8/16b types
   __cuda_atomic_fetch_update(
     __ptr,
@@ -173,7 +172,6 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_or(_Type* __ptr, _Type& __ds
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_arithmetic<_Operand> = 0>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
-  printf("%s\r\n", __PRETTY_FUNCTION__);
   __dst = __cuda_atomic_fetch_update(
     __ptr,
     [__op](_Type __old) {
@@ -276,7 +274,6 @@ _CCCL_DEVICE _Tp __atomic_exchange_n_cuda(_Tp volatile* __ptr, _Tp __val, int __
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  printf("%s\r\n", __PRETTY_FUNCTION__);
   return __atomic_fetch_update_cuda(
     __ptr,
     [__val](_Tp __old) {
@@ -288,7 +285,6 @@ _CCCL_DEVICE _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, 
 template <typename _Tp, typename _Up, typename _Sco, __atomic_enable_if_not_native_minmax<_Tp> = 0>
 _CCCL_DEVICE _Tp __atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __memorder, _Sco)
 {
-  printf("%s\r\n", __PRETTY_FUNCTION__);
   return __atomic_fetch_update_cuda(
     __ptr,
     [__val](_Tp __old) {
