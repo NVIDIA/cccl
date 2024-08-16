@@ -585,17 +585,17 @@ struct DeterministicDispatchReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /**
-   * @brief Invoke a single block block to reduce in-core
+   * @brief Invoke a single block block to reduce in-core deterministically
    *
    * @tparam ActivePolicyT
    *   Umbrella policy active for the target device
    *
    * @tparam SingleTileKernelT
-   *   Function type of cub::DeviceReduceSingleTileKernel
+   *   Function type of cub::DeterministicDeviceReduceSingleTileKernel
    *
    * @param[in] single_tile_kernel
    *   Kernel function pointer to parameterization of
-   *   cub::DeviceReduceSingleTileKernel
+   *   cub::DeterministicDeviceReduceSingleTileKernel
    */
   template <typename ActivePolicyT, typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -614,7 +614,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
 
 // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+      _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
               (long long) stream,
@@ -649,22 +649,22 @@ struct DeterministicDispatchReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /**
-   * @brief Invoke two-passes to reduce
+   * @brief Invoke two-passes to reduce deteerministically
    * @tparam ActivePolicyT
    *   Umbrella policy active for the target device
    *
    * @tparam ReduceKernelT
-   *   Function type of cub::DeviceReduceKernel
+   *   Function type of cub::DeterministicDeviceReduceKernel
    *
    * @tparam SingleTileKernelT
-   *   Function type of cub::DeviceReduceSingleTileKernel
+   *   Function type of cub::DeterministicDeviceReduceSingleTileKernel
    *
    * @param[in] reduce_kernel
-   *   Kernel function pointer to parameterization of cub::DeviceReduceKernel
+   *   Kernel function pointer to parameterization of cub::DeterministicDeviceReduceKernel
    *
    * @param[in] single_tile_kernel
    *   Kernel function pointer to parameterization of
-   *   cub::DeviceReduceSingleTileKernel
+   *   cub::DeterministicDeviceReduceSingleTileKernel
    */
   template <typename ActivePolicyT, typename ReduceKernelT, typename SingleTileKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -729,6 +729,17 @@ struct DeterministicDispatchReduce : SelectedPolicy
       // Alias the allocation for the privatized per-block reductions
       deterministic_accum_t* d_block_reductions = (deterministic_accum_t*) allocations[0];
 
+      // Log device_reduce_sweep_kernel configuration
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+      _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
+              "per thread, %d SM occupancy\n",
+              reduce_grid_size,
+              ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS,
+              (long long) stream,
+              ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD,
+              reduce_config.sm_occupancy);
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
         .doit(reduce_kernel,
@@ -753,7 +764,16 @@ struct DeterministicDispatchReduce : SelectedPolicy
         break;
       }
 
-      // Invoke DeviceReduceSingleTileKernel
+// Log single_reduce_sweep_kernel configuration
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+      _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+              "%d items per thread\n",
+              ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
+              (long long) stream,
+              ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+
+      // Invoke DeterministicDeviceReduceSingleTileKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
