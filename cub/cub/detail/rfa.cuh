@@ -156,10 +156,10 @@ struct RFA_bins
   }
 };
 
-/// Class to hold a reproducible summation of the numbers passed to it
-///
-///@param ftype Floating-point data type; either `float` or `double
-///@param FOLD  The fold, uses 3 by default.
+//! Class to hold a reproducible summation of the numbers passed to it
+//!
+//!@param ftype Floating-point data type; either `float` or `double
+//!@param FOLD  The fold, uses 3 by default.
 template <class ftype_, int FOLD_ = 3, typename std::enable_if<std::is_floating_point<ftype_>::value>::type* = nullptr>
 class alignas(2 * sizeof(ftype_)) ReproducibleFloatingAccumulator
 {
@@ -433,13 +433,13 @@ private:
     return EXP(primary(0)) == MAX_EXP + EXP_BIAS;
   }
 
-  /// Update manually specified binned fp with a scalar (X -> Y)
-  ///
-  /// This method updates the binned fp to an index suitable for adding numbers
-  /// with absolute value less than @p max_abs_val
-  ///
-  ///@param incpriY stride within Y's primary vector (use every incpriY'th element)
-  ///@param inccarY stride within Y's carry vector (use every inccarY'th element)
+  //! Update manually specified binned fp with a scalar (X -> Y)
+  //!
+  //! This method updates the binned fp to an index suitable for adding numbers
+  //! with absolute value less than @p max_abs_val
+  //!
+  //!@param incpriY stride within Y's primary vector (use every incpriY'th element)
+  //!@param inccarY stride within Y's carry vector (use every inccarY'th element)
   _CCCL_HOST _CCCL_DEVICE void binned_dmdupdate(const ftype max_abs_val, const int incpriY, const int inccarY)
   {
     if (ISNANINF(primary(0)))
@@ -486,12 +486,12 @@ private:
     }
   }
 
-  /// Add scalar @p X to suitably binned manually specified binned fp (Y += X)
-  ///
-  /// Performs the operation Y += X on an binned type Y where the index of Y is
-  /// larger than the index of @p X
-  ///
-  ///@param incpriY stride within Y's primary vector (use every incpriY'th element)
+  //! Add scalar @p X to suitably binned manually specified binned fp (Y += X)
+  //!
+  //! Performs the operation Y += X on an binned type Y where the index of Y is
+  //! larger than the index of @p X
+  //!
+  //!@param incpriY stride within Y's primary vector (use every incpriY'th element)
   _CCCL_HOST _CCCL_DEVICE void binned_dmddeposit(const ftype X, const int incpriY)
   {
     ftype M;
@@ -551,13 +551,13 @@ private:
     }
   }
 
-  /// Renormalize manually specified binned double precision
-  ///
-  /// Renormalization keeps the primary vector within the necessary bins by
-  /// shifting over to the carry vector
-  ///
-  ///@param incpriX stride within X's primary vector (use every incpriX'th element)
-  ///@param inccarX stride within X's carry vector (use every inccarX'th element)
+  //! Renormalize manually specified binned double precision
+  //!
+  //! Renormalization keeps the primary vector within the necessary bins by
+  //! shifting over to the carry vector
+  //!
+  //!@param incpriX stride within X's primary vector (use every incpriX'th element)
+  //!@param inccarX stride within X's carry vector (use every inccarX'th element)
   _CCCL_HOST _CCCL_DEVICE inline void binned_dmrenorm(const int incpriX, const int inccarX)
   {
     if (ISZERO(primary(0)) || ISNANINF(primary(0)))
@@ -579,12 +579,12 @@ private:
     }
   }
 
-  /// Add scalar to manually specified binned fp (Y += X)
-  ///
-  /// Performs the operation Y += X on an binned type Y
-  ///
-  ///@param incpriY stride within Y's primary vector (use every incpriY'th element)
-  ///@param inccarY stride within Y's carry vector (use every inccarY'th element)
+  //! Add scalar to manually specified binned fp (Y += X)
+  //!
+  //! Performs the operation Y += X on an binned type Y
+  //!
+  //!@param incpriY stride within Y's primary vector (use every incpriY'th element)
+  //!@param inccarY stride within Y's carry vector (use every inccarY'th element)
   _CCCL_HOST _CCCL_DEVICE _CCCL_FORCEINLINE void binned_dmdadd(const ftype X, const int incpriY, const int inccarY)
   {
     // const auto max_val_encountered_l = max(abs(X), max_val_encountered);
@@ -599,10 +599,10 @@ private:
     (void) inccarY;
   }
 
-  /// Convert manually specified binned fp to native double-precision (X -> Y)
-  ///
-  ///@param incpriX stride within X's primary vector (use every incpriX'th element)
-  ///@param inccarX stride within X's carry vector (use every inccarX'th element)
+  //! Convert manually specified binned fp to native double-precision (X -> Y)
+  //!
+  //!@param incpriX stride within X's primary vector (use every incpriX'th element)
+  //!@param inccarX stride within X's carry vector (use every inccarX'th element)
   _CCCL_HOST _CCCL_DEVICE double binned_conv_double(const int incpriX, const int inccarX) const
   {
     int i = 0;
@@ -673,10 +673,10 @@ private:
     return Y;
   }
 
-  /// Convert manually specified binned fp to native single-precision (X -> Y)
-  ///
-  ///@param incpriX stride within X's primary vector (use every incpriX'th element)
-  ///@param inccarX stride within X's carry vector (use every inccarX'th element)
+  //! Convert manually specified binned fp to native single-precision (X -> Y)
+  //!
+  //!@param incpriX stride within X's primary vector (use every incpriX'th element)
+  //!@param inccarX stride within X's carry vector (use every inccarX'th element)
   _CCCL_HOST _CCCL_DEVICE float binned_conv_single(const int incpriX, const int inccarX) const
   {
     int i    = 0;
@@ -717,14 +717,14 @@ private:
     return (float) Y;
   }
 
-  /// Add two manually specified binned fp (Y += X)
-  /// Performs the operation Y += X
-  ///
-  ///@param other   Another binned fp of the same type
-  ///@param incpriX stride within X's primary vector (use every incpriX'th element)
-  ///@param inccarX stride within X's carry vector (use every inccarX'th element)
-  ///@param incpriY stride within Y's primary vector (use every incpriY'th element)
-  ///@param inccarY stride within Y's carry vector (use every inccarY'th element)
+  //! Add two manually specified binned fp (Y += X)
+  //! Performs the operation Y += X
+  //!
+  //!@param other   Another binned fp of the same type
+  //!@param incpriX stride within X's primary vector (use every incpriX'th element)
+  //!@param inccarX stride within X's carry vector (use every inccarX'th element)
+  //!@param incpriY stride within Y's primary vector (use every incpriY'th element)
+  //!@param inccarY stride within Y's carry vector (use every inccarY'th element)
   _CCCL_HOST _CCCL_DEVICE void binned_dmdmadd(
     const ReproducibleFloatingAccumulator& x, const int incpriX, const int inccarX, const int incpriY, const int inccarY)
   {
@@ -842,8 +842,8 @@ public:
     return array<ftype, MAXINDEX + MAXFOLD>::size();
   }
 
-  /// Accumulate an arithmetic @p x into the binned fp.
-  /// NOTE: Casts @p x to the type of the binned fp
+  //! Accumulate an arithmetic @p x into the binned fp.
+  //! NOTE: Casts @p x to the type of the binned fp
   template <typename U, typename std::enable_if<std::is_arithmetic<U>::value>::type* = nullptr>
   _CCCL_HOST _CCCL_DEVICE ReproducibleFloatingAccumulator& operator+=(const U x)
   {
@@ -851,8 +851,8 @@ public:
     return *this;
   }
 
-  /// Accumulate-subtract an arithmetic @p x into the binned fp.
-  /// NOTE: Casts @p x to the type of the binned fp
+  //! Accumulate-subtract an arithmetic @p x into the binned fp.
+  //! NOTE: Casts @p x to the type of the binned fp
   template <typename U, typename std::enable_if<std::is_arithmetic<U>::value>::type* = nullptr>
   _CCCL_HOST _CCCL_DEVICE ReproducibleFloatingAccumulator& operator-=(const U x)
   {
@@ -867,8 +867,8 @@ public:
     return *this;
   }
 
-  /// Accumulate-subtract a binned fp @p x into the binned fp.
-  /// NOTE: Makes a copy and performs arithmetic; slow.
+  //! Accumulate-subtract a binned fp @p x into the binned fp.
+  //! NOTE: Makes a copy and performs arithmetic; slow.
   _CCCL_HOST _CCCL_DEVICE ReproducibleFloatingAccumulator& operator-=(const ReproducibleFloatingAccumulator& other)
   {
     const auto temp = -other;
@@ -887,8 +887,8 @@ public:
     return !operator==(other);
   }
 
-  /// Sets this binned fp equal to the arithmetic value @p x
-  /// NOTE: Casts @p x to the type of the binned fp
+  //! Sets this binned fp equal to the arithmetic value @p x
+  //! NOTE: Casts @p x to the type of the binned fp
   template <typename U, typename std::enable_if<std::is_arithmetic<U>::value>::type* = nullptr>
   _CCCL_HOST _CCCL_DEVICE ReproducibleFloatingAccumulator& operator=(const U x)
   {
@@ -897,8 +897,8 @@ public:
     return *this;
   }
 
-  /// Returns the negative of this binned fp
-  /// NOTE: Makes a copy and performs arithmetic; slow.
+  //! Returns the negative of this binned fp
+  //! NOTE: Makes a copy and performs arithmetic; slow.
   _CCCL_HOST _CCCL_DEVICE ReproducibleFloatingAccumulator operator-()
   {
     constexpr int incpriX                = 1;
@@ -942,28 +942,28 @@ public:
   // MANUAL OPERATIONS; USE WISELY
   //////////////////////////////////////
 
-  /// Rebins for repeated accumulation of scalars with magnitude <= @p mav
-  ///
-  /// Once rebinned, `ENDURANCE` values <= @p mav can be added to the accumulator
-  /// with `unsafe_add` after which `renorm()` must be called. See the source of
-  ///`add()` for an example
+  //! Rebins for repeated accumulation of scalars with magnitude <= @p mav
+  //!
+  //! Once rebinned, `ENDURANCE` values <= @p mav can be added to the accumulator
+  //! with `unsafe_add` after which `renorm()` must be called. See the source of
+  //!`add()` for an example
   _CCCL_HOST _CCCL_DEVICE void set_max_val(const ftype mav)
   {
     binned_dmdupdate(static_cast<ftype>(mav), 1, 1);
   }
 
-  /// Add @p x to the binned fp
-  ///
-  /// This is intended to be used after a call to `set_max_abs_val()`
+  //! Add @p x to the binned fp
+  //!
+  //! This is intended to be used after a call to `set_max_abs_val()`
   _CCCL_HOST _CCCL_DEVICE void unsafe_add(const ftype x)
   {
     binned_dmddeposit(x, 1);
   }
 
-  /// Renormalizes the binned fp
-  ///
-  /// This is intended to be used after a call to `set_max_abs_val()` and one or
-  /// more calls to `unsafe_add()`
+  //! Renormalizes the binned fp
+  //!
+  //! This is intended to be used after a call to `set_max_abs_val()` and one or
+  //! more calls to `unsafe_add()`
   _CCCL_HOST _CCCL_DEVICE void renorm()
   {
     binned_dmrenorm(1, 1);
