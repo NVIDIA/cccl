@@ -746,7 +746,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(cudaDeviceSynchronize());
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
