@@ -16,7 +16,7 @@
 
 #pragma once
 
-#if THRUST_DEVICE_COMPILER != THRUST_DEVICE_COMPILER_NVCC
+#ifndef _CCCL_CUDA_COMPILER
 
 #  ifndef __host__
 #    define __host__

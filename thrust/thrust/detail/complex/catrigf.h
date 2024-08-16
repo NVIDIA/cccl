@@ -466,7 +466,7 @@ _CCCL_HOST_DEVICE inline float real_part_reciprocal(float x, float y)
   return (x / (x * x + y * y) * scale);
 }
 
-#if THRUST_CPP_DIALECT >= 2011 || THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if _CCCL_STD_VER >= 2011 || !defined(_CCCL_COMPILER_MSVC)
 _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
 {
   float x, y, ax, ay, rx, ry;
@@ -563,7 +563,7 @@ _CCCL_HOST_DEVICE inline complex<float> asin(const complex<float>& z)
   return detail::complex::casinf(z);
 }
 
-#if THRUST_CPP_DIALECT >= 2011 || THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if _CCCL_STD_VER >= 2011 || !defined(_CCCL_COMPILER_MSVC)
 template <>
 _CCCL_HOST_DEVICE inline complex<float> atan(const complex<float>& z)
 {
@@ -583,7 +583,7 @@ _CCCL_HOST_DEVICE inline complex<float> asinh(const complex<float>& z)
   return detail::complex::casinhf(z);
 }
 
-#if THRUST_CPP_DIALECT >= 2011 || THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if _CCCL_STD_VER >= 2011 || !defined(_CCCL_COMPILER_MSVC)
 template <>
 _CCCL_HOST_DEVICE inline complex<float> atanh(const complex<float>& z)
 {

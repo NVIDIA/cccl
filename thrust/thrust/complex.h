@@ -76,7 +76,7 @@ namespace detail
 template <typename T, std::size_t Align>
 struct complex_storage;
 
-#if THRUST_CPP_DIALECT >= 2011 && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION >= 40800)
+#if THRUST_CPP_DIALECT >= 2011 && defined(_CCCL_COMPILER_GCC) && (_CCCL_GCC_VERSION >= 40800)
 // C++11 implementation, excluding GCC 4.7, which doesn't have `alignas`.
 template <typename T, std::size_t Align>
 struct complex_storage
@@ -87,15 +87,14 @@ struct complex_storage
     T y;
   };
 };
-#elif (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC) \
-  || ((THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION < 40600))
+#elif defined(_CCCL_COMPILER_MSVC) || (defined(_CCCL_COMPILER_GCC) && (_CCCL_GCC_VERSION < 40600))
 // C++03 implementation for MSVC and GCC <= 4.5.
 //
 // We have to implement `aligned_type` with specializations for MSVC
 // and GCC 4.2 and older because they require literals as arguments to
 // their alignment attribute.
 
-#  if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+#  ifdef _CCCL_COMPILER_MSVC
 // MSVC implementation.
 #    define THRUST_DEFINE_COMPLEX_STORAGE_SPECIALIZATION(X) \
       template <typename T>                                 \

@@ -33,7 +33,7 @@
 #include <cstdint>
 
 // for floating point infinity
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#ifdef _CCCL_CUDA_COMPILER
 #  include <math_constants.h>
 #else
 #  include <limits>
