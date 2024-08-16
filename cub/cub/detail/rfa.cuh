@@ -44,9 +44,6 @@
 #include <limits>
 
 #ifndef __CUDACC__
-#  define _CCCL_HOST
-#  define _CCCL_DEVICE
-#  define _CCCL_FORCEINLINE
 #  include <array>
 using std::array;
 using std::max;
@@ -211,35 +208,42 @@ private:
   /// Return a binned floating-point bin
   _CCCL_HOST _CCCL_DEVICE inline ftype binned_bins(int index) const
   {
-#ifdef __CUDA_ARCH__
-    ftype* bins = get_shared_bin_array<ftype, MAXINDEX + MAXFOLD>();
-    if (index >= MAXINDEX + MAXFOLD)
-    {
-      return static_cast<ftype>(bins[MAXINDEX + MAXFOLD - 1]);
-    }
-    if (index < 0)
-    {
-      return static_cast<ftype>(bins[0]);
-    }
-    return static_cast<ftype>(bins[index]);
-#else
-    static float bins_host[MAXINDEX + MAXFOLD] = {};
+    NV_IF_TARGET(
+      NV_IS_HOST,
+      (
+        // clang-format off
+          static float bins_host[MAXINDEX + MAXFOLD] = {};
 
-    for (int i = 0; i < MAXINDEX + MAXFOLD; ++i)
-    {
-      bins_host[i] = RFA_bins<ftype>::initialize_bins(i);
-    }
+          for (int i = 0; i < MAXINDEX + MAXFOLD; ++i)
+          {
+            bins_host[i] = RFA_bins<ftype>::initialize_bins(i);
+          }
 
-    if (index >= MAXINDEX + MAXFOLD)
-    {
-      return static_cast<ftype>(bins_host[MAXINDEX + MAXFOLD - 1]);
-    }
-    if (index < 0)
-    {
-      return static_cast<ftype>(bins_host[0]);
-    }
-    return static_cast<ftype>(bins_host[index]);
-#endif
+          if (index >= MAXINDEX + MAXFOLD)
+          {
+            return static_cast<ftype>(bins_host[MAXINDEX + MAXFOLD - 1]);
+          }
+          if (index < 0)
+          {
+            return static_cast<ftype>(bins_host[0]);
+          }
+          return static_cast<ftype>(bins_host[index]);
+        // clang-format on
+        ),
+      ( // NV_IS_DEVICE:
+        // clang-format off
+          ftype* bins = get_shared_bin_array<ftype, MAXINDEX + MAXFOLD>();
+          if (index >= MAXINDEX + MAXFOLD)
+          {
+            return static_cast<ftype>(bins[MAXINDEX + MAXFOLD - 1]);
+          }
+          if (index < 0)
+          {
+            return static_cast<ftype>(bins[0]);
+          }
+          return static_cast<ftype>(bins[index]);
+        // clang-format on
+        ));
   }
 
   /// Get the bit representation of a float
