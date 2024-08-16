@@ -26,9 +26,9 @@
  ******************************************************************************/
 
 /**
- * @file cub::DeviceReduce provides device-wide, parallel operations for
+ * @file cub::DeterministicDeviceReduce provides device-wide, parallel operations for
  *       computing a reduction across a sequence of data items residing within
- *       device-accessible memory.
+ *       device-accessible memory. Current reduction operator supported is cub::Sum
  */
 
 #pragma once
