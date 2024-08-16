@@ -1593,6 +1593,7 @@ public:
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,

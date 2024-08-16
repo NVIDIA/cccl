@@ -42,11 +42,26 @@ enum class E2 : unsigned char
 template <typename T>
 __host__ __device__ constexpr bool constexpr_test()
 {
-  return cuda::std::popcount(T(0)) == 0 && cuda::std::popcount(T(1)) == 1 && cuda::std::popcount(T(2)) == 1
-      && cuda::std::popcount(T(3)) == 2 && cuda::std::popcount(T(4)) == 1 && cuda::std::popcount(T(5)) == 2
-      && cuda::std::popcount(T(6)) == 2 && cuda::std::popcount(T(7)) == 3 && cuda::std::popcount(T(8)) == 1
-      && cuda::std::popcount(T(9)) == 2
-      && cuda::std::popcount(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits;
+  static_assert(cuda::std::popcount(T(0)) == 0, "");
+  static_assert(cuda::std::popcount(T(1)) == 1, "");
+  static_assert(cuda::std::popcount(T(2)) == 1, "");
+  static_assert(cuda::std::popcount(T(3)) == 2, "");
+  static_assert(cuda::std::popcount(T(4)) == 1, "");
+  static_assert(cuda::std::popcount(T(5)) == 2, "");
+  static_assert(cuda::std::popcount(T(6)) == 2, "");
+  static_assert(cuda::std::popcount(T(7)) == 3, "");
+  static_assert(cuda::std::popcount(T(8)) == 1, "");
+  static_assert(cuda::std::popcount(T(9)) == 2, "");
+  static_assert(cuda::std::popcount(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits, "");
+
+  return true;
+}
+
+template <typename T>
+__host__ __device__ inline void assert_popcount(T val, int expected)
+{
+  volatile auto v = val;
+  assert(cuda::std::popcount(v) == expected);
 }
 
 template <typename T>
@@ -55,36 +70,36 @@ __host__ __device__ void runtime_test()
   ASSERT_SAME_TYPE(int, decltype(cuda::std::popcount(T(0))));
   ASSERT_NOEXCEPT(cuda::std::popcount(T(0)));
 
-  assert(cuda::std::popcount(T(121)) == 5);
-  assert(cuda::std::popcount(T(122)) == 5);
-  assert(cuda::std::popcount(T(123)) == 6);
-  assert(cuda::std::popcount(T(124)) == 5);
-  assert(cuda::std::popcount(T(125)) == 6);
-  assert(cuda::std::popcount(T(126)) == 6);
-  assert(cuda::std::popcount(T(127)) == 7);
-  assert(cuda::std::popcount(T(128)) == 1);
-  assert(cuda::std::popcount(T(129)) == 2);
-  assert(cuda::std::popcount(T(130)) == 2);
+  assert_popcount(T(121), 5);
+  assert_popcount(T(122), 5);
+  assert_popcount(T(123), 6);
+  assert_popcount(T(124), 5);
+  assert_popcount(T(125), 6);
+  assert_popcount(T(126), 6);
+  assert_popcount(T(127), 7);
+  assert_popcount(T(128), 1);
+  assert_popcount(T(129), 2);
+  assert_popcount(T(130), 2);
 }
 
 int main(int, char**)
 {
-  static_assert(constexpr_test<unsigned char>(), "");
-  static_assert(constexpr_test<unsigned short>(), "");
-  static_assert(constexpr_test<unsigned>(), "");
-  static_assert(constexpr_test<unsigned long>(), "");
-  static_assert(constexpr_test<unsigned long long>(), "");
+  constexpr_test<unsigned char>();
+  constexpr_test<unsigned short>();
+  constexpr_test<unsigned>();
+  constexpr_test<unsigned long>();
+  constexpr_test<unsigned long long>();
 
-  static_assert(constexpr_test<uint8_t>(), "");
-  static_assert(constexpr_test<uint16_t>(), "");
-  static_assert(constexpr_test<uint32_t>(), "");
-  static_assert(constexpr_test<uint64_t>(), "");
-  static_assert(constexpr_test<size_t>(), "");
-  static_assert(constexpr_test<uintmax_t>(), "");
-  static_assert(constexpr_test<uintptr_t>(), "");
+  constexpr_test<uint8_t>();
+  constexpr_test<uint16_t>();
+  constexpr_test<uint32_t>();
+  constexpr_test<uint64_t>();
+  constexpr_test<size_t>();
+  constexpr_test<uintmax_t>();
+  constexpr_test<uintptr_t>();
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-  static_assert(constexpr_test<__uint128_t>(), "");
+  constexpr_test<__uint128_t>();
 #endif
 
   runtime_test<unsigned char>();

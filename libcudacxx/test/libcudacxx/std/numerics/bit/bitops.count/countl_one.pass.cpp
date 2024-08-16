@@ -39,15 +39,26 @@ template <typename T>
 __host__ __device__ constexpr bool constexpr_test()
 {
   using nl = cuda::std::numeric_limits<T>;
-  return cuda::std::countl_one(nl::max()) == nl::digits && cuda::std::countl_one(T(nl::max() - 1)) == nl::digits - 1
-      && cuda::std::countl_one(T(nl::max() - 2)) == nl::digits - 2
-      && cuda::std::countl_one(T(nl::max() - 3)) == nl::digits - 2
-      && cuda::std::countl_one(T(nl::max() - 4)) == nl::digits - 3
-      && cuda::std::countl_one(T(nl::max() - 5)) == nl::digits - 3
-      && cuda::std::countl_one(T(nl::max() - 6)) == nl::digits - 3
-      && cuda::std::countl_one(T(nl::max() - 7)) == nl::digits - 3
-      && cuda::std::countl_one(T(nl::max() - 8)) == nl::digits - 4
-      && cuda::std::countl_one(T(nl::max() - 9)) == nl::digits - 4;
+
+  static_assert(cuda::std::countl_one(nl::max()) == nl::digits, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 1)) == nl::digits - 1, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 2)) == nl::digits - 2, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 3)) == nl::digits - 2, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 4)) == nl::digits - 3, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 5)) == nl::digits - 3, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 6)) == nl::digits - 3, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 7)) == nl::digits - 3, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 8)) == nl::digits - 4, "");
+  static_assert(cuda::std::countl_one(T(nl::max() - 9)) == nl::digits - 4, "");
+
+  return true;
+}
+
+template <typename T>
+__host__ __device__ inline void assert_countl_one(T val, int expected)
+{
+  volatile auto v = val;
+  assert(cuda::std::countl_one(v) == expected);
 }
 
 template <typename T>
@@ -57,36 +68,36 @@ __host__ __device__ void runtime_test()
   ASSERT_NOEXCEPT(cuda::std::countl_one(T(0)));
   const int dig = cuda::std::numeric_limits<T>::digits;
 
-  assert(cuda::std::countl_one(T(~121)) == dig - 7);
-  assert(cuda::std::countl_one(T(~122)) == dig - 7);
-  assert(cuda::std::countl_one(T(~123)) == dig - 7);
-  assert(cuda::std::countl_one(T(~124)) == dig - 7);
-  assert(cuda::std::countl_one(T(~125)) == dig - 7);
-  assert(cuda::std::countl_one(T(~126)) == dig - 7);
-  assert(cuda::std::countl_one(T(~127)) == dig - 7);
-  assert(cuda::std::countl_one(T(~128)) == dig - 8);
-  assert(cuda::std::countl_one(T(~129)) == dig - 8);
-  assert(cuda::std::countl_one(T(~130)) == dig - 8);
+  assert_countl_one(T(~121), dig - 7);
+  assert_countl_one(T(~122), dig - 7);
+  assert_countl_one(T(~123), dig - 7);
+  assert_countl_one(T(~124), dig - 7);
+  assert_countl_one(T(~125), dig - 7);
+  assert_countl_one(T(~126), dig - 7);
+  assert_countl_one(T(~127), dig - 7);
+  assert_countl_one(T(~128), dig - 8);
+  assert_countl_one(T(~129), dig - 8);
+  assert_countl_one(T(~130), dig - 8);
 }
 
 int main(int, char**)
 {
-  static_assert(constexpr_test<unsigned char>(), "");
-  static_assert(constexpr_test<unsigned short>(), "");
-  static_assert(constexpr_test<unsigned>(), "");
-  static_assert(constexpr_test<unsigned long>(), "");
-  static_assert(constexpr_test<unsigned long long>(), "");
+  constexpr_test<unsigned char>();
+  constexpr_test<unsigned short>();
+  constexpr_test<unsigned>();
+  constexpr_test<unsigned long>();
+  constexpr_test<unsigned long long>();
 
-  static_assert(constexpr_test<uint8_t>(), "");
-  static_assert(constexpr_test<uint16_t>(), "");
-  static_assert(constexpr_test<uint32_t>(), "");
-  static_assert(constexpr_test<uint64_t>(), "");
-  static_assert(constexpr_test<size_t>(), "");
-  static_assert(constexpr_test<uintmax_t>(), "");
-  static_assert(constexpr_test<uintptr_t>(), "");
+  constexpr_test<uint8_t>();
+  constexpr_test<uint16_t>();
+  constexpr_test<uint32_t>();
+  constexpr_test<uint64_t>();
+  constexpr_test<size_t>();
+  constexpr_test<uintmax_t>();
+  constexpr_test<uintptr_t>();
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-  static_assert(constexpr_test<__uint128_t>(), "");
+  constexpr_test<__uint128_t>();
 #endif
 
   runtime_test<unsigned char>();

@@ -53,8 +53,6 @@
 
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -147,7 +145,7 @@ struct AgentReduce
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
+    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
                      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -160,8 +158,8 @@ struct AgentReduce
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0) && (std::is_pointer<InputIteratorT>::value)
-    && Traits<InputT>::PRIMITIVE;
+    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
+    && (::cuda::std::is_pointer<InputIteratorT>::value) && Traits<InputT>::PRIMITIVE;
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 

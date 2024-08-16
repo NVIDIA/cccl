@@ -39,6 +39,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/type_traits/is_trivially_relocatable.h>
+
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -231,6 +233,10 @@ inline _CCCL_HOST_DEVICE tuple<Ts&...> tie(Ts&... ts) noexcept
 }
 
 using _CUDA_VSTD::get;
+
+template <typename... Ts>
+struct proclaim_trivially_relocatable<tuple<Ts...>> : ::cuda::std::conjunction<is_trivially_relocatable<Ts>...>
+{};
 
 /*! \endcond
  */
