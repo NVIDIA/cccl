@@ -25,7 +25,7 @@
  *
  ******************************************************************************/
 
-#include "cub/device/device_reduce.cuh"
+#include "cub/device/dispatch/dispatch_reduce_deterministic.cuh"
 #include <nvbench/range.cuh>
 #include <nvbench/types.cuh>
 #include <nvbench_helper.cuh>

@@ -46,7 +46,6 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
-#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_deprecated.cuh>
 
@@ -347,35 +346,6 @@ struct DeviceReduce
     return Sum<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    NumItemsT num_items,
-    cudaStream_t stream = 0)
-  {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::DeterministicSum");
-
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // The output value type
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
-
-    using InitT = OutputT;
-
-    return detail::DeterministicDispatchReduce<InputIteratorT, OutputIteratorT, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      static_cast<OffsetT>(num_items),
-      InitT{}, // zero-initialize
-      stream);
-  }
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.

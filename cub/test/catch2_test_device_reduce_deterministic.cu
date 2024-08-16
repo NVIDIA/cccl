@@ -47,6 +47,35 @@
 
 using float_type_list = c2h::type_list<float, double>;
 
+template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  NumItemsT num_items,
+  cudaStream_t stream = 0)
+{
+  CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::DeterministicSum");
+
+  // Signed integer type for global offsets
+  using OffsetT = cub::detail::choose_offset_t<NumItemsT>;
+
+  // The output value type
+  using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+
+  using InitT = OutputT;
+
+  return cub::detail::DeterministicDispatchReduce<InputIteratorT, OutputIteratorT, OffsetT>::Dispatch(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    static_cast<OffsetT>(num_items),
+    InitT{}, // zero-initialize
+    stream);
+}
+
 template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
 struct AgentReducePolicy
 {
@@ -121,7 +150,7 @@ void deterministic_reduce_gpu(const int N)
   REQUIRE(res_p1 == res_p2);
 }
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::DeterministicSum, deterministic_sum);
+DECLARE_LAUNCH_WRAPPER(DeterministicSum, deterministic_sum);
 
 template <typename type>
 void deterministic_reduce_heterogenous(const int N)

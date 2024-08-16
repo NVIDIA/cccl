@@ -362,31 +362,31 @@ private:
   }
 
 #ifdef DISABLE_ZERO
-  _CCCL_HOST _CCCL_DEVICE static inline constexpr bool ISZERO(const ftype)
+  _CCCL_HOST _CCCL_DEVICE static inline constexpr bool is_zero_v(const ftype)
   {
     return false;
   }
 #else
-  _CCCL_HOST _CCCL_DEVICE static inline constexpr bool ISZERO(const ftype x)
+  _CCCL_HOST _CCCL_DEVICE static inline constexpr bool is_zero_v(const ftype x)
   {
     return x == 0.0;
   }
 #endif
 
 #ifdef DISABLE_NANINF
-  _CCCL_HOST _CCCL_DEVICE static inline constexpr int ISNANINF(const ftype)
+  _CCCL_HOST _CCCL_DEVICE static inline constexpr int is_nan_inf_v(const ftype)
   {
     return false;
   }
 #else
-  _CCCL_HOST _CCCL_DEVICE static inline constexpr int ISNANINF(const ftype x)
+  _CCCL_HOST _CCCL_DEVICE static inline constexpr int is_nan_inf_v(const ftype x)
   {
     const auto bits = get_bits(x);
     return (bits & ((2ull * MAX_EXP - 1) << (MANT_DIG - 1))) == ((2ull * MAX_EXP - 1) << (MANT_DIG - 1));
   }
 #endif
 
-  _CCCL_HOST _CCCL_DEVICE static inline int EXP(const ftype x)
+  _CCCL_HOST _CCCL_DEVICE static inline int exp_val(const ftype x)
   {
     const auto bits = get_bits(x);
     return (bits >> (MANT_DIG - 1)) & (2 * MAX_EXP - 1);
@@ -398,7 +398,7 @@ private:
   /// bins.
   _CCCL_HOST _CCCL_DEVICE static inline int binned_dindex(const ftype x)
   {
-    int exp = EXP(x);
+    int exp = exp_val(x);
     if (exp == 0)
     {
       if (x == 0.0)
@@ -419,14 +419,14 @@ private:
   /// indicies correspond to smaller bins.
   _CCCL_HOST _CCCL_DEVICE inline int binned_index() const
   {
-    return ((MAX_EXP + MANT_DIG - BIN_WIDTH + 1 + EXP_BIAS) - EXP(primary(0))) / BIN_WIDTH;
+    return ((MAX_EXP + MANT_DIG - BIN_WIDTH + 1 + EXP_BIAS) - exp_val(primary(0))) / BIN_WIDTH;
   }
 
   /// Check if index of manually specified binned floating-point is 0
   /// A quick check to determine if the index is 0
   _CCCL_HOST _CCCL_DEVICE inline bool binned_index0() const
   {
-    return EXP(primary(0)) == MAX_EXP + EXP_BIAS;
+    return exp_val(primary(0)) == MAX_EXP + EXP_BIAS;
   }
 
   //! Update manually specified binned fp with a scalar (X -> Y)
@@ -438,13 +438,13 @@ private:
   //!@param inccarY stride within Y's carry vector (use every inccarY'th element)
   _CCCL_HOST _CCCL_DEVICE void binned_dmdupdate(const ftype max_abs_val, const int incpriY, const int inccarY)
   {
-    if (ISNANINF(primary(0)))
+    if (is_nan_inf_v(primary(0)))
     {
       return;
     }
 
     int X_index = binned_dindex(max_abs_val);
-    if (ISZERO(primary(0)))
+    if (is_zero_v(primary(0)))
     {
       _LIBCUDACXX_PRAGMA_UNROLL()
       for (int i = 0; i < FOLD; i++)
@@ -493,7 +493,7 @@ private:
     ftype M;
     ftype x = X;
 
-    if (ISNANINF(x) || ISNANINF(primary(0)))
+    if (is_nan_inf_v(x) || is_nan_inf_v(primary(0)))
     {
       primary(0) += x;
       return;
@@ -556,7 +556,7 @@ private:
   //!@param inccarX stride within X's carry vector (use every inccarX'th element)
   _CCCL_HOST _CCCL_DEVICE inline void binned_dmrenorm(const int incpriX, const int inccarX)
   {
-    if (ISZERO(primary(0)) || ISNANINF(primary(0)))
+    if (is_zero_v(primary(0)) || is_nan_inf_v(primary(0)))
     {
       return;
     }
@@ -603,11 +603,11 @@ private:
   {
     int i = 0;
 
-    if (ISNANINF(primary(0)))
+    if (is_nan_inf_v(primary(0)))
     {
       return primary(0);
     }
-    if (ISZERO(primary(0)))
+    if (is_zero_v(primary(0)))
     {
       return 0.0;
     }
@@ -678,11 +678,11 @@ private:
     int i    = 0;
     double Y = 0.0;
 
-    if (ISNANINF(primary(0)))
+    if (is_nan_inf_v(primary(0)))
     {
       return primary(0);
     }
-    if (ISZERO(primary(0)))
+    if (is_zero_v(primary(0)))
     {
       return 0.0;
     }
@@ -724,12 +724,12 @@ private:
   _CCCL_HOST _CCCL_DEVICE void binned_dmdmadd(
     const ReproducibleFloatingAccumulator& x, const int incpriX, const int inccarX, const int incpriY, const int inccarY)
   {
-    if (ISZERO(x.primary(0)))
+    if (is_zero_v(x.primary(0)))
     {
       return;
     }
 
-    if (ISZERO(primary(0)))
+    if (is_zero_v(primary(0)))
     {
       for (int i = 0; i < FOLD; i++)
       {
@@ -739,7 +739,7 @@ private:
       return;
     }
 
-    if (ISNANINF(x.primary(0)) || ISNANINF(primary(0)))
+    if (is_nan_inf_v(x.primary(0)) || is_nan_inf_v(primary(0)))
     {
       primary(0) += x.primary(0);
       return;
