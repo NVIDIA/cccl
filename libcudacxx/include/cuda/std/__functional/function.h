@@ -26,10 +26,12 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__memory/allocator_destructor.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/builtin_new_allocator.h>
 #include <cuda/std/__memory/compressed_pair.h>
+#include <cuda/std/__memory/uses_allocator.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -47,7 +49,6 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/detail/libcxx/include/__functional_base>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
