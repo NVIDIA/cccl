@@ -8,14 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 // Test translation of launch function arguments to cudaLaunchConfig_t sent to cudaLaunchKernelEx internally
 // We replace cudaLaunchKernelEx with a test function here through a macro to intercept the cudaLaunchConfig_t
 #define cudaLaunchKernelEx cudaLaunchKernelExTestReplacement
 #include <cuda/experimental/launch.cuh>
 #undef cudaLaunchKernelEx
 
-#include "../hierarchy/testing_common.cuh"
+#include <host_device.cuh>
 
 static cudaLaunchConfig_t expectedConfig;
 static bool replacementCalled = false;

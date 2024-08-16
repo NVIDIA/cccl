@@ -46,7 +46,7 @@ struct __is_trivial_equality_predicate<__equal_to, _Lhs, _Rhs> : true_type
 struct __less
 {
   template <class _Tp, class _Up>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
   operator()(const _Tp& __lhs, const _Up& __rhs) const noexcept(noexcept(__lhs < __rhs))
   {
     return __lhs < __rhs;

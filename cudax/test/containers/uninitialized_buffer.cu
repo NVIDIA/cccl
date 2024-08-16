@@ -61,7 +61,7 @@ TEMPLATE_TEST_CASE(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
 
-  cuda::mr::cuda_memory_resource resource{};
+  cuda::mr::device_memory_resource resource{};
 
   SECTION("construction")
   {
@@ -89,7 +89,7 @@ TEMPLATE_TEST_CASE(
   {
     static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
     {
-      cuda::mr::cuda_managed_memory_resource other_resource{};
+      cuda::mr::managed_memory_resource other_resource{};
       uninitialized_buffer input{other_resource, 42};
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr       = buf.data();

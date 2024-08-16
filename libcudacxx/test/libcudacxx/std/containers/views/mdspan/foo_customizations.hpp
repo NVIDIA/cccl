@@ -93,8 +93,8 @@ public:
       : __extents(__exts)
   {}
 
-  __MDSPAN_TEMPLATE_REQUIRES(class OtherExtents,
-                             /* requires */ (_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)))
+  _LIBCUDACXX_TEMPLATE(class OtherExtents)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
                                                                                                  // comma
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
@@ -107,18 +107,18 @@ public:
      */
   }
 
-  __MDSPAN_TEMPLATE_REQUIRES(class OtherExtents,
-                             /* requires */ (_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)))
-  __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
-                                                                                                 // comma
+  _LIBCUDACXX_TEMPLATE(class OtherExtents)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
+  __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due
+                                                                                                 // to comma
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
     cuda::std::layout_right::mapping<OtherExtents> const& other) noexcept // NOLINT(google-explicit-constructor)
       : __extents(other.extents())
   {}
 
-  __MDSPAN_TEMPLATE_REQUIRES(class OtherExtents,
-                             /* requires */ (_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
-                                             && (extents_type::rank() <= 1)))
+  _LIBCUDACXX_TEMPLATE(class OtherExtents)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
+                       && (extents_type::rank() <= 1))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
                                                                                                  // comma
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
@@ -126,8 +126,8 @@ public:
       : __extents(other.extents())
   {}
 
-  __MDSPAN_TEMPLATE_REQUIRES(class OtherExtents,
-                             /* requires */ (_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)))
+  _LIBCUDACXX_TEMPLATE(class OtherExtents)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
   __MDSPAN_INLINE_FUNCTION constexpr mapping(
     cuda::std::layout_stride::mapping<OtherExtents> const& other) // NOLINT(google-explicit-constructor)

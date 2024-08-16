@@ -322,6 +322,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       , stream(stream)
   {}
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchUniqueByKey(
     void* d_temp_storage,
@@ -348,6 +349,7 @@ struct DispatchUniqueByKey : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /******************************************************************************
    * Dispatch entrypoints
@@ -425,7 +427,7 @@ struct DispatchUniqueByKey : SelectedPolicy
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
@@ -488,7 +490,7 @@ struct DispatchUniqueByKey : SelectedPolicy
                 items_per_thread,
                 scan_sm_occupancy);
       }
-#endif
+#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke select_if_kernel
       error =
@@ -629,6 +631,7 @@ struct DispatchUniqueByKey : SelectedPolicy
     return error;
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -657,6 +660,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       num_items,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 };
 
 CUB_NAMESPACE_END

@@ -25,6 +25,7 @@
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/std/__concepts/all_of.h>
+#  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/decay.h>
@@ -99,10 +100,29 @@ template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT async_resource_with =
   async_resource<_Resource> && _CUDA_VSTD::__all_of<has_property<_Resource, _Properties>...>;
 
+template <bool _Convertible>
+struct __different_resource__
+{
+  template <class _OtherResource>
+  static constexpr bool __value(_OtherResource*) noexcept
+  {
+    return resource<_OtherResource>;
+  }
+};
+
+template <>
+struct __different_resource__<true>
+{
+  static constexpr bool __value(void*) noexcept
+  {
+    return false;
+  }
+};
+
 template <class _Resource, class _OtherResource>
 _LIBCUDACXX_CONCEPT __different_resource =
-  (!_CUDA_VSTD::same_as<_CUDA_VSTD::decay_t<_Resource>, _CUDA_VSTD::decay_t<_OtherResource>>)
-  && resource<_OtherResource>;
+  __different_resource__<_CUDA_VSTD::convertible_to<_OtherResource const&, _Resource const&>>::__value(
+    static_cast<_OtherResource*>(nullptr));
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

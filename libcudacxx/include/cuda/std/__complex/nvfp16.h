@@ -60,6 +60,39 @@ struct __libcpp_complex_overload_traits<__half, false, false>
   typedef complex<__half> _ComplexType;
 };
 
+// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
+template <>
+struct __complex_can_implicitly_construct<__half, float> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<__half, double> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<float, __half> : true_type
+{};
+
+template <>
+struct __complex_can_implicitly_construct<double, __half> : true_type
+{};
+
+template <class _Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY __half __convert_to_half(const _Tp& __value) noexcept
+{
+  return __value;
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __half __convert_to_half(const float& __value) noexcept
+{
+  return __float2half(__value);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __half __convert_to_half(const double& __value) noexcept
+{
+  return __double2half(__value);
+}
+
 template <>
 class _LIBCUDACXX_TEMPLATE_VIS _CCCL_ALIGNAS(alignof(__half2)) complex<__half>
 {
@@ -77,14 +110,14 @@ public:
 
   template <class _Up, __enable_if_t<__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<_Up>& __c)
-      : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
+      : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
   template <class _Up,
             __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
             __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>              = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
-      : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
+      : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const value_type& __re)
@@ -97,8 +130,8 @@ public:
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<_Up>& __c)
   {
-    __repr_.x = __c.real();
-    __repr_.y = __c.imag();
+    __repr_.x = __convert_to_half(__c.real());
+    __repr_.y = __convert_to_half(__c.imag());
     return *this;
   }
 
@@ -152,24 +185,24 @@ public:
 
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const value_type& __re)
   {
-    __repr_.x += __re;
+    __repr_.x = __hadd(__repr_.x, __re);
     return *this;
   }
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const value_type& __re)
   {
-    __repr_.x -= __re;
+    __repr_.x = __hsub(__repr_.x, __re);
     return *this;
   }
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const value_type& __re)
   {
-    __repr_.x *= __re;
-    __repr_.y *= __re;
+    __repr_.x = __hmul(__repr_.x, __re);
+    __repr_.y = __hmul(__repr_.y, __re);
     return *this;
   }
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const value_type& __re)
   {
-    __repr_.x /= __re;
-    __repr_.y /= __re;
+    __repr_.x = __hdiv(__repr_.x, __re);
+    __repr_.y = __hdiv(__repr_.y, __re);
     return *this;
   }
 
@@ -192,9 +225,41 @@ public:
   }
 };
 
+template <> // complex<float>
+template <> // complex<__half>
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__half>& __c)
+    : __re_(__half2float(__c.real()))
+    , __im_(__half2float(__c.imag()))
+{}
+
+template <> // complex<double>
+template <> // complex<__half>
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__half>& __c)
+    : __re_(__half2float(__c.real()))
+    , __im_(__half2float(__c.imag()))
+{}
+
+template <> // complex<float>
+template <> // complex<__half>
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>& complex<float>::operator=(const complex<__half>& __c)
+{
+  __re_ = __half2float(__c.real());
+  __im_ = __half2float(__c.imag());
+  return *this;
+}
+
+template <> // complex<double>
+template <> // complex<__half>
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>& complex<double>::operator=(const complex<__half>& __c)
+{
+  __re_ = __half2float(__c.real());
+  __im_ = __half2float(__c.imag());
+  return *this;
+}
+
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 {
-  return _CUDA_VSTD::atan2f(__half(0), __re);
+  return _CUDA_VSTD::atan2(__int2half_rn(0), __re);
 }
 
 // We have performance issues with some trigonometric functions with __half
