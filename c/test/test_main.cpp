@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <iostream>
 #include <cuda_runtime.h>
+
+#include <iostream>
 
 #define CATCH_CONFIG_RUNNER
 #include <catch2/catch.hpp>
