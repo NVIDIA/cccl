@@ -61,11 +61,11 @@ using cuda::std::min;
 // disable nan / infinity checks
 #  define DISABLE_NANINF
 
-// jump table for indexing into data
-#  define MAX_JUMP 5
-static_assert(MAX_JUMP <= 5, "MAX_JUMP greater than max");
-
 #endif
+
+// jump table for indexing into data
+#define _CUB_RFA_MAX_JUMP_ 5
+static_assert(_CUB_RFA_MAX_JUMP_ <= 5, "MAX_JUMP greater than max");
 
 CUB_NAMESPACE_BEGIN
 
@@ -266,7 +266,7 @@ private:
   /// Return primary vector value const ref
   _CCCL_HOST _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& primary(int i) const
   {
-    if (FOLD <= MAX_JUMP)
+    if (FOLD <= _CUB_RFA_MAX_JUMP_)
     {
       switch (i)
       {
@@ -308,7 +308,7 @@ private:
   /// Return carry vector value const ref
   _CCCL_HOST _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& carry(int i) const
   {
-    if (FOLD <= MAX_JUMP)
+    if (FOLD <= _CUB_RFA_MAX_JUMP_)
     {
       switch (i)
       {
