@@ -55,21 +55,22 @@ template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_e
 static inline _CCCL_DEVICE bool
 __cuda_atomic_compare_exchange(_Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, _Order, _Operand, _Sco)
 {
-  uint32_t* __aligned     = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
-  const uint32_t __offset = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * 8;
-  const uint32_t __mask   = ((1 << (sizeof(_Type) * 8)) - 1) << __offset;
+  uint32_t* __aligned           = (uint32_t*) ((intptr_t) __ptr & ~(sizeof(uint32_t) - 1));
+  constexpr uint32_t __sizemask = (1 << (sizeof(_Type) * 8)) - 1;
+  const uint32_t __offset       = uint32_t((intptr_t) __ptr & (sizeof(uint32_t) - 1)) * 8;
+  const uint32_t __valueMask    = __sizemask << __offset;
+  const uint32_t __windowMask   = ~__valueMask;
 
   // Algorithm for 8b CAS with 32b intrinsics
   // __old = __window[0:32] where [__cmp] resides within any of the potential offsets
   // First CAS attempt 'guesses' that the masked portion of the window is 0x00.
-  uint32_t __old    = (uint32_t(__op) << __offset);
-  _Type __old_value = 0;
+  uint32_t __old = (uint32_t(__cmp) << __offset);
 
   // Reemit CAS instructions until either of two conditions are met
   while (1)
   {
     // Combine the desired value and most recently fetched expected masked portion of the window
-    uint32_t __attempt = (__old & ~__mask) | (uint32_t(__op) << __offset);
+    uint32_t __attempt = (__old & __windowMask) | (uint32_t(__op) << __offset);
 
     if (__cuda_atomic_compare_exchange(
           __aligned, __old, __old, __attempt, _Order{}, __atomic_cuda_operand_b32{}, _Sco{}))
@@ -77,7 +78,7 @@ __cuda_atomic_compare_exchange(_Type* __ptr, _Type& __dst, _Type __cmp, _Type __
       // CAS was successful
       return true;
     }
-    __old_value = static_cast<_Type>((__old & __mask) >> __offset);
+    auto __old_value = static_cast<_Type>((__old & __valueMask) >> __offset);
     // The expected value no longer matches inside the CAS.
     if (__old_value != __cmp)
     {
