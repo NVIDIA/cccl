@@ -22,11 +22,11 @@ Test goals:
 Interleaved 8b/16b access to a 32b window while there is thread contention.
 
 for 8b:
-Launch 1028 threads, fetch_add(1) each window, value at end of kernel should be 0xFF..FF. This checks for corruption
+Launch 1020 threads, fetch_add(1) each window, value at end of kernel should be 0xFF..FF. This checks for corruption
 caused by interleaved access to different parts of the window.
 
 for 16b:
-Launch 1028 threads, fetch_add(128) into both windows.
+Launch 1020 threads, fetch_add(128) into both windows.
 */
 
 template <class T, int Inc>
