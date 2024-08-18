@@ -88,4 +88,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
   )
+
+  cudax_add_catch2_test(test_target memory_resource ${cn_target}
+    memory_resource/any_resource.cu
+  )
 endforeach()

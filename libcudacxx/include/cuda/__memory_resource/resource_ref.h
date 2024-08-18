@@ -28,8 +28,10 @@
 #  include <cuda/std/__concepts/_One_of.h>
 #  include <cuda/std/__concepts/all_of.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
 
@@ -39,13 +41,35 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 union _AnyResourceStorage
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr _AnyResourceStorage() noexcept
-      : __ptr_(nullptr)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr _AnyResourceStorage(void* __ptr = nullptr) noexcept
+      : __ptr_(__ptr)
   {}
 
   void* __ptr_;
   char __buf_[3 * sizeof(void*)];
 };
+
+template <class _Resource>
+constexpr bool _IsSmall() noexcept
+{
+  return (sizeof(_Resource) <= sizeof(_AnyResourceStorage)) //
+      && (alignof(_AnyResourceStorage) % alignof(_Resource) == 0)
+      && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Resource);
+}
+
+template <typename _Resource>
+_Resource* _Any_resource_cast(void* __object_) noexcept
+{
+  _AnyResourceStorage* __object = static_cast<_AnyResourceStorage*>(__object_);
+  return static_cast<_Resource*>(_IsSmall<_Resource>() ? __object->__buf_ : __object->__ptr_);
+}
+
+template <typename _Resource>
+const _Resource* _Any_resource_cast(const void* __object_) noexcept
+{
+  const _AnyResourceStorage* __object = static_cast<const _AnyResourceStorage*>(__object_);
+  return static_cast<const _Resource*>(_IsSmall<_Resource>() ? __object->__buf_ : __object->__ptr_);
+}
 
 enum class _AllocType
 {
@@ -56,28 +80,35 @@ enum class _AllocType
 struct _Alloc_vtable
 {
   using _AllocFn   = void* (*) (void*, size_t, size_t);
-  using _DeallocFn = void (*)(void*, void*, size_t, size_t);
+  using _DeallocFn = void (*)(void*, void*, size_t, size_t) noexcept;
   using _EqualFn   = bool (*)(void*, void*);
-  using _DestroyFn = void (*)(void*);
-  using _IsSmallFn = bool (*)();
+  using _DestroyFn = void (*)(void*) noexcept;
+  using _MoveFn    = void (*)(void*, void*) noexcept;
+  using _CopyFn    = void (*)(void*, const void*);
 
+  bool __is_small;
   _AllocFn __alloc_fn;
   _DeallocFn __dealloc_fn;
   _EqualFn __equal_fn;
   _DestroyFn __destroy_fn;
-  _IsSmallFn __is_small_fn;
+  _MoveFn __move_fn;
+  _CopyFn __copy_fn;
 
   constexpr _Alloc_vtable(
+    bool __is_small_,
     _AllocFn __alloc_fn_,
     _DeallocFn __dealloc_fn_,
     _EqualFn __equal_fn_,
     _DestroyFn __destroy_fn_,
-    _IsSmallFn __is_small_fn_) noexcept
-      : __alloc_fn(__alloc_fn_)
+    _MoveFn __move_fn_,
+    _CopyFn __copy_fn_) noexcept
+      : __is_small(__is_small_)
+      , __alloc_fn(__alloc_fn_)
       , __dealloc_fn(__dealloc_fn_)
       , __equal_fn(__equal_fn_)
       , __destroy_fn(__destroy_fn_)
-      , __is_small_fn(__is_small_fn_)
+      , __move_fn(__move_fn_)
+      , __copy_fn(__copy_fn_)
   {}
 };
 
@@ -90,14 +121,16 @@ struct _Async_alloc_vtable : public _Alloc_vtable
   _AsyncDeallocFn __async_dealloc_fn;
 
   constexpr _Async_alloc_vtable(
+    bool __is_small_,
     _Alloc_vtable::_AllocFn __alloc_fn_,
     _Alloc_vtable::_DeallocFn __dealloc_fn_,
     _Alloc_vtable::_EqualFn __equal_fn_,
     _Alloc_vtable::_DestroyFn __destroy_fn_,
-    _Alloc_vtable::_IsSmallFn __is_small_fn_,
+    _Alloc_vtable::_MoveFn __move_fn_,
+    _Alloc_vtable::_CopyFn __copy_fn_,
     _AsyncAllocFn __async_alloc_fn_,
     _AsyncDeallocFn __async_dealloc_fn_) noexcept
-      : _Alloc_vtable(__alloc_fn_, __dealloc_fn_, __equal_fn_, __destroy_fn_, __is_small_fn_)
+      : _Alloc_vtable(__is_small_, __alloc_fn_, __dealloc_fn_, __equal_fn_, __destroy_fn_, __move_fn_, __copy_fn_)
       , __async_alloc_fn(__async_alloc_fn_)
       , __async_dealloc_fn(__async_dealloc_fn_)
   {}
@@ -118,8 +151,9 @@ struct _Resource_vtable_builder
   }
 
   template <class _Resource>
-  static void _Dealloc(void* __object, void* __ptr, size_t __bytes, size_t __alignment)
+  static void _Dealloc(void* __object, void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
+    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment);
   }
 
@@ -143,38 +177,72 @@ struct _Resource_vtable_builder
   }
 
   template <class _Resource>
-  static void _Destroy(void* __object)
+  static void _Destroy(void* __object_) noexcept
   {
-    static_cast<_Resource*>(__object)->~_Resource();
+    _Resource* __object = _Any_resource_cast<_Resource>(__object_);
+    if constexpr (_IsSmall<_Resource>())
+    {
+      __object->~_Resource();
+    }
+    else
+    {
+      delete __object;
+    }
   }
 
   template <class _Resource>
-  static bool _IsSmall()
+  static void _Move(void* __object_, void* __other_) noexcept
   {
-    return (sizeof(_Resource) <= sizeof(_AnyResourceStorage))
-        && (alignof(_AnyResourceStorage) % alignof(_Resource) == 0)
-        && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Resource);
+    _AnyResourceStorage* __object = static_cast<_AnyResourceStorage*>(__object_);
+    if constexpr (_IsSmall<_Resource>())
+    {
+      ::new (static_cast<void*>(__object->__buf_))
+        _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other_)));
+    }
+    else
+    {
+      __object->__ptr_ = ::new _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other_)));
+    }
+  }
+
+  template <class _Resource>
+  static void _Copy(void* __object_, const void* __other_)
+  {
+    _AnyResourceStorage* __object = static_cast<_AnyResourceStorage*>(__object_);
+    if constexpr (_IsSmall<_Resource>())
+    {
+      ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other_));
+    }
+    else
+    {
+      __object->__ptr_ = ::new _Resource(*_Any_resource_cast<_Resource>(__other_));
+    }
   }
 
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
-  _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Default)) static constexpr _Alloc_vtable _Create() noexcept
+  _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Default))
+  static constexpr _Alloc_vtable _Create() noexcept
   {
-    return {&_Resource_vtable_builder::_Alloc<_Resource>,
+    return {_IsSmall<_Resource>(),
+            &_Resource_vtable_builder::_Alloc<_Resource>,
             &_Resource_vtable_builder::_Dealloc<_Resource>,
             &_Resource_vtable_builder::_Equal<_Resource>,
             &_Resource_vtable_builder::_Destroy<_Resource>,
-            &_Resource_vtable_builder::_IsSmall<_Resource>};
+            &_Resource_vtable_builder::_Move<_Resource>,
+            &_Resource_vtable_builder::_Copy<_Resource>};
   }
 
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
   _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Async))
   static constexpr _Async_alloc_vtable _Create() noexcept
   {
-    return {&_Resource_vtable_builder::_Alloc<_Resource>,
+    return {_IsSmall<_Resource>(),
+            &_Resource_vtable_builder::_Alloc<_Resource>,
             &_Resource_vtable_builder::_Dealloc<_Resource>,
             &_Resource_vtable_builder::_Equal<_Resource>,
             &_Resource_vtable_builder::_Destroy<_Resource>,
-            &_Resource_vtable_builder::_IsSmall<_Resource>,
+            &_Resource_vtable_builder::_Move<_Resource>,
+            &_Resource_vtable_builder::_Copy<_Resource>,
             &_Resource_vtable_builder::_Alloc_async<_Resource>,
             &_Resource_vtable_builder::_Dealloc_async<_Resource>};
   }
@@ -224,6 +292,7 @@ struct _Property_filter
   using _Filtered_properties =
     typename _Filtered<_Properties...>::_Filtered_vtable::template _Append_property<_Property>;
 };
+
 template <>
 struct _Property_filter<false>
 {
@@ -273,15 +342,27 @@ struct _Alloc_base
 
   _CCCL_NODISCARD void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return __static_vtable->__alloc_fn(__object, __bytes, __alignment);
+    return __static_vtable->__alloc_fn(_Get_object(), __bytes, __alignment);
   }
 
   void deallocate(void* _Ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    __static_vtable->__dealloc_fn(__object, _Ptr, __bytes, __alignment);
+    __static_vtable->__dealloc_fn(_Get_object(), _Ptr, __bytes, __alignment);
   }
 
 protected:
+  void* _Get_object() const noexcept
+  {
+    if constexpr (_IsReference)
+    {
+      return __object;
+    }
+    else
+    {
+      return __static_vtable->__is_small ? __object.__buf_ : __object.__ptr_;
+    }
+  }
+
   __alloc_object_storage_t<_IsReference> __object = nullptr;
   const _Vtable* __static_vtable                  = nullptr;
 };
@@ -424,6 +505,7 @@ public:
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
   _CCCL_NODISCARD bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
   {
+    // BUGBUG: comparing function pointers like this can lead to false negatives:
     return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
         && this->__static_vtable->__equal_fn(this->__object, __rhs.__object);
   }
