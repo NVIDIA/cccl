@@ -6,6 +6,7 @@
 #include <thrust/sequence.h>
 
 #include <memory>
+#include <vector>
 
 #include <unittest/unittest.h>
 
@@ -108,3 +109,110 @@ void TestTransformIteratorNonCopyable()
 }
 
 DECLARE_UNITTEST(TestTransformIteratorNonCopyable);
+
+struct flip_value
+{
+  _CCCL_HOST_DEVICE bool operator()(bool b) const
+  {
+    return !b;
+  }
+};
+
+struct pass_ref
+{
+  _CCCL_HOST_DEVICE const bool& operator()(const bool& b) const
+  {
+    return b;
+  }
+};
+
+// TODO(bgruber): replace by libc++ with C++14
+struct forward
+{
+  template <class _Tp>
+  constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  {
+    return _CUDA_VSTD::forward<_Tp>(__t);
+  }
+};
+
+void TestTransformIteratorReferenceAndValueType()
+{
+  using ::cuda::std::is_same;
+  using ::cuda::std::negate;
+  {
+    thrust::host_vector<bool> v;
+    auto it = v.begin();
+    static_assert(is_same<decltype(*it), bool&>::value, "");
+    auto it_tr_val = thrust::make_transform_iterator(it, flip_value{});
+    static_assert(is_same<decltype(*it_tr_val), bool>::value, "");
+    auto it_tr_ref = thrust::make_transform_iterator(it, pass_ref{});
+    static_assert(is_same<decltype(*it_tr_ref), const bool&>::value, "");
+    auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
+  }
+
+  {
+    thrust::device_vector<bool> v;
+    auto it = v.begin();
+    static_assert(is_same<decltype(*it), thrust::device_reference<bool>>::value, "");
+    auto it_tr_val = thrust::make_transform_iterator(it, flip_value{});
+    static_assert(is_same<decltype(*it_tr_val), bool>::value, "");
+    auto it_tr_ref = thrust::make_transform_iterator(it, pass_ref{});
+    static_assert(is_same<decltype(*it_tr_ref), const bool&>::value, "");
+    auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
+    static_assert(is_same<decltype(*it_tr_fwd), const bool&>::value, ""); // device ref. is decayed
+  }
+
+  {
+    std::vector<bool> v;
+    auto it = v.begin();
+    static_assert(is_same<decltype(*it), std::vector<bool>::reference>::value, "");
+    auto it_tr_val = thrust::make_transform_iterator(it, flip_value{});
+    static_assert(is_same<decltype(*it_tr_val), bool>::value, "");
+    auto it_tr_ref = thrust::make_transform_iterator(it, pass_ref{});
+    static_assert(is_same<decltype(*it_tr_ref), const bool&>::value, "");
+    auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
+    static_assert(is_same<decltype(*it_tr_fwd), std::vector<bool>::reference&&>::value, ""); // No handling for std
+  }
+}
+DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
+
+struct foo
+{
+  int x, y;
+};
+
+struct access_x
+{
+  _CCCL_HOST_DEVICE int& operator()(foo& f) const noexcept
+  {
+    return f.x;
+  }
+};
+
+template <template <typename...> class SrcVec, template <typename...> class DstVec = SrcVec>
+void TestTransformIteratorAsDestinationWith()
+{
+  constexpr auto n = 10;
+  SrcVec<int> src(n, 1234);
+  DstVec<foo> dst(n, foo{1, 2});
+
+  thrust::copy(src.begin(), src.end(), thrust::make_transform_iterator(dst.begin(), access_x{}));
+
+  const thrust::host_vector<foo>& dst_h = dst; // no copy when Vec is a host vector
+  for (const auto& f : dst_h)
+  {
+    ASSERT_EQUAL(f.x, 1234);
+    ASSERT_EQUAL(f.y, 2);
+  }
+}
+
+void TestTransformIteratorAsDestination()
+{
+  TestTransformIteratorAsDestinationWith<thrust::host_vector>();
+  TestTransformIteratorAsDestinationWith<thrust::device_vector>();
+
+  TestTransformIteratorAsDestinationWith<thrust::host_vector, thrust::device_vector>();
+  TestTransformIteratorAsDestinationWith<thrust::device_vector, thrust::host_vector>();
+}
+DECLARE_UNITTEST(TestTransformIteratorAsDestination);

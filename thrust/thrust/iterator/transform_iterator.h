@@ -207,9 +207,8 @@ public:
   /*! \endcond
    */
 
-public:
-  /*! Null constructor does nothing.
-   */
+  using reference = typename super_t::reference;
+
   transform_iterator() = default;
 
   transform_iterator(transform_iterator const&) = default;
@@ -299,8 +298,24 @@ private:
   // See goo.gl/LELTNp
   THRUST_DISABLE_MSVC_WARNING_BEGIN(4172)
 
+  _CCCL_HOST_DEVICE reference dereference() const
+  {
+    // TODO(bgruber): use an if constexpr in C++17
+    return dereference_impl(
+      ::cuda::std::bool_constant<
+        detail::is_wrapped_reference<::cuda::std::__decay_t<iterator_reference_t<Iterator>>>::value>{});
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE
+  reference dereference_impl(::cuda::std::false_type /* iterator does not return a wrapped/proxy reference */) const
+  {
+    return m_f(*this->base());
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
+  reference dereference_impl(::cuda::std::true_type /* iterator returns a wrapped/proxy reference */) const
   {
     // Create a temporary to allow iterators with wrapped references to
     // convert to their value type before calling m_f. Note that this
