@@ -287,7 +287,8 @@ _LIBCUDACXX_THREAD_ABI_VISIBILITY
 void __libcpp_thread_sleep_for(chrono::nanoseconds __ns)
 {
   NV_IF_TARGET(NV_IS_DEVICE,
-               (auto const __step = __ns.count(); assert(__step < numeric_limits<unsigned>::max());
+               (auto const __step = __ns.count();
+                _LIBCUDACXX_ASSERT(__step < numeric_limits<unsigned>::max(), "sleep exceeds maximal duration");
                 asm volatile("nanosleep.u32 %0;" ::"r"((unsigned) __step)
                              :);))
 }
