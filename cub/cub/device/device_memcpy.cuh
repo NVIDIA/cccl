@@ -25,7 +25,8 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
+//! @file
+//! cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
 
 #pragma once
 

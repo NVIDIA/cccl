@@ -26,9 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceRadixSort provides device-wide, parallel operations for
-//!       computing a radix sort across a sequence of data items residing within
-//!       device-accessible memory.
+//! @file
+//! cub::DeviceRadixSort provides device-wide, parallel operations for computing a radix sort across a sequence of data
+//! items residing within device-accessible memory.
 
 #pragma once
 

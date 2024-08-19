@@ -26,7 +26,8 @@
  *
  ******************************************************************************/
 
-//! @file cub::BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block
+//! @file
+//! cub::BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block
 
 #pragma once
 

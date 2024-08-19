@@ -31,7 +31,8 @@
 
 #include "catch2_test_helper.h"
 
-//! @file This file contains utilities for device-scope API tests
+//! @file
+//! This file contains utilities for device-scope API tests
 //!
 //! Device-scope API in CUB can be launched from the host or device side.
 //! Utilities in this file facilitate testing in both cases.

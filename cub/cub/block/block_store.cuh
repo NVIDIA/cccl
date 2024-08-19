@@ -26,7 +26,8 @@
  *
  ******************************************************************************/
 
-//! @file Operations for writing linear segments of data from the CUDA thread block
+//! @file
+//! Operations for writing linear segments of data from the CUDA thread block
 
 #pragma once
 
