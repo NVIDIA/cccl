@@ -22,11 +22,11 @@ Test goals:
 Interleaved 8b/16b access to a 32b window while there is thread contention.
 
 for 8b:
-Launch 1020 threads, fetch_add(1) each window, value at end of kernel should be 0xFF..FF. This checks for corruption
+Launch 1024 threads, fetch_add(1) each window, value at end of kernel should be 0xFF..FF. This checks for corruption
 caused by interleaved access to different parts of the window.
 
 for 16b:
-Launch 1020 threads, fetch_add(128) into both windows.
+Launch 1024 threads, fetch_add(1), checking for 0x01FF01FF.
 */
 
 template <class T, int Inc>
@@ -38,11 +38,17 @@ __host__ __device__ void fetch_add_into_window(T* window, uint16_t* atomHistory)
   *atomHistory = a.fetch_add(Inc);
 }
 
-template <class T, int Inc>
+template <class T>
 __device__ void device_do_test(uint32_t expected)
 {
-  __shared__ uint16_t atomHistory[1024];
+  constexpr uint32_t threadCount               = 1024;
+  constexpr uint32_t histogramResultCount      = 256 * sizeof(T);
+  constexpr uint32_t histogramEntriesPerThread = 4 / sizeof(T);
+
+  __shared__ uint16_t atomHistory[threadCount];
+  __shared__ uint8_t atomHistogram[histogramResultCount];
   __shared__ uint32_t atomicStorage;
+
   cuda::atomic_ref<uint32_t, cuda::thread_scope_block> bucket(atomicStorage);
 
   constexpr uint32_t offsetMask = ((4 / sizeof(T)) - 1);
@@ -51,16 +57,28 @@ __device__ void device_do_test(uint32_t expected)
 
   if (threadIdx.x == 0)
   {
+    memset(atomHistogram, 0, histogramResultCount);
     bucket.store(0);
   }
   __syncthreads();
 
   T* window = reinterpret_cast<T*>(&atomicStorage) + threadOffset;
-  fetch_add_into_window<T, Inc>(window, atomHistory + threadIdx.x);
+  fetch_add_into_window<T, 1>(window, atomHistory + threadIdx.x);
 
   __syncthreads();
   if (threadIdx.x == 0)
   {
+    // For each thread, add its atomic result into the corresponding bucket
+    for (int i = 0; i < threadCount; i++)
+    {
+      atomHistogram[atomHistory[i]]++;
+    }
+    // Check that each bucket has exactly (4 / sizeof(T)) entries
+    // This checks that atomic fetch operations were sequential. i.e. 4xfetch_add(1) returns [0, 1, 2, 3]
+    for (int i = 0; i < histogramResultCount; i++)
+    {
+      assert(atomHistogram[i] == histogramEntriesPerThread);
+    }
     printf("expected: 0x%X\r\n", expected);
     printf("result:   0x%X\r\n", bucket.load());
     assert(bucket.load() == expected);
@@ -70,9 +88,9 @@ __device__ void device_do_test(uint32_t expected)
 int main(int, char**)
 {
   NV_DISPATCH_TARGET(NV_IS_HOST,
-                     (cuda_thread_count = 1020;),
+                     (cuda_thread_count = 1024;),
                      NV_IS_DEVICE,
-                     (device_do_test<uint8_t, 1>(~uint32_t(0)); device_do_test<uint16_t, 128>(0xFF00FF00);));
+                     (device_do_test<uint8_t>(0); device_do_test<uint16_t>(0x02000200);));
 
   return 0;
 }
