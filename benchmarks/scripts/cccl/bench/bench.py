@@ -648,11 +648,11 @@ class Bench:
             p.wait(timeout=timeout)
             elapsed = time.time() - begin
 
-            logger.info("finished benchmark {} with {} ({}) in {}s".format(self.label(), ct_point, p.returncode, elapsed))
+            logger.info("finished benchmark {} with {} ({}) in {:.3f}s".format(self.label(), ct_point, p.returncode, elapsed))
 
             return BenchResult(result_path, p.returncode, elapsed)
         except subprocess.TimeoutExpired:
-            logger.info("benchmark {} with {} reached timeout of {}s".format(self.label(), ct_point, timeout))
+            logger.info("benchmark {} with {} reached timeout of {:.3f}s".format(self.label(), ct_point, timeout))
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             return BenchResult(None, 42, float('inf'))
 
