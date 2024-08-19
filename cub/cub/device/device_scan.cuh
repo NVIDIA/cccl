@@ -153,6 +153,9 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -261,6 +264,9 @@ struct DeviceScan
   //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access iterator type for reading scan inputs and wrigin scan outputs
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -377,6 +383,9 @@ struct DeviceScan
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -521,6 +530,9 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -655,6 +667,9 @@ struct DeviceScan
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -812,6 +827,9 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -934,6 +952,9 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -1037,6 +1058,9 @@ struct DeviceScan
   //!
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -1148,6 +1172,9 @@ struct DeviceScan
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in]
   //!   d_temp_storage Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
@@ -1230,6 +1257,9 @@ struct DeviceScan
   //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage.
@@ -1374,6 +1404,9 @@ struct DeviceScan
   //!
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @param[in]
   //!   d_temp_storage Device-accessible allocation of temporary storage.
