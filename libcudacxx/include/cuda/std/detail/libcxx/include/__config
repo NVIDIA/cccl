@@ -447,7 +447,10 @@ extern "C++" {
 #    define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #  endif // __check_builtin(builtin_addressof)
 
-#  if __check_builtin(builtin_bit_cast) || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1925)
+// MSVC supports __builtin_bit_cast from 19.25 on
+// clang-9 supports __builtin_bit_cast but it is not a constant expression
+#  if (__check_builtin(builtin_bit_cast) || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1925)) \
+    && !defined(_CCCL_CUDACC_BELOW_11_7) && !(defined(_CCCL_COMPILER_CLANG) && __clang_major__ < 10)
 #    define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
 #  endif // __check_builtin(builtin_bit_cast)
 

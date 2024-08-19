@@ -33,7 +33,7 @@
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

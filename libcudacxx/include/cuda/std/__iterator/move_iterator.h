@@ -41,7 +41,7 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
