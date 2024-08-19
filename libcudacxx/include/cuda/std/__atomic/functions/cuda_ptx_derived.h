@@ -33,10 +33,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Operand>
 using __cuda_atomic_enable_non_native_arithmetic =
-  typename enable_if<_Operand::__size <= 16 || _Operand::__op == __atomic_cuda_operand::_f, bool>::type;
+  __enable_if_t<_Operand::__size <= 16 || _Operand::__op == __atomic_cuda_operand::_f, bool>;
 
 template <class _Operand>
-using __cuda_atomic_enable_non_native_bitwise = typename enable_if<_Operand::__size <= 16, bool>::type;
+using __cuda_atomic_enable_non_native_bitwise = __enable_if_t<_Operand::__size <= 16, bool>;
 
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
 static inline _CCCL_DEVICE void
