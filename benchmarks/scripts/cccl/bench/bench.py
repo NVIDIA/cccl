@@ -19,7 +19,7 @@ def first_val(my_dict):
     first_value = values[0]
 
     if not all(value == first_value for value in values):
-        raise ValueError('All values in the dictionary are not equal')
+        raise ValueError('All values in the dictionary are not equal. First value: {} All values: {}'.format(first_value, values))
 
     return first_value
 
