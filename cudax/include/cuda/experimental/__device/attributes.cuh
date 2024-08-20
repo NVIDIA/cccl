@@ -473,8 +473,8 @@ struct device::attrs
   static constexpr gpu_overlap_t gpu_overlap{};
 
   // Number of multiprocessors on the device
-  using multi_processor_count_t = detail::__dev_attr<::cudaDevAttrMultiProcessorCount>;
-  static constexpr multi_processor_count_t multi_processor_count{};
+  using multiprocessor_count_t = detail::__dev_attr<::cudaDevAttrMultiProcessorCount>;
+  static constexpr multiprocessor_count_t multiprocessor_count{};
 
   // true if there is a run time limit for kernels executed on the device, or
   // false if not
@@ -485,7 +485,7 @@ struct device::attrs
   using integrated_t = detail::__dev_attr<::cudaDevAttrIntegrated>;
   static constexpr integrated_t integrated{};
 
-  // true if the d
+  // true if the device can map host memory into CUDA address space
   using can_map_host_memory_t = detail::__dev_attr<::cudaDevAttrCanMapHostMemory>;
   static constexpr can_map_host_memory_t can_map_host_memory{};
 
@@ -531,8 +531,8 @@ struct device::attrs
   static constexpr l2_cache_size_t l2_cache_size{};
 
   // Maximum resident threads per multiprocessor
-  using max_threads_per_multi_processor_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerMultiProcessor>;
-  static constexpr max_threads_per_multi_processor_t max_threads_per_multi_processor{};
+  using max_threads_per_multiprocessor_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerMultiProcessor>;
+  static constexpr max_threads_per_multiprocessor_t max_threads_per_multiprocessor{};
 
   // true if the device shares a unified address space with the host, or false
   // if not
@@ -644,7 +644,7 @@ struct device::attrs
   static constexpr direct_managed_mem_access_from_host_t direct_managed_mem_access_from_host{};
 
   // Maximum per block shared memory size on the device. This value can be opted
-  // into when using cudaFuncSetAttribute
+  // into when using dynamic_shared_memory with NonPortableSize set to true
   using max_shared_memory_per_block_optin_t = detail::__dev_attr<::cudaDevAttrMaxSharedMemoryPerBlockOptin>;
   static constexpr max_shared_memory_per_block_optin_t max_shared_memory_per_block_optin{};
 
@@ -716,6 +716,12 @@ struct device::attrs
 
 #endif // CUDART_VERSION >= 12020
 };
+
+_CCCL_HOST_DEVICE inline arch_traits_t device_ref::arch_traits() const
+{
+  return cuda::experimental::arch_traits(
+    attr<cudaDevAttrComputeCapabilityMajor>() * 10 + attr<cudaDevAttrComputeCapabilityMinor>());
+}
 } // namespace cuda::experimental
 
 #endif // _CUDAX__DEVICE_ATTRIBUTES_
