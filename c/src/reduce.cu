@@ -528,11 +528,10 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   const char* libcudacxx_path,
   const char* ctk_path) noexcept
 {
-  bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
+
   try
   {
-    pushed = try_push_context();
     nvrtcProgram prog{};
     const char* name = "test";
 
@@ -783,12 +782,6 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   catch (...)
   {
     error = CUDA_ERROR_UNKNOWN;
-  }
-
-  if (pushed)
-  {
-    CUcontext dummy;
-    cuCtxPopCurrent(&dummy);
   }
 
   return error;
