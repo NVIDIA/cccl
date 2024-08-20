@@ -267,30 +267,57 @@ inline constexpr arch_traits_t sm_860_traits = []() constexpr {
   return __traits;
 }();
 
+inline constexpr arch_traits_t sm_900_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 9;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 90;
+  __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_warps_per_multiprocessor         = 64;
+  __traits.max_threads_per_multiprocessor =
+    __traits.max_warps_per_multiprocessor * detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+
+  return __traits;
+}();
+
 // TODO Should this be provided outside detail? Just using arch template seems better
-template <unsigned int SmVersion>
+template <unsigned int __SmVersion>
 _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits()
 {
-  if constexpr (SmVersion == 60)
+  if constexpr (__SmVersion == 60)
   {
     return detail::sm_600_traits;
   }
-  else if constexpr (SmVersion == 70)
+  else if constexpr (__SmVersion == 70)
   {
     return detail::sm_700_traits;
   }
-  else if constexpr (SmVersion == 75)
+  else if constexpr (__SmVersion == 75)
   {
     return detail::sm_750_traits;
   }
-  else if constexpr (SmVersion == 80)
+  else if constexpr (__SmVersion == 80)
   {
     return detail::sm_800_traits;
   }
+  else if constexpr (__SmVersion == 86)
+  {
+    return detail::sm_860_traits;
+  }
   else
   {
-    static_assert(SmVersion == 86, "Unknown architecture");
-    return detail::sm_860_traits;
+    static_assert(__SmVersion == 90, "Unknown architecture");
+    return detail::sm_900_traits;
   }
 }
 
@@ -315,6 +342,8 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
       return detail::sm_800_traits;
     case 86:
       return detail::sm_860_traits;
+    case 90:
+      return detail::sm_900_traits;
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;
