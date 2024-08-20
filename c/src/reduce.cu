@@ -770,13 +770,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     check(nvJitLinkGetLinkedCubin(handle, cubin.get()));
     check(nvJitLinkDestroy(&handle));
 
-    // TODO Eagerly loading the module
-    //      Consider "lazy" loading at the first reduction call
-    check(cuModuleLoadData(&build->module, cubin.get()));
-    check(cuModuleGetFunction(&build->single_tile_kernel, build->module, single_tile_kernel_lowered_name_ptr.get()));
-    check(cuModuleGetFunction(
-      &build->single_tile_second_kernel, build->module, single_tile_second_kernel_lowered_name_ptr.get()));
-    check(cuModuleGetFunction(&build->reduction_kernel, build->module, reduction_kernel_lowered_name_ptr.get()));
+    cuLibraryLoadData(&build->library, cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name_ptr.get()));
+    check(cuLibraryGetKernel(
+      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name_ptr.get()));
+    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name_ptr.get()));
 
     build->cc         = cc;
     build->cubin      = cubin.release();
@@ -825,9 +823,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
       op,
       init,
       build.cc,
-      build.single_tile_kernel,
-      build.single_tile_second_kernel,
-      build.reduction_kernel,
+      (CUfunction) build.single_tile_kernel,
+      (CUfunction) build.single_tile_second_kernel,
+      (CUfunction) build.reduction_kernel,
       cu_device,
       stream);
   }
@@ -855,7 +853,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
     }
 
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuModuleUnload(bld_ptr->module));
+    check(cuLibraryUnload(bld_ptr->library));
   }
   catch (...)
   {

@@ -24,10 +24,10 @@ struct cccl_device_reduce_build_result_t
   int cc;
   void* cubin;
   size_t cubin_size;
-  CUmodule module;
-  CUfunction single_tile_kernel;
-  CUfunction single_tile_second_kernel;
-  CUfunction reduction_kernel;
+  CUlibrary library;
+  CUkernel single_tile_kernel;
+  CUkernel single_tile_second_kernel;
+  CUkernel reduction_kernel;
 };
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
