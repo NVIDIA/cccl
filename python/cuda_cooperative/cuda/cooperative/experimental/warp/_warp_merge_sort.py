@@ -15,7 +15,7 @@ def merge_sort_keys(dtype, items_per_thread, compare_op, threads_in_warp=32, met
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across a warp of 32 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_merge_sort_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_merge_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -23,7 +23,7 @@ def merge_sort_keys(dtype, items_per_thread, compare_op, threads_in_warp=32, met
 
         Below is the code snippet that demonstrates the usage of the ``merge_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_merge_sort_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_merge_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin merge-sort
@@ -51,7 +51,8 @@ def merge_sort_keys(dtype, items_per_thread, compare_op, threads_in_warp=32, met
                           TemplateParameter('ITEMS_PER_THREAD'),
                           TemplateParameter('VIRTUAL_WARP_THREADS')],
                          [[Pointer(numba.uint8),
-                           DependentArray(Dependency('KeyT'), Dependency('ITEMS_PER_THREAD')),
+                           DependentArray(Dependency('KeyT'),
+                                          Dependency('ITEMS_PER_THREAD')),
                            DependentOperator(Constant(numba.int8), [Dependency('KeyT'), Dependency('KeyT')], Dependency('Op'))]],
                          type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
     specialization = template.specialize({'KeyT': dtype,

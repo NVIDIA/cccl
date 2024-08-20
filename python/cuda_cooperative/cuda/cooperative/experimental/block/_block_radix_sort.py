@@ -15,7 +15,7 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_radix_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -23,7 +23,7 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_radix_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort
@@ -50,7 +50,8 @@ def radix_sort_keys(dtype, threads_in_block, items_per_thread):
                           TemplateParameter('BLOCK_DIM_X'),
                           TemplateParameter('ITEMS_PER_THREAD')],
                          [[Pointer(numba.uint8), DependentArray(Dependency('KeyT'), Dependency('ITEMS_PER_THREAD'))],
-                          [Pointer(numba.uint8), DependentArray(Dependency('KeyT'), Dependency('ITEMS_PER_THREAD')), Value(numba.int32), Value(numba.int32)]
+                          [Pointer(numba.uint8), DependentArray(Dependency('KeyT'), Dependency(
+                              'ITEMS_PER_THREAD')), Value(numba.int32), Value(numba.int32)]
                           ])
     specialization = template.specialize({'KeyT': dtype,
                                           'BLOCK_DIM_X': threads_in_block,
@@ -68,7 +69,7 @@ def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_radix_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -76,7 +77,7 @@ def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_radix_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort-descending
@@ -103,7 +104,8 @@ def radix_sort_keys_descending(dtype, threads_in_block, items_per_thread):
                           TemplateParameter('BLOCK_DIM_X'),
                           TemplateParameter('ITEMS_PER_THREAD')],
                          [[Pointer(numba.uint8), DependentArray(Dependency('KeyT'), Dependency('ITEMS_PER_THREAD'))],
-                          [Pointer(numba.uint8), DependentArray(Dependency('KeyT'), Dependency('ITEMS_PER_THREAD')), Value(numba.int32), Value(numba.int32)]
+                          [Pointer(numba.uint8), DependentArray(Dependency('KeyT'), Dependency(
+                              'ITEMS_PER_THREAD')), Value(numba.int32), Value(numba.int32)]
                           ])
     specialization = template.specialize({'KeyT': dtype,
                                           'BLOCK_DIM_X': threads_in_block,

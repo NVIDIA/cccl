@@ -18,7 +18,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
         The code snippet below illustrates a max reduction of 32 integer items that
         are partitioned across a warp of threads.
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -26,7 +26,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
 
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce
@@ -52,7 +52,8 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
                           TemplateParameter('VIRTUAL_WARP_THREADS')],
                          [[Pointer(numba.uint8),
                            DependentReference(Dependency('T')),
-                           DependentOperator(Dependency('T'), [Dependency('T'), Dependency('T')], Dependency('Op')),
+                           DependentOperator(Dependency('T'), [Dependency(
+                               'T'), Dependency('T')], Dependency('Op')),
                            DependentReference(Dependency('T'), True)]],
                          type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
     specialization = template.specialize({'T': dtype,
@@ -75,7 +76,7 @@ def sum(dtype, threads_in_warp=32):
         The code snippet below illustrates a reduction of 32 integer items that
         are partitioned across a warp of threads.
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -83,7 +84,7 @@ def sum(dtype, threads_in_warp=32):
 
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin sum
