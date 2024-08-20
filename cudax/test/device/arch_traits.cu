@@ -10,7 +10,7 @@
 
 #include <cuda/experimental/device.cuh>
 
-#include "../hierarchy/testing_common.cuh"
+#include <testing.cuh>
 
 template <typename Arch>
 __global__ void arch_specific_kernel_mock_do_not_launch()
@@ -42,6 +42,7 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
 
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<70>>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<75>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<80>>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<86>>();
 
 static_assert(sizeof(cudax::arch<70>) == 1);
@@ -98,6 +99,7 @@ TEST_CASE("Traits", "[device]")
 {
   compare_static_and_dynamic<70>();
   compare_static_and_dynamic<75>();
+  compare_static_and_dynamic<80>();
   compare_static_and_dynamic<86>();
 
   // Compare arch traits with attributes

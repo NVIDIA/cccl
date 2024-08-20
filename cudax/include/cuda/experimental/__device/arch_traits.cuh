@@ -153,6 +153,28 @@ struct arch_traits_t : public detail::arch_common_traits
 namespace detail
 {
 
+inline constexpr arch_traits_t sm_600_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 6;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 60;
+  __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_warps_per_multiprocessor         = 64;
+  __traits.max_threads_per_multiprocessor =
+    __traits.max_warps_per_multiprocessor * detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block  = 0;
+  __traits.max_shared_memory_per_block_optin = 48 * 1024;
+
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = false;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = false;
+  __traits.tma_supported      = false;
+
+  return __traits;
+}();
+
 inline constexpr arch_traits_t sm_700_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 7;
@@ -199,6 +221,29 @@ inline constexpr arch_traits_t sm_750_traits = []() constexpr {
   return __traits;
 }();
 
+inline constexpr arch_traits_t sm_800_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 8;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 80;
+  __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_warps_per_multiprocessor         = 64;
+  __traits.max_threads_per_multiprocessor =
+    __traits.max_warps_per_multiprocessor * detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = false;
+
+  return __traits;
+}();
+
 inline constexpr arch_traits_t sm_860_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 8;
@@ -228,7 +273,7 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits()
 {
   if constexpr (SmVersion == 60)
   {
-    return detail::sm_700_traits;
+    return detail::sm_600_traits;
   }
   else if constexpr (SmVersion == 70)
   {
@@ -240,7 +285,7 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits()
   }
   else if constexpr (SmVersion == 80)
   {
-    return detail::sm_860_traits;
+    return detail::sm_800_traits;
   }
   else
   {
@@ -260,10 +305,14 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
 {
   switch (__sm_version)
   {
+    case 60:
+      return detail::sm_600_traits;
     case 70:
       return detail::sm_700_traits;
     case 75:
       return detail::sm_750_traits;
+    case 80:
+      return detail::sm_800_traits;
     case 86:
       return detail::sm_860_traits;
     default:
