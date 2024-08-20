@@ -25,7 +25,8 @@
  *
  ******************************************************************************/
 
-//! @file Detect the version of the C++ standard used by the compiler.
+//! @file
+//! Detect the version of the C++ standard used by the compiler.
 
 #pragma once
 

@@ -26,9 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceSegmentedReduce provides device-wide, parallel operations
-//!       for computing a batched reduction across multiple sequences of data
-//!       items residing within device-accessible memory.
+//! @file
+//! cub::DeviceSegmentedReduce provides device-wide, parallel operations for computing a batched reduction across
+//! multiple sequences of data items residing within device-accessible memory.
 
 #pragma once
 

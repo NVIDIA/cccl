@@ -27,8 +27,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceSpmv provides device-wide parallel operations for performing
-//!       sparse-matrix * vector multiplication (SpMV).
+//! @file
+//! cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication
+//! (SpMV).
 
 #pragma once
 
