@@ -69,7 +69,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_signed<T>::v
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_unsigned<T>::value, bool>::type is_negative(T x)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_unsigned<T>::value, bool>::type is_negative(T)
 {
   return false;
 }
