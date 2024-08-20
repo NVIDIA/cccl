@@ -11,9 +11,8 @@
 #pragma once
 
 #ifndef CCCL_C_EXPERIMENTAL
-#  warning "C exposure is experimental and subject to change."
-#  warning "Define CCCL_C_EXPERIMENTAL to get it."
-#else
+#  warning "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this warning."
+#else // ^^^ !CCCL_C_EXPERIMENTAL ^^^ / vvv CCCL_C_EXPERIMENTAL vvv
 
 #  if defined(_WIN32)
 #    define CCCL_C_API __declspec(dllexport)
@@ -83,4 +82,4 @@ struct cccl_iterator_t
   void* state;
 };
 
-#endif
+#endif // CCCL_C_EXPERIMENTAL

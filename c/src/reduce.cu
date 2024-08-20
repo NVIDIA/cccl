@@ -245,7 +245,7 @@ cudaError_t InvokeSingleTile(
   cudaError error = cudaSuccess;
   do
   {
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = 1;
       break;
@@ -325,7 +325,7 @@ cudaError_t InvokePasses(
       break;
     }
 
-    if (d_temp_storage == NULL)
+    if (d_temp_storage == nullptr)
     {
       // Return if the caller is simply requesting the size of the storage
       // allocation
@@ -399,7 +399,7 @@ cudaError_t Invoke(
   }
   else
   {
-    // Regular size
+    // Multi-tile pass
     return InvokePasses(
       d_temp_storage,
       temp_storage_bytes,
