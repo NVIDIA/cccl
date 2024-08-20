@@ -719,6 +719,7 @@ struct device::attrs
 
 _CCCL_HOST_DEVICE inline arch_traits_t device_ref::arch_traits() const
 {
+  // TODO we might want to get the CC with device init and store it device struct
   return cuda::experimental::arch_traits(
     attr<cudaDevAttrComputeCapabilityMajor>() * 10 + attr<cudaDevAttrComputeCapabilityMinor>());
 }
