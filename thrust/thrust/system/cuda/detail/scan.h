@@ -42,6 +42,7 @@
 
 #  include <cub/device/device_scan.cuh>
 
+#  include <thrust/detail/integer_math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/distance.h>
@@ -68,6 +69,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
+
+  // Negative number of items are normalized to `0`
+  if(thrust::detail::is_negative(num_items)){
+    num_items = 0;
+  }
 
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
@@ -118,6 +124,11 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
+
+  // Negative number of items are normalized to `0`
+  if(thrust::detail::is_negative(num_items)){
+    num_items = 0;
+  }
 
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
