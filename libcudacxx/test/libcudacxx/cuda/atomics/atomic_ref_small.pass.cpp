@@ -69,13 +69,13 @@ __device__ void device_do_test(uint32_t expected)
   if (threadIdx.x == 0)
   {
     // For each thread, add its atomic result into the corresponding bucket
-    for (int i = 0; i < threadCount; i++)
+    for (uint32_t i = 0; i < threadCount; i++)
     {
       atomHistogram[atomHistory[i]]++;
     }
     // Check that each bucket has exactly (4 / sizeof(T)) entries
     // This checks that atomic fetch operations were sequential. i.e. 4xfetch_add(1) returns [0, 1, 2, 3]
-    for (int i = 0; i < histogramResultCount; i++)
+    for (uint32_t i = 0; i < histogramResultCount; i++)
     {
       assert(atomHistogram[i] == histogramEntriesPerThread);
     }
