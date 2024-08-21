@@ -14,7 +14,7 @@ def exclusive_sum(dtype, threads_in_warp=32):
     Example:
         The code snippet below illustrates an exclusive prefix sum of 32 integer items:
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_scan_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -22,7 +22,7 @@ def exclusive_sum(dtype, threads_in_warp=32):
 
         Below is the code snippet that demonstrates the usage of the ``exclusive_sum`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_warp_scan_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_warp_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin exclusive-sum
