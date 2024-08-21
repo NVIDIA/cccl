@@ -27,7 +27,8 @@ def test_block_merge_sort(T, threads_in_block, items_per_thread):
     @cuda.jit(link=block_merge_sort.files)
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(
+            shape=temp_storage_bytes, dtype='uint8')
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
@@ -69,7 +70,8 @@ def test_block_merge_sort_descending(T, threads_in_block, items_per_thread):
     @cuda.jit(link=block_merge_sort.files)
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(
+            shape=temp_storage_bytes, dtype='uint8')
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
@@ -112,7 +114,8 @@ def test_block_merge_sort_user_defined_type():
     @cuda.jit(link=block_merge_sort.files)
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(
+            shape=temp_storage_bytes, dtype='uint8')
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
@@ -122,7 +125,8 @@ def test_block_merge_sort_user_defined_type():
 
     dtype = np.complex128
     items_per_tile = threads_in_block * items_per_thread
-    input = np.random.random(items_per_tile) + 1j * np.random.random(items_per_tile)
+    input = np.random.random(items_per_tile) + 1j * \
+        np.random.random(items_per_tile)
     input = input.astype(dtype)
     d_input = cuda.to_device(input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype)

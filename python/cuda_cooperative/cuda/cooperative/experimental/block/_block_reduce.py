@@ -17,7 +17,7 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
         The code snippet below illustrates a max reduction of 128 integer items that
         are partitioned across 128 threads.
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -25,7 +25,7 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
 
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce
@@ -51,7 +51,8 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
                           TemplateParameter('BLOCK_DIM_X')],
                          [[Pointer(numba.uint8),
                            DependentReference(Dependency('T')),
-                           DependentOperator(Dependency('T'), [Dependency('T'), Dependency('T')], Dependency('Op')),
+                           DependentOperator(Dependency('T'), [Dependency(
+                               'T'), Dependency('T')], Dependency('Op')),
                            DependentReference(Dependency('T'), True)]],
                          type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
     specialization = template.specialize({'T': dtype,
@@ -74,7 +75,7 @@ def sum(dtype, threads_in_block):
         The code snippet below illustrates a reduction of 128 integer items that
         are partitioned across 128 threads.
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -82,7 +83,7 @@ def sum(dtype, threads_in_block):
 
         Below is the code snippet that demonstrates the usage of the ``reduce`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin sum
