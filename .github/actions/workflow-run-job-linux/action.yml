@@ -141,7 +141,7 @@ runs:
 
         # Launch this container using the host's docker daemon
         set -x
-        ${{github.event.repository.name}}/.devcontainer/launch.sh \
+        bash -x ${{github.event.repository.name}}/.devcontainer/launch.sh \
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
@@ -172,10 +172,23 @@ runs:
 
         touch "$result_dir/success"
 
+        repo_dir="${{github.event.repository.name}}"
+
+        echo "::group::Install tree"
+        apt install -y tree
+        echo "::endgroup::"
+
+        echo "::group::Dump repo dir"
+        echo "repo_dir: $repo_dir"
+        ls -lh "$repo_dir"
+        tree "${repo_dir}"
+        echo "::endgroup::"
+
         # Finds a matching file in the repo directory and copies it to the results directory.
         find_and_copy() {
           filename="$1"
-          filepath="$(find ${{github.event.repository.name}} -name "${filename}" -print -quit)"
+          echo "Searching for '${filename}' in '${repo_dir}'"
+          filepath="$(find "${repo_dir}" -name "${filename}" -print -quit)"
           if [[ -z "$filepath" ]]; then
             echo "${filename} does not exist in repo directory."
             return 1

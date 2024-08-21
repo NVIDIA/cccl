@@ -206,7 +206,13 @@ function build_preset() {
     status=$?
     popd > /dev/null
 
-    sccache --show-adv-stats --stats-format=json > "${sccache_json}"
+    which sccache || :
+    echo "${sccache_json}"
+    sccache --show-adv-stats --stats-format=json | tee "${sccache_json}" || :
+    echo
+    ls -lh "${sccache_json}" || :
+    cat "${sccache_json}" || :
+    echo
 
     minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
 

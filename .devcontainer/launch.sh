@@ -237,6 +237,13 @@ launch_docker() {
         eval "${INITIALIZE_COMMAND[*]@Q}"
     fi
 
+    echo "docker run \\"
+    echo "  ${RUN_ARGS[@]} \\"
+    echo "  ${ENV_VARS[@]} \\"
+    echo "  ${MOUNTS[@]} \\"
+    echo "  ${DOCKER_IMAGE} \\"
+    echo "  $@"
+
     exec docker run \
         "${RUN_ARGS[@]}" \
         "${ENV_VARS[@]}" \
