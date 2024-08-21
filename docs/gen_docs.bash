@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-## This script just wraps launching a docs build within a container
-## Tag is passed on as the first argument ${1}
+# This script just wraps launching a repo docs build within a container
+#
+# Additional options, e.g --stage sphinx will be passed on to repo.sh
 
 set -e
 
@@ -36,7 +37,7 @@ if [ ! -n "$(find img -name '*.png')" ]; then
     done
 fi
 
-if ! ./repo.sh docs; then
+if ! ./repo.sh docs "$@"; then
     echo "!!! There were errors while generating"
     exit 1
 fi

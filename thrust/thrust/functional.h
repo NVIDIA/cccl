@@ -29,7 +29,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/functional/placeholder.h>
+#include <thrust/detail/functional/actor.h>
 
 #include <functional>
 

@@ -37,11 +37,16 @@
 #  pragma system_header
 #endif // no system header
 
+#ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
+//! When this macro is defined, no NVTX ranges are emitted by CCCL
+#  define CCCL_DISABLE_NVTX
+#endif // DOXYGEN_SHOULD_SKIP_THIS
+
 // Enable the functionality of this header if:
 // * The NVTX3 C API is available in CTK
-// * NVTX is not explicitly disabled
+// * NVTX is not explicitly disabled (via CCCL_DISABLE_NVTX or NVTX_DISABLE)
 // * C++14 is availabl for cuda::std::optional
-#if __has_include(<nvtx3/nvToolsExt.h> ) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014
+#if __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014
 // Include our NVTX3 C++ wrapper if not available from the CTK
 #  if __has_include(<nvtx3/nvtx3.hpp>) // TODO(bgruber): replace by a check for the first CTK version shipping the header
 #    include <nvtx3/nvtx3.hpp>
@@ -96,7 +101,9 @@ CUB_NAMESPACE_END
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
-#else // __has_include(<nvtx3/nvToolsExt.h> ) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014
+#else // __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) && _CCCL_STD_VER
+      // >= 2014
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
-#endif // __has_include(<nvtx3/nvToolsExt.h> ) && !defined(NVTX_DISABLE) && _CCCL_STD_VER >= 2014
+#endif // __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) && _CCCL_STD_VER
+       // >= 2014

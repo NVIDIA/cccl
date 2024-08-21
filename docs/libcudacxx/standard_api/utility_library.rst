@@ -7,6 +7,7 @@ Utility Library
    :hidden:
    :maxdepth: 1
 
+   utility_library/bitset
    utility_library/expected
    utility_library/functional
    utility_library/optional
@@ -26,6 +27,9 @@ the information about the individual features for details.
    * - Header
      - Content
      - Availability
+   * - :ref:`libcudacxx-standard-api-utility-bitset`
+     - Fixed-size sequence of bits
+     - CCCL 2.8.0
    * - :ref:`libcudacxx-standard-api-utility-expected`
      - Optional value with error channel
      - CCCL 2.3.0 / CUDA 12.4

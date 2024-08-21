@@ -52,7 +52,7 @@ declare -A project_names=(
 # but can be overridden here. The `cccl` project is special, and checks for files outside
 # of any subproject directory.
 declare -A project_dirs=(
-  [pycuda]="python/cuda"
+  [pycuda]="python/cuda_cooperative"
 )
 
 # Usage checks:

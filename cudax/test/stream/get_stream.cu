@@ -8,11 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define LIBCUDACXX_ENABLE_EXCEPTIONS
 #include <cuda/experimental/stream.cuh>
 
-#include "../common/utility.cuh"
 #include <catch2/catch.hpp>
+#include <utility.cuh>
 
 TEST_CASE("Can call get_stream on a cudaStream_t", "[stream]")
 {

@@ -30,14 +30,9 @@
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
 
-#include <cstdint>
+#include <cuda/std/limits>
 
-// for floating point infinity
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <math_constants.h>
-#else
-#  include <limits>
-#endif
+#include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -94,25 +89,14 @@ template <typename RealType>
 _CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::min
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
-  return -this->max THRUST_PREVENT_MACRO_SUBSTITUTION();
+  return ::cuda::std::numeric_limits<RealType>::lowest();
 } // end normal_distribution::min()
 
 template <typename RealType>
 _CCCL_HOST_DEVICE typename normal_distribution<RealType>::result_type normal_distribution<RealType>::max
 THRUST_PREVENT_MACRO_SUBSTITUTION() const
 {
-  // XXX this solution is pretty terrible
-  // we can't use numeric_traits<RealType>::max because nvcc will
-  // complain that it is a __host__ function
-  union
-  {
-    std::uint32_t inf_as_int;
-    float result;
-  } hack;
-
-  hack.inf_as_int = 0x7f800000u;
-
-  return hack.result;
+  return ::cuda::std::numeric_limits<RealType>::max();
 } // end normal_distribution::max()
 
 template <typename RealType>

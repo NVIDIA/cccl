@@ -19,7 +19,7 @@ def first_val(my_dict):
     first_value = values[0]
 
     if not all(value == first_value for value in values):
-        raise ValueError('All values in the dictionary are not equal')
+        raise ValueError('All values in the dictionary are not equal. First value: {} All values: {}'.format(first_value, values))
 
     return first_value
 
@@ -648,11 +648,11 @@ class Bench:
             p.wait(timeout=timeout)
             elapsed = time.time() - begin
 
-            logger.info("finished benchmark {} with {} ({}) in {}s".format(self.label(), ct_point, p.returncode, elapsed))
+            logger.info("finished benchmark {} with {} ({}) in {:.3f}s".format(self.label(), ct_point, p.returncode, elapsed))
 
             return BenchResult(result_path, p.returncode, elapsed)
         except subprocess.TimeoutExpired:
-            logger.info("benchmark {} with {} reached timeout of {}s".format(self.label(), ct_point, timeout))
+            logger.info("benchmark {} with {} reached timeout of {:.3f}s".format(self.label(), ct_point, timeout))
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             return BenchResult(None, 42, float('inf'))
 

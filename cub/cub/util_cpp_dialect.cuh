@@ -25,7 +25,8 @@
  *
  ******************************************************************************/
 
-//! @file Detect the version of the C++ standard used by the compiler.
+//! @file
+//! Detect the version of the C++ standard used by the compiler.
 
 #pragma once
 
@@ -50,9 +51,12 @@
 // - CUB_IGNORE_DEPRECATED_CPP_11:
 //   Ignore deprecation warnings when compiling with C++11. C++03 and outdated
 //   compilers will still issue warnings.
+// - CUB_IGNORE_DEPRECATED_CPP_14:
+//   Ignore deprecation warnings when compiling with C++14. C++03 and outdated
+//   compilers will still issue warnings.
 // - CUB_IGNORE_DEPRECATED_COMPILER
 //   Ignore deprecation warnings when using deprecated compilers. Compiling
-//   with C++03 and C++11 will still issue warnings.
+//   with C++03, C++11 and C++14 will still issue warnings.
 
 // Check for the thrust opt-outs as well:
 #  if !defined(CUB_IGNORE_DEPRECATED_CPP_DIALECT) && defined(THRUST_IGNORE_DEPRECATED_CPP_DIALECT)
@@ -67,6 +71,7 @@
 
 #  ifdef CUB_IGNORE_DEPRECATED_CPP_DIALECT
 #    define CUB_IGNORE_DEPRECATED_CPP_11
+#    define CUB_IGNORE_DEPRECATED_CPP_14
 #    ifndef CUB_IGNORE_DEPRECATED_COMPILER
 #      define CUB_IGNORE_DEPRECATED_COMPILER
 #    endif
@@ -96,14 +101,14 @@
 #  ifndef CUB_IGNORE_DEPRECATED_COMPILER
 
 // Compiler checks:
-#    if defined(_CCCL_COMPILER_GCC) && CUB_GCC_VERSION < 50000
+#    if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 50000
 CUB_COMPILER_DEPRECATION(GCC 5.0);
-#    elif defined(_CCCL_COMPILER_CLANG) && CUB_CLANG_VERSION < 70000
+#    elif defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 70000
 CUB_COMPILER_DEPRECATION(Clang 7.0);
-#    elif defined(_CCCL_COMPILER_MSVC) && CUB_MSVC_VERSION < 1910
+#    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1910
 // <2017. Hard upgrade message:
 CUB_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
-#    elif defined(_CCCL_COMPILER_MSVC) && CUB_MSVC_VERSION < 1920
+#    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1920
 // >=2017, <2019. Soft deprecation message:
 CUB_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 #    endif
@@ -115,10 +120,13 @@ CUB_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 // Dialect checks:
 #    if _CCCL_STD_VER < 2011
 // <C++11. Hard upgrade message:
-CUB_COMPILER_DEPRECATION(C++ 14);
+CUB_COMPILER_DEPRECATION(C++ 17);
 #    elif _CCCL_STD_VER == 2011 && !defined(CUB_IGNORE_DEPRECATED_CPP_11)
 // =C++11. Soft upgrade message:
-CUB_COMPILER_DEPRECATION_SOFT(C++ 14, C++ 11);
+CUB_COMPILER_DEPRECATION_SOFT(C++ 17, C++ 11);
+#    elif _CCCL_STD_VER == 2014 && !defined(CUB_IGNORE_DEPRECATED_CPP_14)
+// =C++14. Soft upgrade message:
+CUB_COMPILER_DEPRECATION_SOFT(C++ 17, C++ 14);
 #    endif
 
 #  endif // CUB_IGNORE_DEPRECATED_DIALECT

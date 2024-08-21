@@ -10,8 +10,8 @@
 
 #include <iostream>
 
-#include "testing_common.cuh"
 #include <cooperative_groups.h>
+#include <host_device.cuh>
 
 struct custom_level : public cudax::hierarchy_level
 {

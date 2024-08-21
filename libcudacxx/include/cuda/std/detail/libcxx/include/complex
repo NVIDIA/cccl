@@ -1467,6 +1467,9 @@ inline namespace literals
 inline namespace complex_literals
 {
 #  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+// NOTE: if you get a warning from GCC <7 here that "literal operator suffixes not preceded by ‘_’ are reserved for
+// future standardization" then we are sorry. The warning was implemented before GCC 7, but can only be disabled since
+// GCC 7. See also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69523
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<long double> operator""il(long double __im)
 {
   return {0.0l, __im};

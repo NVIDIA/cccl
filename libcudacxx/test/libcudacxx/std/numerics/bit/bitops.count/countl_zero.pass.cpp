@@ -54,42 +54,49 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
+__host__ __device__ inline void assert_countl_zero(T val, int expected)
+{
+  volatile auto v = val;
+  assert(cuda::std::countl_zero(v) == expected);
+}
+
+template <typename T>
 __host__ __device__ void runtime_test()
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::countl_zero(T(0))));
   ASSERT_NOEXCEPT(cuda::std::countl_zero(T(0)));
   const int dig = cuda::std::numeric_limits<T>::digits;
 
-  assert(cuda::std::countl_zero(T(121)) == dig - 7);
-  assert(cuda::std::countl_zero(T(122)) == dig - 7);
-  assert(cuda::std::countl_zero(T(123)) == dig - 7);
-  assert(cuda::std::countl_zero(T(124)) == dig - 7);
-  assert(cuda::std::countl_zero(T(125)) == dig - 7);
-  assert(cuda::std::countl_zero(T(126)) == dig - 7);
-  assert(cuda::std::countl_zero(T(127)) == dig - 7);
-  assert(cuda::std::countl_zero(T(128)) == dig - 8);
-  assert(cuda::std::countl_zero(T(129)) == dig - 8);
-  assert(cuda::std::countl_zero(T(130)) == dig - 8);
+  assert_countl_zero(T(121), dig - 7);
+  assert_countl_zero(T(122), dig - 7);
+  assert_countl_zero(T(123), dig - 7);
+  assert_countl_zero(T(124), dig - 7);
+  assert_countl_zero(T(125), dig - 7);
+  assert_countl_zero(T(126), dig - 7);
+  assert_countl_zero(T(127), dig - 7);
+  assert_countl_zero(T(128), dig - 8);
+  assert_countl_zero(T(129), dig - 8);
+  assert_countl_zero(T(130), dig - 8);
 }
 
 int main(int, char**)
 {
-  static_assert(constexpr_test<unsigned char>(), "");
-  static_assert(constexpr_test<unsigned short>(), "");
-  static_assert(constexpr_test<unsigned>(), "");
-  static_assert(constexpr_test<unsigned long>(), "");
-  static_assert(constexpr_test<unsigned long long>(), "");
+  constexpr_test<unsigned char>();
+  constexpr_test<unsigned short>();
+  constexpr_test<unsigned>();
+  constexpr_test<unsigned long>();
+  constexpr_test<unsigned long long>();
 
-  static_assert(constexpr_test<uint8_t>(), "");
-  static_assert(constexpr_test<uint16_t>(), "");
-  static_assert(constexpr_test<uint32_t>(), "");
-  static_assert(constexpr_test<uint64_t>(), "");
-  static_assert(constexpr_test<size_t>(), "");
-  static_assert(constexpr_test<uintmax_t>(), "");
-  static_assert(constexpr_test<uintptr_t>(), "");
+  constexpr_test<uint8_t>();
+  constexpr_test<uint16_t>();
+  constexpr_test<uint32_t>();
+  constexpr_test<uint64_t>();
+  constexpr_test<size_t>();
+  constexpr_test<uintmax_t>();
+  constexpr_test<uintptr_t>();
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-  static_assert(constexpr_test<__uint128_t>(), "");
+  constexpr_test<__uint128_t>();
 #endif
 
   runtime_test<unsigned char>();

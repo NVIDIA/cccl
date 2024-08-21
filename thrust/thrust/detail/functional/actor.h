@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 NVIDIA Corporation
+ *  Copyright 2024 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,103 +34,183 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/functional/composite.h>
-#include <thrust/detail/functional/operators/assignment_operator.h>
-#include <thrust/detail/functional/value.h>
-#include <thrust/detail/raw_reference_cast.h>
+#include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits/result_of_adaptable_function.h>
+#include <thrust/functional.h>
 #include <thrust/tuple.h>
+
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 namespace functional
 {
-
-// eval_ref<T> is
-// - T when T is a subclass of thrust::reference
-// - T& otherwise
-// This is used to let thrust::references pass through actor evaluations.
-template <typename T>
-using eval_ref = typename std::conditional<thrust::detail::is_wrapped_reference<T>::value, T, T&>::type;
-
-template <typename Action, typename Env>
-struct apply_actor
-{
-  using type = typename Action::template result<Env>::type;
-};
-
+// An actor is a node in an expression template
 template <typename Eval>
 struct actor : Eval
 {
-  using eval_type = Eval;
-
   constexpr actor() = default;
 
-  _CCCL_HOST_DEVICE actor(const Eval& base);
+  _CCCL_HOST_DEVICE actor(const Eval& base)
+      : Eval(base)
+  {}
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE typename apply_actor<eval_type, thrust::tuple<eval_ref<Ts>...>>::type operator()(Ts&&... ts) const;
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... ts) const -> decltype(Eval::eval(THRUST_FWD(ts)...))
+  {
+    return Eval::eval(THRUST_FWD(ts)...);
+  }
 
   template <typename T>
-  _CCCL_HOST_DEVICE typename assign_result<Eval, T>::type operator=(const T& _1) const;
-}; // end actor
-
-// in general, as_actor should turn things into values
-template <typename T>
-struct as_actor
-{
-  using type = value<T>;
-
-  static inline _CCCL_HOST_DEVICE type convert(const T& x)
+  _CCCL_HOST_DEVICE auto operator=(const T& _1) const -> decltype(do_assign(*this, _1))
   {
-    return val(x);
-  } // end convert()
-}; // end as_actor
+    return do_assign(*this, _1);
+  }
+};
 
-// specialization for things which are already actors
+template <typename T>
+struct is_actor : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct is_actor<actor<T>> : ::cuda::std::true_type
+{};
+
+// a node selecting and returning one of the arguments to the entire expression template
+template <unsigned int Pos>
+struct argument
+{
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto
+  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts...>{THRUST_FWD(args)...}))
+  {
+    return thrust::get<Pos>(thrust::tuple<Ts...>{THRUST_FWD(args)...});
+  }
+};
+
+template <unsigned int Pos>
+struct placeholder
+{
+  using type = actor<argument<Pos>>;
+};
+
+// composition of actors/nodes
+template <typename...>
+struct composite;
+
+template <typename Eval, typename SubExpr>
+struct composite<Eval, SubExpr>
+{
+  // TODO(bgruber): drop ctor and use aggregate initialization in C++17
+  _CCCL_HOST_DEVICE composite(const Eval& eval, const SubExpr& subexpr)
+      : m_eval(eval)
+      , m_subexpr(subexpr)
+  {}
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+    -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr>().eval(THRUST_FWD(args)...)))
+  {
+    return m_eval.eval(m_subexpr.eval(THRUST_FWD(args)...));
+  }
+
+private:
+  Eval m_eval;
+  SubExpr m_subexpr;
+};
+
+template <typename Eval, typename SubExpr1, typename SubExpr2>
+struct composite<Eval, SubExpr1, SubExpr2>
+{
+  // TODO(bgruber): drop ctor and use aggregate initialization in C++17
+  _CCCL_HOST_DEVICE composite(const Eval& eval, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
+      : m_eval(eval)
+      , m_subexpr1(subexpr1)
+      , m_subexpr2(subexpr2)
+  {}
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+    -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr1>().eval(THRUST_FWD(args)...),
+                                                  ::cuda::std::declval<SubExpr2>().eval(THRUST_FWD(args)...)))
+  {
+    return m_eval.eval(m_subexpr1.eval(THRUST_FWD(args)...), m_subexpr2.eval(THRUST_FWD(args)...));
+  }
+
+private:
+  Eval m_eval;
+  SubExpr1 m_subexpr1;
+  SubExpr2 m_subexpr2;
+};
+
 template <typename Eval>
-struct as_actor<actor<Eval>>
-{
-  using type = actor<Eval>;
+struct actor;
 
-  static inline _CCCL_HOST_DEVICE const type& convert(const actor<Eval>& x)
+// Adapts a transparent unary functor from functional.h (e.g. thrust::negate<>) into the Eval interface.
+template <typename F>
+struct operator_adaptor : F
+{
+  _CCCL_HOST_DEVICE operator_adaptor(F f)
+      : F(::cuda::std::move(f))
+  {}
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const -> decltype(F{}(THRUST_FWD(args)...))
   {
-    return x;
-  } // end convert()
-}; // end as_actor
+    return static_cast<const F&>(*this)(THRUST_FWD(args)...);
+  }
+};
+
+// a node returning a fixed value
+template <typename T>
+struct value
+{
+  T m_val;
+
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE T eval(Ts&&...) const
+  {
+    return m_val;
+  }
+};
 
 template <typename T>
-typename as_actor<T>::type _CCCL_HOST_DEVICE make_actor(const T& x)
+_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::__decay_t<T>>>
 {
-  return as_actor<T>::convert(x);
-} // end make_actor()
+  return {{THRUST_FWD(x)}};
+}
 
+template <typename Eval>
+_CCCL_HOST_DEVICE auto make_actor(actor<Eval> x) -> actor<Eval>
+{
+  return x;
+}
+
+template <typename Eval, typename SubExpr>
+_CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr& subexpr)
+  -> decltype(actor<composite<operator_adaptor<Eval>, decltype(make_actor(subexpr))>>{
+    {{::cuda::std::move(e)}, make_actor(subexpr)}})
+{
+  return actor<composite<operator_adaptor<Eval>, decltype(make_actor(subexpr))>>{
+    {{::cuda::std::move(e)}, make_actor(subexpr)}};
+}
+
+template <typename Eval, typename SubExpr1, typename SubExpr2>
+_CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
+  -> decltype(actor<composite<operator_adaptor<Eval>, decltype(make_actor(subexpr1)), decltype(make_actor(subexpr2))>>{
+    {{::cuda::std::move(e)}, make_actor(subexpr1), make_actor(subexpr2)}})
+{
+  return actor<composite<operator_adaptor<Eval>, decltype(make_actor(subexpr1)), decltype(make_actor(subexpr2))>>{
+    {{::cuda::std::move(e)}, make_actor(subexpr1), make_actor(subexpr2)}};
+}
 } // namespace functional
 
-// provide specializations for result_of for nullary, unary, and binary invocations of actor
-template <typename Eval>
-struct result_of_adaptable_function<thrust::detail::functional::actor<Eval>()>
+template <typename Eval, typename... Args>
+struct result_of_adaptable_function<functional::actor<Eval>(Args...)>
 {
-  using type =
-    typename thrust::detail::functional::apply_actor<thrust::detail::functional::actor<Eval>, thrust::tuple<>>::type;
-}; // end result_of
-
-template <typename Eval, typename Arg1>
-struct result_of_adaptable_function<thrust::detail::functional::actor<Eval>(Arg1)>
-{
-  using type =
-    typename thrust::detail::functional::apply_actor<thrust::detail::functional::actor<Eval>, thrust::tuple<Arg1>>::type;
-}; // end result_of
-
-template <typename Eval, typename Arg1, typename Arg2>
-struct result_of_adaptable_function<thrust::detail::functional::actor<Eval>(Arg1, Arg2)>
-{
-  using type = typename thrust::detail::functional::apply_actor<thrust::detail::functional::actor<Eval>,
-                                                                thrust::tuple<Arg1, Arg2>>::type;
-}; // end result_of
-
+  using type = decltype(::cuda::std::declval<functional::actor<Eval>>()(::cuda::std::declval<Args>()...));
+};
 } // namespace detail
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/functional/actor.inl>

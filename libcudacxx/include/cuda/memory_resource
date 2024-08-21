@@ -21,7 +21,8 @@
 #endif // no system header
 
 //!@rst
-//! @file Defines facilities to allocate and deallocate memory in a type safe manner
+//! @file
+//! Defines facilities to allocate and deallocate memory in a type safe manner
 //!
 //! .. note::
 //!
@@ -31,10 +32,10 @@
 //!
 //!@endrst
 
-#include <cuda/__memory_resource/cuda_managed_memory_resource.h>
-#include <cuda/__memory_resource/cuda_memory_resource.h>
-#include <cuda/__memory_resource/cuda_pinned_memory_resource.h>
+#include <cuda/__memory_resource/device_memory_resource.h>
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/managed_memory_resource.h>
+#include <cuda/__memory_resource/pinned_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>

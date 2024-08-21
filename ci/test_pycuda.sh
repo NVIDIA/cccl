@@ -11,7 +11,7 @@ fail_if_no_gpu
 readonly prefix="${BUILD_DIR}/python/"
 export PYTHONPATH="${prefix}:${PYTHONPATH:-}"
 
-pushd ../python/cuda >/dev/null
+pushd ../python/cuda_cooperative >/dev/null
 
 run_command "⚙️  Pip install cuda" pip install --force-reinstall --target "${prefix}" .[test]
 run_command "🚀  Pytest cuda" python -m pytest -v ./tests

@@ -61,10 +61,11 @@ TEMPLATE_TEST_CASE(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
 
-  cuda::mr::cuda_memory_resource resource{};
+  cuda::mr::device_memory_resource resource{};
 
   SECTION("construction")
   {
+    static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");
     {
       uninitialized_buffer from_count{resource, 42};
       CHECK(from_count.data() != nullptr);
@@ -81,6 +82,36 @@ TEMPLATE_TEST_CASE(
       // Ensure that we properly reset the input buffer
       CHECK(input.data() == nullptr);
       CHECK(input.size() == 0);
+    }
+  }
+
+  SECTION("assignment")
+  {
+    static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
+    {
+      cuda::mr::managed_memory_resource other_resource{};
+      uninitialized_buffer input{other_resource, 42};
+      uninitialized_buffer buf{resource, 1337};
+      const auto* old_ptr       = buf.data();
+      const auto* old_input_ptr = input.data();
+
+      buf = cuda::std::move(input);
+      CHECK(buf.data() != old_ptr);
+      CHECK(buf.data() == old_input_ptr);
+      CHECK(buf.size() == 42);
+      CHECK(buf.resource() == other_resource);
+
+      CHECK(input.data() == nullptr);
+      CHECK(input.size() == 0);
+    }
+
+    { // Ensure self move assignment doesnt do anything
+      uninitialized_buffer buf{resource, 1337};
+      const auto* old_ptr = buf.data();
+
+      buf = cuda::std::move(buf);
+      CHECK(buf.data() == old_ptr);
+      CHECK(buf.size() == 1337);
     }
   }
 

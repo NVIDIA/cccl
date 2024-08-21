@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,9 +21,353 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/clz.h>
+#include <cuda/std/__bit/ctz.h>
+#include <cuda/std/__bit/popc.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__debug>
+#include <cuda/std/limits>
+#include <cuda/std/version>
+
 _CCCL_PUSH_MACROS
 
-#include <cuda/std/detail/libcxx/include/bit>
+#if defined(_CCCL_COMPILER_IBM)
+#  include <cuda/std/detail/libcxx/include/support/ibm/support.h>
+#endif // _CCCL_COMPILER_IBM
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp __rotl(_Tp __t, uint32_t __cnt) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
+  using __nlt = numeric_limits<_Tp>;
+
+  return ((__cnt % __nlt::digits) == 0)
+         ? __t
+         : (__t << (__cnt % __nlt::digits)) | (__t >> (__nlt::digits - (__cnt % __nlt::digits)));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp __rotr(_Tp __t, uint32_t __cnt) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned");
+  using __nlt = numeric_limits<_Tp>;
+
+  return ((__cnt % __nlt::digits) == 0)
+         ? __t
+         : (__t >> (__cnt % __nlt::digits)) | (__t << (__nlt::digits - (__cnt % __nlt::digits)));
+}
+
+// Forward decl for recursive use in split word operations
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __countr_zero(_Tp __t) noexcept;
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
+__countr_zero_dispatch(_Tp __t) noexcept
+{
+  return __libcpp_ctz(static_cast<uint32_t>(__t));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
+__countr_zero_dispatch(_Tp __t) noexcept
+{
+  return __libcpp_ctz(static_cast<uint64_t>(__t));
+}
+
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
+struct __countr_zero_rsh_impl
+{
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __short_circuit(_Tp __t, int __cur, int __count)
+  {
+    // Stops processing early if non-zero
+    return (__cur == numeric_limits<uint64_t>::digits)
+           ? __countr_zero_rsh_impl<_Tp, _St - 1>::__count(__t, __cur + __count)
+           : __cur + __count;
+  }
+
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __count(_Tp __t, int __count)
+  {
+    return __short_circuit(__t >> numeric_limits<uint64_t>::digits, __countr_zero(static_cast<uint64_t>(__t)), __count);
+  }
+};
+
+template <typename _Tp>
+struct __countr_zero_rsh_impl<_Tp, 1>
+{
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __count(_Tp __t, int __count)
+  {
+    return __count + __countr_zero(static_cast<uint64_t>(__t));
+  }
+};
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
+__countr_zero_dispatch(_Tp __t) noexcept
+{
+  return __countr_zero_rsh_impl<_Tp>::__count(__t, 0);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __countr_zero(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countr_zero requires unsigned");
+
+  return __t ? __countr_zero_dispatch(__t) : numeric_limits<_Tp>::digits;
+}
+
+// Forward decl for recursive use in split word operations
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __countl_zero(_Tp __t) noexcept;
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
+__countl_zero_dispatch(_Tp __t) noexcept
+{
+  return __libcpp_clz(static_cast<uint32_t>(__t)) - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
+__countl_zero_dispatch(_Tp __t) noexcept
+{
+  return __libcpp_clz(static_cast<uint64_t>(__t)) - (numeric_limits<uint64_t>::digits - numeric_limits<_Tp>::digits);
+}
+
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
+struct __countl_zero_rotl_impl
+{
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __short_circuit(_Tp __t, int __cur)
+  {
+    // This stops processing early if the current word is not empty
+    return (__cur == numeric_limits<uint64_t>::digits)
+           ? __cur + __countl_zero_rotl_impl<_Tp, _St - 1>::__count(__t)
+           : __cur;
+  }
+
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __countl_iter(_Tp __t)
+  {
+    // After rotating pass result of clz to another step for processing
+    return __short_circuit(__t, __countl_zero(static_cast<uint64_t>(__t)));
+  }
+
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __count(_Tp __t)
+  {
+    return __countl_iter(__rotl(__t, numeric_limits<uint64_t>::digits));
+  }
+};
+
+template <typename _Tp>
+struct __countl_zero_rotl_impl<_Tp, 1>
+{
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __count(_Tp __t)
+  {
+    return __countl_zero(static_cast<uint64_t>(__rotl(__t, numeric_limits<uint64_t>::digits)));
+  }
+};
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
+__countl_zero_dispatch(_Tp __t) noexcept
+{
+  return __countl_zero_rotl_impl<_Tp>::__count(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __countl_zero(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countl_zero requires unsigned");
+  return __t ? __countl_zero_dispatch(__t) : numeric_limits<_Tp>::digits;
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __countl_one(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countl_one requires unsigned");
+  return __t != numeric_limits<_Tp>::max() ? __countl_zero(static_cast<_Tp>(~__t)) : numeric_limits<_Tp>::digits;
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __countr_one(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countr_one requires unsigned");
+  return __t != numeric_limits<_Tp>::max() ? __countr_zero(static_cast<_Tp>(~__t)) : numeric_limits<_Tp>::digits;
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
+__popcount_dispatch(_Tp __t) noexcept
+{
+  return __libcpp_popc(static_cast<uint32_t>(__t));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
+__popcount_dispatch(_Tp __t) noexcept
+{
+  return __libcpp_popc(static_cast<uint64_t>(__t));
+}
+
+template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
+struct __popcount_rsh_impl
+{
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __count(_Tp __t)
+  {
+    return __popcount_rsh_impl<_Tp, _St - 1>::__count(__t >> numeric_limits<uint64_t>::digits)
+         + __libcpp_popc(static_cast<uint64_t>(__t));
+  }
+};
+
+template <typename _Tp>
+struct __popcount_rsh_impl<_Tp, 1>
+{
+  static _LIBCUDACXX_INLINE_VISIBILITY constexpr int __count(_Tp __t)
+  {
+    return __libcpp_popc(static_cast<uint64_t>(__t));
+  }
+};
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
+__popcount_dispatch(_Tp __t) noexcept
+{
+  return __popcount_rsh_impl<_Tp>::__count(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr int __popcount(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__libcpp_popcount requires unsigned");
+
+  return __popcount_dispatch(__t);
+}
+
+// integral log base 2
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr uint32_t __bit_log2(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__bit_log2 requires unsigned");
+  return numeric_limits<_Tp>::digits - 1 - __countl_zero(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool __has_single_bit(_Tp __t) noexcept
+{
+  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__has_single_bit requires unsigned");
+  return __t != 0 && (((__t & (__t - 1)) == 0));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) >= sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
+{
+  return _Tp{1} << (numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) < sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
+{
+  return (_Tp) ((1u << ((numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)))
+                        + (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits)))
+                >> (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+rotl(_Tp __t, uint32_t __cnt) noexcept
+{
+  return __rotl(__t, __cnt);
+}
+
+// rotr
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+rotr(_Tp __t, uint32_t __cnt) noexcept
+{
+  return __rotr(__t, __cnt);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+countl_zero(_Tp __t) noexcept
+{
+  return __countl_zero(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+countl_one(_Tp __t) noexcept
+{
+  return __countl_one(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+countr_zero(_Tp __t) noexcept
+{
+  return __countr_zero(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+countr_one(_Tp __t) noexcept
+{
+  return __countr_one(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+popcount(_Tp __t) noexcept
+{
+  return __popcount(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, bool>
+has_single_bit(_Tp __t) noexcept
+{
+  return __has_single_bit(__t);
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+bit_floor(_Tp __t) noexcept
+{
+  return __t == 0 ? 0 : static_cast<_Tp>(_Tp{1} << __bit_log2(__t));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+bit_ceil(_Tp __t) noexcept
+{
+  return (__t < 2) ? 1 : static_cast<_Tp>(__ceil2(__t));
+}
+
+template <class _Tp>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+bit_width(_Tp __t) noexcept
+{
+  return __t == 0 ? 0 : static_cast<_Tp>(__bit_log2(__t) + 1);
+}
+
+enum class endian
+{
+  little = 0xDEAD,
+  big    = 0xFACE,
+#if defined(_LIBCUDACXX_LITTLE_ENDIAN)
+  native = little
+#elif defined(_LIBCUDACXX_BIG_ENDIAN)
+  native = big
+#else
+  native = 0xCAFE
+#endif
+};
+
+_LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
 

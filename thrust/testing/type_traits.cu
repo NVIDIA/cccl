@@ -5,7 +5,16 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/pair.h>
+#include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+
+#if defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+// This header pulls in an unsuppressable warning on GCC 6
+#  include <cuda/std/complex>
+#endif // defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+#include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include <unittest/unittest.h>
 
@@ -146,3 +155,53 @@ void TestIsCommutative()
   }
 }
 DECLARE_UNITTEST(TestIsCommutative);
+
+struct NonTriviallyCopyable
+{
+  NonTriviallyCopyable(const NonTriviallyCopyable&) {}
+};
+THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(NonTriviallyCopyable);
+
+static_assert(!::cuda::std::is_trivially_copyable<NonTriviallyCopyable>::value, "");
+static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value, "");
+
+void TestTriviallyRelocatable()
+{
+  static_assert(thrust::is_trivially_relocatable<int>::value, "");
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  static_assert(thrust::is_trivially_relocatable<__half>::value, "");
+  static_assert(thrust::is_trivially_relocatable<int1>::value, "");
+  static_assert(thrust::is_trivially_relocatable<int2>::value, "");
+  static_assert(thrust::is_trivially_relocatable<int3>::value, "");
+  static_assert(thrust::is_trivially_relocatable<int4>::value, "");
+#  ifndef _LIBCUDACXX_HAS_NO_INT128
+  static_assert(thrust::is_trivially_relocatable<__int128>::value, "");
+#  endif // _LIBCUDACXX_HAS_NO_INT128
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#if defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+  static_assert(thrust::is_trivially_relocatable<thrust::complex<float>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<::cuda::std::complex<float>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<thrust::pair<int, thrust::complex<float>>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<::cuda::std::pair<int, ::cuda::std::complex<float>>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<thrust::tuple<int, thrust::complex<float>, char>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<int, ::cuda::std::complex<float>, char>>::value,
+                "");
+#endif // defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+  static_assert(thrust::is_trivially_relocatable<
+                  ::cuda::std::tuple<thrust::pair<int, thrust::tuple<int, ::cuda::std::tuple<>>>,
+                                     thrust::tuple<::cuda::std::pair<int, thrust::tuple<>>, int>>>::value,
+                "");
+
+  static_assert(!thrust::is_trivially_relocatable<thrust::pair<int, std::string>>::value, "");
+  static_assert(!thrust::is_trivially_relocatable<::cuda::std::pair<int, std::string>>::value, "");
+  static_assert(!thrust::is_trivially_relocatable<thrust::tuple<int, float, std::string>>::value, "");
+  static_assert(!thrust::is_trivially_relocatable<::cuda::std::tuple<int, float, std::string>>::value, "");
+
+  // test propagation of relocatability through pair and tuple
+  static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value, "");
+  static_assert(thrust::is_trivially_relocatable<thrust::pair<NonTriviallyCopyable, int>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<::cuda::std::pair<NonTriviallyCopyable, int>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<thrust::tuple<NonTriviallyCopyable>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<NonTriviallyCopyable>>::value, "");
+};
+DECLARE_UNITTEST(TestTriviallyRelocatable);

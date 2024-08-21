@@ -38,6 +38,7 @@
         "CCCL_ENABLE_TESTING": true,
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_C": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
@@ -215,6 +216,7 @@
       "displayName": "CUB: C++14",
       "inherits": "cub-base",
       "cacheVariables": {
+        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "CUB_ENABLE_DIALECT_CPP14": true
       }
     },
@@ -265,6 +267,7 @@
       "displayName": "Thrust: C++14",
       "inherits": "thrust-base",
       "cacheVariables": {
+        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true
       }
     },
@@ -476,7 +479,7 @@
       ],
       "filter": {
         "exclude": {
-          "name": "^libcudacxx\\.test\\.lit$"
+          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.diff)$"
         }
       }
     },
@@ -485,7 +488,7 @@
       "configurePreset": "libcudacxx-codegen",
       "filter": {
         "include": {
-          "name": "^libcudacxx\\.atomics\\.codegen.*$"
+          "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
         }
       }
     },

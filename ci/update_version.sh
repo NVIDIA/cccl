@@ -36,7 +36,7 @@ CUB_CMAKE_VERSION_FILE="cub/cub/cmake/cub-config-version.cmake"
 LIBCUDACXX_CMAKE_VERSION_FILE="libcudacxx/lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
 THRUST_CMAKE_VERSION_FILE="thrust/thrust/cmake/thrust-config-version.cmake"
 CUDAX_CMAKE_VERSION_FILE="cudax/lib/cmake/cudax/cudax-config-version.cmake"
-PYCUDA_VERSION_FILE="python/cuda/cuda/cooperative/_version.py"
+PYCUDA_VERSION_FILE="python/cuda_cooperative/cuda/cooperative/_version.py"
 
 # Calculated version codes
 new_cccl_version=$((major * 1000000 + minor * 1000 + patch))     # MMMmmmppp

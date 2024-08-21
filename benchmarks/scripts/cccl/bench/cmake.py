@@ -80,7 +80,7 @@ class CMake:
                               stderr=subprocess.DEVNULL)
           p.wait(timeout=timeout)
           elapsed = time.time() - begin
-          logger.info("finished build for {} ({}) in {}s".format(bench.label(), p.returncode, elapsed))
+          logger.info("finished build for {} (exit code: {}) in {:.3f}s".format(bench.label(), p.returncode, elapsed))
 
           return Build(p.returncode, elapsed)
       except subprocess.TimeoutExpired:

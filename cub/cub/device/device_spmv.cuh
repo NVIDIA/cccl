@@ -27,8 +27,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceSpmv provides device-wide parallel operations for performing
-//!       sparse-matrix * vector multiplication (SpMV).
+//! @file
+//! cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication
+//! (SpMV).
 
 #pragma once
 
@@ -207,6 +208,7 @@ struct DeviceSpmv
     return DispatchSpmv<ValueT, int>::Dispatch(d_temp_storage, temp_storage_bytes, spmv_params, stream);
   }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename ValueT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t CsrMV(
     void* d_temp_storage,
@@ -237,6 +239,7 @@ struct DeviceSpmv
       num_nonzeros,
       stream);
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @}  end member group
 };
