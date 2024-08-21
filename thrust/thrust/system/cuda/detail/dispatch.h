@@ -90,6 +90,21 @@
     status                             = call_64 arguments;                     \
   }
 
+/// Like \ref THRUST_INDEX_TYPE_DISPATCH2 but dispatching to uint32_t and uint64_t, respectively, depending on the
+/// `count` argument. `count` must not be negative.
+#define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count, arguments)       \
+  if (static_cast<std::uint64_t>(count)                                                        \
+      <= static_cast<std::uint64_t>(thrust::detail::integer_traits<std::uint32_t>::const_max)) \
+  {                                                                                            \
+    auto THRUST_PP_CAT2(count, _fixed) = static_cast<std::uint32_t>(count);                    \
+    status                             = call_32 arguments;                                    \
+  }                                                                                            \
+  else                                                                                         \
+  {                                                                                            \
+    auto THRUST_PP_CAT2(count, _fixed) = static_cast<std::uint64_t>(count);                    \
+    status                             = call_64 arguments;                                    \
+  }
+
 /// Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
 #define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
   if (count1 + count2 <= thrust::detail::integer_traits<std::int32_t>::const_max)               \

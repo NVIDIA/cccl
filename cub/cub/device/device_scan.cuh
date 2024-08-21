@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -153,6 +154,9 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -173,19 +177,19 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
     using InitT   = cub::detail::value_t<InputIteratorT>;
 
     // Initial value
@@ -196,13 +200,13 @@ struct DeviceScan
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -262,6 +266,9 @@ struct DeviceScan
   //! @tparam IteratorT
   //!   **[inferred]** Random-access iterator type for reading scan inputs and wrigin scan outputs
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -279,20 +286,20 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT>
+  template <typename IteratorT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
-    void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, int num_items, cudaStream_t stream = 0)
+    void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, NumItemsT num_items, cudaStream_t stream = 0)
   {
     return ExclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename IteratorT>
+  template <typename IteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -378,6 +385,9 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -404,7 +414,7 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -412,13 +422,13 @@ struct DeviceScan
     OutputIteratorT d_out,
     ScanOpT scan_op,
     InitValueT init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
       d_temp_storage,
@@ -432,7 +442,7 @@ struct DeviceScan
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -440,7 +450,7 @@ struct DeviceScan
     OutputIteratorT d_out,
     ScanOpT scan_op,
     InitValueT init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -521,6 +531,9 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -544,28 +557,28 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT, typename ScanOpT, typename InitValueT>
+  template <typename IteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
     InitValueT init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename IteratorT, typename ScanOpT, typename InitValueT>
+  template <typename IteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
     InitValueT init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -656,6 +669,9 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -686,7 +702,8 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT = InitValueT*>
+            typename InitValueIterT = InitValueT*,
+            typename NumItemsT      = int>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -694,13 +711,13 @@ struct DeviceScan
     OutputIteratorT d_out,
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
       d_temp_storage,
@@ -718,7 +735,8 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT = InitValueT*>
+            typename InitValueIterT = InitValueT*,
+            typename NumItemsT      = int>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -726,7 +744,7 @@ struct DeviceScan
     OutputIteratorT d_out,
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -810,6 +828,9 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value` used Binary scan functor type
   //!   having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -833,28 +854,36 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT, typename ScanOpT, typename InitValueT, typename InitValueIterT = InitValueT*>
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename InitValueIterT = InitValueT*,
+            typename NumItemsT      = int>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename IteratorT, typename ScanOpT, typename InitValueT, typename InitValueIterT = InitValueT*>
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename InitValueIterT = InitValueT*,
+            typename NumItemsT      = int>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
     FutureValue<InitValueT, InitValueIterT> init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -924,6 +953,9 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -944,32 +976,32 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, Sum, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, Sum(), NullType(), num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -1028,6 +1060,9 @@ struct DeviceScan
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -1045,20 +1080,20 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT>
+  template <typename IteratorT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
-    void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, int num_items, cudaStream_t stream = 0)
+    void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, NumItemsT num_items, cudaStream_t stream = 0)
   {
     return InclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename IteratorT>
+  template <typename IteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -1138,6 +1173,9 @@ struct DeviceScan
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in]
   //!   d_temp_storage Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
@@ -1162,20 +1200,20 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), num_items, stream);
@@ -1221,6 +1259,9 @@ struct DeviceScan
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
@@ -1247,7 +1288,7 @@ struct DeviceScan
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within.
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1255,13 +1296,13 @@ struct DeviceScan
     OutputIteratorT d_out,
     ScanOpT scan_op,
     InitValueT init_value,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
+    // Unsigned integer type for global offsets
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
     using AccumT  = cub::detail::accumulator_t<ScanOpT, InitValueT, cub::detail::value_t<InputIteratorT>>;
     constexpr bool ForceInclusive = true;
 
@@ -1284,14 +1325,14 @@ struct DeviceScan
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ScanOpT scan_op,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -1365,6 +1406,9 @@ struct DeviceScan
   //! @tparam ScanOp
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
   //! @param[in]
   //!   d_temp_storage Device-accessible allocation of temporary storage.
   //!   When `nullptr`, the required allocation size is written to
@@ -1386,26 +1430,26 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT, typename ScanOpT>
+  template <typename IteratorT, typename ScanOpT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename IteratorT, typename ScanOpT>
+  template <typename IteratorT, typename ScanOpT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     IteratorT d_data,
     ScanOpT scan_op,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
