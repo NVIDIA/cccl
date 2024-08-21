@@ -175,7 +175,7 @@ private:
     cuda::atomic<ptrdiff_t, _Sco> skipped_tickets;
     cuda::atomic<ptrdiff_t, _Sco> ticketing;
 
-    _LIBCUDACXX_INLINE_VISIBILITY bool try_acq_impl(ptrdiff_t ctr)
+    _LIBCUDACXX_INLINE_VISIBILITY bool __try_acq_impl(ptrdiff_t ctr)
     {
 
         if (counter.compare_exchange_weak(ctr,
