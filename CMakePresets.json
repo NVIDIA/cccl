@@ -356,7 +356,8 @@
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
-        "libcudacxx.test.lit.precompile"
+        "libcudacxx.test.lit.precompile",
+        "libcudacxx.test.atomics.ptx"
       ]
     },
     {
@@ -478,7 +479,7 @@
       ],
       "filter": {
         "exclude": {
-          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.ptx)$"
+          "name": "^libcudacxx\\.test\\.lit$"
         }
       }
     },

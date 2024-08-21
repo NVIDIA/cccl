@@ -43,6 +43,7 @@ endif()
 
 find_program(filecheck "FileCheck")
 
+add_custom_target(libcudacxx.test.atomics.ptx)
 if (filecheck)
   message("-- ${filecheck} found... building atomic codegen tests")
   add_subdirectory(atomic_codegen)
