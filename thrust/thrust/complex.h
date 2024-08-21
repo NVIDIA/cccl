@@ -341,14 +341,20 @@ public:
 private:
 #if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000
   struct __align__(sizeof(T) * 2) storage
-#else // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000
+#elif defined(_CCCL_COMPILER_ICC)
+  struct storage
+#else // !(defined(_CCCL_COMPILER_ICC) || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000))
   struct alignas(sizeof(T) * 2) storage
-#endif // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000
+#endif // !(defined(_CCCL_COMPILER_ICC) || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_VER < 1107000))
   {
     T x;
     T y;
   }
-  data;
+#ifdef _CCCL_COMPILER_ICC
+  __attribute__((aligned(sizeof(T) * 2)))
+#endif // _CCCL_COMPILER_ICC
+  ;
+  storage data;
 };
 
 /* --- General Functions --- */
