@@ -40,12 +40,13 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
   }
 }
 
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<70>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<75>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<80>>();
-template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<86>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<700>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<750>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<800>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<860>>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cudax::arch<900>>();
 
-static_assert(sizeof(cudax::arch<70>) == 1);
+static_assert(sizeof(cudax::arch<700>) == 1);
 
 template <unsigned int Arch>
 void constexpr compare_static_and_dynamic()
@@ -97,10 +98,11 @@ void constexpr compare_static_and_dynamic()
 
 TEST_CASE("Traits", "[device]")
 {
-  compare_static_and_dynamic<70>();
-  compare_static_and_dynamic<75>();
-  compare_static_and_dynamic<80>();
-  compare_static_and_dynamic<86>();
+  compare_static_and_dynamic<700>();
+  compare_static_and_dynamic<750>();
+  compare_static_and_dynamic<800>();
+  compare_static_and_dynamic<860>();
+  compare_static_and_dynamic<900>();
 
   // Compare arch traits with attributes
   for (const cudax::device& dev : cudax::devices)

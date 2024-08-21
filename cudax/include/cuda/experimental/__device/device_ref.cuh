@@ -107,7 +107,7 @@ public:
     return attr(detail::__dev_attr<_Attr>());
   }
 
-  _CCCL_HOST_DEVICE arch_traits_t arch_traits() const;
+  arch_traits_t arch_traits() const;
 };
 
 } // namespace cuda::experimental

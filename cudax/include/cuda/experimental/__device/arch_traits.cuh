@@ -109,7 +109,7 @@ struct arch_traits_t : public detail::arch_common_traits
   // Minor compute capability version number
   int compute_capability_minor;
 
-  // Compute capability version number in 10 * major + minor format
+  // Compute capability version number in 100 * major + 10 * minor format
   int compute_capability;
 
   // Maximum amount of shared memory available to a multiprocessor in bytes;
@@ -157,7 +157,7 @@ inline constexpr arch_traits_t sm_600_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 6;
   __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 60;
+  __traits.compute_capability                   = 600;
   __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_warps_per_multiprocessor         = 64;
@@ -179,7 +179,7 @@ inline constexpr arch_traits_t sm_700_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 7;
   __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 70;
+  __traits.compute_capability                   = 700;
   __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_warps_per_multiprocessor         = 64;
@@ -202,7 +202,7 @@ inline constexpr arch_traits_t sm_750_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 7;
   __traits.compute_capability_minor             = 5;
-  __traits.compute_capability                   = 75;
+  __traits.compute_capability                   = 750;
   __traits.max_shared_memory_per_multiprocessor = 64 * 1024;
   __traits.max_blocks_per_multiprocessor        = 16;
   __traits.max_warps_per_multiprocessor         = 32;
@@ -225,7 +225,7 @@ inline constexpr arch_traits_t sm_800_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 8;
   __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 80;
+  __traits.compute_capability                   = 800;
   __traits.max_shared_memory_per_multiprocessor = 164 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_warps_per_multiprocessor         = 64;
@@ -248,7 +248,7 @@ inline constexpr arch_traits_t sm_860_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 8;
   __traits.compute_capability_minor             = 6;
-  __traits.compute_capability                   = 86;
+  __traits.compute_capability                   = 860;
   __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
   __traits.max_blocks_per_multiprocessor        = 16;
   __traits.max_warps_per_multiprocessor         = 48;
@@ -271,7 +271,7 @@ inline constexpr arch_traits_t sm_900_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 9;
   __traits.compute_capability_minor             = 0;
-  __traits.compute_capability                   = 90;
+  __traits.compute_capability                   = 900;
   __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
   __traits.max_blocks_per_multiprocessor        = 32;
   __traits.max_warps_per_multiprocessor         = 64;
@@ -290,59 +290,29 @@ inline constexpr arch_traits_t sm_900_traits = []() constexpr {
   return __traits;
 }();
 
-// TODO Should this be provided outside detail? Just using arch template seems better
-template <unsigned int __SmVersion>
-_CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits()
-{
-  if constexpr (__SmVersion == 60)
-  {
-    return detail::sm_600_traits;
-  }
-  else if constexpr (__SmVersion == 70)
-  {
-    return detail::sm_700_traits;
-  }
-  else if constexpr (__SmVersion == 75)
-  {
-    return detail::sm_750_traits;
-  }
-  else if constexpr (__SmVersion == 80)
-  {
-    return detail::sm_800_traits;
-  }
-  else if constexpr (__SmVersion == 86)
-  {
-    return detail::sm_860_traits;
-  }
-  else
-  {
-    static_assert(__SmVersion == 90, "Unknown architecture");
-    return detail::sm_900_traits;
-  }
-}
-
 } // namespace detail
 
 //! @brief Retrieve architecture traits of the specified architecture
 //!
-//! @param __sm_version Compute capability in 10 * major + minor format for which the architecture traits are requested
+//! @param __sm_version Compute capability in 100 * major + 10 * minor format for which the architecture traits are
+//! requested
 //!
 //! @throws cuda_error if the requested architecture is unknown
 _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_version)
 {
   switch (__sm_version)
   {
-    case 60:
+    case 600:
       return detail::sm_600_traits;
-    case 70:
+    case 700:
       return detail::sm_700_traits;
-    case 75:
+    case 750:
       return detail::sm_750_traits;
-    case 80:
+    case 800:
       return detail::sm_800_traits;
-    case 86:
+    case 860:
       return detail::sm_860_traits;
-    case 90:
+    case 900:
       return detail::sm_900_traits;
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
@@ -355,7 +325,7 @@ template <unsigned int __SmVersion>
 struct arch : public detail::arch_common_traits
 {
 private:
-  static constexpr arch_traits_t __traits = detail::arch_traits<__SmVersion>();
+  static constexpr arch_traits_t __traits = arch_traits(__SmVersion);
 
 public:
   static constexpr int compute_capability_major             = __traits.compute_capability_major;
@@ -385,7 +355,7 @@ public:
 _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
 {
 #ifdef __CUDA_ARCH__
-  return detail::arch_traits<__CUDA_ARCH__ / 10>();
+  return arch_traits(__CUDA_ARCH__);
 #else
   // Should be unreachable in __device__ function
   return arch_traits_t{};
@@ -393,8 +363,8 @@ _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
 }
 
 // TODO might need to remove this since sm_80 and sm_86 is both called ampere :(
-using arch_volta  = arch<70>;
-using arch_turing = arch<75>;
+using arch_volta  = arch<700>;
+using arch_turing = arch<750>;
 
 } // namespace cuda::experimental
 
