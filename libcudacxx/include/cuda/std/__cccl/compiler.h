@@ -20,10 +20,14 @@
 #  define _CCCL_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG
+#  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC
+#  define _CCCL_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #elif defined(_MSC_VER)
 #  define _CCCL_COMPILER_MSVC
+#  define _CCCL_MSVC_VERSION      _MSC_VER
+#  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
 #elif defined(__IBMCPP__)
 #  define _CCCL_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)

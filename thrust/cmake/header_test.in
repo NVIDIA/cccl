@@ -17,7 +17,7 @@
   THRUST_MACRO_CHECK_IMPL(Identifier MACRO should not be used from Thrust      \
                           headers due to conflicts with HEADER macros.)
 
-// Use raw platform checks instead of the THRUST_HOST_COMPILER macros since we
+// Use raw platform macros instead of the CCCL macros since we
 // don't want to #include any headers other than the one being tested.
 //
 // This is only implemented for MSVC/GCC/Clang.
