@@ -478,7 +478,7 @@
       ],
       "filter": {
         "exclude": {
-          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.diff)$"
+          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.ptx)$"
         }
       }
     },
