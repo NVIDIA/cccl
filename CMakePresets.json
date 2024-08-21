@@ -38,6 +38,7 @@
         "CCCL_ENABLE_TESTING": true,
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_C": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
