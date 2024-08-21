@@ -1,4 +1,13 @@
-find_program(filecheck "FileCheck" REQUIRED)
+add_custom_target(libcudacxx.test.atomics.ptx)
+
+find_program(filecheck "FileCheck")
+
+if (filecheck)
+  message("-- ${filecheck} found... building atomic codegen tests")
+else()
+  return()
+endif()
+
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
