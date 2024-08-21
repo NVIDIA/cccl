@@ -299,7 +299,16 @@ namespace __smart_sort
 template <class Key, class CompareOp>
 using can_use_primitive_sort = ::cuda::std::integral_constant<
   bool,
-  ::cuda::std::is_arithmetic<Key>::value
+  (::cuda::std::is_arithmetic<Key>::value
+#  if defined(_CCCL_HAS_NVFP16) && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+   || ::cuda::std::is_same<Key, __half>::value
+#  endif // defined(_CCCL_HAS_NVFP16) && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
+#  if defined(_CCCL_HAS_NVBF16) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) \
+    && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+   || ::cuda::std::is_same<Key, __nv_bfloat16>::value
+#  endif // defined(_CCCL_HAS_NVBF16) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
+         // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+   )
     && (::cuda::std::is_same<CompareOp, thrust::less<Key>>::value
         || ::cuda::std::is_same<CompareOp, ::cuda::std::less<Key>>::value
         || ::cuda::std::is_same<CompareOp, thrust::less<void>>::value
