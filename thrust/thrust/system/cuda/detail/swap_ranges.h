@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#ifdef _CCCL_CUDA_COMPILER
 #  include <thrust/distance.h>
 #  include <thrust/swap.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
