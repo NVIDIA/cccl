@@ -316,7 +316,7 @@ void meta_dims_test()
   {
     unsigned int target_count = 4420;
     auto dims                 = cudax::make_hierarchy(
-      cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::at_least(target_count, cudax::thread)));
+      cudax::block_dims(cudax::max_occupancy()), cudax::grid_dims(cudax::at_least(target_count, cudax::thread)));
 
     auto dims_finalized = cudax::finalize(stream, dims, empty_kernel);
     static_assert(::cuda::std::is_same_v<::cudax::finalized_t<decltype(dims)>, decltype(dims_finalized)>);
@@ -331,7 +331,7 @@ void meta_dims_test()
   SECTION("max_coresident + best occupancy")
   {
     auto dims =
-      cudax::make_hierarchy(cudax::block_dims(cudax::best_occupancy()), cudax::grid_dims(cudax::max_coresident()));
+      cudax::make_hierarchy(cudax::block_dims(cudax::max_occupancy()), cudax::grid_dims(cudax::max_coresident()));
 
     auto config = cudax::make_config(dims, cudax::cooperative_launch());
 

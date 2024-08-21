@@ -70,7 +70,7 @@ struct at_least
  * a largest size that still allows full occupancy.
  * This type is usable only to describe dimensions at block level
  */
-struct best_occupancy
+struct max_occupancy
 {};
 
 /**
@@ -125,7 +125,7 @@ struct dimensions_handler<at_least<Level>> : meta_dimensions_handler<at_least<Le
 {};
 
 template <>
-struct dimensions_handler<best_occupancy> : meta_dimensions_handler<best_occupancy, block_level>
+struct dimensions_handler<max_occupancy> : meta_dimensions_handler<max_occupancy, block_level>
 {};
 
 template <>
@@ -151,11 +151,11 @@ struct level_finalizer<at_least<Unit>>
 };
 
 template <>
-struct level_finalizer<best_occupancy>
+struct level_finalizer<max_occupancy>
 {
   template <typename HierarchyBelow>
   _CCCL_NODISCARD meta_dims_finalized
-  operator()(void* fn, unsigned int dynamic_smem_bytes, const best_occupancy& dims, const HierarchyBelow& rest)
+  operator()(void* fn, unsigned int dynamic_smem_bytes, const max_occupancy& dims, const HierarchyBelow& rest)
   {
     int block_size, dummy;
 
@@ -367,10 +367,9 @@ finalize([[maybe_unused]] ::cuda::stream_ref stream,
  * @param kernel
  * Kernel functor that the configuration are intended for
  */
-#  ifdef _MSC_VER
-#    pragma warning(push)
-#    pragma warning(disable : 4180) // qualifier applied to function type has no meaning; ignored
-#  endif
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
 template <typename... Args,
           typename Kernel,
           typename ConfOrDims,
@@ -390,9 +389,7 @@ _CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrD
     return finalize(stream, conf_or_dims, launcher);
   }
 }
-#  ifdef _MSC_VER
-#    pragma warning(pop)
-#  endif
+_CCCL_DIAG_POP
 
 /**
  * @brief Returns a hierarchy or a configuration with the hierarchy updated to replace meta dimsnions with concrete
