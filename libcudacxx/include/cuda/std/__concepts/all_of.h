@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER >= 2017
 template <bool... _Preds>
 _LIBCUDACXX_CONCEPT __all_of = (_Preds && ...);
-#elif _CCCL_STD_VER >= 2011
+#elif _CCCL_STD_VER >= 2014
 template <bool... _Preds>
 struct __all_of_helper;
 

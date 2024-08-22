@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
 
+#if _CCCL_STD_VER >= 2014
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Set, class... _Ty>
@@ -82,5 +84,7 @@ template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
