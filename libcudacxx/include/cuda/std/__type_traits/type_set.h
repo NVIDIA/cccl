@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_base_of.h>
@@ -30,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Set, class... _Ty>
-_LIBCUDACXX_CONCEPT __type_set_contains =
+_LIBCUDACXX_INLINE_VAR constexpr bool __type_set_contains =
   _CUDA_VSTD::__all_of<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, type_identity<_Ty>, _Set)...>;
 
 namespace __set
@@ -70,7 +69,7 @@ struct __bulk_insert
 } // namespace __set
 
 template <class _ExpectedSet, class... _Ts>
-_LIBCUDACXX_CONCEPT __type_set_eq = //
+_LIBCUDACXX_INLINE_VAR constexpr bool __type_set_eq = //
   (sizeof...(_Ts) == _ExpectedSet::__size()) && __type_set_contains<_ExpectedSet, _Ts...>;
 
 template <class... _Ts>

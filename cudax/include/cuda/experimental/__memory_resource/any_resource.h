@@ -39,6 +39,7 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
+#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -171,7 +172,7 @@ public:
     this->__static_vtable->__copy_fn(&this->__object, &__other.__object);
   }
 
-  basic_any_resource& operator=(basic_any_resource& __other)
+  basic_any_resource& operator=(const basic_any_resource& __other)
   {
     return this == &__other ? *this : operator=(basic_any_resource(__other));
   }
