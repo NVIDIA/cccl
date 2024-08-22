@@ -317,15 +317,14 @@ _CCCL_DEVICE void transform_kernel_impl(
 // Pointer with meta data to describe input memory for memcpy_async and UBLKCP kernels.
 // memcpy_async and UBLKCP are most efficient when the data is 128-byte aligned and the size a multiple of 16 bytes
 template <typename T>
-struct ptr_set
+struct aligned_base_ptr
 {
-  T* base_ptr; // 128-byte aligned pointer before the original pointer (== start of cacheline)
-  int base_offset; // byte offset between base ptr and the original pointer. Value inside [0;127].
-  int extra_bytes_to_copy; // number of extra bytes to copy when starting at base_ptr. Value inside [0;127].
+  T* ptr; // 128-byte aligned pointer before the original pointer (== start of cacheline)
+  int offset; // byte offset between ptr and the original pointer. Value inside [0;127].
 
-  _CCCL_HOST_DEVICE friend bool operator==(const ptr_set& a, const ptr_set& b)
+  _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
   {
-    return a.base_ptr == b.base_ptr && a.extra_bytes_to_copy == b.extra_bytes_to_copy && a.base_offset == b.base_offset;
+    return a.ptr == b.ptr && a.offset == b.offset;
   }
 };
 
@@ -341,13 +340,17 @@ _CCCL_HOST_DEVICE const T* round_down_ptr_128(const T* ptr)
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE auto make_ptr_set(const T* ptr) -> ptr_set<const T>
+_CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr) -> aligned_base_ptr<const T>
 {
   // TODO(bgruber): is it actually legal to move the pointer to a lower 128-byte aligned address and start reading from
   // there in the kernel?
-  const T* base_ptr      = round_down_ptr_128(ptr);
-  const auto base_offset = static_cast<int>((ptr - base_ptr) * sizeof(T));
-  return ptr_set<const T>{base_ptr, base_offset, round_up_to_multiple(base_offset, 16)};
+  // The CUDA programming guide says:
+  //   https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses
+  //   > Any address of a variable residing in global memory or returned by one of the memory allocation routines from
+  //     the driver or runtime API is always aligned to at least 256 bytes.
+  // However, gevtushenko says since Linux Kernel 6, any host memory is device accessible, even stack memory
+  const T* base_ptr = round_down_ptr_128(ptr);
+  return aligned_base_ptr<const T>{base_ptr, static_cast<int>((ptr - base_ptr) * sizeof(T))};
 }
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -361,17 +364,17 @@ _CCCL_DEVICE void copy_ptr_set(
   int& smem_offset,
   uint32_t& total_copied,
   size_t global_offset,
-  const ptr_set<T>& ptr_set)
+  const aligned_base_ptr<T>& aligned_ptr)
 {
 #  if CUB_PTX_ARCH >= 900
   namespace ptx = ::cuda::ptx;
   // Copy a bit more than tile_size, to cover for base_ptr starting earlier than ptr
-  const uint32_t num_bytes = round_up_16(sizeof(T) * tile_size + ptr_set.extra_bytes_to_copy);
+  const uint32_t num_bytes = round_up_16(aligned_ptr.offset + sizeof(T) * tile_size);
   ptx::cp_async_bulk(
     ptx::space_cluster,
     ptx::space_global,
     smem + smem_offset,
-    ptr_set.base_ptr + global_offset, // Use 128-byte aligned base_ptr here
+    aligned_ptr.ptr + global_offset, // Use 128-byte aligned base_ptr here
     num_bytes,
     &bar);
   smem_offset += sizeof(T) * tile_stride + 128;
@@ -381,10 +384,10 @@ _CCCL_DEVICE void copy_ptr_set(
 
 // TODO(bgruber): inline this as lambda in C++14
 template <typename T>
-_CCCL_DEVICE const T&
-fetch_operand(uint32_t tile_stride, const char* smem, int& smem_offset, int smem_idx, const ptr_set<T>& ptr_set)
+_CCCL_DEVICE const T& fetch_operand(
+  uint32_t tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
-  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + ptr_set.base_offset);
+  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.offset);
   smem_offset += sizeof(T) * tile_stride + 128;
   return smem_operand_tile_base[smem_idx];
 };
@@ -415,7 +418,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   int num_elem_per_thread,
   F f,
   RandomAccessIteartorOut out,
-  ptr_set<const InTs>... pointers)
+  aligned_base_ptr<const InTs>... aligned_ptrs)
 {
 #  if CUB_PTX_ARCH >= 900
   __shared__ uint64_t bar;
@@ -440,11 +443,12 @@ _CCCL_DEVICE void transform_kernel_impl(
 
 #    ifdef __cpp_fold_expressions // C++17
     // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-    (..., copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, global_offset, pointers));
+    (..., copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, global_offset, aligned_ptrs));
 #    else
     // Order of evaluation is also left-to-right
     int dummy[] = {
-      (copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, global_offset, pointers), 0)..., 0};
+      (copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, global_offset, aligned_ptrs), 0)...,
+      0};
     (void) dummy;
 #    endif
 
@@ -455,7 +459,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
   {
   }
-  // Intentionally use unroll 1. This tends to improve performance.
+  // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
 #    pragma unroll 1
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
@@ -466,7 +470,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     if (g_idx < num_items)
     {
       int smem_offset = 0;
-      out[g_idx]      = f(fetch_operand(tile_stride, smem, smem_offset, smem_idx, pointers)...);
+      out[g_idx]      = f(fetch_operand(tile_stride, smem, smem_offset, smem_idx, aligned_ptrs)...);
     }
   }
 #  endif // CUB_PTX_ARCH >= 900
@@ -478,7 +482,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <typename It>
 struct kernel_arg
 {
-  using PS                               = ptr_set<const value_t<It>>;
+  using PS                               = aligned_base_ptr<const value_t<It>>;
   static constexpr std::size_t alignment = ::cuda::std::max(alignof(It), alignof(PS)); // need extra variable for GCC<9
   alignas(alignment) char storage[::cuda::std::max(sizeof(It), sizeof(PS))];
 
@@ -502,20 +506,21 @@ _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 }
 
 template <typename It>
-_CCCL_HOST_DEVICE auto make_ptr_set_kernel_arg(It ptr) -> kernel_arg<It>
+_CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
   using T = value_t<It>;
-  cub::detail::uninitialized_copy_single(&arg.template aliased_storage<ptr_set<const T>>(), make_ptr_set(ptr));
+  cub::detail::uninitialized_copy_single(
+    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr));
   return arg;
 }
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 template <typename It>
 _CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
-                                    kernel_arg<It>&& arg) -> ptr_set<const value_t<It>>&&
+                                    kernel_arg<It>&& arg) -> aligned_base_ptr<const value_t<It>>&&
 {
-  return ::cuda::std::move(arg.template aliased_storage<ptr_set<const value_t<It>>>());
+  return ::cuda::std::move(arg.template aliased_storage<aligned_base_ptr<const value_t<It>>>());
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -927,7 +932,7 @@ struct dispatch_t<RequiresStableAddress,
       ::cuda::std::get<2>(*ret),
       op,
       out,
-      make_ptr_set_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
+      make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
         THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
