@@ -75,7 +75,9 @@ An atomic operation is atomic at the scope it specifies if:
          sizes ``1``, ``2``, ``4``, ``8``, or ``16`` bytes on `mapped
          memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ [1],
          **or**
-      -  it affects an object in GPU memory and only GPU threads access it.
+      -  it affects an object in GPU memory, only GPU threads access it, and
+          - `p2pNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg2f597e2acceab33f60bd61c41fea0c1b8513982962e4439fa60f2a24348be587>`__ between each accessing GPU and the GPU where the object resides is ``1``, or
+          - only GPU threads from a single GPU concurrently access it.
 
 .. note::
    - [0] If `PageableMemoryAccessUsesHostPagetables <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg49e2f8c2c0bd6fe264f2fc970912e5cdc228cf8983c97d0e035da72a71494eaa>`__ is ``0`` then atomic operations to memory mapped file or ``hugetlbfs`` allocations are not atomic.
