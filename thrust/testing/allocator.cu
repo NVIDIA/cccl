@@ -87,7 +87,7 @@ struct my_allocator_with_custom_destroy
 
   _CCCL_HOST ~my_allocator_with_custom_destroy() {}
 
-  _CCCL_HOST_DEVICE void destroy(T*)
+  _CCCL_HOST_DEVICE void destroy(T*) noexcept
   {
     NV_IF_TARGET(NV_IS_HOST, (g_state = true;));
   }

@@ -127,7 +127,7 @@ struct AllocController
   }
 
   template <class Alloc, class Tp>
-  void countDestroy(Alloc const&, Tp* p)
+  void countDestroy(Alloc const&, Tp* p) noexcept
   {
     ++destroy_called;
     last_destroy_alloc   = &makeTypeID<Alloc>();
@@ -286,7 +286,7 @@ public:
   }
 
   template <class U>
-  void destroy(U* p)
+  void destroy(U* p) noexcept
   {
     p->~U();
     P->countDestroy(*this, p);
@@ -442,7 +442,7 @@ public:
   }
 
   template <class U>
-  void destroy(U* p)
+  void destroy(U* p) noexcept
   {
     p->~U();
     P->countDestroy(*this, p);

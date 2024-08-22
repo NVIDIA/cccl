@@ -12,7 +12,7 @@
 // template <class Alloc>
 // struct allocator_traits
 // {
-//     static constexpr void deallocate(allocator_type& a, pointer p, size_type n);
+//     static constexpr void deallocate(allocator_type& a, pointer p, size_type n) noexcept;
 //     ...
 // };
 

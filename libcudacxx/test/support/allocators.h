@@ -217,7 +217,7 @@ public:
   }
 
   template <class U>
-  __device__ __host__ void destroy(U* p)
+  __device__ __host__ void destroy(U* p) noexcept
   {
     p->~U();
     destroy_called() = true;

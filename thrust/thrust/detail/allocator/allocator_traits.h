@@ -314,7 +314,7 @@ public:
   inline _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p, Args&&... args);
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE static void destroy(allocator_type& a, T* p);
+  inline _CCCL_HOST_DEVICE static void destroy(allocator_type& a, T* p) noexcept;
 
   inline _CCCL_HOST_DEVICE static size_type max_size(const allocator_type& a);
 }; // end allocator_traits

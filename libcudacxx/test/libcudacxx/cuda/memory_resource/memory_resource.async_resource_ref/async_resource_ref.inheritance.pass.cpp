@@ -30,6 +30,8 @@ struct property_without_value
 template <class... Properties>
 struct async_resource_base
 {
+  virtual ~async_resource_base() = default;
+
   virtual void* allocate(std::size_t, std::size_t) = 0;
 
   virtual void deallocate(void* ptr, std::size_t, std::size_t) noexcept = 0;

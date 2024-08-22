@@ -181,47 +181,57 @@ struct _Resource_vtable_builder
     return *static_cast<_Resource*>(__left) == *static_cast<_Resource*>(__rhs);
   }
 
-  template <class _Resource>
+  template <class _Resource, _WrapperType _Wrapper_type>
   static void _Destroy(_AnyResourceStorage* __object_) noexcept
   {
-    _Resource* __object = _Any_resource_cast<_Resource>(__object_);
-    if constexpr (_IsSmall<_Resource>())
+    if constexpr (_Wrapper_type == _WrapperType::_Owning)
     {
-      __object->~_Resource();
-    }
-    else
-    {
-      delete __object;
+      _Resource* __object = _Any_resource_cast<_Resource>(__object_);
+      if constexpr (_IsSmall<_Resource>())
+      {
+        __object->~_Resource();
+      }
+      else
+      {
+        delete __object;
+      }
     }
   }
 
-  template <class _Resource>
+  template <class _Resource, _WrapperType _Wrapper_type>
   static void _Move(_AnyResourceStorage* __object, _AnyResourceStorage* __other) noexcept
   {
-    if constexpr (_IsSmall<_Resource>())
+    if constexpr (_Wrapper_type == _WrapperType::_Owning)
     {
-      ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
-    }
-    else
-    {
-      __object->__ptr_ = new _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
+      if constexpr (_IsSmall<_Resource>())
+      {
+        ::new (static_cast<void*>(__object->__buf_))
+          _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
+      }
+      else
+      {
+        __object->__ptr_ = new _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
+      }
     }
   }
 
-  template <class _Resource>
+  template <class _Resource, _WrapperType _Wrapper_type>
   static void _Copy(_AnyResourceStorage* __object, const _AnyResourceStorage* __other)
   {
-    if constexpr (_IsSmall<_Resource>())
+    if constexpr (_Wrapper_type == _WrapperType::_Owning)
     {
-      ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
-    }
-    else
-    {
-      __object->__ptr_ = new _Resource(*_Any_resource_cast<_Resource>(__other));
+      if constexpr (_IsSmall<_Resource>())
+      {
+        ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
+      }
+      else
+      {
+        __object->__ptr_ = new _Resource(*_Any_resource_cast<_Resource>(__other));
+      }
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
+  _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type, _WrapperType _Wrapper_type)
   _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Default))
   static constexpr _Alloc_vtable _Create() noexcept
   {
@@ -229,12 +239,12 @@ struct _Resource_vtable_builder
             &_Resource_vtable_builder::_Alloc<_Resource>,
             &_Resource_vtable_builder::_Dealloc<_Resource>,
             &_Resource_vtable_builder::_Equal<_Resource>,
-            &_Resource_vtable_builder::_Destroy<_Resource>,
-            &_Resource_vtable_builder::_Move<_Resource>,
-            &_Resource_vtable_builder::_Copy<_Resource>};
+            &_Resource_vtable_builder::_Destroy<_Resource, _Wrapper_type>,
+            &_Resource_vtable_builder::_Move<_Resource, _Wrapper_type>,
+            &_Resource_vtable_builder::_Copy<_Resource, _Wrapper_type>};
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type)
+  _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type, _WrapperType _Wrapper_type)
   _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Async))
   static constexpr _Async_alloc_vtable _Create() noexcept
   {
@@ -242,9 +252,9 @@ struct _Resource_vtable_builder
             &_Resource_vtable_builder::_Alloc<_Resource>,
             &_Resource_vtable_builder::_Dealloc<_Resource>,
             &_Resource_vtable_builder::_Equal<_Resource>,
-            &_Resource_vtable_builder::_Destroy<_Resource>,
-            &_Resource_vtable_builder::_Move<_Resource>,
-            &_Resource_vtable_builder::_Copy<_Resource>,
+            &_Resource_vtable_builder::_Destroy<_Resource, _Wrapper_type>,
+            &_Resource_vtable_builder::_Move<_Resource, _Wrapper_type>,
+            &_Resource_vtable_builder::_Copy<_Resource, _Wrapper_type>,
             &_Resource_vtable_builder::_Alloc_async<_Resource>,
             &_Resource_vtable_builder::_Dealloc_async<_Resource>};
   }
@@ -424,9 +434,9 @@ using _Resource_base =
 template <_AllocType _Alloc_type>
 using _Vtable_store = _CUDA_VSTD::_If<_Alloc_type == _AllocType::_Default, _Alloc_vtable, _Async_alloc_vtable>;
 
-template <_AllocType _Alloc_type, class _Resource>
+template <_AllocType _Alloc_type, _WrapperType _Wrapper_type, class _Resource>
 _LIBCUDACXX_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
-  _Resource_vtable_builder::template _Create<_Resource, _Alloc_type>();
+  _Resource_vtable_builder::template _Create<_Resource, _Alloc_type, _Wrapper_type>();
 
 struct _Resource_ref_helper
 {
@@ -478,7 +488,7 @@ public:
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
-          _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
+          _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _WrapperType::_Reference, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -490,7 +500,7 @@ public:
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
-          _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
+          _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _WrapperType::_Reference, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -501,7 +511,8 @@ public:
   _LIBCUDACXX_REQUIRES((!_Is_resource_base<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
-      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
+          __res, &__alloc_vtable<_Alloc_type, _WrapperType::_Reference, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -512,7 +523,8 @@ public:
   _LIBCUDACXX_REQUIRES((!_Is_resource_base<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
-      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
+          __res, &__alloc_vtable<_Alloc_type, _WrapperType::_Reference, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 

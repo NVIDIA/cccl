@@ -29,14 +29,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if __has_builtin(__is_base_of) || defined(_LIBCUDACXX_MSVC)
-template <class _Set, class... _Ty>
-_LIBCUDACXX_CONCEPT __type_set_contains = _CUDA_VSTD::__all_of<__is_base_of(type_identity<_Ty>, _Set)...>;
-#else
 template <class _Set, class... _Ty>
 _LIBCUDACXX_CONCEPT __type_set_contains =
   _CUDA_VSTD::__all_of<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, type_identity<_Ty>, _Set)...>;
-#endif
 
 namespace __set
 {

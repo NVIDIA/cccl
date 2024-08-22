@@ -120,11 +120,12 @@ public:
   _CCCL_HOST_DEVICE iterator
   uninitialized_copy_n(thrust::execution_policy<System>& from_system, InputIterator first, Size n, iterator result);
 
-  _CCCL_HOST_DEVICE void destroy(iterator first, iterator last);
+  _CCCL_HOST_DEVICE void destroy(iterator first, iterator last) noexcept;
 
-  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch(const contiguous_storage& other);
+  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch(const contiguous_storage& other) noexcept;
 
-  _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch(const contiguous_storage& other, iterator first, iterator last);
+  _CCCL_HOST_DEVICE void
+  destroy_on_allocator_mismatch(const contiguous_storage& other, iterator first, iterator last) noexcept;
 
   _CCCL_HOST_DEVICE void set_allocator(const allocator_type& alloc);
 
@@ -161,15 +162,15 @@ private:
 
   _CCCL_HOST_DEVICE bool is_allocator_not_equal_dispatch(false_type, const allocator_type&) const;
 
-  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch_dispatch(true_type, const contiguous_storage& other);
+  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch_dispatch(true_type, const contiguous_storage& other) noexcept;
 
-  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch_dispatch(false_type, const contiguous_storage& other);
+  _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch_dispatch(false_type, const contiguous_storage& other) noexcept;
 
-  _CCCL_HOST_DEVICE void
-  destroy_on_allocator_mismatch_dispatch(true_type, const contiguous_storage& other, iterator first, iterator last);
+  _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch_dispatch(
+    true_type, const contiguous_storage& other, iterator first, iterator last) noexcept;
 
-  _CCCL_HOST_DEVICE void
-  destroy_on_allocator_mismatch_dispatch(false_type, const contiguous_storage& other, iterator first, iterator last);
+  _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch_dispatch(
+    false_type, const contiguous_storage& other, iterator first, iterator last) noexcept;
 
   _CCCL_HOST_DEVICE void propagate_allocator_dispatch(true_type, const contiguous_storage& other);
 

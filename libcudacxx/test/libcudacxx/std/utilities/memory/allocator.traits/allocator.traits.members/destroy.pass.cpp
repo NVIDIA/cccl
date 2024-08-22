@@ -68,7 +68,7 @@ struct CountDestroy
   }
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void destroy(U* p)
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void destroy(U* p) noexcept
   {
     assert(p == nullptr);
     ++*counter_;

@@ -367,7 +367,7 @@ public:
   }
 
   template <class Up>
-  void destroy(Up* p)
+  void destroy(Up* p) noexcept
   {
     static_assert((std::is_same<Up, AllowConstructT>::value), "Only allowed to destroy Up");
     {

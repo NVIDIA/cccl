@@ -201,7 +201,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -298,7 +298,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }

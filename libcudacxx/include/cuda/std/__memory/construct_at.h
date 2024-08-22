@@ -225,7 +225,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 #if _CCCL_STD_VER > 2014
 
 template <class _Tp, enable_if_t<!is_array_v<_Tp>, int> = 0>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc) noexcept
 {
   _LIBCUDACXX_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   __loc->~_Tp();
@@ -233,14 +233,15 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp, enable_if_t<is_array_v<_Tp>, int> = 0>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc) noexcept
 {
   _CUDA_VSTD::__destroy_at(__loc);
 }
 #  endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
+destroy(_ForwardIterator __first, _ForwardIterator __last) noexcept
 {
   (void) _CUDA_VSTD::__destroy(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }

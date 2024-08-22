@@ -70,7 +70,7 @@ public:
     return base_traits::construct(alloc, ptr);
   }
 
-  static void destroy(pointer ptr)
+  static void destroy(pointer ptr) noexcept
   {
     BaseAlloc alloc;
     return base_traits::destroy(alloc, ptr);

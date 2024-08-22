@@ -178,7 +178,7 @@ public:
   {
     ::new (static_cast<void*>(p)) T(std::forward<U>(val));
   }
-  void destroy(pointer p)
+  void destroy(pointer p) noexcept
   {
     p->~T();
   }
@@ -282,7 +282,7 @@ public:
   {
     ::new (static_cast<void*>(p)) T(std::forward<U>(val));
   }
-  void destroy(pointer p)
+  void destroy(pointer p) noexcept
   {
     p->~T();
   }
@@ -491,7 +491,7 @@ public:
   }
 
   template <typename U, typename... Args>
-  void destroy(U* p)
+  void destroy(U* p) noexcept
   {
     p->~U();
   }
