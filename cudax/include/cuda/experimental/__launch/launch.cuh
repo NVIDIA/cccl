@@ -120,7 +120,7 @@ void launch(
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
   auto finalized = finalize(stream, conf, kernel, args...);
-  if constexpr (::cuda::std::is_invocable_v<Kernel, decltype(finalized), as_kernel_arg_t<Args>...>,
+  if constexpr (::cuda::std::is_invocable_v<Kernel, decltype(finalized), as_kernel_arg_t<Args>...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
     auto launcher = detail::kernel_launcher<decltype(finalized), Kernel, as_kernel_arg_t<Args>...>;

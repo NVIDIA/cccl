@@ -18,6 +18,8 @@
 #include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/kernel_launchers.cuh>
+#include <cuda/experimental/__launch/launch_transform.cuh>
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -92,14 +94,7 @@ struct max_occupancy
  * @par
  */
 struct max_coresident
-{
-  // Super janky until we get a way to query device id from a stream
-  const unsigned int device_id;
-
-  _CCCL_HOST_DEVICE constexpr max_coresident(unsigned int dev_id = 0)
-      : device_id(dev_id)
-  {}
-};
+{};
 
 namespace detail
 {
@@ -179,6 +174,7 @@ struct level_finalizer<max_coresident>
   operator()(void* fn, unsigned int dynamic_smem_bytes, const max_coresident& dims, const HierarchyBelow& rest)
   {
     int num_sms = 0, num_blocks_per_sm = 0;
+    int device;
 
     // Needs to be fragment for c++17, since hierarchy_dimensions is an alias and CTAD is not supported
     auto tmp_hierarchy = hierarchy_dimensions_fragment(thread, rest);
@@ -188,7 +184,9 @@ struct level_finalizer<max_coresident>
     // TODO: there might be some consideration of clusters fitting on the device?
     auto blocks_multiplier = tmp_hierarchy.count(block);
 
-    cudaError_t status = cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, dims.device_id);
+    // Device will be properly set outside of this function
+    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device", &device);
+    cudaError_t status = cudaDeviceGetAttribute(&num_sms, cudaDevAttrMultiProcessorCount, device);
     if (status != cudaSuccess)
     {
       ::cuda::__throw_cuda_error(status, "Failed to query device attributes");
@@ -301,9 +299,10 @@ using finalized_t = typename finalized<T>::type;
  * Kernel function that the dimensions are intended for
  */
 template <typename... Args, typename... Levels>
-_CCCL_NODISCARD constexpr auto finalize(
-  [[maybe_unused]] ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
+_CCCL_NODISCARD constexpr auto
+finalize(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
 {
+  __ensure_current_device __dev_setter(stream);
   return detail::finalize_impl(reinterpret_cast<void*>(kernel), 0, hierarchy);
 }
 
@@ -327,10 +326,9 @@ _CCCL_NODISCARD constexpr auto finalize(
  */
 template <typename... Args, typename Dimensions, typename... Options>
 _CCCL_NODISCARD constexpr auto
-finalize([[maybe_unused]] ::cuda::stream_ref stream,
-         const kernel_config<Dimensions, Options...>& config,
-         void (*kernel)(Args...))
+finalize(::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
 {
+  __ensure_current_device __dev_setter(stream);
   size_t smem_size = 0;
   auto dyn_smem    = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
   if constexpr (!::cuda::std::is_same_v<decltype(dyn_smem), detail::option_not_found>)
@@ -376,16 +374,16 @@ template <typename... Args,
           typename = ::cuda::std::enable_if_t<!::cuda::std::is_function_v<std::remove_pointer_t<Kernel>>>>
 _CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel&)
 {
-  if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_t<ConfOrDims>, Args...>
+  if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_t<ConfOrDims>, as_kernel_arg_t<Args>...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    auto launcher = detail::kernel_launcher<finalized_t<ConfOrDims>, Kernel, Args...>;
+    auto launcher = detail::kernel_launcher<finalized_t<ConfOrDims>, Kernel, as_kernel_arg_t<Args>...>;
     return finalize(stream, conf_or_dims, launcher);
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<Kernel, Args...>);
-    auto launcher = detail::kernel_launcher_no_config<Kernel, Args...>;
+    static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
+    auto launcher = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
     return finalize(stream, conf_or_dims, launcher);
   }
 }
