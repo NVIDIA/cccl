@@ -242,6 +242,29 @@ finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensi
       hierarchy.levels));
 }
 
+template <typename... Args, typename... Levels>
+_CCCL_NODISCARD constexpr auto finalize_no_device_set(
+  ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
+{
+  return detail::finalize_impl(reinterpret_cast<void*>(kernel), 0, hierarchy);
+}
+
+template <typename... Args, typename Dimensions, typename... Options>
+_CCCL_NODISCARD constexpr auto finalize_no_device_set(
+  ::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
+{
+  size_t smem_size = 0;
+  auto dyn_smem    = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  if constexpr (!::cuda::std::is_same_v<decltype(dyn_smem), detail::option_not_found>)
+  {
+    smem_size = dyn_smem.size_bytes();
+  }
+
+  auto finalized_hierarchy =
+    detail::finalize_impl(reinterpret_cast<void*>(kernel), static_cast<unsigned int>(smem_size), config.dims);
+  return kernel_config(finalized_hierarchy, config.options);
+}
+
 // Assumes all meta dims are finalized into 1-d dynamic extent (seems like a safe assumption at least for now)
 // TODO should this be in the main namespace
 template <typename Level>
@@ -303,7 +326,7 @@ _CCCL_NODISCARD constexpr auto
 finalize(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
 {
   __ensure_current_device __dev_setter(stream);
-  return detail::finalize_impl(reinterpret_cast<void*>(kernel), 0, hierarchy);
+  return detail::finalize_no_device_set(stream, hierarchy, kernel);
 }
 
 /**
@@ -329,16 +352,7 @@ _CCCL_NODISCARD constexpr auto
 finalize(::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
 {
   __ensure_current_device __dev_setter(stream);
-  size_t smem_size = 0;
-  auto dyn_smem    = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
-  if constexpr (!::cuda::std::is_same_v<decltype(dyn_smem), detail::option_not_found>)
-  {
-    smem_size = dyn_smem.size_bytes();
-  }
-
-  auto finalized_hierarchy =
-    detail::finalize_impl(reinterpret_cast<void*>(kernel), static_cast<unsigned int>(smem_size), config.dims);
-  return kernel_config(finalized_hierarchy, config.options);
+  return detail::finalize_no_device_set(stream, config, kernel);
 }
 
 // Functor overload needs the arguments types to correctly instantiate the launcher
@@ -374,18 +388,8 @@ template <typename... Args,
           typename = ::cuda::std::enable_if_t<!::cuda::std::is_function_v<std::remove_pointer_t<Kernel>>>>
 _CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel&)
 {
-  if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_t<ConfOrDims>, as_kernel_arg_t<Args>...>
-                || __nv_is_extended_device_lambda_closure_type(Kernel))
-  {
-    auto launcher = detail::kernel_launcher<finalized_t<ConfOrDims>, Kernel, as_kernel_arg_t<Args>...>;
-    return finalize(stream, conf_or_dims, launcher);
-  }
-  else
-  {
-    static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
-    auto launcher = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
-    return finalize(stream, conf_or_dims, launcher);
-  }
+  return finalize(
+    stream, conf_or_dims, detail::get_kernel_launcher<Kernel, finalized_t<ConfOrDims>, as_kernel_arg_t<Args>...>());
 }
 _CCCL_DIAG_POP
 
