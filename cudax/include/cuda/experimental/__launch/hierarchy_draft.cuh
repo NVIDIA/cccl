@@ -243,15 +243,15 @@ finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensi
 }
 
 template <typename... Args, typename... Levels>
-_CCCL_NODISCARD auto finalize_no_device_set(
-  ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
+_CCCL_NODISCARD auto
+finalize_no_device_set(::cuda::stream_ref, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
 {
   return detail::finalize_impl(reinterpret_cast<void*>(kernel), 0, hierarchy);
 }
 
 template <typename... Args, typename Dimensions, typename... Options>
-_CCCL_NODISCARD auto finalize_no_device_set(
-  ::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
+_CCCL_NODISCARD auto
+finalize_no_device_set(::cuda::stream_ref, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
 {
   size_t smem_size = 0;
   auto dyn_smem    = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
