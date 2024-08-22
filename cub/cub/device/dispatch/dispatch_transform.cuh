@@ -320,8 +320,8 @@ template <typename T>
 struct ptr_set
 {
   T* base_ptr; // 128-byte aligned pointer before the original pointer (== start of cacheline)
-  uint32_t base_offset; // byte offset between base ptr and the original pointer (always smaller than 128)
-  uint32_t extra_bytes_to_copy; // number of extra bytes to copy when starting at base_ptr
+  int base_offset; // byte offset between base ptr and the original pointer. Value inside [0;127].
+  int extra_bytes_to_copy; // number of extra bytes to copy when starting at base_ptr. Value inside [0;127].
 
   _CCCL_HOST_DEVICE friend bool operator==(const ptr_set& a, const ptr_set& b)
   {
@@ -346,8 +346,8 @@ _CCCL_HOST_DEVICE auto make_ptr_set(const T* ptr) -> ptr_set<const T>
   // TODO(bgruber): is it actually legal to move the pointer to a lower 128-byte aligned address and start reading from
   // there in the kernel?
   const T* base_ptr      = round_down_ptr_128(ptr);
-  const auto base_offset = static_cast<::cuda::std::uint32_t>((ptr - base_ptr) * sizeof(T));
-  return ptr_set<const T>{base_ptr, base_offset, round_up_16(base_offset)};
+  const auto base_offset = static_cast<int>((ptr - base_ptr) * sizeof(T));
+  return ptr_set<const T>{base_ptr, base_offset, round_up_to_multiple(base_offset, 16)};
 }
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -366,7 +366,7 @@ _CCCL_DEVICE void copy_ptr_set(
 #  if CUB_PTX_ARCH >= 900
   namespace ptx = ::cuda::ptx;
   // Copy a bit more than tile_size, to cover for base_ptr starting earlier than ptr
-  const uint32_t num_bytes = round_up_16(sizeof(T) * tile_size + ptr_set.over_copy);
+  const uint32_t num_bytes = round_up_16(sizeof(T) * tile_size + ptr_set.extra_bytes_to_copy);
   ptx::cp_async_bulk(
     ptx::space_cluster,
     ptx::space_global,
