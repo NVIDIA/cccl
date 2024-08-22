@@ -209,7 +209,7 @@ _CCCL_NODISCARD constexpr auto hierarchy_finalize_impl(void*, unsigned int)
 }
 
 template <typename L1, typename... Rest>
-_CCCL_NODISCARD constexpr auto
+_CCCL_NODISCARD auto
 hierarchy_finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const L1& level, const Rest&... rest)
 {
   auto rest_finalized = hierarchy_finalize_impl(fn, dynamic_smem_bytes, rest...);
@@ -229,7 +229,7 @@ hierarchy_finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const L1& lev
 }
 
 template <typename... Levels>
-_CCCL_NODISCARD constexpr auto
+_CCCL_NODISCARD auto
 finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensions<Levels...>& hierarchy)
 {
   // Needs to be a fragment for c++17, since hierarchy_dimensions is an alias and CTAD is not supported
@@ -243,14 +243,14 @@ finalize_impl(void* fn, unsigned int dynamic_smem_bytes, const hierarchy_dimensi
 }
 
 template <typename... Args, typename... Levels>
-_CCCL_NODISCARD constexpr auto finalize_no_device_set(
+_CCCL_NODISCARD auto finalize_no_device_set(
   ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
 {
   return detail::finalize_impl(reinterpret_cast<void*>(kernel), 0, hierarchy);
 }
 
 template <typename... Args, typename Dimensions, typename... Options>
-_CCCL_NODISCARD constexpr auto finalize_no_device_set(
+_CCCL_NODISCARD auto finalize_no_device_set(
   ::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
 {
   size_t smem_size = 0;
@@ -322,7 +322,7 @@ using finalized_t = typename finalized<T>::type;
  * Kernel function that the dimensions are intended for
  */
 template <typename... Args, typename... Levels>
-_CCCL_NODISCARD constexpr auto
+_CCCL_NODISCARD auto
 finalize(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hierarchy, void (*kernel)(Args...))
 {
   __ensure_current_device __dev_setter(stream);
@@ -348,7 +348,7 @@ finalize(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& hiera
  * Kernel function that the configuration are intended for
  */
 template <typename... Args, typename Dimensions, typename... Options>
-_CCCL_NODISCARD constexpr auto
+_CCCL_NODISCARD auto
 finalize(::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>& config, void (*kernel)(Args...))
 {
   __ensure_current_device __dev_setter(stream);
@@ -386,7 +386,7 @@ template <typename... Args,
           typename Kernel,
           typename ConfOrDims,
           typename = ::cuda::std::enable_if_t<!::cuda::std::is_function_v<std::remove_pointer_t<Kernel>>>>
-_CCCL_NODISCARD constexpr auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel&)
+_CCCL_NODISCARD auto finalize(::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel&)
 {
   return finalize(
     stream, conf_or_dims, detail::get_kernel_launcher<Kernel, finalized_t<ConfOrDims>, as_kernel_arg_t<Args>...>());
@@ -417,7 +417,7 @@ _CCCL_DIAG_POP
  * Arguments that the kernel functor will be launched with
  */
 template <typename... Args, typename Kernel, typename ConfOrDims>
-_CCCL_NODISCARD constexpr auto finalize(
+_CCCL_NODISCARD auto finalize(
   ::cuda::stream_ref stream, const ConfOrDims& conf_or_dims, const Kernel& kernel, [[maybe_unused]] const Args&... args)
 {
   return finalize<Args...>(stream, conf_or_dims, kernel);
