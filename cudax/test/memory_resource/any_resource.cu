@@ -59,18 +59,18 @@ struct big_resource
   big_resource(big_resource&& other) noexcept
       : data(other.data)
   {
+    other._assert_valid();
     ++counts.move_count;
     ++counts.object_count;
-    other._assert_valid();
-    cookie[0] = cookie[1] = cookie[2] = 0x0C07FEFE;
+    other.cookie[0] = other.cookie[1] = other.cookie[2] = 0x0C07FEFE;
   }
 
   big_resource(const big_resource& other) noexcept
       : data(other.data)
   {
+    other._assert_valid();
     ++counts.copy_count;
     ++counts.object_count;
-    other._assert_valid();
   }
 
   ~big_resource()
@@ -80,23 +80,23 @@ struct big_resource
 
   void* allocate(std::size_t, std::size_t)
   {
-    ++counts.allocate_count;
     _assert_valid();
+    ++counts.allocate_count;
     return nullptr;
   }
 
   void deallocate(void*, std::size_t, std::size_t) noexcept
   {
-    ++counts.deallocate_count;
     _assert_valid();
+    ++counts.deallocate_count;
     return;
   }
 
   friend bool operator==(const big_resource& lhs, const big_resource& rhs)
   {
-    ++counts.equal_to_count;
     lhs._assert_valid();
     rhs._assert_valid();
+    ++counts.equal_to_count;
     return lhs.data == rhs.data;
   }
 
@@ -119,7 +119,7 @@ struct big_resource
     return ::operator new(size);
   }
 
-  static void operator delete(void* pv)
+  static void operator delete(void* pv) noexcept
   {
     ++counts.delete_count;
     return ::operator delete(pv);
@@ -132,21 +132,58 @@ Counts big_resource::counts{};
 
 TEST_CASE("any_resource", "[container][resource]")
 {
-  SECTION("construct and destruct a big resource")
+  SECTION("big resources")
   {
-    Counts expected{};
-    CHECK(big_resource::counts == expected);
+    SECTION("construct and destruct")
     {
-      cudax::mr::any_resource<> mr{big_resource{42}};
-      ++expected.new_count;
-      ++expected.object_count;
-      ++expected.move_count;
+      Counts expected{};
+      CHECK(big_resource::counts == expected);
+      {
+        cudax::mr::any_resource<> mr{big_resource{42}};
+        ++expected.new_count;
+        ++expected.object_count;
+        ++expected.move_count;
+        CHECK(big_resource::counts == expected);
+
+        void* ptr = mr.allocate(0, 0);
+        ++expected.allocate_count;
+        CHECK(big_resource::counts == expected);
+
+        mr.deallocate(ptr, 0, 0);
+        ++expected.deallocate_count;
+        CHECK(big_resource::counts == expected);
+      }
+      ++expected.delete_count;
+      --expected.object_count;
       CHECK(big_resource::counts == expected);
     }
-    ++expected.delete_count;
-    --expected.object_count;
-    CHECK(big_resource::counts == expected);
-  }
 
-  big_resource::counts = Counts();
+    // Reset the counters:
+    big_resource::counts = Counts();
+
+    SECTION("conversion to resource_ref")
+    {
+      Counts expected{};
+      {
+        cudax::mr::any_resource<> mr{big_resource{42}};
+        ++expected.new_count;
+        ++expected.object_count;
+        ++expected.move_count;
+        CHECK(big_resource::counts == expected);
+
+        cuda::mr::resource_ref<> ref = mr;
+
+        CHECK(big_resource::counts == expected);
+        auto* ptr = ref.allocate(0, 0);
+        ++expected.allocate_count;
+        CHECK(big_resource::counts == expected);
+        ref.deallocate(ptr, 0, 0);
+        ++expected.deallocate_count;
+        CHECK(big_resource::counts == expected);
+      }
+      ++expected.delete_count;
+      --expected.object_count;
+      CHECK(big_resource::counts == expected);
+    }
+  }
 }

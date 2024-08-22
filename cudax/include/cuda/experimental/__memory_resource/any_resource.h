@@ -21,20 +21,31 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+// If the memory resource header was included without the experimental flag,
+// tell the user to define the experimental flag.
+#if defined(_CUDA_MEMORY_RESOURCE) && !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#  error "To use the experimental memory resource, define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+#endif
 
-#  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/__memory_resource/resource.h>
-#  include <cuda/__memory_resource/resource_ref.h>
-#  include <cuda/std/__concepts/_One_of.h>
-#  include <cuda/std/__memory/construct_at.h>
-#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
-#  include <cuda/std/__utility/exchange.h>
-#  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/in_place.h>
+// cuda::mr is unavable on MSVC 2017
+#if defined(_CCCL_COMPILER_MSVC_2017)
+#  error "The any_resource header is not supported on MSVC 2017"
+#endif
 
-#  if _CCCL_STD_VER >= 2014
+#if !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif
+
+#include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/resource.h>
+#include <cuda/__memory_resource/resource_ref.h>
+#include <cuda/std/__concepts/_One_of.h>
+#include <cuda/std/__concepts/all_of.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
 
 namespace cuda::experimental::mr
 {
@@ -43,7 +54,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource = false;
 
 template <_CUDA_VMR::_AllocType _Alloc_type, class... _Properties>
 class basic_any_resource
-    : public _CUDA_VMR::_Resource_ref_base<_Alloc_type, false>
+    : public _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>
     , private _CUDA_VMR::_Filtered_vtable<_Properties...>
 {
 private:
@@ -57,18 +68,15 @@ private:
 
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
+    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>;
 
-  template <typename _Resource>
-  basic_any_resource(_CUDA_VSTD::in_place_t,
-                     _Resource&& __res) noexcept(_CUDA_VMR::_IsSmall<_CUDA_VSTD::remove_cvref_t<_Resource>>())
-      : _CUDA_VMR::_Resource_ref_base<_Alloc_type, false>(
-          nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VSTD::remove_cvref_t<_Resource>>)
-      , __vtable(__vtable::template _Create<_CUDA_VSTD::remove_cvref_t<_Resource>>())
+  template <class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>>
+  basic_any_resource(_CUDA_VSTD::in_place_t, _Resource&& __res) noexcept(_CUDA_VMR::_IsSmall<__resource_t>())
+      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
+          nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, __resource_t>)
+      , __vtable(__vtable::template _Create<__resource_t>())
   {
-    using __resource_t        = _CUDA_VSTD::remove_cvref_t<_Resource>;
-    constexpr bool __is_small = _CUDA_VMR::_IsSmall<__resource_t>();
-    if constexpr (__is_small)
+    if constexpr (_CUDA_VMR::_IsSmall<__resource_t>())
     {
       ::new (static_cast<void*>(this->__object.__buf_)) __resource_t(_CUDA_VSTD::forward<_Resource>(__res));
     }
@@ -106,7 +114,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
   basic_any_resource(basic_any_resource<_Alloc_type, _OtherProperties...> __other) noexcept
-      : _CUDA_VMR::_Resource_ref_base<_Alloc_type, false>(
+      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
@@ -121,7 +129,7 @@ public:
   _LIBCUDACXX_REQUIRES((_OtherAllocType == _CUDA_VMR::_AllocType::_Async) _LIBCUDACXX_AND(
     _OtherAllocType != _Alloc_type) _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
   basic_any_resource(basic_any_resource<_OtherAllocType, _OtherProperties...> __other) noexcept
-      : _CUDA_VMR::_Resource_ref_base<_Alloc_type, false>(
+      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
@@ -130,7 +138,7 @@ public:
   }
 
   basic_any_resource(basic_any_resource&& __other) noexcept
-      : _CUDA_VMR::_Resource_ref_base<_Alloc_type, false>(
+      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
@@ -156,7 +164,7 @@ public:
   }
 
   basic_any_resource(const basic_any_resource& __other)
-      : _CUDA_VMR::_Resource_ref_base<_Alloc_type, false>(nullptr, __other.__static_vtable)
+      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(nullptr, __other.__static_vtable)
       , __vtable(__other)
   {
     _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
@@ -177,6 +185,16 @@ public:
     }
   }
 
+  _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
+  _LIBCUDACXX_REQUIRES(
+    (_OtherAllocType == _CUDA_VMR::_AllocType::_Default || _OtherAllocType == _Alloc_type)
+      _LIBCUDACXX_AND _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_Properties...>, _OtherProperties...>)
+  operator _CUDA_VMR::basic_resource_ref<_OtherAllocType, _OtherProperties...>() noexcept
+  {
+    return _CUDA_VMR::_Resource_ref_helper::_Construct<_Alloc_type, _OtherProperties...>(
+      this->_Get_object(), this->__static_vtable, static_cast<const __vtable&>(*this));
+  }
+
   void swap(basic_any_resource& __other) noexcept
   {
     auto __tmp = _CUDA_VSTD::move(__other);
@@ -194,7 +212,7 @@ public:
   _CCCL_NODISCARD bool operator==(const basic_any_resource<_Alloc_type, _OtherProperties...>& __rhs) const
   {
     return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
-        && this->__static_vtable->__equal_fn(this->__object, __rhs.__object);
+        && this->__static_vtable->__equal_fn(this->_Get_object(), __rhs._Get_object());
   }
 
   //! @brief Inequality comparison between two \c basic_any_resource
@@ -220,7 +238,7 @@ public:
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_any_resource& __res, _Property) noexcept
   {
     _CUDA_VMR::_Property_vtable<_Property> const& __prop = __res;
-    return __prop.__property_fn(__res.__object);
+    return __prop.__property_fn(__res._Get_object());
   }
 };
 
@@ -240,9 +258,5 @@ template <class... _Properties>
 using async_any_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Async, _Properties...>;
 
 } // namespace cuda::experimental::mr
-
-#  endif // _CCCL_STD_VER >= 2014
-
-#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDAX__MEMORY_RESOURCE_ANY_RESOURCE_H

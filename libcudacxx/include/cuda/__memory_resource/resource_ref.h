@@ -25,12 +25,13 @@
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__concepts/_One_of.h>
 #  include <cuda/std/__concepts/all_of.h>
 #  include <cuda/std/__memory/addressof.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#  include <cuda/std/__type_traits/type_set.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
@@ -57,19 +58,23 @@ constexpr bool _IsSmall() noexcept
       && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Resource);
 }
 
-template <typename _Resource>
-_Resource* _Any_resource_cast(void* __object_) noexcept
+template <class _Resource>
+constexpr _Resource* _Any_resource_cast(_AnyResourceStorage* __object) noexcept
 {
-  _AnyResourceStorage* __object = static_cast<_AnyResourceStorage*>(__object_);
   return static_cast<_Resource*>(_IsSmall<_Resource>() ? __object->__buf_ : __object->__ptr_);
 }
 
-template <typename _Resource>
-const _Resource* _Any_resource_cast(const void* __object_) noexcept
+template <class _Resource>
+constexpr const _Resource* _Any_resource_cast(const _AnyResourceStorage* __object) noexcept
 {
-  const _AnyResourceStorage* __object = static_cast<const _AnyResourceStorage*>(__object_);
   return static_cast<const _Resource*>(_IsSmall<_Resource>() ? __object->__buf_ : __object->__ptr_);
 }
+
+enum class _WrapperType
+{
+  _Reference,
+  _Owning
+};
 
 enum class _AllocType
 {
@@ -82,9 +87,9 @@ struct _Alloc_vtable
   using _AllocFn   = void* (*) (void*, size_t, size_t);
   using _DeallocFn = void (*)(void*, void*, size_t, size_t) noexcept;
   using _EqualFn   = bool (*)(void*, void*);
-  using _DestroyFn = void (*)(void*) noexcept;
-  using _MoveFn    = void (*)(void*, void*) noexcept;
-  using _CopyFn    = void (*)(void*, const void*);
+  using _DestroyFn = void (*)(_AnyResourceStorage*) noexcept;
+  using _MoveFn    = void (*)(_AnyResourceStorage*, _AnyResourceStorage*) noexcept;
+  using _CopyFn    = void (*)(_AnyResourceStorage*, const _AnyResourceStorage*);
 
   bool __is_small;
   _AllocFn __alloc_fn;
@@ -177,7 +182,7 @@ struct _Resource_vtable_builder
   }
 
   template <class _Resource>
-  static void _Destroy(void* __object_) noexcept
+  static void _Destroy(_AnyResourceStorage* __object_) noexcept
   {
     _Resource* __object = _Any_resource_cast<_Resource>(__object_);
     if constexpr (_IsSmall<_Resource>())
@@ -191,31 +196,28 @@ struct _Resource_vtable_builder
   }
 
   template <class _Resource>
-  static void _Move(void* __object_, void* __other_) noexcept
+  static void _Move(_AnyResourceStorage* __object, _AnyResourceStorage* __other) noexcept
   {
-    _AnyResourceStorage* __object = static_cast<_AnyResourceStorage*>(__object_);
     if constexpr (_IsSmall<_Resource>())
     {
-      ::new (static_cast<void*>(__object->__buf_))
-        _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other_)));
+      ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
     }
     else
     {
-      __object->__ptr_ = ::new _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other_)));
+      __object->__ptr_ = new _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
     }
   }
 
   template <class _Resource>
-  static void _Copy(void* __object_, const void* __other_)
+  static void _Copy(_AnyResourceStorage* __object, const _AnyResourceStorage* __other)
   {
-    _AnyResourceStorage* __object = static_cast<_AnyResourceStorage*>(__object_);
     if constexpr (_IsSmall<_Resource>())
     {
-      ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other_));
+      ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
     }
     else
     {
-      __object->__ptr_ = ::new _Resource(*_Any_resource_cast<_Resource>(__other_));
+      __object->__ptr_ = new _Resource(*_Any_resource_cast<_Resource>(__other));
     }
   }
 
@@ -249,12 +251,14 @@ struct _Resource_vtable_builder
 };
 
 template <class _Property>
+using __property_fn_t = __property_value_t<_Property> (*)(void*);
+
+template <class _Property>
 struct _Property_vtable
 {
-  using _PropertyFn         = __property_value_t<_Property> (*)(void*);
-  _PropertyFn __property_fn = nullptr;
+  __property_fn_t<_Property> __property_fn = nullptr;
 
-  constexpr _Property_vtable(_PropertyFn __property_fn_) noexcept
+  constexpr _Property_vtable(__property_fn_t<_Property> __property_fn_) noexcept
       : __property_fn(__property_fn_)
   {}
 };
@@ -265,14 +269,13 @@ class basic_resource_ref;
 template <class... _Properties>
 struct _Resource_vtable : public _Property_vtable<_Properties>...
 {
-  template <class... _PropertyFns>
-  constexpr _Resource_vtable(_PropertyFns... __property_fn_) noexcept
+  constexpr _Resource_vtable(__property_fn_t<_Properties>... __property_fn_) noexcept
       : _Property_vtable<_Properties>(__property_fn_)...
   {}
 
-  template <_AllocType _Alloc_type, class... _OtherProperties>
-  constexpr _Resource_vtable(basic_resource_ref<_Alloc_type, _OtherProperties...>& __ref) noexcept
-      : _Property_vtable<_Properties>(__ref._Property_vtable<_Properties>::__property_fn)...
+  template <class... _OtherProperties>
+  constexpr _Resource_vtable(const _Resource_vtable<_OtherProperties...>& __other) noexcept
+      : _Property_vtable<_Properties>(__other._Property_vtable<_Properties>::__property_fn)...
   {}
 
   template <class _Resource>
@@ -327,10 +330,10 @@ struct _Filtered<>
 template <class... _Properties>
 using _Filtered_vtable = typename _Filtered<_Properties...>::_Filtered_vtable::_Vtable;
 
-template <bool _IsReference>
-using __alloc_object_storage_t = _CUDA_VSTD::_If<_IsReference, void*, _AnyResourceStorage>;
+template <_WrapperType _Wrapper_type>
+using __alloc_object_storage_t = _CUDA_VSTD::_If<_Wrapper_type == _WrapperType::_Reference, void*, _AnyResourceStorage>;
 
-template <class _Vtable, bool _IsReference>
+template <class _Vtable, _WrapperType _Wrapper_type>
 struct _Alloc_base
 {
   static_assert(_CUDA_VSTD::is_base_of_v<_Alloc_vtable, _Vtable>, "");
@@ -345,7 +348,7 @@ struct _Alloc_base
     return __static_vtable->__alloc_fn(_Get_object(), __bytes, __alignment);
   }
 
-  void deallocate(void* _Ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  void deallocate(void* _Ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
   {
     __static_vtable->__dealloc_fn(_Get_object(), _Ptr, __bytes, __alignment);
   }
@@ -353,55 +356,70 @@ struct _Alloc_base
 protected:
   void* _Get_object() const noexcept
   {
-    if constexpr (_IsReference)
+    if constexpr (_Wrapper_type == _WrapperType::_Reference)
     {
       return __object;
     }
     else
     {
-      return __static_vtable->__is_small ? __object.__buf_ : __object.__ptr_;
+      const void* __pv = __static_vtable->__is_small ? __object.__buf_ : __object.__ptr_;
+      return const_cast<void*>(__pv);
     }
   }
 
-  __alloc_object_storage_t<_IsReference> __object = nullptr;
-  const _Vtable* __static_vtable                  = nullptr;
+  __alloc_object_storage_t<_Wrapper_type> __object{};
+  const _Vtable* __static_vtable = nullptr;
 };
 
-template <class _Vtable, bool _IsReference>
-struct _Async_alloc_base : public _Alloc_base<_Vtable, _IsReference>
+template <class _Vtable, _WrapperType _Wrapper_type>
+struct _Async_alloc_base : public _Alloc_base<_Vtable, _Wrapper_type>
 {
   static_assert(_CUDA_VSTD::is_base_of_v<_Async_alloc_vtable, _Vtable>, "");
 
   _Async_alloc_base(void* __object_, const _Vtable* __static_vtabl_) noexcept
-      : _Alloc_base<_Vtable, _IsReference>(__object_, __static_vtabl_)
+      : _Alloc_base<_Vtable, _Wrapper_type>(__object_, __static_vtabl_)
   {}
 
   _CCCL_NODISCARD void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    return this->__static_vtable->__async_alloc_fn(this->__object, __bytes, __alignment, __stream);
+    return this->__static_vtable->__async_alloc_fn(this->_Get_object(), __bytes, __alignment, __stream);
   }
 
   _CCCL_NODISCARD void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
   {
-    return this->__static_vtable->__async_alloc_fn(this->__object, __bytes, alignof(max_align_t), __stream);
+    return this->__static_vtable->__async_alloc_fn(this->_Get_object(), __bytes, alignof(max_align_t), __stream);
   }
 
   void deallocate_async(void* _Ptr, size_t __bytes, ::cuda::stream_ref __stream)
   {
-    this->__static_vtable->__async_dealloc_fn(this->__object, _Ptr, __bytes, alignof(max_align_t), __stream);
+    this->__static_vtable->__async_dealloc_fn(this->_Get_object(), _Ptr, __bytes, alignof(max_align_t), __stream);
   }
 
   void deallocate_async(void* _Ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    this->__static_vtable->__async_dealloc_fn(this->__object, _Ptr, __bytes, __alignment, __stream);
+    this->__static_vtable->__async_dealloc_fn(this->_Get_object(), _Ptr, __bytes, __alignment, __stream);
   }
 };
 
-template <_AllocType _Alloc_type, bool _IsReference>
-using _Resource_ref_base =
+template <class _VTable, _WrapperType _Wrapper_type>
+constexpr bool _Is_resource_base_fn(const _Alloc_base<_VTable, _Wrapper_type>*) noexcept
+{
+  return true;
+}
+
+constexpr bool _Is_resource_base_fn(...) noexcept
+{
+  return false;
+}
+
+template <class _Resource>
+_LIBCUDACXX_CONCEPT _Is_resource_base = _Is_resource_base_fn(static_cast<_Resource*>(nullptr));
+
+template <_AllocType _Alloc_type, _WrapperType _Wrapper_type>
+using _Resource_base =
   _CUDA_VSTD::_If<_Alloc_type == _AllocType::_Default,
-                  _Alloc_base<_Alloc_vtable, _IsReference>,
-                  _Async_alloc_base<_Async_alloc_vtable, _IsReference>>;
+                  _Alloc_base<_Alloc_vtable, _Wrapper_type>,
+                  _Async_alloc_base<_Async_alloc_vtable, _Wrapper_type>>;
 
 template <_AllocType _Alloc_type>
 using _Vtable_store = _CUDA_VSTD::_If<_Alloc_type == _AllocType::_Default, _Alloc_vtable, _Async_alloc_vtable>;
@@ -410,12 +428,22 @@ template <_AllocType _Alloc_type, class _Resource>
 _LIBCUDACXX_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
   _Resource_vtable_builder::template _Create<_Resource, _Alloc_type>();
 
-template <class>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref = false;
+struct _Resource_ref_helper
+{
+  //! This is used from \c basic_any_resource to make it convertible to a \c basic_resource_ref
+  template <_AllocType _Alloc_type, class... _Properties>
+  static basic_resource_ref<_Alloc_type, _Properties...>
+  _Construct(void* __object,
+             const _Vtable_store<_Alloc_type>* __static_vtable,
+             _Filtered_vtable<_Properties...> __properties) noexcept
+  {
+    return basic_resource_ref<_Alloc_type, _Properties...>(__object, __static_vtable, __properties);
+  }
+};
 
 template <_AllocType _Alloc_type, class... _Properties>
 class basic_resource_ref
-    : public _Resource_ref_base<_Alloc_type, true>
+    : public _Resource_base<_Alloc_type, _WrapperType::_Reference>
     , private _Filtered_vtable<_Properties...>
 {
 private:
@@ -425,21 +453,32 @@ private:
   template <class...>
   friend struct _Resource_vtable;
 
+  friend struct _Resource_ref_helper;
+
   using __vtable = _Filtered_vtable<_Properties...>;
 
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
+    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>;
+
+  //! @brief Constructs a \c basic_resource_ref from a void*, a resource vtable ptr, and a vtable
+  //! for the properties. This is used to create a \c basic_resource_ref from a \c basic_any_resource.
+  explicit basic_resource_ref(
+    void* __object_, const _Vtable_store<_Alloc_type>* __static_vtable, __vtable __properties) noexcept
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__object_, __static_vtable)
+      , __vtable(__properties)
+  {}
 
 public:
   //! @brief Constructs a \c basic_resource_ref from a type that satisfies the \c resource or \c async_resource concept
   //! as well as all properties
   //! @param __res The resource to be wrapped within the \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
+  _LIBCUDACXX_REQUIRES((!_Is_resource_base<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
-      : _Resource_ref_base<_Alloc_type, true>(_CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
+          _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -447,10 +486,11 @@ public:
   //! properties. This ignores the async interface of the passed in resource
   //! @param __res The resource to be wrapped within the \c resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
+  _LIBCUDACXX_REQUIRES((!_Is_resource_base<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
-      : _Resource_ref_base<_Alloc_type, true>(_CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
+          _CUDA_VSTD::addressof(__res), &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -458,10 +498,10 @@ public:
   //! as well as all properties
   //! @param __res Pointer to a resource to be wrapped within the \c basic_resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
+  _LIBCUDACXX_REQUIRES((!_Is_resource_base<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
                          _LIBCUDACXX_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
-      : _Resource_ref_base<_Alloc_type, true>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -469,10 +509,10 @@ public:
   //! properties. This ignores the async interface of the passed in resource
   //! @param __res Pointer to a resource to be wrapped within the \c resource_ref
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES((!__is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
+  _LIBCUDACXX_REQUIRES((!_Is_resource_base<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Async)
                          _LIBCUDACXX_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
-      : _Resource_ref_base<_Alloc_type, true>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__res, &__alloc_vtable<_Alloc_type, _Resource>)
       , __vtable(__vtable::template _Create<_Resource>())
   {}
 
@@ -481,8 +521,8 @@ public:
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
   basic_resource_ref(basic_resource_ref<_Alloc_type, _OtherProperties...> __ref) noexcept
-      : _Resource_ref_base<_Alloc_type, true>(__ref.__object, __ref.__static_vtable)
-      , __vtable(__ref)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__ref.__object, __ref.__static_vtable)
+      , __vtable(static_cast<const _Filtered_vtable<_OtherProperties...>&>(__ref))
   {}
 
   //! @brief Conversion from a \c async_resource_ref with the same set of properties but in a different order to a
@@ -492,8 +532,8 @@ public:
   _LIBCUDACXX_REQUIRES((_OtherAllocType == _AllocType::_Async) _LIBCUDACXX_AND(_OtherAllocType != _Alloc_type)
                          _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
   basic_resource_ref(basic_resource_ref<_OtherAllocType, _OtherProperties...> __ref) noexcept
-      : _Resource_ref_base<_Alloc_type, true>(__ref.__object, __ref.__static_vtable)
-      , __vtable(__ref)
+      : _Resource_base<_Alloc_type, _WrapperType::_Reference>(__ref.__object, __ref.__static_vtable)
+      , __vtable(static_cast<const _Filtered_vtable<_OtherProperties...>&>(__ref))
   {}
 
   //! @brief Equality comparison between two \c basic_resource_ref
@@ -535,10 +575,6 @@ public:
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
   }
 };
-
-//! @brief Checks whether a passed in type is a specialization of basic_resource_ref
-template <_AllocType _Alloc_type, class... _Properties>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_resource_ref<basic_resource_ref<_Alloc_type, _Properties...>> = true;
 
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
 //! @tparam _Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
