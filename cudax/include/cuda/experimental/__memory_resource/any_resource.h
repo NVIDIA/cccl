@@ -127,8 +127,9 @@ public:
   //! \c any_resource
   //! @param __ref The other \c async_any_resource
   _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES((_OtherAllocType == _CUDA_VMR::_AllocType::_Async) _LIBCUDACXX_AND(
-    _OtherAllocType != _Alloc_type) _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
+  _LIBCUDACXX_REQUIRES((_OtherAllocType == _CUDA_VMR::_AllocType::_Async) _LIBCUDACXX_AND //
+                       (_OtherAllocType != _Alloc_type) _LIBCUDACXX_AND //
+                         __properties_match<_OtherProperties...>)
   basic_any_resource(basic_any_resource<_OtherAllocType, _OtherProperties...> __other) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
