@@ -743,6 +743,10 @@ struct dispatch_t<RequiresStableAddress,
                   TransformOp,
                   PolicyHub>
 {
+  static_assert(::cuda::std::is_same<Offset, ::cuda::std::int32_t>::value
+                  || ::cuda::std::is_same<Offset, ::cuda::std::int64_t>::value,
+                "cub::DeviceTransform is only tested and tuned for 32-bit or 64-bit signed offset types");
+
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
   RandomAccessIteratorOut out;
   Offset num_items;
