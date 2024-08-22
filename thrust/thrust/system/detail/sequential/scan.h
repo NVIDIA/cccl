@@ -93,7 +93,6 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 {
   using namespace thrust::detail;
 
-  // Use the input iterator's value type per https://wg21.link/P0571
   using ValueType = typename ::cuda::std::
     __accumulator_t<BinaryFunction, typename ::cuda::std::iterator_traits<InputIterator>::value_type, InitialValueType>;
 

@@ -109,7 +109,7 @@ struct inclusive_body
     {
       _CCCL_IF_CONSTEXPR (HasInit)
       {
-        *iter2 = sum = binary_op(*iter1, sum);
+        *iter2 = sum = binary_op(sum, *iter1);
       }
       else
       {

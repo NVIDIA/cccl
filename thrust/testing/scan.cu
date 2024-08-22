@@ -75,8 +75,8 @@ void TestScanSimple()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with init and op
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(3), thrust::plus<T>());
-  result = {4, 7, 5, 9, 4};
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(-1), thrust::multiplies<T>());
+  result = {-1, -3, 6, 24, -120};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
