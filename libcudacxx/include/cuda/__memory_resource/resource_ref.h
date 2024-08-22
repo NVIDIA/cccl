@@ -32,6 +32,7 @@
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__type_traits/type_set.h>
+#  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
@@ -199,18 +200,19 @@ struct _Resource_vtable_builder
   }
 
   template <class _Resource, _WrapperType _Wrapper_type>
-  static void _Move(_AnyResourceStorage* __object, _AnyResourceStorage* __other) noexcept
+  static void _Move(_AnyResourceStorage* __object, _AnyResourceStorage* __other_) noexcept
   {
     if constexpr (_Wrapper_type == _WrapperType::_Owning)
     {
       if constexpr (_IsSmall<_Resource>())
       {
-        ::new (static_cast<void*>(__object->__buf_))
-          _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
+        _Resource* __other = _Any_resource_cast<_Resource>(__other_);
+        ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*__other));
+        __other->~_Resource();
       }
       else
       {
-        __object->__ptr_ = new _Resource(_CUDA_VSTD::move(*_Any_resource_cast<_Resource>(__other)));
+        __object->__ptr_ = _CUDA_VSTD::exchange(__other_->__ptr_, nullptr);
       }
     }
   }

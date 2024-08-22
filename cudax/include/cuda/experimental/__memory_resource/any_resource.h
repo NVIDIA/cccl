@@ -73,7 +73,7 @@ private:
   template <class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>>
   basic_any_resource(_CUDA_VSTD::in_place_t, _Resource&& __res) noexcept(_CUDA_VMR::_IsSmall<__resource_t>())
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
-          nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, __resource_t>)
+          nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __resource_t>)
       , __vtable(__vtable::template _Create<__resource_t>())
   {
     if constexpr (_CUDA_VMR::_IsSmall<__resource_t>())
