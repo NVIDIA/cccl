@@ -381,7 +381,7 @@ finalize(::cuda::stream_ref stream, const kernel_config<Dimensions, Options...>&
  */
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
+_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored in is_function
 template <typename... Args,
           typename Kernel,
           typename ConfOrDims,
