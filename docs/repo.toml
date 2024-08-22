@@ -338,22 +338,28 @@ doxygen_input = [
 ]
 
 doxygen_predefined = [
+  "__device__",
+  "__host__",
+  "__global__",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
+  "_CCCL_GLOBAL_CONSTANT=constexpr",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
   "_CCCL_NODISCARD=[[nodiscard]]",
-  "_CCCL_NODISCARD_FRIEND=friend",
+  "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
   "_CUDA_VMR=cuda::mr",
   "_CUDA_VSTD=cuda::std",
-  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
-  "_LIBCUDACXX_EAT_REST(x)=",
-  "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
-  "_LIBCUDACXX_TEMPLATE(...)=template<__VA_ARGS__>",
-  "_LIBCUDACXX_REQUIRES=requires",
   "_LIBCUDACXX_AND=&&",
+  "_LIBCUDACXX_EAT_REST(x)=",
+  "_LIBCUDACXX_GLOBAL_CONSTANT=inline",
+  "_LIBCUDACXX_INLINE_VAR=inline",
+  "_LIBCUDACXX_REQUIRES=requires",
+  "_LIBCUDACXX_TEMPLATE(...)=template<__VA_ARGS__>",
+  "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -365,6 +371,6 @@ doxygen_conf_extra = """
   EXTENSION_MAPPING      = cuh=c++ cu=c++
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
-  EXCLUDE_SYMBOLS        = "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*"
+  EXCLUDE_SYMBOLS        = "*detail*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*"
   AUTOLINK_SUPPORT       = YES
 """

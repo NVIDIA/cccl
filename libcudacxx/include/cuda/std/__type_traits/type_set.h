@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Set, class... _Ty>
 _LIBCUDACXX_INLINE_VAR constexpr bool __type_set_contains =
-  _CUDA_VSTD::__all_of<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, type_identity<_Ty>, _Set)...>;
+  _CUDA_VSTD::__all_of<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, __type_identity<_Ty>, _Set)...>;
 
 namespace __set
 {
@@ -45,7 +45,7 @@ struct __tupl
 
 template <class _Ty, class... _Ts>
 struct __tupl<_Ty, _Ts...>
-    : type_identity<_Ty>
+    : __type_identity<_Ty>
     , __tupl<_Ts...>
 {
   static constexpr size_t __size() noexcept

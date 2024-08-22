@@ -144,6 +144,9 @@ struct _Async_alloc_vtable : public _Alloc_vtable
 
 struct _Resource_vtable_builder
 {
+  template <_WrapperType _Wrapper_type>
+  using __wrapper_type = _CUDA_VSTD::integral_constant<_WrapperType, _Wrapper_type>;
+
   template <class _Resource, class _Property>
   static __property_value_t<_Property> _Get_property(void* __res) noexcept
   {
@@ -185,55 +188,79 @@ struct _Resource_vtable_builder
     return *static_cast<_Resource*>(__left) == *static_cast<_Resource*>(__rhs);
   }
 
-  template <class _Resource, _WrapperType _Wrapper_type>
-  static void _Destroy(_AnyResourceStorage* __object_) noexcept
+  template <class _Resource>
+  static void _Destroy_impl(_AnyResourceStorage* __object_, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
-    if constexpr (_Wrapper_type == _WrapperType::_Owning)
+    _Resource* __object = _Any_resource_cast<_Resource>(__object_);
+    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
     {
-      _Resource* __object = _Any_resource_cast<_Resource>(__object_);
-      if constexpr (_IsSmall<_Resource>())
-      {
-        __object->~_Resource();
-      }
-      else
-      {
-        delete __object;
-      }
+      __object->~_Resource();
+    }
+    else
+    {
+      delete __object;
     }
   }
 
+  template <class _Resource>
+  static void _Destroy_impl(_AnyResourceStorage*, __wrapper_type<_WrapperType::_Reference>) noexcept
+  {}
+
   template <class _Resource, _WrapperType _Wrapper_type>
-  static void _Move(_AnyResourceStorage* __object, _AnyResourceStorage* __other_) noexcept
+  static void _Destroy(_AnyResourceStorage* __object) noexcept
   {
-    if constexpr (_Wrapper_type == _WrapperType::_Owning)
+    _Destroy_impl<_Resource>(__object, __wrapper_type<_Wrapper_type>{});
+  }
+
+  template <class _Resource>
+  static void _Move_impl(
+    _AnyResourceStorage* __object, _AnyResourceStorage* __other_, __wrapper_type<_WrapperType::_Owning>) noexcept
+  {
+    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
     {
-      if constexpr (_IsSmall<_Resource>())
-      {
-        _Resource* __other = _Any_resource_cast<_Resource>(__other_);
-        ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*__other));
-        __other->~_Resource();
-      }
-      else
-      {
-        __object->__ptr_ = _CUDA_VSTD::exchange(__other_->__ptr_, nullptr);
-      }
+      _Resource* __other = _Any_resource_cast<_Resource>(__other_);
+      ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*__other));
+      __other->~_Resource();
+    }
+    else
+    {
+      __object->__ptr_ = _CUDA_VSTD::exchange(__other_->__ptr_, nullptr);
     }
   }
+
+  template <class _Resource>
+  static void _Move_impl(_AnyResourceStorage*, _AnyResourceStorage*, __wrapper_type<_WrapperType::_Reference>) noexcept
+  {}
+
+  template <class _Resource, _WrapperType _Wrapper_type>
+  static void _Move(_AnyResourceStorage* __object, _AnyResourceStorage* __other) noexcept
+  {
+    _Move_impl<_Resource>(__object, __other, __wrapper_type<_Wrapper_type>{});
+  }
+
+  template <class _Resource>
+  static void _Copy_impl(
+    _AnyResourceStorage* __object, const _AnyResourceStorage* __other, __wrapper_type<_WrapperType::_Owning>) noexcept
+  {
+    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
+    {
+      ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
+    }
+    else
+    {
+      __object->__ptr_ = new _Resource(*_Any_resource_cast<_Resource>(__other));
+    }
+  }
+
+  template <class _Resource>
+  static void
+  _Copy_impl(_AnyResourceStorage*, const _AnyResourceStorage*, __wrapper_type<_WrapperType::_Reference>) noexcept
+  {}
 
   template <class _Resource, _WrapperType _Wrapper_type>
   static void _Copy(_AnyResourceStorage* __object, const _AnyResourceStorage* __other)
   {
-    if constexpr (_Wrapper_type == _WrapperType::_Owning)
-    {
-      if constexpr (_IsSmall<_Resource>())
-      {
-        ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
-      }
-      else
-      {
-        __object->__ptr_ = new _Resource(*_Any_resource_cast<_Resource>(__other));
-      }
-    }
+    _Copy_impl<_Resource>(__object, __other, __wrapper_type<_Wrapper_type>{});
   }
 
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type, _WrapperType _Wrapper_type)
