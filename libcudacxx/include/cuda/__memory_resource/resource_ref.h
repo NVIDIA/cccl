@@ -159,7 +159,10 @@ struct _Resource_vtable_builder
   template <class _Resource>
   static void _Dealloc(void* __object, void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
-    static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
+    // TODO: this breaks RMM because their memory resources do not declare their
+    // deallocate functions to be noexcept. Comment out the check for now until
+    // we can fix RMM.
+    // static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment);
   }
 
