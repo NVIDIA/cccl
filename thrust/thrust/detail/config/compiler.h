@@ -31,56 +31,83 @@
 #endif // no system header
 
 // enumerate host compilers we know about
+//! deprecated [Since 2.7]
 #define THRUST_HOST_COMPILER_UNKNOWN 0
-#define THRUST_HOST_COMPILER_MSVC    1
-#define THRUST_HOST_COMPILER_GCC     2
-#define THRUST_HOST_COMPILER_CLANG   3
-#define THRUST_HOST_COMPILER_INTEL   4
+//! deprecated [Since 2.7]
+#define THRUST_HOST_COMPILER_MSVC 1
+//! deprecated [Since 2.7]
+#define THRUST_HOST_COMPILER_GCC 2
+//! deprecated [Since 2.7]
+#define THRUST_HOST_COMPILER_CLANG 3
+//! deprecated [Since 2.7]
+#define THRUST_HOST_COMPILER_INTEL 4
 
 // enumerate device compilers we know about
+//! deprecated [Since 2.7]
 #define THRUST_DEVICE_COMPILER_UNKNOWN 0
-#define THRUST_DEVICE_COMPILER_MSVC    1
-#define THRUST_DEVICE_COMPILER_GCC     2
-#define THRUST_DEVICE_COMPILER_CLANG   3
-#define THRUST_DEVICE_COMPILER_NVCC    4
+//! deprecated [Since 2.7]
+#define THRUST_DEVICE_COMPILER_MSVC 1
+//! deprecated [Since 2.7]
+#define THRUST_DEVICE_COMPILER_GCC 2
+//! deprecated [Since 2.7]
+#define THRUST_DEVICE_COMPILER_CLANG 3
+//! deprecated [Since 2.7]
+#define THRUST_DEVICE_COMPILER_NVCC 4
 
 // figure out which host compiler we're using
 #if defined(_CCCL_COMPILER_MSVC)
-#  define THRUST_HOST_COMPILER     THRUST_HOST_COMPILER_MSVC
-#  define THRUST_MSVC_VERSION      _MSC_VER
-#  define THRUST_MSVC_VERSION_FULL _MSC_FULL_VER
+//! deprecated [Since 2.7]
+#  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_MSVC
+//! deprecated [Since 2.7]
+#  define THRUST_MSVC_VERSION _CCCL_MSVC_VERSION
+//! deprecated [Since 2.7]
+#  define THRUST_MSVC_VERSION_FULL _CCCL_MSVC_VERSION_FULL
 #elif defined(_CCCL_COMPILER_ICC)
+//! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_INTEL
 #elif defined(_CCCL_COMPILER_CLANG)
+//! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_CLANG
-#  define THRUST_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+//! deprecated [Since 2.7]
+#  define THRUST_CLANG_VERSION _CCCL_CLANG_VERSION
 #elif defined(_CCCL_COMPILER_GCC)
+//! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_GCC
-#  define THRUST_GCC_VERSION   (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+//! deprecated [Since 2.7]
+#  define THRUST_GCC_VERSION   _CCCL_GCC_VERSION
 #  if (THRUST_GCC_VERSION >= 50000)
+//! deprecated [Since 2.7]
 #    define THRUST_MODERN_GCC
 #  else
+//! deprecated [Since 2.7]
 #    define THRUST_LEGACY_GCC
 #  endif
 #else
+//! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_UNKNOWN
 #endif // TRUST_HOST_COMPILER
 
 // figure out which device compiler we're using
 #if defined(__CUDACC__) || defined(_NVHPC_CUDA)
+//! deprecated [Since 2.7]
 #  define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_NVCC
 #elif defined(_CCCL_COMPILER_MSVC)
+//! deprecated [Since 2.7]
 #  define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_MSVC
 #elif defined(_CCCL_COMPILER_GCC)
+//! deprecated [Since 2.7]
 #  define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_GCC
 #elif defined(_CCCL_COMPILER_CLANG)
 // CUDA-capable clang should behave similar to NVCC.
 #  if defined(__CUDA__)
+//! deprecated [Since 2.7]
 #    define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_NVCC
 #  else
+//! deprecated [Since 2.7]
 #    define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_CLANG
 #  endif
 #else
+//! deprecated [Since 2.7]
 #  define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_UNKNOWN
 #endif
 

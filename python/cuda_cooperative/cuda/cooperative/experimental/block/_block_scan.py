@@ -17,7 +17,7 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive items.
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_scan_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -25,7 +25,7 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
 
         Below is the code snippet that demonstrates the usage of the ``exclusive_sum`` API:
 
-        .. literalinclude:: ../../python/cuda/tests/test_block_scan_api.py
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin exclusive-sum
@@ -51,11 +51,14 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
                          [TemplateParameter('T'),
                           TemplateParameter('BLOCK_DIM_X')],
                          [[Pointer(numba.uint8),
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
+                           DependentArray(Dependency(
+                               'T'), Dependency('ITEMS_PER_THREAD')),
+                           DependentArray(Dependency(
+                               'T'), Dependency('ITEMS_PER_THREAD')),
                            DependentOperator(Dependency('T'), [Dependency('T')], Dependency('PrefixOp'))],
                           [Pointer(numba.uint8),
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
+                           DependentArray(Dependency(
+                               'T'), Dependency('ITEMS_PER_THREAD')),
                            DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD'))]])
     specialization = template.specialize({'T': dtype,
                                           'BLOCK_DIM_X': threads_in_block,

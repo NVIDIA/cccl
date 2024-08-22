@@ -26,8 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceSegmentedRadixSort provides device-wide, parallel operations for computing a batched radix sort
-//!       across multiple, non-overlapping sequences of data items residing within device-accessible memory.
+//! @file
+//! cub::DeviceSegmentedRadixSort provides device-wide, parallel operations for computing a batched radix sort across
+//! multiple, non-overlapping sequences of data items residing within device-accessible memory.
 
 #pragma once
 

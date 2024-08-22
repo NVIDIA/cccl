@@ -25,7 +25,8 @@
  *
  ******************************************************************************/
 
-//! @file Detect the version of the C++ standard used by the compiler.
+//! @file
+//! Detect the version of the C++ standard used by the compiler.
 
 #pragma once
 
@@ -100,14 +101,14 @@
 #  ifndef CUB_IGNORE_DEPRECATED_COMPILER
 
 // Compiler checks:
-#    if defined(_CCCL_COMPILER_GCC) && CUB_GCC_VERSION < 50000
+#    if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 50000
 CUB_COMPILER_DEPRECATION(GCC 5.0);
-#    elif defined(_CCCL_COMPILER_CLANG) && CUB_CLANG_VERSION < 70000
+#    elif defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 70000
 CUB_COMPILER_DEPRECATION(Clang 7.0);
-#    elif defined(_CCCL_COMPILER_MSVC) && CUB_MSVC_VERSION < 1910
+#    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1910
 // <2017. Hard upgrade message:
 CUB_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
-#    elif defined(_CCCL_COMPILER_MSVC) && CUB_MSVC_VERSION < 1920
+#    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1920
 // >=2017, <2019. Soft deprecation message:
 CUB_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 #    endif
