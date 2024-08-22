@@ -453,8 +453,10 @@ CUB_TEST("DeviceTransform::Transform heavy functor",
   REQUIRE(reference_h == result);
 }
 
+namespace Catch
+{
 template <typename T>
-struct Catch::StringMaker<cub::detail::transform::aligned_base_ptr<T>>
+struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
 {
   static auto convert(cub::detail::transform::aligned_base_ptr<T> ps) -> std::string
   {
@@ -463,6 +465,7 @@ struct Catch::StringMaker<cub::detail::transform::aligned_base_ptr<T>>
     return ss.str();
   }
 };
+} // namespace Catch
 
 CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
 {
