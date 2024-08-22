@@ -271,7 +271,7 @@ public:
     return static_cast<T*>(ret);
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     void* vp = static_cast<void*>(p);
     P->countDealloc(vp, n * sizeof(T), alignof(T));
@@ -422,7 +422,7 @@ public:
     return ((T*) unaligned_ptr);
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     assert(is_min_aligned(p));
 
@@ -539,7 +539,7 @@ public:
     return nullptr;
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     void* vp = static_cast<void*>(p);
     P->countDealloc(vp, n * sizeof(T), alignof(T));

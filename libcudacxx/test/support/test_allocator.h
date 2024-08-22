@@ -163,7 +163,7 @@ public:
     ++alloc_count;
     return (pointer)::operator new(n * sizeof(T));
   }
-  void deallocate(pointer p, size_type)
+  void deallocate(pointer p, size_type) noexcept
   {
     assert(data_ >= 0);
     --alloc_count;
@@ -267,7 +267,7 @@ public:
     ++alloc_count;
     return (pointer)::operator new(n * sizeof(T));
   }
-  void deallocate(pointer p, size_type)
+  void deallocate(pointer p, size_type) noexcept
   {
     assert(data_ >= 0);
     --alloc_count;
@@ -386,7 +386,7 @@ public:
   {
     return (T*) ::operator new(n * sizeof(T));
   }
-  void deallocate(T* p, std::size_t)
+  void deallocate(T* p, std::size_t) noexcept
   {
     ::operator delete((void*) p);
   }
@@ -473,7 +473,7 @@ public:
     return std::allocator<T>{}.allocate(n);
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     std::allocator<T>{}.deallocate(p, n);
   }
@@ -532,7 +532,7 @@ struct limited_alloc_handle
     return static_cast<T*>(last_alloc_);
   }
 
-  void deallocate(void* ptr, std::size_t N)
+  void deallocate(void* ptr, std::size_t N) noexcept
   {
     if (ptr == last_alloc_)
     {
@@ -588,7 +588,7 @@ public:
   {
     return handle_->template allocate<T>(n);
   }
-  void deallocate(pointer p, size_type n)
+  void deallocate(pointer p, size_type n) noexcept
   {
     handle_->deallocate(p, n);
   }

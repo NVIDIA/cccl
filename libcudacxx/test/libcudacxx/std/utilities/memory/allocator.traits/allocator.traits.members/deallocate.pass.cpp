@@ -32,7 +32,7 @@ struct A
       : called_(called)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type* p, cuda::std::size_t n)
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type* p, cuda::std::size_t n) noexcept
   {
     assert(p == &storage);
     assert(n == 10);

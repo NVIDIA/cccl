@@ -180,7 +180,7 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::allocate(size_type n)
 } // end contiguous_storage::allocate()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate()
+_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate() noexcept
 {
   if (size() > 0)
   {

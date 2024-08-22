@@ -27,7 +27,7 @@ struct valid_resource_with_property
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -51,7 +51,7 @@ struct valid_resource_without_property
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -80,7 +80,7 @@ struct resource_with_many_properties
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;

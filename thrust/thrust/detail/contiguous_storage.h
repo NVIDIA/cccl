@@ -98,7 +98,7 @@ public:
   // note that allocate does *not* automatically call deallocate
   _CCCL_HOST_DEVICE void allocate(size_type n);
 
-  _CCCL_HOST_DEVICE void deallocate();
+  _CCCL_HOST_DEVICE void deallocate() noexcept;
 
   _CCCL_HOST_DEVICE void swap(contiguous_storage& x);
 

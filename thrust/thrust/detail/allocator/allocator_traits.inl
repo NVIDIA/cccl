@@ -94,7 +94,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n)
+  _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept
   {
     superclass::deallocate(a, p, n);
   }

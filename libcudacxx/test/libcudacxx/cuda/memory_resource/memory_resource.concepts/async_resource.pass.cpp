@@ -27,7 +27,7 @@ struct valid_resource
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -46,7 +46,7 @@ static_assert(cuda::mr::async_resource<valid_resource>, "");
 
 struct invalid_allocate_missing
 {
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -91,7 +91,7 @@ struct invalid_allocate_async_argument
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(invalid_argument, std::size_t)
   {
     return nullptr;
@@ -114,7 +114,7 @@ struct invalid_allocate_async_return
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   int allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return 42;
@@ -137,7 +137,7 @@ struct invalid_deallocate_async_argument
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -160,7 +160,7 @@ struct non_comparable
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -175,7 +175,7 @@ struct non_eq_comparable
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;
@@ -195,7 +195,7 @@ struct non_neq_comparable
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {
     return nullptr;

@@ -505,7 +505,7 @@ struct caching_allocator_t
     return result;
   }
 
-  void deallocate(char* ptr, size_t)
+  void deallocate(char* ptr, size_t) noexcept
   {
     auto iter = allocated_blocks.find(ptr);
     if (iter == allocated_blocks.end())

@@ -300,7 +300,7 @@ public:
 
   inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n, const_void_pointer hint);
 
-  inline _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n);
+  inline _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept;
 
   // XXX should probably change T* to pointer below and then relax later
 
