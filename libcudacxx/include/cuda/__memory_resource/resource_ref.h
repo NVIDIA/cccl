@@ -398,7 +398,7 @@ struct _Alloc_base
 protected:
   void* _Get_object() const noexcept
   {
-    if constexpr (_Wrapper_type == _WrapperType::_Reference)
+    _CCCL_IF_CONSTEXPR (_Wrapper_type == _WrapperType::_Reference)
     {
       return __object;
     }
