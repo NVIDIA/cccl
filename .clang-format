@@ -54,7 +54,6 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED',
                   '_LIBCUDACXX_DISABLE_EXTENTSION_WARNING',
                   '_LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION',
-                  '_LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS',
                   '_LIBCUDACXX_HIDDEN',
                   '_LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
