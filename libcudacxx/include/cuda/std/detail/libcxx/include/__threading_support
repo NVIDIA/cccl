@@ -690,7 +690,7 @@ _LIBCUDACXX_INLINE_VISIBILITY __libcpp_contention_t* __libcpp_contention_state(v
 
 #  if !defined(_LIBCUDACXX_HAS_NO_TREE_BARRIER) && !defined(_LIBCUDACXX_HAS_NO_THREAD_FAVORITE_BARRIER_INDEX)
 
-_LIBCUDACXX_EXPORTED_FROM_ABI extern thread_local ptrdiff_t __libcpp_thread_favorite_barrier_index;
+_CCCL_VISIBILITY_DEFAULT extern thread_local ptrdiff_t __libcpp_thread_favorite_barrier_index;
 
 #  endif
 

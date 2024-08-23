@@ -3718,7 +3718,7 @@ struct _FilesystemClock
   typedef chrono::duration<rep, period> duration;
   typedef chrono::time_point<_FilesystemClock> time_point;
 
-  _LIBCUDACXX_EXPORTED_FROM_ABI static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
+  _CCCL_VISIBILITY_DEFAULT static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
 
   _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_INLINE_VISIBILITY static time_point now() noexcept;
 

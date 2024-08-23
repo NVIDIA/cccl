@@ -1033,7 +1033,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
 #      define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
-#      define _LIBCUDACXX_EXPORTED_FROM_ABI
 #    elif defined(_LIBCUDACXX_BUILDING_LIBRARY)
 #      if defined(__MINGW32__)
 #        define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS __declspec(dllexport)
@@ -1043,12 +1042,10 @@ typedef __char32_t char32_t;
 #        define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS __declspec(dllexport)
 #      endif
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS __declspec(dllexport)
-#      define _LIBCUDACXX_EXPORTED_FROM_ABI    __declspec(dllexport)
 #    else
 #      define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS __declspec(dllimport)
 #      define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
-#      define _LIBCUDACXX_EXPORTED_FROM_ABI __declspec(dllimport)
 #    endif
 
 #  endif // defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
@@ -1080,14 +1077,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_TEMPLATE_VIS
 #    endif
 #  endif // !_LIBCUDACXX_TEMPLATE_VIS
-
-#  ifndef _LIBCUDACXX_EXPORTED_FROM_ABI
-#    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#      define _LIBCUDACXX_EXPORTED_FROM_ABI _CCCL_VISIBILITY_DEFAULT
-#    else
-#      define _LIBCUDACXX_EXPORTED_FROM_ABI
-#    endif
-#  endif
 
 #  ifndef _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
 #    define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS _LIBCUDACXX_INLINE_VISIBILITY

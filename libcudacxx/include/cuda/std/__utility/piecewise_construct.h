@@ -26,11 +26,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS piecewise_construct_t
 {
   explicit piecewise_construct_t() = default;
 };
-#if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-extern _LIBCUDACXX_EXPORTED_FROM_ABI const piecewise_construct_t piecewise_construct; // = piecewise_construct_t();
-#else
-/* _LIBCUDACXX_INLINE_VAR */ constexpr piecewise_construct_t piecewise_construct = piecewise_construct_t();
-#endif
+_CCCL_GLOBAL_CONSTANT piecewise_construct_t piecewise_construct = piecewise_construct_t();
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
