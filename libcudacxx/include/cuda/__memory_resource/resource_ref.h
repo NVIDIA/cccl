@@ -504,7 +504,7 @@ private:
 
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>;
+    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Constructs a \c basic_resource_ref from a void*, a resource vtable ptr, and a vtable
   //! for the properties. This is used to create a \c basic_resource_ref from a \c basic_any_resource.

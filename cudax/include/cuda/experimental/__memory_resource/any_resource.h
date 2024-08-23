@@ -69,7 +69,7 @@ private:
 
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>;
+    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
 public:
   //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c resource or \c async_resource
@@ -168,7 +168,7 @@ public:
   _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(
     (_OtherAllocType == _CUDA_VMR::_AllocType::_Default || _OtherAllocType == _Alloc_type)
-      _LIBCUDACXX_AND _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_Properties...>, _OtherProperties...>)
+      _LIBCUDACXX_AND _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>)
   operator _CUDA_VMR::basic_resource_ref<_OtherAllocType, _OtherProperties...>() noexcept
   {
     return _CUDA_VMR::_Resource_ref_helper::_Construct<_Alloc_type, _OtherProperties...>(
