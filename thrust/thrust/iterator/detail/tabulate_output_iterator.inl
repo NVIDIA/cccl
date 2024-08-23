@@ -48,18 +48,15 @@ private:
   DifferenceT index;
 };
 
-// Compute the iterator_adaptor instantiation to be used for tabulate_output_iterator
+// Alias template for the iterator_adaptor instantiation to be used for tabulate_output_iterator
 template <typename BinaryFunction, typename System, typename DifferenceT>
-struct tabulate_output_iterator_base
-{
-  using type =
+using tabulate_output_iterator_base =
     thrust::iterator_adaptor<tabulate_output_iterator<BinaryFunction, System, DifferenceT>,
                              counting_iterator<DifferenceT>,
                              thrust::use_default,
                              System,
                              thrust::use_default,
                              tabulate_output_iterator_proxy<BinaryFunction, DifferenceT>>;
-};
 
 // Register tabulate_output_iterator_proxy with 'is_proxy_reference' from
 // type_traits to enable its use with algorithms.

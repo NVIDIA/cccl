@@ -60,13 +60,13 @@ THRUST_NAMESPACE_BEGIN
  */
 
 template <typename BinaryFunction, typename System = use_default, typename DifferenceT = ptrdiff_t>
-class tabulate_output_iterator : public detail::tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>::type
+class tabulate_output_iterator : public detail::tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
 {
   /*! \cond
    */
 
 public:
-  using super_t = typename detail::tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>::type;
+  using super_t = detail::tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>;
 
   friend class thrust::iterator_core_access;
   /*! \endcond
