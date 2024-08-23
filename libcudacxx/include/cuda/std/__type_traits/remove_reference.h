@@ -24,15 +24,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
+#if defined(_CCCL_BUILTIN_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
 template <class _Tp>
 struct remove_reference
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_REFERENCE_T(_Tp);
+  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_REFERENCE_T(_Tp);
 };
 
 template <class _Tp>
-using __libcpp_remove_reference_t = _LIBCUDACXX_REMOVE_REFERENCE_T(_Tp);
+using __libcpp_remove_reference_t = _CCCL_BUILTIN_REMOVE_REFERENCE_T(_Tp);
 
 #else
 
@@ -55,7 +55,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference<_Tp&&>
 template <class _Tp>
 using __libcpp_remove_reference_t = typename remove_reference<_Tp>::type;
 
-#endif // defined(_LIBCUDACXX_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>

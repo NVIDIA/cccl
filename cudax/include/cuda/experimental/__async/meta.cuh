@@ -675,17 +675,8 @@ struct __mconcat_into_q
 };
 
 // The following must be super-fast to compile, so use an intrinsic directly if it is available
-#if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
-
-template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __mset_contains = (_LIBCUDACXX_IS_BASE_OF(__mtype<_Ty>, _Set) && ...);
-
-#else
-
 template <class _Set, class... _Ty>
 _CCCL_INLINE_VAR constexpr bool __mset_contains = (_CUDA_VSTD::is_base_of_v<__mtype<_Ty>, _Set> && ...);
-
-#endif
 
 namespace __set
 {

@@ -25,7 +25,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // addressof
 // NVCXX has the builtin defined but did not mark it as supported
-#if defined(_LIBCUDACXX_ADDRESSOF)
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
@@ -41,7 +41,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
 
-#endif // defined(_LIBCUDACXX_ADDRESSOF)
+#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;

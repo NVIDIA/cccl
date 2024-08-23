@@ -135,9 +135,9 @@ int main(int, char**)
   static_assert(test(), "");
 #  endif // TEST_STD_VER > 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
 #  if TEST_STD_VER > 2017
-#    if defined(_LIBCUDACXX_ADDRESSOF)
+#    if defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test_nontrivial());
-#    endif // defined(_LIBCUDACXX_ADDRESSOF)
+#    endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 #  endif // TEST_STD_VER > 2017
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   return 0;

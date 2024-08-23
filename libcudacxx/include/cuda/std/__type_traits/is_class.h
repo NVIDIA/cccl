@@ -30,15 +30,15 @@ struct __two
   char __lx[2];
 };
 
-#if defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class : public integral_constant<bool, _LIBCUDACXX_IS_CLASS(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class : public integral_constant<bool, _CCCL_BUILTIN_IS_CLASS(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_class_v = _LIBCUDACXX_IS_CLASS(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_class_v = _CCCL_BUILTIN_IS_CLASS(_Tp);
 #  endif
 
 #else
@@ -61,7 +61,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_class_v = is_class<_Tp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -24,21 +24,21 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_FINAL)
+#if defined(_CCCL_BUILTIN_IS_FINAL)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_final : public integral_constant<bool, _LIBCUDACXX_IS_FINAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_final : public integral_constant<bool, _CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public integral_constant<bool, _LIBCUDACXX_IS_FINAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public integral_constant<bool, _CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 #  endif
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = _LIBCUDACXX_IS_FINAL(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
 #  endif
 
 #else
@@ -58,7 +58,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = false;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_FINAL)
+#endif // defined(_CCCL_BUILTIN_IS_FINAL)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -25,10 +25,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
 template <class _Tp>
-struct __libcpp_is_referenceable : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCEABLE(_Tp)>
+struct __libcpp_is_referenceable : public integral_constant<bool, _CCCL_BUILTIN_IS_REFERENCEABLE(_Tp)>
 {};
 
 #else
@@ -44,7 +44,7 @@ template <class _Tp>
 struct __libcpp_is_referenceable
     : integral_constant<bool, _IsNotSame<decltype(__libcpp_is_referenceable_impl::__test<_Tp>(0)), false_type>::value>
 {};
-#endif // defined(_LIBCUDACXX_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

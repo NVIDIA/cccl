@@ -32,15 +32,16 @@ struct __select_2nd
   typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
 };
 
-#if defined(_LIBCUDACXX_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_assignable : public integral_constant<bool, _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_assignable
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_assignable_v = _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_assignable_v = _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2);
 #  endif
 
 #else
@@ -70,7 +71,7 @@ template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_assignable_v = is_assignable<_Tp, _Arg>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

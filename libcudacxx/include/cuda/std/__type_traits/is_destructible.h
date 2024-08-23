@@ -28,18 +28,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible : public integral_constant<bool, _LIBCUDACXX_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = _LIBCUDACXX_IS_DESTRUCTIBLE(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp);
 #  endif
 
-#else // __has_builtin(__is_destructible)
+#else // ^^^ _CCCL_BUILTIN_IS_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_DESTRUCTIBLE vvv
 
 //  if it's a reference, return true
 //  if it's a function, return false
@@ -107,7 +108,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = is_destructible<_Tp>::value;
 #  endif
 
-#endif // __has_builtin(__is_destructible)
+#endif // !_CCCL_BUILTIN_IS_DESTRUCTIBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
