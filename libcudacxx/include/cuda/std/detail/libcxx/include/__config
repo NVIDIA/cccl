@@ -395,12 +395,6 @@ extern "C++" {
 #    define _LIBCUDACXX_PRAGMA_UNROLL(_N)
 #  endif // !__CUDA_ARCH__
 
-#  if defined(_CCCL_COMPILER_MSVC)
-#    define _LIBCUDACXX_ALWAYS_INLINE __forceinline
-#  else
-#    define _LIBCUDACXX_ALWAYS_INLINE __attribute__((__always_inline__))
-#  endif // !_CCCL_COMPILER_MSVC
-
 #  if defined(_CCCL_CUDA_COMPILER)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #  elif defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_GCC)
@@ -1001,7 +995,7 @@ typedef __char32_t char32_t;
 #  if __has_attribute(internal_linkage)
 #    define _LIBCUDACXX_INTERNAL_LINKAGE __attribute__((internal_linkage))
 #  else
-#    define _LIBCUDACXX_INTERNAL_LINKAGE _LIBCUDACXX_ALWAYS_INLINE
+#    define _LIBCUDACXX_INTERNAL_LINKAGE _CCCL_ALWAYS_INLINE
 #  endif
 
 #  if __has_attribute(exclude_from_explicit_instantiation)
@@ -1010,7 +1004,7 @@ typedef __char32_t char32_t;
 // Try to approximate the effect of exclude_from_explicit_instantiation
 // (which is that entities are not assumed to be provided by explicit
 // template instantiations in the dylib) by always inlining those entities.
-#    define _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION _LIBCUDACXX_ALWAYS_INLINE
+#    define _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION _CCCL_ALWAYS_INLINE
 #  endif
 
 #  ifndef _LIBCUDACXX_HIDE_FROM_ABI_PER_TU
