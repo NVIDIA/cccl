@@ -22,34 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/clz.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
-#include <cuda/std/__bit/ctz.h>
 #include <cuda/std/__bit/endian.h>
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
-#include <cuda/std/__bit/popc.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__bit/rotate.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_unsigned_integer.h>
-#include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/limits>
 #include <cuda/std/version>
-
-_CCCL_PUSH_MACROS
-
-#if defined(_CCCL_COMPILER_IBM)
-#  include <cuda/std/detail/libcxx/include/support/ibm/support.h>
-#endif // _CCCL_COMPILER_IBM
-
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
-_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_BIT
