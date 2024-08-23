@@ -93,18 +93,6 @@ extern "C++" {
 #    endif // !__ELF__
 #  endif
 
-#  if defined(__ELF__)
-#    define _LIBCUDACXX_OBJECT_FORMAT_ELF 1
-#  elif defined(__MACH__)
-#    define _LIBCUDACXX_OBJECT_FORMAT_MACHO 1
-#  elif defined(_WIN32)
-#    define _LIBCUDACXX_OBJECT_FORMAT_COFF 1
-#  elif defined(__wasm__)
-#    define _LIBCUDACXX_OBJECT_FORMAT_WASM 1
-#  else
-#    error Unknown object file format
-#  endif
-
 #  if defined(_LIBCUDACXX_ABI_UNSTABLE) || _LIBCUDACXX_ABI_VERSION >= 2 || defined(__cuda_std__)
 // Change short string representation so that string data starts at offset 0,
 // improving its alignment in some cases.
@@ -141,15 +129,6 @@ extern "C++" {
 #    define _LIBCUDACXX_ABI_OPTIMIZED_FUNCTION
 // All the regex constants must be distinct and nonzero.
 #    define _LIBCUDACXX_ABI_REGEX_CONSTANTS_NONZERO
-#  elif _LIBCUDACXX_ABI_VERSION == 1
-#    if !defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
-// Enable compiling copies of now inline methods into the dylib to support
-// applications compiled against older libraries. This is unnecessary with
-// COFF dllexport semantics, since dllexport forces a non-inline definition
-// of inline functions to be emitted anyway. Our own non-inline copy would
-// conflict with the dllexport-emitted copy, so we disable it.
-#      define _LIBCUDACXX_DEPRECATED_ABI_LEGACY_LIBRARY_DEFINITIONS_FOR_INLINE_FUNCTIONS
-#    endif
 #  endif
 
 #  ifndef __has_attribute
@@ -876,8 +855,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 #    endif
 
-#    define _LIBCUDACXX_WEAK
-
 #    define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
@@ -1044,32 +1021,12 @@ typedef __char32_t char32_t;
 #    endif
 #  endif
 
-#  ifndef _LIBCUDACXX_HAS_MERGED_TYPEINFO_NAMES_DEFAULT
-#    ifdef _LIBCUDACXX_OBJECT_FORMAT_COFF // Windows binaries can't merge typeinfos.
-#      define _LIBCUDACXX_HAS_MERGED_TYPEINFO_NAMES_DEFAULT 0
-#    else
-// TODO: This isn't strictly correct on ELF platforms due to llvm.org/PR37398
-// And we should consider defaulting to OFF.
-#      define _LIBCUDACXX_HAS_MERGED_TYPEINFO_NAMES_DEFAULT 1
-#    endif
-#  endif
-
 #  ifndef _LIBCUDACXX_HIDE_FROM_ABI
 #    if _LIBCUDACXX_HIDE_FROM_ABI_PER_TU
 #      define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _LIBCUDACXX_INTERNAL_LINKAGE
 #    else
 #      define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #    endif
-#  endif
-
-#  ifdef _LIBCUDACXX_BUILDING_LIBRARY
-#    if _LIBCUDACXX_ABI_VERSION > 1
-#      define _LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1 _LIBCUDACXX_HIDE_FROM_ABI
-#    else
-#      define _LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1
-#    endif
-#  else
-#    define _LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1 _LIBCUDACXX_HIDE_FROM_ABI
 #  endif
 
 // Just so we can migrate to the new macros gradually.
@@ -1154,12 +1111,6 @@ typedef unsigned short char16_t;
 typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#  if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
-#    define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
-#  else
-#    define _LIBCUDACXX_NOALIAS
-#  endif
-
 #  if __has_feature(cxx_explicit_conversions) || defined(_CCCL_COMPILER_IBM) || defined(_CCCL_COMPILER_GCC) \
     || defined(_CCCL_COMPILER_CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
@@ -1190,35 +1141,10 @@ typedef unsigned int char32_t;
 
 #  ifdef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
 #    define _LIBCUDACXX_EXTERN_TEMPLATE(...)
-#    define _LIBCUDACXX_EXTERN_TEMPLATE2(...)
 #  endif
 
 #  ifndef _LIBCUDACXX_EXTERN_TEMPLATE
 #    define _LIBCUDACXX_EXTERN_TEMPLATE(...) extern template __VA_ARGS__;
-#  endif
-
-#  ifndef _LIBCUDACXX_EXTERN_TEMPLATE2
-#    define _LIBCUDACXX_EXTERN_TEMPLATE2(...) extern template __VA_ARGS__;
-#  endif
-
-#  if defined(__APPLE__) || defined(__FreeBSD__) || defined(_LIBCUDACXX_MSVCRT_LIKE) || defined(__sun__) \
-    || defined(__NetBSD__) || defined(__CloudABI__)
-#    define _LIBCUDACXX_LOCALE__L_EXTENSIONS 1
-#  endif
-
-#  if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-// Most unix variants have catopen.  These are the specific ones that don't.
-#    if !defined(__BIONIC__) && !defined(_NEWLIB_VERSION)
-#      define _LIBCUDACXX_HAS_CATOPEN 1
-#    endif
-#  endif
-
-#  ifdef __FreeBSD__
-#    define _DECLARE_C99_LDBL_MATH 1
-#  endif
-
-#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && !defined(_LIBCUDACXX_NO_VCRUNTIME)
-#    define _LIBCUDACXX_DEFER_NEW_TO_VCRUNTIME
 #  endif
 
 // If we are getting operator new from the MSVC CRT, then allocation overloads
@@ -1231,25 +1157,11 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 #  endif
 
-#  if defined(__APPLE__)
-#    if !defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__)
-#      define __MAC_OS_X_VERSION_MIN_REQUIRED __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
-#    endif
-#  endif // defined(__APPLE__)
-
 #  if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)                     \
       && (defined(_LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION)          \
           || (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606)) \
     || defined(__cuda_std__) // FIXME: Properly handle aligned allocations
 #    define _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
-#  endif
-
-#  if defined(__APPLE__) || defined(__FreeBSD__)
-#    define _LIBCUDACXX_HAS_DEFAULTRUNELOCALE
-#  endif
-
-#  if defined(__APPLE__) || defined(__FreeBSD__) || defined(__sun__)
-#    define _LIBCUDACXX_WCTYPE_IS_MASK
 #  endif
 
 #  if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
@@ -1293,12 +1205,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20
 #  endif
 
-#  if _CCCL_STD_VER <= 2011
-#    define _LIBCUDACXX_EXPLICIT_AFTER_CXX11
-#  else
-#    define _LIBCUDACXX_EXPLICIT_AFTER_CXX11 explicit
-#  endif
-
 #  if _CCCL_STD_VER > 2014 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
 #    define _LIBCUDACXX_INLINE_VAR inline
 #  else
@@ -1311,19 +1217,9 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_EXPLICIT_MOVE(x) (x)
 #  endif
 
-#  if __has_attribute(no_destroy)
-#    define _LIBCUDACXX_NO_DESTROY __attribute__((__no_destroy__))
-#  else
-#    define _LIBCUDACXX_NO_DESTROY
-#  endif
-
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
 extern "C" _LIBCUDACXX_INLINE_VISIBILITY void
 __sanitizer_annotate_contiguous_container(const void*, const void*, const void*, const void*);
-#  endif
-
-#  ifndef _LIBCUDACXX_WEAK
-#    define _LIBCUDACXX_WEAK __attribute__((__weak__))
 #  endif
 
 // Thread API
@@ -1386,59 +1282,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define __STDCPP_THREADS__ 1
 #  endif
 
-// The glibc and Bionic implementation of pthreads implements
-// pthread_mutex_destroy as nop for regular mutexes. Additionally, Win32
-// mutexes have no destroy mechanism.
-//
-// This optimization can't be performed on Apple platforms, where
-// pthread_mutex_destroy can allow the kernel to release resources.
-// See https://llvm.org/D64298 for details.
-//
-// TODO(EricWF): Enable this optimization on Bionic after speaking to their
-//               respective stakeholders.
-#  if (defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD) && defined(__GLIBC__)) || defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
-#    define _LIBCUDACXX_HAS_TRIVIAL_MUTEX_DESTRUCTION
-#  endif
-
-// Destroying a condvar is a nop on Windows.
-//
-// This optimization can't be performed on Apple platforms, where
-// pthread_cond_destroy can allow the kernel to release resources.
-// See https://llvm.org/D64298 for details.
-//
-// TODO(EricWF): This is potentially true for some pthread implementations
-// as well.
-#  if defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
-#    define _LIBCUDACXX_HAS_TRIVIAL_CONDVAR_DESTRUCTION
-#  endif
-
-// Systems that use capability-based security (FreeBSD with Capsicum,
-// Nuxi CloudABI) may only provide local filesystem access (using *at()).
-// Functions like open(), rename(), unlink() and stat() should not be
-// used, as they attempt to access the global filesystem namespace.
-#  ifdef __CloudABI__
-#    define _LIBCUDACXX_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE
-#  endif
-
-// CloudABI is intended for running networked services. Processes do not
-// have standard input and output channels.
-#  ifdef __CloudABI__
-#    define _LIBCUDACXX_HAS_NO_STDIN
-#    define _LIBCUDACXX_HAS_NO_STDOUT
-#  endif
-
-// Some systems do not provide gets() in their C library, for security reasons.
-#  ifndef _LIBCUDACXX_C_HAS_NO_GETS
-#    if defined(_LIBCUDACXX_MSVCRT) || (defined(__FreeBSD__) && __FreeBSD__ >= 13)
-#      define _LIBCUDACXX_C_HAS_NO_GETS
-#    endif
-#  endif
-
-#  if defined(__BIONIC__) || defined(__CloudABI__) || defined(__Fuchsia__) || defined(__wasi__) \
-    || defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#    define _LIBCUDACXX_PROVIDES_DEFAULT_RUNE_TABLE
-#  endif
-
 // Thread-unsafe functions such as strtok() and localtime()
 // are not available.
 #  ifdef __CloudABI__
@@ -1487,27 +1330,10 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 #  endif
 
-#  if defined(_LIBCUDACXX_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-#    if defined(_CCCL_COMPILER_CLANG) && __has_attribute(acquire_capability)
-// Work around the attribute handling in clang.  When both __declspec and
-// __attribute__ are present, the processing goes awry preventing the definition
-// of the types.
-#      if !defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
-#        define _LIBCUDACXX_HAS_THREAD_SAFETY_ANNOTATIONS
-#      endif
-#    endif
-#  endif
-
 #  if __has_attribute(require_constant_initialization)
 #    define _LIBCUDACXX_SAFE_STATIC __attribute__((__require_constant_initialization__))
 #  else
 #    define _LIBCUDACXX_SAFE_STATIC
-#  endif
-
-#  if !defined(_LIBCUDACXX_HAS_NO_OFF_T_FUNCTIONS)
-#    if defined(_LIBCUDACXX_MSVCRT) || defined(_NEWLIB_VERSION)
-#      define _LIBCUDACXX_HAS_NO_OFF_T_FUNCTIONS
-#    endif
 #  endif
 
 #  if __has_attribute(diagnose_if) && !defined(_LIBCUDACXX_DISABLE_ADDITIONAL_DIAGNOSTICS)
@@ -1547,10 +1373,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
 #  endif
 
-#  if !defined(__cpp_coroutines) || __cpp_coroutines < 201703L
-#    define _LIBCUDACXX_HAS_NO_COROUTINES
-#  endif
-
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #  if !defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
@@ -1571,33 +1393,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 
 #  define _LIBCUDACXX_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS
 
-// The stream API was dropped and re-added in the dylib shipped on macOS
-// and iOS. We can only assume the dylib to provide these definitions for
-// macosx >= 10.9 and ios >= 7.0. Otherwise, the definitions are available
-// from the headers, but not from the dylib. Explicit instantiation
-// declarations for streams exist conditionally to this; if we provide
-// an explicit instantiation declaration and we try to deploy to a dylib
-// that does not provide those symbols, we'll get a load-time error.
-#  if !defined(_LIBCUDACXX_BUILDING_LIBRARY)                        \
-    && ((defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__)     \
-         && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1090)   \
-        || (defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__) \
-            && __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ < 70000))
-#    define _LIBCUDACXX_DO_NOT_ASSUME_STREAMS_EXPLICIT_INSTANTIATION_IN_DYLIB
-#  endif
-
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
-
-// Configures the fopen close-on-exec mode character, if any. This string will
-// be appended to any mode string used by fstream for fopen/fdopen.
-//
-// Not all platforms support this, but it helps avoid fd-leaks on platforms that
-// do.
-#  if defined(__BIONIC__)
-#    define _LIBCUDACXX_FOPEN_CLOEXEC_MODE "e"
-#  else
-#    define _LIBCUDACXX_FOPEN_CLOEXEC_MODE
-#  endif
 
 #  if __has_attribute(__format__)
 // The attribute uses 1-based indices for ordinary and static member functions.
