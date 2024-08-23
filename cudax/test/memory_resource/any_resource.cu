@@ -193,89 +193,88 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
 {
   using TestResource    = TestType;
   constexpr bool is_big = sizeof(TestResource) > sizeof(cuda::mr::_AnyResourceStorage);
-  auto& counts          = this->counts;
 
   SECTION("construct and destruct")
   {
     Counts expected{};
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
     }
     expected.delete_count += is_big;
     --expected.object_count;
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
   }
 
   // Reset the counters:
-  counts = Counts();
+  this->counts = Counts();
 
   SECTION("copy and move")
   {
     Counts expected{};
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
 
       auto mr2 = mr;
       expected.new_count += is_big;
       ++expected.copy_count;
       ++expected.object_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
       CHECK(mr == mr2);
       ++expected.equal_to_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
 
       auto mr3 = std::move(mr);
       expected.move_count += !is_big; // for big resources, move is a pointer swap
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
       CHECK(mr2 == mr3);
       ++expected.equal_to_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
     }
     expected.delete_count += 2 * is_big;
     expected.object_count -= 2;
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
   }
 
   // Reset the counters:
-  counts = Counts();
+  this->counts = Counts();
 
   SECTION("allocate and deallocate")
   {
     Counts expected{};
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
 
       void* ptr = mr.allocate(bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
 
       mr.deallocate(ptr, bytes(50), align(8));
       ++expected.deallocate_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
     }
     expected.delete_count += is_big;
     --expected.object_count;
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
   }
 
   // Reset the counters:
-  counts = Counts();
+  this->counts = Counts();
 
   SECTION("conversion to resource_ref")
   {
@@ -285,24 +284,24 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
 
       cuda::mr::resource_ref<> ref = mr;
 
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
       auto* ptr = ref.allocate(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
       ref.deallocate(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
-      CHECK(counts == expected);
+      CHECK(this->counts == expected);
     }
     expected.delete_count += is_big;
     --expected.object_count;
-    CHECK(counts == expected);
+    CHECK(this->counts == expected);
   }
 
   // Reset the counters:
-  counts = Counts();
+  this->counts = Counts();
 }
