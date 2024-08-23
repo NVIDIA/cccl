@@ -44,8 +44,8 @@ struct cccl_type_info
 
 enum class cccl_op_kind_t
 {
-  stateless,
-  stateful
+  stateless = 0,
+  stateful = 1
 };
 
 struct cccl_op_t
@@ -61,8 +61,8 @@ struct cccl_op_t
 
 enum class cccl_iterator_kind_t
 {
-  pointer,
-  iterator
+  pointer = 0,
+  iterator = 1
 };
 
 struct cccl_value_t
