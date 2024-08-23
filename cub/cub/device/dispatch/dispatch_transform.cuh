@@ -30,6 +30,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/barrier>
 #include <cuda/cmath>
 #include <cuda/ptx>
 #include <cuda/std/__algorithm/clamp.h>
@@ -260,64 +261,6 @@ _CCCL_HOST_DEVICE inline auto round_up_to_po2_multiple(Integral x, Integral mult
   return (x + mult - 1) & ~(mult - 1);
 }
 
-// For performance considerations of memcpy_async:
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
-
-// TODO(bgruber): inline this as lambda in C++14
-template <typename T>
-_CCCL_DEVICE const T* copy_and_return_smem_dst(
-  cooperative_groups::thread_block& group, int tile_size, char* smem, int& smem_offset, int global_offset, const T* ptr)
-{
-  // using T          = ::cuda::std::__remove_const_t<::cuda::std::__remove_pointer_t<decltype(ptr)>>;
-  const auto count = static_cast<uint32_t>(sizeof(T)) * tile_size;
-  smem_offset      = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
-  auto smem_dst    = reinterpret_cast<T*>(smem + smem_offset);
-  cooperative_groups::memcpy_async(group, smem_dst, ptr + global_offset, count);
-  smem_offset += count;
-  return smem_dst;
-}
-
-template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
-  Offset num_items,
-  int num_elem_per_thread,
-  F f,
-  RandomAccessIteartorOut out,
-  const InTs*... pointers)
-{
-  extern __shared__ char smem[];
-
-  const Offset tile_stride   = blockDim.x * num_elem_per_thread;
-  const Offset global_offset = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size        = ::cuda::std::min(num_items - global_offset, tile_stride);
-
-  auto group = cooperative_groups::this_thread_block();
-
-  // TODO(bgruber): if we pass block size as template parameter, we could compute the smem offsets at compile time
-  int smem_offset      = 0;
-  const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    copy_and_return_smem_dst(group, tile_size, smem, smem_offset, global_offset, pointers)...};
-  cooperative_groups::wait(group);
-  (void) smem_ptrs; // suppress unused warning for MSVC
-  (void) &smem_offset; // MSVC needs extra strong unused warning supression
-
-#pragma unroll 1
-  for (int i = 0; i < num_elem_per_thread; ++i)
-  {
-    const int smem_idx    = i * blockDim.x + threadIdx.x;
-    const Offset gmem_idx = global_offset + smem_idx;
-    if (gmem_idx < num_items)
-    {
-      out[gmem_idx] = poor_apply(
-        [&](const InTs*... smem_base_ptrs) {
-          return f(smem_base_ptrs[smem_idx]...);
-        },
-        smem_ptrs);
-    }
-  }
-}
-
 template <typename T>
 _CCCL_HOST_DEVICE const T* round_down_ptr(const T* ptr, unsigned alignment)
 {
@@ -332,7 +275,7 @@ _CCCL_HOST_DEVICE const T* round_down_ptr(const T* ptr, unsigned alignment)
 template <typename T> // Cannot add alignment to signature, because we need a uniform kernel template instantiation
 struct aligned_base_ptr
 {
-  T* ptr; // 16-byte or 128-byte aligned pointer before the original pointer
+  T* ptr; // aligned pointer before the original pointer (16-byte or 128-byte)
   int offset; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
   _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
@@ -355,6 +298,87 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
   return aligned_base_ptr<const T>{base_ptr, static_cast<int>((ptr - base_ptr) * sizeof(T))};
 }
 
+// For performance considerations of memcpy_async:
+// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
+
+constexpr int memcpy_async_alignment     = 16;
+constexpr int memcpy_async_size_multiple = 16;
+
+// TODO(bgruber): inline this as lambda in C++14
+template <typename T>
+_CCCL_DEVICE const T* copy_and_return_smem_dst(
+  cooperative_groups::thread_block& group,
+  int tile_size,
+  char* smem,
+  int& smem_offset,
+  int global_offset,
+  aligned_base_ptr<const T> aligned_ptr)
+{
+  const int count =
+    round_up_to_po2_multiple(static_cast<int>(sizeof(T)) * tile_size + aligned_ptr.offset, memcpy_async_size_multiple);
+  // because SMEM base pointer and count are always multiples of 16-byte, we only need to align the SMEM start for types
+  // with larger alignment
+  _CCCL_IF_CONSTEXPR (alignof(T) > memcpy_async_alignment)
+  {
+    smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
+  }
+  auto smem_dst = reinterpret_cast<T*>(smem + smem_offset);
+  assert(reinterpret_cast<uintptr_t>(smem_dst) % memcpy_async_size_multiple == 0); // to hit optimal memcpy_async
+                                                                                   // performance
+  cooperative_groups::memcpy_async(
+    group,
+    smem_dst,
+    aligned_ptr.ptr + global_offset,
+    ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(count)});
+  smem_offset += count;
+  return smem_dst + aligned_ptr.offset;
+}
+
+template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
+  Offset num_items,
+  int num_elem_per_thread,
+  F f,
+  RandomAccessIteartorOut out,
+  aligned_base_ptr<const InTs>... aligned_ptrs)
+{
+  extern __shared__ char smem[]; // this should be __attribute((aligned(memcpy_async_alignment))), but then it clashes
+                                 // with the ublkcp kernel, which sets a higher alignment, since they are both called
+                                 // from the same kernel entry point (albeit one is always discarded). However, SMEM is
+                                 // 16-byte aligned by default.
+
+  const Offset tile_stride   = blockDim.x * num_elem_per_thread;
+  const Offset global_offset = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size        = ::cuda::std::min(num_items - global_offset, tile_stride);
+
+  auto group           = cooperative_groups::this_thread_block();
+  int smem_offset      = 0;
+  const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
+    copy_and_return_smem_dst(group, tile_size, smem, smem_offset, global_offset, aligned_ptrs)...};
+  cooperative_groups::wait(group);
+  (void) smem_ptrs; // suppress unused warning for MSVC
+  (void) &smem_offset; // MSVC needs extra strong unused warning supression
+
+#pragma unroll 1
+  for (int i = 0; i < num_elem_per_thread; ++i)
+  {
+    const int smem_idx    = i * blockDim.x + threadIdx.x;
+    const Offset gmem_idx = global_offset + smem_idx;
+    if (gmem_idx < num_items)
+    {
+      out[gmem_idx] = poor_apply(
+        [&](const InTs*... smem_base_ptrs) {
+          return f(smem_base_ptrs[smem_idx]...);
+        },
+        smem_ptrs);
+    }
+  }
+}
+
+constexpr int ublkcp_alignment     = 128;
+constexpr int ublkcp_size_multiple = 16;
+
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 // TODO(bgruber): inline this as lambda in C++14
 template <typename T>
@@ -371,8 +395,8 @@ _CCCL_DEVICE void copy_ptr_set(
 #  if CUB_PTX_ARCH >= 900
   namespace ptx = ::cuda::ptx;
   // Copy a bit more than tile_size, to cover for base_ptr starting earlier than ptr
-  const uint32_t num_bytes =
-    round_up_to_po2_multiple(aligned_ptr.offset + static_cast<uint32_t>(sizeof(T)) * tile_size, 16u);
+  const uint32_t num_bytes = round_up_to_po2_multiple(
+    aligned_ptr.offset + static_cast<uint32_t>(sizeof(T)) * tile_size, static_cast<uint32_t>(ublkcp_size_multiple));
   ptx::cp_async_bulk(
     ptx::space_cluster,
     ptx::space_global,
@@ -391,7 +415,7 @@ _CCCL_DEVICE const T& fetch_operand(
   uint32_t tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
   const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.offset);
-  smem_offset += sizeof(T) * tile_stride + 128;
+  smem_offset += sizeof(T) * tile_stride + ublkcp_alignment;
   return smem_operand_tile_base[smem_idx];
 };
 
@@ -425,7 +449,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 {
 #  if CUB_PTX_ARCH >= 900
   __shared__ uint64_t bar;
-  extern __shared__ char __attribute((aligned(128))) smem[];
+  extern __shared__ char __attribute((aligned(ublkcp_alignment))) smem[];
 
   namespace ptx = ::cuda::ptx;
 
@@ -509,25 +533,32 @@ _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 }
 
 template <typename It>
-_CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr) -> kernel_arg<It>
+_CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
   using T = value_t<It>;
   cub::detail::uninitialized_copy_single(
-    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr, 128));
+    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr, alignment));
   return arg;
 }
 
+// TODO(bgruber): make a variable template in C++14
+template <Algorithm Alg>
+using needs_aligned_ptr_t =
+  ::cuda::std::bool_constant<Alg == Algorithm::memcpy_async
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-template <typename It>
-_CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
+                             || Alg == Algorithm::ublkcp
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
+                             >;
+
+template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
+_CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>,
                                     kernel_arg<It>&& arg) -> aligned_base_ptr<const value_t<It>>&&
 {
   return ::cuda::std::move(arg.template aliased_storage<aligned_base_ptr<const value_t<It>>>());
 }
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-template <Algorithm Alg, typename It>
+template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> It&&
 {
   return ::cuda::std::move(arg.template aliased_storage<It>());
@@ -640,6 +671,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     using unrolled_policy =
       unrolled_policy_t<256, items_per_thread_from_occupancy(256, 6, min_bif, loaded_bytes_per_iter)>;
 
+    // TODO(bgruber): I improved the memcpy_async kernel, need to reevaluate whether to use unrolled or memcpy_async
     using algo_policy =
       ::cuda::std::_If<RequiresStableAddress || !can_memcpy || no_input_streams, prefetch_policy_t<256>, unrolled_policy>;
     // best BabelStream unroll tunings (threads, items per thread, score)
@@ -780,7 +812,9 @@ struct dispatch_t<RequiresStableAddress,
     // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
-
+    static_assert(block_dim % memcpy_async_alignment == 0,
+                  "BLOCK_THREADS needs to be a multiple of memcpy_async_alignment (16)"); // then tile_size is a
+                                                                                          // multiple of 16-byte
     const auto max_smem = get_max_shared_memory();
     if (!max_smem)
     {
@@ -800,7 +834,8 @@ struct dispatch_t<RequiresStableAddress,
       int smem_size   = 0;
       auto count_smem = [&](int size, int alignment) {
         smem_size = round_up_to_po2_multiple(smem_size, alignment);
-        smem_size += size * tile_size;
+        // max aligned_base_ptr offset + max padding after == 16
+        smem_size += size * tile_size + ::cuda::std::max(memcpy_async_alignment, memcpy_async_size_multiple);
       };
       // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)
       int dummy[] = {
@@ -840,6 +875,7 @@ struct dispatch_t<RequiresStableAddress,
     }
     assert(chosen_elem_per_thread > 0);
     assert(chosen_tile_size > 0);
+    assert(chosen_tile_size % memcpy_async_alignment == 0);
     assert((sizeof...(RandomAccessIteratorsIn) == 0) != (chosen_smem_size != 0)); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{chosen_tile_size}));
@@ -858,6 +894,10 @@ struct dispatch_t<RequiresStableAddress,
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
+    static_assert(block_dim % ublkcp_alignment == 0,
+                  "BLOCK_THREADS needs to be a multiple of ublkcp_alignment (128)"); // then tile_size is a multiple of
+                                                                                     // 128-byte
+    // aligned
 
     const auto max_smem = get_max_shared_memory();
     if (!max_smem)
@@ -874,8 +914,9 @@ struct dispatch_t<RequiresStableAddress,
     {
       constexpr int num_inputs = sizeof...(RandomAccessIteratorsIn);
       const int tile_size      = block_dim * elem_per_thread;
-      const int smem_size      = tile_size * loaded_bytes_per_iter + 128 * num_inputs; // 128 bytes of padding for each
-                                                                                  // input tile
+      // 128 bytes of padding for each input tile (before + after)
+      const int smem_size =
+        tile_size * loaded_bytes_per_iter + ::cuda::std::max(ublkcp_alignment, ublkcp_size_multiple) * num_inputs;
 
       if (smem_size > *max_smem)
       {
@@ -909,6 +950,7 @@ struct dispatch_t<RequiresStableAddress,
     }
     assert(chosen_elem_per_thread > 0);
     assert(chosen_tile_size > 0);
+    assert(chosen_tile_size % ublkcp_alignment == 0);
     assert((sizeof...(RandomAccessIteratorsIn) == 0) != (chosen_smem_size != 0)); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{chosen_tile_size}));
@@ -936,7 +978,7 @@ struct dispatch_t<RequiresStableAddress,
       op,
       out,
       make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
-        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...);
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), ublkcp_alignment)...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -957,8 +999,8 @@ struct dispatch_t<RequiresStableAddress,
       ::cuda::std::get<2>(*ret),
       op,
       out,
-      make_iterator_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
-        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...);
+      make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), memcpy_async_alignment)...);
   }
 
   template <typename ActivePolicy, std::size_t... Is>
