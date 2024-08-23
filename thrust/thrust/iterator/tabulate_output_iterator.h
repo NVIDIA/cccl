@@ -28,7 +28,7 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \p tabulate_output_iterator is a special kind of output iterator which, whenever a value is assigned to a
  * dereferenced iterator, calls the given callable with the index that corresponds to the offset of the dereferenced
- * iterator and the the assigned value.
+ * iterator and the assigned value.
  *
  * The following code snippet demonstrated how to create a \p tabulate_output_iterator which prints the index and the
  * assigned value.
@@ -37,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
  * #include <thrust/iterator/tabulate_output_iterator.h>
  *
  *  // note: functor inherits form binary function
- *  struct print_op : public thrust::binary_function<int, float, void>
+ *  struct print_op
  *  {
  *    __host__ __device__
  *    void operator()(int index, float value) const
