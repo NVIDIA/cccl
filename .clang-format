@@ -62,7 +62,6 @@ AttributeMacros: [
                   '_LIBCUDACXX_NO_DESTROY',
                   '_LIBCUDACXX_NO_SANITIZE',
                   '_LIBCUDACXX_NOALIAS',
-                  '_LIBCUDACXX_OVERRIDABLE_FUNC_VIS',
                   '_LIBCUDACXX_STANDALONE_DEBUG',
                   '_LIBCUDACXX_TEMPLATE_DATA_VIS',
                   '_LIBCUDACXX_TEMPLATE_VIS',
