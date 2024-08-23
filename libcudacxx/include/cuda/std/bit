@@ -25,6 +25,7 @@
 #include <cuda/std/__bit/clz.h>
 #include <cuda/std/__bit/ctz.h>
 #include <cuda/std/__bit/endian.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/popc.h>
 #include <cuda/std/__bit/rotate.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -237,13 +238,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr uint32_t __bit_log2(_Tp __t) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool __has_single_bit(_Tp __t) noexcept
-{
-  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__has_single_bit requires unsigned");
-  return __t != 0 && (((__t & (__t - 1)) == 0));
-}
-
-template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<sizeof(_Tp) >= sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
 {
   return _Tp{1} << (numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)));
@@ -290,13 +284,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integ
 popcount(_Tp __t) noexcept
 {
   return __popcount(__t);
-}
-
-template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, bool>
-has_single_bit(_Tp __t) noexcept
-{
-  return __has_single_bit(__t);
 }
 
 template <class _Tp>
