@@ -30,7 +30,6 @@ namespace detail
 {
 struct arch_common_traits
 {
-  // TODO: Should these be in block_level, grid_level?
   // Maximum number of threads per block
   static constexpr int max_threads_per_block = 1024;
 
@@ -64,7 +63,6 @@ struct arch_common_traits
   // Maximum number of concurrent grids on the device
   static constexpr int max_resident_grids = 128;
 
-  // TODO: Not sure if we need these:
   // true if the device can concurrently copy memory between host and device
   // while executing a kernel, or false if not
   static constexpr bool gpu_overlap = true;
@@ -267,6 +265,29 @@ inline constexpr arch_traits_t sm_860_traits = []() constexpr {
   return __traits;
 }();
 
+inline constexpr arch_traits_t sm_890_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 8;
+  __traits.compute_capability_minor             = 9;
+  __traits.compute_capability                   = 890;
+  __traits.max_shared_memory_per_multiprocessor = 100 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 24;
+  __traits.max_warps_per_multiprocessor         = 48;
+  __traits.max_threads_per_multiprocessor =
+    __traits.max_warps_per_multiprocessor * detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = false;
+
+  return __traits;
+}();
+
 inline constexpr arch_traits_t sm_900_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 9;
@@ -312,6 +333,8 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
       return detail::sm_800_traits;
     case 860:
       return detail::sm_860_traits;
+    case 890:
+      return detail::sm_890_traits;
     case 900:
       return detail::sm_900_traits;
     default:
@@ -350,7 +373,6 @@ public:
   }
 };
 
-// TODO: possible this should be __device__ constexpr variable?
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
 _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
 {
@@ -361,10 +383,6 @@ _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
   return arch_traits_t{};
 #endif
 }
-
-// TODO might need to remove this since sm_80 and sm_86 is both called ampere :(
-using arch_volta  = arch<700>;
-using arch_turing = arch<750>;
 
 } // namespace cuda::experimental
 
