@@ -60,12 +60,15 @@ struct hierarchy_query_result : public dimensions<T, Extents...>
   using Dims::Dims;
   _CCCL_HOST_DEVICE explicit constexpr hierarchy_query_result(const Dims& dims)
       : Dims(dims)
+      , x(Dims::extent(0))
+      , y(Dims::rank() > 1 ? Dims::extent(1) : 1)
+      , z(Dims::rank() > 2 ? Dims::extent(2) : 1)
   {}
   static_assert(Dims::rank() > 0 && Dims::rank() <= 3);
 
-  const T x = Dims::extent(0);
-  const T y = (Dims::rank() > 1) ? Dims::extent(1) : 1;
-  const T z = (Dims::rank() > 2) ? Dims::extent(2) : 1;
+  const T x;
+  const T y;
+  const T z;
 
   _CCCL_HOST_DEVICE constexpr operator dim3() const
   {

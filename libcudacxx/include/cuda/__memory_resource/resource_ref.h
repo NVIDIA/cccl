@@ -396,17 +396,20 @@ struct _Alloc_base
   }
 
 protected:
+  static _CCCL_FORCEINLINE void* _Get_object_(bool, void* __object) noexcept
+  {
+    return __object;
+  }
+
+  static _CCCL_FORCEINLINE void* _Get_object_(const bool __is_small, const _AnyResourceStorage& __object) noexcept
+  {
+    const void* __pv = __is_small ? __object.__buf_ : __object.__ptr_;
+    return const_cast<void*>(__pv);
+  }
+
   void* _Get_object() const noexcept
   {
-    _CCCL_IF_CONSTEXPR (_Wrapper_type == _WrapperType::_Reference)
-    {
-      return __object;
-    }
-    else
-    {
-      const void* __pv = __static_vtable->__is_small ? __object.__buf_ : __object.__ptr_;
-      return const_cast<void*>(__pv);
-    }
+    return _Get_object_(__static_vtable->__is_small, this->__object);
   }
 
   __alloc_object_storage_t<_Wrapper_type> __object{};

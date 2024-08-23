@@ -43,6 +43,7 @@
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
@@ -94,12 +95,13 @@ public:
     }
   }
 
-  //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
-  //! This constructor also handles conversion from \c async_any_resource to \c any_resource
-  //! @param __ref The other \c basic_any_resource
-  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
-  basic_any_resource(basic_any_resource<_Alloc_type, _OtherProperties...> __other) noexcept
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen misparses the below constructor, so dumb it down for it.
+  _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VSTD::_IsNotSame<basic_any_resource, basic_any_resource<_OtherAllocType, _OtherProperties...>>::value
+      _LIBCUDACXX_AND(_OtherAllocType == _Alloc_type || _OtherAllocType == _CUDA_VMR::_AllocType::_Async)
+        _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
+  basic_any_resource(basic_any_resource<_OtherAllocType, _OtherProperties...> __other) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
@@ -107,6 +109,13 @@ public:
     _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__move_fn(&this->__object, &__other.__object);
   }
+#else
+  //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
+  //! This constructor also handles conversion from \c async_any_resource to \c any_resource
+  //! @param __ref The other \c basic_any_resource
+  template <_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties>
+  basic_any_resource(basic_any_resource<_OtherAllocType, _OtherProperties...> __other) noexcept;
+#endif
 
   basic_any_resource(basic_any_resource&& __other) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
