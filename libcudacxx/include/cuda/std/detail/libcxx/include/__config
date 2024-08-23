@@ -1023,12 +1023,6 @@ typedef __char32_t char32_t;
 
 #  if defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
 
-#    ifdef _DLL
-#      define _LIBCUDACXX_CRT_FUNC __declspec(dllimport)
-#    else
-#      define _LIBCUDACXX_CRT_FUNC
-#    endif
-
 #    if defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
 #    elif defined(_LIBCUDACXX_BUILDING_LIBRARY)
