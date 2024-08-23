@@ -1031,20 +1031,16 @@ typedef __char32_t char32_t;
 
 #    if defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
 #      define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
-#      define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
 #    elif defined(_LIBCUDACXX_BUILDING_LIBRARY)
 #      if defined(__MINGW32__)
 #        define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS __declspec(dllexport)
-#        define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
 #      else
 #        define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
-#        define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS __declspec(dllexport)
 #      endif
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS __declspec(dllexport)
 #    else
 #      define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS __declspec(dllimport)
-#      define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
 #      define _LIBCUDACXX_OVERRIDABLE_FUNC_VIS
 #    endif
 
@@ -1096,10 +1092,6 @@ typedef __char32_t char32_t;
 #    else
 #      define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
 #    endif
-#  endif
-
-#  ifndef _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
-#    define _LIBCUDACXX_CLASS_TEMPLATE_INSTANTIATION_VIS
 #  endif
 
 #  if __has_attribute(internal_linkage)
