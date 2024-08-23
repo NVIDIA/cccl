@@ -31,6 +31,14 @@ namespace cuda::experimental
 
 namespace detail
 {
+
+_CCCL_NODISCARD inline int __get_attr_impl(::cudaDeviceAttr __attr, int __dev)
+{
+  int __value = 0;
+  _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, __attr, __dev);
+  return __value;
+}
+
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr
 {
@@ -43,7 +51,7 @@ struct __dev_attr
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return __dev_id.attr<_Attr>();
+    return __get_attr_impl(_Attr, __dev_id.get());
   }
 };
 
@@ -59,7 +67,7 @@ struct __dev_attr_with_type
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return __dev_id.attr<_Attr>();
+    return static_cast<type>(__get_attr_impl(_Attr, __dev_id.get()));
   }
 };
 
@@ -715,6 +723,15 @@ struct device::attrs
   static constexpr numa_id_t numa_id{};
 
 #endif // CUDART_VERSION >= 12020
+
+  struct compute_capability_t
+  {
+    _CCCL_NODISCARD int operator()(device_ref __dev_id) const
+    {
+      return 100 * compute_capability_major(__dev_id) + 10 * compute_capability_minor(__dev_id);
+    }
+  };
+  static constexpr compute_capability_t compute_capability{};
 };
 
 inline arch_traits_t device_ref::arch_traits() const
