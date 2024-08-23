@@ -1033,14 +1033,6 @@ typedef __char32_t char32_t;
 #    endif
 #  endif // !_LIBCUDACXX_TEMPLATE_VIS
 
-#  ifndef _LIBCUDACXX_ENUM_VIS
-#    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#      define _LIBCUDACXX_ENUM_VIS _CCCL_TYPE_VISIBILITY_DEFAULT
-#    else
-#      define _LIBCUDACXX_ENUM_VIS
-#    endif
-#  endif // _LIBCUDACXX_ENUM_VIS
-
 #  if __has_attribute(internal_linkage)
 #    define _LIBCUDACXX_INTERNAL_LINKAGE __attribute__((internal_linkage))
 #  else
@@ -1194,9 +1186,6 @@ typedef unsigned int char32_t;
 #  if __check_builtin(make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
 #    define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 #  endif
-
-#  define _LIBCUDACXX_DECLARE_STRONG_ENUM(x) enum class _LIBCUDACXX_ENUM_VIS x
-#  define _LIBCUDACXX_DECLARE_STRONG_ENUM_EPILOG(x)
 
 #  ifdef _LIBCUDACXX_DEBUG
 #    if _LIBCUDACXX_DEBUG == 0

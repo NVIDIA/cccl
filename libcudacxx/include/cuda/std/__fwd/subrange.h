@@ -26,7 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-enum class _LIBCUDACXX_ENUM_VIS subrange_kind : bool
+enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
 {
   unsized,
   sized
