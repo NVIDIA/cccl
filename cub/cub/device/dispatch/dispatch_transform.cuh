@@ -30,7 +30,6 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/barrier>
 #include <cuda/cmath>
 #include <cuda/ptx>
 #include <cuda/std/__algorithm/clamp.h>
@@ -304,6 +303,18 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 constexpr int memcpy_async_alignment     = 16;
 constexpr int memcpy_async_size_multiple = 16;
 
+// Our own version of ::cuda::aligned_size_t, since we cannot include <cuda/barrier> on CUDA_ARCH < 700
+template <_CUDA_VSTD::size_t _Alignment>
+struct aligned_size_t
+{
+  _CUDA_VSTD::size_t value;
+
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr operator size_t() const
+  {
+    return value;
+  }
+};
+
 // TODO(bgruber): inline this as lambda in C++14
 template <typename T>
 _CCCL_DEVICE const T* copy_and_return_smem_dst(
@@ -329,7 +340,7 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
     group,
     smem_dst,
     aligned_ptr.ptr + global_offset,
-    ::cuda::aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(count)});
+    aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(count)});
   smem_offset += count;
   return smem_dst + aligned_ptr.offset;
 }
