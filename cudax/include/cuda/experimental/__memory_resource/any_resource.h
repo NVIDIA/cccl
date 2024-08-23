@@ -46,7 +46,6 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/in_place.h>
 
 namespace cuda::experimental::mr
 {
@@ -71,8 +70,16 @@ private:
   static constexpr bool __properties_match =
     _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>;
 
-  template <class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>>
-  basic_any_resource(_CUDA_VSTD::in_place_t, _Resource&& __res) noexcept(_CUDA_VMR::_IsSmall<__resource_t>())
+public:
+  //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c resource or \c async_resource
+  //! concept as well as all properties
+  //! @param __res The resource to be wrapped within the \c basic_any_resource
+  _LIBCUDACXX_TEMPLATE(class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>)
+  _LIBCUDACXX_REQUIRES(
+    (!__is_basic_any_resource<_Resource>)
+      _LIBCUDACXX_AND _CUDA_VMR::resource_with<__resource_t, _Properties...> _LIBCUDACXX_AND(
+        _Alloc_type != _CUDA_VMR::_AllocType::_Async || _CUDA_VMR::async_resource_with<__resource_t, _Properties...>))
+  basic_any_resource(_Resource&& __res) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __resource_t>)
       , __vtable(__vtable::template _Create<__resource_t>())
@@ -87,50 +94,12 @@ private:
     }
   }
 
-public:
-  //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c resource or \c async_resource concept
-  //! as well as all properties
-  //! @param __res The resource to be wrapped within the \c basic_any_resource
-  _LIBCUDACXX_TEMPLATE(class _Resource, _CUDA_VMR::_AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES(
-    (!__is_basic_any_resource<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _CUDA_VMR::_AllocType::_Default)
-      _LIBCUDACXX_AND _CUDA_VMR::resource_with<_CUDA_VSTD::remove_cvref_t<_Resource>, _Properties...>)
-  basic_any_resource(_Resource&& __res) noexcept
-      : basic_any_resource(_CUDA_VSTD::in_place, _CUDA_VSTD::forward<_Resource>(__res))
-  {}
-
-  //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c async_resource concept as well as all
-  //! properties. This ignores the async interface of the passed in resource
-  //! @param __res The resource to be wrapped within the \c basic_any_resource
-  _LIBCUDACXX_TEMPLATE(class _Resource, _CUDA_VMR::_AllocType _Alloc_type2 = _Alloc_type)
-  _LIBCUDACXX_REQUIRES(
-    (!__is_basic_any_resource<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _CUDA_VMR::_AllocType::_Async)
-      _LIBCUDACXX_AND _CUDA_VMR::async_resource_with<_CUDA_VSTD::remove_cvref_t<_Resource>, _Properties...>)
-  basic_any_resource(_Resource&& __res) noexcept
-      : basic_any_resource(_CUDA_VSTD::in_place, _CUDA_VSTD::forward<_Resource>(__res))
-  {}
-
-  //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order
+  //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
+  //! This constructor also handles conversion from \c async_any_resource to \c any_resource
   //! @param __ref The other \c basic_any_resource
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
   basic_any_resource(basic_any_resource<_Alloc_type, _OtherProperties...> __other) noexcept
-      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
-          nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
-      , __vtable(__other)
-  {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
-    this->__static_vtable->__move_fn(&this->__object, &__other.__object);
-  }
-
-  //! @brief Conversion from a \c async_any_resource with the same set of properties but in a different order to a
-  //! \c any_resource
-  //! @param __ref The other \c async_any_resource
-  _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES((_OtherAllocType == _CUDA_VMR::_AllocType::_Async) _LIBCUDACXX_AND //
-                       (_OtherAllocType != _Alloc_type) _LIBCUDACXX_AND //
-                         __properties_match<_OtherProperties...>)
-  basic_any_resource(basic_any_resource<_OtherAllocType, _OtherProperties...> __other) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
