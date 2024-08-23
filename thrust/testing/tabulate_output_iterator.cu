@@ -20,7 +20,7 @@ struct host_write_op
   OutItT out;
 
   template <typename IndexT, typename T>
-  __host__ __forceinline__ void operator()(IndexT index, T val)
+  _CCCL_HOST void operator()(IndexT index, T val)
   {
     // val is a thrust::tuple(value, input_index). Only write out the value part.
     out[index] = thrust::get<0>(val);
@@ -33,7 +33,7 @@ struct device_write_op
   OutItT out;
 
   template <typename IndexT, typename T>
-  __device__ __forceinline__ void operator()(IndexT index, T val)
+  _CCCL_DEVICE void operator()(IndexT index, T val)
   {
     // val is a thrust::tuple(value, input_index). Only write out the value part.
     out[index] = thrust::get<0>(val);
@@ -45,7 +45,7 @@ struct select_op
   std::size_t select_every_nth;
 
   template <typename T, typename IndexT>
-  __device__ __host__ __forceinline__ bool operator()(thrust::tuple<T, IndexT> key_index_pair)
+  _CCCL_HOST_DEVICE bool operator()(thrust::tuple<T, IndexT> key_index_pair)
   {
     // Select every n-th item
     return (thrust::get<1>(key_index_pair) % select_every_nth == 0);
@@ -57,7 +57,7 @@ struct index_to_gather_index_op
   std::size_t gather_stride;
 
   template <typename IndexT>
-  __device__ __host__ __forceinline__ IndexT operator()(IndexT index)
+  _CCCL_HOST_DEVICE IndexT operator()(IndexT index)
   {
     // Gather the i-th output item from input[i*3]
     return index * static_cast<IndexT>(gather_stride);
