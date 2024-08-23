@@ -11,10 +11,14 @@
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <cstddef>
+#include <cstdint>
 
 #include "cuda/std/detail/libcxx/include/cstddef"
 #include <catch2/catch.hpp>
 #include <testing.cuh>
+
+using std::size_t;
+using std::uintptr_t;
 
 struct Counts
 {
@@ -179,7 +183,7 @@ struct test_resource
   }
 };
 
-using big_resource   = test_resource<unsigned long>;
+using big_resource   = test_resource<uintptr_t>;
 using small_resource = test_resource<unsigned int>;
 
 static_assert(sizeof(big_resource) > sizeof(cuda::mr::_AnyResourceStorage));
