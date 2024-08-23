@@ -100,7 +100,7 @@ struct cached_allocator
     return result;
   }
 
-  void deallocate(char* ptr, size_t) noexcept
+  void deallocate(char* ptr, size_t)
   {
     std::cout << "cached_allocator::deallocate(): ptr == " << reinterpret_cast<void*>(ptr) << std::endl;
 
