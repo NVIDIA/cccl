@@ -107,7 +107,7 @@ typedef fpos<char_traits<wchar_t>::state_type> wstreampos;
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-class _LIBCUDACXX_TYPE_VIS ios_base;
+class _CCCL_TYPE_VISIBILITY_DEFAULT ios_base;
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _LIBCUDACXX_TEMPLATE_VIS basic_ios;

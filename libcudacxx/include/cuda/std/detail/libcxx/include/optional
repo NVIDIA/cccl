@@ -228,7 +228,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 using ::std::bad_optional_access;
 
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
-class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad_optional_access : public ::std::exception
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad_optional_access
+    : public ::std::exception
 {
 public:
   const char* what() const noexcept override

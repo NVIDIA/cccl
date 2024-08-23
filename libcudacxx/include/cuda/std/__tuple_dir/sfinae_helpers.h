@@ -133,7 +133,7 @@ template <class _Tuple, size_t _ExpectedSize, class _RawTuple = __remove_cvref_t
 using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE =
   __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
 
-struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __check_tuple_constructor_fail
 {
   template <int&...>
   using __enable_explicit_default = false_type;

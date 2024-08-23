@@ -1604,7 +1604,7 @@ operator-(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 //////////////////////////////////////////////////////////
 /////////////////////// clocks ///////////////////////////
 //////////////////////////////////////////////////////////
-class _LIBCUDACXX_TYPE_VIS system_clock
+class _CCCL_TYPE_VISIBILITY_DEFAULT system_clock
 {
 public:
   typedef _LIBCUDACXX_SYS_CLOCK_DURATION duration;
@@ -1619,7 +1619,7 @@ public:
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
-class _LIBCUDACXX_TYPE_VIS steady_clock
+class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
 {
 public:
   typedef nanoseconds duration;

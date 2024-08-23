@@ -696,8 +696,8 @@ _CCCL_VISIBILITY_DEFAULT extern thread_local ptrdiff_t __libcpp_thread_favorite_
 
 #  ifndef __cuda_std__
 
-class _LIBCUDACXX_TYPE_VIS thread;
-class _LIBCUDACXX_TYPE_VIS __thread_id;
+class _CCCL_TYPE_VISIBILITY_DEFAULT thread;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __thread_id;
 
 namespace this_thread
 {
@@ -779,7 +779,7 @@ private:
   {}
 
   friend __thread_id this_thread::get_id() noexcept;
-  friend class _LIBCUDACXX_TYPE_VIS thread;
+  friend class _CCCL_TYPE_VISIBILITY_DEFAULT thread;
   friend struct _LIBCUDACXX_TEMPLATE_VIS hash<__thread_id>;
 };
 

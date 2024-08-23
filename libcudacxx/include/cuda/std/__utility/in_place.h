@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-struct _LIBCUDACXX_TYPE_VIS in_place_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 {
   explicit in_place_t() = default;
 };
