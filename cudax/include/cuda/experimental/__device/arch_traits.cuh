@@ -12,8 +12,6 @@
 #define _CUDAX__DEVICE_ARCH_TRAITS
 
 #include <cuda/__cccl_config>
-#include <cuda/std/__exception/cuda_error.h>
-#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,6 +20,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/limits>
 
 namespace cuda::experimental
 {
