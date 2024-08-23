@@ -122,6 +122,9 @@ _CCCL_DEVICE void prefetch(const T* addr)
   asm volatile("prefetch.L2 [%0];" : : "l"(addr) : "memory");
 }
 
+// TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
+// as we need to create less instructions to prefetch the same amount of data.
+
 // overload for any iterator that is not a pointer, do nothing
 template <typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
 _CCCL_DEVICE void prefetch(It)
@@ -250,9 +253,10 @@ _CCCL_DEVICE auto poor_apply(F&& f, Tuple&& t)
 }
 
 // mult must be a power of 2
-_CCCL_HOST_DEVICE inline auto round_up_to_multiple(int x, int mult) -> int
+template <typename Integral>
+_CCCL_HOST_DEVICE inline auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
-  assert(::cuda::std::popcount(static_cast<unsigned>(mult)) == 1);
+  assert(::cuda::std::popcount(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)) == 1);
   return (x + mult - 1) & ~(mult - 1);
 }
 
@@ -266,7 +270,7 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
 {
   // using T          = ::cuda::std::__remove_const_t<::cuda::std::__remove_pointer_t<decltype(ptr)>>;
   const auto count = static_cast<uint32_t>(sizeof(T)) * tile_size;
-  smem_offset      = round_up_to_multiple(smem_offset, alignof(T));
+  smem_offset      = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
   auto smem_dst    = reinterpret_cast<T*>(smem + smem_offset);
   cooperative_groups::memcpy_async(group, smem_dst, ptr + global_offset, count);
   smem_offset += count;
@@ -314,13 +318,22 @@ _CCCL_DEVICE void transform_kernel_impl(
   }
 }
 
-// Pointer with meta data to describe input memory for memcpy_async and UBLKCP kernels.
-// memcpy_async and UBLKCP are most efficient when the data is 128-byte aligned and the size a multiple of 16 bytes
 template <typename T>
+_CCCL_HOST_DEVICE const T* round_down_ptr(const T* ptr, unsigned alignment)
+{
+  assert(::cuda::std::popcount(static_cast<::cuda::std::__make_unsigned_t<Integral>>(alignment)) == 1);
+  return reinterpret_cast<const T*>(
+    reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
+}
+
+// Pointer with metadata to describe input memory for memcpy_async and UBLKCP kernels.
+// cg::memcpy_async is most efficient when the data is 16-byte aligned and the size a multiple of 16 bytes
+// UBLKCP is most efficient when the data is 128-byte aligned and the size a multiple of 16 bytes
+template <typename T> // Cannot add alignment to signature, because we need a uniform kernel template instantiation
 struct aligned_base_ptr
 {
-  T* ptr; // 128-byte aligned pointer before the original pointer (== start of cacheline)
-  int offset; // byte offset between ptr and the original pointer. Value inside [0;127].
+  T* ptr; // 16-byte or 128-byte aligned pointer before the original pointer
+  int offset; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
   _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
   {
@@ -328,28 +341,17 @@ struct aligned_base_ptr
   }
 };
 
-_CCCL_HOST_DEVICE constexpr uint32_t round_up_16(::cuda::std::uint32_t x)
-{
-  return (x + 15u) & ~15u;
-}
-
 template <typename T>
-_CCCL_HOST_DEVICE const T* round_down_ptr_128(const T* ptr)
+_CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<const T>
 {
-  return reinterpret_cast<const T*>(reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{128 - 1});
-}
-
-template <typename T>
-_CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr) -> aligned_base_ptr<const T>
-{
-  // TODO(bgruber): is it actually legal to move the pointer to a lower 128-byte aligned address and start reading from
-  // there in the kernel?
-  // The CUDA programming guide says:
+  // TODO(bgruber): is it actually legal to move the pointer to a lower 128-byte aligned address and start reading
+  // from there in the kernel? The CUDA programming guide says:
   //   https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses
   //   > Any address of a variable residing in global memory or returned by one of the memory allocation routines from
   //     the driver or runtime API is always aligned to at least 256 bytes.
   // However, gevtushenko says since Linux Kernel 6, any host memory is device accessible, even stack memory
-  const T* base_ptr = round_down_ptr_128(ptr);
+  // ahendriksen argues that all memory pages are sufficiently aligned, even those migrated from the host
+  const T* base_ptr = round_down_ptr(ptr, alignment);
   return aligned_base_ptr<const T>{base_ptr, static_cast<int>((ptr - base_ptr) * sizeof(T))};
 }
 
@@ -359,7 +361,7 @@ template <typename T>
 _CCCL_DEVICE void copy_ptr_set(
   uint64_t& bar,
   uint32_t tile_size,
-  size_t tile_stride,
+  int tile_stride,
   char* smem,
   int& smem_offset,
   uint32_t& total_copied,
@@ -369,7 +371,8 @@ _CCCL_DEVICE void copy_ptr_set(
 #  if CUB_PTX_ARCH >= 900
   namespace ptx = ::cuda::ptx;
   // Copy a bit more than tile_size, to cover for base_ptr starting earlier than ptr
-  const uint32_t num_bytes = round_up_16(aligned_ptr.offset + sizeof(T) * tile_size);
+  const uint32_t num_bytes =
+    round_up_to_po2_multiple(aligned_ptr.offset + static_cast<uint32_t>(sizeof(T)) * tile_size, 16u);
   ptx::cp_async_bulk(
     ptx::space_cluster,
     ptx::space_global,
@@ -377,7 +380,7 @@ _CCCL_DEVICE void copy_ptr_set(
     aligned_ptr.ptr + global_offset, // Use 128-byte aligned base_ptr here
     num_bytes,
     &bar);
-  smem_offset += sizeof(T) * tile_stride + 128;
+  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + 128;
   total_copied += num_bytes;
 #  endif // CUB_PTX_ARCH >= 900
 };
@@ -511,7 +514,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr) -> kernel_arg<It
   kernel_arg<It> arg;
   using T = value_t<It>;
   cub::detail::uninitialized_copy_single(
-    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr));
+    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr, 128));
   return arg;
 }
 
@@ -796,7 +799,7 @@ struct dispatch_t<RequiresStableAddress,
 
       int smem_size   = 0;
       auto count_smem = [&](int size, int alignment) {
-        smem_size = round_up_to_multiple(smem_size, alignment);
+        smem_size = round_up_to_po2_multiple(smem_size, alignment);
         smem_size += size * tile_size;
       };
       // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)

@@ -471,13 +471,13 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
-  CHECK(make_aligned_base_ptr(&arr[0]) == aligned_base_ptr<const int>{&arr[0], 0});
-  CHECK(make_aligned_base_ptr(&arr[1]) == aligned_base_ptr<const int>{&arr[0], 4});
-  CHECK(make_aligned_base_ptr(&arr[5]) == aligned_base_ptr<const int>{&arr[0], 20});
-  CHECK(make_aligned_base_ptr(&arr[31]) == aligned_base_ptr<const int>{&arr[0], 124});
-  CHECK(make_aligned_base_ptr(&arr[32]) == aligned_base_ptr<const int>{&arr[32], 0});
-  CHECK(make_aligned_base_ptr(&arr[33]) == aligned_base_ptr<const int>{&arr[32], 4});
-  CHECK(make_aligned_base_ptr(&arr[127]) == aligned_base_ptr<const int>{&arr[96], 124});
-  CHECK(make_aligned_base_ptr(&arr[128]) == aligned_base_ptr<const int>{&arr[128], 0});
-  CHECK(make_aligned_base_ptr(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4});
+  CHECK(make_aligned_base_ptr(&arr[0], 128) == aligned_base_ptr<const int>{&arr[0], 0});
+  CHECK(make_aligned_base_ptr(&arr[1], 128) == aligned_base_ptr<const int>{&arr[0], 4});
+  CHECK(make_aligned_base_ptr(&arr[5], 128) == aligned_base_ptr<const int>{&arr[0], 20});
+  CHECK(make_aligned_base_ptr(&arr[31], 128) == aligned_base_ptr<const int>{&arr[0], 124});
+  CHECK(make_aligned_base_ptr(&arr[32], 128) == aligned_base_ptr<const int>{&arr[32], 0});
+  CHECK(make_aligned_base_ptr(&arr[33], 128) == aligned_base_ptr<const int>{&arr[32], 4});
+  CHECK(make_aligned_base_ptr(&arr[127], 128) == aligned_base_ptr<const int>{&arr[96], 124});
+  CHECK(make_aligned_base_ptr(&arr[128], 128) == aligned_base_ptr<const int>{&arr[128], 0});
+  CHECK(make_aligned_base_ptr(&arr[129], 128) == aligned_base_ptr<const int>{&arr[128], 4});
 }
