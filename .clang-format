@@ -61,7 +61,6 @@ AttributeMacros: [
                   '_LIBCUDACXX_HIDE_FROM_ABI',
                   '_LIBCUDACXX_INLINE_VISIBILITY',
                   '_LIBCUDACXX_INTERNAL_LINKAGE',
-                  '_LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS',
                   '_LIBCUDACXX_NO_DESTROY',
                   '_LIBCUDACXX_NO_SANITIZE',
                   '_LIBCUDACXX_NOALIAS',

@@ -1051,8 +1051,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_EXPORTED_FROM_ABI __declspec(dllimport)
 #    endif
 
-#    define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-
 #  endif // defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
 
 #  ifndef _LIBCUDACXX_HIDDEN
@@ -1062,15 +1060,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_HIDDEN
 #    endif
 #  endif // !_LIBCUDACXX_HIDDEN
-
-#  ifndef _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-#    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-// The inline should be removed once PR32114 is resolved
-#      define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS inline _LIBCUDACXX_HIDDEN
-#    else
-#      define _LIBCUDACXX_METHOD_TEMPLATE_IMPLICIT_INSTANTIATION_VIS
-#    endif
-#  endif
 
 #  ifndef _LIBCUDACXX_TYPE_VIS
 #    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
