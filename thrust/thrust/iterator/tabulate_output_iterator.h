@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/iterator/detail/tabulate_output_iterator.inl>
 
 THRUST_NAMESPACE_BEGIN
@@ -26,8 +27,8 @@ THRUST_NAMESPACE_BEGIN
  */
 
 /*! \p tabulate_output_iterator is a special kind of output iterator which, whenever a value is assigned to a
- * dereferenced iterator, calls the given callable with the index of the dereferenced iterator and the the assigned
- * value.
+ * dereferenced iterator, calls the given callable with the index that corresponds to the offset of the dereferenced
+ * iterator and the the assigned value.
  *
  * The following code snippet demonstrated how to create a \p tabulate_output_iterator which prints the index and the
  * assigned value.

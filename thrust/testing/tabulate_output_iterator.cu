@@ -22,13 +22,25 @@ struct host_write_op
   template <typename IndexT, typename T>
   _CCCL_HOST void operator()(IndexT index, T val)
   {
+    out[index] = val;
+  }
+};
+
+template <typename OutItT>
+struct host_write_first_op
+{
+  OutItT out;
+
+  template <typename IndexT, typename T>
+  _CCCL_HOST void operator()(IndexT index, T val)
+  {
     // val is a thrust::tuple(value, input_index). Only write out the value part.
     out[index] = thrust::get<0>(val);
   }
 };
 
 template <typename OutItT>
-struct device_write_op
+struct device_write_first_op
 {
   OutItT out;
 
@@ -77,8 +89,8 @@ void TestTabulateOutputIterator()
 
   // Use operator type that supports the targeted system
   using op_t = typename ::cuda::std::conditional<(::cuda::std::is_same<space, thrust::host_system_tag>::value),
-                                                 host_write_op<it_t>,
-                                                 device_write_op<it_t>>::type;
+                                                 host_write_first_op<it_t>,
+                                                 device_write_first_op<it_t>>::type;
 
   // Construct tabulate_output_iterator
   op_t op{output.begin()};
