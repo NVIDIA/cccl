@@ -110,39 +110,39 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 class _CCCL_TYPE_VISIBILITY_DEFAULT ios_base;
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_ios;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ios;
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_streambuf;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_streambuf;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_istream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_istream;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_ostream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ostream;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_iostream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_iostream;
 
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_stringbuf;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_stringbuf;
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_istringstream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_istringstream;
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_ostringstream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ostringstream;
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_stringstream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_stringstream;
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_filebuf;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_filebuf;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_ifstream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ifstream;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_ofstream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_ofstream;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_fstream;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_fstream;
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS istreambuf_iterator;
+class _CCCL_TYPE_VISIBILITY_DEFAULT istreambuf_iterator;
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS ostreambuf_iterator;
+class _CCCL_TYPE_VISIBILITY_DEFAULT ostreambuf_iterator;
 
 typedef basic_ios<char> ios;
 typedef basic_ios<wchar_t> wios;
@@ -179,7 +179,7 @@ typedef basic_fstream<wchar_t> wfstream;
 
 #if !defined(_LIBCUDACXX_HAS_NO_WCHAR_H)
 template <class _State>
-class _LIBCUDACXX_TEMPLATE_VIS fpos;
+class _CCCL_TYPE_VISIBILITY_DEFAULT fpos;
 typedef fpos<mbstate_t> streampos;
 typedef fpos<mbstate_t> wstreampos;
 #  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
@@ -200,7 +200,7 @@ typedef long long streamoff; // for char_traits in <string>
 
 // Include other forward declarations here
 template <class _Tp, class _Alloc = allocator<_Tp>>
-class _LIBCUDACXX_TEMPLATE_VIS vector;
+class _CCCL_TYPE_VISIBILITY_DEFAULT vector;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

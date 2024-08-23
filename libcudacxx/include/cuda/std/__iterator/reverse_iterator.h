@@ -75,7 +75,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>
-class _LIBCUDACXX_TEMPLATE_VIS reverse_iterator
+class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 #if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<typename iterator_traits<_Iter>::iterator_category,
                       typename iterator_traits<_Iter>::value_type,

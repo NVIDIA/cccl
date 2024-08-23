@@ -116,7 +116,7 @@ struct __tuple_assignable<_Tp, _Up, true, true>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, tuple<_Tp...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
 };

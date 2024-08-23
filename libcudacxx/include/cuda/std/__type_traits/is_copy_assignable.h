@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_copy_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_assignable
     : public is_assignable<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 

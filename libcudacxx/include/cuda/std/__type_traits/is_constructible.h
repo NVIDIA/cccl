@@ -149,7 +149,7 @@ struct __libcpp_is_constructible<_Tp&&, _A0> : public decltype(__is_constructibl
 
 #if defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_constructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
@@ -160,7 +160,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = _LIBCUDACXX_IS_CONSTR
 
 #else
 template <class _Tp, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_constructible : public __libcpp_is_constructible<_Tp, _Args...>::type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __libcpp_is_constructible<_Tp, _Args...>::type
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

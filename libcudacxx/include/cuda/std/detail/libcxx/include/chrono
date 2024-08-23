@@ -881,7 +881,7 @@ namespace chrono
 {
 
 template <class _Rep, class _Period = ratio<1>>
-class _LIBCUDACXX_TEMPLATE_VIS duration;
+class _CCCL_TYPE_VISIBILITY_DEFAULT duration;
 
 template <class _Tp>
 struct __is_duration : false_type
@@ -906,7 +906,7 @@ struct __is_duration<const volatile duration<_Rep, _Period>> : true_type
 } // namespace chrono
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<chrono::duration<_Rep1, _Period1>, chrono::duration<_Rep2, _Period2>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<chrono::duration<_Rep1, _Period1>, chrono::duration<_Rep2, _Period2>>
 {
   typedef chrono::duration<typename common_type<_Rep1, _Rep2>::type, typename __ratio_gcd<_Period1, _Period2>::type>
     type;
@@ -974,7 +974,7 @@ duration_cast(const duration<_Rep, _Period>& __fd)
 }
 
 template <class _Rep>
-struct _LIBCUDACXX_TEMPLATE_VIS treat_as_floating_point : is_floating_point<_Rep>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT treat_as_floating_point : is_floating_point<_Rep>
 {};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -983,7 +983,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool treat_as_floating_point_v = treat_as_float
 #endif // _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 
 template <class _Rep>
-struct _LIBCUDACXX_TEMPLATE_VIS duration_values
+struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
 {
 public:
   _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep zero() noexcept
@@ -1048,7 +1048,7 @@ round(const duration<_Rep, _Period>& __d)
 // duration
 
 template <class _Rep, class _Period>
-class _LIBCUDACXX_TEMPLATE_VIS duration
+class _CCCL_TYPE_VISIBILITY_DEFAULT duration
 {
   static_assert(!__is_duration<_Rep>::value, "A duration representation can not be a duration");
   static_assert(__is_ratio<_Period>::value, "Second template parameter of duration must be a std::ratio");
@@ -1393,7 +1393,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 //////////////////////////////////////////////////////////
 
 template <class _Clock, class _Duration = typename _Clock::duration>
-class _LIBCUDACXX_TEMPLATE_VIS time_point
+class _CCCL_TYPE_VISIBILITY_DEFAULT time_point
 {
   static_assert(__is_duration<_Duration>::value,
                 "Second template parameter of time_point must be a std::chrono::duration");
@@ -1457,7 +1457,7 @@ public:
 } // namespace chrono
 
 template <class _Clock, class _Duration1, class _Duration2>
-struct _LIBCUDACXX_TEMPLATE_VIS
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
 common_type<chrono::time_point<_Clock, _Duration1>, chrono::time_point<_Clock, _Duration2>>
 {
   typedef chrono::time_point<_Clock, typename common_type<_Duration1, _Duration2>::type> type;

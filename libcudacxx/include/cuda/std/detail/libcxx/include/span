@@ -302,7 +302,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
 
 template <typename _Tp, size_t _Extent>
-class _LIBCUDACXX_TEMPLATE_VIS span
+class _CCCL_TYPE_VISIBILITY_DEFAULT span
 {
 public:
   //  constants and types
@@ -551,7 +551,7 @@ private:
 };
 
 template <typename _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS span<_Tp, dynamic_extent>
+class _CCCL_TYPE_VISIBILITY_DEFAULT span<_Tp, dynamic_extent>
 {
 public:
   //  constants and types

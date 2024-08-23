@@ -77,7 +77,7 @@ struct incrementable_traits<_Tp>
 };
 
 template <class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_difference_t<I>` denotes
 // `incrementable_traits<RI>::difference_type` if `iterator_traits<RI>` names a specialization
@@ -139,7 +139,7 @@ struct incrementable_traits<_Tp,
 };
 
 template <class, class = void>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_difference_t<I>` denotes
 // `incrementable_traits<RI>::difference_type` if `iterator_traits<RI>` names a specialization

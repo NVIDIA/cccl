@@ -709,7 +709,7 @@ _LIBCUDACXX_INLINE_VISIBILITY __thread_id get_id() noexcept;
 template <>
 struct hash<__thread_id>;
 
-class _LIBCUDACXX_TEMPLATE_VIS __thread_id
+class _CCCL_TYPE_VISIBILITY_DEFAULT __thread_id
 {
   // FIXME: pthread_t is a pointer on Darwin but a long on Linux.
   // NULL is the no-thread value on Darwin.  Someone needs to check
@@ -780,7 +780,7 @@ private:
 
   friend __thread_id this_thread::get_id() noexcept;
   friend class _CCCL_TYPE_VISIBILITY_DEFAULT thread;
-  friend struct _LIBCUDACXX_TEMPLATE_VIS hash<__thread_id>;
+  friend struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__thread_id>;
 };
 
 namespace this_thread

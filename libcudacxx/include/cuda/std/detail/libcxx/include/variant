@@ -311,50 +311,52 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_variant_acc
 }
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS variant;
+class _CCCL_TYPE_VISIBILITY_DEFAULT variant;
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_size;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size;
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t variant_size_v = variant_size<_Tp>::value;
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_size<const _Tp> : variant_size<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<const _Tp> : variant_size<_Tp>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_size<volatile _Tp> : variant_size<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<volatile _Tp> : variant_size<_Tp>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_size<const volatile _Tp> : variant_size<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<const volatile _Tp> : variant_size<_Tp>
 {};
 
 template <class... _Types>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_size<variant<_Types...>> : integral_constant<size_t, sizeof...(_Types)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<variant<_Types...>> : integral_constant<size_t, sizeof...(_Types)>
 {};
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative;
 
 template <size_t _Ip, class _Tp>
 using variant_alternative_t = typename variant_alternative<_Ip, _Tp>::type;
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative<_Ip, const _Tp> : add_const<variant_alternative_t<_Ip, _Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, const _Tp> : add_const<variant_alternative_t<_Ip, _Tp>>
 {};
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative<_Ip, volatile _Tp> : add_volatile<variant_alternative_t<_Ip, _Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, volatile _Tp>
+    : add_volatile<variant_alternative_t<_Ip, _Tp>>
 {};
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative<_Ip, const volatile _Tp> : add_cv<variant_alternative_t<_Ip, _Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, const volatile _Tp>
+    : add_cv<variant_alternative_t<_Ip, _Tp>>
 {};
 
 template <size_t _Ip, class... _Types>
-struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative<_Ip, variant<_Types...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "Index out of bounds in _CUDA_VSTD::variant_alternative<>");
   using type = __type_pack_element<_Ip, _Types...>;
@@ -391,7 +393,7 @@ template <class _IndexType>
 constexpr _IndexType __variant_npos = static_cast<_IndexType>(-1);
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS variant;
+class _CCCL_TYPE_VISIBILITY_DEFAULT variant;
 
 template <class... _Types>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr variant<_Types...>& __as_variant(variant<_Types...>& __vs) noexcept
@@ -745,7 +747,7 @@ private:
 } // namespace __visitation
 
 template <size_t _Index, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS __alt
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
 {
   using __value_type = _Tp;
 
@@ -758,10 +760,10 @@ struct _LIBCUDACXX_TEMPLATE_VIS __alt
 };
 
 template <_Trait _DestructibleTrait, size_t _Index, class... _Types>
-union _LIBCUDACXX_TEMPLATE_VIS __union;
+union _CCCL_TYPE_VISIBILITY_DEFAULT __union;
 
 template <_Trait _DestructibleTrait, size_t _Index>
-union _LIBCUDACXX_TEMPLATE_VIS __union<_DestructibleTrait, _Index>
+union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_DestructibleTrait, _Index>
 {};
 
 #  define _LIBCUDACXX_VARIANT_UNION_BODY(destructible_trait)                                           \
@@ -794,21 +796,21 @@ union _LIBCUDACXX_TEMPLATE_VIS __union<_DestructibleTrait, _Index>
     __union& operator=(__union&&)      = default;
 
 template <size_t _Index, class _Tp, class... _Types>
-union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_TriviallyAvailable, _Index, _Tp, _Types...>
+union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_Trait::_TriviallyAvailable, _Index, _Tp, _Types...>
 {
   _LIBCUDACXX_VARIANT_UNION_BODY(_Trait::_TriviallyAvailable)
   ~__union() = default;
 };
 
 template <size_t _Index, class _Tp, class... _Types>
-union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_Available, _Index, _Tp, _Types...>
+union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_Trait::_Available, _Index, _Tp, _Types...>
 {
   _LIBCUDACXX_VARIANT_UNION_BODY(_Trait::_Available)
   _LIBCUDACXX_INLINE_VISIBILITY ~__union() {}
 };
 
 template <size_t _Index, class _Tp, class... _Types>
-union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_Unavailable, _Index, _Tp, _Types...>
+union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_Trait::_Unavailable, _Index, _Tp, _Types...>
 {
   _LIBCUDACXX_VARIANT_UNION_BODY(_Trait::_Unavailable)
   _LIBCUDACXX_INLINE_VISIBILITY ~__union() = delete;
@@ -817,7 +819,7 @@ union _LIBCUDACXX_TEMPLATE_VIS __union<_Trait::_Unavailable, _Index, _Tp, _Types
 #  undef _LIBCUDACXX_VARIANT_UNION_BODY
 
 template <_Trait _DestructibleTrait, class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS __base
+class _CCCL_TYPE_VISIBILITY_DEFAULT __base
 {
 public:
   using __index_t = __variant_index_t<sizeof...(_Types)>;
@@ -876,7 +878,7 @@ protected:
 };
 
 template <class _Traits, _Trait = _Traits::__destructible_trait>
-class _LIBCUDACXX_TEMPLATE_VIS __dtor;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor;
 
 #  define _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(destructible_trait) \
     using __base_type = __base<destructible_trait, _Types...>;    \
@@ -892,7 +894,7 @@ class _LIBCUDACXX_TEMPLATE_VIS __dtor;
     __dtor& operator=(__dtor&&)      = default;
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, _Trait::_TriviallyAvailable>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_TriviallyAvailable>
     : public __base<_Trait::_TriviallyAvailable, _Types...>
 {
   _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(_Trait::_TriviallyAvailable)
@@ -906,7 +908,7 @@ protected:
 };
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, _Trait::_Available>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_Available>
     : public __base<_Trait::_Available, _Types...>
 {
   struct __visitor
@@ -964,7 +966,7 @@ private:
 };
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS __dtor<__traits<_Types...>, _Trait::_Unavailable>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_Unavailable>
     : public __base<_Trait::_Unavailable, _Types...>
 {
   _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY(_Trait::_Unavailable)
@@ -977,7 +979,7 @@ protected:
 #  undef _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY
 
 template <class _Traits>
-class _LIBCUDACXX_TEMPLATE_VIS __ctor : public __dtor<_Traits>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
 {
   using __base_type = __dtor<_Traits>;
 
@@ -1039,23 +1041,23 @@ protected:
 };
 
 template <class _Traits, _Trait = _Traits::__move_constructible_trait>
-class _LIBCUDACXX_TEMPLATE_VIS __move_constructor;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __move_constructor;
 
-#  define _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(move_constructible_trait, move_constructor)           \
-    template <class... _Types>                                                                       \
-    class _LIBCUDACXX_TEMPLATE_VIS __move_constructor<__traits<_Types...>, move_constructible_trait> \
-        : public __ctor<__traits<_Types...>>                                                         \
-    {                                                                                                \
-      using __base_type = __ctor<__traits<_Types...>>;                                               \
-                                                                                                     \
-    public:                                                                                          \
-      using __base_type::__base_type;                                                                \
-      using __base_type::operator=;                                                                  \
-                                                                                                     \
-      __move_constructor(const __move_constructor&)            = default;                            \
-      move_constructor ~__move_constructor()                   = default;                            \
-      __move_constructor& operator=(const __move_constructor&) = default;                            \
-      __move_constructor& operator=(__move_constructor&&)      = default;                            \
+#  define _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(move_constructible_trait, move_constructor)                \
+    template <class... _Types>                                                                            \
+    class _CCCL_TYPE_VISIBILITY_DEFAULT __move_constructor<__traits<_Types...>, move_constructible_trait> \
+        : public __ctor<__traits<_Types...>>                                                              \
+    {                                                                                                     \
+      using __base_type = __ctor<__traits<_Types...>>;                                                    \
+                                                                                                          \
+    public:                                                                                               \
+      using __base_type::__base_type;                                                                     \
+      using __base_type::operator=;                                                                       \
+                                                                                                          \
+      __move_constructor(const __move_constructor&)            = default;                                 \
+      move_constructor ~__move_constructor()                   = default;                                 \
+      __move_constructor& operator=(const __move_constructor&) = default;                                 \
+      __move_constructor& operator=(__move_constructor&&)      = default;                                 \
     }
 
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
@@ -1072,23 +1074,23 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_Unavailable, __move_constructor(__
 #  undef _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR
 
 template <class _Traits, _Trait = _Traits::__copy_constructible_trait>
-class _LIBCUDACXX_TEMPLATE_VIS __copy_constructor;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_constructor;
 
-#  define _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(copy_constructible_trait, copy_constructor)           \
-    template <class... _Types>                                                                       \
-    class _LIBCUDACXX_TEMPLATE_VIS __copy_constructor<__traits<_Types...>, copy_constructible_trait> \
-        : public __move_constructor<__traits<_Types...>>                                             \
-    {                                                                                                \
-      using __base_type = __move_constructor<__traits<_Types...>>;                                   \
-                                                                                                     \
-    public:                                                                                          \
-      using __base_type::__base_type;                                                                \
-      using __base_type::operator=;                                                                  \
-                                                                                                     \
-      copy_constructor __copy_constructor(__copy_constructor&&) = default;                           \
-      ~__copy_constructor()                                     = default;                           \
-      __copy_constructor& operator=(const __copy_constructor&)  = default;                           \
-      __copy_constructor& operator=(__copy_constructor&&)       = default;                           \
+#  define _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(copy_constructible_trait, copy_constructor)                \
+    template <class... _Types>                                                                            \
+    class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_constructor<__traits<_Types...>, copy_constructible_trait> \
+        : public __move_constructor<__traits<_Types...>>                                                  \
+    {                                                                                                     \
+      using __base_type = __move_constructor<__traits<_Types...>>;                                        \
+                                                                                                          \
+    public:                                                                                               \
+      using __base_type::__base_type;                                                                     \
+      using __base_type::operator=;                                                                       \
+                                                                                                          \
+      copy_constructor __copy_constructor(__copy_constructor&&) = default;                                \
+      ~__copy_constructor()                                     = default;                                \
+      __copy_constructor& operator=(const __copy_constructor&)  = default;                                \
+      __copy_constructor& operator=(__copy_constructor&&)       = default;                                \
     }
 
 _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(_Trait::_TriviallyAvailable,
@@ -1103,7 +1105,7 @@ _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR(_Trait::_Unavailable, __copy_constructor(co
 #  undef _LIBCUDACXX_VARIANT_COPY_CONSTRUCTOR
 
 template <class _Traits>
-class _LIBCUDACXX_TEMPLATE_VIS __assignment : public __copy_constructor<_Traits>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Traits>
 {
   using __base_type = __copy_constructor<_Traits>;
 
@@ -1205,24 +1207,24 @@ protected:
 };
 
 template <class _Traits, _Trait = _Traits::__move_assignable_trait>
-class _LIBCUDACXX_TEMPLATE_VIS __move_assignment;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __move_assignment;
 
-#  define _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(move_assignable_trait, move_assignment)            \
-    template <class... _Types>                                                                   \
-    class _LIBCUDACXX_TEMPLATE_VIS __move_assignment<__traits<_Types...>, move_assignable_trait> \
-        : public __assignment<__traits<_Types...>>                                               \
-    {                                                                                            \
-      using __base_type = __assignment<__traits<_Types...>>;                                     \
-                                                                                                 \
-    public:                                                                                      \
-      using __base_type::__base_type;                                                            \
-      using __base_type::operator=;                                                              \
-                                                                                                 \
-      __move_assignment(const __move_assignment&)            = default;                          \
-      __move_assignment(__move_assignment&&)                 = default;                          \
-      ~__move_assignment()                                   = default;                          \
-      __move_assignment& operator=(const __move_assignment&) = default;                          \
-      move_assignment                                                                            \
+#  define _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(move_assignable_trait, move_assignment)                 \
+    template <class... _Types>                                                                        \
+    class _CCCL_TYPE_VISIBILITY_DEFAULT __move_assignment<__traits<_Types...>, move_assignable_trait> \
+        : public __assignment<__traits<_Types...>>                                                    \
+    {                                                                                                 \
+      using __base_type = __assignment<__traits<_Types...>>;                                          \
+                                                                                                      \
+    public:                                                                                           \
+      using __base_type::__base_type;                                                                 \
+      using __base_type::operator=;                                                                   \
+                                                                                                      \
+      __move_assignment(const __move_assignment&)            = default;                               \
+      __move_assignment(__move_assignment&&)                 = default;                               \
+      ~__move_assignment()                                   = default;                               \
+      __move_assignment& operator=(const __move_assignment&) = default;                               \
+      move_assignment                                                                                 \
     }
 
 _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(_Trait::_TriviallyAvailable,
@@ -1243,23 +1245,23 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(_Trait::_Unavailable, __move_assignment& ope
 #  undef _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT
 
 template <class _Traits, _Trait = _Traits::__copy_assignable_trait>
-class _LIBCUDACXX_TEMPLATE_VIS __copy_assignment;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_assignment;
 
-#  define _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(copy_assignable_trait, copy_assignment)            \
-    template <class... _Types>                                                                   \
-    class _LIBCUDACXX_TEMPLATE_VIS __copy_assignment<__traits<_Types...>, copy_assignable_trait> \
-        : public __move_assignment<__traits<_Types...>>                                          \
-    {                                                                                            \
-      using __base_type = __move_assignment<__traits<_Types...>>;                                \
-                                                                                                 \
-    public:                                                                                      \
-      using __base_type::__base_type;                                                            \
-      using __base_type::operator=;                                                              \
-                                                                                                 \
-      __copy_assignment(const __copy_assignment&)                       = default;               \
-      __copy_assignment(__copy_assignment&&)                            = default;               \
-      ~__copy_assignment()                                              = default;               \
-      copy_assignment __copy_assignment& operator=(__copy_assignment&&) = default;               \
+#  define _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(copy_assignable_trait, copy_assignment)                 \
+    template <class... _Types>                                                                        \
+    class _CCCL_TYPE_VISIBILITY_DEFAULT __copy_assignment<__traits<_Types...>, copy_assignable_trait> \
+        : public __move_assignment<__traits<_Types...>>                                               \
+    {                                                                                                 \
+      using __base_type = __move_assignment<__traits<_Types...>>;                                     \
+                                                                                                      \
+    public:                                                                                           \
+      using __base_type::__base_type;                                                                 \
+      using __base_type::operator=;                                                                   \
+                                                                                                      \
+      __copy_assignment(const __copy_assignment&)                       = default;                    \
+      __copy_assignment(__copy_assignment&&)                            = default;                    \
+      ~__copy_assignment()                                              = default;                    \
+      copy_assignment __copy_assignment& operator=(__copy_assignment&&) = default;                    \
     }
 
 _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(_Trait::_TriviallyAvailable,
@@ -1277,7 +1279,7 @@ _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT(_Trait::_Unavailable,
 #  undef _LIBCUDACXX_VARIANT_COPY_ASSIGNMENT
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS __impl : public __copy_assignment<__traits<_Types...>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_Types...>>
 {
   using __base_type = __copy_assignment<__traits<_Types...>>;
 
@@ -1521,7 +1523,7 @@ struct __variant_constraints
 } // namespace __variant_detail
 
 template <class... _Types>
-class _LIBCUDACXX_TEMPLATE_VIS variant
+class _CCCL_TYPE_VISIBILITY_DEFAULT variant
     : private __sfinae_base<
         __all<_CCCL_TRAIT(is_copy_constructible, _Types)...>::value,
         __all<_CCCL_TRAIT(is_move_constructible, _Types)...>::value,
@@ -2101,7 +2103,7 @@ _LIBCUDACXX_INLINE_VISIBILITY auto swap(variant<_Types...>& __lhs, variant<_Type
 
 #  ifndef __cuda_std__
 template <class... _Types>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<variant<_Types...>, remove_const_t<_Types>...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...>, remove_const_t<_Types>...>>
 {
   using argument_type = variant<_Types...>;
   using result_type   = size_t;

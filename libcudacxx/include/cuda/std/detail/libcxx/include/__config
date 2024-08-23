@@ -1021,18 +1021,6 @@ typedef __char32_t char32_t;
 #    endif
 #  endif // !_LIBCUDACXX_NODEBUG_TYPE
 
-#  ifndef _LIBCUDACXX_TEMPLATE_VIS
-#    if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#      if __has_attribute(__type_visibility__)
-#        define _LIBCUDACXX_TEMPLATE_VIS _CCCL_TYPE_VISIBILITY_DEFAULT
-#      else // ^^^ __has_attribute(__type_visibility__) ^^^ / vvv !__has_attribute(__type_visibility__) vvv
-#        define _LIBCUDACXX_TEMPLATE_VIS _CCCL_VISIBILITY_DEFAULT
-#      endif // !__has_attribute(__type_visibility__)
-#    else
-#      define _LIBCUDACXX_TEMPLATE_VIS
-#    endif
-#  endif // !_LIBCUDACXX_TEMPLATE_VIS
-
 #  if __has_attribute(internal_linkage)
 #    define _LIBCUDACXX_INTERNAL_LINKAGE __attribute__((internal_linkage))
 #  else

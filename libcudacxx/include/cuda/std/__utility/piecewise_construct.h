@@ -22,7 +22,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct _LIBCUDACXX_TEMPLATE_VIS piecewise_construct_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT piecewise_construct_t
 {
   explicit piecewise_construct_t() = default;
 };

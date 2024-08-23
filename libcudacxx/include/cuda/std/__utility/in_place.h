@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 _CCCL_GLOBAL_CONSTANT in_place_t in_place{};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS in_place_type_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_type_t
 {
   explicit in_place_type_t() = default;
 };
@@ -43,7 +43,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
 
 template <size_t _Idx>
-struct _LIBCUDACXX_TEMPLATE_VIS in_place_index_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
 {
   explicit in_place_index_t() = default;
 };
