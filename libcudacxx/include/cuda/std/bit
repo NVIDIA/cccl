@@ -24,6 +24,7 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/clz.h>
 #include <cuda/std/__bit/ctz.h>
+#include <cuda/std/__bit/endian.h>
 #include <cuda/std/__bit/popc.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
@@ -354,19 +355,6 @@ bit_width(_Tp __t) noexcept
 {
   return __t == 0 ? 0 : static_cast<_Tp>(__bit_log2(__t) + 1);
 }
-
-enum class endian
-{
-  little = 0xDEAD,
-  big    = 0xFACE,
-#if defined(_LIBCUDACXX_LITTLE_ENDIAN)
-  native = little
-#elif defined(_LIBCUDACXX_BIG_ENDIAN)
-  native = big
-#else
-  native = 0xCAFE
-#endif
-};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
