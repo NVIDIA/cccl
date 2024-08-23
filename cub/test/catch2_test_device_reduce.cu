@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-
+#define MY_TEST
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
@@ -48,7 +48,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_TYPES types 0:1:2:3
+// %PARAM% TEST_TYPES types 0:1:2:3:4
 
 // List of types to test
 using custom_t =
@@ -72,9 +72,13 @@ type_pair<custom_t>
 #endif
 #if TEST_BF_T
 , type_pair<bfloat16_t> // testing bf16
-#endif
+
 >;
+#endif
 // clang-format on
+#elif TEST_TYPES == 4
+// DPX SIMD instructions
+using full_type_list = c2h::type_list<type_pair<std::uint16_t>, type_pair<std::int16_t>>;
 #endif
 
 /**
@@ -124,6 +128,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
+#if TEST_TYPES != 4
   SECTION("reduce")
   {
     using op_t = cub::Sum;
@@ -145,10 +150,11 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Verify result
     REQUIRE(expected_result == out_result[0]);
   }
+#endif // TEST_TYPES != 4
 
 // Skip DeviceReduce::Sum tests for extended floating-point types because of unbounded epsilon due
 // to pseudo associativity of the addition operation over floating point numbers
-#if TEST_TYPES != 3
+#if TEST_TYPES != 3 && TEST_TYPES != 4
   SECTION("sum")
   {
     using op_t    = cub::Sum;
@@ -197,6 +203,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE(expected_result == out_result[0]);
   }
 
+#if TEST_TYPES != 4
   SECTION("argmax")
   {
     // Prepare verification data
@@ -233,4 +240,5 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
+#endif
 }
