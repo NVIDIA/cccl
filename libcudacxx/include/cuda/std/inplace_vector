@@ -1047,7 +1047,7 @@ public:
   // [containers.sequences.inplace.vector.access], element access
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr reference at(const size_type __pos)
   {
-    if (this->size() < __pos)
+    if (__pos > this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
@@ -1056,7 +1056,7 @@ public:
 
   _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const_reference at(const size_type __pos) const
   {
-    if (this->size() < __pos)
+    if (__pos > this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     }
@@ -1168,43 +1168,44 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator
   insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
   {
-    const iterator __pos = (iterator) __cpos;
-    const iterator __end = this->end();
-    if (this->size() + __count > _Capacity)
+    const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
+    if (__count > _Capacity - this->size())
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
-    else if (__pos < this->begin() || __end < __pos)
+    else if (__pos > this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, size_type, T)");
     }
 
+    const iterator __first = this->begin() + __pos;
     if (__count == 0)
     {
-      return __pos;
+      return __first;
     }
 
-    if (__pos == __end)
+    const iterator __end = this->end();
+    if (__pos == this->size())
     {
       this->__uninitialized_fill(__end, __end + __count, __value);
-      return __pos;
+      return __first;
     }
 
-    const iterator __middle = __pos + __count;
+    const iterator __middle = __first + __count;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
       this->__uninitialized_fill(__end, __middle, __value);
-      this->__uninitialized_move(__pos, __end, __middle);
-      _CUDA_VSTD::fill(__pos, __end, __value);
+      this->__uninitialized_move(__first, __end, __middle);
+      _CUDA_VSTD::fill(__first, __end, __value);
     }
     else
     { // some elements get copied into existing storage
       this->__uninitialized_move(__end - __count, __end, __end);
-      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
-      _CUDA_VSTD::fill(__pos, __middle, __value);
+      _CUDA_VSTD::move_backward(__first, __end - __count, __end);
+      _CUDA_VSTD::fill(__first, __middle, __value);
     }
 
-    return __pos;
+    return __first;
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter)
@@ -1219,99 +1220,99 @@ public:
       emplace_back(*__first);
     }
 
-    const iterator __pos = (iterator) __cpos;
-    _CUDA_VSTD::rotate(__pos, __old_end, this->end());
-    return __pos;
+    const iterator __res = this->begin() + (__cpos - this->cbegin());
+    _CUDA_VSTD::rotate(__res, __old_end, this->end());
+    return __res;
   }
 
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
-    const iterator __pos = (iterator) __cpos;
-    const iterator __end = this->end();
-    const auto __count   = _CUDA_VSTD::distance(__first, __last);
-    if (this->size() + __count > _Capacity)
+    const auto __pos   = static_cast<size_type>(__cpos - this->cbegin());
+    const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
+    if (__count > _Capacity - this->size())
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
-    else if (__pos < this->begin() || __end < __pos)
+    else if (__pos > this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, Iter, Iter)");
     }
 
+    const iterator __res = this->begin() + __pos;
     if (__count == 0)
     {
-      return __pos;
+      return __res;
     }
 
-    if (__pos == __end)
+    const iterator __end = this->end();
+    if (__pos == this->size())
     {
       this->__uninitialized_copy(__first, __last, __end);
-      return __pos;
+      return __res;
     }
 
-    const iterator __middle = __pos + __count;
-    const auto __to_copy    = __end - __pos;
+    const iterator __middle = __res + __count;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
-      _Iter __imiddle = _CUDA_VSTD::next(__first, __to_copy);
+      _Iter __imiddle = _CUDA_VSTD::next(__first, this->size() - __pos);
       this->__uninitialized_copy(__imiddle, __last, __end);
-      this->__uninitialized_move(__pos, __end, __middle);
-      _CUDA_VSTD::copy(__first, __imiddle, __pos);
+      this->__uninitialized_move(__res, __end, __middle);
+      _CUDA_VSTD::copy(__first, __imiddle, __res);
     }
     else
     { // all new elements get copied into existing storage
       this->__uninitialized_move(__end - __count, __end, __end);
-      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
-      _CUDA_VSTD::copy(__first, __last, __pos);
+      _CUDA_VSTD::move_backward(__res, __end - __count, __end);
+      _CUDA_VSTD::copy(__first, __last, __res);
     }
 
-    return __pos;
+    return __res;
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator insert(const_iterator __cpos, initializer_list<_Tp> __ilist)
   {
-    const iterator __pos = (iterator) __cpos;
-    const iterator __end = this->end();
-    const auto __count   = __ilist.size();
-    if (this->size() + __count > _Capacity)
+    const auto __pos   = static_cast<size_type>(__cpos - this->cbegin());
+    const auto __count = __ilist.size();
+    if (__count > _Capacity - this->size())
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
-    else if (__pos < this->begin() || __end < __pos)
+    else if (__pos > this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, initializer_list)");
     }
 
+    const iterator __res = this->begin() + __pos;
     if (__count == 0)
     {
-      return __pos;
+      return __res;
     }
 
-    if (__pos == __end)
+    const iterator __end = this->end();
+    if (__pos == this->size())
     {
       this->__uninitialized_copy(__ilist.begin(), __ilist.end(), __end);
-      return __pos;
+      return __res;
     }
 
-    const iterator __middle = __pos + __count;
-    const auto __to_copy    = __end - __pos;
+    const iterator __middle = __res + __count;
     if (__end <= __middle)
     { // all existing elements are pushed into uninitialized storage
-      auto __imiddel = __ilist.begin() + __to_copy;
+      auto __imiddel = __ilist.begin() + this->size() - __pos;
       this->__uninitialized_copy(__imiddel, __ilist.end(), __end);
-      this->__uninitialized_move(__pos, __end, __middle);
-      _CUDA_VSTD::copy(__ilist.begin(), __imiddel, __pos);
+      this->__uninitialized_move(__res, __end, __middle);
+      _CUDA_VSTD::copy(__ilist.begin(), __imiddel, __res);
     }
     else
     { // all new elements get copied into existing storage
       this->__uninitialized_move(__end - __count, __end, __end);
-      _CUDA_VSTD::move_backward(__pos, __end - __count, __end);
-      _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), __pos);
+      _CUDA_VSTD::move_backward(__res, __end - __count, __end);
+      _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), __res);
     }
 
-    return __pos;
+    return __res;
   }
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -1329,7 +1330,7 @@ public:
       emplace_back(*__first);
     }
 
-    const iterator __pos = (iterator) __cpos;
+    const auto __pos = this->begin() + static_cast<size_type>(__cpos - this->cbegin());
     _CUDA_VSTD::rotate(__pos, __old_end, this->end());
     return __pos;
   }
@@ -1369,30 +1370,30 @@ public:
   template <class... _Args>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator emplace(const_iterator __cpos, _Args&&... __args)
   {
-    const iterator __pos = (iterator) __cpos;
-    const iterator __end = this->end();
+    const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
     if (this->size() == _Capacity)
     {
       _CUDA_VSTD::__throw_bad_alloc();
     }
-    else if (__pos < this->begin() || __end < __pos)
+    else if (__pos > this->size())
     {
       _CUDA_VSTD::__throw_out_of_range("inplace_vector::emplace(const_iterator, Args...)");
     }
 
-    if (__pos == __end)
+    const iterator __res = this->begin() + __pos;
+    if (__pos == this->size())
     {
       this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
-    }
-    else
-    {
-      _Tp __temp{_CUDA_VSTD::forward<_Args>(__args)...};
-      this->unchecked_emplace_back(_CUDA_VSTD::move(*(__end - 1)));
-      _CUDA_VSTD::move_backward(__pos, __end - 1, __end);
-      *__pos = _CUDA_VSTD::move(__temp);
+      return __res;
     }
 
-    return __pos;
+    const iterator __end = this->end();
+    _Tp __temp{_CUDA_VSTD::forward<_Args>(__args)...};
+    this->unchecked_emplace_back(_CUDA_VSTD::move(*(__end - 1)));
+    _CUDA_VSTD::move_backward(__res, __end - 1, __end);
+    *__res = _CUDA_VSTD::move(__temp);
+
+    return __res;
   }
 
   template <class... _Args>
@@ -1532,21 +1533,22 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator
   erase(const_iterator __cpos) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
-    const iterator __pos = (iterator) __cpos;
-    const iterator __end = this->end();
-    if (__pos == __end)
-    {
-      return __pos;
-    }
-
-    if (this->size() == 0 || __pos < this->begin() || __end < __pos)
+    const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
+    if (__pos > this->size())
     {
       _CUDA_VSTD_NOVERSION::terminate();
     }
 
-    _CUDA_VSTD::move(__pos + 1, __end, __pos);
+    const iterator __res = this->begin() + __pos;
+    if (__pos == this->size())
+    {
+      return __res;
+    }
+
+    const iterator __end = this->end();
+    _CUDA_VSTD::move(__res + 1, __end, __res);
     this->__destroy(__end - 1, __end);
-    return __pos;
+    return __res;
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator

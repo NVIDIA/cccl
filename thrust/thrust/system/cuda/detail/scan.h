@@ -71,7 +71,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   cudaError_t status;
 
   // Negative number of items are normalized to `0`
-  if(thrust::detail::is_negative(num_items)){
+  if (thrust::detail::is_negative(num_items))
+  {
     num_items = 0;
   }
 
@@ -126,7 +127,8 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   cudaError_t status;
 
   // Negative number of items are normalized to `0`
-  if(thrust::detail::is_negative(num_items)){
+  if (thrust::detail::is_negative(num_items))
+  {
     num_items = 0;
   }
 
