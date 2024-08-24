@@ -55,6 +55,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     "#include <cub/block/block_reduce.cuh>                                                       \n"
     "#include <cub/block/block_scan.cuh>                                                         \n"
     "#include <cub/device/dispatch/kernels/reduce.cuh>                                           \n"
+    "#include <cub/device/dispatch/kernels/for_each.cuh>                                       \n"
     "                                                                                            \n"
     "extern \"C\" __global__ void kernel(int *ptr, int *errors)                                  \n"
     "{                                                                                           \n"
