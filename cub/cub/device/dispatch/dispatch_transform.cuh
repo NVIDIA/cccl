@@ -58,24 +58,24 @@ namespace transform
 {
 #if _CCCL_STD_VER >= 2017
 template <typename... Its>
-constexpr auto loaded_bytes_per_iteration() -> int
+_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
   return (int{sizeof(value_t<Its>)} + ... + 0);
 }
 #else // ^^^ C++17 ^^^ / vvv C++11 vvv
-constexpr int sum()
+_CCCL_HOST_DEVICE constexpr int sum()
 {
   return 0;
 }
 
 template <typename... Ts>
-constexpr int sum(int head, Ts... tail)
+_CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
 {
   return head + sum(tail...);
 }
 
 template <typename... Its>
-constexpr auto loaded_bytes_per_iteration() -> int
+_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
   return sum(int{sizeof(value_t<Its>)}...);
 }
@@ -277,7 +277,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
 
 // mult must be a power of 2
 template <typename Integral>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
   assert(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)));
   return (x + mult - 1) & ~(mult - 1);
@@ -422,7 +422,7 @@ constexpr int ublkcp_size_multiple = 16;
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 // TODO(bgruber): inline this as lambda in C++14
 template <typename Offset, typename T>
-_CCCL_DEVICE void copy_ptr_set(
+_CCCL_DEVICE void bulk_copy_tile(
   ::cuda::std::uint64_t& bar,
   int tile_size,
   int tile_stride,
@@ -511,11 +511,11 @@ _CCCL_DEVICE void transform_kernel_impl(
 
 #    if _CCCL_STD_VER >= 2017
     // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-    (..., copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
+    (..., bulk_copy_tile(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
 #    else // _CCCL_STD_VER >= 2017
     // Order of evaluation is also left-to-right
     int dummy[] = {
-      (copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
+      (bulk_copy_tile(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
     (void) dummy;
 #    endif // _CCCL_STD_VER >= 2017
 
@@ -654,6 +654,32 @@ items_per_thread_from_occupancy(int block_dim, int max_block_per_sm, int min_bif
 #endif
 }
 
+// TODO(bgruber): need a constexpr version of this function:
+template <typename... RandomAccessIteratorsIn>
+_CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) -> int
+{
+  int smem_size   = 0;
+  auto count_smem = [&](int size, int alignment) {
+    smem_size = round_up_to_po2_multiple(smem_size, alignment);
+    // max aligned_base_ptr offset + max padding after == 16
+    smem_size += size * tile_size + ::cuda::std::max(memcpy_async_alignment, memcpy_async_size_multiple);
+  };
+  // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)
+  int dummy[] = {
+    (count_smem(sizeof(value_t<RandomAccessIteratorsIn>), alignof(value_t<RandomAccessIteratorsIn>)), 0)..., 0};
+  (void) &dummy; // need to take the address to suppress unused warnings more strongly for nvcc 11.1
+  (void) &count_smem;
+  return smem_size;
+}
+
+template <typename... RandomAccessIteratorsIn>
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> int
+{
+  // 128 bytes of padding for each input tile (before + after)
+  return tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
+       + ::cuda::std::max(ublkcp_alignment, ublkcp_size_multiple) * sizeof...(RandomAccessIteratorsIn);
+}
+
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
 struct policy_hub
 {
@@ -663,8 +689,6 @@ struct policy_hub
 template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn>
 struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>>
 {
-  // TODO(gevtushenko): take a look at radix sort dispatch
-
   static constexpr int loaded_bytes_per_iter =
     ::cuda::std::max(1, loaded_bytes_per_iteration<RandomAccessIteratorsIn...>());
 
@@ -697,14 +721,15 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   struct policy800 : ChainedPolicy<800, policy800, policy300>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
-    // TODO(bgruber): we could use unrolled_staged if we cannot memcpy
-    static constexpr auto algorithm =
-      (RequiresStableAddress || !can_memcpy || no_input_streams) ? Algorithm::prefetch : Algorithm::memcpy_async;
-    using algo_policy = ::cuda::std::
-      _If<RequiresStableAddress || !can_memcpy || no_input_streams, prefetch_policy_t<256>, async_copy_policy_t<256>>;
+    using async_policy           = async_copy_policy_t<256>;
+    static constexpr bool exhaust_smem =
+      memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(
+        async_policy::BLOCK_THREADS * async_policy::MIN_ITEMS_PER_THREAD)
+      > 48 * 1024;
+    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem;
+    static constexpr auto algorithm    = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
+    using algo_policy                  = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
-
-  // TODO(bgruber): should we add a tuning for 860? They should have items_per_thread_from_occupancy(256, 6, ...)
 
   // A6000
   struct policy860 : ChainedPolicy<860, policy860, policy800>
@@ -732,17 +757,23 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   struct policy900 : ChainedPolicy<900, policy900, policy860>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(900);
-    static constexpr auto algorithm =
-      (RequiresStableAddress || !can_memcpy || no_input_streams)
-        ? Algorithm::prefetch
-        :
+    using async_policy           = async_copy_policy_t<256>;
+    static constexpr bool exhaust_smem =
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-        Algorithm::ublkcp;
-#else
-        Algorithm::memcpy_async;
-#endif
-    using algo_policy = ::cuda::std::
-      _If<RequiresStableAddress || !can_memcpy || no_input_streams, prefetch_policy_t<256>, async_copy_policy_t<256>>;
+      bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
+#else // _CUB_HAS_TRANSFORM_UBLKCP
+      memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
+        async_policy::BLOCK_THREADS * async_policy::MIN_ITEMS_PER_THREAD)
+      > 48 * 1024;
+    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem;
+    static constexpr auto algorithm    = use_fallback ? Algorithm::prefetch :
+#ifdef _CUB_HAS_TRANSFORM_UBLKCP
+                                                   Algorithm::ublkcp;
+#else // _CUB_HAS_TRANSFORM_UBLKCP
+                                                   Algorithm::memcpy_async;
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
+    using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
 
   using max_policy = policy900;
@@ -784,6 +815,16 @@ struct PoorExpected
     _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
     return reinterpret_cast<const T&>(storage);
     _CCCL_DIAG_POP
+  }
+
+  _CCCL_HOST_DEVICE T* operator->()
+  {
+    return &**this;
+  }
+
+  _CCCL_HOST_DEVICE const T* operator->() const
+  {
+    return &**this;
   }
 };
 
@@ -848,9 +889,16 @@ struct dispatch_t<RequiresStableAddress,
 
   static constexpr int loaded_bytes_per_iter = loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
 
+  struct elem_counts
+  {
+    int elem_per_thread;
+    int tile_size;
+    int smem_size;
+  };
+
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running on?
-  template <typename ActivePolicy, std::size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_memcpy_async_kernel(cuda::std::index_sequence<Is...>)
+  template <typename ActivePolicy>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_memcpy_async_kernel()
     -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, kernel_ptr_t, int>>
   {
     // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
@@ -859,81 +907,75 @@ struct dispatch_t<RequiresStableAddress,
     static_assert(block_dim % memcpy_async_alignment == 0,
                   "BLOCK_THREADS needs to be a multiple of memcpy_async_alignment (16)"); // then tile_size is a
                                                                                           // multiple of 16-byte
-    const auto max_smem = get_max_shared_memory();
-    if (!max_smem)
+    auto determine_element_counts = [&]() -> PoorExpected<elem_counts> {
+      const auto max_smem = get_max_shared_memory();
+      if (!max_smem)
+      {
+        return max_smem.error;
+      }
+
+      elem_counts last_counts{};
+      // Increase the number of output elements per thread until we reach the required bytes in flight.
+      static_assert(policy_t::MIN_ITEMS_PER_THREAD <= policy_t::MAX_ITEMS_PER_THREAD, ""); // ensures the loop below
+                                                                                           // runs at least once
+      for (int elem_per_thread = +policy_t::MIN_ITEMS_PER_THREAD; elem_per_thread <= +policy_t::MAX_ITEMS_PER_THREAD;
+           ++elem_per_thread)
+      {
+        const auto tile_size = block_dim * elem_per_thread;
+        const int smem_size  = memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
+        if (smem_size > *max_smem)
+        {
+          // assert should be prevented by smem check in policy
+          assert(last_counts.elem_per_thread > 0 && "MIN_ITEMS_PER_THREAD exceeds available shared memory");
+          return last_counts;
+        }
+
+        if (tile_size >= num_items)
+        {
+          return elem_counts{elem_per_thread, tile_size, smem_size};
+        }
+
+        int max_occupancy = 0;
+        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size));
+        if (error != cudaSuccess)
+        {
+          return error;
+        }
+
+        const int bytes_in_flight_SM = max_occupancy * tile_size * loaded_bytes_per_iter;
+        if (bytes_in_flight_SM >= ActivePolicy::min_bif)
+        {
+          return elem_counts{elem_per_thread, tile_size, smem_size};
+        }
+
+        last_counts = elem_counts{elem_per_thread, tile_size, smem_size};
+      }
+      return last_counts;
+    };
+    // this static variable exists for each template instantiation of the surrounding function and class, on which the
+    // chosen element count solely depends (assuming max SMEM is constant during a program execution)
+    static auto config = determine_element_counts();
+    if (!config)
     {
-      return max_smem.error;
+      return config.error;
     }
+    assert(config->elem_per_thread > 0);
+    assert(config->tile_size > 0);
+    assert(config->tile_size % memcpy_async_alignment == 0);
+    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
 
-    // TODO(bgruber): we could consider the element size here and ensure that the tilesize is a multiple of 16 bytes.
-    // Increase the number of output elements per thread until we reach the required bytes in flight.
-    int chosen_elem_per_thread = 0;
-    int chosen_tile_size       = 0;
-    int chosen_smem_size       = 0;
-    for (int elem_per_thread = +policy_t::MIN_ITEMS_PER_THREAD; elem_per_thread < +policy_t::MAX_ITEMS_PER_THREAD;
-         ++elem_per_thread)
-    {
-      const auto tile_size = block_dim * elem_per_thread;
-
-      int smem_size   = 0;
-      auto count_smem = [&](int size, int alignment) {
-        smem_size = round_up_to_po2_multiple(smem_size, alignment);
-        // max aligned_base_ptr offset + max padding after == 16
-        smem_size += size * tile_size + ::cuda::std::max(memcpy_async_alignment, memcpy_async_size_multiple);
-      };
-      // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)
-      int dummy[] = {
-        (count_smem(sizeof(value_t<RandomAccessIteratorsIn>), alignof(value_t<RandomAccessIteratorsIn>)), 0)..., 0};
-      (void) &dummy; // need to take the address to suppress unused warnings more strongly for nvcc 11.1
-      (void) &count_smem;
-
-      if (smem_size > *max_smem)
-      {
-        break;
-      }
-
-      if (tile_size >= num_items)
-      {
-        chosen_elem_per_thread = elem_per_thread;
-        chosen_tile_size       = tile_size;
-        chosen_smem_size       = smem_size;
-        break;
-      }
-
-      int max_occupancy = 0;
-      const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size));
-      if (error != cudaSuccess)
-      {
-        return error;
-      }
-
-      chosen_elem_per_thread = elem_per_thread;
-      chosen_tile_size       = tile_size;
-      chosen_smem_size       = smem_size;
-
-      const int bytes_in_flight_SM = max_occupancy * tile_size * loaded_bytes_per_iter;
-      if (bytes_in_flight_SM >= ActivePolicy::min_bif)
-      {
-        break;
-      }
-    }
-    assert(chosen_elem_per_thread > 0);
-    assert(chosen_tile_size > 0);
-    assert(chosen_tile_size % memcpy_async_alignment == 0);
-    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (chosen_smem_size != 0)); // logical xor
-
-    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{chosen_tile_size}));
+    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, chosen_smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       kernel,
-      chosen_elem_per_thread);
+      config->elem_per_thread);
   }
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
-  template <typename ActivePolicy, std::size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_ublkcp_kernel(cuda::std::index_sequence<Is...>)
+  template <typename ActivePolicy>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
     -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, kernel_ptr_t, int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
@@ -941,74 +983,76 @@ struct dispatch_t<RequiresStableAddress,
     static_assert(block_dim % ublkcp_alignment == 0,
                   "BLOCK_THREADS needs to be a multiple of ublkcp_alignment (128)"); // then tile_size is a multiple of
                                                                                      // 128-byte
-    // aligned
 
-    const auto max_smem = get_max_shared_memory();
-    if (!max_smem)
+    auto determine_element_counts = [&]() -> PoorExpected<elem_counts> {
+      const auto max_smem = get_max_shared_memory();
+      if (!max_smem)
+      {
+        return max_smem.error;
+      }
+
+      elem_counts last_counts{};
+      // Increase the number of output elements per thread until we reach the required bytes in flight.
+      static_assert(policy_t::MIN_ITEMS_PER_THREAD <= policy_t::MAX_ITEMS_PER_THREAD, ""); // ensures the loop below
+      // runs at least once
+      for (int elem_per_thread = +policy_t::MIN_ITEMS_PER_THREAD; elem_per_thread < +policy_t::MAX_ITEMS_PER_THREAD;
+           ++elem_per_thread)
+      {
+        const int tile_size = block_dim * elem_per_thread;
+        const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
+        if (smem_size > *max_smem)
+        {
+          // assert should be prevented by smem check in policy
+          assert(last_counts.elem_per_thread > 0 && "MIN_ITEMS_PER_THREAD exceeds available shared memory");
+          return last_counts;
+        }
+
+        if (tile_size >= num_items)
+        {
+          return elem_counts{elem_per_thread, tile_size, smem_size};
+        }
+
+        int max_occupancy = 0;
+        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size));
+        if (error != cudaSuccess)
+        {
+          return error;
+        }
+
+        const int bytes_in_flight_SM = max_occupancy * tile_size * loaded_bytes_per_iter;
+        if (ActivePolicy::min_bif <= bytes_in_flight_SM)
+        {
+          return elem_counts{elem_per_thread, tile_size, smem_size};
+        }
+
+        last_counts = elem_counts{elem_per_thread, tile_size, smem_size};
+      }
+      return last_counts;
+    };
+    // this static variable exists for each template instantiation of the surrounding function and class, on which the
+    // chosen element count solely depends (assuming max SMEM is constant during a program execution)
+    static auto config = determine_element_counts();
+    if (!config)
     {
-      return max_smem.error;
+      return config.error;
     }
+    assert(config->elem_per_thread > 0);
+    assert(config->tile_size > 0);
+    assert(config->tile_size % ublkcp_alignment == 0);
+    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
 
-    // Increase the number of output elements per thread until we reach the required bytes in flight.
-    int chosen_elem_per_thread = 0;
-    int chosen_tile_size       = 0;
-    int chosen_smem_size       = 0;
-    for (int elem_per_thread = +policy_t::MIN_ITEMS_PER_THREAD; elem_per_thread < +policy_t::MAX_ITEMS_PER_THREAD;
-         ++elem_per_thread)
-    {
-      constexpr int num_inputs = sizeof...(RandomAccessIteratorsIn);
-      const int tile_size      = block_dim * elem_per_thread;
-      // 128 bytes of padding for each input tile (before + after)
-      const int smem_size =
-        tile_size * loaded_bytes_per_iter + ::cuda::std::max(ublkcp_alignment, ublkcp_size_multiple) * num_inputs;
-
-      if (smem_size > *max_smem)
-      {
-        break;
-      }
-
-      if (tile_size >= num_items)
-      {
-        chosen_elem_per_thread = elem_per_thread;
-        chosen_tile_size       = tile_size;
-        chosen_smem_size       = smem_size;
-        break;
-      }
-
-      int max_occupancy = 0;
-      const auto error  = MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size);
-      if (error != cudaSuccess)
-      {
-        return error;
-      }
-
-      chosen_elem_per_thread = elem_per_thread;
-      chosen_tile_size       = tile_size;
-      chosen_smem_size       = smem_size;
-
-      const int bytes_in_flight_SM = max_occupancy * tile_size * loaded_bytes_per_iter;
-      if (ActivePolicy::min_bif <= bytes_in_flight_SM)
-      {
-        break;
-      }
-    }
-    assert(chosen_elem_per_thread > 0);
-    assert(chosen_tile_size > 0);
-    assert(chosen_tile_size % ublkcp_alignment == 0);
-    assert((sizeof...(RandomAccessIteratorsIn) == 0) != (chosen_smem_size != 0)); // logical xor
-
-    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{chosen_tile_size}));
+    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, chosen_smem_size, stream),
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
       kernel,
-      chosen_elem_per_thread);
+      config->elem_per_thread);
   }
 
   template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...> is, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
+  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
   {
-    auto ret = configure_ublkcp_kernel<ActivePolicy>(is);
+    auto ret = configure_ublkcp_kernel<ActivePolicy>();
     if (!ret)
     {
       return ret.error;
@@ -1027,10 +1071,10 @@ struct dispatch_t<RequiresStableAddress,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
   template <typename ActivePolicy, std::size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_algorithm(
-    cuda::std::index_sequence<Is...> is, ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>)
   {
-    auto ret = configure_memcpy_async_kernel<ActivePolicy>(is);
+    auto ret = configure_memcpy_async_kernel<ActivePolicy>();
     if (!ret)
     {
       return ret.error;

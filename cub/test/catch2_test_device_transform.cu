@@ -17,6 +17,7 @@
 
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/custom_type.cuh>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -147,6 +148,81 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
   c2h::host_vector<type> reference_h(num_items);
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus<type>{});
   REQUIRE(reference_h == result);
+}
+
+template <int Alignment>
+struct alignas(Alignment) overaligned_addable_t
+{
+  int value;
+
+  overaligned_addable_t() = default;
+
+  _CCCL_HOST_DEVICE overaligned_addable_t(int val)
+      : value{val}
+  {}
+
+  _CCCL_HOST_DEVICE static void check(const overaligned_addable_t& obj)
+  {
+    if (reinterpret_cast<uintptr_t>(&obj) % Alignment != 0)
+    {
+      printf("Error: object not aligned to %d: %p\n", Alignment, &obj);
+      ::cuda::std::terminate();
+    }
+  }
+
+  _CCCL_HOST_DEVICE friend auto operator==(const overaligned_addable_t& a, const overaligned_addable_t& b) -> bool
+  {
+    check(a);
+    check(b);
+    return a.value == b.value;
+  }
+
+  _CCCL_HOST_DEVICE friend auto
+  operator+(const overaligned_addable_t& a, const overaligned_addable_t& b) -> overaligned_addable_t
+  {
+    check(a);
+    check(b);
+    return overaligned_addable_t{a.value + b.value};
+  }
+
+  _CCCL_HOST friend auto operator<<(std::ostream& os, const overaligned_addable_t& obj) -> std::ostream&
+  {
+    check(obj);
+    return os << "over{" << obj.value << "}";
+  }
+};
+
+// test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
+CUB_TEST("DeviceTransform::Transform overaligned type",
+         "[device][device_transform]",
+         c2h::type_list<overaligned_addable_t<32>, overaligned_addable_t<256>>)
+{
+  using type = c2h::get<0, TestType>;
+  CAPTURE(c2h::demangle(typeid(type).name()));
+
+  const int num_items = GENERATE(0, 1, 100, 1000);
+  c2h::device_vector<type> a(num_items, 3);
+  c2h::device_vector<type> b(num_items, 4);
+
+  c2h::device_vector<type> result(num_items);
+  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
+
+  REQUIRE(result == c2h::device_vector<type>(num_items, 7));
+}
+
+CUB_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
+{
+  using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
+  CAPTURE(c2h::demangle(typeid(huge_t).name()));
+
+  const int num_items = GENERATE(0, 1, 100, 1000);
+  c2h::device_vector<huge_t> a(num_items, huge_t{{3, 3}});
+  c2h::device_vector<huge_t> b(num_items, huge_t{{4, 4}});
+
+  c2h::device_vector<huge_t> result(num_items);
+  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<huge_t>{});
+
+  REQUIRE(result == c2h::device_vector<huge_t>(num_items, huge_t{{7, 7}}));
 }
 
 CUB_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
