@@ -90,7 +90,7 @@ CUB_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   using op_t = cub::Sum;
 
   // Prepare verification data
-  using accum_t = cub::detail::accumulator_t<op_t, output_t, value_t>;
+  using accum_t = ::cuda::std::__accumulator_t<op_t, value_t, output_t>;
   c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(value_it, segment_offsets, op_t{}, accum_t{}, expected_result.begin());
   c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
