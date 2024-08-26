@@ -25,7 +25,7 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative", "cuda_parallel" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
@@ -33,6 +33,7 @@ deps = [
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
     [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
+    [ "cuda_parallel", "_build/docs/cuda_parallel/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -301,7 +302,30 @@ autodoc.mock_imports = [
 
 enhanced_search_enabled = true
 python_paths = [
-    "${root}/../python/cuda"
+    "${root}/../python/cuda_cooperative"
+]
+
+[repo_docs.projects.cuda_parallel]
+name = "cuda.parallel"
+docs_root = "cuda_parallel"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+autodoc.mock_imports = [
+    "numba",
+    "pynvjitlink",
+    "cuda.nvrtc",
+    "llvmlite"
+]
+
+enhanced_search_enabled = true
+python_paths = [
+    "${root}/../python/cuda_parallel"
 ]
 
 [repo_docs.projects.cudax]

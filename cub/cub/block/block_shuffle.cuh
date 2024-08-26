@@ -26,8 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file The cub::BlockShuffle class provides :ref:`collective <collective-primitives>` methods for shuffling
-//!       data partitioned across a CUDA thread block.
+//! @file
+//! The cub::BlockShuffle class provides :ref:`collective <collective-primitives>` methods for shuffling data
+//! partitioned across a CUDA thread block.
 
 #pragma once
 

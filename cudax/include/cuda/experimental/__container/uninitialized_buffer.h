@@ -30,7 +30,8 @@
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-//! @file The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
+//! @file
+//! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
 namespace cuda::experimental
 {
 

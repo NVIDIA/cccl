@@ -5,7 +5,7 @@
 // Define CUB_MACRO_CHECK(macro, header), which emits a diagnostic indicating
 // a potential macro collision and halts.
 //
-// Use raw platform checks instead of the CUB_HOST_COMPILER macros since we
+// Use raw platform macros instead of the CCCL macros since we
 // don't want to #include any headers other than the one being tested.
 //
 // This is only implemented for MSVC/GCC/Clang.

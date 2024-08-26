@@ -25,7 +25,8 @@
  *
  ******************************************************************************/
 
-//! @file Operations for writing linear segments of data from the CUDA warp
+//! @file
+//! Operations for writing linear segments of data from the CUDA warp
 
 #pragma once
 

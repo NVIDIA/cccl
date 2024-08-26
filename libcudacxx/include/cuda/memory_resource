@@ -21,7 +21,8 @@
 #endif // no system header
 
 //!@rst
-//! @file Defines facilities to allocate and deallocate memory in a type safe manner
+//! @file
+//! Defines facilities to allocate and deallocate memory in a type safe manner
 //!
 //! .. note::
 //!
