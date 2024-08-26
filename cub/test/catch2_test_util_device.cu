@@ -95,7 +95,7 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 CUB_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__", "[util][dispatch]")
 {
   int ptx_version = 0;
-  cub::PtxVersion(ptx_version);
+  REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
   const auto arch_list = std::vector<int>{__CUDA_ARCH_LIST__};
   REQUIRE(std::find(arch_list.begin(), arch_list.end(), ptx_version) != arch_list.end());
 }
@@ -156,6 +156,7 @@ struct closure_all
 #  if TEST_LAUNCH == 0
     REQUIRE(+ActivePolicy::value == ptx_version);
 #  endif // TEST_LAUNCH == 0
+    // the returned error code will be checked by the launch helper
     return +ActivePolicy::value == ptx_version ? cudaSuccess : cudaErrorInvalidValue;
   }
 };
@@ -216,6 +217,7 @@ struct check_policy_closure
       printf("\n");
     }
 #endif // TEST_LAUNCH == 0
+    // the returned error code will be checked by the launch helper
     return (CHECK_EXPR) ? cudaSuccess : cudaErrorInvalidValue;
 #undef CHECK_EXPR
   }
