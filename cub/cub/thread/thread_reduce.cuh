@@ -34,11 +34,12 @@
 #pragma once
 
 #include <cub/config.cuh>
-#include <cuda/cmath>                   // ceil_div
+
+#include <cuda/cmath> // ceil_div
 #include <cuda/std/__cccl/attributes.h> // _CCCL_NODISCARD
-#include <cuda/std/cstdint>             // uint16_t
-#include <cuda/std/limits>              // numeric_limits
-#include <cuda/std/type_traits>         // __enable_if_t
+#include <cuda/std/cstdint> // uint16_t
+#include <cuda/std/limits> // numeric_limits
+#include <cuda/std/type_traits> // __enable_if_t
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -48,8 +49,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh>       // are_same()
-#include <cub/thread/thread_operators.cuh>  // DpxMin
+#include <cub/detail/type_traits.cuh> // are_same()
+#include <cub/thread/thread_operators.cuh> // DpxMin
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 

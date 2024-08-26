@@ -38,7 +38,8 @@
 #pragma once
 
 #include <cub/config.cuh>
-#include <cub/detail/type_traits.cuh>   // always_false
+
+#include <cub/detail/type_traits.cuh> // always_false
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -412,44 +413,59 @@ _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
   return BinaryFlip<BinaryOpT>(binary_op);
 }
 
-namespace internal {
+namespace internal
+{
 
 // TODO: Remove DPX specilization when nvbug 4823237 is fixed
 
-template<typename T>
-struct DpxMin {
+template <typename T>
+struct DpxMin
+{
   static_assert(detail::always_false<T>(), "DpxMin is not supported for this type");
 };
 
-template<>
-struct DpxMin<int16_t> {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-  unsigned operator()(unsigned a, unsigned b) const { return __vmins2(a, b); }
+template <>
+struct DpxMin<int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmins2(a, b);
+  }
 };
 
-template<>
-struct DpxMin<uint16_t> {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-  unsigned operator()(unsigned a, unsigned b) const { return __vminu2(a, b); }
+template <>
+struct DpxMin<uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vminu2(a, b);
+  }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-template<typename T>
-struct DpxMax {
+template <typename T>
+struct DpxMax
+{
   static_assert(detail::always_false<T>(), "DpxMax is not supported for this type");
 };
 
-template<>
-struct DpxMax<int16_t> {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-  unsigned operator()(unsigned a, unsigned b) const { return __vmaxs2(a, b); }
+template <>
+struct DpxMax<int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmaxs2(a, b);
+  }
 };
 
-template<>
-struct DpxMax<uint16_t> {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-  unsigned operator()(unsigned a, unsigned b) const { return __vmaxu2(a, b); }
+template <>
+struct DpxMax<uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmaxu2(a, b);
+  }
 };
 
 } // namespace internal
