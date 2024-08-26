@@ -94,14 +94,14 @@ enum class Algorithm
 
 // TODO(bgruber): only needed so we can instantiate the kernel generically for any policy. Remove when fallback_for is
 // dropped.
-template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... RandomAccessIteartorIn>
+template <typename, typename Offset, typename F, typename RandomAccessIteratorOut, typename... RandomAccessIteratorIn>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>,
   Offset,
   int,
   F,
-  RandomAccessIteartorOut,
-  RandomAccessIteartorIn...)
+  RandomAccessIteratorOut,
+  RandomAccessIteratorIn...)
 {}
 
 template <int BlockThreads>
@@ -135,15 +135,15 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(It)
 template <typename PrefetchPolicy,
           typename Offset,
           typename F,
-          typename RandomAccessIteartorOut,
-          typename... RandomAccessIteartorIn>
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorIn>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>,
   Offset num_items,
   int num_elem_per_thread,
   F f,
-  RandomAccessIteartorOut out,
-  RandomAccessIteartorIn... ins)
+  RandomAccessIteratorOut out,
+  RandomAccessIteratorIn... ins)
 {
   constexpr int block_dim = PrefetchPolicy::BLOCK_THREADS;
   {
@@ -192,15 +192,15 @@ struct unrolled_policy_t
 template <typename UnrolledPolicy,
           typename Offset,
           typename F,
-          typename RandomAccessIteartorOut,
-          typename... RandomAccessIteartorIn>
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorIn>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::unrolled_staged>,
   Offset num_items,
   int,
   F f,
-  RandomAccessIteartorOut out,
-  RandomAccessIteartorIn... ins)
+  RandomAccessIteratorOut out,
+  RandomAccessIteratorIn... ins)
 {
   constexpr int block_dim        = UnrolledPolicy::BLOCK_THREADS;
   constexpr int items_per_thread = UnrolledPolicy::ITEMS_PER_THREAD;
@@ -218,7 +218,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   // TODO(bgruber): we could use load vectorization here
 
-  [&](cuda::std::array<value_t<RandomAccessIteartorIn>, items_per_thread>&&... arrays) {
+  [&](cuda::std::array<value_t<RandomAccessIteratorIn>, items_per_thread>&&... arrays) {
   // load items_per_thread elements
 #pragma unroll
     for (int j = 0; j < items_per_thread; ++j)
@@ -241,7 +241,7 @@ _CCCL_DEVICE void transform_kernel_impl(
         out[idx] = f(arrays[j]...);
       }
     }
-  }(cuda::std::array<value_t<RandomAccessIteartorIn>, items_per_thread>{}...);
+  }(cuda::std::array<value_t<RandomAccessIteratorIn>, items_per_thread>{}...);
 }
 
 // used for both, memcpy_async and ublkcp kernels
@@ -368,13 +368,13 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   return reinterpret_cast<T*>(reinterpret_cast<char*>(smem_dst) + aligned_ptr.offset);
 }
 
-template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
   Offset num_items,
   int num_elem_per_thread,
   F f,
-  RandomAccessIteartorOut out,
+  RandomAccessIteratorOut out,
   aligned_base_ptr<const InTs>... aligned_ptrs)
 {
   extern __shared__ char smem[]; // this should be __attribute((aligned(memcpy_async_alignment))), but then it clashes
@@ -478,13 +478,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool select_one()
 #  endif // CUB_PTX_ARCH >= 900
 }
 
-template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
   Offset num_items,
   int num_elem_per_thread,
   F f,
-  RandomAccessIteartorOut out,
+  RandomAccessIteratorOut out,
   aligned_base_ptr<const InTs>... aligned_ptrs)
 {
 #  if CUB_PTX_ARCH >= 900
@@ -615,14 +615,14 @@ select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>
 template <typename MaxPolicy,
           typename Offset,
           typename F,
-          typename RandomAccessIteartorOut,
+          typename RandomAccessIteratorOut,
           typename... RandomAccessIteartorsIn>
 __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
     Offset num_items,
     int num_elem_per_thread,
     F f,
-    RandomAccessIteartorOut out,
+    RandomAccessIteratorOut out,
     kernel_arg<RandomAccessIteartorsIn>... ins)
 {
   constexpr auto alg = ::cuda::std::integral_constant<Algorithm, MaxPolicy::ActivePolicy::algorithm>{};

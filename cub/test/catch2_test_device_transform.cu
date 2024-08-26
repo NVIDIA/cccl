@@ -49,13 +49,13 @@ struct policy_hub_for_alg
 template <Algorithm Alg,
           typename Offset = int,
           typename... RandomAccessIteratorsIn,
-          typename RandomAccessIteartorOut,
+          typename RandomAccessIteratorOut,
           typename TransformOp>
 CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg_entry_point(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-  RandomAccessIteartorOut output,
+  RandomAccessIteratorOut output,
   int num_items,
   TransformOp transform_op,
   cudaStream_t stream = nullptr)
@@ -70,7 +70,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg_entry_point(
   return cub::detail::transform::dispatch_t<RequiresStableAddress,
                                             Offset,
                                             ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                            RandomAccessIteartorOut,
+                                            RandomAccessIteratorOut,
                                             TransformOp,
                                             policy_hub_for_alg<Alg>>{}
     .dispatch(inputs, output, num_items, transform_op, stream);
@@ -434,7 +434,7 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
   REQUIRE(reference == result);
 }
 
-// This functor was gifted by ahendriksen
+// This functor was gifted by ahendriksen. It is very expensive to compile.
 template <int N>
 struct heavy_functor
 {
@@ -471,21 +471,21 @@ CUB_TEST("DeviceTransform::Transform heavy functor",
 {
   using offset_t           = int;
   constexpr auto alg       = c2h::get<0, TestType>::value;
-  constexpr auto heavyness = c2h::get<1, TestType>::value;
+  constexpr auto heaviness = c2h::get<1, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
-  CAPTURE(alg, heavyness);
+  CAPTURE(alg, heaviness);
 
   constexpr int num_items = 100;
   c2h::device_vector<std::uint32_t> input(num_items, 4);
   // c2h::gen(CUB_SEED(1), input, 1, 10);
   c2h::device_vector<std::uint32_t> result(num_items);
   transform_many_with_alg<alg, offset_t>(
-    ::cuda::std::make_tuple(input.begin()), result.begin(), num_items, heavy_functor<heavyness>{});
+    ::cuda::std::make_tuple(input.begin()), result.begin(), num_items, heavy_functor<heaviness>{});
 
   // compute reference and verify
   c2h::host_vector<std::uint32_t> input_h = input;
   c2h::host_vector<std::uint32_t> reference_h(num_items);
-  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), heavy_functor<heavyness>{});
+  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), heavy_functor<heaviness>{});
   REQUIRE(reference_h == result);
 }
 
