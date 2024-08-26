@@ -38,7 +38,8 @@
 #endif // no system header
 
 #include <cub/agent/agent_for.cuh>
-#include <cub/grid/grid_even_share.cuh>
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
