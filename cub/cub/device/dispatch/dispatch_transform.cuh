@@ -56,13 +56,13 @@ namespace detail
 {
 namespace transform
 {
-#ifdef __cpp_fold_expressions // C++17
+#if _CCCL_STD_VER >= 2017
 template <typename... Its>
 constexpr auto loaded_bytes_per_iteration() -> int
 {
   return (int{sizeof(value_t<Its>)} + ... + 0);
 }
-#else
+#else // ^^^ C++17 ^^^ / vvv C++11 vvv
 constexpr int sum()
 {
   return 0;
@@ -79,17 +79,16 @@ constexpr auto loaded_bytes_per_iteration() -> int
 {
   return sum(int{sizeof(value_t<Its>)}...);
 }
-#endif
+#endif // _CCCL_STD_VER >= 2017
 
 enum class Algorithm
 {
   fallback_for,
   prefetch,
   unrolled_staged,
-  memcpy_async
+  memcpy_async,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  ,
-  ublkcp
+  ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 };
 
@@ -510,15 +509,15 @@ _CCCL_DEVICE void transform_kernel_impl(
     int smem_offset                    = 0;
     ::cuda::std::uint32_t total_copied = 0;
 
-#    ifdef __cpp_fold_expressions // C++17
+#    if _CCCL_STD_VER >= 2017
     // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
     (..., copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
-#    else
+#    else // _CCCL_STD_VER >= 2017
     // Order of evaluation is also left-to-right
     int dummy[] = {
       (copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
     (void) dummy;
-#    endif
+#    endif // _CCCL_STD_VER >= 2017
 
     ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
   }
