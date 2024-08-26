@@ -80,17 +80,14 @@ VectorUnitTest<TestFunctionalPlaceholdersTransformIterator,
 VectorUnitTest<TestFunctionalPlaceholdersTransformIterator, ThirtyTwoBitTypes, thrust::host_vector, std::allocator>
   TestFunctionalPlaceholdersTransformIteratorInstanceHost;
 
-template <typename T>
-struct TestFunctionalPlaceholdersArgumentValueCategories
+void TestFunctionalPlaceholdersArgumentValueCategories()
 {
-  void operator()() const
-  {
-    using namespace thrust::placeholders;
-    auto expr = _1 * _1 + _2 * _2;
-    T a       = 2;
-    T b       = 3;
-    ASSERT_ALMOST_EQUAL(expr(2, 3), 13); // pass pr-value
-    ASSERT_ALMOST_EQUAL(expr(a, b), 13); // pass l-value
-    ASSERT_ALMOST_EQUAL(expr(::cuda::std::move(a), ::cuda::std::move(b)), 13); // pass x-value
-  }
-};
+  using namespace thrust::placeholders;
+  auto expr = _1 * _1 + _2 * _2;
+  int a     = 2;
+  int b     = 3;
+  ASSERT_EQUAL(expr(2, 3), 13); // pass pr-value
+  ASSERT_EQUAL(expr(a, b), 13); // pass l-value
+  ASSERT_EQUAL(expr(::cuda::std::move(a), ::cuda::std::move(b)), 13); // pass x-value
+}
+DECLARE_UNITTEST(TestFunctionalPlaceholdersArgumentValueCategories);
