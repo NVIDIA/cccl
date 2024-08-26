@@ -36,6 +36,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/array>
+#include <cuda/std/bit>
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -57,26 +58,26 @@ namespace transform
 {
 #ifdef __cpp_fold_expressions // C++17
 template <typename... Its>
-constexpr auto loaded_bytes_per_iteration() -> std::size_t
+constexpr auto loaded_bytes_per_iteration() -> int
 {
-  return (sizeof(value_t<Its>) + ... + 0);
+  return (int{sizeof(value_t<Its>)} + ... + 0);
 }
 #else
-constexpr std::size_t sum()
+constexpr int sum()
 {
   return 0;
 }
 
 template <typename... Ts>
-constexpr std::size_t sum(std::size_t head, Ts... tail)
+constexpr int sum(int head, Ts... tail)
 {
   return head + sum(tail...);
 }
 
 template <typename... Its>
-constexpr auto loaded_bytes_per_iteration() -> std::size_t
+constexpr auto loaded_bytes_per_iteration() -> int
 {
-  return sum(sizeof(value_t<Its>)...);
+  return sum(int{sizeof(value_t<Its>)}...);
 }
 #endif
 
@@ -116,10 +117,11 @@ struct prefetch_policy_t
 
 // Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
 template <typename T>
-_CCCL_DEVICE void prefetch(const T* addr)
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
+  assert(__isGlobal(addr));
   // TODO(bgruber): prefetch to L1 may be even better
-  asm volatile("prefetch.L2 [%0];" : : "l"(addr) : "memory");
+  asm volatile("prefetch.global.L2 [%0];" : : "l"(addr) : "memory");
 }
 
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
@@ -127,7 +129,7 @@ _CCCL_DEVICE void prefetch(const T* addr)
 
 // overload for any iterator that is not a pointer, do nothing
 template <typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
-_CCCL_DEVICE void prefetch(It)
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(It)
 {}
 
 // this kernel guarantees stable addresses for the parameters of the user provided function
@@ -140,16 +142,24 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteartorOut out,
   RandomAccessIteartorIn... ins)
 {
-  const int tile_size = blockDim.x * num_elem_per_thread;
-  const Offset offset = static_cast<Offset>(blockIdx.x) * tile_size;
+  {
+    const int tile_stride = blockDim.x * num_elem_per_thread;
+    const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_stride;
+
+    // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
+    num_items -= offset;
+    int dummy[] = {(ins += offset, 0)..., 0};
+    (void) dummy;
+    out += offset;
+  }
 
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
+    const int idx = j * blockDim.x + threadIdx.x;
     // TODO(bgruber): replace by fold over comma in C++17
-    const auto idx = offset + (j * blockDim.x + threadIdx.x);
-    int dummy[]    = {(prefetch(ins + idx), 0)..., 0}; // extra zero to handle empty packs
-    (void) &dummy; // nvcc 11.1 needs extra strong unused warning supression
-    (void) &idx; // nvcc 11.1 needs extra strong unused warning supression
+    int dummy[] = {(prefetch(ins + idx), 0)..., 0}; // extra zero to handle empty packs
+    (void) &dummy; // nvcc 11.1 needs extra strong unused warning suppression
+    (void) &idx; // nvcc 11.1 needs extra strong unused warning suppression
   }
 
   // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -157,7 +167,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 #pragma unroll 1
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
-    const auto idx = offset + (j * blockDim.x + threadIdx.x);
+    const int idx = j * blockDim.x + threadIdx.x;
     if (idx < num_items)
     {
       // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
@@ -190,8 +200,17 @@ _CCCL_DEVICE void transform_kernel_impl(
 {
   constexpr int block_dim        = UnrolledPolicy::BLOCK_THREADS;
   constexpr int items_per_thread = UnrolledPolicy::ITEMS_PER_THREAD;
-  constexpr int tile_size        = block_dim * items_per_thread;
-  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_size;
+
+  {
+    constexpr int tile_stride = block_dim * items_per_thread;
+    const Offset offset       = static_cast<Offset>(blockIdx.x) * tile_stride;
+
+    // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
+    num_items -= offset;
+    int dummy[] = {(ins += offset, 0)..., 0};
+    (void) dummy;
+    out += offset;
+  }
 
   // TODO(bgruber): we could use load vectorization here
 
@@ -200,7 +219,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 #pragma unroll
     for (int j = 0; j < items_per_thread; ++j)
     {
-      const auto idx = offset + (j * block_dim + threadIdx.x);
+      const int idx = j * block_dim + threadIdx.x;
       if (idx < num_items)
       {
         // TODO(bgruber): replace by fold over comma in C++17
@@ -212,7 +231,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 #pragma unroll
     for (int j = 0; j < items_per_thread; ++j)
     {
-      const auto idx = offset + (j * block_dim + threadIdx.x);
+      const int idx = j * block_dim + threadIdx.x;
       if (idx < num_items)
       {
         out[idx] = f(arrays[j]...);
@@ -233,14 +252,14 @@ struct async_copy_policy_t
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
 template <class F, class Tuple, std::size_t... Is>
-_CCCL_DEVICE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
   -> decltype(::cuda::std::forward<F>(f)(::cuda::std::get<Is>(::cuda::std::forward<Tuple>(t))...))
 {
   return ::cuda::std::forward<F>(f)(::cuda::std::get<Is>(::cuda::std::forward<Tuple>(t))...);
 }
 
 template <class F, class Tuple>
-_CCCL_DEVICE auto poor_apply(F&& f, Tuple&& t)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
   -> decltype(poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
@@ -254,16 +273,16 @@ _CCCL_DEVICE auto poor_apply(F&& f, Tuple&& t)
 
 // mult must be a power of 2
 template <typename Integral>
-_CCCL_HOST_DEVICE inline auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
-  assert(::cuda::std::popcount(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)) == 1);
+  assert(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)));
   return (x + mult - 1) & ~(mult - 1);
 }
 
 template <typename T>
-_CCCL_HOST_DEVICE const T* round_down_ptr(const T* ptr, unsigned alignment)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE const T* round_down_ptr(const T* ptr, unsigned alignment)
 {
-  assert(::cuda::std::popcount(static_cast<::cuda::std::__make_unsigned_t<Integral>>(alignment)) == 1);
+  assert(::cuda::std::has_single_bit(alignment));
   return reinterpret_cast<const T*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
@@ -359,28 +378,33 @@ _CCCL_DEVICE void transform_kernel_impl(
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
                                  // 16-byte aligned by default.
 
-  const Offset tile_stride   = blockDim.x * num_elem_per_thread;
-  const Offset global_offset = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size        = ::cuda::std::min(num_items - global_offset, tile_stride);
+  const Offset tile_stride = blockDim.x * num_elem_per_thread;
+  const Offset offset      = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size      = ::cuda::std::min(num_items - offset, tile_stride);
 
   auto group           = cooperative_groups::this_thread_block();
   int smem_offset      = 0;
   const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
-    copy_and_return_smem_dst(group, tile_size, smem, smem_offset, global_offset, aligned_ptrs)...};
+    copy_and_return_smem_dst(group, tile_size, smem, smem_offset, offset, aligned_ptrs)...};
   cooperative_groups::wait(group);
   (void) smem_ptrs; // suppress unused warning for MSVC
   (void) &smem_offset; // MSVC needs extra strong unused warning supression
 
+  {
+    // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+    num_items -= offset;
+    out += offset;
+  }
+
 #pragma unroll 1
   for (int i = 0; i < num_elem_per_thread; ++i)
   {
-    const int smem_idx    = i * blockDim.x + threadIdx.x;
-    const Offset gmem_idx = global_offset + smem_idx;
-    if (gmem_idx < num_items)
+    const int idx = i * blockDim.x + threadIdx.x;
+    if (idx < num_items)
     {
-      out[gmem_idx] = poor_apply(
+      out[idx] = poor_apply(
         [&](const InTs*... smem_base_ptrs) {
-          return f(smem_base_ptrs[smem_idx]...);
+          return f(smem_base_ptrs[idx]...);
         },
         smem_ptrs);
     }
@@ -392,15 +416,15 @@ constexpr int ublkcp_size_multiple = 16;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 // TODO(bgruber): inline this as lambda in C++14
-template <typename T>
+template <typename Offset, typename T>
 _CCCL_DEVICE void copy_ptr_set(
-  uint64_t& bar,
-  uint32_t tile_size,
+  ::cuda::std::uint64_t& bar,
+  int tile_size,
   int tile_stride,
   char* smem,
   int& smem_offset,
-  uint32_t& total_copied,
-  size_t global_offset,
+  ::cuda::std::uint32_t& total_copied,
+  Offset global_offset,
   const aligned_base_ptr<T>& aligned_ptr)
 {
 #  if CUB_PTX_ARCH >= 900
@@ -422,15 +446,15 @@ _CCCL_DEVICE void copy_ptr_set(
 
 // TODO(bgruber): inline this as lambda in C++14
 template <typename T>
-_CCCL_DEVICE const T& fetch_operand(
-  uint32_t tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
+_CCCL_DEVICE _CCCL_FORCEINLINE const T&
+fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
   const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.offset);
-  smem_offset += sizeof(T) * tile_stride + ublkcp_alignment;
+  smem_offset += int{sizeof(T)} * tile_stride + ublkcp_alignment;
   return smem_operand_tile_base[smem_idx];
 };
 
-_CCCL_DEVICE bool select_one()
+_CCCL_DEVICE _CCCL_FORCEINLINE bool select_one()
 {
 #  if CUB_PTX_ARCH >= 900
   const ::cuda::std::uint32_t membermask = ~0;
@@ -464,8 +488,8 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   namespace ptx = ::cuda::ptx;
 
-  const int tile_stride      = blockDim.x * num_elem_per_thread;
-  const Offset global_offset = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_stride = blockDim.x * num_elem_per_thread;
+  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_stride;
 
   // TODO(bgruber) use: `cooperative_groups::invoke_one(cooperative_groups::this_thread_block(), [&]() {` with CTK
   // >= 12.1
@@ -475,18 +499,17 @@ _CCCL_DEVICE void transform_kernel_impl(
     ptx::mbarrier_init(&bar, 1);
     ptx::fence_proxy_async(ptx::space_shared);
 
-    const int tile_size        = ::cuda::std::min(num_items - global_offset, Offset{tile_stride});
-    int smem_offset            = 0;
-    std::uint32_t total_copied = 0;
+    const int tile_size                = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+    int smem_offset                    = 0;
+    ::cuda::std::uint32_t total_copied = 0;
 
 #    ifdef __cpp_fold_expressions // C++17
     // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-    (..., copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, global_offset, aligned_ptrs));
+    (..., copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
 #    else
     // Order of evaluation is also left-to-right
     int dummy[] = {
-      (copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, global_offset, aligned_ptrs), 0)...,
-      0};
+      (copy_ptr_set(bar, tile_size, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
     (void) dummy;
 #    endif
 
@@ -497,18 +520,22 @@ _CCCL_DEVICE void transform_kernel_impl(
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
   {
   }
+
+  {
+    // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+    num_items -= offset;
+    out += offset;
+  }
+
   // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
 #    pragma unroll 1
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
-    // ahendriksen: We do not define g_idx in terms of smem_idx. Doing this results in sub-optimal codegen. The common
-    // sub-expression elimination logic is smart enough to remove the redundant computations.
-    const int smem_idx = j * blockDim.x + threadIdx.x;
-    const Offset g_idx = global_offset + j * blockDim.x + threadIdx.x;
-    if (g_idx < num_items)
+    const int idx = j * blockDim.x + threadIdx.x;
+    if (idx < num_items)
     {
       int smem_offset = 0;
-      out[g_idx]      = f(fetch_operand(tile_stride, smem, smem_offset, smem_idx, aligned_ptrs)...);
+      out[idx]        = f(fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...);
     }
   }
 #  endif // CUB_PTX_ARCH >= 900
@@ -563,14 +590,15 @@ using needs_aligned_ptr_t =
                              >;
 
 template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
-_CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>,
-                                    kernel_arg<It>&& arg) -> aligned_base_ptr<const value_t<It>>&&
+_CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
+  ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<const value_t<It>>&&
 {
   return ::cuda::std::move(arg.template aliased_storage<aligned_base_ptr<const value_t<It>>>());
 }
 
 template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
-_CCCL_DEVICE auto select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> It&&
+_CCCL_DEVICE _CCCL_FORCEINLINE auto
+select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> It&&
 {
   return ::cuda::std::move(arg.template aliased_storage<It>());
 }
@@ -601,7 +629,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS)
     select_kernel_arg(alg, ::cuda::std::move(ins))...);
 }
 
-constexpr int arch_to_min_bif(int sm_arch)
+constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 {
   // TODO(bgruber): use if-else in C++14 for better readability
   return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
@@ -632,7 +660,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // TODO(gevtushenko): take a look at radix sort dispatch
 
   static constexpr int loaded_bytes_per_iter =
-    ::cuda::std::max(1, static_cast<int>(loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()));
+    ::cuda::std::max(1, loaded_bytes_per_iteration<RandomAccessIteratorsIn...>());
 
   static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
   static constexpr bool all_contiguous =
@@ -647,7 +675,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // below A100
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif = arch_to_min_bif(300);
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm =
       RequiresStableAddress || no_input_streams ? Algorithm::prefetch : Algorithm::unrolled_staged;
@@ -662,7 +690,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // A100
   struct policy800 : ChainedPolicy<800, policy800, policy300>
   {
-    static constexpr int min_bif = arch_to_min_bif(800);
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
     // TODO(bgruber): we could use unrolled_staged if we cannot memcpy
     static constexpr auto algorithm =
       (RequiresStableAddress || !can_memcpy || no_input_streams) ? Algorithm::prefetch : Algorithm::memcpy_async;
@@ -675,7 +703,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // A6000
   struct policy860 : ChainedPolicy<860, policy860, policy800>
   {
-    static constexpr int min_bif = arch_to_min_bif(860);
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(860);
     static constexpr auto algorithm =
       (RequiresStableAddress || !can_memcpy || no_input_streams) ? Algorithm::prefetch : Algorithm::unrolled_staged;
     // default: gives 6 items fir 2 I8 per iteration, 3 items for 2 I16, 2 items for 2 F32, 1 item for F64/I128
@@ -697,7 +725,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   // H100 and H200
   struct policy900 : ChainedPolicy<900, policy900, policy860>
   {
-    static constexpr int min_bif = arch_to_min_bif(900);
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(900);
     static constexpr auto algorithm =
       (RequiresStableAddress || !can_memcpy || no_input_streams)
         ? Algorithm::prefetch
@@ -812,8 +840,7 @@ struct dispatch_t<RequiresStableAddress,
                                THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
   kernel_ptr_t kernel;
 
-  static constexpr int loaded_bytes_per_iter =
-    static_cast<int>(loaded_bytes_per_iteration<RandomAccessIteratorsIn...>());
+  static constexpr int loaded_bytes_per_iter = loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
 
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running on?
   template <typename ActivePolicy, std::size_t... Is>
