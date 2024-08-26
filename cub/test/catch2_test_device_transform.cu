@@ -419,6 +419,7 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
 
   constexpr int num_items = 1000;
   const int offset        = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
+  CAPTURE(c2h::demangle(typeid(type).name()), offset);
   c2h::device_vector<type> input(num_items);
   thrust::sequence(input.begin(), input.end());
   c2h::device_vector<type> result(num_items);
@@ -427,9 +428,10 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
                  num_items - offset,
                  ::cuda::std::negate<>{});
 
-  auto reference = c2h::device_vector<type>(num_items);
-  thrust::fill(reference.begin() + offset, reference.end(), -42);
-  REQUIRE((reference == result));
+  using thrust::placeholders::_1;
+  c2h::device_vector<type> reference(num_items);
+  thrust::tabulate(reference.begin() + offset, reference.end(), -(_1 + offset));
+  REQUIRE(reference == result);
 }
 
 // This functor was gifted by ahendriksen
