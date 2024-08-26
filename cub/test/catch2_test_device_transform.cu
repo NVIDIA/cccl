@@ -301,10 +301,10 @@ CUB_TEST("DeviceTransform::Transform fancy output iterator type", "[device][devi
   c2h::device_vector<type> result(num_items);
 
   using thrust::placeholders::_1;
-  auto out = thrust::make_transform_output_iterator(result.begin(), _1 * 2);
+  auto out = thrust::make_transform_output_iterator(result.begin(), _1 + 4);
   transform_many_with_alg<alg, offset_t>(
-    ::cuda::std::make_tuple(a.begin(), b.end()), out, num_items, ::cuda::std::plus<type>{});
-  REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) * 2));
+    ::cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, ::cuda::std::plus<type>{});
+  REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) + 4));
 }
 
 CUB_TEST("DeviceTransform::Transform mixed input iterator types", "[device][device_transform]")
