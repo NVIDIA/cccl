@@ -71,17 +71,17 @@ using accumulator_t = typename ::cuda::std::decay<invoke_result_t<Invokable, Ini
  * Additional type traits
  **********************************************************************************************************************/
 
-template<typename T>
-_CCCL_INLINE_VAR constexpr int num_bits_v = sizeof(T) * CHAR_BIT;
+template<typename T, typename... TArgs>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+constexpr bool are_same() { return ::cuda::std::conjunction<::cuda::std::is_same<T, TArgs>...>::value; }
 
 template<typename T, typename... TArgs>
-_CCCL_INLINE_VAR constexpr bool are_same_v = ::cuda::std::conjunction_v<::cuda::std::is_same<T, TArgs>...>;
-
-template<typename T, typename... TArgs>
-_CCCL_INLINE_VAR constexpr bool is_one_of_v = ::cuda::std::disjunction_v<::cuda::std::is_same<T, TArgs>...>;
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+constexpr bool is_one_of() { return ::cuda::std::disjunction<::cuda::std::is_same<T, TArgs>...>::value; }
 
 template<typename...>
-_CCCL_INLINE_VAR constexpr bool always_false_v = false;
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+constexpr bool always_false() { return false; }
 
 } // namespace detail
 CUB_NAMESPACE_END

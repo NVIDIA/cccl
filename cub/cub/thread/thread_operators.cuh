@@ -38,8 +38,7 @@
 #pragma once
 
 #include <cub/config.cuh>
-#include <cub/detail/type_traits.cuh>   // always_false_v
-#include "cuda/std/__cccl/attributes.h" // _CCCL_NODISCARD
+#include <cub/detail/type_traits.cuh>   // always_false
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -52,9 +51,7 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -417,21 +414,16 @@ _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 
 namespace internal {
 
-// DPX instructions compute min and max for up to three 16 and 32-bit signed or unsigned integer parameters
-// see DPX documetation https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dpx
-
-// NOTE: The compiler is able to automatically vectorize all cases with 3 operands.
-//       However, all other cases with per-halfword comparison need to be explicitly vectorized
 // TODO: Remove DPX specilization when nvbug 4823237 is fixed
 
 template<typename T>
 struct DpxMin {
-  static_assert(detail::always_false_v<T>, "DpxMin is not supported for this type");
+  static_assert(detail::always_false<T>(), "DpxMin is not supported for this type");
 };
 
 template<>
 struct DpxMin<int16_t> {
- _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
   unsigned operator()(unsigned a, unsigned b) const { return __vmins2(a, b); }
 };
 
@@ -445,7 +437,7 @@ struct DpxMin<uint16_t> {
 
 template<typename T>
 struct DpxMax {
-  static_assert(detail::always_false_v<T>, "DpxMax is not supported for this type");
+  static_assert(detail::always_false<T>(), "DpxMax is not supported for this type");
 };
 
 template<>

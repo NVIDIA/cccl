@@ -38,7 +38,7 @@
 #include <cuda/std/__cccl/attributes.h> // _CCCL_NODISCARD
 #include <cuda/std/cstdint>             // uint16_t
 #include <cuda/std/limits>              // numeric_limits
-#include <cuda/std/type_traits>         // enable_if_t
+#include <cuda/std/type_traits>         // __enable_if_t
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -48,7 +48,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh>        // are_same_v
+#include <cub/detail/type_traits.cuh>       // are_same()
 #include <cub/thread/thread_operators.cuh>  // DpxMin
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
@@ -59,26 +59,31 @@ CUB_NAMESPACE_BEGIN
 namespace internal
 {
 
-//----------------------------------------------------------------------------------------------------------------------
-
-/// Enable DPX reduction if the following conditions are met:
-/// - Hopper+ architectures. DPX instructions are emulated before Hopper.
+/// DPX instructions compute min and max for up to three 16 and 32-bit signed or unsigned integer parameters
+/// see DPX documetation https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dpx
+/// NOTE: The compiler is able to automatically vectorize all cases with 3 operands
+///       However, all other cases with per-halfword comparison need to be explicitly vectorized
+/// TODO: Remove DPX specilization when nvbug 4823237 is fixed
+///
+/// DPX reduction is enabled if the following conditions are met:
+/// - Hopper+ architectures. DPX instructions are emulated before Hopper
 /// - The number of elements must be large enough for performance reasons (see below)
 /// - All types must be the same
-/// - Only works with integral types of 1 bytes or 2 bytes
+/// - Only works with integral types of 2 bytes
 /// - DPX instructions provide Min and Max SIMD operations
+/// If the number of instructions is the same, we favor the compiler
 
-// clang-format off
 template <int LENGTH, typename T, typename ReductionOp, typename PrefixT = T, typename AccumT = T>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-constexpr bool enable_dpx_reduction() // clang-format on
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE // clang-format off
+constexpr bool enable_dpx_reduction()
 {
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
-    (return (LENGTH == 6 || LENGTH == 8 || LENGTH >= 10) && detail::are_same_v<T, PrefixT, AccumT>
-           && detail::is_one_of_v<T, int16_t, uint16_t> && detail::is_one_of_v<ReductionOp, cub::Min, cub::Max>;),
+    (return (LENGTH == 6 || LENGTH == 8 || LENGTH >= 10) && detail::are_same<T, PrefixT, AccumT>()
+           && detail::is_one_of<T, int16_t, uint16_t>() && detail::is_one_of<ReductionOp, cub::Min, cub::Max>();),
     (return false;));
 }
+// clang-format on
 
 // Considering compiler vectorization with 3-way reduction, the number of SASS instructions is
 // standard: ceil((L - 3) / 2) + 1
@@ -116,15 +121,14 @@ constexpr bool enable_dpx_reduction() // clang-format on
  * @param[in] prefix
  *   Prefix to seed reduction with
  */
-// clang-format off
 template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-_CCCL_DEVICE _CCCL_FORCEINLINE
-::cuda::std::enable_if_t<!enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), AccumT>
-ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/) // clang-format on
+_CCCL_DEVICE
+_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<!enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), AccumT>
+ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
   AccumT retval = prefix;
 #pragma unroll
@@ -139,7 +143,7 @@ ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH
 
 /// Specialization for single-element arrays
 template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(LENGTH == 1), T>
+_CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::__enable_if_t<LENGTH == 1, T>
 ThreadReduce(T* input, ReductionOp reduction_op)
 {
   return input[0];
@@ -166,24 +170,22 @@ ThreadReduce(T* input, ReductionOp reduction_op)
  *   Binary reduction operator
  */
 template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE // clang-format off
-::cuda::std::enable_if_t<!enable_dpx_reduction<LENGTH, T, ReductionOp>(), T>
-ThreadReduce(T* input, ReductionOp reduction_op) // clang-format on
+_CCCL_DEVICE
+_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<(!enable_dpx_reduction<LENGTH, T, ReductionOp>() && LENGTH > 1), T>
+ThreadReduce(T* input, ReductionOp reduction_op)
 {
   T prefix = input[0];
   return ThreadReduce(input + 1, reduction_op, prefix, Int2Type<LENGTH - 1>{});
 }
 
 /// Specialization for DPX reduction
-template <int LENGTH, // clang-format off
-          typename T,
-          typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-::cuda::std::enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp>(), T> // clang-format on
+template <int LENGTH, typename T, typename ReductionOp>
+_CCCL_NODISCARD _CCCL_DEVICE
+_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp>(), T>
 ThreadReduce(T* input, ReductionOp reduction_op)
 {
-  constexpr auto IS_MIN = ::cuda::std::is_same_v<ReductionOp, cub::Min>;
-  using DpxReduceOp     = ::cuda::std::conditional_t<IS_MIN, DpxMin<T>, DpxMax<T>>;
+  constexpr auto IS_MIN = ::cuda::std::is_same<ReductionOp, cub::Min>::value;
+  using DpxReduceOp     = ::cuda::std::_If<IS_MIN, DpxMin<T>, DpxMax<T>>;
   auto unsigned_input   = reinterpret_cast<unsigned*>(input);
   auto simd_reduction   = ThreadReduce<LENGTH / 2>(unsigned_input, DpxReduceOp{});
   T simd_values[2]; // TODO (fbusato): use bit_cast
@@ -193,14 +195,14 @@ ThreadReduce(T* input, ReductionOp reduction_op)
 }
 
 /// Specialization for DPX reduction with prefix
-template <int LENGTH, // clang-format off
+template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
-::cuda::std::enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), T>
-ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH>) // clang-format on
+_CCCL_NODISCARD _CCCL_DEVICE
+_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), T>
+ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH>)
 {
   return reduction_op(ThreadReduce<LENGTH>(input, reduction_op), prefix);
 }
