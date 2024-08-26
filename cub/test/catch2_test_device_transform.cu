@@ -8,6 +8,7 @@
 #include <cub/device/device_transform.cuh>
 
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
@@ -130,7 +131,7 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
   FILTER_UNSUPPORTED_ALGS
   CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg);
 
-  const int num_items = GENERATE(0, 1, 100, 1000 /*, 1000000*/); // TODO(bgruber): select good sizes
+  const int num_items = GENERATE(0, 1, 100, 1000);
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
   c2h::gen(CUB_SEED(1), a);
@@ -146,6 +147,33 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
   c2h::host_vector<type> reference_h(num_items);
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus<type>{});
   REQUIRE(reference_h == result);
+}
+
+CUB_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
+try
+{
+  using type         = unsigned char;
+  using offset_t     = cuda::std::int64_t;
+  constexpr auto alg = c2h::get<0, TestType>::value;
+  FILTER_UNSUPPORTED_ALGS
+
+  constexpr offset_t num_items = offset_t{1} << 32 + 1; // 4GiB + 1
+  c2h::device_vector<type> input(num_items);
+  c2h::gen(CUB_SEED(1), input);
+
+  using thrust::placeholders::_1;
+  c2h::device_vector<type> result(num_items);
+  transform_many_with_alg<alg, offset_t>(::cuda::std::tuple{input.begin()}, result.begin(), num_items, _1 * 7);
+
+  // compute reference and verify
+  c2h::host_vector<type> input_h = input;
+  c2h::host_vector<type> reference_h(num_items);
+  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), _1 * 7);
+  REQUIRE(reference_h == result);
+}
+catch (const std::bad_alloc&)
+{
+  // allocation failure is not a test failure, so we can run tests on smaller GPUs
 }
 
 template <typename T>
@@ -268,10 +296,15 @@ CUB_TEST("DeviceTransform::Transform fancy output iterator type", "[device][devi
   FILTER_UNSUPPORTED_ALGS
 
   constexpr int num_items = 100;
-  c2h::device_vector<type> a(num_items, 10);
-  c2h::device_vector<type> b(num_items, 10);
+  c2h::device_vector<type> a(num_items, 13);
+  c2h::device_vector<type> b(num_items, 35);
+  c2h::device_vector<type> result(num_items);
+
+  using thrust::placeholders::_1;
+  auto out = thrust::make_transform_output_iterator(result.begin(), _1 * 2);
   transform_many_with_alg<alg, offset_t>(
-    ::cuda::std::make_tuple(a.begin(), b.end()), thrust::discard_iterator<>{}, num_items, ::cuda::std::plus<type>{});
+    ::cuda::std::make_tuple(a.begin(), b.end()), out, num_items, ::cuda::std::plus<type>{});
+  REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) * 2));
 }
 
 CUB_TEST("DeviceTransform::Transform mixed input iterator types", "[device][device_transform]")
@@ -386,7 +419,8 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
 
   constexpr int num_items = 1000;
   const int offset        = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
-  c2h::device_vector<type> input(num_items, 42);
+  c2h::device_vector<type> input(num_items);
+  thrust::sequence(input.begin(), input.end());
   c2h::device_vector<type> result(num_items);
   transform_many(::cuda::std::make_tuple(input.begin() + offset),
                  result.begin() + offset,

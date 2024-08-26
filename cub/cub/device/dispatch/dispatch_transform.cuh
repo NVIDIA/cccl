@@ -133,7 +133,11 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(It)
 {}
 
 // this kernel guarantees stable addresses for the parameters of the user provided function
-template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... RandomAccessIteartorIn>
+template <typename PrefetchPolicy,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteartorOut,
+          typename... RandomAccessIteartorIn>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>,
   Offset num_items,
@@ -142,8 +146,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteartorOut out,
   RandomAccessIteartorIn... ins)
 {
+  constexpr int block_dim = PrefetchPolicy::BLOCK_THREADS;
   {
-    const int tile_stride = blockDim.x * num_elem_per_thread;
+    const int tile_stride = block_dim * num_elem_per_thread;
     const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_stride;
 
     // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
@@ -155,7 +160,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
-    const int idx = j * blockDim.x + threadIdx.x;
+    const int idx = j * block_dim + threadIdx.x;
     // TODO(bgruber): replace by fold over comma in C++17
     int dummy[] = {(prefetch(ins + idx), 0)..., 0}; // extra zero to handle empty packs
     (void) &dummy; // nvcc 11.1 needs extra strong unused warning suppression
@@ -167,7 +172,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 #pragma unroll 1
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
-    const int idx = j * blockDim.x + threadIdx.x;
+    const int idx = j * block_dim + threadIdx.x;
     if (idx < num_items)
     {
       // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
@@ -361,10 +366,10 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
     aligned_ptr.ptr + global_offset,
     aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(count)});
   smem_offset += count;
-  return smem_dst + aligned_ptr.offset;
+  return reinterpret_cast<T*>(reinterpret_cast<char*>(smem_dst) + aligned_ptr.offset);
 }
 
-template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::memcpy_async>,
   Offset num_items,
@@ -378,7 +383,8 @@ _CCCL_DEVICE void transform_kernel_impl(
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
                                  // 16-byte aligned by default.
 
-  const Offset tile_stride = blockDim.x * num_elem_per_thread;
+  constexpr int block_dim  = MemcpyAsyncPolicy::BLOCK_THREADS;
+  const Offset tile_stride = block_dim * num_elem_per_thread;
   const Offset offset      = static_cast<Offset>(blockIdx.x) * tile_stride;
   const int tile_size      = ::cuda::std::min(num_items - offset, tile_stride);
 
@@ -399,7 +405,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 #pragma unroll 1
   for (int i = 0; i < num_elem_per_thread; ++i)
   {
-    const int idx = i * blockDim.x + threadIdx.x;
+    const int idx = i * block_dim + threadIdx.x;
     if (idx < num_items)
     {
       out[idx] = poor_apply(
@@ -473,7 +479,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool select_one()
 #  endif // CUB_PTX_ARCH >= 900
 }
 
-template <typename, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
+template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteartorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
   Offset num_items,
@@ -488,8 +494,9 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   namespace ptx = ::cuda::ptx;
 
-  const int tile_stride = blockDim.x * num_elem_per_thread;
-  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_stride;
+  constexpr int block_dim = BulkCopyPolicy::BLOCK_THREADS;
+  const int tile_stride   = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
 
   // TODO(bgruber) use: `cooperative_groups::invoke_one(cooperative_groups::this_thread_block(), [&]() {` with CTK
   // >= 12.1
@@ -531,7 +538,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 #    pragma unroll 1
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
-    const int idx = j * blockDim.x + threadIdx.x;
+    const int idx = j * block_dim + threadIdx.x;
     if (idx < num_items)
     {
       int smem_offset = 0;
