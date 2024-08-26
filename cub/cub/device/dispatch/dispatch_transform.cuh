@@ -895,7 +895,7 @@ struct dispatch_t<RequiresStableAddress,
       }
 
       int max_occupancy = 0;
-      const auto error  = MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size);
+      const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size));
       if (error != cudaSuccess)
       {
         return error;
