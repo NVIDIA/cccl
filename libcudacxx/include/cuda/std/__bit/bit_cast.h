@@ -23,6 +23,7 @@
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/detail/libcxx/include/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -43,6 +44,9 @@ _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_BIT_CAST _To
 #if defined(_LIBCUDACXX_BIT_CAST)
   return _LIBCUDACXX_BIT_CAST(_To, __from);
 #else // ^^^ _LIBCUDACXX_BIT_CAST ^^^ / vvv !_LIBCUDACXX_BIT_CAST vvv
+  static_assert(_CCCL_TRAIT(is_trivially_default_constructible, To),
+                "The compiler does not support __builtin_bit_cast, so bit_cast additionally requires the destination "
+                "type to be trivially constructible");
   _To __temp;
   _CUDA_VSTD::memcpy(&__temp, &__from, sizeof(_To));
   return __temp;
