@@ -153,7 +153,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
     num_items -= offset;
     int dummy[] = {(ins += offset, 0)..., 0};
-    (void) dummy;
+    (void) &dummy;
     out += offset;
   }
 
