@@ -25,11 +25,11 @@
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/limits>
-#include <cuda/std/detail/libcxx/include/new>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
