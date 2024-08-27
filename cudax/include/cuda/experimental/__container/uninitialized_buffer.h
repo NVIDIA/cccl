@@ -65,14 +65,14 @@ private:
   void* __buf_    = nullptr;
 
   //! @brief Determines the allocation size given the alignment and size of `T`
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr size_t __get_allocation_size(const size_t __count) noexcept
+  _CCCL_NODISCARD static constexpr size_t __get_allocation_size(const size_t __count) noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     return (__count * sizeof(_Tp) + (__alignment - 1)) & ~(__alignment - 1);
   }
 
   //! @brief Determines the properly aligned start of the buffer given the alignment and size of  `T`
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _Tp* __get_data() const noexcept
+  _CCCL_NODISCARD _Tp* __get_data() const noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     size_t __space               = __get_allocation_size(__count_);
@@ -146,25 +146,25 @@ public:
   }
 
   //! @brief Returns an aligned pointer to the buffer
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer begin() const noexcept
+  _CCCL_NODISCARD pointer begin() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns an aligned pointer to end of the buffer
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer end() const noexcept
+  _CCCL_NODISCARD pointer end() const noexcept
   {
     return __get_data() + __count_;
   }
 
   //! @brief Returns an aligned pointer to the buffer
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE pointer data() const noexcept
+  _CCCL_NODISCARD pointer data() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns the size of the buffer
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
+  _CCCL_NODISCARD constexpr size_type size() const noexcept
   {
     return __count_;
   }
@@ -172,14 +172,14 @@ public:
   //! @rst
   //! Returns a copy of the `any_resource` used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE ::cuda::experimental::mr::any_resource<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD ::cuda::experimental::mr::any_resource<_Properties...> resource() const noexcept
   {
     return __mr_;
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_buffer
   //! @param __other The other \c uninitialized_buffer.
-  _CCCL_HOST_DEVICE constexpr void swap(uninitialized_buffer& __other) noexcept
+  constexpr void swap(uninitialized_buffer& __other) noexcept
   {
     __mr_.swap(__other.__mr_);
     _CUDA_VSTD::swap(__count_, __other.__count_);
