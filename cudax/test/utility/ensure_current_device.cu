@@ -92,7 +92,7 @@ TEST_CASE("ensure current device", "[device]")
       CUDAX_REQUIRE(driver::ctxGetCurrent() == driver::streamGetCtx(stream.get()));
     }
 
-    CHECK(test::count_driver_stack() == 0);
+    CUDAX_CHECK(test::count_driver_stack() == 0);
 
     {
       // Check NULL stream ref is handled ok
