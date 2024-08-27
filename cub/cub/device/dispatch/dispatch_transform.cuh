@@ -291,37 +291,53 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const T* round_down_ptr(const T* ptr, unsign
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
 
+// Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
+//
+// For performance considerations of memcpy_async:
+// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
+//
+// We basically have to align the base pointer to 16 bytes, and copy a multiple of 16 bytes. To achieve this, when we
+// copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
+// address that is a multiple of 16 bytes. This introduces front padding. We also round up the total number of bytes to
+// copy (including front padding) to a multiple of 16 bytes, which introduces tail padding. For the bulk copy kernel, we
+// have to align to 128 bytes instead of 16.
+//
+// However, padding memory copies like that may access the input buffer out-of-bounds. Here are some thoughts:
+// * According to the CUDA programming guide
+// (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses), "any address of a variable
+// residing in global memory or returned by one of the memory allocation routines from the driver or runtime API is
+// always aligned to at least 256 bytes."
+// * Memory protection is usually done on memory page level, which is even larger than 256 bytes for CUDA and 4KiB on
+// Intel x86 and 4KiB+ ARM. Front and tail padding thus never leaves the memory page of the input buffer.
+// * This should count for device memory, but also for device accessible memory living on the host.
+// * The base pointer alignment and size rounding also never leaves the size of a cache line.
+//
+// Copying larger data blocks with front and tail padding should thus be legal. Nevertheless, an out-of-bounds read is
+// still technically undefined behavior in C++. compute-sanitizer flags at least such reads after the end of a buffer,
+// so we are protecting against those.=
+
 // Pointer with metadata to describe input memory for memcpy_async and UBLKCP kernels.
 // cg::memcpy_async is most efficient when the data is 16-byte aligned and the size a multiple of 16 bytes
 // UBLKCP is most efficient when the data is 128-byte aligned and the size a multiple of 16 bytes
 template <typename T> // Cannot add alignment to signature, because we need a uniform kernel template instantiation
 struct aligned_base_ptr
 {
-  T* ptr; // aligned pointer before the original pointer (16-byte or 128-byte)
-  int offset; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
+  T* ptr; // aligned pointer before the original pointer (16-byte or 128-byte, or higher if alignof(T) is larger)
+  T* end; // address of one-past-last element. used to avoid out-of-bounds accesses at the end
+  int front_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
   _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
   {
-    return a.ptr == b.ptr && a.offset == b.offset;
+    return a.ptr == b.ptr && a.end == b.end && a.front_padding == b.front_padding;
   }
 };
 
-template <typename T>
-_CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> aligned_base_ptr<const T>
+template <typename T, typename Offset>
+_CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, Offset size, int alignment) -> aligned_base_ptr<const T>
 {
-  // TODO(bgruber): is it actually legal to move the pointer to a lower 128-byte aligned address and start reading
-  // from there in the kernel? The CUDA programming guide says:
-  //   https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses
-  //   > Any address of a variable residing in global memory or returned by one of the memory allocation routines from
-  //     the driver or runtime API is always aligned to at least 256 bytes.
-  // However, gevtushenko says since Linux Kernel 6, any host memory is device accessible, even stack memory
-  // ahendriksen argues that all memory pages are sufficiently aligned, even those migrated from the host
   const T* base_ptr = round_down_ptr(ptr, alignment);
-  return aligned_base_ptr<const T>{base_ptr, static_cast<int>((ptr - base_ptr) * sizeof(T))};
+  return aligned_base_ptr<const T>{base_ptr, ptr + size, static_cast<int>((ptr - base_ptr) * sizeof(T))};
 }
-
-// For performance considerations of memcpy_async:
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
 
 constexpr int memcpy_async_alignment     = 16;
 constexpr int memcpy_async_size_multiple = 16;
@@ -348,8 +364,8 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   int global_offset,
   aligned_base_ptr<const T> aligned_ptr)
 {
-  const int count =
-    round_up_to_po2_multiple(static_cast<int>(sizeof(T)) * tile_size + aligned_ptr.offset, memcpy_async_size_multiple);
+  const int padded_num_bytes         = aligned_ptr.front_padding + static_cast<int>(sizeof(T)) * tile_size;
+  const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, memcpy_async_size_multiple);
   // because SMEM base pointer and count are always multiples of 16-byte, we only need to align the SMEM start for types
   // with larger alignment
   _CCCL_IF_CONSTEXPR (alignof(T) > memcpy_async_alignment)
@@ -359,15 +375,25 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   auto smem_dst = reinterpret_cast<T*>(smem + smem_offset);
   assert(reinterpret_cast<uintptr_t>(smem_dst) % memcpy_async_size_multiple == 0); // to hit optimal memcpy_async
                                                                                    // performance
-  // FIXME(bgruber): this can read out of bounds and compute-sanitizer will diagnose this. E.g. for num_items == 1, it
-  // will read 15 items after the allocation.
-  cooperative_groups::memcpy_async(
-    group,
-    smem_dst,
-    aligned_ptr.ptr + global_offset,
-    aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(count)});
-  smem_offset += count;
-  return reinterpret_cast<T*>(reinterpret_cast<char*>(smem_dst) + aligned_ptr.offset);
+  // Do fast-path, 16-byte aligned copy if we don't access beyond the buffer
+  if (reinterpret_cast<uintptr_t>(aligned_ptr.ptr + global_offset) + padded_num_bytes_rounded
+      <= reinterpret_cast<uintptr_t>(aligned_ptr.end))
+  {
+    cooperative_groups::memcpy_async(
+      group,
+      smem_dst,
+      aligned_ptr.ptr + global_offset,
+      aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(padded_num_bytes_rounded)});
+  }
+  else
+  {
+    // TODO(bgruber): this function internally dispatches to several code paths and adds a fair bit of instructions to
+    // the kernel. If we eventually deem this too large, we can consider rounding down the size, perform an aligned copy
+    // and copy the remaining elements using ordinary loads.
+    cooperative_groups::memcpy_async(group, smem_dst, aligned_ptr.ptr + global_offset, padded_num_bytes);
+  }
+  smem_offset += padded_num_bytes_rounded; // leave aligned address for follow-up copy
+  return reinterpret_cast<T*>(reinterpret_cast<char*>(smem_dst) + aligned_ptr.front_padding);
 }
 
 template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
@@ -397,6 +423,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   (void) smem_ptrs; // suppress unused warning for MSVC
   (void) &smem_offset; // MSVC needs extra strong unused warning supression
 
+  // TODO(bgruber): shouldn't this be before the loading?
   {
     // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
     num_items -= offset;
@@ -458,7 +485,7 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE const T&
 fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
-  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.offset);
+  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.front_padding);
   smem_offset += int{sizeof(T)} * tile_stride + ublkcp_alignment;
   return smem_operand_tile_base[smem_idx];
 };
@@ -580,13 +607,13 @@ _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
   return arg;
 }
 
-template <typename It>
-_CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -> kernel_arg<It>
+template <typename It, typename Offset>
+_CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, Offset size, int alignment) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
   using T = value_t<It>;
   cub::detail::uninitialized_copy_single(
-    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr, alignment));
+    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr, size, alignment));
   return arg;
 }
 
@@ -658,14 +685,14 @@ items_per_thread_from_occupancy(int block_dim, int max_block_per_sm, int min_bif
 #endif
 }
 
-// TODO(bgruber): need a constexpr version of this function:
+// TODO(bgruber): need a constexpr version of this function
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) -> int
 {
   int smem_size   = 0;
   auto count_smem = [&](int size, int alignment) {
     smem_size = round_up_to_po2_multiple(smem_size, alignment);
-    // max aligned_base_ptr offset + max padding after == 16
+    // max aligned_base_ptr front_padding + max padding after == 16
     smem_size += size * tile_size + ::cuda::std::max(memcpy_async_alignment, memcpy_async_size_multiple);
   };
   // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)
@@ -1070,7 +1097,7 @@ struct dispatch_t<RequiresStableAddress,
       op,
       out,
       make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
-        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), ublkcp_alignment)...);
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), num_items, ublkcp_alignment)...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -1092,7 +1119,9 @@ struct dispatch_t<RequiresStableAddress,
       op,
       out,
       make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
-        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), memcpy_async_alignment)...);
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)),
+        num_items,
+        memcpy_async_alignment)...);
   }
 
   template <typename ActivePolicy, std::size_t... Is>
