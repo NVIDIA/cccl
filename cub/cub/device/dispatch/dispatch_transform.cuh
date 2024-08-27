@@ -317,6 +317,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const T* round_down_ptr(const T* ptr, unsign
 // still technically undefined behavior in C++. compute-sanitizer flags at least such reads after the end of a buffer,
 // so we are protecting against those.=
 
+// A note on size and alignment: The size of a type is at least as large as its alignment. We rely on this fact in some
+// conditions.
+// This is guaranteed by the C++ standard, and follows from the definition of arrays: the difference between neighboring
+// array element addresses is sizeof element type and each array element needs to fulfill the alignment requirement of
+// the element type.
+
 // Pointer with metadata to describe input memory for memcpy_async and UBLKCP kernels.
 // cg::memcpy_async is most efficient when the data is 16-byte aligned and the size a multiple of 16 bytes
 // UBLKCP is most efficient when the data is 128-byte aligned and the size a multiple of 16 bytes
@@ -374,8 +380,9 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
     smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
   }
   auto smem_dst = reinterpret_cast<T*>(smem + smem_offset);
-  assert(reinterpret_cast<uintptr_t>(smem_dst) % memcpy_async_size_multiple == 0); // to hit optimal memcpy_async
-                                                                                   // performance
+  assert(reinterpret_cast<uintptr_t>(smem_dst) % memcpy_async_size_multiple == 0);
+  assert(reinterpret_cast<uintptr_t>(smem_dst) % alignof(T) == 0);
+
   // Do fast-path, 16-byte aligned copy if we don't access beyond the buffer
   if (reinterpret_cast<uintptr_t>(aligned_ptr.ptr + global_offset) + padded_num_bytes_rounded
       <= reinterpret_cast<uintptr_t>(aligned_ptr.end))
@@ -488,6 +495,10 @@ fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx,
 {
   const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.front_padding);
   smem_offset += int{sizeof(T)} * tile_stride + ublkcp_alignment;
+  _CCCL_IF_CONSTEXPR (alignof(T) > ublkcp_alignment)
+  {
+    smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
+  }
   return smem_operand_tile_base[smem_idx];
 };
 
