@@ -82,33 +82,37 @@ constexpr bool enable_dpx_reduction()
 {
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
-    (return (LENGTH == 6 || LENGTH == 8 || LENGTH >= 10) && detail::are_same<T, PrefixT, AccumT>()
-           && detail::is_one_of<T, int16_t, uint16_t>() && detail::is_one_of<ReductionOp, cub::Min, cub::Max>();),
+    (return LENGTH >= 10
+            && detail::are_same<T, PrefixT, AccumT>()
+            && detail::is_one_of<T, int16_t, uint16_t>()
+            && detail::is_one_of<ReductionOp, cub::Min, cub::Max>();),
     (return false;));
 }
 // clang-format on
 
 // Considering compiler vectorization with 3-way reduction, the number of SASS instructions is
-// standard: ceil((L - 3) / 2) + 1
+// Standard: ceil((L - 3) / 2) + 1
 //   replacing L with L/2 for SIMD
-// DPX:      ceil((L/2 - 3) / 2) + 1 + 1 [for halfword comparison] + L % 2 [for last element]
+// DPX:      ceil((L/2 - 3) / 2) + 1 + 2 [for halfword comparison: PRMT, VIMNMX] + L % 2 [for last element]
+//   finally, the last two comparision operations are vectorized in a 3-way reduction
+//           ceil((L/2 - 3) / 2) + 3
 //
 // LENGTH | Standard |  DPX
 //  2     |    1     |  NA
 //  3     |    1     |  NA
 //  4     |    2     |  3
-//  5     |    2     |  4
-//  6     |    3     |  2 // *** (3-way comparison for DPX)
+//  5     |    2     |  3
+//  6     |    3     |  3
 //  7     |    3     |  3
-//  8     |    4     |  3 // ***
+//  8     |    4     |  4
 //  9     |    4     |  4
-// 10     |    5     |  3 // ***
+// 10     |    5     |  4 // ***
 // 11     |    5     |  4 // ***
-// 12     |    6     |  4 // ***
+// 12     |    6     |  5 // ***
 // 13     |    6     |  5 // ***
-// 14     |    7     |  4 // ***
+// 14     |    7     |  5 // ***
 // 15     |    7     |  5 // ***
-// 16     |    8     |  5 // ***
+// 16     |    8     |  6 // ***
 
 /**
  * @brief Sequential reduction over statically-sized array types
