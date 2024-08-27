@@ -171,7 +171,8 @@ public:
   }
 
   //! @rst
-  //! Returns a copy of the `any_resource` used to allocate the buffer
+  //! Returns a :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used to
+  //! allocate the buffer
   //! @endrst
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
