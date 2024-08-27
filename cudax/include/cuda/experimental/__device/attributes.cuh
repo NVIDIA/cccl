@@ -24,7 +24,7 @@
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 
 namespace cuda::experimental
 {
@@ -257,9 +257,8 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
 #endif
-} // namespace detail
 
-struct device::attrs
+struct __device_attrs
 {
   // Maximum number of threads per block
   using max_threads_per_block_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerBlock>;
@@ -734,12 +733,8 @@ struct device::attrs
   static constexpr compute_capability_t compute_capability{};
 };
 
-inline arch_traits_t device_ref::arch_traits() const
-{
-  // TODO we might want to get the CC with device init and store it device struct
-  return cuda::experimental::arch_traits(
-    attr<cudaDevAttrComputeCapabilityMajor>() * 100 + attr<cudaDevAttrComputeCapabilityMinor>() * 10);
-}
+} // namespace detail
+
 } // namespace cuda::experimental
 
 #endif // _CUDAX__DEVICE_ATTRIBUTES_

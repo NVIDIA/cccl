@@ -23,6 +23,8 @@
 
 #include <cuda.h>
 
+#include <cuda/experimental/__device/arch_traits.cuh>
+#include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
@@ -39,9 +41,9 @@ struct __emplace_device
 {
   int __id_;
 
-  _CCCL_NODISCARD operator device() const noexcept;
+  _CCCL_NODISCARD operator device() const;
 
-  _CCCL_NODISCARD constexpr const __emplace_device* operator->() const noexcept;
+  _CCCL_NODISCARD constexpr const __emplace_device* operator->() const;
 };
 } // namespace detail
 
@@ -52,7 +54,7 @@ struct __emplace_device
 class device : public device_ref
 {
 public:
-  struct attrs;
+  using attrs = detail::__device_attrs;
 
   //! @brief For a given attribute, returns the type of the attribute value.
   //!
@@ -70,11 +72,16 @@ public:
 #  if defined(_CCCL_COMPILER_MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
-  constexpr device(detail::__emplace_device __ed) noexcept
+  device(detail::__emplace_device __ed)
       : device(__ed.__id_)
   {}
 #  endif
 #endif
+
+  inline arch_traits_t arch_traits() const
+  {
+    return __traits;
+  }
 
   CUcontext primary_context() const
   {
@@ -104,12 +111,11 @@ private:
   mutable CUcontext __primary_ctx = nullptr;
   mutable CUdevice __device{};
   mutable ::std::once_flag __init_once;
+  const arch_traits_t __traits;
 
-  // TODO: put a mutable thread-safe (or thread_local) cache of device
-  // properties here.
-
-  explicit constexpr device(int __id) noexcept
+  explicit device(int __id)
       : device_ref(__id)
+      , __traits(cuda::experimental::arch_traits(attrs::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
@@ -129,12 +135,12 @@ private:
 
 namespace detail
 {
-_CCCL_NODISCARD inline __emplace_device::operator device() const noexcept
+_CCCL_NODISCARD inline __emplace_device::operator device() const
 {
   return device(__id_);
 }
 
-_CCCL_NODISCARD inline constexpr const __emplace_device* __emplace_device::operator->() const noexcept
+_CCCL_NODISCARD inline constexpr const __emplace_device* __emplace_device::operator->() const
 {
   return this;
 }
