@@ -151,6 +151,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_stride;
 
     // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
+    assert(offset < num_items);
     num_items -= offset;
     int dummy[] = {(ins += offset, 0)..., 0};
     (void) &dummy;
