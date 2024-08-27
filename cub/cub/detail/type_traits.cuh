@@ -67,10 +67,6 @@ using invoke_result_t =
 template <typename Invokable, typename InitT, typename InputT>
 using accumulator_t = typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
 
-/**********************************************************************************************************************
- * Additional type traits
- **********************************************************************************************************************/
-
 template <typename T, typename... TArgs>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool are_same()
 {

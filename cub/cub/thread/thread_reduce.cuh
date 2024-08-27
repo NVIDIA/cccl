@@ -37,9 +37,11 @@
 
 #include <cuda/cmath> // ceil_div
 #include <cuda/std/__cccl/attributes.h> // _CCCL_NODISCARD
+#include <cuda/std/bit> // bit_cast
 #include <cuda/std/cstdint> // uint16_t
 #include <cuda/std/limits> // numeric_limits
 #include <cuda/std/type_traits> // __enable_if_t
+#include <cuda/std/utility> // pair
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -108,8 +110,6 @@ constexpr bool enable_dpx_reduction()
 // 15     |    7     |  5 // ***
 // 16     |    8     |  5 // ***
 
-//----------------------------------------------------------------------------------------------------------------------
-
 /**
  * @brief Sequential reduction over statically-sized array types
  *
@@ -139,8 +139,6 @@ ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH
   }
   return retval;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
 
 /// Specialization for single-element arrays
 template <int LENGTH, typename T, typename ReductionOp>
@@ -187,11 +185,11 @@ ThreadReduce(T* input, ReductionOp reduction_op)
 {
   constexpr auto IS_MIN = ::cuda::std::is_same<ReductionOp, cub::Min>::value;
   using DpxReduceOp     = ::cuda::std::_If<IS_MIN, DpxMin<T>, DpxMax<T>>;
+  using SimdType        = ::cuda::std::pair<T, T>;
   auto unsigned_input   = reinterpret_cast<unsigned*>(input);
   auto simd_reduction   = ThreadReduce<LENGTH / 2>(unsigned_input, DpxReduceOp{});
-  T simd_values[2]; // TODO (fbusato): use bit_cast
-  ::memcpy(simd_values, &simd_reduction, sizeof(simd_values));
-  auto ret_value = reduction_op(simd_values[0], simd_values[1]);
+  auto simd_values      = ::cuda::std::bit_cast<SimdType>(simd_reduction);
+  auto ret_value        = reduction_op(simd_values.first, simd_values.second);
   return (LENGTH % 2 == 0) ? ret_value : reduction_op(ret_value, input[LENGTH - 1]);
 }
 
