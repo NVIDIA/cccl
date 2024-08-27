@@ -240,6 +240,8 @@ CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
   test_unspecified_segments_random<KeyT, ValueT>(CUB_SEED(4));
 }
 
+#if defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
+
 // we can reuse the same structure of DeviceSegmentedRadixSortPairs for simplicity
 CUB_TEST("DeviceSegmentedSortPairs: 64-bit num. items and num. segments", "[pairs][segmented][sort][device]")
 {
@@ -301,3 +303,5 @@ CUB_TEST("DeviceSegmentedSortPairs: 64-bit num. items and num. segments", "[pair
   REQUIRE((ref_keys == out_keys) == true);
   REQUIRE(ref_values == out_values);
 }
+
+#endif // defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)

@@ -497,6 +497,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
+#if defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
+
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: 64-bit num. items and num. segments",
          "[keys][segmented][radix][sort][device]")
 {
@@ -548,3 +550,5 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: 64-bit num. items and num. segment
   auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, offsets);
   REQUIRE((ref_keys == out_keys) == true);
 }
+
+#endif // defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
