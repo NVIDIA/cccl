@@ -172,9 +172,10 @@ public:
   //! @rst
   //! Returns a copy of the `any_resource` used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE ::cuda::experimental::mr::any_resource<_Properties...> resource() const noexcept
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
   {
-    return __mr_;
+    return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_buffer
