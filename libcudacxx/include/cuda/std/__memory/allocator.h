@@ -32,7 +32,7 @@
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib>
 
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
 #  include <memory>

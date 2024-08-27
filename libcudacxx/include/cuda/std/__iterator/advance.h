@@ -28,8 +28,8 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdlib>
 #include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
