@@ -34,28 +34,27 @@ namespace __rbegin
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<_Tp*>
-  operator()(_Tp (&__array)[_Np]) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator<_Tp*> operator()(_Tp (&__array)[_Np]) const noexcept
   {
     return reverse_iterator<_Tp*>(__array + _Np);
   }
 
   template <class _Ep>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<const _Ep*>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator<const _Ep*>
   operator()(initializer_list<_Ep> __il) const noexcept
   {
     return reverse_iterator<const _Ep*>(__il.end());
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
     noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
   {
     return __c.rbegin();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
     noexcept(noexcept(__c.rbegin())) -> decltype(__c.rbegin())
   {
     return __c.rbegin();
@@ -73,28 +72,27 @@ namespace __rend
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<_Tp*>
-  operator()(_Tp (&__array)[_Np]) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator<_Tp*> operator()(_Tp (&__array)[_Np]) const noexcept
   {
     return reverse_iterator<_Tp*>(__array);
   }
 
   template <class _Ep>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reverse_iterator<const _Ep*>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator<const _Ep*>
   operator()(initializer_list<_Ep> __il) const noexcept
   {
     return reverse_iterator<const _Ep*>(__il.begin());
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(_Cp& __c) const
     noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
   {
     return __c.rend();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
     noexcept(noexcept(__c.rend())) -> decltype(__c.rend())
   {
     return __c.rend();
@@ -112,7 +110,7 @@ namespace __crbegin
 struct __fn
 {
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
     noexcept(noexcept(_CUDA_VSTD::rbegin(__c))) -> decltype(_CUDA_VSTD::rbegin(__c))
   {
     return _CUDA_VSTD::rbegin(__c);
@@ -130,7 +128,7 @@ namespace __crend
 struct __fn
 {
   template <class _Cp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto operator()(const _Cp& __c) const
     noexcept(noexcept(_CUDA_VSTD::rend(__c))) -> decltype(_CUDA_VSTD::rend(__c))
   {
     return _CUDA_VSTD::rend(__c);

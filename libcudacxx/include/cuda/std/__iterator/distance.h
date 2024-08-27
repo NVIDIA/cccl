@@ -33,7 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
 __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 {
   typename iterator_traits<_InputIter>::difference_type __r(0);
@@ -45,14 +45,14 @@ __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 }
 
 template <class _RandIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_RandIter>::difference_type
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_RandIter>::difference_type
 __distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
 {
   return __last - __first;
 }
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
   return _CUDA_VSTD::__distance(__first, __last, typename iterator_traits<_InputIter>::iterator_category());
@@ -69,8 +69,7 @@ struct __fn
 {
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr iter_difference_t<_Ip>
-  operator()(_Ip __first, _Sp __last) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
   {
     iter_difference_t<_Ip> __n = 0;
     while (__first != __last)
@@ -83,8 +82,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr iter_difference_t<_Ip>
-  operator()(_Ip&& __first, _Sp __last) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
   {
     if constexpr (sized_sentinel_for<_Sp, remove_cvref_t<_Ip>>)
     {
@@ -99,7 +97,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Rp)
   _LIBCUDACXX_REQUIRES((range<_Rp>) )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
   {
     if constexpr (sized_range<_Rp>)
     {

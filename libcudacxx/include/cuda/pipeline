@@ -179,17 +179,17 @@ private:
   friend class pipeline;
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope>
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope>
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 size_t __producer_count);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope>
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 pipeline_role __role);
@@ -217,7 +217,7 @@ public:
   pipeline& operator=(pipeline&&)      = delete;
   pipeline& operator=(const pipeline&) = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY ~pipeline()
+  _LIBCUDACXX_HIDE_FROM_ABI ~pipeline()
   {
     if (__active)
     {
@@ -225,7 +225,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY bool quit()
+  _LIBCUDACXX_HIDE_FROM_ABI bool quit()
   {
     bool __elected;
     uint32_t __sub_count;
@@ -257,13 +257,13 @@ public:
     return __released;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void producer_acquire()
+  _LIBCUDACXX_HIDE_FROM_ABI void producer_acquire()
   {
     barrier<_Scope>& __stage_barrier = __shared_state_get_stage(__head)->__consumed;
     __stage_barrier.wait_parity(__consumed_phase_parity);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void producer_commit()
+  _LIBCUDACXX_HIDE_FROM_ABI void producer_commit()
   {
     barrier<_Scope>& __stage_barrier = __shared_state_get_stage(__head)->__produced;
     (void) __memcpy_completion_impl::__defer(
@@ -276,13 +276,13 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void consumer_wait()
+  _LIBCUDACXX_HIDE_FROM_ABI void consumer_wait()
   {
     barrier<_Scope>& __stage_barrier = __shared_state_get_stage(__tail)->__produced;
     __stage_barrier.wait_parity(__produced_phase_parity);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void consumer_release()
+  _LIBCUDACXX_HIDE_FROM_ABI void consumer_release()
   {
     (void) __shared_state_get_stage(__tail)->__consumed.arrive();
     if (++__tail == __stages_count)
@@ -293,7 +293,7 @@ public:
   }
 
   template <class _Rep, class _Period>
-  _LIBCUDACXX_INLINE_VISIBILITY bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
+  _LIBCUDACXX_HIDE_FROM_ABI bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
   {
     barrier<_Scope>& __stage_barrier = __shared_state_get_stage(__tail)->__produced;
     return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
@@ -302,7 +302,7 @@ public:
   }
 
   template <class _Clock, class _Duration>
-  _LIBCUDACXX_INLINE_VISIBILITY bool
+  _LIBCUDACXX_HIDE_FROM_ABI bool
   consumer_wait_until(const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time_point)
   {
     return consumer_wait_for(__time_point - _Clock::now());
@@ -319,7 +319,7 @@ private:
   const bool __partitioned : 1;
   char* const __shared_state;
 
-  _LIBCUDACXX_INLINE_VISIBILITY pipeline(char* __shared_state, uint8_t __stages_count, bool __partitioned)
+  _LIBCUDACXX_HIDE_FROM_ABI pipeline(char* __shared_state, uint8_t __stages_count, bool __partitioned)
       : __head(0)
       , __tail(0)
       , __stages_count(__stages_count)
@@ -330,37 +330,37 @@ private:
       , __shared_state(__shared_state)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY __pipeline_stage<_Scope>* __shared_state_get_stage(uint8_t __stage)
+  _LIBCUDACXX_HIDE_FROM_ABI __pipeline_stage<_Scope>* __shared_state_get_stage(uint8_t __stage)
   {
     ptrdiff_t __stage_offset = __stage * sizeof(__pipeline_stage<_Scope>);
     return reinterpret_cast<__pipeline_stage<_Scope>*>(__shared_state + __stage_offset);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY atomic<uint32_t, _Scope>* __shared_state_get_refcount()
+  _LIBCUDACXX_HIDE_FROM_ABI atomic<uint32_t, _Scope>* __shared_state_get_refcount()
   {
     ptrdiff_t __refcount_offset = __stages_count * sizeof(__pipeline_stage<_Scope>);
     return reinterpret_cast<atomic<uint32_t, _Scope>*>(__shared_state + __refcount_offset);
   }
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope>
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope>
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 size_t __producer_count);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope>
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 pipeline_role __role);
 };
 
 template <class _Group, thread_scope _Scope, uint8_t _Stages_count>
-_LIBCUDACXX_INLINE_VISIBILITY pipeline<_Scope>
+_LIBCUDACXX_HIDE_FROM_ABI pipeline<_Scope>
 make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count>* __shared_state)
 {
   const uint32_t __group_size  = static_cast<uint32_t>(__group.size());
@@ -381,7 +381,7 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
 }
 
 template <class _Group, thread_scope _Scope, uint8_t _Stages_count>
-_LIBCUDACXX_INLINE_VISIBILITY pipeline<_Scope> make_pipeline(
+_LIBCUDACXX_HIDE_FROM_ABI pipeline<_Scope> make_pipeline(
   const _Group& __group, pipeline_shared_state<_Scope, _Stages_count>* __shared_state, size_t __producer_count)
 {
   const uint32_t __group_size  = static_cast<uint32_t>(__group.size());
@@ -403,7 +403,7 @@ _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Scope> make_pipeline(
 }
 
 template <class _Group, thread_scope _Scope, uint8_t _Stages_count>
-_LIBCUDACXX_INLINE_VISIBILITY pipeline<_Scope>
+_LIBCUDACXX_HIDE_FROM_ABI pipeline<_Scope>
 make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count>* __shared_state, pipeline_role __role)
 {
   const uint32_t __group_size  = static_cast<uint32_t>(__group.size());
@@ -473,21 +473,21 @@ public:
   pipeline& operator=(pipeline&&)      = delete;
   pipeline& operator=(const pipeline&) = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY ~pipeline() {}
+  _LIBCUDACXX_HIDE_FROM_ABI ~pipeline() {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY bool quit()
+  _LIBCUDACXX_HIDE_FROM_ABI bool quit()
   {
     return true;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void producer_acquire() {}
+  _LIBCUDACXX_HIDE_FROM_ABI void producer_acquire() {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY void producer_commit()
+  _LIBCUDACXX_HIDE_FROM_ABI void producer_commit()
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, asm volatile("cp.async.commit_group;"); ++__head;)
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void consumer_wait()
+  _LIBCUDACXX_HIDE_FROM_ABI void consumer_wait()
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
@@ -498,10 +498,10 @@ public:
       ++__tail;)
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void consumer_release() {}
+  _LIBCUDACXX_HIDE_FROM_ABI void consumer_release() {}
 
   template <class _Rep, class _Period>
-  _LIBCUDACXX_INLINE_VISIBILITY bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
+  _LIBCUDACXX_HIDE_FROM_ABI bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
   {
     (void) __duration;
     consumer_wait();
@@ -509,7 +509,7 @@ public:
   }
 
   template <class _Clock, class _Duration>
-  _LIBCUDACXX_INLINE_VISIBILITY bool
+  _LIBCUDACXX_HIDE_FROM_ABI bool
   consumer_wait_until(const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time_point)
   {
     (void) __time_point;
@@ -521,18 +521,18 @@ private:
   uint8_t __head;
   uint8_t __tail;
 
-  _LIBCUDACXX_INLINE_VISIBILITY pipeline()
+  _LIBCUDACXX_HIDE_FROM_ABI pipeline()
       : __head(0)
       , __tail(0)
   {}
 
-  friend _LIBCUDACXX_INLINE_VISIBILITY inline pipeline<thread_scope_thread> make_pipeline();
+  friend _LIBCUDACXX_HIDE_FROM_ABI inline pipeline<thread_scope_thread> make_pipeline();
 
   template <uint8_t _Prior>
-  friend _LIBCUDACXX_INLINE_VISIBILITY void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline);
+  friend _LIBCUDACXX_HIDE_FROM_ABI void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _LIBCUDACXX_INLINE_VISIBILITY pipeline<_Pipeline_scope> __make_pipeline(
+  friend _LIBCUDACXX_HIDE_FROM_ABI pipeline<_Pipeline_scope> __make_pipeline(
     const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 };
 
@@ -589,20 +589,20 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-_LIBCUDACXX_INLINE_VISIBILITY inline pipeline<thread_scope_thread> make_pipeline()
+_LIBCUDACXX_HIDE_FROM_ABI inline pipeline<thread_scope_thread> make_pipeline()
 {
   return pipeline<thread_scope_thread>();
 }
 
 template <uint8_t _Prior>
-_LIBCUDACXX_INLINE_VISIBILITY void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline)
+_LIBCUDACXX_HIDE_FROM_ABI void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80, device::__pipeline_consumer_wait<_Prior>(__pipeline);
                __pipeline.__tail = __pipeline.__head - _Prior;)
 }
 
 template <thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY void
+_LIBCUDACXX_HIDE_FROM_ABI void
 pipeline_producer_commit(pipeline<thread_scope_thread>& __pipeline, barrier<_Scope>& __barrier)
 {
   (void) __pipeline;
@@ -612,7 +612,7 @@ pipeline_producer_commit(pipeline<thread_scope_thread>& __pipeline, barrier<_Sco
 }
 
 template <typename _Group, class _Tp, typename _Size, thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __memcpy_async_pipeline(
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_pipeline(
   _Group const& __group, _Tp* __destination, _Tp const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
   // 1. Set the completion mechanisms that can be used.
@@ -639,7 +639,7 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment __memcpy_async_pipeline
 }
 
 template <typename _Group, class _Type, thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group, _Type* __destination, _Type const* __source, std::size_t __size, pipeline<_Scope>& __pipeline)
 {
   return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
@@ -650,7 +650,7 @@ template <typename _Group,
           std::size_t _Alignment,
           thread_scope _Scope,
           std::size_t _Larger_alignment = (alignof(_Type) > _Alignment) ? alignof(_Type) : _Alignment>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Type* __destination,
   _Type const* __source,
@@ -661,14 +661,14 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
 }
 
 template <class _Type, typename _Size, thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(_Type* __destination, _Type const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
   return __memcpy_async_pipeline(__single_thread_group{}, __destination, __source, __size, __pipeline);
 }
 
 template <typename _Group, thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group, void* __destination, void const* __source, std::size_t __size, pipeline<_Scope>& __pipeline)
 {
   return __memcpy_async_pipeline(
@@ -676,7 +676,7 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
 }
 
 template <typename _Group, std::size_t _Alignment, thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
   void const* __source,
@@ -688,7 +688,7 @@ _LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment memcpy_async(
 }
 
 template <typename _Size, thread_scope _Scope>
-_LIBCUDACXX_INLINE_VISIBILITY async_contract_fulfillment
+_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
   return __memcpy_async_pipeline(

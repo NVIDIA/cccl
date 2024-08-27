@@ -136,8 +136,7 @@ using make_unsigned_t = __make_unsigned_t<_Tp>;
 #endif
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr __make_unsigned_t<_Tp>
-__to_unsigned_like(_Tp __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 {
   return static_cast<__make_unsigned_t<_Tp>>(__x);
 }

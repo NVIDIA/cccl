@@ -290,14 +290,14 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 public:
   using value_type = _Tp;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(const value_type& __re = value_type(),
-                                                  const value_type& __im = value_type())
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr complex(const value_type& __re = value_type(),
+                                              const value_type& __im = value_type())
       : __re_(__re)
       , __im_(__im)
   {}
 
   template <class _Up, __enable_if_t<__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(const complex<_Up>& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
@@ -305,12 +305,12 @@ public:
   template <class _Up,
             __enable_if_t<!__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0,
             __enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>              = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr complex(const complex<_Up>& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const value_type& __re)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator=(const value_type& __re)
   {
     __re_ = __re;
     __im_ = value_type();
@@ -318,7 +318,7 @@ public:
   }
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const complex<_Up>& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator=(const complex<_Up>& __c)
   {
     __re_ = __c.real();
     __im_ = __c.imag();
@@ -327,13 +327,13 @@ public:
 
 #if !defined(_CCCL_COMPILER_NVRTC)
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY complex(const ::std::complex<_Up>& __other)
+  _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
       : __re_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other))
       , __im_(_LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
   {}
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const ::std::complex<_Up>& __other)
+  _LIBCUDACXX_HIDE_FROM_ABI complex& operator=(const ::std::complex<_Up>& __other)
   {
     __re_ = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
     __im_ = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
@@ -346,60 +346,60 @@ public:
   }
 #endif // !_CCCL_COMPILER_NVRTC
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type real() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type real() const
   {
     return __re_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type imag() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type imag() const
   {
     return __im_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void real(value_type __re)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void real(value_type __re)
   {
     __re_ = __re;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void imag(value_type __im)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void imag(value_type __im)
   {
     __im_ = __im;
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  _LIBCUDACXX_INLINE_VISIBILITY value_type real() const volatile
+  _LIBCUDACXX_HIDE_FROM_ABI value_type real() const volatile
   {
     return __re_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY value_type imag() const volatile
+  _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const volatile
   {
     return __im_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void real(value_type __re) volatile
+  _LIBCUDACXX_HIDE_FROM_ABI void real(value_type __re) volatile
   {
     __re_ = __re;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) volatile
+  _LIBCUDACXX_HIDE_FROM_ABI void imag(value_type __im) volatile
   {
     __im_ = __im;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const value_type& __re)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator+=(const value_type& __re)
   {
     __re_ += __re;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator-=(const value_type& __re)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator-=(const value_type& __re)
   {
     __re_ -= __re;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator*=(const value_type& __re)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator*=(const value_type& __re)
   {
     __re_ *= __re;
     __im_ *= __re;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator/=(const value_type& __re)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator/=(const value_type& __re)
   {
     __re_ /= __re;
     __im_ /= __re;
@@ -407,14 +407,14 @@ public:
   }
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Up>& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Up>& __c)
   {
     __re_ += __c.real();
     __im_ += __c.imag();
     return *this;
   }
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator-=(const complex<_Up>& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex& operator-=(const complex<_Up>& __c)
   {
     __re_ -= __c.real();
     __im_ -= __c.imag();
@@ -431,14 +431,14 @@ struct __is_complex<complex<_Tp>> : true_type
 {};
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
 operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs * complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
 }
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
 operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
@@ -447,7 +447,7 @@ operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 
 // 26.3.6 operators:
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
@@ -456,8 +456,7 @@ operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator+(const complex<_Tp>& __x, const _Tp& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator+(const complex<_Tp>& __x, const _Tp& __y)
 {
   complex<_Tp> __t(__x);
   __t += __y;
@@ -465,8 +464,7 @@ operator+(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator+(const _Tp& __x, const complex<_Tp>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator+(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__y);
   __t += __x;
@@ -474,7 +472,7 @@ operator+(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
@@ -483,8 +481,7 @@ operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator-(const complex<_Tp>& __x, const _Tp& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator-(const complex<_Tp>& __x, const _Tp& __y)
 {
   complex<_Tp> __t(__x);
   __t -= __y;
@@ -492,15 +489,14 @@ operator-(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator-(const _Tp& __x, const complex<_Tp>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator-(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(-__y);
   __t += __x;
   return __t;
 }
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
 operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   _Tp __a = __z.real();
@@ -618,8 +614,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator*(const complex<_Tp>& __x, const _Tp& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator*(const complex<_Tp>& __x, const _Tp& __y)
 {
   complex<_Tp> __t(__x);
   __t *= __y;
@@ -627,8 +622,7 @@ operator*(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator*(const _Tp& __x, const complex<_Tp>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator*(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__y);
   __t *= __x;
@@ -636,7 +630,7 @@ operator*(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
 operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
   int __ilogbw = 0;
@@ -740,15 +734,13 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator/(const complex<_Tp>& __x, const _Tp& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator/(const complex<_Tp>& __x, const _Tp& __y)
 {
   return complex<_Tp>(__x.real() / __y, __x.imag() / __y);
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
-operator/(const _Tp& __x, const complex<_Tp>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
   __t /= __y;
@@ -756,50 +748,50 @@ operator/(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator+(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator+(const complex<_Tp>& __x)
 {
   return __x;
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator-(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> operator-(const complex<_Tp>& __x)
 {
   return complex<_Tp>(-__x.real(), -__x.imag());
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return __x.real() == __y.real() && __x.imag() == __y.imag();
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const _Tp& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const _Tp& __y)
 {
   return __x.real() == __y && __x.imag() == _Tp(0);
 }
 
 #if _CCCL_STD_VER <= 2017
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator==(const _Tp& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const _Tp& __x, const complex<_Tp>& __y)
 {
   return __x == __y.real() && _Tp(0) == __y.imag();
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator!=(const complex<_Tp>& __x, const _Tp& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const complex<_Tp>& __x, const _Tp& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator!=(const _Tp& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const _Tp& __x, const complex<_Tp>& __y)
 {
   return !(__x == __y);
 }
@@ -807,8 +799,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator!=(const _Tp& _
 
 #if !defined(_CCCL_COMPILER_NVRTC)
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
-operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
   return __x.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__y)
       && __x.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__y);
@@ -816,23 +807,20 @@ operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 
 #  if _CCCL_STD_VER <= 2017
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
-operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
   return __y.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__x)
       && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
-operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
-operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 {
   return !(__x == __y);
 }
@@ -842,7 +830,7 @@ operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y)
 // real
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp real(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp real(const complex<_Tp>& __c)
 {
   return __c.real();
 }
@@ -876,7 +864,7 @@ template <class _Tp>
 using __libcpp_complex_complex_type = typename __libcpp_complex_overload_traits<_Tp>::_ComplexType;
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> real(_Tp __re)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> real(_Tp __re)
 {
   return __re;
 }
@@ -884,13 +872,13 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_valu
 // imag
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp imag(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp imag(const complex<_Tp>& __c)
 {
   return __c.imag();
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> imag(_Tp)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> imag(_Tp)
 {
   return 0;
 }
@@ -898,7 +886,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_valu
 // abs
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp abs(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI _Tp abs(const complex<_Tp>& __c)
 {
   return _CUDA_VSTD::hypot(__c.real(), __c.imag());
 }
@@ -906,21 +894,21 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _Tp abs(const complex<_Tp>& __c)
 // arg
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp arg(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI _Tp arg(const complex<_Tp>& __c)
 {
   return _CUDA_VSTD::atan2(__c.imag(), __c.real());
 }
 
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_same<_Tp, long double>::value, long double> arg(_Tp __re)
+inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_same<_Tp, long double>::value, long double> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2l(0.L, __re);
 }
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_integral<_Tp>::value || is_same<_Tp, double>::value, double>
+inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value || is_same<_Tp, double>::value, double>
 arg(_Tp __re)
 {
   // integrals need to be promoted to double
@@ -928,7 +916,7 @@ arg(_Tp __re)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_same<_Tp, float>::value, float> arg(_Tp __re)
+inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_same<_Tp, float>::value, float> arg(_Tp __re)
 {
   return _CUDA_VSTD::atan2f(0.F, __re);
 }
@@ -936,7 +924,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_same<_Tp, float>::value, f
 // norm
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp norm(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp norm(const complex<_Tp>& __c)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__c.real()))
   {
@@ -950,7 +938,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp norm(const comple
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> norm(_Tp __re)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> norm(_Tp __re)
 {
   return static_cast<__libcpp_complex_value_type<_Tp>>(__re) * __re;
 }
@@ -958,13 +946,13 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_valu
 // conj
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp> conj(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> conj(const complex<_Tp>& __c)
 {
   return complex<_Tp>(__c.real(), -__c.imag());
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_complex_type<_Tp> conj(_Tp __re)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_complex_type<_Tp> conj(_Tp __re)
 {
   return __libcpp_complex_complex_type<_Tp>(__re);
 }
@@ -972,7 +960,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __libcpp_complex_comp
 // proj
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> proj(const complex<_Tp>& __c)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> proj(const complex<_Tp>& __c)
 {
   complex<_Tp> __r = __c;
   if (_CUDA_VSTD::__constexpr_isinf(__c.real()) || _CUDA_VSTD::__constexpr_isinf(__c.imag()))
@@ -983,7 +971,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> proj(const complex<_Tp>& __c)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<__is_complex_float<_Tp>::value, __libcpp_complex_complex_type<_Tp>>
+inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<__is_complex_float<_Tp>::value, __libcpp_complex_complex_type<_Tp>>
 proj(_Tp __re)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__re))
@@ -994,7 +982,7 @@ proj(_Tp __re)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_integral<_Tp>::value, __libcpp_complex_complex_type<_Tp>>
+inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value, __libcpp_complex_complex_type<_Tp>>
 proj(_Tp __re)
 {
   return __libcpp_complex_complex_type<_Tp>(__re);
@@ -1003,7 +991,7 @@ proj(_Tp __re)
 // polar
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> polar(const _Tp& __rho, const _Tp& __theta = _Tp())
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> polar(const _Tp& __rho, const _Tp& __theta = _Tp())
 {
   if (_CUDA_VSTD::__constexpr_isnan(__rho) || _CUDA_VSTD::signbit(__rho))
   {
@@ -1041,7 +1029,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> polar(const _Tp& __rho, const _Tp& __
 // log
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> log(const complex<_Tp>& __x)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> log(const complex<_Tp>& __x)
 {
   return complex<_Tp>(_CUDA_VSTD::log(_CUDA_VSTD::abs(__x)), _CUDA_VSTD::arg(__x));
 }
@@ -1049,7 +1037,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> log(const complex<_Tp>& __x)
 // log10
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> log10(const complex<_Tp>& __x)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> log10(const complex<_Tp>& __x)
 {
   return _CUDA_VSTD::log(__x) / _CUDA_VSTD::log(_Tp(10));
 }
@@ -1057,7 +1045,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> log10(const complex<_Tp>& __x)
 // sqrt
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> sqrt(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> sqrt(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
   {
@@ -1079,7 +1067,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> sqrt(const complex<_Tp>& __x)
 // exp
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> exp(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> exp(const complex<_Tp>& __x)
 {
   _Tp __i = __x.imag();
   if (__i == _Tp(0))
@@ -1111,7 +1099,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> exp(const complex<_Tp>& __x)
 // pow
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> pow(const complex<_Tp>& __x, const complex<_Tp>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> pow(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   return _CUDA_VSTD::exp(__y * _CUDA_VSTD::log(__x));
 }
@@ -1120,22 +1108,21 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244)
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>>
-pow(const complex<_Tp>& __x, const complex<_Up>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<__common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
 }
 
 template <class _Tp, class _Up, __enable_if_t<!__is_complex<_Up>::value, int> = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<__common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
 {
   using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
 }
 
 template <class _Tp, class _Up, __enable_if_t<!__is_complex<_Tp>::value, int> = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<__common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<__common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<__common_type_t<_Tp, _Up>>;
   return _CUDA_VSTD::pow(__result_type(__x, 0), __result_type(__y));
@@ -1146,7 +1133,7 @@ _CCCL_DIAG_POP
 // __sqr, computes pow(x, 2)
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> __sqr(const complex<_Tp>& __x)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> __sqr(const complex<_Tp>& __x)
 {
   return complex<_Tp>((__x.real() - __x.imag()) * (__x.real() + __x.imag()), _Tp(2) * __x.real() * __x.imag());
 }
@@ -1154,7 +1141,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> __sqr(const complex<_Tp>& __x)
 // asinh
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> asinh(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> asinh(const complex<_Tp>& __x)
 {
   const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
@@ -1192,7 +1179,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> asinh(const complex<_Tp>& __x)
 // acosh
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> acosh(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> acosh(const complex<_Tp>& __x)
 {
   const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
@@ -1237,7 +1224,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> acosh(const complex<_Tp>& __x)
 // atanh
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> atanh(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> atanh(const complex<_Tp>& __x)
 {
   const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
@@ -1271,7 +1258,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> atanh(const complex<_Tp>& __x)
 // sinh
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> sinh(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> sinh(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__x.real()) && !_CUDA_VSTD::__constexpr_isfinite(__x.imag()))
   {
@@ -1292,7 +1279,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> sinh(const complex<_Tp>& __x)
 // cosh
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> cosh(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> cosh(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__x.real()) && !_CUDA_VSTD::__constexpr_isfinite(__x.imag()))
   {
@@ -1317,7 +1304,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> cosh(const complex<_Tp>& __x)
 // tanh
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> tanh(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tanh(const complex<_Tp>& __x)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
   {
@@ -1346,7 +1333,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> tanh(const complex<_Tp>& __x)
 // asin
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> asin(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> asin(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = _CUDA_VSTD::asinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -1355,7 +1342,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> asin(const complex<_Tp>& __x)
 // acos
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> acos(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> acos(const complex<_Tp>& __x)
 {
   const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
   if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
@@ -1405,7 +1392,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> acos(const complex<_Tp>& __x)
 // atan
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> atan(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> atan(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = _CUDA_VSTD::atanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -1414,7 +1401,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> atan(const complex<_Tp>& __x)
 // sin
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> sin(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> sin(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = _CUDA_VSTD::sinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -1423,7 +1410,7 @@ _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> sin(const complex<_Tp>& __x)
 // cos
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> cos(const complex<_Tp>& __x)
+inline _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> cos(const complex<_Tp>& __x)
 {
   return _CUDA_VSTD::cosh(complex<_Tp>(-__x.imag(), __x.real()));
 }
@@ -1431,7 +1418,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> cos(const complex<_Tp>& __x)
 // tan
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY complex<_Tp> tan(const complex<_Tp>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tan(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = _CUDA_VSTD::tanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
@@ -1470,52 +1457,51 @@ inline namespace complex_literals
 // NOTE: if you get a warning from GCC <7 here that "literal operator suffixes not preceded by ‘_’ are reserved for
 // future standardization" then we are sorry. The warning was implemented before GCC 7, but can only be disabled since
 // GCC 7. See also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69523
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<long double> operator""il(long double __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<long double> operator""il(long double __im)
 {
   return {0.0l, __im};
 }
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<long double>
-operator""il(unsigned long long __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<long double> operator""il(unsigned long long __im)
 {
   return {0.0l, static_cast<long double>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<double> operator""i(long double __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(long double __im)
 {
   return {0.0, static_cast<double>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<double> operator""i(unsigned long long __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(unsigned long long __im)
 {
   return {0.0, static_cast<double>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<float> operator""if(long double __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(long double __im)
 {
   return {0.0f, static_cast<float>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<float> operator""if(unsigned long long __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long long __im)
 {
   return {0.0f, static_cast<float>(__im)};
 }
 #  else
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<double> operator""i(double __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(double __im)
 {
   return {0.0, static_cast<double>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<double> operator""i(unsigned long long __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<double> operator""i(unsigned long long __im)
 {
   return {0.0, static_cast<double>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<float> operator""if(double __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(double __im)
 {
   return {0.0f, static_cast<float>(__im)};
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr complex<float> operator""if(unsigned long long __im)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr complex<float> operator""if(unsigned long long __im)
 {
   return {0.0f, static_cast<float>(__im)};
 }

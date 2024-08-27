@@ -38,18 +38,18 @@ protected:
   typename __Operation::second_argument_type value;
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY binder2nd(const __Operation& __x, const typename __Operation::second_argument_type __y)
+  _LIBCUDACXX_HIDE_FROM_ABI binder2nd(const __Operation& __x, const typename __Operation::second_argument_type __y)
       : op(__x)
       , value(__y)
   {}
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type
+  _LIBCUDACXX_HIDE_FROM_ABI typename __Operation::result_type
   operator()(typename __Operation::first_argument_type& __x) const
   {
     return op(__x, value);
   }
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type
+  _LIBCUDACXX_HIDE_FROM_ABI typename __Operation::result_type
   operator()(const typename __Operation::first_argument_type& __x) const
   {
     return op(__x, value);
@@ -57,7 +57,7 @@ public:
 };
 
 template <class __Operation, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY binder2nd<__Operation>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI binder2nd<__Operation>
 bind2nd(const __Operation& __op, const _Tp& __x)
 {
   return binder2nd<__Operation>(__op, __x);

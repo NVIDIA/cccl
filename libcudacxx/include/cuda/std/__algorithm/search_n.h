@@ -28,13 +28,13 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-__search_n(_ForwardIterator __first,
-           _ForwardIterator __last,
-           _Size __count,
-           const _Tp& __value_,
-           _BinaryPredicate __pred,
-           forward_iterator_tag)
+_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __search_n(
+  _ForwardIterator __first,
+  _ForwardIterator __last,
+  _Size __count,
+  const _Tp& __value_,
+  _BinaryPredicate __pred,
+  forward_iterator_tag)
 {
   if (__count <= 0)
   {
@@ -79,14 +79,13 @@ __search_n(_ForwardIterator __first,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, class _Tp>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
-__search_n(_RandomAccessIterator __first,
-           _RandomAccessIterator __last,
-           _Size __count,
-           const _Tp& __value_,
-           _BinaryPredicate __pred,
-           random_access_iterator_tag)
+_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __search_n(
+  _RandomAccessIterator __first,
+  _RandomAccessIterator __last,
+  _Size __count,
+  const _Tp& __value_,
+  _BinaryPredicate __pred,
+  random_access_iterator_tag)
 {
   if (__count <= 0)
   {
@@ -134,7 +133,7 @@ __search_n(_RandomAccessIterator __first,
 }
 
 template <class _ForwardIterator, class _Size, class _Tp, class _BinaryPredicate>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_, _BinaryPredicate __pred)
 {
   return _CUDA_VSTD::__search_n<__add_lvalue_reference_t<_BinaryPredicate>>(
@@ -147,7 +146,7 @@ search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const
 }
 
 template <class _ForwardIterator, class _Size, class _Tp>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_)
 {
   return _CUDA_VSTD::search_n(__first, __last, __convert_to_integral(__count), __value_, __equal_to{});

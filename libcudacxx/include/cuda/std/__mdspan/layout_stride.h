@@ -486,12 +486,10 @@ struct layout_stride
         extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
         _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
 #  else
-    template<class _StridedLayoutMapping>
-    requires(
-         __detail::__layout_mapping_alike<_StridedLayoutMapping> &&
-         (extents_type::rank() == _StridedLayoutMapping::extents_type::rank()) &&
-         _StridedLayoutMapping::is_always_strided()
-    )
+    template <class _StridedLayoutMapping>
+      requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
+               && (extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
+               && _StridedLayoutMapping::is_always_strided())
 #  endif
     __MDSPAN_INLINE_FUNCTION
     friend constexpr bool operator==(const mapping& __x, const _StridedLayoutMapping& __y) noexcept

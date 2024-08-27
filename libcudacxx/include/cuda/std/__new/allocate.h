@@ -47,7 +47,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __is_overaligned_for_new(size_t __align) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_overaligned_for_new(size_t __align) noexcept
 {
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
   return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
@@ -57,7 +57,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __is_overaligned_for_new(siz
 }
 
 template <class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_operator_new(_Args... __args)
+_LIBCUDACXX_HIDE_FROM_ABI void* __libcpp_operator_new(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
 #if 0 && __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
@@ -68,7 +68,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_operator_new(_Args... __args)
 }
 
 template <class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY void __libcpp_operator_delete(_Args... __args)
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_operator_delete(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
 #if 0 && __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
@@ -78,7 +78,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_operator_delete(_Args... __args)
 #endif // !__builtin_operator_new || !__builtin_operator_delete
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_allocate(size_t __size, size_t __align)
+inline _LIBCUDACXX_HIDE_FROM_ABI void* __libcpp_allocate(size_t __size, size_t __align)
 {
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align))
@@ -92,7 +92,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_allocate(size_t __size, size
 }
 
 template <class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY void __do_deallocate_handle_size(void* __ptr, size_t __size, _Args... __args)
+_LIBCUDACXX_HIDE_FROM_ABI void __do_deallocate_handle_size(void* __ptr, size_t __size, _Args... __args)
 {
 #ifdef _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
   (void) __size;
@@ -102,7 +102,7 @@ _LIBCUDACXX_INLINE_VISIBILITY void __do_deallocate_handle_size(void* __ptr, size
 #endif // !_LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate(void* __ptr, size_t __size, size_t __align)
+inline _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_deallocate(void* __ptr, size_t __size, size_t __align)
 {
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align))
@@ -115,7 +115,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate(void* __ptr, size_
   return __do_deallocate_handle_size(__ptr, __size);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __ptr, size_t __align)
+inline _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_deallocate_unsized(void* __ptr, size_t __align)
 {
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align))

@@ -263,14 +263,14 @@
 #    define _LIBCUDACXX_CONCEPT _LIBCUDACXX_INLINE_VAR constexpr bool
 
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT(_NAME, ...)                                            \
-      _LIBCUDACXX_INLINE_VISIBILITY auto _NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_impl_              \
+      _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_impl_                  \
           _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_##__VA_ARGS__                                       \
         >                                                                                       \
       {}                                                                                        \
       template <typename... _As>                                                                \
-      _LIBCUDACXX_INLINE_VISIBILITY char _NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_(                  \
+      _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_(                      \
         _Concept::_Tag<_As...>*, decltype(&_NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_impl_<_As...>)); \
-      _LIBCUDACXX_INLINE_VISIBILITY char(&_NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_(...))[2] /**/
+      _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_(...))[2] /**/
 #    if defined(_MSC_VER) && !defined(__clang__)
 #      define _LIBCUDACXX_CONCEPT_FRAGMENT_TRUE(...) \
         _Concept::_Is_true<decltype(_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()
@@ -345,14 +345,14 @@ using _Requires_t = typename _Select<_Bp>::template type<_Tp>;
 template <typename...>
 struct _Tag;
 template <class>
-_LIBCUDACXX_INLINE_VISIBILITY inline constexpr bool _Is_true()
+_LIBCUDACXX_HIDE_FROM_ABI inline constexpr bool _Is_true()
 {
   return true;
 }
 
 #  if defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_MSVC)
 template <bool _Bp>
-_LIBCUDACXX_INLINE_VISIBILITY _Concept::_Enable_if_t<_Bp> _Requires()
+_LIBCUDACXX_HIDE_FROM_ABI _Concept::_Enable_if_t<_Bp> _Requires()
 {}
 #  else
 template <bool _Bp, _Concept::_Enable_if_t<_Bp, int> = 0>

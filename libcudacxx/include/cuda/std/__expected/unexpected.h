@@ -70,28 +70,28 @@ class unexpected
 
 public:
   // [expected.un.ctor]
-  _LIBCUDACXX_HIDE_FROM_ABI unexpected(const unexpected&) = default;
-  _LIBCUDACXX_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
+  _CCCL_HIDE_FROM_ABI unexpected(const unexpected&) = default;
+  _CCCL_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class _Error = _Err)
   _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, unexpected)
                         && !_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t)
                         && _CCCL_TRAIT(is_constructible, _Err, _Error)))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit unexpected(_Error&& __error) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(_Error&& __error) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Error))
       : __unex_(_CUDA_VSTD::forward<_Error>(__error))
   {}
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit unexpected(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(
     in_place_t,
     initializer_list<_Up> __il,
     _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
@@ -102,29 +102,28 @@ public:
   constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Err& error() const& noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Err& error() & noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Err&& error() const&& noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr _Err&& error() && noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
   // [expected.un.swap]
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void
-  swap(unexpected& __other) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(unexpected& __other) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err))
   {
     static_assert(_CCCL_TRAIT(is_swappable, _Err), "E must be swappable");
     using _CUDA_VSTD::swap;
@@ -133,7 +132,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
-  friend _LIBCUDACXX_INLINE_VISIBILITY constexpr void
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void
   swap(unexpected& __lhs, unexpected& __rhs) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err2))
   {
     __lhs.swap(__rhs);
@@ -142,7 +141,7 @@ public:
 
   // [expected.un.eq]
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() == __rhs.error())))
   {
@@ -150,7 +149,7 @@ public:
   }
 #  if _CCCL_STD_VER < 2020
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() != __rhs.error())))
   {

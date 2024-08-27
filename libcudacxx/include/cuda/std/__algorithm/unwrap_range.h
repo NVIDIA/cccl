@@ -39,8 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Iter, class _Sent>
 struct __unwrap_range_impl
 {
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __unwrap(_Iter __first, _Sent __sent)
+  inline _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __unwrap(_Iter __first, _Sent __sent)
     requires random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>
   {
     auto __last = ranges::next(__first, __sent);
@@ -48,21 +47,19 @@ struct __unwrap_range_impl
                 _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__last))};
   }
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __unwrap(_Iter __first, _Sent __last)
+  inline _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __unwrap(_Iter __first, _Sent __last)
   {
     return pair{_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last)};
   }
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
+  inline _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
   __rewrap(_Iter __orig_iter, decltype(_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__orig_iter))) __iter)
     requires random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>
   {
     return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
   }
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __rewrap(const _Iter&, _Iter __iter)
+  inline _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __rewrap(const _Iter&, _Iter __iter)
     requires(!(random_access_iterator<_Iter> && sized_sentinel_for<_Sent, _Iter>) )
   {
     return __iter;
@@ -72,14 +69,13 @@ struct __unwrap_range_impl
 template <class _Iter>
 struct __unwrap_range_impl<_Iter, _Iter>
 {
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __unwrap(_Iter __first, _Iter __last)
+  inline _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __unwrap(_Iter __first, _Iter __last)
   {
     return pair{_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__first)),
                 _CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::move(__last))};
   }
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
+  inline _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
   __rewrap(_Iter __orig_iter, decltype(_CUDA_VSTD::__unwrap_iter(__orig_iter)) __iter)
   {
     return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
@@ -87,20 +83,19 @@ struct __unwrap_range_impl<_Iter, _Iter>
 };
 
 template <class _Iter, class _Sent>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto __unwrap_range(_Iter __first, _Sent __last)
+inline _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __unwrap_range(_Iter __first, _Sent __last)
 {
   return __unwrap_range_impl<_Iter, _Sent>::__unwrap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }
 
 template <class _Sent, class _Iter, class _Unwrapped>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Iter
-__rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
+inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
 {
   return __unwrap_range_impl<_Iter, _Sent>::__rewrap(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Iter, class _Unwrapped = decltype(_CUDA_VSTD::__unwrap_iter(_CUDA_VSTD::declval<_Iter>()))>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Unwrapped, _Unwrapped>
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Unwrapped, _Unwrapped>
 __unwrap_range(_Iter __first, _Iter __last)
 {
   return _CUDA_VSTD::make_pair(
@@ -108,8 +103,7 @@ __unwrap_range(_Iter __first, _Iter __last)
 }
 
 template <class _Iter, class _Unwrapped>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter
-__rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
 {
   return _CUDA_VSTD::__rewrap_iter(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }

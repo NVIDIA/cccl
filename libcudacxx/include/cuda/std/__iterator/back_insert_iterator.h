@@ -53,35 +53,35 @@ public:
   typedef void reference;
   typedef _Container container_type;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit back_insert_iterator(_Container& __x)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit back_insert_iterator(_Container& __x)
       : container(_CUDA_VSTD::addressof(__x))
   {}
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator&
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator&
   operator=(const typename _Container::value_type& __value)
   {
     container->push_back(__value);
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator&
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator&
   operator=(typename _Container::value_type&& __value)
   {
     container->push_back(_CUDA_VSTD::move(__value));
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator*()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator*()
   {
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator++()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator++()
   {
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator operator++(int)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator operator++(int)
   {
     return *this;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Container* __get_container() const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Container* __get_container() const
   {
     return container;
   }
@@ -89,8 +89,7 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator<_Container>
-back_inserter(_Container& __x)
+inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator<_Container> back_inserter(_Container& __x)
 {
   return back_insert_iterator<_Container>(__x);
 }

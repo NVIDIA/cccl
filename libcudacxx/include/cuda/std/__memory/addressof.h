@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_ADDRESSOF)
 
 template <class _Tp>
-inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY _Tp* addressof(_Tp& __x) noexcept
+inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI _Tp* addressof(_Tp& __x) noexcept
 {
   return __builtin_addressof(__x);
 }
@@ -36,7 +36,7 @@ inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY _T
 #else
 
 template <class _Tp>
-inline _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY _Tp* addressof(_Tp& __x) noexcept
+inline _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
@@ -49,27 +49,27 @@ inline _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY _Tp* addressof(_Tp& __x)
 // _LIBCUDACXX_PREDEFINED_OBJC_ARC_ADDRESSOF is defined, the compiler
 // itself is providing these definitions. Otherwise, we provide them.
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __strong _Tp* addressof(__strong _Tp& __x) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI __strong _Tp* addressof(__strong _Tp& __x) noexcept
 {
   return &__x;
 }
 
 #  ifdef _LIBCUDACXX_HAS_OBJC_ARC_WEAK
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __weak _Tp* addressof(__weak _Tp& __x) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI __weak _Tp* addressof(__weak _Tp& __x) noexcept
 {
   return &__x;
 }
 #  endif
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __autoreleasing _Tp* addressof(__autoreleasing _Tp& __x) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI __autoreleasing _Tp* addressof(__autoreleasing _Tp& __x) noexcept
 {
   return &__x;
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY __unsafe_unretained _Tp* addressof(__unsafe_unretained _Tp& __x) noexcept
+inline _LIBCUDACXX_HIDE_FROM_ABI __unsafe_unretained _Tp* addressof(__unsafe_unretained _Tp& __x) noexcept
 {
   return &__x;
 }

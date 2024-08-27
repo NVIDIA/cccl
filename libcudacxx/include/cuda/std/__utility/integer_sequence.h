@@ -187,7 +187,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 {
   typedef _Tp value_type;
   static_assert(is_integral<_Tp>::value, "std::integer_sequence can only be instantiated with an integral type");
-  static _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t size() noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() noexcept
   {
     return sizeof...(_Ip);
   }

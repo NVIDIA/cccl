@@ -78,22 +78,22 @@ public:
       : __unex_(_CUDA_VSTD::move(__e))
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _Err& error() & noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY const _Err& error() const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _Err&& error() && noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY const _Err&& error() const&& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
@@ -106,7 +106,7 @@ private:
 #  endif // _LIBCUDACXX_NO_EXCEPTIONS
 
 template <class _Err, class _Arg>
-_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expected_access(_Arg&& __arg)
+_CCCL_NORETURN inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access(_Arg&& __arg)
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,

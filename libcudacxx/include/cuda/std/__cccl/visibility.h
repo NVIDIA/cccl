@@ -62,6 +62,17 @@
 #  define _CCCL_ALWAYS_INLINE __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER_MSVC
 
+#if __has_attribute(exclude_from_explicit_instantiation)
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
+#else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
+// Try to approximate the effect of exclude_from_explicit_instantiation
+// (which is that entities are not assumed to be provided by explicit
+// template instantiations in the dylib) by always inlining those entities.
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION _CCCL_ALWAYS_INLINE
+#endif // !exclude_from_explicit_instantiation
+
+#define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !CCCL_DETAIL_KERNEL_ATTRIBUTES

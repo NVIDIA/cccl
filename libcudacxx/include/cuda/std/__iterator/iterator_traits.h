@@ -203,9 +203,9 @@ struct __has_iterator_typedefs
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type
   __test(void_t<typename _Up::iterator_category>* = nullptr,
          void_t<typename _Up::difference_type>*   = nullptr,
          void_t<typename _Up::value_type>*        = nullptr,
@@ -221,9 +221,9 @@ struct __has_iterator_category
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Up::iterator_category* = nullptr);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::iterator_category* = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
@@ -234,9 +234,9 @@ struct __has_iterator_concept
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Up::iterator_concept* = nullptr);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::iterator_concept* = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
