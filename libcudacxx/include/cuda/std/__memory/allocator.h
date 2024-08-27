@@ -201,7 +201,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -251,7 +251,7 @@ public:
   }
 #endif // _CCCL_STD_VER >= 2023
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
     if (__libcpp_is_constant_evaluated())
     {
@@ -298,7 +298,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }

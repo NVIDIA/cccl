@@ -127,7 +127,7 @@ struct AllocController
   }
 
   template <class Alloc, class Tp>
-  void countDestroy(Alloc const&, Tp* p)
+  void countDestroy(Alloc const&, Tp* p) noexcept
   {
     ++destroy_called;
     last_destroy_alloc   = &makeTypeID<Alloc>();
@@ -271,7 +271,7 @@ public:
     return static_cast<T*>(ret);
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     void* vp = static_cast<void*>(p);
     P->countDealloc(vp, n * sizeof(T), alignof(T));
@@ -286,7 +286,7 @@ public:
   }
 
   template <class U>
-  void destroy(U* p)
+  void destroy(U* p) noexcept
   {
     p->~U();
     P->countDestroy(*this, p);
@@ -422,7 +422,7 @@ public:
     return ((T*) unaligned_ptr);
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     assert(is_min_aligned(p));
 
@@ -442,7 +442,7 @@ public:
   }
 
   template <class U>
-  void destroy(U* p)
+  void destroy(U* p) noexcept
   {
     p->~U();
     P->countDestroy(*this, p);
@@ -539,7 +539,7 @@ public:
     return nullptr;
   }
 
-  void deallocate(T* p, std::size_t n)
+  void deallocate(T* p, std::size_t n) noexcept
   {
     void* vp = static_cast<void*>(p);
     P->countDealloc(vp, n * sizeof(T), alignof(T));

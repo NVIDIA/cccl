@@ -420,14 +420,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
   }
 
   template <class _Tp, __enable_if_t<__has_destroy<allocator_type, _Tp*>::value, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type& __a, _Tp* __p)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type& __a, _Tp* __p) noexcept
   {
     _CCCL_SUPPRESS_DEPRECATED_PUSH
     __a.destroy(__p);
     _CCCL_SUPPRESS_DEPRECATED_POP
   }
   template <class _Tp, class = void, __enable_if_t<!__has_destroy<allocator_type, _Tp*>::value, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type&, _Tp* __p)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type&, _Tp* __p) noexcept
   {
 #if _CCCL_STD_VER >= 2020
     _CUDA_VSTD::destroy_at(__p);

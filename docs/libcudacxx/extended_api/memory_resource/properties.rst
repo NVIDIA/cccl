@@ -87,7 +87,7 @@ base type at all. This common use case is covered by ``cuda::forward_property``,
            std::cout << "allocating\n";
            return base.allocate(size, alignment);
        }
-       void deallocate(void* ptr, std::size_t size, std::size_t alignment) {
+       void deallocate(void* ptr, std::size_t size, std::size_t alignment) noexcept {
            std::cout << "deallocating\n";
            return base.deallocate(ptr, size, alignment);
        }

@@ -21,8 +21,7 @@
 #endif // no system header
 
 #include "../__concepts/__concept_macros.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/is_same.h"
+#include "../__type_traits/is_same.h" // IWYU pragma: keep
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -34,7 +33,7 @@ template <bool... _Preds>
 struct __all_of_helper;
 
 template <bool... _Preds>
-_LIBCUDACXX_CONCEPT __all_of = _IsSame<__all_of_helper<_Preds...>, __all_of_helper<((void) _Preds, true)...>>::value;
+_LIBCUDACXX_CONCEPT __all_of = _IsSame<__all_of_helper<true, _Preds...>, __all_of_helper<_Preds..., true>>::value;
 #endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
