@@ -24,13 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-#define DEBUG_CHECKED_ALLOC_FAILURE
-#define CUB_DETAIL_DEBUG_ENABLE_LOG
+
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
 #include <cub/device/device_segmented_radix_sort.cuh>
-#include <cub/device/dispatch/dispatch_radix_sort.cuh> // DispatchSegmentedRadixSort
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
@@ -45,58 +43,10 @@
 #include "catch2_test_launch_helper.h"
 #include "thrust/detail/raw_pointer_cast.h"
 
-// TODO replace with DeviceSegmentedRadixSort::If interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset types
-template <bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename NumItemsT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_radix_sort_pairs_wrapper(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  const KeyT* d_keys_in,
-  KeyT* d_keys_out,
-  const ValueT* d_values_in,
-  ValueT* d_values_out,
-  NumItemsT num_items,
-  NumItemsT num_segments,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  int begin_bit       = 0,
-  int end_bit         = sizeof(KeyT) * 8,
-  cudaStream_t stream = 0)
-{
-  cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-  cub::DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-  return cub::DispatchSegmentedRadixSort<
-    IS_DESCENDING,
-    KeyT,
-    ValueT,
-    BeginOffsetIteratorT,
-    EndOffsetIteratorT, //
-    NumItemsT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         false,
-                         stream);
-}
-
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_pairs_wrapper<true>,
-                       dispatch_segmented_radix_sort_pairs_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_pairs_wrapper<false>, dispatch_segmented_radix_sort_pairs);
 
 using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
@@ -328,74 +278,3 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
   REQUIRE((ref_keys == out_keys) == true);
   REQUIRE((ref_values == out_values) == true);
 }
-
-#if defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
-
-CUB_TEST("DeviceSegmentedRadixSort::SortPairs: 64-bit num. items and num. segments",
-         "[pairs][segmented][radix][sort][device]")
-{
-  using key_t    = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using value_t  = cuda::std::uint8_t;
-  using offset_t = cuda::std::int64_t; // the test requires ~22 GB GPU memory + temporary buffer size
-
-  constexpr std::size_t min_num_items = std::size_t{1} << 31;
-  constexpr std::size_t max_num_items = min_num_items + (std::size_t{1} << 20);
-  constexpr int num_key_seeds         = 1;
-  constexpr int num_value_seeds       = 1;
-  constexpr int num_segment_seeds     = 1;
-  const std::size_t num_items         = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
-  const bool is_descending            = GENERATE(false, true);
-  CAPTURE(num_items, num_segments, is_descending);
-
-  c2h::device_vector<key_t> in_keys(num_items);
-  c2h::device_vector<offset_t> offsets(num_segments + 1);
-  c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
-  c2h::gen(CUB_SEED(num_value_seeds), in_values);
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
-
-  // Initialize the output vectors by copying the inputs since not all items may belong to a segment.
-  c2h::device_vector<key_t> out_keys(in_keys);
-  c2h::device_vector<value_t> out_values(in_values);
-
-  if (is_descending)
-  {
-    dispatch_segmented_radix_sort_pairs_descending(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      thrust::raw_pointer_cast(in_values.data()),
-      thrust::raw_pointer_cast(out_values.data()),
-      static_cast<offset_t>(num_items),
-      static_cast<offset_t>(num_segments),
-      // Mix pointers/iterators for segment info to test using different iterable types:
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
-  }
-  else
-  {
-    dispatch_segmented_radix_sort_pairs(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      thrust::raw_pointer_cast(in_values.data()),
-      thrust::raw_pointer_cast(out_values.data()),
-      static_cast<offset_t>(num_items),
-      static_cast<offset_t>(num_segments),
-      // Mix pointers/iterators for segment info to test using different iterable types:
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1,
-      begin_bit<key_t>(),
-      end_bit<key_t>());
-  }
-  // compoute the reference only if the routine is able to terminate correctly
-  auto refs        = segmented_radix_sort_reference(in_keys, in_values, is_descending, offsets);
-  auto& ref_keys   = refs.first;
-  auto& ref_values = refs.second;
-
-  REQUIRE(ref_keys == out_keys);
-  REQUIRE(ref_values == out_values);
-}
-
-#endif // defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
