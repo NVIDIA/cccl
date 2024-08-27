@@ -355,7 +355,7 @@ struct aligned_size_t
 {
   _CUDA_VSTD::size_t value;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr operator size_t() const
+  _CCCL_HOST_DEVICE constexpr operator size_t() const
   {
     return value;
   }
@@ -922,13 +922,12 @@ struct dispatch_t<RequiresStableAddress,
   TransformOp op;
   cudaStream_t stream;
 
-  using kernel_ptr_t =
-    decltype(&transform_kernel<typename PolicyHub::max_policy,
-                               Offset,
-                               TransformOp,
-                               RandomAccessIteratorOut,
-                               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
-  kernel_ptr_t kernel;
+#define KERNEL_PTR                                  \
+  &transform_kernel<typename PolicyHub::max_policy, \
+                    Offset,                         \
+                    TransformOp,                    \
+                    RandomAccessIteratorOut,        \
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>
 
   static constexpr int loaded_bytes_per_iter = loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
 
@@ -941,8 +940,9 @@ struct dispatch_t<RequiresStableAddress,
 
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running on?
   template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_memcpy_async_kernel()
-    -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, kernel_ptr_t, int>>
+  _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_memcpy_async_kernel()
+    -> PoorExpected<
+      ::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(KERNEL_PTR), int>>
   {
     // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
     using policy_t          = typename ActivePolicy::algo_policy;
@@ -979,7 +979,7 @@ struct dispatch_t<RequiresStableAddress,
         }
 
         int max_occupancy = 0;
-        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size));
+        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, KERNEL_PTR, block_dim, smem_size));
         if (error != cudaSuccess)
         {
           return error;
@@ -1010,7 +1010,7 @@ struct dispatch_t<RequiresStableAddress,
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
-      kernel,
+      KERNEL_PTR,
       config->elem_per_thread);
   }
 
@@ -1018,8 +1018,9 @@ struct dispatch_t<RequiresStableAddress,
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
   template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
-    -> PoorExpected<::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, kernel_ptr_t, int>>
+  _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
+    -> PoorExpected<
+      ::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
@@ -1056,7 +1057,7 @@ struct dispatch_t<RequiresStableAddress,
         }
 
         int max_occupancy = 0;
-        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, kernel, block_dim, smem_size));
+        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, KERNEL_PTR, block_dim, smem_size));
         if (error != cudaSuccess)
         {
           return error;
@@ -1087,7 +1088,7 @@ struct dispatch_t<RequiresStableAddress,
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
-      kernel,
+      KERNEL_PTR,
       config->elem_per_thread);
   }
 
@@ -1144,7 +1145,7 @@ struct dispatch_t<RequiresStableAddress,
     const auto grid_dim = static_cast<unsigned int>(
       ::cuda::ceil_div(num_items, Offset{policy_t::BLOCK_THREADS * policy_t::ITEMS_PER_THREAD}));
     return THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, policy_t::BLOCK_THREADS, 0, stream)
-      .doit(kernel,
+      .doit(KERNEL_PTR,
             num_items,
             /* items per thread taken from policy */ -1,
             op,
@@ -1160,7 +1161,7 @@ struct dispatch_t<RequiresStableAddress,
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
     int max_occupancy       = 0;
-    const auto error        = MaxSmOccupancy(max_occupancy, kernel, block_dim, 0);
+    const auto error        = MaxSmOccupancy(max_occupancy, KERNEL_PTR, block_dim, 0);
     if (error != cudaSuccess)
     {
       return error;
@@ -1176,7 +1177,7 @@ struct dispatch_t<RequiresStableAddress,
     const auto grid_dim    = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
 
     return THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
-      .doit(kernel,
+      .doit(KERNEL_PTR,
             num_items,
             items_per_thread_clamped,
             op,
@@ -1235,15 +1236,11 @@ struct dispatch_t<RequiresStableAddress,
       return error;
     }
 
-    auto kernel =
-      &transform_kernel<typename PolicyHub::max_policy,
-                        Offset,
-                        TransformOp,
-                        RandomAccessIteratorOut,
-                        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>;
-    dispatch_t dispatch{::cuda::std::move(in), ::cuda::std::move(out), num_items, ::cuda::std::move(op), stream, kernel};
+    dispatch_t dispatch{::cuda::std::move(in), ::cuda::std::move(out), num_items, ::cuda::std::move(op), stream};
     return CubDebug(PolicyHub::max_policy::Invoke(ptx_version, dispatch));
   }
+
+#undef KERNEL_PTR
 };
 } // namespace transform
 } // namespace detail
