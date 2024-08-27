@@ -41,6 +41,7 @@
 _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 #endif // nvcc-11
 
+#include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/utility>
 
@@ -133,8 +134,8 @@ struct bitwise_equal
   bool operator()(const T& a, const T& b) const
   {
     using bits_t  = typename cub::Traits<T>::UnsignedBits;
-    bits_t a_bits = c2h::bit_cast<bits_t>(a);
-    bits_t b_bits = c2h::bit_cast<bits_t>(b);
+    bits_t a_bits = ::cuda::std::bit_cast<bits_t>(a);
+    bits_t b_bits = ::cuda::std::bit_cast<bits_t>(b);
     return a_bits == b_bits;
   }
 };

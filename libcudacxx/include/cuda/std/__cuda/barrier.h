@@ -27,7 +27,7 @@
 
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
-#include <cuda/std/detail/libcxx/include/cstdlib> // _LIBCUDACXX_UNREACHABLE
+#include <cuda/std/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
 #if defined(_CCCL_CUDA_COMPILER)
 #  include <cuda/ptx> // cuda::ptx::*

@@ -143,7 +143,7 @@ struct NullProvider
   {
     return nullptr;
   }
-  void deallocate(void*, size_t, size_t) {}
+  void deallocate(void*, size_t, size_t) noexcept {}
   void reset() {}
 
 private:
@@ -157,7 +157,7 @@ struct NewDeleteProvider
   {
     return ::operator new(s);
   }
-  void deallocate(void* p, size_t, size_t)
+  void deallocate(void* p, size_t, size_t) noexcept
   {
     ::operator delete(p);
   }
@@ -191,7 +191,7 @@ struct BufferProvider
     return ret;
   }
 
-  void deallocate(void*, size_t, size_t) {}
+  void deallocate(void*, size_t, size_t) noexcept {}
 
   void reset()
   {

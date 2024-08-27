@@ -50,8 +50,8 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdlib>
 #include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/cstdlib>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 

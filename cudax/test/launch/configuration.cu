@@ -26,11 +26,11 @@ cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, void (*kerne
   replacementCalled = true;
   bool has_cluster  = false;
 
-  CHECK(expectedConfig.numAttrs == config->numAttrs);
-  CHECK(expectedConfig.blockDim == config->blockDim);
-  CHECK(expectedConfig.gridDim == config->gridDim);
-  CHECK(expectedConfig.stream == config->stream);
-  CHECK(expectedConfig.dynamicSmemBytes == config->dynamicSmemBytes);
+  CUDAX_CHECK(expectedConfig.numAttrs == config->numAttrs);
+  CUDAX_CHECK(expectedConfig.blockDim == config->blockDim);
+  CUDAX_CHECK(expectedConfig.gridDim == config->gridDim);
+  CUDAX_CHECK(expectedConfig.stream == config->stream);
+  CUDAX_CHECK(expectedConfig.dynamicSmemBytes == config->dynamicSmemBytes);
 
   for (unsigned int i = 0; i < expectedConfig.numAttrs; ++i)
   {
@@ -44,26 +44,26 @@ cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, void (*kerne
         switch (expectedAttr.id)
         {
           case cudaLaunchAttributeClusterDimension:
-            CHECK(expectedAttr.val.clusterDim.x == actualAttr.val.clusterDim.x);
-            CHECK(expectedAttr.val.clusterDim.y == actualAttr.val.clusterDim.y);
-            CHECK(expectedAttr.val.clusterDim.z == actualAttr.val.clusterDim.z);
+            CUDAX_CHECK(expectedAttr.val.clusterDim.x == actualAttr.val.clusterDim.x);
+            CUDAX_CHECK(expectedAttr.val.clusterDim.y == actualAttr.val.clusterDim.y);
+            CUDAX_CHECK(expectedAttr.val.clusterDim.z == actualAttr.val.clusterDim.z);
             has_cluster = true;
             break;
           case cudaLaunchAttributeCooperative:
-            CHECK(expectedAttr.val.cooperative == actualAttr.val.cooperative);
+            CUDAX_CHECK(expectedAttr.val.cooperative == actualAttr.val.cooperative);
             break;
           case cudaLaunchAttributePriority:
-            CHECK(expectedAttr.val.priority == actualAttr.val.priority);
+            CUDAX_CHECK(expectedAttr.val.priority == actualAttr.val.priority);
             break;
           default:
-            CHECK(false);
+            CUDAX_CHECK(false);
             break;
         }
         break;
       }
     }
     INFO("Searched attribute is " << expectedAttr.id);
-    CHECK(j != expectedConfig.numAttrs);
+    CUDAX_CHECK(j != expectedConfig.numAttrs);
   }
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
@@ -186,5 +186,5 @@ TEST_CASE("Launch configuration", "[launch]")
   }
 
   CUDART(cudaStreamDestroy(stream));
-  CHECK(replacementCalled);
+  CUDAX_CHECK(replacementCalled);
 }

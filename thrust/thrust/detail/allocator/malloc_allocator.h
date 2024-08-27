@@ -44,7 +44,7 @@ public:
 
   pointer allocate(size_type cnt);
 
-  void deallocate(pointer p, size_type n);
+  void deallocate(pointer p, size_type n) noexcept;
 };
 
 } // namespace detail

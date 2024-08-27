@@ -300,7 +300,7 @@ public:
 
   inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n, const_void_pointer hint);
 
-  inline _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n);
+  inline _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept;
 
   // XXX should probably change T* to pointer below and then relax later
 
@@ -314,7 +314,7 @@ public:
   inline _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p, Args&&... args);
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE static void destroy(allocator_type& a, T* p);
+  inline _CCCL_HOST_DEVICE static void destroy(allocator_type& a, T* p) noexcept;
 
   inline _CCCL_HOST_DEVICE static size_type max_size(const allocator_type& a);
 }; // end allocator_traits

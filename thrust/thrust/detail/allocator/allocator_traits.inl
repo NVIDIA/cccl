@@ -94,7 +94,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n)
+  _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept
   {
     superclass::deallocate(a, p, n);
   }
@@ -108,7 +108,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename U>
-  _CCCL_HOST_DEVICE static void destroy(allocator_type& a, U* p)
+  _CCCL_HOST_DEVICE static void destroy(allocator_type& a, U* p) noexcept
   {
     superclass::destroy(a, p);
   }
@@ -312,13 +312,13 @@ _CCCL_HOST_DEVICE typename allocator_traits<Alloc>::pointer allocator_traits<All
 
 template <typename Alloc>
 _CCCL_HOST_DEVICE void allocator_traits<Alloc>::deallocate(
-  Alloc& a, typename allocator_traits<Alloc>::pointer p, typename allocator_traits<Alloc>::size_type n)
+  Alloc& a, typename allocator_traits<Alloc>::pointer p, typename allocator_traits<Alloc>::size_type n) noexcept
 {
   struct workaround_warnings
   {
     _CCCL_EXEC_CHECK_DISABLE
-    static _CCCL_HOST_DEVICE void
-    deallocate(Alloc& a, typename allocator_traits<Alloc>::pointer p, typename allocator_traits<Alloc>::size_type n)
+    static _CCCL_HOST_DEVICE void deallocate(
+      Alloc& a, typename allocator_traits<Alloc>::pointer p, typename allocator_traits<Alloc>::size_type n) noexcept
     {
       return a.deallocate(p, n);
     }
@@ -350,7 +350,7 @@ _CCCL_HOST_DEVICE void allocator_traits<Alloc>::construct(allocator_type& a, T* 
 
 template <typename Alloc>
 template <typename T>
-_CCCL_HOST_DEVICE void allocator_traits<Alloc>::destroy(allocator_type& a, T* p)
+_CCCL_HOST_DEVICE void allocator_traits<Alloc>::destroy(allocator_type& a, T* p) noexcept
 {
   return allocator_traits_detail::destroy(a, p);
 }

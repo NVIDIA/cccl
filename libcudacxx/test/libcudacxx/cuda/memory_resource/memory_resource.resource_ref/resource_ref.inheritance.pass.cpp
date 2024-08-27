@@ -30,9 +30,11 @@ struct property_without_value
 template <class... Properties>
 struct resource_base
 {
+  virtual ~resource_base() = default;
+
   virtual void* allocate(std::size_t, std::size_t) = 0;
 
-  virtual void deallocate(void* ptr, std::size_t, std::size_t) = 0;
+  virtual void deallocate(void* ptr, std::size_t, std::size_t) noexcept = 0;
 
   bool operator==(const resource_base& other) const
   {
@@ -69,7 +71,7 @@ struct resource_derived_first : public resource_base<Properties...>
     return &_val;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) override {}
+  void deallocate(void* ptr, std::size_t, std::size_t) noexcept override {}
 
   bool operator==(const resource_derived_first& other) const
   {
@@ -103,7 +105,7 @@ struct resource_derived_second : public resource_base<Properties...>
     return &_val->_val;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) override {}
+  void deallocate(void* ptr, std::size_t, std::size_t) noexcept override {}
 
   bool operator==(const resource_derived_second& other) const
   {

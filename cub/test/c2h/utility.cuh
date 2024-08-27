@@ -38,19 +38,6 @@
 namespace c2h
 {
 
-/**
- * Return a value of type `T0` with the same bitwise representation of `in`.
- * Types `To` and `From` must be the same size.
- */
-template <typename To, typename From>
-__host__ __device__ To bit_cast(const From& in)
-{
-  static_assert(sizeof(To) == sizeof(From), "Types must be same size.");
-  To out;
-  memcpy(&out, &in, sizeof(To));
-  return out;
-}
-
 // TODO(bgruber): duplicated version of thrust/testing/unittest/system.h
 inline std::string demangle(const char* name)
 {
