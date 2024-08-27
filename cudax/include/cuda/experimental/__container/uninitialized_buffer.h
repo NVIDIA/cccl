@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
