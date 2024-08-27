@@ -111,7 +111,7 @@ TEST_CASE("Smoke", "[device]")
     ::test_device_attribute<device::attrs::texture_alignment, ::cudaDevAttrTextureAlignment, int>();
     ::test_device_attribute<device::attrs::texture_pitch_alignment, ::cudaDevAttrTexturePitchAlignment, int>();
     ::test_device_attribute<device::attrs::gpu_overlap, ::cudaDevAttrGpuOverlap, bool>();
-    ::test_device_attribute<device::attrs::multi_processor_count, ::cudaDevAttrMultiProcessorCount, int>();
+    ::test_device_attribute<device::attrs::multiprocessor_count, ::cudaDevAttrMultiProcessorCount, int>();
     ::test_device_attribute<device::attrs::kernel_exec_timeout, ::cudaDevAttrKernelExecTimeout, bool>();
     ::test_device_attribute<device::attrs::integrated, ::cudaDevAttrIntegrated, bool>();
     ::test_device_attribute<device::attrs::can_map_host_memory, ::cudaDevAttrCanMapHostMemory, bool>();
@@ -124,7 +124,7 @@ TEST_CASE("Smoke", "[device]")
     ::test_device_attribute<device::attrs::memory_clock_rate, ::cudaDevAttrMemoryClockRate, int>();
     ::test_device_attribute<device::attrs::global_memory_bus_width, ::cudaDevAttrGlobalMemoryBusWidth, int>();
     ::test_device_attribute<device::attrs::l2_cache_size, ::cudaDevAttrL2CacheSize, int>();
-    ::test_device_attribute<device::attrs::max_threads_per_multi_processor,
+    ::test_device_attribute<device::attrs::max_threads_per_multiprocessor,
                             ::cudaDevAttrMaxThreadsPerMultiProcessor,
                             int>();
     ::test_device_attribute<device::attrs::unified_addressing, ::cudaDevAttrUnifiedAddressing, bool>();

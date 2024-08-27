@@ -36,7 +36,6 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits/result_of_adaptable_function.h>
-#include <thrust/functional.h>
 #include <thrust/tuple.h>
 
 #include <cuda/std/type_traits>
@@ -84,9 +83,9 @@ struct argument
 {
   template <typename... Ts>
   _CCCL_HOST_DEVICE auto
-  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts...>{THRUST_FWD(args)...}))
+  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
-    return thrust::get<Pos>(thrust::tuple<Ts...>{THRUST_FWD(args)...});
+    return thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...});
   }
 };
 

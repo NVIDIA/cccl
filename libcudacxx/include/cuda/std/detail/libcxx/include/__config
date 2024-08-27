@@ -447,7 +447,10 @@ extern "C++" {
 #    define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #  endif // __check_builtin(builtin_addressof)
 
-#  if __check_builtin(builtin_bit_cast) || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1925)
+// MSVC supports __builtin_bit_cast from 19.25 on
+// clang-9 supports __builtin_bit_cast but it is not a constant expression
+#  if (__check_builtin(builtin_bit_cast) || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1925)) \
+    && !defined(_CCCL_CUDACC_BELOW_11_7) && !(defined(_CCCL_COMPILER_CLANG) && __clang_major__ < 10)
 #    define _LIBCUDACXX_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
 #  endif // __check_builtin(builtin_bit_cast)
 
@@ -1787,6 +1790,12 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
+
+#  if _CCCL_STD_VER > 2014 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
+#    define _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT noexcept
+#  else
+#    define _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT
+#  endif
 
 #endif // __cplusplus
 

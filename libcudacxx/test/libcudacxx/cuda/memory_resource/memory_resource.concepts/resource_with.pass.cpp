@@ -27,7 +27,7 @@ struct valid_resource_with_property
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const valid_resource_with_property&) const
   {
     return true;
@@ -46,7 +46,7 @@ struct valid_resource_without_property
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const valid_resource_without_property&) const
   {
     return true;
@@ -70,7 +70,7 @@ struct resource_with_many_properties
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const resource_with_many_properties&) const
   {
     return true;

@@ -33,13 +33,13 @@ THRUST_NAMESPACE_BEGIN
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-_CCCL_HOST_DEVICE void destroy_at(T* location)
+_CCCL_HOST_DEVICE void destroy_at(T* location) noexcept
 {
   location->~T();
 }
 
 template <typename Allocator, typename T>
-_CCCL_HOST_DEVICE void destroy_at(Allocator const& alloc, T* location)
+_CCCL_HOST_DEVICE void destroy_at(Allocator const& alloc, T* location) noexcept
 {
   using traits = typename detail::allocator_traits<
     ::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE void destroy_at(Allocator const& alloc, T* location)
 }
 
 template <typename ForwardIt>
-_CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last)
+_CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last) noexcept
 {
   for (; first != last; ++first)
   {
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last)
 }
 
 template <typename Allocator, typename ForwardIt>
-_CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, ForwardIt last)
+_CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, ForwardIt last) noexcept
 {
   using T      = typename iterator_traits<ForwardIt>::value_type;
   using traits = typename detail::allocator_traits<
@@ -78,7 +78,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, For
 }
 
 template <typename ForwardIt, typename Size>
-_CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n)
+_CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n) noexcept
 {
   for (; n > 0; (void) ++first, --n)
   {
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n)
 }
 
 template <typename Allocator, typename ForwardIt, typename Size>
-_CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, Size n)
+_CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, Size n) noexcept
 {
   using T      = typename iterator_traits<ForwardIt>::value_type;
   using traits = typename detail::allocator_traits<

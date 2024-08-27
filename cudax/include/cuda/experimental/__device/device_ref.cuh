@@ -23,6 +23,8 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
+#include <cuda/experimental/__device/arch_traits.cuh>
+
 namespace cuda::experimental
 {
 class device;
@@ -104,6 +106,8 @@ public:
   {
     return attr(detail::__dev_attr<_Attr>());
   }
+
+  arch_traits_t arch_traits() const;
 };
 
 } // namespace cuda::experimental

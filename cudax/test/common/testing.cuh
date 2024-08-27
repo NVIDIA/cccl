@@ -13,17 +13,18 @@
 
 #include <cuda/experimental/hierarchy.cuh>
 
-#include <exception>
+#include <exception> // IWYU pragma: keep
 #include <iostream>
 #include <sstream>
 
 #include <catch2/catch.hpp>
+#include <nv/target>
 
-namespace cudax = cuda::experimental;
+namespace cudax = cuda::experimental; // NOLINT: misc-unused-alias-decls
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-inline void __device__ cudax_require_impl(
+__device__ inline void cudax_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
@@ -44,14 +45,24 @@ inline void __device__ cudax_require_impl(
   }
 }
 
-// TODO make it work on NVC++
-#ifdef __CUDA_ARCH__
-#  define CUDAX_REQUIRE(condition) cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
-#else
-#  define CUDAX_REQUIRE REQUIRE
-#endif
+#define CUDAX_REQUIRE(condition)                                                                           \
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                          \
+                    (cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
+                    (REQUIRE(condition);))
 
-bool constexpr __host__ __device__ operator==(const dim3& lhs, const dim3& rhs)
+#define CUDAX_CHECK(condition)                                                                             \
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                          \
+                    (cudax_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
+                    (CHECK(condition);))
+
+#define CUDAX_FAIL(message) /*                                                                   */ \
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, /*                                                             */ \
+                    (cudax_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
+                    (FAIL(message);))
+
+#define CUDAX_CHECK_FALSE(condition) CUDAX_CHECK(!(condition))
+
+__host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
 }

@@ -36,7 +36,7 @@ struct async_resource
     return nullptr;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) {}
+  void deallocate(void* ptr, std::size_t, std::size_t) noexcept {}
 
   void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
   {

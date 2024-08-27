@@ -53,12 +53,12 @@ namespace std
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__new_>
 #include <cuda/std/atomic>
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/detail/libcxx/include/new>
 
 _CCCL_PUSH_MACROS
 

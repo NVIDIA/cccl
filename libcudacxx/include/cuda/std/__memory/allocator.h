@@ -25,14 +25,14 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstdlib>
-#include <cuda/std/detail/libcxx/include/new>
+#include <cuda/std/cstdlib>
 
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
 #  include <memory>
@@ -201,7 +201,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -251,7 +251,7 @@ public:
   }
 #endif // _CCCL_STD_VER >= 2023
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
     if (__libcpp_is_constant_evaluated())
     {
@@ -298,7 +298,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }

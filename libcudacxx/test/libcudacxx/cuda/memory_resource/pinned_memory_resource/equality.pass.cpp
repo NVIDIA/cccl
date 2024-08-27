@@ -30,7 +30,7 @@ struct resource
   {
     return nullptr;
   }
-  void deallocate(void*, size_t, size_t) {}
+  void deallocate(void*, size_t, size_t) noexcept {}
 
   bool operator==(const resource&) const
   {
