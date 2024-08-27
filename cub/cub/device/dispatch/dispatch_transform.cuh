@@ -359,6 +359,8 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   auto smem_dst = reinterpret_cast<T*>(smem + smem_offset);
   assert(reinterpret_cast<uintptr_t>(smem_dst) % memcpy_async_size_multiple == 0); // to hit optimal memcpy_async
                                                                                    // performance
+  // FIXME(bgruber): this can read out of bounds and compute-sanitizer will diagnose this. E.g. for num_items == 1, it
+  // will read 15 items after the allocation.
   cooperative_groups::memcpy_async(
     group,
     smem_dst,
@@ -435,6 +437,8 @@ _CCCL_DEVICE void bulk_copy_tile(
 #  if CUB_PTX_ARCH >= 900
   namespace ptx = ::cuda::ptx;
   // Copy a bit more than tile_size, to cover for base_ptr starting earlier than ptr
+  // FIXME(bgruber): this can read out of bounds and compute-sanitizer will diagnose this. E.g. for num_items == 1, it
+  // will read 15 items after the allocation.
   const uint32_t num_bytes = round_up_to_po2_multiple(
     aligned_ptr.offset + static_cast<uint32_t>(sizeof(T)) * tile_size, static_cast<uint32_t>(ublkcp_size_multiple));
   ptx::cp_async_bulk(

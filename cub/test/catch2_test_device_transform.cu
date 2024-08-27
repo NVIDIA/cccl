@@ -130,9 +130,9 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
   using offset_t     = typename c2h::get<1, TestType>;
   constexpr auto alg = c2h::get<2, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
-  CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg);
-
   const int num_items = GENERATE(0, 1, 100, 1000);
+  CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg, num_items);
+
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
   c2h::gen(CUB_SEED(1), a);
@@ -213,6 +213,7 @@ CUB_TEST("DeviceTransform::Transform overaligned type",
 CUB_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
 {
   using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
+  static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
   CAPTURE(c2h::demangle(typeid(huge_t).name()));
 
   const int num_items = GENERATE(0, 1, 100, 1000);
