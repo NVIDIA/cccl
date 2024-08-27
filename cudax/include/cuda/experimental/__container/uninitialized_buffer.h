@@ -60,7 +60,7 @@ template <class _Tp, class... _Properties>
 class uninitialized_buffer
 {
 private:
-  mr::any_resource<_Properties...> __mr_;
+  ::cuda::experimental::mr::any_resource<_Properties...> __mr_;
   size_t __count_ = 0;
   void* __buf_    = nullptr;
 
@@ -93,7 +93,7 @@ public:
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`.
   //! @note Only allocates memory when \p __count > 0
-  uninitialized_buffer(mr::any_resource<_Properties...> __mr, const size_t __count)
+  uninitialized_buffer(::cuda::experimental::mr::any_resource<_Properties...> __mr, const size_t __count)
       : __mr_(_CUDA_VSTD::move(__mr))
       , __count_(__count)
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__get_allocation_size(__count_)))
@@ -172,7 +172,7 @@ public:
   //! @rst
   //! Returns a copy of the `any_resource` used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE mr::any_resource<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE ::cuda::experimental::mr::any_resource<_Properties...> resource() const noexcept
   {
     return __mr_;
   }
