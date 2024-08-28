@@ -26,9 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceSelect provides device-wide, parallel operations for
-//!       compacting selected items from sequences of data items residing within
-//!       device-accessible memory.
+//! @file
+//! cub::DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data
+//! items residing within device-accessible memory.
 
 #pragma once
 

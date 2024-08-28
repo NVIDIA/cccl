@@ -25,12 +25,16 @@
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
+
+#include <cuda/experimental/__memory_resource/any_resource.h>
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-//! @file The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
+//! @file
+//! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
 namespace cuda::experimental
 {
 
@@ -50,20 +54,14 @@ namespace cuda::experimental
 //! need to implement :ref:`get_property(const device_buffer&, Property)
 //! <libcudacxx-extended-api-memory-resources-properties>`.
 //!
-//! .. warning::
-//!
-//!    ``uninitialized_buffer`` stores a reference to the provided memory :ref:`memory resource
-//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's resposibility to ensure the lifetime of
-//!    the resource exceeds the lifetime of the buffer.
-//!
 //! @endrst
-//! @tparam _T the type to be stored in the buffer
+//! @tparam _Tp the type to be stored in the buffer
 //! @tparam _Properties... The properties the allocated memory satisfies
 template <class _Tp, class... _Properties>
 class uninitialized_buffer
 {
 private:
-  _CUDA_VMR::resource_ref<_Properties...> __mr_;
+  ::cuda::experimental::mr::any_resource<_Properties...> __mr_;
   size_t __count_ = 0;
   void* __buf_    = nullptr;
 
@@ -96,8 +94,8 @@ public:
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`.
   //! @note Only allocates memory when \p __count > 0
-  uninitialized_buffer(_CUDA_VMR::resource_ref<_Properties...> __mr, const size_t __count)
-      : __mr_(__mr)
+  uninitialized_buffer(::cuda::experimental::mr::any_resource<_Properties...> __mr, const size_t __count)
+      : __mr_(_CUDA_VSTD::move(__mr))
       , __count_(__count)
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__get_allocation_size(__count_)))
   {}
@@ -108,7 +106,7 @@ public:
   //! @brief Move construction
   //! @param __other Another \c uninitialized_buffer
   uninitialized_buffer(uninitialized_buffer&& __other) noexcept
-      : __mr_(__other.__mr_)
+      : __mr_(_CUDA_VSTD::move(__other.__mr_))
       , __count_(__other.__count_)
       , __buf_(__other.__buf_)
   {
@@ -129,7 +127,7 @@ public:
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
     }
-    __mr_            = __other.__mr_;
+    __mr_            = _CUDA_VSTD::move(__other.__mr_);
     __count_         = __other.__count_;
     __buf_           = __other.__buf_;
     __other.__count_ = 0;
@@ -173,19 +171,20 @@ public:
   }
 
   //! @rst
-  //! Returns the :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` used to allocate
-  //! the buffer
+  //! Returns a :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used to
+  //! allocate the buffer
   //! @endrst
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
   {
-    return __mr_;
+    return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_buffer
   //! @param __other The other \c uninitialized_buffer.
   _CCCL_HOST_DEVICE constexpr void swap(uninitialized_buffer& __other) noexcept
   {
-    _CUDA_VSTD::swap(__mr_, __other.__mr_);
+    __mr_.swap(__other.__mr_);
     _CUDA_VSTD::swap(__count_, __other.__count_);
     _CUDA_VSTD::swap(__buf_, __other.__buf_);
   }

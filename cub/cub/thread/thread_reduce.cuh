@@ -68,7 +68,7 @@ template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
-          typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>>
 _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
@@ -110,7 +110,7 @@ template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
-          typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>>
 _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix)
 {
   return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
@@ -170,7 +170,7 @@ template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
-          typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>>
 _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op, PrefixT prefix)
 {
   return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());

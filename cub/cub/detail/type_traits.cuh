@@ -62,9 +62,5 @@ using invoke_result_t =
   ::cuda::std::invoke_result_t<Invokable, Args...>;
 #endif
 
-/// The type of intermediate accumulator (according to P2322R6)
-template <typename Invokable, typename InitT, typename InputT>
-using accumulator_t = typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
-
 } // namespace detail
 CUB_NAMESPACE_END

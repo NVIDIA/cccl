@@ -24,6 +24,9 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Before AppleClang 14, __is_unsigned returned true for enums with signed underlying type.
@@ -69,5 +72,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_unsigned_v = is_unsigned<_Tp>::value;
 #endif // defined(_LIBCUDACXX_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNSIGNED_H

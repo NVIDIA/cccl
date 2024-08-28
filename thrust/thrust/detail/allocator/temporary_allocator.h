@@ -62,7 +62,7 @@ public:
 
   _CCCL_HOST_DEVICE pointer allocate(size_type cnt);
 
-  _CCCL_HOST_DEVICE void deallocate(pointer p, size_type n);
+  _CCCL_HOST_DEVICE void deallocate(pointer p, size_type n) noexcept;
 
   _CCCL_HOST_DEVICE inline System& system()
   {

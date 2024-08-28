@@ -26,8 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file The cub::BlockAdjacentDifference class provides collective methods for computing
-//! the differences of adjacent elements partitioned across a CUDA thread block.
+//! @file
+//! The cub::BlockAdjacentDifference class provides collective methods for computing the differences of adjacent
+//! elements partitioned across a CUDA thread block.
 
 #pragma once
 

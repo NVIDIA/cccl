@@ -72,7 +72,7 @@ temporary_allocator<T, System>::allocate(typename temporary_allocator<T, System>
 
 template <typename T, typename System>
 _CCCL_HOST_DEVICE void temporary_allocator<T, System>::deallocate(
-  typename temporary_allocator<T, System>::pointer p, typename temporary_allocator<T, System>::size_type n)
+  typename temporary_allocator<T, System>::pointer p, typename temporary_allocator<T, System>::size_type n) noexcept
 {
   return thrust::return_temporary_buffer(system(), p, n);
 } // end temporary_allocator

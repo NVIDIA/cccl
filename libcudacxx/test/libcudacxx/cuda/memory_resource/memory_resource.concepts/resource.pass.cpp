@@ -27,7 +27,7 @@ struct valid_resource
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const valid_resource&) const
   {
     return true;
@@ -45,7 +45,7 @@ struct invalid_allocate_argument
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const invalid_allocate_argument&)
   {
     return true;
@@ -63,7 +63,7 @@ struct invalid_allocate_return
   {
     return 42;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const invalid_allocate_return&)
   {
     return true;
@@ -81,7 +81,7 @@ struct invalid_deallocate_argument
   {
     return nullptr;
   }
-  void deallocate(void*, invalid_argument, std::size_t) {}
+  void deallocate(void*, invalid_argument, std::size_t) noexcept {}
   bool operator==(const invalid_deallocate_argument&)
   {
     return true;
@@ -99,7 +99,7 @@ struct non_comparable
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
 };
 static_assert(!cuda::mr::resource<non_comparable>, "");
 
@@ -109,7 +109,7 @@ struct non_eq_comparable
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator!=(const non_eq_comparable&)
   {
     return false;
@@ -124,7 +124,7 @@ struct non_neq_comparable
   {
     return nullptr;
   }
-  void deallocate(void*, std::size_t, std::size_t) {}
+  void deallocate(void*, std::size_t, std::size_t) noexcept {}
   bool operator==(const non_neq_comparable&)
   {
     return true;

@@ -39,6 +39,8 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/bit>
+
 #include <array>
 #include <climits>
 #include <cstdint>
@@ -199,7 +201,7 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
 
   for (std::size_t i = 0; i < h_keys.size(); i++)
   {
-    bit_ordered_t key = c2h::bit_cast<bit_ordered_t>(h_keys[i]);
+    bit_ordered_t key = ::cuda::std::bit_cast<bit_ordered_t>(h_keys[i]);
 
     _CCCL_IF_CONSTEXPR (traits_t::CATEGORY == cub::FLOATING_POINT)
     {

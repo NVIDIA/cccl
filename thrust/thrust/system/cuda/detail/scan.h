@@ -36,12 +36,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#ifdef _CCCL_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_scan.cuh>
 
+#  include <thrust/detail/integer_math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/distance.h>
@@ -63,16 +64,22 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
   using AccumT     = typename thrust::iterator_traits<InputIt>::value_type;
-  using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::int32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::int64_t, AccumT>;
+  using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint32_t, AccumT>;
+  using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint64_t, AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
+  // Negative number of items are normalized to `0`
+  if (thrust::detail::is_negative(num_items))
+  {
+    num_items = 0;
+  }
+
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -88,12 +95,87 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
+    thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
+    thrust::cuda_cub::throw_on_error(
+      thrust::cuda_cub::synchronize_optional(policy), "inclusive_scan failed to synchronize");
+  }
+
+  return result + num_items;
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename InitValueT, typename ScanOp>
+_CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
+  thrust::cuda_cub::execution_policy<Derived>& policy,
+  InputIt first,
+  Size num_items,
+  OutputIt result,
+  InitValueT init,
+  ScanOp scan_op)
+{
+  using InputValueT = cub::detail::InputValue<InitValueT>;
+  using AccumT      = typename ::cuda::std::__accumulator_t<ScanOp, cub::detail::value_t<InputIt>, InitValueT>;
+  constexpr bool ForceInclusive = true;
+
+  using Dispatch32 =
+    cub::DispatchScan<InputIt,
+                      OutputIt,
+                      ScanOp,
+                      InputValueT,
+                      std::int32_t,
+                      AccumT,
+                      cub::DeviceScanPolicy<AccumT, ScanOp>,
+                      ForceInclusive>;
+  using Dispatch64 =
+    cub::DispatchScan<InputIt,
+                      OutputIt,
+                      ScanOp,
+                      InputValueT,
+                      std::int64_t,
+                      AccumT,
+                      cub::DeviceScanPolicy<AccumT, ScanOp>,
+                      ForceInclusive>;
+
+  cudaStream_t stream = thrust::cuda_cub::stream(policy);
+  cudaError_t status;
+
+  // Negative number of items are normalized to `0`
+  if (thrust::detail::is_negative(num_items))
+  {
+    num_items = 0;
+  }
+
+  // Determine temporary storage requirements:
+  size_t tmp_size = 0;
+  {
+    THRUST_INDEX_TYPE_DISPATCH2(
+      status,
+      Dispatch32::Dispatch,
+      Dispatch64::Dispatch,
+      num_items,
+      (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
+    thrust::cuda_cub::throw_on_error(
+      status,
+      "after determining tmp storage "
+      "requirements for inclusive_scan");
+  }
+
+  // Run scan:
+  {
+    // Allocate temporary storage:
+    thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
+    THRUST_INDEX_TYPE_DISPATCH2(
+      status,
+      Dispatch32::Dispatch,
+      Dispatch64::Dispatch,
+      num_items,
+      (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
     thrust::cuda_cub::throw_on_error(
       thrust::cuda_cub::synchronize_optional(policy), "inclusive_scan failed to synchronize");
@@ -113,16 +195,22 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   ScanOp scan_op)
 {
   using InputValueT = cub::detail::InputValue<InitValueT>;
-  using Dispatch32  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::int32_t, InitValueT>;
-  using Dispatch64  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::int64_t, InitValueT>;
+  using Dispatch32  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, InitValueT>;
+  using Dispatch64  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
+  // Negative number of items are normalized to `0`
+  if (thrust::detail::is_negative(num_items))
+  {
+    num_items = 0;
+  }
+
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -138,7 +226,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -158,7 +246,21 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 // Thrust API entry points
 //-------------------------
 
-_CCCL_EXEC_CHECK_DISABLE
+template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename T, typename ScanOp>
+_CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
+  thrust::cuda_cub::execution_policy<Derived>& policy,
+  InputIt first,
+  Size num_items,
+  OutputIt result,
+  T init,
+  ScanOp scan_op)
+{
+  THRUST_CDP_DISPATCH(
+    (result = thrust::cuda_cub::detail::inclusive_scan_n_impl(policy, first, num_items, result, init, scan_op);),
+    (result = thrust::inclusive_scan(cvt_to_seq(derived_cast(policy)), first, first + num_items, result, scan_op);));
+  return result;
+}
+
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
@@ -176,6 +278,20 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan(
   using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
   diff_t const num_items = thrust::distance(first, last);
   return thrust::cuda_cub::inclusive_scan_n(policy, first, num_items, result, scan_op);
+}
+
+template <typename Derived, typename InputIt, typename OutputIt, typename T, typename ScanOp>
+_CCCL_HOST_DEVICE OutputIt inclusive_scan(
+  thrust::cuda_cub::execution_policy<Derived>& policy,
+  InputIt first,
+  InputIt last,
+  OutputIt result,
+  T init,
+  ScanOp scan_op)
+{
+  using diff_t           = typename thrust::iterator_traits<InputIt>::difference_type;
+  diff_t const num_items = thrust::distance(first, last);
+  return thrust::cuda_cub::inclusive_scan_n(policy, first, num_items, result, init, scan_op);
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>

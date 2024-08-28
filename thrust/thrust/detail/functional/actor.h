@@ -36,7 +36,6 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits/result_of_adaptable_function.h>
-#include <thrust/functional.h>
 #include <thrust/tuple.h>
 
 #include <cuda/std/type_traits>
@@ -84,9 +83,9 @@ struct argument
 {
   template <typename... Ts>
   _CCCL_HOST_DEVICE auto
-  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts...>{THRUST_FWD(args)...}))
+  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
-    return thrust::get<Pos>(thrust::tuple<Ts...>{THRUST_FWD(args)...});
+    return thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...});
   }
 };
 
@@ -103,6 +102,8 @@ struct composite;
 template <typename Eval, typename SubExpr>
 struct composite<Eval, SubExpr>
 {
+  constexpr composite() = default;
+
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
   _CCCL_HOST_DEVICE composite(const Eval& eval, const SubExpr& subexpr)
       : m_eval(eval)
@@ -124,6 +125,8 @@ private:
 template <typename Eval, typename SubExpr1, typename SubExpr2>
 struct composite<Eval, SubExpr1, SubExpr2>
 {
+  constexpr composite() = default;
+
   // TODO(bgruber): drop ctor and use aggregate initialization in C++17
   _CCCL_HOST_DEVICE composite(const Eval& eval, const SubExpr1& subexpr1, const SubExpr2& subexpr2)
       : m_eval(eval)
@@ -152,6 +155,8 @@ struct actor;
 template <typename F>
 struct operator_adaptor : F
 {
+  constexpr operator_adaptor() = default;
+
   _CCCL_HOST_DEVICE operator_adaptor(F f)
       : F(::cuda::std::move(f))
   {}

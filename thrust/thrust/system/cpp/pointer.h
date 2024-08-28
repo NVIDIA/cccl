@@ -14,9 +14,8 @@
  *  limitations under the License.
  */
 
-/*! \file thrust/system/cpp/memory.h
- *  \brief Managing memory associated with Thrust's TBB system.
- */
+//! \file
+//! Managing memory associated with Thrust's TBB system.
 
 #pragma once
 
