@@ -10,9 +10,9 @@ __global__ void cas_device_relaxed_non_volatile(int* data, int* out, int n)
 
 ; SM8X-LABEL: .target sm_80
 ; SM8X:      .visible .entry [[FUNCTION:_.*cas_device_relaxed_non_volatile.*]](
-; SM8X-DAG:  ld.param.u64 %rd[[#ATOM:]], [[[FUNCTION]]_param_0];
-; SM8X-DAG:  ld.param.u64 %rd[[#EXPECTED:]], [[[FUNCTION]]_param_1];
-; SM8X-DAG:  ld.param.u32 %r[[#INPUT:]], [[[FUNCTION]]_param_2];
+; SM8X-DAG:  ld.param.u64 %rd[[#ATOM:]], {{.*}}[[FUNCTION]]_param_0{{.*}}
+; SM8X-DAG:  ld.param.u64 %rd[[#EXPECTED:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
+; SM8X-DAG:  ld.param.u32 %r[[#INPUT:]], {{.*}}[[FUNCTION]]_param_2{{.*}}
 ; SM8X-NEXT: cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#EXPECTED]];
 ; SM8X-NEXT: ld.global.u32 %r[[#LOCALEXP:]], [%rd[[#INPUT]]];
 ; SM8X-NEXT: //
