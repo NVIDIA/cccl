@@ -1090,7 +1090,11 @@ struct dispatch_t<RequiresStableAddress,
     };
     // this static variable exists for each template instantiation of the surrounding function and class, on which the
     // chosen element count solely depends (assuming max SMEM is constant during a program execution)
-    static auto config = determine_element_counts();
+    // TODO(bgruber): we cannot cache the determined element count in device code
+#ifndef __CUDA_ARCH__
+    static
+#endif // __CUDA_ARCH__
+      const auto config = determine_element_counts();
     if (!config)
     {
       return config.error;
@@ -1168,7 +1172,11 @@ struct dispatch_t<RequiresStableAddress,
     };
     // this static variable exists for each template instantiation of the surrounding function and class, on which the
     // chosen element count solely depends (assuming max SMEM is constant during a program execution)
-    static auto config = determine_element_counts();
+    // TODO(bgruber): we cannot cache the determined element count in device code
+#  ifndef __CUDA_ARCH__
+    static
+#  endif // __CUDA_ARCH__
+      auto config = determine_element_counts();
     if (!config)
     {
       return config.error;
