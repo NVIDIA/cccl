@@ -131,6 +131,14 @@ function(thrust_build_compiler_targets)
     )
   endforeach()
 
+  if (THRUST_FORCE_32BIT_OFFSET_TYPE)
+    list(APPEND cxx_compile_definitions "THRUST_FORCE_32BIT_OFFSET_TYPE")
+  endif()
+
+  if (THRUST_FORCE_64BIT_OFFSET_TYPE)
+    list(APPEND cxx_compile_definitions "THRUST_FORCE_64BIT_OFFSET_TYPE")
+  endif()
+
   foreach (cxx_definition IN LISTS cxx_compile_definitions)
     # Add these for both CUDA and CXX targets:
     target_compile_definitions(thrust.compiler_interface INTERFACE
