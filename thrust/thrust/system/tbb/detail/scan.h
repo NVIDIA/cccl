@@ -45,6 +45,10 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
 
 template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
 OutputIterator
+inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator result, T init, BinaryFunction binary_op);
+
+template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+OutputIterator
 exclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator result, T init, BinaryFunction binary_op);
 
 } // end namespace detail

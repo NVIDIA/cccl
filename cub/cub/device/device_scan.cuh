@@ -49,6 +49,8 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
 
+#include <cuda/std/__functional/invoke.h>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -1303,7 +1305,7 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using AccumT  = cub::detail::accumulator_t<ScanOpT, InitValueT, cub::detail::value_t<InputIteratorT>>;
+    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::value_t<InputIteratorT>, InitValueT>;
     constexpr bool ForceInclusive = true;
 
     return DispatchScan<
