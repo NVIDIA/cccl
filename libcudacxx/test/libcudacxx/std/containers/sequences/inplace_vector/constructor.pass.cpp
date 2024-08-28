@@ -235,18 +235,18 @@ template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
   { // inplace_vector<T, 0> can be constructed from an empty range
-    cuda::std::inplace_vector<T, 0> vec(Range<T, 0>{});
+    cuda::std::inplace_vector<T, 0> vec(cuda::std::from_range_t{}, Range<T, 0>{});
     assert(vec.empty());
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from an empty range
-    inplace_vector vec(Range<T, 0>{});
+    inplace_vector vec(cuda::std::from_range_t{}, Range<T, 0>{});
     assert(vec.empty());
   }
 
   { // inplace_vector<T, N> can be constructed from a non-empty range
-    inplace_vector vec(Range<T, 4>{T(1), T(42), T(1337), T(0)});
+    inplace_vector vec(cuda::std::from_range_t{}, Range<T, 4>{T(1), T(42), T(1337), T(0)});
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }

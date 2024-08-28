@@ -45,6 +45,7 @@
 #  include <cuda/std/__new/launder.h>
 #  include <cuda/std/__ranges/access.h>
 #  include <cuda/std/__ranges/concepts.h>
+#  include <cuda/std/__ranges/from_range.h>
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
 #  include <cuda/std/__type_traits/conditional.h>
@@ -808,7 +809,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
     auto __first = _CUDA_VRANGES::begin(__range);
@@ -822,7 +823,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
                          _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
     const auto __size = _CUDA_VRANGES::size(__range);
@@ -840,7 +841,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
                          _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
     const auto __count =
@@ -1799,7 +1800,7 @@ public:
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(_Range&& __range)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
     if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
