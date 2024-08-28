@@ -201,7 +201,7 @@ CUB_TEST("DeviceTransform::Transform overaligned type",
   CAPTURE(c2h::demangle(typeid(type).name()));
 
   const int num_items = GENERATE(0, 1, 100, 1000);
-  c2h::device_vector<type> a(num_items, 3);
+  c2h::device_vector<int> a(num_items, 3); // put some integers at the front, so SMEM has to handle different alignments
   c2h::device_vector<type> b(num_items, 4);
 
   c2h::device_vector<type> result(num_items);

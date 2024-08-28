@@ -56,6 +56,18 @@ namespace detail
 {
 namespace transform
 {
+_CCCL_HOST_DEVICE constexpr int sum()
+{
+  return 0;
+}
+
+// TODO(bgruber): remove with C++17
+template <typename... Ts>
+_CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
+{
+  return head + sum(tail...);
+}
+
 #if _CCCL_STD_VER >= 2017
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
@@ -63,17 +75,6 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
   return (int{sizeof(value_t<Its>)} + ... + 0);
 }
 #else // ^^^ C++17 ^^^ / vvv C++11 vvv
-_CCCL_HOST_DEVICE constexpr int sum()
-{
-  return 0;
-}
-
-template <typename... Ts>
-_CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
-{
-  return head + sum(tail...);
-}
-
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
@@ -499,6 +500,8 @@ _CCCL_DEVICE void bulk_copy_tile(
   Offset global_offset,
   const aligned_base_ptr<T>& aligned_ptr)
 {
+  // TODO(bgruber): I think we need to align smem + smem_offset to alignof(T) here
+
   const char* src = reinterpret_cast<const char*>(aligned_ptr.ptr + global_offset);
   char* dst       = smem + smem_offset;
   assert(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0);
@@ -550,7 +553,8 @@ _CCCL_DEVICE void bulk_copy_tile(
     }
   }
 
-  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
+  // TODO(bgruber): I don't think this is correct
+  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + ::cuda::std::max(bulk_copy_alignment, int{alignof(T)});
 };
 
 // TODO(bgruber): inline this as lambda in C++14
@@ -788,9 +792,11 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) 
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> int
 {
-  // 128 bytes of padding for each input tile (before + after)
+  // max(128, alignof(value_type)) bytes of padding for each input tile (before + after)
+  // TODO(bgruber): use a fold expression in C++17
   return tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + ::cuda::std::max(bulk_copy_alignment, bulk_copy_size_multiple) * sizeof...(RandomAccessIteratorsIn);
+       + sum(::cuda::std::max(::cuda::std::max(bulk_copy_alignment, bulk_copy_size_multiple),
+                              int{alignof(value_t<RandomAccessIteratorsIn>)})...);
 }
 
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
