@@ -241,7 +241,7 @@ try
   FILTER_UNSUPPORTED_ALGS
   CAPTURE(alg);
 
-  constexpr offset_t num_items = offset_t{1} << 32 + 1; // 4GiB + 1
+  constexpr offset_t num_items = (offset_t{1} << 32) + 123456; // a few thread blocks beyond 4GiB
   c2h::device_vector<type> input(num_items);
   c2h::gen(CUB_SEED(1), input);
 
