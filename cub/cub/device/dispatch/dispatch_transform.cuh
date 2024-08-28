@@ -362,6 +362,16 @@ struct aligned_size_t
   }
 };
 
+template <typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void fallback_copy(const char* s, char* d, int num_bytes)
+{
+  const int elements = num_bytes / sizeof(T);
+  if (threadIdx.x < elements)
+  {
+    reinterpret_cast<T*>(d)[threadIdx.x] = reinterpret_cast<const T*>(s)[threadIdx.x];
+  }
+};
+
 // TODO(bgruber): inline this as lambda in C++14
 template <typename Offset, typename T>
 _CCCL_DEVICE const T* copy_and_return_smem_dst(
@@ -396,39 +406,46 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   // cooperative_groups::details::copy_like<int4>(group, dst, src, sizeof(T) * tile_size), which already handles all the
   // peeling we do here
 
-  // check for out-of-bounds read at the beginning
   int bytes_to_copy = padded_num_bytes_rounded;
-  if (blockIdx.x == 0 && aligned_ptr.head_padding > 0)
+  _CCCL_IF_CONSTEXPR (alignof(T) < memcpy_async_alignment)
   {
-    // peel front bytes
-    const int peeled_bytes_front = memcpy_async_alignment - aligned_ptr.head_padding;
-    assert(peeled_bytes_front < memcpy_async_alignment);
-    if (threadIdx.x < peeled_bytes_front)
+    // out-of-bounds access at the front can happen, so check for it
+    if (blockIdx.x == 0 && aligned_ptr.head_padding > 0)
     {
-      dst[aligned_ptr.head_padding + threadIdx.x] = src[aligned_ptr.head_padding + threadIdx.x];
+      // peel front bytes
+      const int peeled_bytes_front = memcpy_async_alignment - aligned_ptr.head_padding;
+      assert(peeled_bytes_front < memcpy_async_alignment);
+      fallback_copy<T>(src + aligned_ptr.head_padding, dst + aligned_ptr.head_padding, peeled_bytes_front);
+      // move async copy start into the buffer
+      src += memcpy_async_alignment;
+      dst += memcpy_async_alignment;
+      bytes_to_copy -= memcpy_async_alignment; // may result in a negative value
     }
-    // move async copy start into the buffer
-    src += memcpy_async_alignment;
-    dst += memcpy_async_alignment;
-    bytes_to_copy -= memcpy_async_alignment; // may result in a negative value
   }
 
-  // check for out-of-bounds read at the end
-  const bool oob = reinterpret_cast<uintptr_t>(src) + bytes_to_copy > reinterpret_cast<uintptr_t>(aligned_ptr.end);
-  const auto async_copy_bytes = bytes_to_copy - oob * memcpy_async_size_multiple;
-  if (async_copy_bytes > 0)
+  _CCCL_IF_CONSTEXPR (alignof(T) < memcpy_async_size_multiple)
   {
-    cooperative_groups::memcpy_async(
-      group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(async_copy_bytes)});
-    dst += async_copy_bytes;
-    src += async_copy_bytes;
-  }
-
-  if (oob)
-  {
-    if (threadIdx.x < padded_num_bytes % memcpy_async_size_multiple)
+    // out-of-bounds access at the back can happen, so check for it
+    const bool oob = reinterpret_cast<uintptr_t>(src) + bytes_to_copy > reinterpret_cast<uintptr_t>(aligned_ptr.end);
+    const auto async_copy_bytes = bytes_to_copy - oob * memcpy_async_size_multiple;
+    if (async_copy_bytes > 0)
     {
-      dst[threadIdx.x] = src[threadIdx.x];
+      cooperative_groups::memcpy_async(
+        group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(async_copy_bytes)});
+    }
+    if (oob)
+    {
+      dst += async_copy_bytes;
+      src += async_copy_bytes;
+      fallback_copy<T>(src, dst, padded_num_bytes % memcpy_async_size_multiple);
+    }
+  }
+  else
+  {
+    if (bytes_to_copy > 0)
+    {
+      cooperative_groups::memcpy_async(
+        group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(bytes_to_copy)});
     }
   }
 
@@ -510,44 +527,57 @@ _CCCL_DEVICE void bulk_copy_tile(
   const int padded_num_bytes         = aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size;
   const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, bulk_copy_size_multiple);
 
-  // check for out-of-bounds read at the beginning
   int bytes_to_copy = padded_num_bytes_rounded;
-  if (blockIdx.x == 0 && aligned_ptr.head_padding > 0)
+  _CCCL_IF_CONSTEXPR (alignof(T) < bulk_copy_alignment)
   {
-    // peel front bytes
-    const int peeled_bytes_front = bulk_copy_alignment - aligned_ptr.head_padding;
-    assert(peeled_bytes_front < bulk_copy_alignment);
-    if (threadIdx.x < peeled_bytes_front)
+    // out-of-bounds access at the front can happen, so check for it
+    if (blockIdx.x == 0 && aligned_ptr.head_padding > 0)
     {
-      dst[aligned_ptr.head_padding + threadIdx.x] = src[aligned_ptr.head_padding + threadIdx.x];
+      // peel front bytes
+      const int peeled_bytes_front = bulk_copy_alignment - aligned_ptr.head_padding;
+      assert(peeled_bytes_front < bulk_copy_alignment);
+      fallback_copy<T>(src + aligned_ptr.head_padding, dst + aligned_ptr.head_padding, peeled_bytes_front);
+      // move bulk copy start into the buffer
+      src += bulk_copy_alignment;
+      dst += bulk_copy_alignment;
+      bytes_to_copy -= bulk_copy_alignment; // may result in a negative value
     }
-    // move bulk copy start into the buffer
-    src += bulk_copy_alignment;
-    dst += bulk_copy_alignment;
-    bytes_to_copy -= bulk_copy_alignment; // may result in a negative value
   }
 
-  // check for out-of-bounds read at the end
-  const bool oob = reinterpret_cast<uintptr_t>(src) + bytes_to_copy > reinterpret_cast<uintptr_t>(aligned_ptr.end);
-  const auto bulk_copy_bytes = bytes_to_copy - oob * bulk_copy_size_multiple;
-  if (bulk_copy_bytes > 0)
+  _CCCL_IF_CONSTEXPR (alignof(T) < bulk_copy_size_multiple)
   {
-    if (threadIdx.x == 0)
+    // check for out-of-bounds read at the end
+    // TODO(bgruber): oob has a compile-time known part. Let's look at codegen and see if we want to have two code paths
+    const bool oob = reinterpret_cast<uintptr_t>(src) + bytes_to_copy > reinterpret_cast<uintptr_t>(aligned_ptr.end);
+    const auto bulk_copy_bytes = bytes_to_copy - oob * bulk_copy_size_multiple;
+    if (bulk_copy_bytes > 0)
     {
+      if (threadIdx.x == 0)
+      {
 #  if CUB_PTX_ARCH >= 900
-      ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bulk_copy_bytes, &bar);
+        ::cuda::ptx::cp_async_bulk(
+          ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bulk_copy_bytes, &bar);
 #  endif // CUB_PTX_ARCH >= 900
-      total_bytes_bulk_copied += bulk_copy_bytes;
+        total_bytes_bulk_copied += bulk_copy_bytes;
+      }
     }
-    dst += bulk_copy_bytes;
-    src += bulk_copy_bytes;
-  }
-
-  if (oob)
-  {
-    if (threadIdx.x < padded_num_bytes % bulk_copy_size_multiple)
+    if (oob)
     {
-      dst[threadIdx.x] = src[threadIdx.x];
+      dst += bulk_copy_bytes;
+      src += bulk_copy_bytes;
+      fallback_copy<T>(src, dst, padded_num_bytes % bulk_copy_size_multiple);
+    }
+  }
+  else
+  {
+    if (bytes_to_copy > 0)
+    {
+      if (threadIdx.x == 0)
+      {
+#  if CUB_PTX_ARCH >= 900
+        ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
+#  endif // CUB_PTX_ARCH >= 900
+      }
     }
   }
 

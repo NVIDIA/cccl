@@ -15,9 +15,10 @@
 
 #include <sstream>
 
+#include "c2h/custom_type.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
-#include <c2h/custom_type.cuh>
+#include "test/test_util_vec.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -122,7 +123,7 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 CUB_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, int3>,
          offset_types,
          algorithms)
 {
