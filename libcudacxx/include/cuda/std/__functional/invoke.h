@@ -541,6 +541,10 @@ invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args.
 
 #endif // _CCCL_STD_VER > 2011
 
+/// The type of intermediate accumulator (according to P2322R6)
+template <typename Invokable, typename InputT, typename InitT = InputT>
+using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invokable, InitT, InputT>::type>::type;
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___FUNCTIONAL_INVOKE_H
