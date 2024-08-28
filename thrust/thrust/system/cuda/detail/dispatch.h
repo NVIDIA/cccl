@@ -77,7 +77,12 @@
     if (static_cast<std::uint64_t>(count)                                                    \
         > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max)) \
     {                                                                                        \
-      throw ::std::runtime_error("Offset type overflow");                                    \
+      throw ::std::runtime_error(                                                            \
+        "Input size exceeds the maximum allowable value for " #index_type                    \
+        " (" + std::to_string(thrust::detail::integer_traits<index_type>::const_max) + "). " \
+        #index_type " was used because the macro THRUST_FORCE_32BIT_OFFSET_TYPE was defined. "\
+        "To handle larger input sizes, either remove this macro to dynamically dispatch "    \
+        "between 32-bit and 64-bit index types, or define THRUST_FORCE_64BIT_OFFSET_TYPE.")
     }
 
 //! @brief Ensures that the sizes of the inputs do not overflow the offset type, but two counts
@@ -85,7 +90,12 @@
     if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)              \
         > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max)) \
     {                                                                                        \
-      throw ::std::runtime_error("Offset type overflow");                                    \
+      throw ::std::runtime_error(                                                            \
+        "Combined input sizes exceed the maximum allowable value for " #index_type           \
+        " (" + std::to_string(thrust::detail::integer_traits<index_type>::const_max) + "). " \
+        #index_type " was used because the macro THRUST_FORCE_32BIT_OFFSET_TYPE was defined. "\
+        "To handle larger input sizes, either remove this macro to dynamically dispatch "    \
+        "between 32-bit and 64-bit index types, or define THRUST_FORCE_64BIT_OFFSET_TYPE."); \```
     }
 
 //! @brief Always dispatches to 32 bit offset version of an algorithm but throws if count would overflow
