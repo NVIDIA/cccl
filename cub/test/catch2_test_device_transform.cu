@@ -239,6 +239,7 @@ try
   using offset_t     = cuda::std::int64_t;
   constexpr auto alg = c2h::get<0, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
+  CAPTURE(alg);
 
   constexpr offset_t num_items = offset_t{1} << 32 + 1; // 4GiB + 1
   c2h::device_vector<type> input(num_items);
