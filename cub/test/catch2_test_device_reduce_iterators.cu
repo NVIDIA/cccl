@@ -104,7 +104,7 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t            = cub::detail::accumulator_t<op_t, init_t, item_t>;
+  using accum_t            = ::cuda::std::__accumulator_t<op_t, item_t, init_t>;
   output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test

@@ -93,7 +93,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
+  using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, init_t>;
   c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(in_it, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
 

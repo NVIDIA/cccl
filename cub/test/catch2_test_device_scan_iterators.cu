@@ -84,7 +84,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("inclusive sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -102,7 +102,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("exclusive sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -120,7 +120,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("inclusive scan")
   {
     using op_t    = cub::Min;
-    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -139,7 +139,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("exclusive scan")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -157,7 +157,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   SECTION("exclusive scan with future-init value")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     accum_t init_value{};
