@@ -255,6 +255,7 @@ void test_exceptions()
   try
   {
     too_small.assign_range(Range<int, 2 + capacity>{0, 1, 2, 3, 4, 5});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -275,6 +276,7 @@ void test_exceptions()
   try
   {
     too_small.assign(2 * capacity, 42);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -287,6 +289,7 @@ void test_exceptions()
   {
     using iter = cpp17_input_iterator<const int*>;
     too_small.assign(iter{input.begin()}, iter{input.end()});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -298,6 +301,7 @@ void test_exceptions()
   try
   {
     too_small.assign(input.begin(), input.end());
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -309,6 +313,7 @@ void test_exceptions()
   try
   {
     too_small.assign(cuda::std::initializer_list<int>{0, 1, 2, 3, 4, 5, 6});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}

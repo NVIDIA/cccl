@@ -325,6 +325,7 @@ void test_exceptions()
   try
   {
     inplace_vector too_small(2 * capacity);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -336,6 +337,7 @@ void test_exceptions()
   try
   {
     inplace_vector too_small(2 * capacity, 42);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -349,6 +351,7 @@ void test_exceptions()
     using iter = cpp17_input_iterator<const int*>;
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
     inplace_vector too_small(iter{input.begin()}, iter{input.end()});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -361,6 +364,7 @@ void test_exceptions()
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
     inplace_vector too_small(input.begin(), input.end());
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -373,6 +377,7 @@ void test_exceptions()
   {
     cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
     inplace_vector too_small(input);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -386,6 +391,7 @@ void test_exceptions()
   {
     input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
     inplace_vector too_small(input);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -398,6 +404,7 @@ void test_exceptions()
   {
     uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
     inplace_vector too_small(input);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -410,6 +417,7 @@ void test_exceptions()
   {
     sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
     inplace_vector too_small(input);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -422,6 +430,7 @@ void test_exceptions()
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
     inplace_vector too_small(input);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}

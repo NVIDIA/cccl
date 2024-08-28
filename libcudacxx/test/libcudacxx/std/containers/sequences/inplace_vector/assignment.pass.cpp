@@ -229,6 +229,7 @@ void test_exceptions()
   {
     cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
     too_small = input;
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}

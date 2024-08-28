@@ -250,6 +250,7 @@ void test_exceptions()
     try
     {
       too_small.resize(1337);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -261,6 +262,7 @@ void test_exceptions()
     try
     {
       too_small.resize(1337, 5);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -272,6 +274,7 @@ void test_exceptions()
     try
     {
       too_small.reserve(1337);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}

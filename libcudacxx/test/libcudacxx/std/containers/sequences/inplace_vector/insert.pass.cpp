@@ -233,6 +233,7 @@ void test_exceptions()
   {
     const int input = 5;
     too_small.insert(too_small.begin(), input);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -244,6 +245,7 @@ void test_exceptions()
   try
   {
     too_small.insert(too_small.begin(), 1);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -255,6 +257,7 @@ void test_exceptions()
   try
   {
     too_small.insert(too_small.begin(), 5, 42);
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -268,6 +271,7 @@ void test_exceptions()
     using iter = cpp17_input_iterator<const int*>;
     cuda::std::array<int, 3> input{42, 3, 1337};
     too_small.insert(too_small.begin(), iter{input.begin()}, iter{input.end()});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -280,6 +284,7 @@ void test_exceptions()
   {
     cuda::std::array<int, 3> input{42, 3, 1337};
     too_small.insert(too_small.begin(), input.begin(), input.end());
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -291,6 +296,7 @@ void test_exceptions()
   try
   {
     too_small.insert(too_small.begin(), {42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -303,6 +309,7 @@ void test_exceptions()
   try
   {
     too_small.insert_range(too_small.begin(), input_range<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -314,6 +321,7 @@ void test_exceptions()
   try
   {
     too_small.insert_range(too_small.begin(), uncommon_range<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -325,6 +333,7 @@ void test_exceptions()
   try
   {
     too_small.insert_range(too_small.begin(), sized_uncommon_range<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -336,6 +345,7 @@ void test_exceptions()
   try
   {
     too_small.insert_range(too_small.begin(), cuda::std::array<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -347,6 +357,7 @@ void test_exceptions()
   try
   {
     too_small.append_range(input_range<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -358,6 +369,7 @@ void test_exceptions()
   try
   {
     too_small.append_range(uncommon_range<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -369,6 +381,7 @@ void test_exceptions()
   try
   {
     too_small.append_range(sized_uncommon_range<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}
@@ -380,6 +393,7 @@ void test_exceptions()
   try
   {
     too_small.append_range(cuda::std::array<int, 3>{42, 3, 1337});
+    assert(false);
   }
   catch (const std::bad_alloc&)
   {}

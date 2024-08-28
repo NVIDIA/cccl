@@ -216,6 +216,7 @@ void test_exceptions()
     {
       auto emplace = empty.emplace_back(5);
       unused(emplace);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -229,6 +230,7 @@ void test_exceptions()
       const int input       = 5;
       auto push_back_lvalue = empty.push_back(input);
       unused(push_back_lvalue);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -241,6 +243,7 @@ void test_exceptions()
     {
       auto push_back_rvalue = empty.push_back(5);
       unused(push_back_rvalue);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -257,6 +260,7 @@ void test_exceptions()
     {
       auto emplace = full.emplace_back(5);
       unused(emplace);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -270,6 +274,7 @@ void test_exceptions()
       const int input       = 5;
       auto push_back_lvalue = full.push_back(input);
       unused(push_back_lvalue);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
@@ -282,6 +287,7 @@ void test_exceptions()
     {
       auto push_back_rvalue = full.push_back(5);
       unused(push_back_rvalue);
+      assert(false);
     }
     catch (const std::bad_alloc&)
     {}
