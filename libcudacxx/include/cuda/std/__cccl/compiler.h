@@ -12,10 +12,7 @@
 #define __CCCL_COMPILER_H
 
 // Determine the host compiler and its version
-#if defined(__INTEL_LLVM_COMPILER)
-#  define _CCCL_COMPILER_ICC_LLVM
-#  define _CCCL_COMPILER_ICC_LLVM_VERSION __INTEL_LLVM_COMPILER
-#elif defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER)
 #  define _CCCL_COMPILER_ICC
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC
@@ -31,8 +28,6 @@ static_assert(__clang_patchlevel__ < 100, "__clang_patchlevel__ must be less tha
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC
 #  define _CCCL_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-static_assert(__GNUC__ < 100);
-static_assert(__GNUC_MINOR__ < 100);
 static_assert(__GNUC_PATCHLEVEL__ < 100);
 #elif defined(_MSC_VER)
 #  define _CCCL_COMPILER_MSVC
