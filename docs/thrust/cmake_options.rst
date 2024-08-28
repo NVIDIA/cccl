@@ -78,8 +78,8 @@ Generic CMake Options
          large inputs and optimal performance at the cost of increased compile time and binary size
       -  ``Force32bit`` forces Thrust to use a 32bit offset type. This improves compile time and
          binary size but limits the input size.
-      -  ``Force32bit`` forces Thrust to use a 64bit offset type. This improves compile time and
-         binary size and allow large input sizes. However, it might degrade runtime performance
+      -  ``Force64bit`` forces Thrust to use a 64bit offset type. This improves compile time and
+         binary size and allows large input sizes. However, it might degrade runtime performance
 
 Single Config CMake Options
 ---------------------------
