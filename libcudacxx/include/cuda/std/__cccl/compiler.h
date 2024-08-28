@@ -34,8 +34,6 @@ static_assert(__NVCOMPILER_PATCHLEVEL__ < 100);
 #  define _CCCL_COMPILER_MSVC
 #  define _CCCL_MSVC_VERSION      _MSC_VER
 #  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
-#elif defined(__IBMCPP__)
-#  define _CCCL_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC
 #endif
