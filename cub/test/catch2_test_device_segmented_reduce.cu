@@ -121,7 +121,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
 
@@ -142,7 +142,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   SECTION("sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, input_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);

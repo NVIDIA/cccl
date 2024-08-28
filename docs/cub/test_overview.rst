@@ -95,7 +95,7 @@ but are modified to provide more stable behavior in some testing edge cases.
     unless the test code is being used for documentation examples.
 
 Similarly, any thrust algorithms that executed on the device must be invoked with the
-`c2h::device_policy`` execution policy (not shown here) to support the same edge cases.
+`c2h::device_policy` execution policy (not shown here) to support the same edge cases.
 The memory is filled with random data in (2).
 
 Generator ``c2h::gen`` takes at least two parameters.
@@ -327,4 +327,4 @@ Overall, the test will produce two executables.
 Each of these executables is going to generate ``2`` input problem sizes.
 For each problem size, ``3`` random vectors are generated.
 As a result, we have ``12`` different tests.
-The code also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust alorithm.
+The code also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust algorithm.

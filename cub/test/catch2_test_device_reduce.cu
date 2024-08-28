@@ -132,7 +132,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
     output_t expected_result =
       static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
@@ -152,7 +152,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   SECTION("sum")
   {
     using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
     output_t expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));

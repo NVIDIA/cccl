@@ -26,7 +26,7 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  include <intrin.h>
-#endif
+#endif // _CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
