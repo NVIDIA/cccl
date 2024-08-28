@@ -235,18 +235,18 @@ template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
   { // inplace_vector<T, 0> can be constructed from an empty range
-    cuda::std::inplace_vector<T, 0> vec(cuda::std::from_range_t{}, Range<T, 0>{});
+    cuda::std::inplace_vector<T, 0> vec(cuda::std::from_range, Range<T, 0>{});
     assert(vec.empty());
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from an empty range
-    inplace_vector vec(cuda::std::from_range_t{}, Range<T, 0>{});
+    inplace_vector vec(cuda::std::from_range, Range<T, 0>{});
     assert(vec.empty());
   }
 
   { // inplace_vector<T, N> can be constructed from a non-empty range
-    inplace_vector vec(cuda::std::from_range_t{}, Range<T, 4>{T(1), T(42), T(1337), T(0)});
+    inplace_vector vec(cuda::std::from_range, Range<T, 4>{T(1), T(42), T(1337), T(0)});
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
   }
@@ -390,7 +390,7 @@ void test_exceptions()
   try
   {
     input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    inplace_vector too_small(input);
+    inplace_vector too_small(cuda::std::from_range, input);
     assert(false);
   }
   catch (const std::bad_alloc&)
@@ -403,7 +403,7 @@ void test_exceptions()
   try
   {
     uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    inplace_vector too_small(input);
+    inplace_vector too_small(cuda::std::from_range, input);
     assert(false);
   }
   catch (const std::bad_alloc&)
@@ -416,7 +416,7 @@ void test_exceptions()
   try
   {
     sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-    inplace_vector too_small(input);
+    inplace_vector too_small(cuda::std::from_range, input);
     assert(false);
   }
   catch (const std::bad_alloc&)
@@ -429,7 +429,7 @@ void test_exceptions()
   try
   {
     cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-    inplace_vector too_small(input);
+    inplace_vector too_small(cuda::std::from_range, input);
     assert(false);
   }
   catch (const std::bad_alloc&)

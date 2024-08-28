@@ -25,6 +25,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct from_range_t
 {};
 
+_CCCL_GLOBAL_CONSTANT from_range_t from_range{};
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___RANGES_FROM_RANGE_H
