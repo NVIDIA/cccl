@@ -11,6 +11,7 @@ Memory Resources
    ${repo_docs_api_path}/enum*async__memory__pool*
    ${repo_docs_api_path}/struct*async__memory__pool__properties*
    ${repo_docs_api_path}/class*async__memory__pool*
+   ${repo_docs_api_path}/class*async__memory__resource*
 
 The ``<cuda/experimental/memory_resource.cuh>`` header provides:
    -  :ref:`any_resource <cudax-memory-resource-any-resource>` and

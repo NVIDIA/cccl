@@ -13,5 +13,6 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/async_memory_pool.cuh>
+#include <cuda/experimental/__memory_resource/async_memory_resource.cuh>
 
 #endif // __CUDAX_MEMORY_RESOURCE___
