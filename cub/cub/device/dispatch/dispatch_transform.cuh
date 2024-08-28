@@ -663,31 +663,21 @@ _CCCL_DEVICE void transform_kernel_impl(
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-// Type erasing "union" for kernel arguments. We cannot use a real union, because it would not be trivially copyable in
-// case It is not trivially copyable (e.g. thrust::constant_iterator<custom_numeric>)
 template <typename It>
-struct kernel_arg
+union kernel_arg
 {
-  using PS                               = aligned_base_ptr<const value_t<It>>;
-  static constexpr std::size_t alignment = ::cuda::std::max(alignof(It), alignof(PS)); // need extra variable for GCC<9
-  alignas(alignment) char storage[::cuda::std::max(sizeof(It), sizeof(PS))];
+  char dummy; // in case It is not default-constructible
+  aligned_base_ptr<const value_t<It>> aligned_ptr;
+  It iterator;
 
-  template <typename T>
-  _CCCL_HOST_DEVICE T& aliased_storage()
-  {
-    static_assert(::cuda::std::is_same<T, It>::value || ::cuda::std::is_same<T, PS>::value, "");
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
-    return *reinterpret_cast<T*>(storage);
-    _CCCL_DIAG_POP
-  }
+  _CCCL_HOST_DEVICE kernel_arg() {} // in case It is not default-constructible
 };
 
 template <typename It>
 _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  cub::detail::uninitialized_copy_single(&arg.template aliased_storage<It>(), it);
+  arg.iterator = it;
   return arg;
 }
 
@@ -695,9 +685,7 @@ template <typename It, typename Offset>
 _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, Offset size, int alignment) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  using T = value_t<It>;
-  cub::detail::uninitialized_copy_single(
-    &arg.template aliased_storage<aligned_base_ptr<const T>>(), make_aligned_base_ptr(ptr, size, alignment));
+  arg.aligned_ptr = make_aligned_base_ptr(ptr, size, alignment);
   return arg;
 }
 
@@ -714,14 +702,14 @@ template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<needs_aligned_p
 _CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
   ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<const value_t<It>>&&
 {
-  return ::cuda::std::move(arg.template aliased_storage<aligned_base_ptr<const value_t<It>>>());
+  return ::cuda::std::move(arg.aligned_ptr);
 }
 
 template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto
 select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> It&&
 {
-  return ::cuda::std::move(arg.template aliased_storage<It>());
+  return ::cuda::std::move(arg.iterator);
 }
 
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
