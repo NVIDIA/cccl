@@ -7,21 +7,32 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_STOP_TOKEN_H
+#define __CUDAX_ASYNC_DETAIL_STOP_TOKEN_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
 
-#include "config.cuh"
-#include "thread.cuh"
-#include "utility.cuh"
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/thread.cuh>
+#include <cuda/experimental/__async/utility.cuh>
 
 #if __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
 #  include <stop_token>
 #endif
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 // warning #20012-D: __device__ annotation is ignored on a
 // function("inplace_stop_source") that is explicitly defaulted on its first
@@ -266,7 +277,7 @@ public:
 private:
   _CCCL_HOST_DEVICE static void _execute_impl(_stok::_inplace_stop_callback_base* cb) noexcept
   {
-    _CUDA_VSTD::move(static_cast<inplace_stop_callback*>(cb)->_fun)();
+    static_cast<_Fun&&>(static_cast<inplace_stop_callback*>(cb)->_fun)();
   }
 
   _CCCL_NO_UNIQUE_ADDRESS _Fun _fun;
@@ -471,4 +482,6 @@ using stop_callback_for_t = typename Token::template callback_type<Callback>;
 
 _CCCL_NV_DIAG_DEFAULT(20012)
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

@@ -7,17 +7,28 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_QUERIES_H
+#define __CUDAX_ASYNC_DETAIL_QUERIES_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__memory/allocator.h>
 
-#include "meta.cuh"
-#include "stop_token.cuh"
-#include "type_traits.cuh"
-#include "utility.cuh"
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/stop_token.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/utility.cuh>
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -151,4 +162,6 @@ using domain_of_t = _call_result_t<get_domain_t, Sch>;
 
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

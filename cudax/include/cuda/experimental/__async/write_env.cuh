@@ -7,18 +7,29 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "config.cuh"
-#include "cpos.cuh"
-#include "env.cuh"
-#include "exception.cuh"
-#include "queries.cuh"
-#include "receiver_with_env.cuh"
-#include "utility.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_WRITE_ENV_H
+#define __CUDAX_ASYNC_DETAIL_WRITE_ENV_H
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/env.cuh>
+#include <cuda/experimental/__async/exception.cuh>
+#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/__async/rcvr_with_env.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -32,10 +43,10 @@ private:
   struct _opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = completion_signatures_of_t<Sndr, _receiver_with_env_t<Rcvr, Env>*>;
+    using completion_signatures   = completion_signatures_of_t<Sndr, _rcvr_with_env_t<Rcvr, Env>*>;
 
-    _receiver_with_env_t<Rcvr, Env> _env_rcvr;
-    connect_result_t<Sndr, _receiver_with_env_t<Rcvr, Env>*> _op;
+    _rcvr_with_env_t<Rcvr, Env> _env_rcvr;
+    connect_result_t<Sndr, _rcvr_with_env_t<Rcvr, Env>*> _op;
 
     _CCCL_HOST_DEVICE explicit _opstate_t(Sndr&& sndr, Env env, Rcvr rcvr)
         : _env_rcvr(static_cast<Env&&>(env), static_cast<Rcvr&&>(rcvr))
@@ -99,4 +110,6 @@ _CCCL_GLOBAL_CONSTANT write_env_t write_env{};
 
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

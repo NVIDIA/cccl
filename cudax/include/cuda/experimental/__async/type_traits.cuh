@@ -7,15 +7,26 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_TYPE_TRAITS_H
+#define __CUDAX_ASYNC_DETAIL_TYPE_TRAITS_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#include "config.cuh"
-#include "meta.cuh"
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/meta.cuh>
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -242,4 +253,6 @@ _CCCL_INLINE_VAR constexpr bool _nothrow_copyable = (_mvalid_q<_nothrow_copyable
 #endif
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

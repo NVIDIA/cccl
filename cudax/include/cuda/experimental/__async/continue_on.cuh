@@ -7,19 +7,30 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "completion_signatures.cuh"
-#include "cpos.cuh"
-#include "exception.cuh"
-#include "meta.cuh"
-#include "queries.cuh"
-#include "tuple.cuh"
-#include "utility.cuh"
-#include "variant.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_CONTINUE_ON_H
+#define __CUDAX_ASYNC_DETAIL_CONTINUE_ON_H
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/exception.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/__async/tuple.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/variant.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -268,4 +279,6 @@ _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE continue_on_t::_closure_t<Sch> continue_o
 _CCCL_GLOBAL_CONSTANT continue_on_t continue_on{};
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

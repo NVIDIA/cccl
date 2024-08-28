@@ -7,15 +7,26 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_START_DETACHED_H
+#define __CUDAX_ASYNC_DETAIL_START_DETACHED_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__exception/terminate.h>
 
-#include "config.cuh"
-#include "cpos.cuh"
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -88,4 +99,6 @@ public:
 _CCCL_GLOBAL_CONSTANT start_detached_t start_detached{};
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

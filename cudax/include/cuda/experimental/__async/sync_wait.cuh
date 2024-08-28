@@ -7,9 +7,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "config.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_SYNC_WAIT_H
+#define __CUDAX_ASYNC_DETAIL_SYNC_WAIT_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/config.cuh>
 
 // run_loop isn't supported on-device yet, so neither can sync_wait be.
 #if !defined(__CUDA_ARCH__)
@@ -17,15 +29,14 @@
 #  include <cuda/std/optional>
 #  include <cuda/std/tuple>
 
+#  include <cuda/experimental/__async/exception.cuh>
+#  include <cuda/experimental/__async/meta.cuh>
+#  include <cuda/experimental/__async/run_loop.cuh>
+#  include <cuda/experimental/__async/utility.cuh>
+
 #  include <system_error>
 
-#  include "exception.cuh"
-#  include "meta.cuh"
-#  include "run_loop.cuh"
-#  include "utility.cuh"
-
-// Must be the last include
-#  include "prologue.cuh"
+#  include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -189,6 +200,8 @@ public:
 _CCCL_GLOBAL_CONSTANT sync_wait_t sync_wait{};
 } // namespace cuda::experimental::__async
 
-#  include "epilogue.cuh"
+#  include <cuda/experimental/__async/epilogue.cuh>
 
 #endif // !defined(__CUDA_ARCH__)
+
+#endif

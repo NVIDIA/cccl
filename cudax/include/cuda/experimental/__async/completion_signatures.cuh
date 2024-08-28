@@ -7,13 +7,24 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "cpos.cuh"
-#include "exception.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_COMPLETION_SIGNATURES_H
+#define __CUDAX_ASYNC_DETAIL_COMPLETION_SIGNATURES_H
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/exception.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -310,4 +321,6 @@ auto eptr_completion_if() -> _mif<PotentiallyThrowing, _csig::_sigs<set_error_t(
 } // namespace meta
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

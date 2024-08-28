@@ -7,18 +7,29 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "completion_signatures.cuh"
-#include "cpos.cuh"
-#include "queries.cuh"
-#include "receiver_with_env.cuh"
-#include "tuple.cuh"
-#include "utility.cuh"
-#include "variant.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_START_ON_H
+#define __CUDAX_ASYNC_DETAIL_START_ON_H
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/__async/rcvr_with_env.cuh>
+#include <cuda/experimental/__async/tuple.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/variant.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -52,14 +63,14 @@ private:
 
     using completion_signatures = //
       transform_completion_signatures<
-        completion_signatures_of_t<CvSndr, _receiver_with_env_t<Rcvr, _sch_env_t<Sch>>*>,
+        completion_signatures_of_t<CvSndr, _rcvr_with_env_t<Rcvr, _sch_env_t<Sch>>*>,
         transform_completion_signatures<completion_signatures_of_t<schedule_result_t<Sch>, _opstate_t*>,
                                         __async::completion_signatures<>,
                                         _malways<__async::completion_signatures<>>::_f>>;
 
-    _receiver_with_env_t<Rcvr, _sch_env_t<Sch>> _env_rcvr;
+    _rcvr_with_env_t<Rcvr, _sch_env_t<Sch>> _env_rcvr;
     connect_result_t<schedule_result_t<Sch>, _opstate_t*> _opstate1;
-    connect_result_t<CvSndr, _receiver_with_env_t<Rcvr, _sch_env_t<Sch>>*> _opstate2;
+    connect_result_t<CvSndr, _rcvr_with_env_t<Rcvr, _sch_env_t<Sch>>*> _opstate2;
 
     _CCCL_HOST_DEVICE _opstate_t(Sch sch, Rcvr rcvr, CvSndr&& sndr)
         : _env_rcvr{static_cast<Rcvr&&>(rcvr), {sch}}
@@ -133,4 +144,6 @@ _CCCL_HOST_DEVICE auto start_on_t::operator()(Sch sch, Sndr sndr) const noexcept
 }
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

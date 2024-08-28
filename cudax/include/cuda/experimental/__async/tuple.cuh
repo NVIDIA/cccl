@@ -7,14 +7,25 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "config.cuh"
-#include "meta.cuh"
-#include "type_traits.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_TUPLE_H
+#define __CUDAX_ASYNC_DETAIL_TUPLE_H
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -78,4 +89,6 @@ template <class... Ts>
 using _decayed_tuple = _tuple<_decay_t<Ts>...>;
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

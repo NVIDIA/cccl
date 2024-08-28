@@ -7,15 +7,29 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_LAZY_H
+#define __CUDAX_ASYNC_DETAIL_LAZY_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__new/launder.h>
 
-#include <new>
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
 
-#include "config.cuh"
-#include "meta.cuh"
-#include "type_traits.cuh"
+#include <new> // IWYU pragma: keep
 
 namespace cuda::experimental::__async
 {
@@ -30,20 +44,21 @@ struct _lazy
   template <class... Ts>
   _CCCL_HOST_DEVICE Ty& construct(Ts&&... ts) noexcept(_nothrow_constructible<Ty, Ts...>)
   {
-    ::new (static_cast<void*>(_CUDA_VSTD::addressof(value))) Ty(static_cast<Ts&&>(ts)...);
-    return value;
+    Ty* _value = ::new (static_cast<void*>(_CUDA_VSTD::addressof(value))) Ty{static_cast<Ts&&>(ts)...};
+    return *_CUDA_VSTD::launder(_value);
   }
 
   template <class Fn, class... Ts>
   _CCCL_HOST_DEVICE Ty& construct_from(Fn&& fn, Ts&&... ts) noexcept(_nothrow_callable<Fn, Ts...>)
   {
-    ::new (static_cast<void*>(_CUDA_VSTD::addressof(value))) Ty(static_cast<Fn&&>(fn)(static_cast<Ts&&>(ts)...));
-    return value;
+    Ty* _value = ::new (static_cast<void*>(_CUDA_VSTD::addressof(value)))
+      Ty{static_cast<Fn&&>(fn)(static_cast<Ts&&>(ts)...)};
+    return *_CUDA_VSTD::launder(_value);
   }
 
   _CCCL_HOST_DEVICE void destroy() noexcept
   {
-    value.~Ty();
+    _CUDA_VSTD::destroy_at(&value);
   }
 
   union
@@ -89,9 +104,7 @@ struct _lazy_tupl<_mindices<Idx...>, Ts...> : _detail::_lazy_box<Idx, Ts>...
 
   _CCCL_HOST_DEVICE ~_lazy_tupl()
   {
-    // casting the destructor expression to void is necessary for MSVC in
-    // /permissive- mode.
-    ((_engaged[Idx] ? void((*_get<Idx, Ts>()).~Ts()) : void(0)), ...);
+    ((_engaged[Idx] ? _CUDA_VSTD::destroy_at(_get<Idx, Ts>()) : void(0)), ...);
   }
 
   template <size_t Ny, class Ty>
@@ -101,12 +114,13 @@ struct _lazy_tupl<_mindices<Idx...>, Ts...> : _detail::_lazy_box<Idx, Ts>...
   }
 
   template <size_t Ny, class... Us>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void _emplace(Us&&... us) //
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE _at<Ny>& _emplace(Us&&... us) //
     noexcept(_nothrow_constructible<_at<Ny>, Us...>)
   {
-    using Ty = _at<Ny>;
-    ::new (static_cast<void*>(_get<Ny, Ty>())) Ty{static_cast<Us&&>(us)...};
+    using Ty     = _at<Ny>;
+    Ty* _value   = ::new (static_cast<void*>(_get<Ny, Ty>())) Ty{static_cast<Us&&>(us)...};
     _engaged[Ny] = true;
+    return *_CUDA_VSTD::launder(_value);
   }
 
   template <class Fn, class Self, class... Us>
@@ -128,3 +142,5 @@ template <class... Ts>
 using _decayed_lazy_tuple = _lazy_tuple<_decay_t<Ts>...>;
 
 } // namespace cuda::experimental::__async
+
+#endif

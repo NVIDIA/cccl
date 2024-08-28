@@ -7,25 +7,36 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_WHEN_ALL_H
+#define __CUDAX_ASYNC_DETAIL_WHEN_ALL_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/atomic>
 
-#include "completion_signatures.cuh"
-#include "config.cuh"
-#include "cpos.cuh"
-#include "env.cuh"
-#include "exception.cuh"
-#include "lazy.cuh"
-#include "meta.cuh"
-#include "stop_token.cuh"
-#include "tuple.cuh"
-#include "type_traits.cuh"
-#include "utility.cuh"
-#include "variant.cuh"
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/env.cuh>
+#include <cuda/experimental/__async/exception.cuh>
+#include <cuda/experimental/__async/lazy.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/stop_token.cuh>
+#include <cuda/experimental/__async/tuple.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/variant.cuh>
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 _CCCL_DIAG_PUSH
 _CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
@@ -619,4 +630,6 @@ _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 _CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
 _CCCL_DIAG_POP
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

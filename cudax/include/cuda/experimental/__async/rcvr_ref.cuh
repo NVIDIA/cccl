@@ -7,13 +7,24 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "cpos.cuh"
-#include "meta.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_RCVR_REF_H
+#define __CUDAX_ASYNC_DETAIL_RCVR_REF_H
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -35,4 +46,6 @@ using _rcvr_ref_t = decltype(__async::_rcvr_ref(DECLVAL(Rcvr)));
 
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

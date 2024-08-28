@@ -1,29 +1,24 @@
-/*
- * Copyright (c) 2024 NVIDIA Corporation
- *
- * Licensed under the Apache License Version 2.0 with LLVM Exceptions
- * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *   https://llvm.org/LICENSE.txt
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-#pragma once
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
-#include "completion_signatures.cuh"
-#include "config.cuh"
-#include "just_from.cuh"
-#include "meta.cuh"
-#include "type_traits.cuh"
-#include "variant.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL_H
+#define __CUDAX_ASYNC_DETAIL_CONDITIONAL_H
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/just_from.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/variant.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -38,7 +33,7 @@ struct _cond_t
   };
 
   template <class... Args>
-  _CCCL_HOST_DEVICE static auto _mk_complete_fn(Args&&... args) noexcept
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto _mk_complete_fn(Args&&... args) noexcept
   {
     return [&](auto sink) noexcept {
       return sink(static_cast<Args&&>(args)...);
@@ -138,14 +133,14 @@ struct _cond_t
     _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(Sndr sndr) //
       -> _sndr<Sndr, Pred, Then, Else>
     {
-      return _mk_sender(_CUDA_VSTD::move(sndr));
+      return _mk_sender(static_cast<Sndr&&>(sndr));
     }
 
     template <class Sndr>
     _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(Sndr sndr, _closure&& _self) //
       -> _sndr<Sndr, Pred, Then, Else>
     {
-      return _self._mk_sender(_CUDA_VSTD::move(sndr));
+      return _self._mk_sender(static_cast<Sndr&&>(sndr));
     }
   };
 
@@ -220,4 +215,6 @@ using conditional_t = _cond_t;
 _CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

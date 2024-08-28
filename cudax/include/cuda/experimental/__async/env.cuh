@@ -7,20 +7,31 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_ENV_H
+#define __CUDAX_ASYNC_DETAIL_ENV_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__functional/reference_wrapper.h>
 
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/__async/tuple.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+
 #include <functional>
 
-#include "meta.cuh"
-#include "queries.cuh"
-#include "tuple.cuh"
-#include "type_traits.cuh"
-#include "utility.cuh"
-
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 // warning #20012-D: __device__ annotation is ignored on a
 // function("inplace_stop_source") that is explicitly defaulted on its first
@@ -176,4 +187,6 @@ using env_of_t = decltype(get_env(DECLVAL(Ty)));
 
 _CCCL_NV_DIAG_SUPPRESS(20012)
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

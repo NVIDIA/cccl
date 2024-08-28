@@ -1,29 +1,32 @@
-/*
- * Copyright (c) 2024 NVIDIA Corporation
- *
- * Licensed under the Apache License Version 2.0 with LLVM Exceptions
- * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *   https://llvm.org/LICENSE.txt
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-#pragma once
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 
-#include <cuda/std/__utility/move.h>
+#ifndef __CUDAX_ASYNC_DETAIL_BASIC_SENDER_H
+#define __CUDAX_ASYNC_DETAIL_BASIC_SENDER_H
 
-#include "completion_signatures.cuh"
-#include "config.cuh"
-#include "cpos.cuh"
-#include "utility.cuh"
+#include <cuda/std/detail/__config>
 
-// This must be the last #include
-#include "prologue.cuh"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -42,7 +45,7 @@ struct receiver_defaults
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto set_value(_ignore, Rcvr& rcvr, Args&&... args) noexcept
     -> __async::completion_signatures<__async::set_value_t(Args...)>
   {
-    __async::set_value(_CUDA_VSTD::move(rcvr), static_cast<Args&&>(args)...);
+    __async::set_value(static_cast<Rcvr&&>(rcvr), static_cast<Args&&>(args)...);
     return {};
   }
 
@@ -50,7 +53,7 @@ struct receiver_defaults
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto
   set_error(_ignore, Rcvr& rcvr, Error&& err) noexcept -> __async::completion_signatures<__async::set_error_t(Error)>
   {
-    __async::set_error(_CUDA_VSTD::move(rcvr), static_cast<Error&&>(err));
+    __async::set_error(static_cast<Rcvr&&>(rcvr), static_cast<Error&&>(err));
     return {};
   }
 
@@ -58,7 +61,7 @@ struct receiver_defaults
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto
   set_stopped(_ignore, Rcvr& rcvr) noexcept -> __async::completion_signatures<__async::set_stopped_t()>
   {
-    __async::set_stopped(_CUDA_VSTD::move(rcvr));
+    __async::set_stopped(static_cast<Rcvr&&>(rcvr));
     return {};
   }
 
@@ -141,11 +144,11 @@ constexpr bool _has_stopped =
                                                                   _ignore_error_signature>>;
 
 template <bool PotentiallyThrowing, class Rcvr>
-void set_current_exception_if(Rcvr& rcvr) noexcept
+void set_current_exception_if([[maybe_unused]] Rcvr& rcvr) noexcept
 {
   if constexpr (PotentiallyThrowing)
   {
-    __async::set_error(_CUDA_VSTD::move(rcvr), ::std::current_exception());
+    __async::set_error(static_cast<Rcvr&&>(rcvr), ::std::current_exception());
   }
 }
 
@@ -182,8 +185,10 @@ struct basic_opstate
 template <class Sndr, class Rcvr>
 _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto _make_opstate(Sndr sndr, Rcvr rcvr)
 {
-  auto [tag, data, child] = _CUDA_VSTD::move(sndr);
-  return basic_opstate(_CUDA_VSTD::move(child), _CUDA_VSTD::move(data), _CUDA_VSTD::move(rcvr));
+  auto [tag, data, child] = static_cast<Sndr&&>(sndr);
+  using data_t            = decltype(data);
+  using child_t           = decltype(child);
+  return basic_opstate(static_cast<child_t&&>(child), static_cast<data_t&&>(data), static_cast<Rcvr&&>(rcvr));
 }
 
 template <class Data, class... Sndrs>
@@ -210,7 +215,7 @@ struct basic_sender<Data, Sndr>
   using _tag_t         = typename Data::sender_tag;
   using _rcvr_t        = typename Data::receiver_tag;
 
-  [[no_unique_address]] _tag_t _tag_;
+  _CCCL_NO_UNIQUE_ADDRESS _tag_t _tag_;
   Data data_;
   Sndr sndr_;
 
@@ -219,13 +224,13 @@ struct basic_sender<Data, Sndr>
   template <class Rcvr>
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(Rcvr rcvr) &&
   {
-    return _make_opstate(_CUDA_VSTD::move(*this), _CUDA_VSTD::move(rcvr));
+    return _make_opstate(static_cast<basic_sender&&>(*this), static_cast<Rcvr&&>(rcvr));
   }
 
   template <class Rcvr>
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(Rcvr rcvr) const&
   {
-    return _make_opstate(*this, _CUDA_VSTD::move(rcvr));
+    return _make_opstate(*this, static_cast<Rcvr&&>(rcvr));
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE decltype(auto) get_env() const noexcept
@@ -239,4 +244,6 @@ basic_sender(_ignore, Data, Sndrs...) -> basic_sender<Data, Sndrs...>;
 
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

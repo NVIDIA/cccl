@@ -7,29 +7,40 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-// #include <cstddef>
-// #include <new>
-//  #include <type_traits>
+#ifndef __CUDAX_ASYNC_DETAIL_VARIANT_H
+#define __CUDAX_ASYNC_DETAIL_VARIANT_H
 
-#include "meta.cuh"
-#include "type_traits.cuh"
-#include "utility.cuh"
+#include <cuda/std/detail/__config>
 
-// This must be the last #include
-#include "prologue.cuh"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__new/launder.h>
+
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+
+#include <new> // IWYU pragma: keep
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
-namespace _detail
-{
-template <class Ty>
-_CCCL_HOST_DEVICE void _destroy(Ty& ty) noexcept
-{
-  ty.~Ty();
-}
-} // namespace _detail
+/********************************************************************************/
+/* NB: The variant type implemented here default-constructs into the valueless  */
+/* state. This is different from std::variant which default-constructs into the */
+/* first alternative. This is done to simplify the implementation and to avoid  */
+/* the need for a default constructor for each alternative type.                */
+/********************************************************************************/
+
 template <class Idx, class... Ts>
 class _variant_impl;
 
@@ -59,17 +70,7 @@ class _variant_impl<_mindices<Idx...>, Ts...>
     {
       // make this local in case destroying the sub-object destroys *this
       const auto index = __async::_exchange(_index, _npos);
-#if defined(_CCCL_COMPILER_NVHPC)
-      // Unknown nvc++ name lookup bug
-      ((Idx == index ? static_cast<_at<Idx>*>(_ptr())->Ts::~Ts() : void(0)), ...);
-#elif defined(_CCCL_CUDA_COMPILER_NVCC)
-      // Unknown nvcc name lookup bug
-      ((Idx == index ? _detail::_destroy(*static_cast<_at<Idx>*>(_ptr())) : void(0)), ...);
-#else
-      // casting the destructor expression to void is necessary for MSVC in
-      // /permissive- mode.
-      ((Idx == index ? void((*static_cast<_at<Idx>*>(_ptr())).~Ts()) : void(0)), ...);
-#endif
+      ((Idx == index ? _CUDA_VSTD::destroy_at(static_cast<_at<Idx>*>(_ptr())) : void(0)), ...);
     }
   }
 
@@ -101,9 +102,9 @@ public:
     static_assert(_new_index != _npos, "Type not in variant");
 
     _destroy();
-    ::new (_ptr()) Ty{static_cast<As&&>(as)...};
-    _index = _new_index;
-    return *static_cast<Ty*>(_ptr());
+    Ty* _value = ::new (_ptr()) Ty{static_cast<As&&>(as)...};
+    _index     = _new_index;
+    return *_CUDA_VSTD::launder(_value);
   }
 
   template <size_t Ny, class... As>
@@ -113,9 +114,9 @@ public:
     static_assert(Ny < sizeof...(Ts), "variant index is too large");
 
     _destroy();
-    ::new (_ptr()) _at<Ny>{static_cast<As&&>(as)...};
-    _index = Ny;
-    return *static_cast<_at<Ny>*>(_ptr());
+    _at<Ny>* _value = ::new (_ptr()) _at<Ny>{static_cast<As&&>(as)...};
+    _index          = Ny;
+    return *_CUDA_VSTD::launder(_value);
   }
 
   template <class Fn, class... As>
@@ -127,9 +128,9 @@ public:
     static_assert(_new_index != _npos, "Type not in variant");
 
     _destroy();
-    ::new (_ptr()) _result_t(static_cast<Fn&&>(fn)(static_cast<As&&>(as)...));
-    _index = _new_index;
-    return *static_cast<_result_t*>(_ptr());
+    _result_t* _value = ::new (_ptr()) _result_t(static_cast<Fn&&>(fn)(static_cast<As&&>(as)...));
+    _index            = _new_index;
+    return *_CUDA_VSTD::launder(_value);
   }
 
   template <class Fn, class Self, class... As>
@@ -173,4 +174,6 @@ template <class... Ts>
 using _decayed_variant = _variant<_decay_t<Ts>...>;
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

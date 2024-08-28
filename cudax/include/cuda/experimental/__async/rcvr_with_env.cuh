@@ -7,20 +7,31 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "cpos.cuh"
-#include "env.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV_H
+#define __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV_H
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/env.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
 template <class Rcvr, class Env>
-struct _receiver_with_env_t : Rcvr
+struct _rcvr_with_env_t : Rcvr
 {
-  using _env_t = _receiver_with_env_t const&;
+  using _env_t = _rcvr_with_env_t const&;
 
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto rcvr() noexcept -> Rcvr&
   {
@@ -50,7 +61,7 @@ struct _receiver_with_env_t : Rcvr
     }
   }
 
-  template <class Query, class Self = _receiver_with_env_t>
+  template <class Query, class Self = _rcvr_with_env_t>
   using _1st_env_t = decltype(DECLVAL(const Self&)._get_1st(Query{}));
 
   template <class Query>
@@ -65,9 +76,9 @@ struct _receiver_with_env_t : Rcvr
 };
 
 template <class Rcvr, class Env>
-struct _receiver_with_env_t<Rcvr*, Env>
+struct _rcvr_with_env_t<Rcvr*, Env>
 {
-  using _env_t = _receiver_with_env_t const&;
+  using _env_t = _rcvr_with_env_t const&;
 
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto rcvr() const noexcept -> Rcvr*
   {
@@ -109,7 +120,7 @@ struct _receiver_with_env_t<Rcvr*, Env>
     }
   }
 
-  template <class Query, class Self = _receiver_with_env_t>
+  template <class Query, class Self = _rcvr_with_env_t>
   using _1st_env_t = decltype(DECLVAL(const Self&)._get_1st(Query{}));
 
   template <class Query>
@@ -125,4 +136,6 @@ struct _receiver_with_env_t<Rcvr*, Env>
 };
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

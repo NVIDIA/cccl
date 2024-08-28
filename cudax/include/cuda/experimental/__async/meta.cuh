@@ -7,19 +7,31 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_META_H
+#define __CUDAX_ASYNC_DETAIL_META_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
-#include "config.cuh"
+#include <cuda/experimental/__async/config.cuh>
+
 #if __cpp_lib_three_way_comparison
 #  include <compare>
 #endif
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-string-literal-operator-template")
@@ -519,7 +531,7 @@ struct _mbind_back_q
 #if defined(__cpp_pack_indexing)
 
 template <class _Np, class... _Ts>
-using _m_at = _Ts...[_mvalue<_Np>];
+using _m_at = _Ts...[_v<_Np>];
 
 template <size_t _Np, class... _Ts>
 using _m_at_c = _Ts...[_Np];
@@ -732,4 +744,6 @@ struct _msingle_or
 
 _CCCL_DIAG_POP
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

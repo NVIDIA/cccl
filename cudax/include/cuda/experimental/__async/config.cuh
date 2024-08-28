@@ -7,9 +7,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_CONFIG_H
+#define __CUDAX_ASYNC_DETAIL_CONFIG_H
 
 #include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 namespace cuda::experimental::__async
 {
@@ -31,4 +41,6 @@ namespace cuda::experimental::__async
 #  define _CUDAX_IMMOVABLE(XP) XP(XP&&)
 #else
 #  define _CUDAX_IMMOVABLE(XP) XP(XP&&) = delete
+#endif
+
 #endif

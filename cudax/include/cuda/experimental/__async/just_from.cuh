@@ -7,17 +7,28 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "completion_signatures.cuh"
-#include "config.cuh"
-#include "cpos.cuh"
-#include "rcvr_ref.cuh"
-#include "tuple.cuh"
-#include "utility.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_JUST_FROM_H
+#define __CUDAX_ASYNC_DETAIL_JUST_FROM_H
 
-// Must be the last include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/rcvr_ref.cuh>
+#include <cuda/experimental/__async/tuple.cuh>
+#include <cuda/experimental/__async/utility.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -143,4 +154,6 @@ _CCCL_GLOBAL_CONSTANT struct just_stopped_from_t : _just_from<_stopped>
 } just_stopped_from{};
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

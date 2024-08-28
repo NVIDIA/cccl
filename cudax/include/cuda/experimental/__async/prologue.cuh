@@ -7,7 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#include "config.cuh"
+#include <cuda/std/detail/__config>
 
 #if defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
 #  error multiple inclusion of prologue.cuh
@@ -17,3 +17,4 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")
+_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension

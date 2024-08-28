@@ -7,17 +7,28 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_UTILITY_H
+#define __CUDAX_ASYNC_DETAIL_UTILITY_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/initializer_list>
 
-#include "config.cuh"
-#include "meta.cuh"
-#include "type_traits.cuh"
+#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -176,4 +187,6 @@ _CCCL_DIAG_POP
 
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

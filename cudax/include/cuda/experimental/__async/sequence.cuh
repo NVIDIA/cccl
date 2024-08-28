@@ -7,17 +7,28 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
 
-#include "completion_signatures.cuh"
-#include "cpos.cuh"
-#include "exception.cuh"
-#include "lazy.cuh"
-#include "rcvr_ref.cuh"
-#include "variant.cuh"
+#ifndef __CUDAX_ASYNC_DETAIL_SEQUENCE_H
+#define __CUDAX_ASYNC_DETAIL_SEQUENCE_H
 
-// This must be the last #include
-#include "prologue.cuh"
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/completion_signatures.cuh>
+#include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__async/exception.cuh>
+#include <cuda/experimental/__async/lazy.cuh>
+#include <cuda/experimental/__async/rcvr_ref.cuh>
+#include <cuda/experimental/__async/variant.cuh>
+
+#include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -135,4 +146,6 @@ using sequence_t = _seq;
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::__async
 
-#include "epilogue.cuh"
+#include <cuda/experimental/__async/epilogue.cuh>
+
+#endif

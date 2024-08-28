@@ -7,11 +7,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#pragma once
+
+#ifndef __CUDAX_ASYNC_DETAIL_EXCEPTION_H
+#define __CUDAX_ASYNC_DETAIL_EXCEPTION_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__async/config.cuh>
 
 #include <exception> // IWYU pragma: keep export
-
-#include "config.cuh"
 
 #if defined(__CUDACC__)
 #  include <nv/target>
@@ -29,4 +41,6 @@
 #else
 // This is the default behavior for host code, and for nvc++
 #  define _CUDAX_NOEXCEPT_EXPR(...) noexcept(__VA_ARGS__)
+#endif
+
 #endif
