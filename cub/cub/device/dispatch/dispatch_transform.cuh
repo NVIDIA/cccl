@@ -371,8 +371,6 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   int global_offset,
   aligned_base_ptr<const T> aligned_ptr)
 {
-  const int padded_num_bytes         = aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size;
-  const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, memcpy_async_size_multiple);
   // because SMEM base pointer and count are always multiples of 16-byte, we only need to align the SMEM start for types
   // with larger alignment
   _CCCL_IF_CONSTEXPR (alignof(T) > memcpy_async_alignment)
@@ -388,7 +386,14 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   assert(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0);
   assert(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0);
 
+  const int padded_num_bytes         = aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size;
+  const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, memcpy_async_size_multiple);
+
   smem_offset += padded_num_bytes_rounded; // leave aligned address for follow-up copy
+
+  // TODO(bgruber): In case we need to shrink the padded region (front or back) I would really like to just call
+  // cooperative_groups::details::copy_like<int4>(group, dst, src, sizeof(T) * tile_size), which already handles all the
+  // peeling we do here
 
   // check for out-of-bounds read at the beginning
   int bytes_to_copy = padded_num_bytes_rounded;
@@ -416,7 +421,6 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
       group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(async_copy_bytes)});
     dst += async_copy_bytes;
     src += async_copy_bytes;
-    bytes_to_copy -= async_copy_bytes;
   }
 
   if (oob)
