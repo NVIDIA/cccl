@@ -473,7 +473,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   for (int i = 0; i < num_elem_per_thread; ++i)
   {
     const int idx = i * block_dim + threadIdx.x;
-    if (idx < num_items)
+    if (idx < tile_size)
     {
       out[idx] = poor_apply(
         [&](const InTs*... smem_base_ptrs) {
