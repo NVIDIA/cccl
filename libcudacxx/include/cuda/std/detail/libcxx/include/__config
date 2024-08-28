@@ -1263,8 +1263,7 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_NOALIAS
 #  endif
 
-#  if __has_feature(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) \
-    || defined(_CCCL_COMPILER_CLANG)
+#  if __has_feature(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT

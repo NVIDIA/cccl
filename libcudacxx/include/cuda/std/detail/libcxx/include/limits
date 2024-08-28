@@ -624,13 +624,14 @@ protected:
     return __LDBL_DENORM_MIN__;
   }
 
-  static constexpr bool is_iec559 = true;
+  static constexpr bool is_iec559  = true;
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo  = false;
 
   static constexpr bool traps                    = false;
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
+#endif
 };
 
 template <class _Tp>
