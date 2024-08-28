@@ -380,9 +380,9 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   const char* src                     = reinterpret_cast<const char*>(aligned_ptr.ptr + global_offset);
   char* dst                           = smem + smem_offset;
   const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
-  assert(reinterpret_cast<uintptr_t>(src) % memcpy_async_size_multiple == 0);
+  assert(reinterpret_cast<uintptr_t>(src) % memcpy_async_alignment == 0);
   assert(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0);
-  assert(reinterpret_cast<uintptr_t>(dst) % memcpy_async_size_multiple == 0);
+  assert(reinterpret_cast<uintptr_t>(dst) % memcpy_async_alignment == 0);
   assert(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0);
   assert(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0);
 
@@ -483,8 +483,8 @@ _CCCL_DEVICE void transform_kernel_impl(
   }
 }
 
-constexpr int ublkcp_alignment     = 128;
-constexpr int ublkcp_size_multiple = 16;
+constexpr int bulk_copy_alignment     = 128;
+constexpr int bulk_copy_size_multiple = 16;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 // TODO(bgruber): inline this as lambda in C++14
@@ -495,27 +495,62 @@ _CCCL_DEVICE void bulk_copy_tile(
   int tile_stride,
   char* smem,
   int& smem_offset,
-  ::cuda::std::uint32_t& total_copied,
+  ::cuda::std::uint32_t& total_bytes_bulk_copied,
   Offset global_offset,
   const aligned_base_ptr<T>& aligned_ptr)
 {
+  const char* src = reinterpret_cast<const char*>(aligned_ptr.ptr + global_offset);
+  char* dst       = smem + smem_offset;
+  assert(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0);
+  assert(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0);
+  assert(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0);
+  assert(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0);
+
+  const int padded_num_bytes         = aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size;
+  const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, bulk_copy_size_multiple);
+
+  // check for out-of-bounds read at the beginning
+  int bytes_to_copy = padded_num_bytes_rounded;
+  if (blockIdx.x == 0 && aligned_ptr.head_padding > 0)
+  {
+    // peel front bytes
+    const int peeled_bytes_front = bulk_copy_alignment - aligned_ptr.head_padding;
+    assert(peeled_bytes_front < bulk_copy_alignment);
+    if (threadIdx.x < peeled_bytes_front)
+    {
+      dst[aligned_ptr.head_padding + threadIdx.x] = src[aligned_ptr.head_padding + threadIdx.x];
+    }
+    // move bulk copy start into the buffer
+    src += bulk_copy_alignment;
+    dst += bulk_copy_alignment;
+    bytes_to_copy -= bulk_copy_alignment; // may result in a negative value
+  }
+
+  // check for out-of-bounds read at the end
+  const bool oob = reinterpret_cast<uintptr_t>(src) + bytes_to_copy > reinterpret_cast<uintptr_t>(aligned_ptr.end);
+  const auto bulk_copy_bytes = bytes_to_copy - oob * bulk_copy_size_multiple;
+  if (bulk_copy_bytes > 0)
+  {
+    if (threadIdx.x == 0)
+    {
 #  if CUB_PTX_ARCH >= 900
-  namespace ptx = ::cuda::ptx;
-  // Copy a bit more than tile_size, to cover for base_ptr starting earlier than ptr
-  // FIXME(bgruber): this can read out of bounds and compute-sanitizer will diagnose this. E.g. for num_items == 1, it
-  // will read 15 items after the allocation.
-  const uint32_t num_bytes = round_up_to_po2_multiple(
-    aligned_ptr.offset + static_cast<uint32_t>(sizeof(T)) * tile_size, static_cast<uint32_t>(ublkcp_size_multiple));
-  ptx::cp_async_bulk(
-    ptx::space_cluster,
-    ptx::space_global,
-    smem + smem_offset,
-    aligned_ptr.ptr + global_offset, // Use 128-byte aligned base_ptr here
-    num_bytes,
-    &bar);
-  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + 128;
-  total_copied += num_bytes;
+      ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bulk_copy_bytes, &bar);
 #  endif // CUB_PTX_ARCH >= 900
+      total_bytes_bulk_copied += bulk_copy_bytes;
+    }
+    dst += bulk_copy_bytes;
+    src += bulk_copy_bytes;
+  }
+
+  if (oob)
+  {
+    if (threadIdx.x < padded_num_bytes % bulk_copy_size_multiple)
+    {
+      dst[threadIdx.x] = src[threadIdx.x];
+    }
+  }
+
+  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
 };
 
 // TODO(bgruber): inline this as lambda in C++14
@@ -524,8 +559,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE const T&
 fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
   const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
-  smem_offset += int{sizeof(T)} * tile_stride + ublkcp_alignment;
-  _CCCL_IF_CONSTEXPR (alignof(T) > ublkcp_alignment)
+  smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
+  _CCCL_IF_CONSTEXPR (alignof(T) > bulk_copy_alignment)
   {
     smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
   }
@@ -562,7 +597,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 {
 #  if CUB_PTX_ARCH >= 900
   __shared__ uint64_t bar;
-  extern __shared__ char __attribute((aligned(ublkcp_alignment))) smem[];
+  extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
 
   namespace ptx = ::cuda::ptx;
 
@@ -572,11 +607,13 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   // TODO(bgruber) use: `cooperative_groups::invoke_one(cooperative_groups::this_thread_block(), [&]() {` with CTK
   // >= 12.1
-  if (select_one())
+  if (true)
   {
-    // Then initialize barriers
-    ptx::mbarrier_init(&bar, 1);
-    ptx::fence_proxy_async(ptx::space_shared);
+    if (threadIdx.x == 0)
+    {
+      ptx::mbarrier_init(&bar, 1);
+      ptx::fence_proxy_async(ptx::space_shared); // TODO(bgruber): is this correct?
+    }
 
     const int tile_size                = ::cuda::std::min(num_items - offset, Offset{tile_stride});
     int smem_offset                    = 0;
@@ -592,7 +629,10 @@ _CCCL_DEVICE void transform_kernel_impl(
     (void) dummy;
 #    endif // _CCCL_STD_VER >= 2017
 
-    ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+    if (threadIdx.x == 0)
+    {
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+    }
   }
   __syncthreads();
 
@@ -750,7 +790,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> 
 {
   // 128 bytes of padding for each input tile (before + after)
   return tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + ::cuda::std::max(ublkcp_alignment, ublkcp_size_multiple) * sizeof...(RandomAccessIteratorsIn);
+       + ::cuda::std::max(bulk_copy_alignment, bulk_copy_size_multiple) * sizeof...(RandomAccessIteratorsIn);
 }
 
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
@@ -1054,9 +1094,9 @@ struct dispatch_t<RequiresStableAddress,
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
-    static_assert(block_dim % ublkcp_alignment == 0,
-                  "BLOCK_THREADS needs to be a multiple of ublkcp_alignment (128)"); // then tile_size is a multiple of
-                                                                                     // 128-byte
+    static_assert(block_dim % bulk_copy_alignment == 0,
+                  "BLOCK_THREADS needs to be a multiple of bulk_copy_alignment (128)"); // then tile_size is a multiple
+                                                                                        // of 128-byte
 
     auto determine_element_counts = [&]() -> PoorExpected<elem_counts> {
       const auto max_smem = get_max_shared_memory();
@@ -1112,7 +1152,7 @@ struct dispatch_t<RequiresStableAddress,
     }
     assert(config->elem_per_thread > 0);
     assert(config->tile_size > 0);
-    assert(config->tile_size % ublkcp_alignment == 0);
+    assert(config->tile_size % bulk_copy_alignment == 0);
     assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
@@ -1140,7 +1180,7 @@ struct dispatch_t<RequiresStableAddress,
       op,
       out,
       make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
-        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), num_items, ublkcp_alignment)...);
+        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), num_items, bulk_copy_alignment)...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
