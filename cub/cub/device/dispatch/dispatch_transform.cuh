@@ -363,13 +363,13 @@ struct aligned_size_t
 };
 
 // TODO(bgruber): inline this as lambda in C++14
-template <typename T>
+template <typename Offset, typename T>
 _CCCL_DEVICE const T* copy_and_return_smem_dst(
   cooperative_groups::thread_block& group,
   int tile_size,
   char* smem,
   int& smem_offset,
-  int global_offset,
+  Offset global_offset,
   aligned_base_ptr<const T> aligned_ptr)
 {
   // because SMEM base pointer and count are always multiples of 16-byte, we only need to align the SMEM start for types
