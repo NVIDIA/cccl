@@ -196,7 +196,12 @@ struct alignas(Alignment) overaligned_addable_t
 // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
 CUB_TEST("DeviceTransform::Transform overaligned type",
          "[device][device_transform]",
-         c2h::type_list<overaligned_addable_t<32>, overaligned_addable_t<256>>)
+         c2h::type_list<overaligned_addable_t<32>,
+#ifndef _CCCL_COMPILER_MSVC // error C2719: 'unnamed-parameter': formal parameter with requested alignment of 256 won't
+                            // be aligned
+                        overaligned_addable_t<256>
+#endif // _CCCL_COMPILER_MSVC
+                        >)
 {
   using type = c2h::get<0, TestType>;
   CAPTURE(c2h::demangle(typeid(type).name()));
