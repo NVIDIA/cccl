@@ -217,13 +217,19 @@ CUB_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
   CAPTURE(c2h::demangle(typeid(huge_t).name()));
 
   const int num_items = GENERATE(0, 1, 100, 1000);
-  c2h::device_vector<huge_t> a(num_items, huge_t{{3, 3}});
-  c2h::device_vector<huge_t> b(num_items, huge_t{{4, 4}});
+  c2h::device_vector<huge_t> a(num_items);
+  c2h::device_vector<huge_t> b(num_items);
+  c2h::gen(CUB_SEED(1), a);
+  c2h::gen(CUB_SEED(1), b);
 
   c2h::device_vector<huge_t> result(num_items);
   transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<huge_t>{});
 
-  REQUIRE(result == c2h::device_vector<huge_t>(num_items, huge_t{{7, 7}}));
+  c2h::host_vector<huge_t> a_h = a;
+  c2h::host_vector<huge_t> b_h = b;
+  c2h::host_vector<huge_t> reference_h(num_items);
+  std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus<huge_t>{});
+  REQUIRE(result == reference_h);
 }
 
 CUB_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
