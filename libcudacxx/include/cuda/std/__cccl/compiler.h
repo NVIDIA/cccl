@@ -27,9 +27,15 @@ static_assert(__NVCOMPILER_PATCHLEVEL__ < 100);
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG
 #  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+static_assert(__clang_major__ < 100);
+static_assert(__clang_minor__ < 100);
+static_assert(__clang_patchlevel__ < 100);
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC
 #  define _CCCL_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+static_assert(__GNUC__ < 100);
+static_assert(__GNUC_MINOR__ < 100);
+static_assert(__GNUC_PATCHLEVEL__ < 100);
 #elif defined(_MSC_VER)
 #  define _CCCL_COMPILER_MSVC
 #  define _CCCL_MSVC_VERSION      _MSC_VER
@@ -77,6 +83,9 @@ static_assert(__NVCOMPILER_PATCHLEVEL__ < 100);
 #  define _CCCL_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
 #  define _CCCL_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
 #  define _CCCL_CUDACC_VER       _CCCL_CUDACC_VER_MAJOR * 100000 + _CCCL_CUDACC_VER_MINOR * 1000 + _CCCL_CUDACC_VER_BUILD
+static_assert(_CCCL_CUDACC_VER_MAJOR < 100);
+static_assert(_CCCL_CUDACC_VER_MINOR < 100);
+static_assert(_CCCL_CUDACC_VER_BUILD < 100);
 #endif // __CUDACC__ || _CCCL_CUDA_COMPILER_NVHPC
 
 // Some convenience macros to filter CUDACC versions
