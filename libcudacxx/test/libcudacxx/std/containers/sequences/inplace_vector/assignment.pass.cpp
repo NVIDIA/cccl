@@ -15,6 +15,7 @@
 #include <cuda/std/inplace_vector>
 #include <cuda/std/type_traits>
 
+#include "MoveOnly.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "types.h"
@@ -145,6 +146,25 @@ __host__ __device__ constexpr void test_move()
 }
 
 template <class T>
+__host__ __device__ constexpr void test_move_only()
+{
+  using inplace_vector = cuda::std::inplace_vector<T, 42>;
+  inplace_vector input;
+  input.emplace_back(1);
+  input.emplace_back(42);
+  input.emplace_back(1337);
+  input.emplace_back(0);
+  inplace_vector vec;
+  vec.emplace_back(-2);
+  vec.emplace_back(-2);
+  vec.emplace_back(-2);
+  vec = cuda::std::move(input);
+  assert(!vec.empty());
+  assert(input.size() == 4);
+  assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(42), T(1337), T(0)}));
+}
+
+template <class T>
 __host__ __device__ constexpr void test_init_list()
 {
   { // inplace_vector<T, 0> can be assigned an empty initializer_list
@@ -213,6 +233,7 @@ __host__ __device__ constexpr bool test()
     test<ThrowingMoveConstructor>();
     test<ThrowingCopyAssignment>();
     test<ThrowingMoveAssignment>();
+    test_move_only<MoveOnly>();
   }
 
   return true;
