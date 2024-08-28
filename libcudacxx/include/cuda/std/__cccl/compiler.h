@@ -19,6 +19,11 @@
 #  define _CCCL_COMPILER_ICC
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC
+#  define _CCCL_COMPILER_NVHPC_VERSION \
+    (__NVCOMPILER_MAJOR__ * 10000 + __NVCOMPILER_MINOR__ * 100 + __NVCOMPILER_PATCHLEVEL__)
+static_assert(__NVCOMPILER_MAJOR__ < 100);
+static_assert(__NVCOMPILER_MINOR__ < 100);
+static_assert(__NVCOMPILER_PATCHLEVEL__ < 100);
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG
 #  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
