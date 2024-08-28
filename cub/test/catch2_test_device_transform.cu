@@ -252,7 +252,7 @@ try
   c2h::host_vector<type> input_h = input;
   c2h::host_vector<type> reference_h(num_items);
   std::transform(input_h.begin(), input_h.end(), reference_h.begin(), _1 * 7);
-  REQUIRE(reference_h == result);
+  REQUIRE((reference_h == result));
 }
 catch (const std::bad_alloc&)
 {
