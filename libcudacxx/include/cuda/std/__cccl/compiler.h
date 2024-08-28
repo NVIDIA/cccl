@@ -14,6 +14,7 @@
 // Determine the host compiler
 #if defined(__INTEL_LLVM_COMPILER)
 #  define _CCCL_COMPILER_ICC_LLVM
+#  define _CCCL_COMPILER_ICC_LLVM_VERSION __INTEL_LLVM_COMPILER
 #elif defined(__INTEL_COMPILER)
 #  define _CCCL_COMPILER_ICC
 #elif defined(__NVCOMPILER)
