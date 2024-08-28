@@ -66,9 +66,9 @@ static_assert(__GNUC_PATCHLEVEL__ < 100);
 #  define _CCCL_CUDA_COMPILER
 #endif // cuda compiler available
 
-// clang-cuda does not define __CUDACC_VER_MAJOR__ and friends
+// clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
+// defined in "cuda.h". clang-cuda automatically pre-includes "__clang_cuda_runtime_wrapper.h" which includes "cuda.h"
 #if defined(_CCCL_CUDA_COMPILER_CLANG)
-#  include "cuda.h" // CUDA_VERSION
 #  define _CCCL_CUDACC
 #  define _CCCL_CUDACC_VER_MAJOR CUDA_VERSION / 1000
 #  define _CCCL_CUDACC_VER_MINOR (CUDA_VERSION % 1000) / 10
