@@ -363,14 +363,14 @@ struct aligned_size_t
 };
 
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void fallback_copy(const char* s, char* d, int num_bytes)
+_CCCL_DEVICE _CCCL_FORCEINLINE void fallback_copy(const char* src, char* dst, int num_bytes)
 {
   const int elements = num_bytes / sizeof(T);
   if (threadIdx.x < elements)
   {
-    reinterpret_cast<T*>(d)[threadIdx.x] = reinterpret_cast<const T*>(s)[threadIdx.x];
+    reinterpret_cast<T*>(dst)[threadIdx.x] = reinterpret_cast<const T*>(src)[threadIdx.x];
   }
-};
+}
 
 // TODO(bgruber): inline this as lambda in C++14
 template <typename Offset, typename T>
@@ -513,7 +513,7 @@ _CCCL_DEVICE void bulk_copy_tile(
   int& smem_offset,
   ::cuda::std::uint32_t& total_bytes_bulk_copied,
   Offset global_offset,
-  const aligned_base_ptr<T>& aligned_ptr)
+  const aligned_base_ptr<const T>& aligned_ptr)
 {
   // TODO(bgruber): I think we need to align smem + smem_offset to alignof(T) here
 
