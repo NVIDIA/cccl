@@ -132,9 +132,9 @@ function(thrust_build_compiler_targets)
   endforeach()
 
   if (THRUST_DISPATCH_TYPE STREQUAL "Force32bit")
-    list(APPEND cxx_compile_definitions "THRUST_FORCE_32BIT_OFFSET_TYPE")
+    list(APPEND cxx_compile_definitions "THRUST_FORCE_32_BIT_OFFSET_TYPE")
   elseif (THRUST_DISPATCH_TYPE STREQUAL "Force64bit")
-    list(APPEND cxx_compile_definitions "THRUST_FORCE_64BIT_OFFSET_TYPE")
+    list(APPEND cxx_compile_definitions "THRUST_FORCE_64_BIT_OFFSET_TYPE")
   endif()
 
   foreach (cxx_definition IN LISTS cxx_compile_definitions)

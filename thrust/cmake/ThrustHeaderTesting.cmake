@@ -150,13 +150,13 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
   set(header_definitions
     "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
     "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-    "THRUST_FORCE_32BIT_OFFSET_TYPE")
+    "THRUST_FORCE_32_BIT_OFFSET_TYPE")
   thrust_add_header_test(${thrust_target} offset_32 "${header_definitions}")
 
   set(header_definitions
     "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
     "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-    "THRUST_FORCE_64BIT_OFFSET_TYPE")
+    "THRUST_FORCE_64_BIT_OFFSET_TYPE")
   thrust_add_header_test(${thrust_target} offset_64 "${header_definitions}")
 
   thrust_get_target_property(config_device ${thrust_target} DEVICE)

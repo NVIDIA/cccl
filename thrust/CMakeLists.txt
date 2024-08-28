@@ -60,7 +60,7 @@ option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 
 # Allow the user to optionally select offset type dispatch to fixed 32 or 64 bit types
-set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select thrust offset type dispatch." FORCE)
+set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select Thrust offset type dispatch." FORCE)
 set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit")
 
 # Check if we're actually building anything before continuing. If not, no need

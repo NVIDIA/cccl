@@ -74,9 +74,9 @@ Generic CMake Options
    -  Allows the user to force Thrust to use a specific size for the offset type. Default
       is ``Dynamic``.
 
-      -  ``Dynamic`` lets thrust choose the index type based on input size, allowing
+      -  ``Dynamic`` lets Thrust choose the index type based on input size, allowing
          large inputs and optimal performance at the cost of increased compile time and binary size
-      -  ``Force32bit`` forces Thrust to use a 32bit offset type. This improves compile time and
+      -  ``Force32bit`` forces Thrust to use a 32 bit offset type. This improves compile time and
          binary size but limits the input size.
       -  ``Force64bit`` forces Thrust to use a 64bit offset type. This improves compile time and
          binary size and allows large input sizes. However, it might degrade runtime performance

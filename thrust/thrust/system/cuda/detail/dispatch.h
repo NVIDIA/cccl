@@ -35,9 +35,9 @@
 #include <stdexcept>
 #include <string>
 
-#if defined(THRUST_FORCE_32BIT_OFFSET_TYPE) && defined(THRUST_FORCE_64BIT_OFFSET_TYPE)
-#  error "Only THRUST_FORCE_32BIT_OFFSET_TYPE or THRUST_FORCE_64BIT_OFFSET_TYPE may be defined!"
-#endif // THRUST_FORCE_32BIT_OFFSET_TYPE && THRUST_FORCE_64BIT_OFFSET_TYPE
+#if defined(THRUST_FORCE_32_BIT_OFFSET_TYPE) && defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
+#  error "Only THRUST_FORCE_32_BIT_OFFSET_TYPE or THRUST_FORCE_64_BIT_OFFSET_TYPE may be defined!"
+#endif // THRUST_FORCE_32_BIT_OFFSET_TYPE && THRUST_FORCE_64_BIT_OFFSET_TYPE
 
 #define _THRUST_INDEX_TYPE_DISPATCH(index_type, status, call, count, arguments) \
   {                                                                             \
@@ -71,7 +71,7 @@
     }                                                                                                           \
   }
 
-#if defined(THRUST_FORCE_64BIT_OFFSET_TYPE)
+#if defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
 //! @brief Always dispatches to 64 bit offset version of an algorithm
 #  define THRUST_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)               \
@@ -97,32 +97,32 @@
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                                     \
     _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call_64, count, arguments)
 
-#elif defined(THRUST_FORCE_32BIT_OFFSET_TYPE)
+#elif defined(THRUST_FORCE_32_BIT_OFFSET_TYPE)
 
 //! @brief Ensures that the size of the input does not overflow the offset type
-#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                                \
-    if (static_cast<std::uint64_t>(count)                                                              \
-        > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))           \
-    {                                                                                                  \
-      throw ::std::runtime_error(                                                                      \
-        "Input size exceeds the maximum allowable value for " #index_type " ("                         \
-        + std::to_string(thrust::detail::integer_traits<index_type>::const_max)                        \
-        + "). " #index_type " was used because the macro THRUST_FORCE_32BIT_OFFSET_TYPE was defined. " \
-          "To handle larger input sizes, either remove this macro to dynamically dispatch "            \
-          "between 32-bit and 64-bit index types, or define THRUST_FORCE_64BIT_OFFSET_TYPE.");         \
+#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                                 \
+    if (static_cast<std::uint64_t>(count)                                                               \
+        > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))            \
+    {                                                                                                   \
+      throw ::std::runtime_error(                                                                       \
+        "Input size exceeds the maximum allowable value for " #index_type " ("                          \
+        + std::to_string(thrust::detail::integer_traits<index_type>::const_max)                         \
+        + "). " #index_type " was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. " \
+          "To handle larger input sizes, either remove this macro to dynamically dispatch "             \
+          "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE.");         \
     }
 
 //! @brief Ensures that the sizes of the inputs do not overflow the offset type, but two counts
-#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)                      \
-    if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)                        \
-        > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))           \
-    {                                                                                                  \
-      throw ::std::runtime_error(                                                                      \
-        "Combined input sizes exceed the maximum allowable value for " #index_type " ("                \
-        + std::to_string(thrust::detail::integer_traits<index_type>::const_max)                        \
-        + "). " #index_type " was used because the macro THRUST_FORCE_32BIT_OFFSET_TYPE was defined. " \
-          "To handle larger input sizes, either remove this macro to dynamically dispatch "            \
-          "between 32-bit and 64-bit index types, or define THRUST_FORCE_64BIT_OFFSET_TYPE.");         \
+#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)                       \
+    if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)                         \
+        > static_cast<std::uint64_t>(thrust::detail::integer_traits<index_type>::const_max))            \
+    {                                                                                                   \
+      throw ::std::runtime_error(                                                                       \
+        "Combined input sizes exceed the maximum allowable value for " #index_type " ("                 \
+        + std::to_string(thrust::detail::integer_traits<index_type>::const_max)                         \
+        + "). " #index_type " was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. " \
+          "To handle larger input sizes, either remove this macro to dynamically dispatch "             \
+          "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE.");         \
     }
 
 //! @brief Always dispatches to 32 bit offset version of an algorithm but throws if count would overflow
@@ -155,7 +155,7 @@
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::uint32_t, count)                       \
     _THRUST_INDEX_TYPE_DISPATCH(std::uint32_t, status, call_32, count, arguments)
 
-#else // ^^^ THRUST_FORCE_32BIT_OFFSET_TYPE ^^^ / vvv !THRUST_FORCE_32BIT_OFFSET_TYPE vvv
+#else // ^^^ THRUST_FORCE_32_BIT_OFFSET_TYPE ^^^ / vvv !THRUST_FORCE_32_BIT_OFFSET_TYPE vvv
 
 #  define _THRUST_INDEX_TYPE_DISPATCH_SELECT(index_type, count) \
     (static_cast<std::uint64_t>(count)                          \
@@ -218,4 +218,4 @@
     else                                                                                   \
       _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call_64, count, arguments)
 
-#endif // !THRUST_FORCE_32BIT_OFFSET_TYPE
+#endif // !THRUST_FORCE_32_BIT_OFFSET_TYPE
