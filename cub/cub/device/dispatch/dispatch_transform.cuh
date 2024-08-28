@@ -110,7 +110,7 @@ struct prefetch_policy_t
 {
   static constexpr int BLOCK_THREADS = BlockThreads;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int ITEMS_PER_THREAD_NO_INPUT = 2; // items per thread when no input streams exits (just filling)
+  static constexpr int ITEMS_PER_THREAD_NO_INPUT = 2; // items per thread when no input streams exist (just filling)
   static constexpr int MIN_ITEMS_PER_THREAD      = 1;
   static constexpr int MAX_ITEMS_PER_THREAD      = 32;
 };
@@ -947,7 +947,8 @@ struct PoorExpected
 
 _CCCL_HOST_DEVICE inline PoorExpected<int> get_max_shared_memory()
 {
-  // gevtushenko promised me that I can assume that stream belongs to the currently active device
+  //  gevtushenko promised me that I can assume that the stream passed to the CUB API entry point (where the kernels
+  //  will later be launched on) belongs to the currently active device. So we can just query the active device here.
   int device = 0;
   auto error = CubDebug(cudaGetDevice(&device));
   if (error != cudaSuccess)
