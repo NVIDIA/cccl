@@ -1284,7 +1284,7 @@ struct dispatch_t<RequiresStableAddress,
   {
     ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
     RandomAccessIteratorOut out;
-    mutable TransformOp op; // too many users forgot to mark there operator()'s const ...
+    mutable TransformOp op; // too many users forgot to mark their operator()'s const ...
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(Offset i) const
     {
