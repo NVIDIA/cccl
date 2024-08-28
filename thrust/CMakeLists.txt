@@ -59,15 +59,9 @@ option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 
-# Force the offset type to 32bit. Improves compile times and binary size at the expense of limiting input sizes
-option(THRUST_FORCE_32BIT_OFFSET_TYPE "Requires thrust to use 32 bit offset types." "OFF")
-
-# Force the offset type to 64bit. Improves compile times and binary size potentially degrading runtime performance
-option(THRUST_FORCE_64BIT_OFFSET_TYPE "Requires thrust to use 64 bit offset types." "OFF")
-
-if (THRUST_FORCE_32BIT_OFFSET_TYPE AND THRUST_FORCE_64BIT_OFFSET_TYPE)
-  message(FATAL_ERROR "Only THRUST_FORCE_32BIT_OFFSET_TYPE or THRUST_FORCE_64BIT_OFFSET_TYPE may be defined!")
-endif()
+# Allow the user to optionally select offset type dispatch to fixed 32 or 64 bit types
+set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select thrust offset type dispatch." FORCE)
+set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit")
 
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just

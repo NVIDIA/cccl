@@ -69,6 +69,17 @@ Generic CMake Options
    -  If true, installation rules will be generated for thrust. Default
       is ``ON``.
 
+-  ``THRUST_DISPATCH_TYPE={Dynamic, Force32bit, Force64bit}``
+
+   -  Allows the user to force Thrust to use a specific size for the offset type. Default
+      is ``Dynamic``.
+      -  ``Dynamic`` lets thrust choose the index type based on input size, allowing
+         large inputs and optimal performance at the cost of increased compile time and binary size
+      -  ``Force32bit`` forces Thrust to use a 32bit offset type. This improves compile time and
+         binary size but limits the input size.
+      -  ``Force32bit`` forces Thrust to use a 64bit offset type. This improves compile time and
+         binary size and allow large input sizes. However, it might degrade runtime performance
+
 Single Config CMake Options
 ---------------------------
 
