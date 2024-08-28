@@ -23,14 +23,14 @@ __host__ __device__ constexpr void test_equality()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
-  inplace_vector lhs{T(1), T(42), T(1337), T(0)};
-  inplace_vector rhs{T(0), T(1), T(2), T(3), T(4)};
+  inplace_vector vec{T(1), T(42), T(1337), T(0)};
+  inplace_vector other_vec{T(0), T(1), T(2), T(3), T(4)};
 
-  auto res_equality = lhs == lhs;
+  auto res_equality = vec == vec;
   static_assert(cuda::std::is_same<decltype(res_equality), bool>::value, "");
   assert(res_equality);
 
-  auto res_inequality = lhs != rhs;
+  auto res_inequality = vec != other_vec;
   static_assert(cuda::std::is_same<decltype(res_inequality), bool>::value, "");
   assert(res_inequality);
 }
@@ -40,22 +40,22 @@ __host__ __device__ constexpr void test_relation()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
-  inplace_vector lhs{T(0), T(1), T(1), T(3), T(4)};
-  inplace_vector rhs{T(0), T(1), T(2), T(3), T(4)};
+  inplace_vector vec{T(0), T(1), T(1), T(3), T(4)};
+  inplace_vector other_vec{T(0), T(1), T(2), T(3), T(4)};
 
-  auto res_less = lhs < rhs;
+  auto res_less = vec < other_vec;
   static_assert(cuda::std::is_same<decltype(res_less), bool>::value, "");
   assert(res_less);
 
-  auto res_less_equal = lhs <= rhs;
+  auto res_less_equal = vec <= other_vec;
   static_assert(cuda::std::is_same<decltype(res_less_equal), bool>::value, "");
   assert(res_less_equal);
 
-  auto res_greater = lhs > rhs;
+  auto res_greater = vec > other_vec;
   static_assert(cuda::std::is_same<decltype(res_greater), bool>::value, "");
   assert(!res_greater);
 
-  auto res_greater_equal = lhs >= rhs;
+  auto res_greater_equal = vec >= other_vec;
   static_assert(cuda::std::is_same<decltype(res_greater_equal), bool>::value, "");
   assert(!res_greater_equal);
 }
