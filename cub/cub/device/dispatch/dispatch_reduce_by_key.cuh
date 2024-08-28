@@ -213,25 +213,25 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <
-  typename KeysInputIteratorT,
-  typename UniqueOutputIteratorT,
-  typename ValuesInputIteratorT,
-  typename AggregatesOutputIteratorT,
-  typename NumRunsOutputIteratorT,
-  typename EqualityOpT,
-  typename ReductionOpT,
-  typename OffsetT,
-  typename AccumT = //
-  detail::
-    accumulator_t<ReductionOpT, cub::detail::value_t<ValuesInputIteratorT>, cub::detail::value_t<ValuesInputIteratorT>>,
-  typename SelectedPolicy = //
-  detail::device_reduce_by_key_policy_hub< //
-    ReductionOpT, //
-    AccumT, //
-    cub::detail::non_void_value_t< //
-      UniqueOutputIteratorT, //
-      cub::detail::value_t<KeysInputIteratorT>>>>
+template <typename KeysInputIteratorT,
+          typename UniqueOutputIteratorT,
+          typename ValuesInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT,
+          typename AccumT = //
+          ::cuda::std::__accumulator_t<ReductionOpT,
+                                       cub::detail::value_t<ValuesInputIteratorT>,
+                                       cub::detail::value_t<ValuesInputIteratorT>>,
+          typename SelectedPolicy = //
+          detail::device_reduce_by_key_policy_hub< //
+            ReductionOpT, //
+            AccumT, //
+            cub::detail::non_void_value_t< //
+              UniqueOutputIteratorT, //
+              cub::detail::value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------

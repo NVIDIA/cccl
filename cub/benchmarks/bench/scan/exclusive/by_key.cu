@@ -77,7 +77,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
 {
   using init_value_t    = ValueT;
   using op_t            = cub::Sum;
-  using accum_t         = cub::detail::accumulator_t<op_t, init_value_t, ValueT>;
+  using accum_t         = ::cuda::std::__accumulator_t<op_t, ValueT, init_value_t>;
   using key_input_it_t  = const KeyT*;
   using val_input_it_t  = const ValueT*;
   using val_output_it_t = ValueT*;

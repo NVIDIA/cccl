@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_BIT
-#define _CUDA_STD_BIT
+#ifndef _LIBCUDACXX___BIT_ENDIAN_H
+#define _LIBCUDACXX___BIT_ENDIAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,15 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/countr.h>
-#include <cuda/std/__bit/endian.h>
-#include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__bit/integral.h>
-#include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__bit/rotate.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/version>
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#endif // _CUDA_STD_BIT
+enum class endian
+{
+  little = 0xDEAD,
+  big    = 0xFACE,
+#if defined(_LIBCUDACXX_LITTLE_ENDIAN)
+  native = little
+#elif defined(_LIBCUDACXX_BIG_ENDIAN)
+  native = big
+#else
+  native = 0xCAFE
+#endif
+};
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // _LIBCUDACXX___BIT_ENDIAN_H

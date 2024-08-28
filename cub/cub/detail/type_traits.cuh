@@ -63,10 +63,6 @@ using invoke_result_t =
   ::cuda::std::invoke_result_t<Invokable, Args...>;
 #endif
 
-/// The type of intermediate accumulator (according to P2322R6)
-template <typename Invokable, typename InitT, typename InputT>
-using accumulator_t = typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
-
 template <typename T, typename... TArgs>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool are_same()
 {

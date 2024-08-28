@@ -34,6 +34,8 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/__functional/invoke.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -200,7 +202,7 @@ struct DeviceRunLengthEncode
     // Generator type for providing 1s values for run-length reduction
     using lengths_input_iterator_t = ConstantInputIterator<length_t, offset_t>;
 
-    using accum_t = detail::accumulator_t<reduction_op, length_t, length_t>;
+    using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<InputIteratorT>>;
 
