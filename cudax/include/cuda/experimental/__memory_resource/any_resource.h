@@ -107,7 +107,7 @@ public:
 
   //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
   //! This constructor also handles conversion from \c async_any_resource to \c any_resource
-  //! @param __ref The other \c basic_any_resource.
+  //! @param __other The other \c basic_any_resource.
   _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(
     (_CUDA_VSTD::_IsNotSame<basic_any_resource, basic_any_resource<_OtherAllocType, _OtherProperties...>>::value)
@@ -251,7 +251,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource<_Ty, basic_any_res
 //! ----------------------------------------
 //!
 //! ``any_resource`` wraps any given :ref:`resource <libcudacxx-extended-api-memory-resources-resource>` that
-//! satisfies the required properties. It owns the contained resource taking care of construction / destruction.
+//! satisfies the required properties. It owns the contained resource, taking care of construction / destruction.
 //! This makes it especially suited for use in e.g. container types that need to ensure that the lifetime of the
 //! container exceeds the lifetime of the memory resource used to allocate the storage
 //!
@@ -266,7 +266,7 @@ using any_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Default, _Proper
 //! -----------------------------------------------
 //!
 //! ``async_any_resource`` wraps any given :ref:`async resource <libcudacxx-extended-api-memory-resources-resource>`
-//! that satisfies the required properties. It owns the contained resource taking care of construction / destruction.
+//! that satisfies the required properties. It owns the contained resource, taking care of construction / destruction.
 //! This makes it especially suited for use in e.g. container types that need to ensure that the lifetime of the
 //! container exceeds the lifetime of the memory resource used to allocate the storage
 //!
