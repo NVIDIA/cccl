@@ -48,7 +48,7 @@ struct policy_hub_for_alg
 };
 
 template <Algorithm Alg,
-          typename Offset = int,
+          typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename TransformOp>
@@ -57,7 +57,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg_entry_point(
   size_t& temp_storage_bytes,
   ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
   RandomAccessIteratorOut output,
-  int num_items,
+  Offset num_items,
   TransformOp transform_op,
   cudaStream_t stream = nullptr)
 {
