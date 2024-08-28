@@ -95,7 +95,7 @@ public:
   //! If is_done returns true, calling wait() on this event will return immediately
   //!
   //! @throws cuda_error if the event query fails
-  bool is_done() const
+  _CCCL_NODISCARD bool is_done() const
   {
     assert(__event_ != nullptr);
     cudaError_t __status = ::cudaEventQuery(__event_);
