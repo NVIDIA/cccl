@@ -577,6 +577,7 @@ _CCCL_DEVICE void bulk_copy_tile(
 #  if CUB_PTX_ARCH >= 900
         ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
 #  endif // CUB_PTX_ARCH >= 900
+        total_bytes_bulk_copied += bytes_to_copy;
       }
     }
   }
