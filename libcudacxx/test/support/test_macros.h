@@ -78,8 +78,6 @@
 #  define TEST_COMPILER_GCC
 #elif defined(_MSC_VER)
 #  define TEST_COMPILER_MSVC
-#elif defined(__IBMCPP__)
-#  define TEST_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
 #  define TEST_COMPILER_NVRTC
 #elif defined(__EDG__)
