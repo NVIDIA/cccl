@@ -82,7 +82,7 @@
         + std::to_string(thrust::detail::integer_traits<index_type>::const_max)                        \
         + "). " #index_type " was used because the macro THRUST_FORCE_32BIT_OFFSET_TYPE was defined. " \
           "To handle larger input sizes, either remove this macro to dynamically dispatch "            \
-          "between 32-bit and 64-bit index types, or define THRUST_FORCE_64BIT_OFFSET_TYPE.")          \
+          "between 32-bit and 64-bit index types, or define THRUST_FORCE_64BIT_OFFSET_TYPE.");         \
     }
 
 //! @brief Ensures that the sizes of the inputs do not overflow the offset type, but two counts
