@@ -452,7 +452,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim  = MemcpyAsyncPolicy::BLOCK_THREADS;
   const Offset tile_stride = block_dim * num_elem_per_thread;
   const Offset offset      = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size      = ::cuda::std::min(num_items - offset, tile_stride);
+  const int tile_size      = static_cast<int>(::cuda::std::min(num_items - offset, tile_stride));
 
   auto group           = cooperative_groups::this_thread_block();
   int smem_offset      = 0;
@@ -463,11 +463,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   (void) &smem_offset; // MSVC needs extra strong unused warning supression
 
   // TODO(bgruber): shouldn't this be before the loading?
-  {
-    // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
-    num_items -= offset;
-    out += offset;
-  }
+
+  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+  out += offset;
 
 #pragma unroll 1
   for (int i = 0; i < num_elem_per_thread; ++i)
