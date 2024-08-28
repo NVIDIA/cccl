@@ -130,7 +130,7 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
   using offset_t     = typename c2h::get<1, TestType>;
   constexpr auto alg = c2h::get<2, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
-  const int num_items = GENERATE(0, 1, 100, 1000);
+  const int num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097); // edge cases around 16 and 128
   CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg, num_items);
 
   c2h::device_vector<type> a(num_items);
@@ -574,7 +574,7 @@ struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
   static auto convert(cub::detail::transform::aligned_base_ptr<T> ps) -> std::string
   {
     std::stringstream ss;
-    ss << "{ptr: " << ps.ptr << ", offset: " << ps.front_padding << "}";
+    ss << "{ptr: " << ps.ptr << ", offset: " << ps.head_padding << "}";
     return ss.str();
   }
 };

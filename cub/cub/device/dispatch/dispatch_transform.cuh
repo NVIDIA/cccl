@@ -299,8 +299,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const T* round_down_ptr(const T* ptr, unsign
 //
 // We basically have to align the base pointer to 16 bytes, and copy a multiple of 16 bytes. To achieve this, when we
 // copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
-// address that is a multiple of 16 bytes. This introduces front padding. We also round up the total number of bytes to
-// copy (including front padding) to a multiple of 16 bytes, which introduces tail padding. For the bulk copy kernel, we
+// address that is a multiple of 16 bytes. This introduces head padding. We also round up the total number of bytes to
+// copy (including head padding) to a multiple of 16 bytes, which introduces tail padding. For the bulk copy kernel, we
 // have to align to 128 bytes instead of 16.
 //
 // However, padding memory copies like that may access the input buffer out-of-bounds. Here are some thoughts:
@@ -313,9 +313,9 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const T* round_down_ptr(const T* ptr, unsign
 // * This should count for device memory, but also for device accessible memory living on the host.
 // * The base pointer alignment and size rounding also never leaves the size of a cache line.
 //
-// Copying larger data blocks with front and tail padding should thus be legal. Nevertheless, an out-of-bounds read is
-// still technically undefined behavior in C++. compute-sanitizer flags at least such reads after the end of a buffer,
-// so we are protecting against those.=
+// Copying larger data blocks with head and tail padding should thus be legal. Nevertheless, an out-of-bounds read is
+// still technically undefined behavior in C++. Also, compute-sanitizer flags at least such reads after the end of a
+// buffer. Therefore, we lean on the safer side and protect against out of bounds reads at the beginning and end.
 
 // A note on size and alignment: The size of a type is at least as large as its alignment. We rely on this fact in some
 // conditions.
@@ -331,11 +331,11 @@ struct aligned_base_ptr
 {
   T* ptr; // aligned pointer before the original pointer (16-byte or 128-byte, or higher if alignof(T) is larger)
   T* end; // address of one-past-last element. used to avoid out-of-bounds accesses at the end
-  int front_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
+  int head_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
   _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
   {
-    return a.ptr == b.ptr && a.end == b.end && a.front_padding == b.front_padding;
+    return a.ptr == b.ptr && a.end == b.end && a.head_padding == b.head_padding;
   }
 };
 
@@ -353,7 +353,7 @@ constexpr int memcpy_async_size_multiple = 16;
 template <_CUDA_VSTD::size_t _Alignment>
 struct aligned_size_t
 {
-  _CUDA_VSTD::size_t value;
+  _CUDA_VSTD::size_t value; // TODO(bgruber): can this be an int?
 
   _CCCL_HOST_DEVICE constexpr operator size_t() const
   {
@@ -371,7 +371,7 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   int global_offset,
   aligned_base_ptr<const T> aligned_ptr)
 {
-  const int padded_num_bytes         = aligned_ptr.front_padding + static_cast<int>(sizeof(T)) * tile_size;
+  const int padded_num_bytes         = aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size;
   const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, memcpy_async_size_multiple);
   // because SMEM base pointer and count are always multiples of 16-byte, we only need to align the SMEM start for types
   // with larger alignment
@@ -379,29 +379,55 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   {
     smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
   }
-  auto smem_dst = reinterpret_cast<T*>(smem + smem_offset);
-  assert(reinterpret_cast<uintptr_t>(smem_dst) % memcpy_async_size_multiple == 0);
-  assert(reinterpret_cast<uintptr_t>(smem_dst) % alignof(T) == 0);
+  const char* src                     = reinterpret_cast<const char*>(aligned_ptr.ptr + global_offset);
+  char* dst                           = smem + smem_offset;
+  const char* const dst_start_of_data = dst + aligned_ptr.head_padding;
+  assert(reinterpret_cast<uintptr_t>(src) % memcpy_async_size_multiple == 0);
+  assert(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0);
+  assert(reinterpret_cast<uintptr_t>(dst) % memcpy_async_size_multiple == 0);
+  assert(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0);
+  assert(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0);
 
-  // Do fast-path, 16-byte aligned copy if we don't access beyond the buffer
-  if (reinterpret_cast<uintptr_t>(aligned_ptr.ptr + global_offset) + padded_num_bytes_rounded
-      <= reinterpret_cast<uintptr_t>(aligned_ptr.end))
+  smem_offset += padded_num_bytes_rounded; // leave aligned address for follow-up copy
+
+  // check for out-of-bounds read at the beginning
+  int bytes_to_copy = padded_num_bytes_rounded;
+  if (blockIdx.x == 0 && aligned_ptr.head_padding > 0)
+  {
+    // peel front bytes
+    const int peeled_bytes_front = memcpy_async_alignment - aligned_ptr.head_padding;
+    assert(peeled_bytes_front < memcpy_async_alignment);
+    if (threadIdx.x < peeled_bytes_front)
+    {
+      dst[aligned_ptr.head_padding + threadIdx.x] = src[aligned_ptr.head_padding + threadIdx.x];
+    }
+    // move async copy start into the buffer
+    src += memcpy_async_alignment;
+    dst += memcpy_async_alignment;
+    bytes_to_copy -= memcpy_async_alignment; // may result in a negative value
+  }
+
+  // check for out-of-bounds read at the end
+  const bool oob = reinterpret_cast<uintptr_t>(src) + bytes_to_copy > reinterpret_cast<uintptr_t>(aligned_ptr.end);
+  const auto async_copy_bytes = bytes_to_copy - oob * memcpy_async_size_multiple;
+  if (async_copy_bytes > 0)
   {
     cooperative_groups::memcpy_async(
-      group,
-      smem_dst,
-      aligned_ptr.ptr + global_offset,
-      aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(padded_num_bytes_rounded)});
+      group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(async_copy_bytes)});
+    dst += async_copy_bytes;
+    src += async_copy_bytes;
+    bytes_to_copy -= async_copy_bytes;
   }
-  else
+
+  if (oob)
   {
-    // TODO(bgruber): this function internally dispatches to several code paths and adds a fair bit of instructions to
-    // the kernel. If we eventually deem this too large, we can consider rounding down the size, perform an aligned copy
-    // and copy the remaining elements using ordinary loads.
-    cooperative_groups::memcpy_async(group, smem_dst, aligned_ptr.ptr + global_offset, padded_num_bytes);
+    if (threadIdx.x < padded_num_bytes % memcpy_async_size_multiple)
+    {
+      dst[threadIdx.x] = src[threadIdx.x];
+    }
   }
-  smem_offset += padded_num_bytes_rounded; // leave aligned address for follow-up copy
-  return reinterpret_cast<T*>(reinterpret_cast<char*>(smem_dst) + aligned_ptr.front_padding);
+
+  return reinterpret_cast<const T*>(dst_start_of_data);
 }
 
 template <typename MemcpyAsyncPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
@@ -493,7 +519,7 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE const T&
 fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
-  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.front_padding);
+  const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
   smem_offset += int{sizeof(T)} * tile_stride + ublkcp_alignment;
   _CCCL_IF_CONSTEXPR (alignof(T) > ublkcp_alignment)
   {
@@ -704,7 +730,7 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) 
   int smem_size   = 0;
   auto count_smem = [&](int size, int alignment) {
     smem_size = round_up_to_po2_multiple(smem_size, alignment);
-    // max aligned_base_ptr front_padding + max padding after == 16
+    // max aligned_base_ptr head_padding + max padding after == 16
     smem_size += size * tile_size + ::cuda::std::max(memcpy_async_alignment, memcpy_async_size_multiple);
   };
   // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)
@@ -940,7 +966,7 @@ struct dispatch_t<RequiresStableAddress,
 
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running on?
   template <typename ActivePolicy>
-  _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_memcpy_async_kernel()
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_memcpy_async_kernel()
     -> PoorExpected<
       ::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(KERNEL_PTR), int>>
   {
@@ -1018,7 +1044,7 @@ struct dispatch_t<RequiresStableAddress,
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
   template <typename ActivePolicy>
-  _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
     -> PoorExpected<
       ::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(KERNEL_PTR), int>>
   {
