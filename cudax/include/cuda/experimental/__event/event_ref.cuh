@@ -90,6 +90,29 @@ public:
     _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
   }
 
+  //! @brief Checks if all the work in the stream prior to the record of the event has completed.
+  //!
+  //! If is_done returns true, calling wait() on this event will return immediately
+  //!
+  //! @throws cuda_error if the event query fails
+  bool is_done() const
+  {
+    assert(__event_ != nullptr);
+    cudaError_t __status = ::cudaEventQuery(__event_);
+    if (__status == cudaSuccess)
+    {
+      return true;
+    }
+    else if (__status == cudaErrorNotReady)
+    {
+      return false;
+    }
+    else
+    {
+      ::cuda::__throw_cuda_error(__status, "Failed to query CUDA event");
+    }
+  }
+
   //! @brief Retrieve the native `cudaEvent_t` handle.
   //!
   //! @return cudaEvent_t The native handle being held by the event_ref object.
