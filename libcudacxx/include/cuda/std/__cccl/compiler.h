@@ -11,7 +11,7 @@
 #ifndef __CCCL_COMPILER_H
 #define __CCCL_COMPILER_H
 
-// Determine the host compiler
+// Determine the host compiler and its version
 #if defined(__INTEL_LLVM_COMPILER)
 #  define _CCCL_COMPILER_ICC_LLVM
 #  define _CCCL_COMPILER_ICC_LLVM_VERSION __INTEL_LLVM_COMPILER
@@ -72,6 +72,7 @@ static_assert(__GNUC_PATCHLEVEL__ < 100);
 
 // clang-cuda does not define __CUDACC_VER_MAJOR__ and friends
 #if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  include "cuda.h" // CUDA_VERSION
 #  define _CCCL_CUDACC
 #  define _CCCL_CUDACC_VER_MAJOR CUDA_VERSION / 1000
 #  define _CCCL_CUDACC_VER_MINOR (CUDA_VERSION % 1000) / 10
