@@ -41,7 +41,7 @@ struct __cond_t
   }
 
   template <class... _Args>
-  using __just_from_t = decltype(just_from(__cond_t::__mk_complete_fn(DECLVAL(_Args)...)));
+  using __just_from_t = decltype(just_from(__cond_t::__mk_complete_fn(__declval<_Args>()...)));
 
   template <class _Sndr, class _Rcvr, class _Pred, class _Then, class _Else>
   struct __opstate

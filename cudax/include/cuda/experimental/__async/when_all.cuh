@@ -171,7 +171,7 @@ using __inner_fold_init = __completion_metadata<__mtrue, __mtrue, __moffsets<>>;
 
 template <class... _Sigs>
 using __collect_inner = //
-  decltype((DECLVAL(__inner_fold_init&) | ... | static_cast<_Sigs*>(nullptr)));
+  decltype((__declval<__inner_fold_init&>() | ... | static_cast<_Sigs*>(nullptr)));
 
 //////////////////////////////////////////////////////////////////////////////////////
 // __merge_metadata
@@ -278,7 +278,7 @@ using __outer_fold_init = __completion_metadata<__mtrue, __mtrue, __moffsets<0ul
 
 template <class... _Sigs>
 using __collect_outer = //
-  __reduce_completions_t<decltype((DECLVAL(__outer_fold_init&) & ... & DECLVAL(_Sigs)))>;
+  __reduce_completions_t<decltype((__declval<__outer_fold_init&>() & ... & __declval<_Sigs>()))>;
 
 // Extract the first template parameter of the __state_t specialization.
 // The first template parameter is the receiver type.

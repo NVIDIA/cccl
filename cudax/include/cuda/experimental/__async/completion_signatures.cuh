@@ -321,7 +321,7 @@ auto completion(_Tag, _Args&&...) -> __csig::__sigs<_Tag(_Args...)>&;
 
 template <class _Sndr, class _Rcvr = receiver_archetype>
 auto completions_of(_Sndr&&,
-                    _Rcvr = {}) -> decltype(__csig::__to_sigs(DECLVAL(completion_signatures_of_t<_Sndr, _Rcvr>&)));
+                    _Rcvr = {}) -> decltype(__csig::__to_sigs(__declval<completion_signatures_of_t<_Sndr, _Rcvr>&>()));
 
 template <bool _PotentiallyThrowing>
 auto eptr_completion_if()

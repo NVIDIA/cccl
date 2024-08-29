@@ -48,8 +48,6 @@ using __nothrow_fn_t = _Ret(_Args...) noexcept;
 template <class _Ty, class _Ret = _Ty&&>
 extern __nothrow_fn_t<_Ret>* __declval;
 
-#define DECLVAL(...) __declval<__VA_ARGS__>()
-
 template <class...>
 using __mvoid = void;
 
@@ -725,7 +723,7 @@ template <class... _Ts>
 using __mset = __set::__inherit<_Ts...>;
 
 template <class _Set, class... _Ts>
-using __mset_insert = decltype(+(DECLVAL(_Set&) % ... % DECLVAL(__mtype<_Ts>&)));
+using __mset_insert = decltype(+(__declval<_Set&>() % ... % __declval<__mtype<_Ts>&>()));
 
 template <class... _Ts>
 using __mmake_set = __mset_insert<__mset<>, _Ts...>;

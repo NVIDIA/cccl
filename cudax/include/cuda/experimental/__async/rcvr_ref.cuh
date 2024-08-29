@@ -42,7 +42,7 @@ constexpr _Rcvr* __rcvr_ref(_Rcvr* __rcvr) noexcept
 }
 
 template <class _Rcvr>
-using __rcvr_ref_t = decltype(__async::__rcvr_ref(DECLVAL(_Rcvr)));
+using __rcvr_ref_t = decltype(__async::__rcvr_ref(__declval<_Rcvr>()));
 
 } // namespace cuda::experimental::__async
 

@@ -62,7 +62,7 @@ struct __rcvr_with_env_t : _Rcvr
   }
 
   template <class _Query, class _Self = __rcvr_with_env_t>
-  using _1st_env_t = decltype(DECLVAL(const _Self&).__get_1st(_Query{}));
+  using _1st_env_t = decltype(__declval<const _Self&>().__get_1st(_Query{}));
 
   template <class _Query>
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query __query) const
@@ -121,7 +121,7 @@ struct __rcvr_with_env_t<_Rcvr*, _Env>
   }
 
   template <class _Query, class _Self = __rcvr_with_env_t>
-  using _1st_env_t = decltype(DECLVAL(const _Self&).__get_1st(_Query{}));
+  using _1st_env_t = decltype(__declval<const _Self&>().__get_1st(_Query{}));
 
   template <class _Query>
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query __query) const

@@ -66,7 +66,7 @@ struct __decay_object
   template <class _Ty>
   static _Ty __g(_Ty const&);
   template <class _Ty>
-  using __f = decltype(__g(DECLVAL(_Ty)));
+  using __f = decltype(__g(__declval<_Ty>()));
 };
 
 struct __decay_default
@@ -74,7 +74,7 @@ struct __decay_default
   template <class _Ty>
   static _Ty __g(_Ty);
   template <class _Ty>
-  using __f = decltype(__g(DECLVAL(_Ty)));
+  using __f = decltype(__g(__declval<_Ty>()));
 };
 
 // I don't care to support abominable function types,
@@ -200,7 +200,7 @@ template <class _From, class _To>
 using __copy_cvref_t = typename __copy_cvref_fn<_From>::template __f<_To>;
 
 template <class _Fn, class... _As>
-using __call_result_t = decltype(DECLVAL(_Fn)(DECLVAL(_As)...));
+using __call_result_t = decltype(__declval<_Fn>()(__declval<_As>()...));
 
 template <class _Fn, class... _As>
 _CCCL_INLINE_VAR constexpr bool __callable = __mvalid_q<__call_result_t, _Fn, _As...>;
@@ -222,31 +222,31 @@ template <class... _As>
 _CCCL_INLINE_VAR constexpr bool __nothrow_copyable = true;
 #else
 template <class _Fn, class... _As>
-using __nothrow_callable_ = __mif<noexcept(DECLVAL(_Fn)(DECLVAL(_As)...))>;
+using __nothrow_callable_ = __mif<noexcept(__declval<_Fn>()(__declval<_As>()...))>;
 
 template <class _Fn, class... _As>
 _CCCL_INLINE_VAR constexpr bool __nothrow_callable = __mvalid_q<__nothrow_callable_, _Fn, _As...>;
 
 template <class _Ty, class... _As>
-using __nothrow_constructible_ = __mif<noexcept(_Ty{DECLVAL(_As)...})>;
+using __nothrow_constructible_ = __mif<noexcept(_Ty{__declval<_As>()...})>;
 
 template <class _Ty, class... _As>
 _CCCL_INLINE_VAR constexpr bool __nothrow_constructible = __mvalid_q<__nothrow_constructible_, _Ty, _As...>;
 
 template <class _Ty>
-using __nothrow_decay_copyable_ = __mif<noexcept(__decay_t<_Ty>(DECLVAL(_Ty)))>;
+using __nothrow_decay_copyable_ = __mif<noexcept(__decay_t<_Ty>(__declval<_Ty>()))>;
 
 template <class... _As>
 _CCCL_INLINE_VAR constexpr bool __nothrow_decay_copyable = (__mvalid_q<__nothrow_decay_copyable_, _As> && ...);
 
 template <class _Ty>
-using __nothrow_movable_ = __mif<noexcept(_Ty(DECLVAL(_Ty&&)))>;
+using __nothrow_movable_ = __mif<noexcept(_Ty(__declval<_Ty>()))>;
 
 template <class... _As>
 _CCCL_INLINE_VAR constexpr bool __nothrow_movable = (__mvalid_q<__nothrow_movable_, _As> && ...);
 
 template <class _Ty>
-using __nothrow_copyable_ = __mif<noexcept(_Ty(DECLVAL(const _Ty&)))>;
+using __nothrow_copyable_ = __mif<noexcept(_Ty(__declval<const _Ty&>()))>;
 
 template <class... _As>
 _CCCL_INLINE_VAR constexpr bool __nothrow_copyable = (__mvalid_q<__nothrow_copyable_, _As> && ...);

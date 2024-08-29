@@ -182,7 +182,7 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 using namespace __region;
 
 template <class _Ty>
-using env_of_t = decltype(get_env(DECLVAL(_Ty)));
+using env_of_t = decltype(get_env(__declval<_Ty>()));
 } // namespace cuda::experimental::__async
 
 _CCCL_NV_DIAG_DEFAULT(20012)

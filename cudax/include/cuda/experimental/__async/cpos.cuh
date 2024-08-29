@@ -183,16 +183,16 @@ struct receiver_archetype
 };
 
 template <class _Sndr, class _Rcvr>
-using connect_result_t = decltype(connect(DECLVAL(_Sndr), DECLVAL(_Rcvr)));
+using connect_result_t = decltype(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
 
 template <class _Sndr, class _Rcvr = receiver_archetype>
 using completion_signatures_of_t = typename connect_result_t<_Sndr, _Rcvr>::completion_signatures;
 
 template <class _Sch>
-using schedule_result_t = decltype(schedule(DECLVAL(_Sch)));
+using schedule_result_t = decltype(schedule(__declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
-_CCCL_INLINE_VAR constexpr bool __nothrow_connectable = noexcept(connect(DECLVAL(_Sndr), DECLVAL(_Rcvr)));
+_CCCL_INLINE_VAR constexpr bool __nothrow_connectable = noexcept(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
 
 // handy enumerations for keeping type names readable
 enum __disposition_t

@@ -33,7 +33,7 @@
 namespace cuda::experimental::__async
 {
 template <class _Ty, class _Query>
-auto __query_result_() -> decltype(DECLVAL(_Ty).__query(_Query()));
+auto __query_result_() -> decltype(__declval<_Ty>().__query(_Query()));
 
 template <class _Ty, class _Query>
 using __query_result_t = decltype(__query_result_<_Ty, _Query>());
@@ -46,7 +46,7 @@ template <class _Ty, class _Query>
 _CCCL_INLINE_VAR constexpr bool __nothrow_queryable = true;
 #else
 template <class _Ty, class _Query>
-using __nothrow_queryable_ = __mif<noexcept(DECLVAL(_Ty).__query(_Query()))>;
+using __nothrow_queryable_ = __mif<noexcept(__declval<_Ty>().__query(_Query()))>;
 
 template <class _Ty, class _Query>
 _CCCL_INLINE_VAR constexpr bool __nothrow_queryable = __mvalid_q<__nothrow_queryable_, _Ty, _Query>;
