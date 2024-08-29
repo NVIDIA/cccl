@@ -624,9 +624,10 @@ _CCCL_DEVICE void transform_kernel_impl(
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
 
-  // TODO(bgruber) use: `cooperative_groups::invoke_one(cooperative_groups::this_thread_block(), [&]() {` with CTK
-  // >= 12.1
-  if (threadIdx.x < ::cuda::std::max({bulk_copy_alignment / sizeof(InTs)...}))
+  // we need enough threads to copy any padding elements, but at least 1
+  if (threadIdx.x < ::cuda::std::max(
+        {1,
+         ::cuda::std::max(aligned_ptrs.head_padding / int{sizeof(*aligned_ptrs.ptr)}, aligned_ptrs.tail_elements)...}))
   {
     if (threadIdx.x == 0)
     {
