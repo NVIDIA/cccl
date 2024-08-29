@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/event.cuh>
+#include <cuda/experimental/stream.cuh>
 
 #include <catch2/catch.hpp>
 #include <utility.cuh>
@@ -72,10 +73,11 @@ TEST_CASE("can use event_ref to record and wait on an event", "[event]")
   const cudax::event_ref ref(ev);
 
   test::managed<int> i(0);
-  test::stream stream;
-  ::test::invokernel<<<1, 1, 0, stream.get()>>>(::test::assign_42{}, i.get());
+  cudax::stream stream;
+  cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   ref.record(stream);
   ref.wait();
+  CUDAX_REQUIRE(ref.is_done());
   CUDAX_REQUIRE(*i == 42);
 
   stream.wait();
@@ -84,33 +86,50 @@ TEST_CASE("can use event_ref to record and wait on an event", "[event]")
 
 TEST_CASE("can construct an event with a stream_ref", "[event]")
 {
-  test::stream stream;
-  cudax::event ev(stream.ref());
+  cudax::stream stream;
+  cudax::event ev(static_cast<cuda::stream_ref>(stream));
   CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
 }
 
 TEST_CASE("can wait on an event", "[event]")
 {
-  test::stream stream;
+  cudax::stream stream;
   ::test::managed<int> i(0);
-  ::test::invokernel<<<1, 1, 0, stream.get()>>>(::test::assign_42{}, i.get());
+  cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   cudax::event ev(stream);
   ev.wait();
+  CUDAX_REQUIRE(ev.is_done());
   CUDAX_REQUIRE(*i == 42);
   stream.wait();
 }
 
 TEST_CASE("can take the difference of two timed_event objects", "[event]")
 {
-  test::stream stream;
+  cudax::stream stream;
   ::test::managed<int> i(0);
   cudax::timed_event start(stream);
-  ::test::invokernel<<<1, 1, 0, stream.get()>>>(::test::assign_42{}, i.get());
+  cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   cudax::timed_event end(stream);
   end.wait();
+  CUDAX_REQUIRE(end.is_done());
   CUDAX_REQUIRE(*i == 42);
   auto elapsed = end - start;
   CUDAX_REQUIRE(elapsed.count() >= 0);
   STATIC_REQUIRE(_CUDA_VSTD::is_same_v<decltype(elapsed), _CUDA_VSTD::chrono::nanoseconds>);
   stream.wait();
+}
+
+TEST_CASE("can observe the event in not ready state", "[event]")
+{
+  ::test::managed<int> i(0);
+  ::cuda::atomic_ref atomic_i(*i);
+
+  cudax::stream stream;
+
+  cudax::launch(stream, ::test::one_thread_dims, ::test::spin_until_80{}, i.get());
+  cudax::event ev(stream);
+  CUDAX_REQUIRE(!ev.is_done());
+  atomic_i.store(80);
+  ev.wait();
+  CUDAX_REQUIRE(ev.is_done());
 }
