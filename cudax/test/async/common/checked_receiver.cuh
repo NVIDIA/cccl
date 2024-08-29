@@ -20,6 +20,16 @@ struct checked_value_receiver
 {
   using receiver_concept = cudax_async::receiver_t;
 
+  // This overload is needed to avoid an nvcc compiler bug where a variadic
+  // pack is not visible within the scope of a lambda.
+  _CCCL_HOST_DEVICE void set_value() && noexcept
+  {
+    if constexpr (!_CUDA_VSTD::is_same_v<cudax_async::__mlist<Values...>, cudax_async::__mlist<>>)
+    {
+      CUDAX_FAIL("expected a value completion; got a different value");
+    }
+  }
+
   template <class... As>
   _CCCL_HOST_DEVICE void set_value(As... as) && noexcept
   {

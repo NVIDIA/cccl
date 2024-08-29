@@ -45,8 +45,8 @@ using __fn_t = _Ret(_Args...);
 template <class _Ret, class... _Args>
 using __nothrow_fn_t = _Ret(_Args...) noexcept;
 
-template <class _Ty, class _Ret = _Ty&&>
-extern __nothrow_fn_t<_Ret>* __declval;
+template <class _Ty>
+_Ty&& __declval() noexcept;
 
 template <class...>
 using __mvoid = void;
@@ -311,11 +311,11 @@ using __minvoke = typename _Fn::template __f<_Ts...>;
 template <class _Fn, class _Ty>
 using __minvoke1 = typename _Fn::template __f<_Ty>;
 
-template <class _Fn, template <class...> class _Cy, class... _Ts>
-__minvoke<_Fn, _Ts...> __apply_fn(_Cy<_Ts...>*);
+template <class _Fn, template <class...> class _Cy, class... _Ts, class _Ret = __minvoke<_Fn, _Ts...>>
+auto __apply_fn(_Cy<_Ts...>*) -> _Ret;
 
-template <template <class...> class _Fn, template <class...> class _Cy, class... _Ts>
-_Fn<_Ts...> __apply_fn_q(_Cy<_Ts...>*);
+template <template <class...> class _Fn, template <class...> class _Cy, class... _Ts, class _Ret = _Fn<_Ts...>>
+auto __apply_fn_q(_Cy<_Ts...>*) -> _Ret;
 
 template <class _Fn, class _List>
 using __mapply = decltype(__async::__apply_fn<_Fn>(static_cast<_List*>(nullptr)));

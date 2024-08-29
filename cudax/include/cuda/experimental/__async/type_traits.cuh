@@ -33,17 +33,17 @@ namespace cuda::experimental::__async
 #if __has_builtin(__remove_reference)
 
 template <class _Ty>
-using __remove_reference_t = __remove_reference(_Ty);
+using __remove_ref_t = __remove_reference(_Ty);
 
 #elif __has_builtin(__remove_reference_t)
 
 template <class _Ty>
-using __remove_reference_t = __remove_reference_t(_Ty);
+using __remove_ref_t = __remove_reference_t(_Ty);
 
 #else
 
 template <class _Ty>
-using __remove_reference_t = _CUDA_VSTD::remove_reference_t<_Ty>;
+using __remove_ref_t = _CUDA_VSTD::remove_reference_t<_Ty>;
 
 #endif
 

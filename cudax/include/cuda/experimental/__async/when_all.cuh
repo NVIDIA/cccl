@@ -247,7 +247,7 @@ using __append_offset = __moffsets<_Offsets..., _Count + __last_offset<_Offsets.
 // a single value completion. Concatenate the value types.
 template <class _LeftValsOK,
           class _LeftErrsOK,
-          auto... _Offsets,
+          size_t... _Offsets,
           class... _As,
           class... _LeftSigs,
           class _RightValsOK,
