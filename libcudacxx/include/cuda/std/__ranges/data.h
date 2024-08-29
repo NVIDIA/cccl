@@ -46,12 +46,16 @@ _LIBCUDACXX_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_po
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
 concept __member_data = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.data()) } -> __ptr_to_object;
+  {
+    _LIBCUDACXX_AUTO_CAST(__t.data())
+  } -> __ptr_to_object;
 };
 
 template <class _Tp>
 concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && requires(_Tp&& __t) {
-  { _CUDA_VRANGES::begin(__t) } -> contiguous_iterator;
+  {
+    _CUDA_VRANGES::begin(__t)
+  } -> contiguous_iterator;
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -77,6 +81,7 @@ _LIBCUDACXX_CONCEPT __ranges_begin_invocable = _LIBCUDACXX_FRAGMENT(__ranges_beg
 
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_data<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -85,6 +90,7 @@ struct __fn
     return __t.data();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__ranges_begin_invocable<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const

@@ -49,13 +49,17 @@ void begin(const _Tp&) = delete;
 #  if _CCCL_STD_VER > 2017
 template <class _Tp>
 concept __member_begin = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.begin()) } -> input_or_output_iterator;
+  {
+    _LIBCUDACXX_AUTO_CAST(__t.begin())
+  } -> input_or_output_iterator;
 };
 
 template <class _Tp>
 concept __unqualified_begin =
   !__member_begin<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _LIBCUDACXX_AUTO_CAST(begin(__t)) } -> input_or_output_iterator;
+    {
+      _LIBCUDACXX_AUTO_CAST(begin(__t))
+    } -> input_or_output_iterator;
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -101,6 +105,7 @@ struct __fn
     return __t + 0;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_begin<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -109,6 +114,7 @@ struct __fn
     return _LIBCUDACXX_AUTO_CAST(__t.begin());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_begin<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -145,14 +151,18 @@ void end(const _Tp&) = delete;
 template <class _Tp>
 concept __member_end = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   typename iterator_t<_Tp>;
-  { _LIBCUDACXX_AUTO_CAST(__t.end()) } -> sentinel_for<iterator_t<_Tp>>;
+  {
+    _LIBCUDACXX_AUTO_CAST(__t.end())
+  } -> sentinel_for<iterator_t<_Tp>>;
 };
 
 template <class _Tp>
 concept __unqualified_end =
   !__member_end<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     typename iterator_t<_Tp>;
-    { _LIBCUDACXX_AUTO_CAST(end(__t)) } -> sentinel_for<iterator_t<_Tp>>;
+    {
+      _LIBCUDACXX_AUTO_CAST(end(__t))
+    } -> sentinel_for<iterator_t<_Tp>>;
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -189,6 +199,7 @@ struct __fn
     return __t + _Np;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -197,6 +208,7 @@ struct __fn
     return _LIBCUDACXX_AUTO_CAST(__t.end());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -221,6 +233,7 @@ _CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cbegin)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -230,6 +243,7 @@ struct __fn
     return _CUDA_VRANGES::begin(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -251,6 +265,7 @@ _CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cend)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -260,6 +275,7 @@ struct __fn
     return _CUDA_VRANGES::end(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const

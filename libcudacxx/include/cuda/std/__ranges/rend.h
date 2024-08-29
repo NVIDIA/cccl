@@ -48,20 +48,28 @@ void rend(const _Tp&) = delete;
 template <class _Tp>
 concept __member_rend = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   _CUDA_VRANGES::rbegin(__t);
-  { _LIBCUDACXX_AUTO_CAST(__t.rend()) } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
+  {
+    _LIBCUDACXX_AUTO_CAST(__t.rend())
+  } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
 };
 
 template <class _Tp>
 concept __unqualified_rend =
   !__member_rend<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     _CUDA_VRANGES::rbegin(__t);
-    { _LIBCUDACXX_AUTO_CAST(rend(__t)) } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
+    {
+      _LIBCUDACXX_AUTO_CAST(rend(__t))
+    } -> sentinel_for<decltype(_CUDA_VRANGES::rbegin(__t))>;
   };
 
 template <class _Tp>
 concept __can_reverse = __can_borrow<_Tp> && !__member_rend<_Tp> && !__unqualified_rend<_Tp> && requires(_Tp&& __t) {
-  { _CUDA_VRANGES::begin(__t) } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
-  { _CUDA_VRANGES::begin(__t) } -> bidirectional_iterator;
+  {
+    _CUDA_VRANGES::begin(__t)
+  } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
+  {
+    _CUDA_VRANGES::begin(__t)
+  } -> bidirectional_iterator;
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -105,6 +113,7 @@ _LIBCUDACXX_CONCEPT __can_reverse = _LIBCUDACXX_FRAGMENT(__can_reverse_, _Tp);
 class __fn
 {
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_rend<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -113,6 +122,7 @@ public:
     return _LIBCUDACXX_AUTO_CAST(__t.rend());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_rend<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -121,6 +131,7 @@ public:
     return _LIBCUDACXX_AUTO_CAST(rend(__t));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__can_reverse<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -145,6 +156,7 @@ _CCCL_GLOBAL_CONSTANT auto rend = __rend::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__crend)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -154,6 +166,7 @@ struct __fn
     return _CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const

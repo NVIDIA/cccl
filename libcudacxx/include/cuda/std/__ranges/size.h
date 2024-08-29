@@ -56,20 +56,28 @@ _LIBCUDACXX_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
 concept __member_size = __size_enabled<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.size()) } -> __integer_like;
+  {
+    _LIBCUDACXX_AUTO_CAST(__t.size())
+  } -> __integer_like;
 };
 
 template <class _Tp>
 concept __unqualified_size =
   __size_enabled<_Tp> && !__member_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _LIBCUDACXX_AUTO_CAST(size(__t)) } -> __integer_like;
+    {
+      _LIBCUDACXX_AUTO_CAST(size(__t))
+    } -> __integer_like;
   };
 
 template <class _Tp>
 concept __difference =
   !__member_size<_Tp> && !__unqualified_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
-    { _CUDA_VRANGES::end(__t) } -> sized_sentinel_for<decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>;
+    {
+      _CUDA_VRANGES::begin(__t)
+    } -> forward_iterator;
+    {
+      _CUDA_VRANGES::end(__t)
+    } -> sized_sentinel_for<decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>;
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
@@ -126,6 +134,7 @@ struct __fn
   }
 
   // `[range.prim.size]`: `auto(t.size())` is a valid expression.
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_size<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -135,6 +144,7 @@ struct __fn
   }
 
   // `[range.prim.size]`: `auto(size(t))` is a valid expression.
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_size<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -144,6 +154,7 @@ struct __fn
   }
 
   // [range.prim.size]: the `to-unsigned-like` case.
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__difference<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
