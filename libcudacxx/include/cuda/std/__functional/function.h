@@ -53,17 +53,17 @@
 
 #ifndef __cuda_std__
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
 #    include <function>
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _CCCL_NO_EXCEPTIONS
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_function_call()
 {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _CCCL_NO_EXCEPTIONS
 }
 
 template <class _Fp>
