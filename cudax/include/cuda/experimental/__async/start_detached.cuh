@@ -36,63 +36,63 @@ struct start_detached_t
 
 private:
 #endif
-  struct _opstate_base_t : _immovable
+  struct __opstate_base_t : __immovable
   {};
 
-  struct _rcvr_t
+  struct __rcvr_t
   {
     using receiver_concept = receiver_t;
 
-    _opstate_base_t* _opstate;
-    void (*_destroy)(_opstate_base_t*) noexcept;
+    __opstate_base_t* __opstate_;
+    void (*__destroy)(__opstate_base_t*) noexcept;
 
-    template <class... As>
-    void set_value(As&&...) && noexcept
+    template <class... _As>
+    void set_value(_As&&...) && noexcept
     {
-      _destroy(_opstate);
+      __destroy(__opstate_);
     }
 
-    template <class Error>
-    void set_error(Error&&) && noexcept
+    template <class _Error>
+    void set_error(_Error&&) && noexcept
     {
       ::cuda::std::terminate();
     }
 
     void set_stopped() && noexcept
     {
-      _destroy(_opstate);
+      __destroy(__opstate_);
     }
   };
 
-  template <class Sndr>
-  struct _opstate_t : _opstate_base_t
+  template <class _Sndr>
+  struct __opstate_t : __opstate_base_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __async::completion_signatures_of_t<Sndr, _rcvr_t>;
-    connect_result_t<Sndr, _rcvr_t> _op;
+    using completion_signatures   = __async::completion_signatures_of_t<_Sndr, __rcvr_t>;
+    connect_result_t<_Sndr, __rcvr_t> __opstate_;
 
-    static void _destroy(_opstate_base_t* ptr) noexcept
+    static void __destroy(__opstate_base_t* __ptr) noexcept
     {
-      delete static_cast<_opstate_t*>(ptr);
+      delete static_cast<__opstate_t*>(__ptr);
     }
 
-    _CCCL_HOST_DEVICE explicit _opstate_t(Sndr&& sndr)
-        : _op(__async::connect(static_cast<Sndr&&>(sndr), _rcvr_t{this, &_destroy}))
+    _CCCL_HOST_DEVICE explicit __opstate_t(_Sndr&& __sndr)
+        : __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
     _CCCL_HOST_DEVICE void start() & noexcept
     {
-      __async::start(_op);
+      __async::start(__opstate_);
     }
   };
 
 public:
   /// @brief Eagerly connects and starts a sender and lets it
   /// run detached.
-  template <class Sndr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void operator()(Sndr sndr) const
+  template <class _Sndr>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void operator()(_Sndr __sndr) const
   {
-    __async::start(*new _opstate_t<Sndr>{static_cast<Sndr&&>(sndr)});
+    __async::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
   }
 };
 

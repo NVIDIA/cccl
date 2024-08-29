@@ -22,196 +22,203 @@
 
 namespace cuda::experimental::__async
 {
-struct _cond_t
+struct __cond_t
 {
-  template <class Pred, class Then, class Else>
-  struct _data
+  template <class _Pred, class _Then, class _Else>
+  struct __data
   {
-    Pred pred_;
-    Then then_;
-    Else else_;
+    _Pred __pred_;
+    _Then __then_;
+    _Else __else_;
   };
 
-  template <class... Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto _mk_complete_fn(Args&&... args) noexcept
+  template <class... _Args>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
   {
-    return [&](auto sink) noexcept {
-      return sink(static_cast<Args&&>(args)...);
+    return [&](auto __sink) noexcept {
+      return __sink(static_cast<_Args&&>(__args)...);
     };
   }
 
-  template <class... Args>
-  using _just_from_t = decltype(just_from(_cond_t::_mk_complete_fn(DECLVAL(Args)...)));
+  template <class... _Args>
+  using __just_from_t = decltype(just_from(__cond_t::__mk_complete_fn(DECLVAL(_Args)...)));
 
-  template <class Sndr, class Rcvr, class Pred, class Then, class Else>
-  struct _opstate
+  template <class _Sndr, class _Rcvr, class _Pred, class _Then, class _Else>
+  struct __opstate
   {
     using operation_state_concept = operation_state_t;
 
-    _CCCL_HOST_DEVICE friend env_of_t<Rcvr> get_env(const _opstate* self) noexcept
+    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate* __self) noexcept
     {
-      return get_env(self->_rcvr);
+      return get_env(__self->__rcvr_);
     }
 
-    template <class... Args>
-    using _value_t = //
+    template <class... _Args>
+    using __value_t = //
       transform_completion_signatures<
-        completion_signatures_of_t<_call_result_t<Then, _just_from_t<Args...>>, _rcvr_ref_t<Rcvr&>>,
-        completion_signatures_of_t<_call_result_t<Else, _just_from_t<Args...>>, _rcvr_ref_t<Rcvr&>>>;
+        completion_signatures_of_t<__call_result_t<_Then, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>,
+        completion_signatures_of_t<__call_result_t<_Else, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>>;
 
-    template <class... Args>
-    using _opstate_t = //
-      _mlist< //
-        connect_result_t<_call_result_t<Then, _just_from_t<Args...>>, _rcvr_ref_t<Rcvr&>>,
-        connect_result_t<_call_result_t<Else, _just_from_t<Args...>>, _rcvr_ref_t<Rcvr&>>>;
+    template <class... _Args>
+    using __opstate_t = //
+      __mlist< //
+        connect_result_t<__call_result_t<_Then, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>,
+        connect_result_t<__call_result_t<_Else, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>>;
+
+    using __next_ops_variant_t = //
+      __value_types<completion_signatures_of_t<_Sndr, __opstate*>, __opstate_t, __mconcat_into_q<__variant>::__f>;
 
     using completion_signatures = //
-      transform_completion_signatures_of<Sndr, _opstate*, __async::completion_signatures<>, _value_t>;
+      transform_completion_signatures_of<_Sndr, __opstate*, __async::completion_signatures<>, __value_t>;
 
-    _CCCL_HOST_DEVICE _opstate(Sndr&& sndr, Rcvr&& rcvr, _data<Pred, Then, Else>&& data)
-        : _rcvr{static_cast<Rcvr&&>(rcvr)}
-        , _data{static_cast<_cond_t::_data<Pred, Then, Else>>(data)}
-        , _op{__async::connect(static_cast<Sndr&&>(sndr), this)}
+    _CCCL_HOST_DEVICE __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data<_Pred, _Then, _Else>&& __data)
+        : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
+        , __data_{static_cast<__cond_t::__data<_Pred, _Then, _Else>>(__data)}
+        , __op_{__async::connect(static_cast<_Sndr&&>(__sndr), this)}
     {}
 
     _CCCL_HOST_DEVICE void start() noexcept
     {
-      __async::start(_op);
+      __async::start(__op_);
     }
 
-    template <class... Args>
-    _CCCL_HOST_DEVICE void set_value(Args&&... args) noexcept
+    template <class... _Args>
+    _CCCL_HOST_DEVICE void set_value(_Args&&... __args) noexcept
     {
-      if (static_cast<Pred&&>(_data.pred_)(args...))
+      if (static_cast<_Pred&&>(__data_.__pred_)(__args...))
       {
-        auto& op = _ops.emplace_from(
+        auto& __op = __ops_.__emplace_from(
           connect,
-          static_cast<Then&&>(_data.then_)(just_from(_cond_t::_mk_complete_fn(static_cast<Args&&>(args)...))),
-          _rcvr_ref(_rcvr));
-        __async::start(op);
+          static_cast<_Then&&>(__data_.__then_)(just_from(__cond_t::__mk_complete_fn(static_cast<_Args&&>(__args)...))),
+          __rcvr_ref(__rcvr_));
+        __async::start(__op_);
       }
       else
       {
-        auto& op = _ops.emplace_from(
+        auto& __op = __ops_.__emplace_from(
           connect,
-          static_cast<Else&&>(_data.else_)(just_from(_cond_t::_mk_complete_fn(static_cast<Args&&>(args)...))),
-          _rcvr_ref(_rcvr));
-        __async::start(op);
+          static_cast<_Else&&>(__data_.__else_)(just_from(__cond_t::__mk_complete_fn(static_cast<_Args&&>(__args)...))),
+          __rcvr_ref(__rcvr_));
+        __async::start(__op);
       }
     }
 
-    template <class Error>
-    _CCCL_HOST_DEVICE void set_error(Error&& err) noexcept
+    template <class _Error>
+    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
     {
-      __async::set_error(static_cast<Rcvr&&>(_rcvr), static_cast<Error&&>(err));
+      __async::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
     _CCCL_HOST_DEVICE void set_stopped() noexcept
     {
-      __async::set_stopped(static_cast<Rcvr&&>(_rcvr));
+      __async::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    Rcvr _rcvr;
-    _cond_t::_data<Pred, Then, Else> _data;
-    connect_result_t<Sndr, _opstate*> _op;
-    _value_types<completion_signatures_of_t<Sndr, _opstate*>, _opstate_t, _mconcat_into_q<_variant>::_f> _ops;
+    _Rcvr __rcvr_;
+    __cond_t::__data<_Pred, _Then, _Else> __data_;
+    connect_result_t<_Sndr, __opstate*> __op_;
+    __next_ops_variant_t __ops_;
   };
 
-  template <class Sndr, class Pred, class Then, class Else>
-  struct _sndr;
+  template <class _Sndr, class _Pred, class _Then, class _Else>
+  struct __sndr_t;
 
-  template <class Pred, class Then, class Else>
-  struct _closure
+  template <class _Pred, class _Then, class _Else>
+  struct __closure
   {
-    _cond_t::_data<Pred, Then, Else> _data;
+    __cond_t::__data<_Pred, _Then, _Else> __data_;
 
-    template <class Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto _mk_sender(Sndr&& sndr) //
-      -> _sndr<Sndr, Pred, Then, Else>;
+    template <class _Sndr>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __mk_sender(_Sndr&& __sndr) //
+      -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
-    template <class Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(Sndr sndr) //
-      -> _sndr<Sndr, Pred, Then, Else>
+    template <class _Sndr>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr) //
+      -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
-      return _mk_sender(static_cast<Sndr&&>(sndr));
+      return __mk_sender(static_cast<_Sndr&&>(__sndr));
     }
 
-    template <class Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(Sndr sndr, _closure&& _self) //
-      -> _sndr<Sndr, Pred, Then, Else>
+    template <class _Sndr>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure&& __self) //
+      -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
-      return _self._mk_sender(static_cast<Sndr&&>(sndr));
+      return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
     }
   };
 
-  template <class Sndr, class Pred, class Then, class Else>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(Sndr sndr, Pred pred, Then then, Else _else) const //
-    -> _sndr<Sndr, Pred, Then, Else>;
+  template <class _Sndr, class _Pred, class _Then, class _Else>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+    -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
-  template <class Pred, class Then, class Else>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(Pred pred, Then then, Else _else) const
+  template <class _Pred, class _Then, class _Else>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Pred __pred, _Then __then, _Else __else) const
   {
-    return _closure<Pred, Then, Else>{
-      {static_cast<Pred&&>(pred), static_cast<Then&&>(then), static_cast<Else&&>(_else)}};
+    return __closure<_Pred, _Then, _Else>{
+      {static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)}};
   }
 };
 
-template <class Sndr, class Pred, class Then, class Else>
-struct _cond_t::_sndr
+template <class _Sndr, class _Pred, class _Then, class _Else>
+struct __cond_t::__sndr_t
 {
-  _cond_t _tag;
-  _cond_t::_data<Pred, Then, Else> _data;
-  Sndr _sndr;
+  __cond_t __tag_;
+  __cond_t::__data<_Pred, _Then, _Else> __data_;
+  _Sndr __sndr_;
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) && -> _opstate<Sndr, Rcvr, Pred, Then, Else>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
-    return {
-      static_cast<Sndr&&>(_sndr), static_cast<Rcvr&&>(rcvr), static_cast<_cond_t::_data<Pred, Then, Else>&&>(_data)};
+    return {static_cast<_Sndr&&>(__sndr_),
+            static_cast<_Rcvr&&>(__rcvr),
+            static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_)};
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const& -> _opstate<Sndr const&, Rcvr, Pred, Then, Else>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
-    return {_sndr, static_cast<Rcvr&&>(rcvr), static_cast<_cond_t::_data<Pred, Then, Else>&&>(_data)};
+    return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_)};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<Sndr> get_env() const noexcept
+  _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
   {
-    return __async::get_env(_sndr);
+    return __async::get_env(__sndr_);
   }
 };
 
-template <class Sndr, class Pred, class Then, class Else>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto _cond_t::operator()(Sndr sndr, Pred pred, Then then, Else _else) const //
-  -> _sndr<Sndr, Pred, Then, Else>
+template <class _Sndr, class _Pred, class _Then, class _Else>
+_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
+__cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+  -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
-  if constexpr (_is_non_dependent_sender<Sndr>)
+  if constexpr (__is_non_dependent_sender<_Sndr>)
   {
-    using _completions = completion_signatures_of_t<_sndr<Sndr, Pred, Then, Else>>;
-    static_assert(_is_completion_signatures<_completions>);
+    using __completions = completion_signatures_of_t<__sndr_t<_Sndr, _Pred, _Then, _Else>>;
+    static_assert(__is_completion_signatures<__completions>);
   }
 
-  return _sndr<Sndr, Pred, Then, Else>{
-    {}, {static_cast<Pred&&>(pred), static_cast<Then&&>(then), static_cast<Else&&>(_else)}, static_cast<Sndr&&>(sndr)};
+  return __sndr_t<_Sndr, _Pred, _Then, _Else>{
+    {},
+    {static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)},
+    static_cast<_Sndr&&>(__sndr)};
 }
 
-template <class Pred, class Then, class Else>
-template <class Sndr>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto _cond_t::_closure<Pred, Then, Else>::_mk_sender(Sndr&& sndr) //
-  -> _sndr<Sndr, Pred, Then, Else>
+template <class _Pred, class _Then, class _Else>
+template <class _Sndr>
+_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
+  -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
-  if constexpr (_is_non_dependent_sender<Sndr>)
+  if constexpr (__is_non_dependent_sender<_Sndr>)
   {
-    using _completions = completion_signatures_of_t<_sndr<Sndr, Pred, Then, Else>>;
-    static_assert(_is_completion_signatures<_completions>);
+    using __completions = completion_signatures_of_t<__sndr_t<_Sndr, _Pred, _Then, _Else>>;
+    static_assert(__is_completion_signatures<__completions>);
   }
 
-  return _sndr<Sndr, Pred, Then, Else>{
-    {}, static_cast<_cond_t::_data<Pred, Then, Else>&&>(_data), static_cast<Sndr&&>(sndr)};
+  return __sndr_t<_Sndr, _Pred, _Then, _Else>{
+    {}, static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_), static_cast<_Sndr&&>(__sndr)};
 }
 
-using conditional_t = _cond_t;
+using conditional_t = __cond_t;
 _CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::__async
 

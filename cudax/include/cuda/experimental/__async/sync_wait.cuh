@@ -48,92 +48,92 @@ struct sync_wait_t
 
 private:
 #  endif
-  struct _env_t
+  struct __env_t
   {
-    run_loop* _loop;
+    run_loop* __loop_;
 
     _CCCL_HOST_DEVICE auto query(get_scheduler_t) const noexcept
     {
-      return _loop->get_scheduler();
+      return __loop_->get_scheduler();
     }
 
     _CCCL_HOST_DEVICE auto query(get_delegatee_scheduler_t) const noexcept
     {
-      return _loop->get_scheduler();
+      return __loop_->get_scheduler();
     }
   };
 
-  template <class Sndr>
-  struct _state_t
+  template <class _Sndr>
+  struct __state_t
   {
-    struct _rcvr_t
+    struct __rcvr_t
     {
       using receiver_concept = receiver_t;
-      _state_t* _state;
+      __state_t* __state_;
 
-      template <class... As>
-      _CCCL_HOST_DEVICE void set_value(As&&... _as) noexcept
+      template <class... _As>
+      _CCCL_HOST_DEVICE void set_value(_As&&... __as) noexcept
       {
         _CUDAX_TRY( //
           ({ //
-            _state->_values->emplace(static_cast<As&&>(_as)...);
+            __state_->__values_->emplace(static_cast<_As&&>(__as)...);
           }), //
           _CUDAX_CATCH(...)( //
             { //
-              _state->_eptr = ::std::current_exception();
+              __state_->__eptr_ = ::std::current_exception();
             }))
-        _state->_loop.finish();
+        __state_->__loop_.finish();
       }
 
-      template <class Error>
-      _CCCL_HOST_DEVICE void set_error(Error _err) noexcept
+      template <class _Error>
+      _CCCL_HOST_DEVICE void set_error(_Error __err) noexcept
       {
-        if constexpr (_CUDA_VSTD::is_same_v<Error, ::std::exception_ptr>)
+        if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::exception_ptr>)
         {
-          _state->_eptr = static_cast<Error&&>(_err);
+          __state_->__eptr_ = static_cast<_Error&&>(__err);
         }
-        else if constexpr (_CUDA_VSTD::is_same_v<Error, ::std::error_code>)
+        else if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::error_code>)
         {
-          _state->_eptr = ::std::make_exception_ptr(::std::system_error(_err));
+          __state_->__eptr_ = ::std::make_exception_ptr(::std::system_error(__err));
         }
         else
         {
-          _state->_eptr = ::std::make_exception_ptr(static_cast<Error&&>(_err));
+          __state_->__eptr_ = ::std::make_exception_ptr(static_cast<_Error&&>(__err));
         }
-        _state->_loop.finish();
+        __state_->__loop_.finish();
       }
 
       _CCCL_HOST_DEVICE void set_stopped() noexcept
       {
-        _state->_loop.finish();
+        __state_->__loop_.finish();
       }
 
-      _env_t get_env() const noexcept
+      __env_t get_env() const noexcept
       {
-        return _env_t{&_state->_loop};
+        return __env_t{&__state_->__loop_};
       }
     };
 
-    using _values_t = value_types_of_t<Sndr, _rcvr_t, _CUDA_VSTD::tuple, _midentity::_f>;
+    using __values_t = value_types_of_t<_Sndr, __rcvr_t, _CUDA_VSTD::tuple, __midentity::__f>;
 
-    _CUDA_VSTD::optional<_values_t>* _values;
-    ::std::exception_ptr _eptr;
-    run_loop _loop;
+    _CUDA_VSTD::optional<__values_t>* __values_;
+    ::std::exception_ptr __eptr_;
+    run_loop __loop_;
   };
 
-  struct _invalid_sync_wait
+  struct __invalid_sync_wait
   {
-    const _invalid_sync_wait& value() const
+    const __invalid_sync_wait& value() const
     {
       return *this;
     }
 
-    const _invalid_sync_wait& operator*() const
+    const __invalid_sync_wait& operator*() const
     {
       return *this;
     }
 
-    int i;
+    int __i_;
   };
 
 public:
@@ -162,37 +162,37 @@ public:
     ///         `::std::error_code`.
     /// @throws error otherwise
   // clang-format on
-  template <class Sndr>
-  auto operator()(Sndr&& sndr) const
+  template <class _Sndr>
+  auto operator()(_Sndr&& __sndr) const
   {
-    using _rcvr_t      = typename _state_t<Sndr>::_rcvr_t;
-    using _values_t    = typename _state_t<Sndr>::_values_t;
-    using _completions = completion_signatures_of_t<Sndr, _rcvr_t>;
-    static_assert(_is_completion_signatures<_completions>);
+    using __rcvr_t      = typename __state_t<_Sndr>::__rcvr_t;
+    using __values_t    = typename __state_t<_Sndr>::__values_t;
+    using __completions = completion_signatures_of_t<_Sndr, __rcvr_t>;
+    static_assert(__is_completion_signatures<__completions>);
 
-    if constexpr (!_is_completion_signatures<_completions>)
+    if constexpr (!__is_completion_signatures<__completions>)
     {
-      return _invalid_sync_wait{0};
+      return __invalid_sync_wait{0};
     }
     else
     {
-      _CUDA_VSTD::optional<_values_t> result{};
-      _state_t<Sndr> state{&result};
+      _CUDA_VSTD::optional<__values_t> __result{};
+      __state_t<_Sndr> __state{&__result};
 
       // Launch the sender with a continuation that will fill in a variant
-      auto opstate = __async::connect(static_cast<Sndr&&>(sndr), _rcvr_t{&state});
-      __async::start(opstate);
+      auto __opstate = __async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{&__state});
+      __async::start(__opstate);
 
       // Wait for the variant to be filled in, and process any work that
       // may be delegated to this thread.
-      state._loop.run();
+      __state.__loop_.run();
 
-      if (state._eptr)
+      if (__state.__eptr_)
       {
-        ::std::rethrow_exception(state._eptr);
+        ::std::rethrow_exception(__state.__eptr_);
       }
 
-      return result; // uses NRVO to "return" the result
+      return __result; // uses NRVO to "return" the result
     }
   }
 };

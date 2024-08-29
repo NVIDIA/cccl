@@ -39,706 +39,712 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 
 namespace cuda::experimental::__async
 {
-template <class Ret, class... Args>
-using _fn_t = Ret(Args...);
+template <class _Ret, class... _Args>
+using __fn_t = _Ret(_Args...);
 
-template <class Ret, class... Args>
-using _nothrow_fn_t = Ret(Args...) noexcept;
+template <class _Ret, class... _Args>
+using __nothrow_fn_t = _Ret(_Args...) noexcept;
 
 template <class _Ty, class _Ret = _Ty&&>
-extern _nothrow_fn_t<_Ret>* _declval;
+extern __nothrow_fn_t<_Ret>* __declval;
 
-#define DECLVAL(...) _declval<__VA_ARGS__>()
+#define DECLVAL(...) __declval<__VA_ARGS__>()
 
 template <class...>
-using _mvoid = void;
+using __mvoid = void;
 
-template <class Ty>
-struct _mtype
+template <class _Ty>
+struct __mtype
 {
-  using type = Ty;
+  using type = _Ty;
 };
 
-template <class Ty>
-using _t = typename Ty::type;
+template <class _Ty>
+using __t = typename _Ty::type;
 
-template <class... Ts>
-struct _mlist;
+template <class... _Ts>
+struct __mlist;
 
-template <auto Val>
-struct _mvalue
+template <auto _Val>
+struct __mvalue
 {
-  static constexpr auto value = Val;
+  static constexpr auto __value = _Val;
 };
 
-// A separate _mbool template is needed in addition to _mvalue
+// A separate __mbool template is needed in addition to __mvalue
 // because of an EDG bug in the handling of auto template parameters.
-template <bool Val>
-struct _mbool
+template <bool _Val>
+struct __mbool
 {
-  static constexpr auto value = Val;
+  static constexpr auto __value = _Val;
 };
 
-using _mtrue  = _mbool<true>;
-using _mfalse = _mbool<false>;
+using __mtrue  = __mbool<true>;
+using __mfalse = __mbool<false>;
 
-template <auto... Vals>
-struct _mvalues;
+template <auto... _Vals>
+struct __mvalues;
 
-template <size_t... Vals>
-struct _moffsets;
+template <size_t... _Vals>
+struct __moffsets;
 
-template <class... Bools>
-using _mand = _mbool<(Bools::value && ...)>;
+template <class... _Bools>
+using __mand = __mbool<(_Bools::__value && ...)>;
 
-template <class... Bools>
-using _mor = _mbool<(Bools::value || ...)>;
+template <class... _Bools>
+using __mor = __mbool<(_Bools::__value || ...)>;
 
-template <size_t... Idx>
-using _mindices = _CUDA_VSTD::index_sequence<Idx...>*;
+template <size_t... _Idx>
+using __mindices = _CUDA_VSTD::index_sequence<_Idx...>*;
 
 template <size_t Count>
-using _mmake_indices = _CUDA_VSTD::make_index_sequence<Count>*;
+using __mmake_indices = _CUDA_VSTD::make_index_sequence<Count>*;
 
-template <class... Ts>
-using _mmake_indices_for = _CUDA_VSTD::make_index_sequence<sizeof...(Ts)>*;
+template <class... _Ts>
+using __mmake_indices_for = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>*;
 
-constexpr size_t _mpow2(size_t _size) noexcept
+constexpr size_t __mpow2(size_t __size) noexcept
 {
-  --_size;
-  _size |= _size >> 1;
-  _size |= _size >> 2;
-  _size |= _size >> 4;
-  _size |= _size >> 8;
-  if constexpr (sizeof(_size) >= 4)
+  --__size;
+  __size |= __size >> 1;
+  __size |= __size >> 2;
+  __size |= __size >> 4;
+  __size |= __size >> 8;
+  if constexpr (sizeof(__size) >= 4)
   {
-    _size |= _size >> 16;
+    __size |= __size >> 16;
   }
-  if constexpr (sizeof(_size) >= 8)
+  if constexpr (sizeof(__size) >= 8)
   {
-    _size |= _size >> 32;
+    __size |= __size >> 32;
   }
-  return ++_size;
+  return ++__size;
 }
 
-template <class Ty>
-constexpr Ty _mmin(Ty _lhs, Ty _rhs) noexcept
+template <class _Ty>
+constexpr _Ty __mmin(_Ty __lhs, _Ty __rhs) noexcept
 {
-  return _lhs < _rhs ? _lhs : _rhs;
+  return __lhs < __rhs ? __lhs : __rhs;
 }
 
-template <class Ty>
-constexpr int _mcompare(Ty _lhs, Ty _rhs) noexcept
+template <class _Ty>
+constexpr int __mcompare(_Ty __lhs, _Ty __rhs) noexcept
 {
-  return _lhs < _rhs ? -1 : _lhs > _rhs ? 1 : 0;
+  return __lhs < __rhs ? -1 : __lhs > __rhs ? 1 : 0;
 }
 
-template <size_t Len>
-struct _mstring
+template <size_t _Len>
+struct __mstring
 {
-  template <size_t Ny, size_t... Is>
-  constexpr _mstring(const char (&_str)[Ny], _mindices<Is...>) noexcept
-      : len_{Ny}
-      , what_{(Is < Ny ? _str[Is] : '\0')...}
+  template <size_t _Ny, size_t... _Is>
+  constexpr __mstring(const char (&__str)[_Ny], __mindices<_Is...>) noexcept
+      : __len_{_Ny}
+      , __what_{(_Is < _Ny ? __str[_Is] : '\0')...}
   {}
 
-  template <size_t Ny>
-  constexpr _mstring(const char (&_str)[Ny], int = 0) noexcept
-      : _mstring{_str, _mmake_indices<Len>{}}
+  template <size_t _Ny>
+  constexpr __mstring(const char (&__str)[_Ny], int = 0) noexcept
+      : __mstring{__str, __mmake_indices<_Len>{}}
   {}
 
   constexpr auto length() const noexcept -> size_t
   {
-    return len_;
+    return __len_;
   }
 
-  template <size_t OtherLen>
-  constexpr int compare(const _mstring<OtherLen>& other) const noexcept
+  template <size_t _OtherLen>
+  constexpr int compare(const __mstring<_OtherLen>& __other) const noexcept
   {
-    size_t const len = _mmin(len_, other.len_);
+    size_t const len = __mmin(__len_, __other.__len_);
     for (size_t i = 0; i < len; ++i)
     {
-      if (auto const cmp = _mcompare(what_[i], other.what_[i]))
+      if (auto const cmp = __mcompare(__what_[i], __other.__what_[i]))
       {
         return cmp;
       }
     }
-    return _mcompare(len_, other.len_);
+    return __mcompare(__len_, __other.__len_);
   }
 
-  template <size_t OtherLen>
-  constexpr auto operator==(const _mstring<OtherLen>& other) const noexcept -> bool
+  template <size_t _OtherLen>
+  constexpr auto operator==(const __mstring<_OtherLen>& __other) const noexcept -> bool
   {
-    return len_ == other.len_ && compare(other) == 0;
+    return __len_ == __other.__len_ && compare(__other) == 0;
   }
 
-  template <size_t OtherLen>
-  constexpr auto operator!=(const _mstring<OtherLen>& other) const noexcept -> bool
+  template <size_t _OtherLen>
+  constexpr auto operator!=(const __mstring<_OtherLen>& __other) const noexcept -> bool
   {
-    return !operator==(other);
+    return !operator==(__other);
   }
 
-  template <size_t OtherLen>
-  constexpr auto operator<(const _mstring<OtherLen>& other) const noexcept -> bool
+  template <size_t _OtherLen>
+  constexpr auto operator<(const __mstring<_OtherLen>& __other) const noexcept -> bool
   {
-    return compare(other) < 0;
+    return compare(__other) < 0;
   }
 
-  template <size_t OtherLen>
-  constexpr auto operator>(const _mstring<OtherLen>& other) const noexcept -> bool
+  template <size_t _OtherLen>
+  constexpr auto operator>(const __mstring<_OtherLen>& __other) const noexcept -> bool
   {
-    return compare(other) > 0;
+    return compare(__other) > 0;
   }
 
-  template <size_t OtherLen>
-  constexpr auto operator<=(const _mstring<OtherLen>& other) const noexcept -> bool
+  template <size_t _OtherLen>
+  constexpr auto operator<=(const __mstring<_OtherLen>& __other) const noexcept -> bool
   {
-    return compare(other) <= 0;
+    return compare(__other) <= 0;
   }
 
-  template <size_t OtherLen>
-  constexpr auto operator>=(const _mstring<OtherLen>& other) const noexcept -> bool
+  template <size_t _OtherLen>
+  constexpr auto operator>=(const __mstring<_OtherLen>& __other) const noexcept -> bool
   {
-    return compare(other) >= 0;
+    return compare(__other) >= 0;
   }
 
-  size_t len_;
-  char what_[Len];
+  size_t __len_;
+  char __what_[_Len];
 };
 
-template <size_t Len>
-_mstring(const char (&_str)[Len]) -> _mstring<Len>;
+template <size_t _Len>
+__mstring(const char (&__str)[_Len]) -> __mstring<_Len>;
 
-template <size_t Len>
-_mstring(const char (&_str)[Len], int) -> _mstring<_mpow2(Len)>;
+template <size_t _Len>
+__mstring(const char (&__str)[_Len], int) -> __mstring<__mpow2(_Len)>;
 
-template <class T>
-constexpr auto _mnameof() noexcept
+template <class _Ty>
+constexpr auto __mnameof() noexcept
 {
 #if defined(_CCCL_COMPILER_MSVC)
-  return _mstring{__FUNCSIG__, 0};
+  return __mstring{__FUNCSIG__, 0};
 #else
-  return _mstring{__PRETTY_FUNCTION__, 0};
+  return __mstring{__PRETTY_FUNCTION__, 0};
 #endif
 }
 
 // The following must be left undefined
 template <class...>
-struct DIAGNOSTIC;
+struct _DIAGNOSTIC;
 
-struct WHERE;
+struct _WHERE;
 
-struct IN_ALGORITHM;
+struct _IN_ALGORITHM;
 
-struct WHAT;
+struct _WHAT;
 
-struct WITH_FUNCTION;
+struct _WITH_FUNCTION;
 
-struct WITH_SENDER;
+struct _WITH_SENDER;
 
-struct WITH_ARGUMENTS;
+struct _WITH_ARGUMENTS;
 
-struct WITH_QUERY;
+struct _WITH_QUERY;
 
-struct WITH_ENVIRONMENT;
+struct _WITH_ENVIRONMENT;
 
 template <class>
-struct WITH_COMPLETION_SIGNATURE;
+struct _WITH_COMPLETION_SIGNATURE;
 
-struct FUNCTION_IS_NOT_CALLABLE;
+struct _FUNCTION_IS_NOT_CALLABLE;
 
-struct UNKNOWN;
+struct _UNKNOWN;
 
-struct SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
+struct _SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
 
-template <class... Sigs>
-struct WITH_COMPLETIONS
+template <class... _Sigs>
+struct _WITH_COMPLETIONS
 {};
 
-struct _merror_base
+struct __merror_base
 {
-  constexpr friend bool _ustdex_unhandled_error(void*) noexcept
+  constexpr friend bool __ustdex_unhandled_error(void*) noexcept
   {
     return true;
   }
 };
 
-template <class... What>
-struct ERROR : _merror_base
+template <class... _What>
+struct _ERROR : __merror_base
 {
   template <class...>
-  using _f = ERROR;
+  using __f = _ERROR;
 
-  ERROR operator+();
+  _ERROR operator+();
 
-  template <class Ty>
-  ERROR& operator,(Ty&);
+  template <class _Ty>
+  _ERROR& operator,(_Ty&);
 
-  template <class... With>
-  ERROR<What..., With...>& with(ERROR<With...>&);
+  template <class... _With>
+  _ERROR<_What..., _With...>& with(_ERROR<_With...>&);
 };
 
-constexpr bool _ustdex_unhandled_error(...) noexcept
+constexpr bool __ustdex_unhandled_error(...) noexcept
 {
   return false;
 }
 
-template <class Ty>
-_CCCL_INLINE_VAR constexpr bool _is_error = false;
+template <class _Ty>
+_CCCL_INLINE_VAR constexpr bool __is_error = false;
 
-template <class... What>
-_CCCL_INLINE_VAR constexpr bool _is_error<ERROR<What...>> = true;
+template <class... _What>
+_CCCL_INLINE_VAR constexpr bool __is_error<_ERROR<_What...>> = true;
 
-template <class... What>
-_CCCL_INLINE_VAR constexpr bool _is_error<ERROR<What...>&> = true;
+template <class... _What>
+_CCCL_INLINE_VAR constexpr bool __is_error<_ERROR<_What...>&> = true;
 
-// True if any of the types in Ts... are errors; false otherwise.
-template <class... Ts>
-_CCCL_INLINE_VAR constexpr bool _contains_error =
+// True if any of the types in _Ts... are errors; false otherwise.
+template <class... _Ts>
+_CCCL_INLINE_VAR constexpr bool __contains_error =
 #if defined(_CCCL_COMPILER_MSVC)
-  (_is_error<Ts> || ...);
+  (__is_error<_Ts> || ...);
 #else
-  _ustdex_unhandled_error(static_cast<_mlist<Ts...>*>(nullptr));
+  __ustdex_unhandled_error(static_cast<__mlist<_Ts...>*>(nullptr));
 #endif
 
-template <class... Ts>
-using _find_error = decltype(+(DECLVAL(Ts&), ..., DECLVAL(ERROR<UNKNOWN>&)));
+template <class... _Ts>
+using __find_error = decltype(+(__declval<_Ts&>(), ..., __declval<_ERROR<_UNKNOWN>&>()));
 
-template <template <class...> class Fn, class... Ts>
-using _minvoke_q = Fn<Ts...>;
+template <template <class...> class _Fn, class... _Ts>
+using __minvoke_q = _Fn<_Ts...>;
 
-template <class Fn, class... Ts>
-using _minvoke = typename Fn::template _f<Ts...>;
+template <class _Fn, class... _Ts>
+using __minvoke = typename _Fn::template __f<_Ts...>;
 
-template <class Fn, class Ty>
-using _minvoke1 = typename Fn::template _f<Ty>;
+template <class _Fn, class _Ty>
+using __minvoke1 = typename _Fn::template __f<_Ty>;
 
-template <class Fn, template <class...> class C, class... Ts>
-_minvoke<Fn, Ts...> _apply_fn(C<Ts...>*);
+template <class _Fn, template <class...> class _Cy, class... _Ts>
+__minvoke<_Fn, _Ts...> __apply_fn(_Cy<_Ts...>*);
 
-template <template <class...> class Fn, template <class...> class C, class... Ts>
-Fn<Ts...> _apply_fn_q(C<Ts...>*);
+template <template <class...> class _Fn, template <class...> class _Cy, class... _Ts>
+_Fn<_Ts...> __apply_fn_q(_Cy<_Ts...>*);
 
-template <class Fn, class List>
-using _mapply = decltype(__async::_apply_fn<Fn>(static_cast<List*>(nullptr)));
+template <class _Fn, class _List>
+using __mapply = decltype(__async::__apply_fn<_Fn>(static_cast<_List*>(nullptr)));
 
-template <template <class...> class Fn, class List>
-using _mapply_q = decltype(__async::_apply_fn_q<Fn>(static_cast<List*>(nullptr)));
+template <template <class...> class _Fn, class _List>
+using __mapply_q = decltype(__async::__apply_fn_q<_Fn>(static_cast<_List*>(nullptr)));
 
-template <class Ty, class...>
-using _mfront = Ty;
+template <class _Ty, class...>
+using __mfront = _Ty;
 
-template <template <class...> class Fn, class List, class Enable = void>
-_CCCL_INLINE_VAR constexpr bool _mvalid_ = false;
+template <template <class...> class _Fn, class _List, class _Enable = void>
+_CCCL_INLINE_VAR constexpr bool __mvalid_ = false;
 
-template <template <class...> class Fn, class... Ts>
-_CCCL_INLINE_VAR constexpr bool _mvalid_<Fn, _mlist<Ts...>, _mvoid<Fn<Ts...>>> = true;
+template <template <class...> class _Fn, class... _Ts>
+_CCCL_INLINE_VAR constexpr bool __mvalid_<_Fn, __mlist<_Ts...>, __mvoid<_Fn<_Ts...>>> = true;
 
-template <template <class...> class Fn, class... Ts>
-_CCCL_INLINE_VAR constexpr bool _mvalid_q = _mvalid_<Fn, _mlist<Ts...>>;
+template <template <class...> class _Fn, class... _Ts>
+_CCCL_INLINE_VAR constexpr bool __mvalid_q = __mvalid_<_Fn, __mlist<_Ts...>>;
 
-template <class Fn, class... Ts>
-_CCCL_INLINE_VAR constexpr bool _mvalid = _mvalid_<Fn::template _f, _mlist<Ts...>>;
+template <class _Fn, class... _Ts>
+_CCCL_INLINE_VAR constexpr bool __mvalid = __mvalid_<_Fn::template __f, __mlist<_Ts...>>;
 
-template <class Tp>
-_CCCL_INLINE_VAR constexpr auto _v = Tp::value;
+template <class _Tp>
+_CCCL_INLINE_VAR constexpr auto __v = _Tp::__value;
 
-template <auto Value>
-_CCCL_INLINE_VAR constexpr auto _v<_mvalue<Value>> = Value;
+template <auto _Value>
+_CCCL_INLINE_VAR constexpr auto __v<__mvalue<_Value>> = _Value;
 
-template <bool Value>
-_CCCL_INLINE_VAR constexpr auto _v<_mbool<Value>> = Value;
+template <bool _Value>
+_CCCL_INLINE_VAR constexpr auto __v<__mbool<_Value>> = _Value;
 
-template <class Tp, Tp Value>
-_CCCL_INLINE_VAR constexpr auto _v<_CUDA_VSTD::integral_constant<Tp, Value>> = Value;
+template <class _Tp, _Tp _Value>
+_CCCL_INLINE_VAR constexpr auto __v<_CUDA_VSTD::integral_constant<_Tp, _Value>> = _Value;
 
-struct _midentity
+struct __midentity
 {
-  template <class Ty>
-  using _f = Ty;
+  template <class _Ty>
+  using __f = _Ty;
 };
 
-template <class Ty>
-struct _malways
+template <class _Ty>
+struct __malways
 {
   template <class...>
-  using _f = Ty;
+  using __f = _Ty;
 };
 
-template <class Ty>
-struct _malways1
+template <class _Ty>
+struct __malways1
 {
   template <class>
-  using _f = Ty;
+  using __f = _Ty;
 };
 
 template <bool>
-struct _mif_
+struct __mif_
 {
-  template <class Then, class...>
-  using _f = Then;
+  template <class _Then, class...>
+  using __f = _Then;
 };
 
 template <>
-struct _mif_<false>
+struct __mif_<false>
 {
-  template <class Then, class Else>
-  using _f = Else;
+  template <class _Then, class _Else>
+  using __f = _Else;
 };
 
-template <bool If, class Then = void, class... Else>
-using _mif = typename _mif_<If>::template _f<Then, Else...>;
+template <bool If, class _Then = void, class... _Else>
+using __mif = typename __mif_<If>::template __f<_Then, _Else...>;
 
-template <class If, class Then = void, class... Else>
-using _mif_t = typename _mif_<_v<If>>::template _f<Then, Else...>;
+template <class If, class _Then = void, class... _Else>
+using __mif_t = typename __mif_<__v<If>>::template __f<_Then, _Else...>;
 
-template <bool Error>
-struct _midentity_or_error_with_
+template <bool _Error>
+struct __midentity_or_error_with_
 {
-  template <class Ty, class... With>
-  using _f = Ty;
+  template <class _Ty, class... _With>
+  using __f = _Ty;
 };
 
 template <>
-struct _midentity_or_error_with_<true>
+struct __midentity_or_error_with_<true>
 {
-  template <class Ty, class... With>
-  using _f = decltype(DECLVAL(Ty&).with(DECLVAL(ERROR<With...>&)));
+  template <class _Ty, class... _With>
+  using __f = decltype(__declval<_Ty&>().with(__declval<_ERROR<_With...>&>()));
 };
 
-template <class Ty, class... With>
-using _midentity_or_error_with = _minvoke<_midentity_or_error_with_<_is_error<Ty>>, Ty, With...>;
+template <class _Ty, class... _With>
+using __midentity_or_error_with = __minvoke<__midentity_or_error_with_<__is_error<_Ty>>, _Ty, _With...>;
 
 template <bool>
-struct _mtry_;
+struct __mtry_;
 
 template <>
-struct _mtry_<false>
+struct __mtry_<false>
 {
-  template <template <class...> class Fn, class... Ts>
-  using _g = Fn<Ts...>;
+  template <template <class...> class _Fn, class... _Ts>
+  using __g = _Fn<_Ts...>;
 
-  template <class Fn, class... Ts>
-  using _f = typename Fn::template _f<Ts...>;
+  template <class _Fn, class... _Ts>
+  using __f = typename _Fn::template __f<_Ts...>;
 };
 
 template <>
-struct _mtry_<true>
+struct __mtry_<true>
 {
-  template <template <class...> class Fn, class... Ts>
-  using _g = _find_error<Ts...>;
+  template <template <class...> class _Fn, class... _Ts>
+  using __g = __find_error<_Ts...>;
 
-  template <class Fn, class... Ts>
-  using _f = _find_error<Fn, Ts...>;
+  template <class _Fn, class... _Ts>
+  using __f = __find_error<_Fn, _Ts...>;
 };
 
-template <class Fn, class... Ts>
-using _mtry_invoke = typename _mtry_<_contains_error<Ts...>>::template _f<Fn, Ts...>;
+template <class _Fn, class... _Ts>
+using __mtry_invoke = typename __mtry_<__contains_error<_Ts...>>::template __f<_Fn, _Ts...>;
 
-template <template <class...> class Fn, class... Ts>
-using _mtry_invoke_q = typename _mtry_<_contains_error<Ts...>>::template _g<Fn, Ts...>;
+template <template <class...> class _Fn, class... _Ts>
+using __mtry_invoke_q = typename __mtry_<__contains_error<_Ts...>>::template __g<_Fn, _Ts...>;
 
-template <class Fn>
-struct _mtry
+template <class _Fn>
+struct __mtry
 {
-  template <class... Ts>
-  using _f = _mtry_invoke<Fn, Ts...>;
+  template <class... _Ts>
+  using __f = __mtry_invoke<_Fn, _Ts...>;
 };
 
-template <class Fn>
-struct _mpoly
+template <class _Fn>
+struct __mpoly
 {
-  template <class... Ts>
-  using _f = typename _mtry_<(sizeof...(Ts) == ~0ul)>::template _f<Fn, Ts...>;
+  template <class... _Ts>
+  using __f = typename __mtry_<(sizeof...(_Ts) == ~0ul)>::template __f<_Fn, _Ts...>;
 };
 
-template <template <class...> class Fn>
-struct _mpoly_q
+template <template <class...> class _Fn>
+struct __mpoly_q
 {
-  template <class... Ts>
-  using _f = typename _mtry_<(sizeof...(Ts) == ~0ul)>::template _g<Fn, Ts...>;
+  template <class... _Ts>
+  using __f = typename __mtry_<(sizeof...(_Ts) == ~0ul)>::template __g<_Fn, _Ts...>;
 };
 
-template <template <class...> class Fn, class... Default>
-struct _mquote;
+template <template <class...> class _Fn, class... _Default>
+struct __mquote;
 
-template <template <class...> class Fn>
-struct _mquote<Fn>
+template <template <class...> class _Fn>
+struct __mquote<_Fn>
 {
-  template <class... Ts>
-  using _f = Fn<Ts...>;
+  template <class... _Ts>
+  using __f = _Fn<_Ts...>;
 };
 
-template <template <class...> class Fn, class Default>
-struct _mquote<Fn, Default>
+template <template <class...> class _Fn, class _Default>
+struct __mquote<_Fn, _Default>
 {
-  template <class... Ts>
-  using _f = typename _mif<_mvalid_q<Fn, Ts...>, _mquote<Fn>, _malways<Default>>::template _f<Ts...>;
+  template <class... _Ts>
+  using __f = typename __mif<__mvalid_q<_Fn, _Ts...>, __mquote<_Fn>, __malways<_Default>>::template __f<_Ts...>;
 };
 
-template <template <class...> class Fn, class... Default>
-struct _mtry_quote;
+template <template <class...> class _Fn, class... _Default>
+struct __mtry_quote;
 
-template <template <class...> class Fn>
-struct _mtry_quote<Fn>
+template <template <class...> class _Fn>
+struct __mtry_quote<_Fn>
 {
-  template <class... Ts>
-  using _f = typename _mtry_<_contains_error<Ts...>>::template _g<Fn, Ts...>;
+  template <class... _Ts>
+  using __f = typename __mtry_<__contains_error<_Ts...>>::template __g<_Fn, _Ts...>;
 };
 
-template <template <class...> class Fn, class Default>
-struct _mtry_quote<Fn, Default>
+template <template <class...> class _Fn, class _Default>
+struct __mtry_quote<_Fn, _Default>
 {
-  template <class... Ts>
-  using _f = typename _mif<_mvalid_q<Fn, Ts...>, _mtry_quote<Fn>, _malways<Default>>::template _f<Ts...>;
+  template <class... _Ts>
+  using __f = typename __mif<__mvalid_q<_Fn, _Ts...>, __mtry_quote<_Fn>, __malways<_Default>>::template __f<_Ts...>;
 };
 
-template <class Fn, class... Ts>
-struct _mbind_front
+template <class _Fn, class... _Ts>
+struct __mbind_front
 {
-  template <class... Us>
-  using _f = _minvoke<Fn, Ts..., Us...>;
+  template <class... _Us>
+  using __f = __minvoke<_Fn, _Ts..., _Us...>;
 };
 
-template <class Fn, class Ty>
-struct _mbind_front1
+template <class _Fn, class _Ty>
+struct __mbind_front1
 {
-  template <class... Us>
-  using _f = _minvoke<Fn, Ty, Us...>;
+  template <class... _Us>
+  using __f = __minvoke<_Fn, _Ty, _Us...>;
 };
 
-template <template <class...> class Fn, class... Ts>
-struct _mbind_front_q
+template <template <class...> class _Fn, class... _Ts>
+struct __mbind_front_q
 {
-  template <class... Us>
-  using _f = _minvoke_q<Fn, Ts..., Us...>;
+  template <class... _Us>
+  using __f = __minvoke_q<_Fn, _Ts..., _Us...>;
 };
 
-template <class Fn, class... Ts>
-struct _mbind_back
+template <class _Fn, class... _Ts>
+struct __mbind_back
 {
-  template <class... Us>
-  using _f = _minvoke<Fn, Us..., Ts...>;
+  template <class... _Us>
+  using __f = __minvoke<_Fn, _Us..., _Ts...>;
 };
 
-template <template <class...> class Fn, class... Ts>
-struct _mbind_back_q
+template <template <class...> class _Fn, class... _Ts>
+struct __mbind_back_q
 {
-  template <class... Us>
-  using _f = _minvoke_q<Fn, Us..., Ts...>;
+  template <class... _Us>
+  using __f = __minvoke_q<_Fn, _Us..., _Ts...>;
 };
 
 #if defined(__cpp_pack_indexing)
 
 template <class _Np, class... _Ts>
-using _m_at = _Ts...[_v<_Np>];
+using __m_at = _Ts...[__v<_Np>];
 
 template <size_t _Np, class... _Ts>
-using _m_at_c = _Ts...[_Np];
+using __m_at_c = _Ts...[_Np];
 
 #elif __has_builtin(__type_pack_element)
 
 template <bool>
-struct _m_at_
+struct __m_at_
 {
-  template <class Np, class... Ts>
-  using _f = __type_pack_element<_v<Np>, Ts...>;
+  template <class _Np, class... _Ts>
+  using __f = __type_pack_element<__v<_Np>, _Ts...>;
 };
 
-template <class Np, class... Ts>
-using _m_at = _minvoke<_m_at_<_v<Np> == ~0ul>, Np, Ts...>;
+template <class _Np, class... _Ts>
+using __m_at = __minvoke<__m_at_<__v<_Np> == ~0ul>, _Np, _Ts...>;
 
-template <size_t Np, class... Ts>
-using _m_at_c = _minvoke<_m_at_<Np == ~0ul>, _mvalue<Np>, Ts...>;
+template <size_t _Np, class... _Ts>
+using __m_at_c = __minvoke<__m_at_<_Np == ~0ul>, __mvalue<_Np>, _Ts...>;
 
-template <size_t Idx>
-struct _mget
+template <size_t _Idx>
+struct __mget
 {
-  template <class... Ts>
-  using _f = _m_at<_mvalue<Idx>, Ts...>;
+  template <class... _Ts>
+  using __f = __m_at<__mvalue<_Idx>, _Ts...>;
 };
 
 #else
 
-template <size_t Idx>
-struct _mget
+template <size_t _Idx>
+struct __mget
 {
-  template <class, class, class, class, class... Ts>
-  using _f = _minvoke<_mtry_<sizeof...(Ts) == ~0ull>, _mget<Idx - 4>, Ts...>;
+  template <class, class, class, class, class... _Ts>
+  using __f = __minvoke<__mtry_<sizeof...(_Ts) == ~0ull>, __mget<_Idx - 4>, _Ts...>;
 };
 
 template <>
-struct _mget<0>
+struct __mget<0>
 {
-  template <class T, class...>
-  using _f = T;
+  template <class _Ty, class...>
+  using __f = _Ty;
 };
 
 template <>
-struct _mget<1>
+struct __mget<1>
 {
-  template <class, class T, class...>
-  using _f = T;
+  template <class, class _Ty, class...>
+  using __f = _Ty;
 };
 
 template <>
-struct _mget<2>
+struct __mget<2>
 {
-  template <class, class, class T, class...>
-  using _f = T;
+  template <class, class, class _Ty, class...>
+  using __f = _Ty;
 };
 
 template <>
-struct _mget<3>
+struct __mget<3>
 {
-  template <class, class, class, class T, class...>
-  using _f = T;
+  template <class, class, class, class _Ty, class...>
+  using __f = _Ty;
 };
 
-template <class Np, class... Ts>
-using _m_at = _minvoke<_mget<_v<Np>>, Ts...>;
+template <class _Np, class... _Ts>
+using __m_at = __minvoke<__mget<__v<_Np>>, _Ts...>;
 
-template <size_t Np, class... Ts>
-using _m_at_c = _minvoke<_mget<Np>, Ts...>;
+template <size_t _Np, class... _Ts>
+using __m_at_c = __minvoke<__mget<_Np>, _Ts...>;
 
 #endif
 
-template <class First, class Second>
-struct _mpair
+template <class _First, class _Second>
+struct __mpair
 {
-  using first  = First;
-  using second = Second;
+  using first  = _First;
+  using second = _Second;
 };
 
-template <class Pair>
-using _mfirst = typename Pair::first;
+template <class _Pair>
+using __mfirst = typename _Pair::first;
 
-template <class Pair>
-using _msecond = typename Pair::second;
+template <class _Pair>
+using __msecond = typename _Pair::second;
 
-template <template <class...> class Second, template <class...> class First>
-struct _mcompose_q
+template <template <class...> class _Second, template <class...> class _First>
+struct __mcompose_q
 {
-  template <class... Ts>
-  using _f = Second<First<Ts...>>;
+  template <class... _Ts>
+  using __f = _Second<_First<_Ts...>>;
 };
 
-struct _mcount
+struct __mcount
 {
-  template <class... Ts>
-  using _f = _mvalue<sizeof...(Ts)>;
+  template <class... _Ts>
+  using __f = __mvalue<sizeof...(_Ts)>;
 };
 
 template <bool>
-struct _mconcat_
+struct __mconcat_
 {
-  template <class... Ts,
-            template <class...> class Ap = _mlist,
-            class... As,
-            template <class...> class Bp = _mlist,
-            class... Bs,
-            template <class...> class Cp = _mlist,
-            class... Cs,
-            template <class...> class Dp = _mlist,
-            class... Ds,
-            class... Tail>
+  template <class... _Ts,
+            template <class...> class _Ap = __mlist,
+            class... _As,
+            template <class...> class _Bp = __mlist,
+            class... _Bs,
+            template <class...> class _Cp = __mlist,
+            class... _Cs,
+            template <class...> class _Dp = __mlist,
+            class... _Ds,
+            class... _Tail>
   static auto
-  _f(_mlist<Ts...>*, Ap<As...>*, Bp<Bs...>* = nullptr, Cp<Cs...>* = nullptr, Dp<Ds...>* = nullptr, Tail*... _tail)
-    -> decltype(_mconcat_<(sizeof...(Tail) == 0)>::_f(static_cast<_mlist<Ts..., As..., Bs..., Cs..., Ds...>*>(nullptr),
-                                                      _tail...));
+  __f(__mlist<_Ts...>*,
+      _Ap<_As...>*,
+      _Bp<_Bs...>* = nullptr,
+      _Cp<_Cs...>* = nullptr,
+      _Dp<_Ds...>* = nullptr,
+      _Tail*... __tail)
+    -> decltype(__mconcat_<(sizeof...(_Tail) == 0)>::__f(
+      static_cast<__mlist<_Ts..., _As..., _Bs..., _Cs..., _Ds...>*>(nullptr), __tail...));
 };
 
 template <>
-struct _mconcat_<true>
+struct __mconcat_<true>
 {
-  template <class... As>
-  static auto _f(_mlist<As...>*) -> _mlist<As...>;
+  template <class... _As>
+  static auto __f(__mlist<_As...>*) -> __mlist<_As...>;
 };
 
-template <class Continuation = _mquote<_mlist>>
-struct _mconcat_into
+template <class _Continuation = __mquote<__mlist>>
+struct __mconcat_into
 {
-  template <class... Args>
-  using _f = _mapply<Continuation, decltype(_mconcat_<(sizeof...(Args) == 0)>::_f({}, static_cast<Args*>(nullptr)...))>;
+  template <class... _Args>
+  using __f =
+    __mapply<_Continuation, decltype(__mconcat_<(sizeof...(_Args) == 0)>::__f({}, static_cast<_Args*>(nullptr)...))>;
 };
 
-template <template <class...> class Continuation = _mlist>
-struct _mconcat_into_q
+template <template <class...> class _Continuation = __mlist>
+struct __mconcat_into_q
 {
-  template <class... Args>
-  using _f =
-    _mapply_q<Continuation, decltype(_mconcat_<(sizeof...(Args) == 0)>::_f({}, static_cast<Args*>(nullptr)...))>;
+  template <class... _Args>
+  using __f =
+    __mapply_q<_Continuation, decltype(__mconcat_<(sizeof...(_Args) == 0)>::__f({}, static_cast<_Args*>(nullptr)...))>;
 };
 
 // The following must be super-fast to compile, so use an intrinsic directly if it is available
 #if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
-template <class Set, class... Ty>
-_CCCL_INLINE_VAR constexpr bool _mset_contains = (_LIBCUDACXX_IS_BASE_OF(_mtype<Ty>, Set) && ...);
+template <class _Set, class... _Ty>
+_CCCL_INLINE_VAR constexpr bool __mset_contains = (_LIBCUDACXX_IS_BASE_OF(__mtype<_Ty>, _Set) && ...);
 
 #else
 
-template <class Set, class... Ty>
-_CCCL_INLINE_VAR constexpr bool _mset_contains = (_CUDA_VSTD::is_base_of_v<_mtype<Ty>, Set> && ...);
+template <class _Set, class... _Ty>
+_CCCL_INLINE_VAR constexpr bool __mset_contains = (_CUDA_VSTD::is_base_of_v<__mtype<_Ty>, _Set> && ...);
 
 #endif
 
-namespace _set
+namespace __set
 {
-template <class... Ts>
-struct _inherit
+template <class... _Ts>
+struct __inherit
 {};
 
-template <class Ty, class... Ts>
-struct _inherit<Ty, Ts...>
-    : _mtype<Ty>
-    , _inherit<Ts...>
+template <class _Ty, class... _Ts>
+struct __inherit<_Ty, _Ts...>
+    : __mtype<_Ty>
+    , __inherit<_Ts...>
 {};
 
-template <class... Set>
-auto operator+(_inherit<Set...>&) -> _inherit<Set...>;
+template <class... _Set>
+auto operator+(__inherit<_Set...>&) -> __inherit<_Set...>;
 
-template <class... Set, class Ty>
-auto operator%(_inherit<Set...>&, _mtype<Ty>&) //
-  -> _mif< //
-    _mset_contains<_inherit<Set...>, Ty>,
-    _inherit<Set...>,
-    _inherit<Ty, Set...>>&;
+template <class... _Set, class _Ty>
+auto operator%(__inherit<_Set...>&, __mtype<_Ty>&) //
+  -> __mif< //
+    __mset_contains<__inherit<_Set...>, _Ty>,
+    __inherit<_Set...>,
+    __inherit<_Ty, _Set...>>&;
 
-template <class ExpectedSet>
-struct _eq
+template <class _ExpectedSet>
+struct __eq
 {
-  static constexpr size_t count = _v<_mapply<_mcount, ExpectedSet>>;
+  static constexpr size_t __count = __v<__mapply<__mcount, _ExpectedSet>>;
 
-  template <class... Ts>
-  using _f = _mbool<sizeof...(Ts) == count && _mset_contains<ExpectedSet, Ts...>>;
+  template <class... _Ts>
+  using __f = __mbool<sizeof...(_Ts) == __count && __mset_contains<_ExpectedSet, _Ts...>>;
 };
-} // namespace _set
+} // namespace __set
 
-template <class... Ts>
-using _mset = _set::_inherit<Ts...>;
+template <class... _Ts>
+using __mset = __set::__inherit<_Ts...>;
 
-template <class Set, class... Ts>
-using _mset_insert = decltype(+(DECLVAL(Set&) % ... % DECLVAL(_mtype<Ts>&)));
+template <class _Set, class... _Ts>
+using __mset_insert = decltype(+(DECLVAL(_Set&) % ... % DECLVAL(__mtype<_Ts>&)));
 
-template <class... Ts>
-using _mmake_set = _mset_insert<_mset<>, Ts...>;
+template <class... _Ts>
+using __mmake_set = __mset_insert<__mset<>, _Ts...>;
 
-template <class Set1, class Set2>
-_CCCL_INLINE_VAR constexpr bool _mset_eq = _v<_mapply<_set::_eq<Set1>, Set2>>;
+template <class _Set1, class _Set2>
+_CCCL_INLINE_VAR constexpr bool __mset_eq = __v<__mapply<__set::__eq<_Set1>, _Set2>>;
 
-template <class Fn>
-struct _munique
+template <class _Fn>
+struct __munique
 {
-  template <class... Ts>
-  using _f = _minvoke<_mmake_set<Ts...>, Fn>;
+  template <class... _Ts>
+  using __f = __minvoke<__mmake_set<_Ts...>, _Fn>;
 };
 
-template <class Ty>
-struct _msingle_or
+template <class _Ty>
+struct __msingle_or
 {
-  template <class Uy = Ty>
-  using _f = Uy;
+  template <class _Uy = _Ty>
+  using __f = _Uy;
 };
 } // namespace cuda::experimental::__async
 

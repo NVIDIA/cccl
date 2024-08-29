@@ -40,240 +40,242 @@ struct continue_on_t
 
 private:
 #endif
-  template <class... As>
-  using _set_value_tuple_t = _tuple<set_value_t, _decay_t<As>...>;
+  template <class... _As>
+  using __set_value_tuple_t = __tuple<set_value_t, __decay_t<_As>...>;
 
-  template <class Error>
-  using _set_error_tuple_t = _tuple<set_error_t, _decay_t<Error>>;
+  template <class _Error>
+  using __set_error_tuple_t = __tuple<set_error_t, __decay_t<_Error>>;
 
-  using _set_stopped_tuple_t = _tuple<set_stopped_t>;
+  using __set_stopped_tuple_t = __tuple<set_stopped_t>;
 
-  using _complete_fn = void (*)(void*) noexcept;
+  using __complete_fn = void (*)(void*) noexcept;
 
-  template <class... Ts>
-  using _set_value_completion =
-    _mif<_nothrow_decay_copyable<Ts...>,
-         completion_signatures<set_value_t(_decay_t<Ts>...)>,
-         completion_signatures<set_value_t(_decay_t<Ts>...), set_error_t(::std::exception_ptr)>>;
+  template <class... _Ts>
+  using __set_value_completion =
+    __mif<__nothrow_decay_copyable<_Ts...>,
+          completion_signatures<set_value_t(__decay_t<_Ts>...)>,
+          completion_signatures<set_value_t(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>>;
 
-  template <class Error>
-  using _set_error_completion =
-    _mif<_nothrow_decay_copyable<Error>,
-         completion_signatures<set_error_t(_decay_t<Error>)>,
-         completion_signatures<set_error_t(_decay_t<Error>), set_error_t(::std::exception_ptr)>>;
+  template <class _Error>
+  using __set_error_completion =
+    __mif<__nothrow_decay_copyable<_Error>,
+          completion_signatures<set_error_t(__decay_t<_Error>)>,
+          completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
 
-  template <class Rcvr, class Result>
-  struct _rcvr_t
+  template <class _Rcvr, class _Result>
+  struct __rcvr_t
   {
     using receiver_concept = receiver_t;
-    Rcvr _rcvr;
-    Result _result;
-    _complete_fn _complete;
+    _Rcvr __rcvr_;
+    _Result __result_;
+    __complete_fn __complete_;
 
-    template <class Tag, class... As>
-    _CCCL_HOST_DEVICE void operator()(Tag, As&... as) noexcept
+    template <class _Tag, class... _As>
+    _CCCL_HOST_DEVICE void operator()(_Tag, _As&... __as) noexcept
     {
-      Tag()(static_cast<Rcvr&&>(_rcvr), static_cast<As&&>(as)...);
+      _Tag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_As&&>(__as)...);
     }
 
-    template <class Tag, class... As>
-    _CCCL_HOST_DEVICE void _set_result(Tag, As&&... as) noexcept
+    template <class _Tag, class... _As>
+    _CCCL_HOST_DEVICE void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using _tupl_t = _tuple<Tag, _decay_t<As>...>;
-      if constexpr (_nothrow_decay_copyable<As...>)
+      using __tupl_t = __tuple<_Tag, __decay_t<_As>...>;
+      if constexpr (__nothrow_decay_copyable<_As...>)
       {
-        _result.template emplace<_tupl_t>(Tag(), static_cast<As&&>(as)...);
+        __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
       }
       else
       {
         _CUDAX_TRY( //
           ({ //
-            _result.template emplace<_tupl_t>(Tag(), static_cast<As&&>(as)...);
+            __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
           }),
           _CUDAX_CATCH(...)( //
             { //
-              __async::set_error(static_cast<Rcvr&&>(_rcvr), ::std::current_exception());
+              __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
             }))
       }
-      _complete = +[](void* ptr) noexcept {
-        auto& self = *static_cast<_rcvr_t*>(ptr);
-        auto& tupl = *static_cast<_tupl_t*>(self._result._ptr());
-        tupl.apply(self, tupl);
+      __complete_ = +[](void* __ptr) noexcept {
+        auto& __self = *static_cast<__rcvr_t*>(__ptr);
+        auto& __tupl = *static_cast<__tupl_t*>(__self.__result_.__ptr());
+        __tupl.__apply(__self, __tupl);
       };
     }
 
     _CCCL_HOST_DEVICE void set_value() noexcept
     {
-      _complete(this);
+      __complete_(this);
     }
 
-    template <class Error>
-    _CCCL_HOST_DEVICE void set_error(Error&& error) noexcept
+    template <class _Error>
+    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
     {
-      __async::set_error(static_cast<Rcvr&&>(_rcvr), static_cast<Error&&>(error));
+      __async::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
     _CCCL_HOST_DEVICE void set_stopped() noexcept
     {
-      __async::set_stopped(static_cast<Rcvr&&>(_rcvr));
+      __async::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    _CCCL_HOST_DEVICE env_of_t<Rcvr> get_env() const noexcept
+    _CCCL_HOST_DEVICE env_of_t<_Rcvr> get_env() const noexcept
     {
-      return __async::get_env(_rcvr);
+      return __async::get_env(__rcvr_);
     }
   };
 
-  template <class Rcvr, class CvSndr, class Sch>
-  struct _opstate_t
+  template <class _Rcvr, class _CvSndr, class _Sch>
+  struct __opstate_t
   {
-    _CCCL_HOST_DEVICE friend auto get_env(const _opstate_t* self) noexcept -> env_of_t<Rcvr>
+    _CCCL_HOST_DEVICE friend auto get_env(const __opstate_t* __self) noexcept -> env_of_t<_Rcvr>
     {
-      return __async::get_env(self->_rcvr._rcvr);
+      return __async::get_env(__self->__rcvr_.__rcvr);
     }
 
     using operation_state_concept = operation_state_t;
-    using _result_t =
-      _transform_completion_signatures<completion_signatures_of_t<CvSndr, _opstate_t*>,
-                                       _set_value_tuple_t,
-                                       _set_error_tuple_t,
-                                       _set_stopped_tuple_t,
-                                       _variant>;
+    using __result_t =
+      __transform_completion_signatures<completion_signatures_of_t<_CvSndr, __opstate_t*>,
+                                        __set_value_tuple_t,
+                                        __set_error_tuple_t,
+                                        __set_stopped_tuple_t,
+                                        __variant>;
 
     // The scheduler contributes error and stopped completions.
     // This causes its set_value_t() completion to be ignored.
-    using _scheduler_completions = //
-      transform_completion_signatures<completion_signatures_of_t<schedule_result_t<Sch>, _rcvr_t<Rcvr, _result_t>*>,
+    using __scheduler_completions = //
+      transform_completion_signatures<completion_signatures_of_t<schedule_result_t<_Sch>, __rcvr_t<_Rcvr, __result_t>*>,
                                       __async::completion_signatures<>,
-                                      _malways<__async::completion_signatures<>>::_f>;
+                                      __malways<__async::completion_signatures<>>::__f>;
 
     // The continue_on completions are the scheduler's error
     // and stopped completions, plus the sender's completions
     // with all the result data types decayed.
     using completion_signatures = //
-      transform_completion_signatures<completion_signatures_of_t<CvSndr, _opstate_t*>,
-                                      _scheduler_completions,
-                                      _set_value_completion,
-                                      _set_error_completion>;
+      transform_completion_signatures<completion_signatures_of_t<_CvSndr, __opstate_t*>,
+                                      __scheduler_completions,
+                                      __set_value_completion,
+                                      __set_error_completion>;
 
-    _rcvr_t<Rcvr, _result_t> _rcvr;
-    connect_result_t<CvSndr, _opstate_t*> _opstate1;
-    connect_result_t<schedule_result_t<Sch>, _rcvr_t<Rcvr, _result_t>*> _opstate2;
+    __rcvr_t<_Rcvr, __result_t> __rcvr_;
+    connect_result_t<_CvSndr, __opstate_t*> __opstate1_;
+    connect_result_t<schedule_result_t<_Sch>, __rcvr_t<_Rcvr, __result_t>*> __opstate2_;
 
-    _CCCL_HOST_DEVICE _opstate_t(CvSndr&& sndr, Sch sch, Rcvr rcvr)
-        : _rcvr{static_cast<Rcvr&&>(rcvr), {}, nullptr}
-        , _opstate1{__async::connect(static_cast<CvSndr&&>(sndr), this)}
-        , _opstate2{__async::connect(schedule(sch), &_rcvr)}
+    _CCCL_HOST_DEVICE __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
+        : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}, nullptr}
+        , __opstate1_{__async::connect(static_cast<_CvSndr&&>(__sndr), this)}
+        , __opstate2_{__async::connect(schedule(__sch), &__rcvr_)}
     {}
 
-    _CUDAX_IMMOVABLE(_opstate_t);
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CCCL_HOST_DEVICE void start() noexcept
     {
-      __async::start(_opstate1);
+      __async::start(__opstate1_);
     }
 
-    template <class... As>
-    _CCCL_HOST_DEVICE void set_value(As&&... as) noexcept
+    template <class... _As>
+    _CCCL_HOST_DEVICE void set_value(_As&&... __as) noexcept
     {
-      _rcvr._set_result(set_value_t(), static_cast<As&&>(as)...);
-      __async::start(_opstate2);
+      __rcvr_.__set_result(set_value_t(), static_cast<_As&&>(__as)...);
+      __async::start(__opstate2_);
     }
 
-    template <class Error>
-    _CCCL_HOST_DEVICE void set_error(Error&& error) noexcept
+    template <class _Error>
+    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
     {
-      _rcvr._set_result(set_error_t(), static_cast<Error&&>(error));
-      __async::start(_opstate2);
+      __rcvr_.__set_result(set_error_t(), static_cast<_Error&&>(__error));
+      __async::start(__opstate2_);
     }
 
     _CCCL_HOST_DEVICE void set_stopped() noexcept
     {
-      _rcvr._set_result(set_stopped_t());
-      __async::start(_opstate2);
+      __rcvr_.__set_result(set_stopped_t());
+      __async::start(__opstate2_);
     }
   };
 
-  template <class Sndr, class Sch>
-  struct _sndr_t;
+  template <class _Sndr, class _Sch>
+  struct __sndr_t;
 
-  template <class Sch>
-  struct _closure_t;
+  template <class _Sch>
+  struct __closure_t;
 
 public:
-  template <class Sndr, class Sch>
-  _CCCL_HOST_DEVICE _sndr_t<Sndr, Sch> operator()(Sndr sndr, Sch sch) const noexcept;
+  template <class _Sndr, class _Sch>
+  _CCCL_HOST_DEVICE __sndr_t<_Sndr, _Sch> operator()(_Sndr __sndr, _Sch __sch) const noexcept;
 
-  template <class Sch>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE _closure_t<Sch> operator()(Sch sch) const noexcept;
+  template <class _Sch>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE __closure_t<_Sch> operator()(_Sch __sch) const noexcept;
 };
 
-template <class Sch>
-struct continue_on_t::_closure_t
+template <class _Sch>
+struct continue_on_t::__closure_t
 {
-  Sch _sch;
+  _Sch __sch;
 
-  template <class Sndr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(Sndr sndr, _closure_t&& _self)
+  template <class _Sndr>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure_t&& __self)
   {
-    return continue_on_t()(static_cast<Sndr&&>(sndr), static_cast<Sch&&>(_self._sch));
+    return continue_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
   }
 };
 
-template <class Sndr, class Sch>
-struct continue_on_t::_sndr_t
+template <class _Sndr, class _Sch>
+struct continue_on_t::__sndr_t
 {
   using sender_concept = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS continue_on_t _tag;
-  Sch _sch;
-  Sndr _sndr;
+  _CCCL_NO_UNIQUE_ADDRESS continue_on_t __tag;
+  _Sch __sch;
+  _Sndr __sndr;
 
-  struct _attrs_t
+  struct __attrs_t
   {
-    _sndr_t* _sndr;
+    __sndr_t* __sndr;
 
-    template <class SetTag>
-    _CCCL_HOST_DEVICE auto query(get_completion_scheduler_t<SetTag>) const noexcept
+    template <class _SetTag>
+    _CCCL_HOST_DEVICE auto query(get_completion_scheduler_t<_SetTag>) const noexcept
     {
-      return _sndr->_sch;
+      return __sndr->__sch;
     }
 
-    template <class Query>
-    _CCCL_HOST_DEVICE auto query(Query) const //
-      -> _query_result_t<Query, env_of_t<Sndr>>
+    template <class _Query>
+    _CCCL_HOST_DEVICE auto query(_Query) const //
+      -> __query_result_t<_Query, env_of_t<_Sndr>>
     {
-      return __async::get_env(_sndr->_sndr).query(Query{});
+      return __async::get_env(__sndr->__sndr).__query(_Query{});
     }
   };
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE _opstate_t<Rcvr, Sndr, Sch> connect(Rcvr rcvr) &&
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE __opstate_t<_Rcvr, _Sndr, _Sch> connect(_Rcvr __rcvr) &&
   {
-    return {static_cast<Sndr&&>(_sndr), _sch, static_cast<Rcvr&&>(rcvr)};
+    return {static_cast<_Sndr&&>(__sndr), __sch, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE _opstate_t<Rcvr, const Sndr&, Sch> connect(Rcvr rcvr) const&
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE __opstate_t<_Rcvr, const _Sndr&, _Sch> connect(_Rcvr __rcvr) const&
   {
-    return {_sndr, _sch, static_cast<Rcvr&&>(rcvr)};
+    return {__sndr, __sch, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_HOST_DEVICE _attrs_t get_env() const noexcept
+  _CCCL_HOST_DEVICE __attrs_t get_env() const noexcept
   {
-    return _attrs_t{this};
+    return __attrs_t{this};
   }
 };
 
-template <class Sndr, class Sch>
-_CCCL_HOST_DEVICE auto continue_on_t::operator()(Sndr sndr, Sch sch) const noexcept -> continue_on_t::_sndr_t<Sndr, Sch>
+template <class _Sndr, class _Sch>
+_CCCL_HOST_DEVICE auto
+continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const noexcept -> continue_on_t::__sndr_t<_Sndr, _Sch>
 {
-  return _sndr_t<Sndr, Sch>{{}, sch, static_cast<Sndr&&>(sndr)};
+  return __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)};
 }
 
-template <class Sch>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE continue_on_t::_closure_t<Sch> continue_on_t::operator()(Sch sch) const noexcept
+template <class _Sch>
+_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE continue_on_t::__closure_t<_Sch>
+continue_on_t::operator()(_Sch __sch) const noexcept
 {
-  return _closure_t<Sch>{sch};
+  return __closure_t<_Sch>{__sch};
 }
 
 _CCCL_GLOBAL_CONSTANT continue_on_t continue_on{};

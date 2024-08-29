@@ -27,43 +27,43 @@
 
 namespace cuda::experimental::__async
 {
-template <class Rcvr>
-struct _fwd_rcvr : Rcvr
+template <class _Rcvr>
+struct __fwd_rcvr : _Rcvr
 {
   _CCCL_HOST_DEVICE decltype(auto) get_env() const noexcept
   {
     // TODO: only forward the "forwarding" queries:
-    return __async::get_env(static_cast<Rcvr const&>(*this));
+    return __async::get_env(static_cast<_Rcvr const&>(*this));
   }
 };
 
-template <class Rcvr>
-struct _fwd_rcvr<Rcvr*>
+template <class _Rcvr>
+struct __fwd_rcvr<_Rcvr*>
 {
   using receiver_concept = receiver_t;
-  Rcvr* _rcvr;
+  _Rcvr* __rcvr_;
 
-  template <class... As>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(As&&... as) noexcept
+  template <class... _As>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_As&&... __as) noexcept
   {
-    __async::set_value(_rcvr);
+    __async::set_value(__rcvr_);
   }
 
-  template <class Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(Error&& error) noexcept
+  template <class _Error>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
   {
-    __async::set_error(_rcvr, static_cast<Error&&>(error));
+    __async::set_error(__rcvr_, static_cast<_Error&&>(__error));
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_stopped() noexcept
   {
-    __async::set_stopped(_rcvr);
+    __async::set_stopped(__rcvr_);
   }
 
   _CCCL_HOST_DEVICE decltype(auto) get_env() const noexcept
   {
     // TODO: only forward the "forwarding" queries:
-    return __async::get_env(_rcvr);
+    return __async::get_env(__rcvr_);
   }
 };
 } // namespace cuda::experimental::__async

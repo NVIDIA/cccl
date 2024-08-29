@@ -30,217 +30,217 @@
 
 namespace cuda::experimental::__async
 {
-template <class Data, class Rcvr>
-struct state
+template <class _Data, class _Rcvr>
+struct __state
 {
-  Data data;
-  Rcvr receiver;
+  _Data __data_;
+  _Rcvr __receiver_;
 };
 
 struct receiver_defaults
 {
   using receiver_concept = __async::receiver_t;
 
-  template <class Rcvr, class... Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto set_value(_ignore, Rcvr& rcvr, Args&&... args) noexcept
-    -> __async::completion_signatures<__async::set_value_t(Args...)>
+  template <class _Rcvr, class... _Args>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto set_value(__ignore, _Rcvr& __rcvr, _Args&&... __args) noexcept
+    -> __async::completion_signatures<__async::set_value_t(_Args...)>
   {
-    __async::set_value(static_cast<Rcvr&&>(rcvr), static_cast<Args&&>(args)...);
+    __async::set_value(static_cast<_Rcvr&&>(__rcvr), static_cast<_Args&&>(__args)...);
     return {};
   }
 
-  template <class Rcvr, class Error>
+  template <class _Rcvr, class _Error>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto set_error(__ignore, _Rcvr& __rcvr, _Error&& __error) noexcept
+    -> __async::completion_signatures<__async::set_error_t(_Error)>
+  {
+    __async::set_error(static_cast<_Rcvr&&>(__rcvr), static_cast<_Error&&>(__error));
+    return {};
+  }
+
+  template <class _Rcvr>
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto
-  set_error(_ignore, Rcvr& rcvr, Error&& err) noexcept -> __async::completion_signatures<__async::set_error_t(Error)>
+  set_stopped(__ignore, _Rcvr& __rcvr) noexcept -> __async::completion_signatures<__async::set_stopped_t()>
   {
-    __async::set_error(static_cast<Rcvr&&>(rcvr), static_cast<Error&&>(err));
+    __async::set_stopped(static_cast<_Rcvr&&>(__rcvr));
     return {};
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto
-  set_stopped(_ignore, Rcvr& rcvr) noexcept -> __async::completion_signatures<__async::set_stopped_t()>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static decltype(auto) get_env(__ignore, const _Rcvr& __rcvr) noexcept
   {
-    __async::set_stopped(static_cast<Rcvr&&>(rcvr));
-    return {};
-  }
-
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static decltype(auto) get_env(_ignore, const Rcvr& rcvr) noexcept
-  {
-    return __async::get_env(rcvr);
+    return __async::get_env(__rcvr);
   }
 };
 
-template <class Data, class Rcvr>
+template <class _Data, class _Rcvr>
 struct basic_receiver
 {
   using receiver_concept = __async::receiver_t;
-  using _rcvr_t          = typename Data::receiver_tag;
-  state<Data, Rcvr>& state_;
+  using __rcvr_t         = typename _Data::receiver_tag;
+  __state<_Data, _Rcvr>& state_;
 
-  template <class... Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(Args&&... args) noexcept
+  template <class... _Args>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_Args&&... __args) noexcept
   {
-    _rcvr_t::set_value(state_.data, state_.receiver, (Args&&) args...);
+    __rcvr_t::set_value(state_.__data_, state_.__receiver_, (_Args&&) __args...);
   }
 
-  template <class Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(Error&& err) noexcept
+  template <class _Error>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
   {
-    _rcvr_t::set_error(state_.data, state_.receiver, (Error&&) err);
+    __rcvr_t::set_error(state_.__data_, state_.__receiver_, (_Error&&) __error);
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_stopped() noexcept
   {
-    _rcvr_t::set_stopped(state_.data, state_.receiver);
+    __rcvr_t::set_stopped(state_.__data_, state_.__receiver_);
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE decltype(auto) get_env() const noexcept
   {
-    return _rcvr_t::get_env(state_.data, state_.receiver);
+    return __rcvr_t::get_env(state_.__data_, state_.__receiver_);
   }
 };
 
-template <class Rcvr>
-_CCCL_INLINE_VAR constexpr bool has_no_environment = _CUDA_VSTD::is_same_v<Rcvr, receiver_archetype>;
+template <class _Rcvr>
+_CCCL_INLINE_VAR constexpr bool has_no_environment = _CUDA_VSTD::is_same_v<_Rcvr, receiver_archetype>;
 
-template <bool HasStopped, class Data, class Rcvr>
-struct _mk_completions
+template <bool _HasStopped, class _Data, class _Rcvr>
+struct __mk_completions
 {
-  using _rcvr_t = typename Data::receiver_tag;
+  using __rcvr_t = typename _Data::receiver_tag;
 
-  template <class... Args>
-  using _set_value_t =
-    decltype(+*_rcvr_t::set_value(_declval<Data&>(), _declval<receiver_archetype&>(), _declval<Args>()...));
+  template <class... _Args>
+  using __set_value_t =
+    decltype(+*__rcvr_t::set_value(__declval<_Data&>(), __declval<receiver_archetype&>(), __declval<_Args>()...));
 
-  template <class Error>
-  using _set_error_t =
-    decltype(+*_rcvr_t::set_error(_declval<Data&>(), _declval<receiver_archetype&>(), _declval<Error>()));
+  template <class _Error>
+  using __set_error_t =
+    decltype(+*__rcvr_t::set_error(__declval<_Data&>(), __declval<receiver_archetype&>(), __declval<_Error>()));
 
-  using _set_stopped_t = __async::completion_signatures<>;
+  using __set_stopped_t = __async::completion_signatures<>;
 };
 
-template <class Data, class Rcvr>
-struct _mk_completions<true, Data, Rcvr> : _mk_completions<false, Data, Rcvr>
+template <class _Data, class _Rcvr>
+struct __mk_completions<true, _Data, _Rcvr> : __mk_completions<false, _Data, _Rcvr>
 {
-  using _rcvr_t = typename Data::receiver_tag;
+  using __rcvr_t = typename _Data::receiver_tag;
 
-  using _set_stopped_t = decltype(+*_rcvr_t::set_stopped(_declval<Data&>(), _declval<receiver_archetype&>()));
+  using __set_stopped_t = decltype(+*__rcvr_t::set_stopped(__declval<_Data&>(), __declval<receiver_archetype&>()));
 };
 
 template <class...>
-using _ignore_value_signature = __async::completion_signatures<>;
+using __ignore_value_signature = __async::completion_signatures<>;
 
 template <class>
-using _ignore_error_signature = __async::completion_signatures<>;
+using __ignore_error_signature = __async::completion_signatures<>;
 
-template <class Completions>
-constexpr bool _has_stopped =
+template <class _Completions>
+constexpr bool __has_stopped =
   !_CUDA_VSTD::is_same_v<__async::completion_signatures<>,
-                         __async::transform_completion_signatures<Completions,
+                         __async::transform_completion_signatures<_Completions,
                                                                   __async::completion_signatures<>,
-                                                                  _ignore_value_signature,
-                                                                  _ignore_error_signature>>;
+                                                                  __ignore_value_signature,
+                                                                  __ignore_error_signature>>;
 
-template <bool PotentiallyThrowing, class Rcvr>
-void set_current_exception_if([[maybe_unused]] Rcvr& rcvr) noexcept
+template <bool _PotentiallyThrowing, class _Rcvr>
+void set_current_exception_if([[maybe_unused]] _Rcvr& __rcvr) noexcept
 {
-  if constexpr (PotentiallyThrowing)
+  if constexpr (_PotentiallyThrowing)
   {
-    __async::set_error(static_cast<Rcvr&&>(rcvr), ::std::current_exception());
+    __async::set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
   }
 }
 
 // A generic type that holds the data for an async operation, and
 // that provides a `start` method for enqueuing the work.
-template <class Sndr, class Data, class Rcvr>
+template <class _Sndr, class _Data, class _Rcvr>
 struct basic_opstate
 {
-  using _rcvr_t        = basic_receiver<Data, Rcvr>;
-  using _completions_t = completion_signatures_of_t<Sndr, _rcvr_t>;
-  using _traits_t      = _mk_completions<_has_stopped<_completions_t>, Data, Rcvr>;
+  using __rcvr_t        = basic_receiver<_Data, _Rcvr>;
+  using __completions_t = completion_signatures_of_t<_Sndr, __rcvr_t>;
+  using __traits_t      = __mk_completions<__has_stopped<__completions_t>, _Data, _Rcvr>;
 
   using completion_signatures =
-    transform_completion_signatures<_completions_t,
+    transform_completion_signatures<__completions_t,
                                     __async::completion_signatures<>, // TODO
-                                    _traits_t::template _set_value_t,
-                                    _traits_t::template _set_error_t,
-                                    typename _traits_t::_set_stopped_t>;
+                                    __traits_t::template __set_value_t,
+                                    __traits_t::template __set_error_t,
+                                    typename __traits_t::__set_stopped_t>;
 
-  _CCCL_HOST_DEVICE basic_opstate(Sndr&& sndr, Data data, Rcvr rcvr)
-      : state_{static_cast<Data&&>(data), static_cast<Rcvr&&>(rcvr)}
-      , op_(__async::connect(static_cast<Sndr&&>(sndr), _rcvr_t{state_}))
+  _CCCL_HOST_DEVICE basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
+      : state_{static_cast<_Data&&>(__data), static_cast<_Rcvr&&>(__rcvr)}
+      , __op_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{state_}))
   {}
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void start() noexcept
   {
-    __async::start(op_);
+    __async::start(__op_);
   }
 
-  state<Data, Rcvr> state_;
-  __async::connect_result_t<Sndr, _rcvr_t> op_;
+  __state<_Data, _Rcvr> state_;
+  __async::connect_result_t<_Sndr, __rcvr_t> __op_;
 };
 
-template <class Sndr, class Rcvr>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto _make_opstate(Sndr sndr, Rcvr rcvr)
+template <class _Sndr, class _Rcvr>
+_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
 {
-  auto [tag, data, child] = static_cast<Sndr&&>(sndr);
-  using data_t            = decltype(data);
-  using child_t           = decltype(child);
-  return basic_opstate(static_cast<child_t&&>(child), static_cast<data_t&&>(data), static_cast<Rcvr&&>(rcvr));
+  auto [tag, __data, __child] = static_cast<_Sndr&&>(__sndr);
+  using data_t                = decltype(__data);
+  using child_t               = decltype(__child);
+  return basic_opstate(static_cast<child_t&&>(__child), static_cast<data_t&&>(__data), static_cast<_Rcvr&&>(__rcvr));
 }
 
-template <class Data, class... Sndrs>
+template <class _Data, class... _Sndrs>
 _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
-_get_attrs(int, const Data& data, const Sndrs&... sndrs) noexcept -> decltype(data.get_attrs(sndrs...))
+__get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decltype(__data.get_attrs(__sndrs...))
 {
-  return data.get_attrs(sndrs...);
+  return __data.get_attrs(__sndrs...);
 }
 
-template <class Data, class... Sndrs>
+template <class _Data, class... _Sndrs>
 _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
-_get_attrs(long, const Data& data, const Sndrs&... sndrs) noexcept -> decltype(__async::get_env(sndrs...))
+__get_attrs(long, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decltype(__async::get_env(__sndrs...))
 {
-  return __async::get_env(sndrs...);
+  return __async::get_env(__sndrs...);
 }
 
-template <class Data, class... Sndrs>
+template <class _Data, class... _Sndrs>
 struct basic_sender;
 
-template <class Data, class Sndr>
-struct basic_sender<Data, Sndr>
+template <class _Data, class _Sndr>
+struct basic_sender<_Data, _Sndr>
 {
   using sender_concept = __async::sender_t;
-  using _tag_t         = typename Data::sender_tag;
-  using _rcvr_t        = typename Data::receiver_tag;
+  using __tag_t        = typename _Data::sender_tag;
+  using __rcvr_t       = typename _Data::receiver_tag;
 
-  _CCCL_NO_UNIQUE_ADDRESS _tag_t _tag_;
-  Data data_;
-  Sndr sndr_;
+  _CCCL_NO_UNIQUE_ADDRESS __tag_t __tag_;
+  _Data __data_;
+  _Sndr __sndr_;
 
   // Connect the sender to the receiver (the continuation) and
   // return the state_type object for this operation.
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(Rcvr rcvr) &&
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(_Rcvr __rcvr) &&
   {
-    return _make_opstate(static_cast<basic_sender&&>(*this), static_cast<Rcvr&&>(rcvr));
+    return __make_opstate(static_cast<basic_sender&&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(Rcvr rcvr) const&
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(_Rcvr __rcvr) const&
   {
-    return _make_opstate(*this, static_cast<Rcvr&&>(rcvr));
+    return __make_opstate(*this, static_cast<_Rcvr&&>(__rcvr));
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE decltype(auto) get_env() const noexcept
   {
-    return __async::_get_attrs(0, data_, sndr_);
+    return __async::__get_attrs(0, __data_, __sndr_);
   }
 };
 
-template <class Data, class... Sndrs>
-basic_sender(_ignore, Data, Sndrs...) -> basic_sender<Data, Sndrs...>;
+template <class _Data, class... _Sndrs>
+basic_sender(__ignore, _Data, _Sndrs...) -> basic_sender<_Data, _Sndrs...>;
 
 } // namespace cuda::experimental::__async
 

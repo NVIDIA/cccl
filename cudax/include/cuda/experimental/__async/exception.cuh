@@ -28,11 +28,11 @@
 #if defined(__CUDACC__)
 #  include <nv/target>
 #  define _CUDAX_CATCH(...)
-#  define _CUDAX_TRY(TRY, CATCH) \
-    NV_IF_TARGET(NV_IS_HOST, (try { _NV_EVAL TRY } catch (...){_NV_EVAL CATCH}), ({_NV_EVAL TRY}))
+#  define _CUDAX_TRY(_TRY, _CATCH) \
+    NV_IF_TARGET(NV_IS_HOST, (try { _NV_EVAL _TRY } catch (...){_NV_EVAL _CATCH}), ({_NV_EVAL _TRY}))
 #else
 #  define _CUDAX_CATCH(...)
-#  define _CUDAX_TRY(TRY, CATCH) _NV_EVAL(try { _NV_EVAL TRY } catch (...){_NV_EVAL CATCH})
+#  define _CUDAX_TRY(_TRY, _CATCH) _NV_EVAL(try { _NV_EVAL _TRY } catch (...){_NV_EVAL _CATCH})
 #endif
 
 #if defined(__CUDA_ARCH__)

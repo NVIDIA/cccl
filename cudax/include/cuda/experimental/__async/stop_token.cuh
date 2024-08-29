@@ -51,75 +51,75 @@ class inplace_stop_source;
 template <class _Callback>
 class inplace_stop_callback;
 
-namespace _stok
+namespace __stok
 {
-struct _inplace_stop_callback_base
+struct __inplace_stop_callback_base
 {
-  _CCCL_HOST_DEVICE void _execute() noexcept
+  _CCCL_HOST_DEVICE void __execute() noexcept
   {
-    this->_execute_fn(this);
+    this->__execute_fn_(this);
   }
 
 protected:
-  using _execute_fn_t = void(_inplace_stop_callback_base*) noexcept;
+  using __execute_fn_t = void(__inplace_stop_callback_base*) noexcept;
 
-  _CCCL_HOST_DEVICE explicit _inplace_stop_callback_base( //
-    const inplace_stop_source* _source, //
-    _execute_fn_t* _execute) noexcept
-      : _source(_source)
-      , _execute_fn(_execute)
+  _CCCL_HOST_DEVICE explicit __inplace_stop_callback_base( //
+    const inplace_stop_source* __source, //
+    __execute_fn_t* __execute) noexcept
+      : __source_(__source)
+      , __execute_fn_(__execute)
   {}
 
-  _CCCL_HOST_DEVICE void _register_callback() noexcept;
+  _CCCL_HOST_DEVICE void __register_callback() noexcept;
 
   friend inplace_stop_source;
 
-  const inplace_stop_source* _source;
-  _execute_fn_t* _execute_fn;
-  _inplace_stop_callback_base* _next      = nullptr;
-  _inplace_stop_callback_base** _prev_ptr = nullptr;
-  bool* _removed_during_callback          = nullptr;
-  _CUDA_VSTD::atomic<bool> _callback_completed{false};
+  const inplace_stop_source* __source_;
+  __execute_fn_t* __execute_fn_;
+  __inplace_stop_callback_base* __next_      = nullptr;
+  __inplace_stop_callback_base** __prev_ptr_ = nullptr;
+  bool* __removed_during_callback_           = nullptr;
+  _CUDA_VSTD::atomic<bool> __callback_completed_{false};
 };
 
-struct _spin_wait
+struct __spin_wait
 {
-  _spin_wait() noexcept = default;
+  __spin_wait() noexcept = default;
 
-  _CCCL_HOST_DEVICE void _wait() noexcept
+  _CCCL_HOST_DEVICE void __wait() noexcept
   {
-    if (_count == 0)
+    if (__count_ == 0)
     {
-      __async::_this_thread_yield();
+      __async::__this_thread_yield();
     }
     else
     {
-      --_count;
+      --__count_;
       _CUDAX_PAUSE();
     }
   }
 
 private:
-  static constexpr uint32_t _yield_threshold = 20;
-  uint32_t _count                            = _yield_threshold;
+  static constexpr uint32_t __yield_threshold = 20;
+  uint32_t __count_                           = __yield_threshold;
 };
 
 template <template <class> class>
-struct _check_type_alias_exists;
-} // namespace _stok
+struct __check_type_alias_exists;
+} // namespace __stok
 
 // [stoptoken.never], class never_stop_token
 struct never_stop_token
 {
 private:
-  struct _callback_type
+  struct __callback_type
   {
-    _CCCL_HOST_DEVICE explicit _callback_type(never_stop_token, _ignore) noexcept {}
+    _CCCL_HOST_DEVICE explicit __callback_type(never_stop_token, __ignore) noexcept {}
   };
 
 public:
   template <class>
-  using callback_type = _callback_type;
+  using callback_type = __callback_type;
 
   _CCCL_HOST_DEVICE static constexpr auto stop_requested() noexcept -> bool
   {
@@ -159,30 +159,30 @@ public:
 
   _CCCL_HOST_DEVICE auto stop_requested() const noexcept -> bool
   {
-    return (_state.load(_CUDA_VSTD::memory_order_acquire) & _stop_requested_flag) != 0;
+    return (__state_.load(_CUDA_VSTD::memory_order_acquire) & __stop_requested_flag) != 0;
   }
 
 private:
   friend inplace_stop_token;
-  friend _stok::_inplace_stop_callback_base;
+  friend __stok::__inplace_stop_callback_base;
   template <class>
   friend class inplace_stop_callback;
 
-  _CCCL_HOST_DEVICE auto _lock() const noexcept -> uint8_t;
-  _CCCL_HOST_DEVICE void _unlock(uint8_t) const noexcept;
+  _CCCL_HOST_DEVICE auto __lock() const noexcept -> uint8_t;
+  _CCCL_HOST_DEVICE void __unlock(uint8_t) const noexcept;
 
-  _CCCL_HOST_DEVICE auto _try_lock_unless_stop_requested(bool) const noexcept -> bool;
+  _CCCL_HOST_DEVICE auto __try_lock_unless_stop_requested(bool) const noexcept -> bool;
 
-  _CCCL_HOST_DEVICE auto _try_add_callback(_stok::_inplace_stop_callback_base*) const noexcept -> bool;
+  _CCCL_HOST_DEVICE auto __try_add_callback(__stok::__inplace_stop_callback_base*) const noexcept -> bool;
 
-  _CCCL_HOST_DEVICE void _remove_callback(_stok::_inplace_stop_callback_base*) const noexcept;
+  _CCCL_HOST_DEVICE void __remove_callback(__stok::__inplace_stop_callback_base*) const noexcept;
 
-  static constexpr uint8_t _stop_requested_flag = 1;
-  static constexpr uint8_t _locked_flag         = 2;
+  static constexpr uint8_t __stop_requested_flag = 1;
+  static constexpr uint8_t __locked_flag         = 2;
 
-  mutable _CUDA_VSTD::atomic<uint8_t> _state{0};
-  mutable _stok::_inplace_stop_callback_base* _callbacks = nullptr;
-  __async::_thread_id _notifying_thread;
+  mutable _CUDA_VSTD::atomic<uint8_t> __state_{0};
+  mutable __stok::__inplace_stop_callback_base* __callbacks_ = nullptr;
+  __async::__thread_id __notifying_thread_;
 };
 
 // [stoptoken.inplace], class inplace_stop_token
@@ -193,46 +193,46 @@ public:
   using callback_type = inplace_stop_callback<_Fun>;
 
   _CCCL_HOST_DEVICE inplace_stop_token() noexcept
-      : _source(nullptr)
+      : __source_(nullptr)
   {}
 
-  inplace_stop_token(const inplace_stop_token& _other) noexcept = default;
+  inplace_stop_token(const inplace_stop_token& __other) noexcept = default;
 
-  _CCCL_HOST_DEVICE inplace_stop_token(inplace_stop_token&& _other) noexcept
-      : _source(__async::_exchange(_other._source, {}))
+  _CCCL_HOST_DEVICE inplace_stop_token(inplace_stop_token&& __other) noexcept
+      : __source_(__async::__exchange(__other.__source_, {}))
   {}
 
-  auto operator=(const inplace_stop_token& _other) noexcept -> inplace_stop_token& = default;
+  auto operator=(const inplace_stop_token& __other) noexcept -> inplace_stop_token& = default;
 
-  _CCCL_HOST_DEVICE auto operator=(inplace_stop_token&& _other) noexcept -> inplace_stop_token&
+  _CCCL_HOST_DEVICE auto operator=(inplace_stop_token&& __other) noexcept -> inplace_stop_token&
   {
-    _source = __async::_exchange(_other._source, nullptr);
+    __source_ = __async::__exchange(__other.__source_, nullptr);
     return *this;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE auto stop_requested() const noexcept -> bool
   {
-    return _source != nullptr && _source->stop_requested();
+    return __source_ != nullptr && __source_->stop_requested();
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE auto stop_possible() const noexcept -> bool
   {
-    return _source != nullptr;
+    return __source_ != nullptr;
   }
 
-  _CCCL_HOST_DEVICE void swap(inplace_stop_token& _other) noexcept
+  _CCCL_HOST_DEVICE void swap(inplace_stop_token& __other) noexcept
   {
-    __async::_swap(_source, _other._source);
+    __async::__swap(__source_, __other.__source_);
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const inplace_stop_token& _a, const inplace_stop_token& _b) noexcept
+  _CCCL_HOST_DEVICE friend bool operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
   {
-    return _a._source == _b._source;
+    return __a.__source_ == __b.__source_;
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(const inplace_stop_token& _a, const inplace_stop_token& _b) noexcept
+  _CCCL_HOST_DEVICE friend bool operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
   {
-    return _a._source != _b._source;
+    return __a.__source_ != __b.__source_;
   }
 
 private:
@@ -240,11 +240,11 @@ private:
   template <class>
   friend class inplace_stop_callback;
 
-  _CCCL_HOST_DEVICE explicit inplace_stop_token(const inplace_stop_source* _source) noexcept
-      : _source(_source)
+  _CCCL_HOST_DEVICE explicit inplace_stop_token(const inplace_stop_source* __source) noexcept
+      : __source_(__source)
   {}
 
-  const inplace_stop_source* _source;
+  const inplace_stop_source* __source_;
 };
 
 _CCCL_HOST_DEVICE inline auto inplace_stop_source::get_token() const noexcept -> inplace_stop_token
@@ -254,147 +254,147 @@ _CCCL_HOST_DEVICE inline auto inplace_stop_source::get_token() const noexcept ->
 
 // [stopcallback.inplace], class template inplace_stop_callback
 template <class _Fun>
-class inplace_stop_callback : _stok::_inplace_stop_callback_base
+class inplace_stop_callback : __stok::__inplace_stop_callback_base
 {
 public:
   template <class _Fun2>
-  _CCCL_HOST_DEVICE explicit inplace_stop_callback(inplace_stop_token _token, _Fun2&& _fun) noexcept(
+  _CCCL_HOST_DEVICE explicit inplace_stop_callback(inplace_stop_token __token, _Fun2&& __fun) noexcept(
     _CUDA_VSTD::is_nothrow_constructible_v<_Fun, _Fun2>)
-      : _stok::_inplace_stop_callback_base(_token._source, &inplace_stop_callback::_execute_impl)
-      , _fun(static_cast<_Fun2&&>(_fun))
+      : __stok::__inplace_stop_callback_base(__token.__source_, &inplace_stop_callback::__execute_impl)
+      , __fun(static_cast<_Fun2&&>(__fun))
   {
-    _register_callback();
+    __register_callback();
   }
 
   _CCCL_HOST_DEVICE ~inplace_stop_callback()
   {
-    if (_source != nullptr)
+    if (__source_ != nullptr)
     {
-      _source->_remove_callback(this);
+      __source_->__remove_callback(this);
     }
   }
 
 private:
-  _CCCL_HOST_DEVICE static void _execute_impl(_stok::_inplace_stop_callback_base* cb) noexcept
+  _CCCL_HOST_DEVICE static void __execute_impl(__stok::__inplace_stop_callback_base* __cb) noexcept
   {
-    static_cast<_Fun&&>(static_cast<inplace_stop_callback*>(cb)->_fun)();
+    static_cast<_Fun&&>(static_cast<inplace_stop_callback*>(__cb)->__fun)();
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Fun _fun;
+  _CCCL_NO_UNIQUE_ADDRESS _Fun __fun;
 };
 
-namespace _stok
+namespace __stok
 {
-_CCCL_HOST_DEVICE inline void _inplace_stop_callback_base::_register_callback() noexcept
+_CCCL_HOST_DEVICE inline void __inplace_stop_callback_base::__register_callback() noexcept
 {
-  if (_source != nullptr)
+  if (__source_ != nullptr)
   {
-    if (!_source->_try_add_callback(this))
+    if (!__source_->__try_add_callback(this))
     {
-      _source = nullptr;
-      // Callback not registered because stop_requested() was true.
+      __source_ = nullptr;
+      // _Callback not registered because stop_requested() was true.
       // Execute inline here.
-      _execute();
+      __execute();
     }
   }
 }
-} // namespace _stok
+} // namespace __stok
 
 _CCCL_HOST_DEVICE inline inplace_stop_source::~inplace_stop_source()
 {
-  _LIBCUDACXX_ASSERT((_state.load(_CUDA_VSTD::memory_order_relaxed) & _locked_flag) == 0, "");
-  _LIBCUDACXX_ASSERT(_callbacks == nullptr, "");
+  _LIBCUDACXX_ASSERT((__state_.load(_CUDA_VSTD::memory_order_relaxed) & __locked_flag) == 0, "");
+  _LIBCUDACXX_ASSERT(__callbacks_ == nullptr, "");
 }
 
 _CCCL_HOST_DEVICE inline auto inplace_stop_source::request_stop() noexcept -> bool
 {
-  if (!_try_lock_unless_stop_requested(true))
+  if (!__try_lock_unless_stop_requested(true))
   {
     return true;
   }
 
-  _notifying_thread = __async::_this_thread_id();
+  __notifying_thread_ = __async::__this_thread_id();
 
   // We are responsible for executing callbacks.
-  while (_callbacks != nullptr)
+  while (__callbacks_ != nullptr)
   {
-    auto* _callbk      = _callbacks;
-    _callbk->_prev_ptr = nullptr;
-    _callbacks         = _callbk->_next;
-    if (_callbacks != nullptr)
+    auto* __callbk        = __callbacks_;
+    __callbk->__prev_ptr_ = nullptr;
+    __callbacks_          = __callbk->__next_;
+    if (__callbacks_ != nullptr)
     {
-      _callbacks->_prev_ptr = &_callbacks;
+      __callbacks_->__prev_ptr_ = &__callbacks_;
     }
 
-    _state.store(_stop_requested_flag, _CUDA_VSTD::memory_order_release);
+    __state_.store(__stop_requested_flag, _CUDA_VSTD::memory_order_release);
 
-    bool _removed_during_callback     = false;
-    _callbk->_removed_during_callback = &_removed_during_callback;
+    bool __removed_during_callback_      = false;
+    __callbk->__removed_during_callback_ = &__removed_during_callback_;
 
-    _callbk->_execute();
+    __callbk->__execute();
 
-    if (!_removed_during_callback)
+    if (!__removed_during_callback_)
     {
-      _callbk->_removed_during_callback = nullptr;
-      _callbk->_callback_completed.store(true, _CUDA_VSTD::memory_order_release);
+      __callbk->__removed_during_callback_ = nullptr;
+      __callbk->__callback_completed_.store(true, _CUDA_VSTD::memory_order_release);
     }
 
-    _lock();
+    __lock();
   }
 
-  _state.store(_stop_requested_flag, _CUDA_VSTD::memory_order_release);
+  __state_.store(__stop_requested_flag, _CUDA_VSTD::memory_order_release);
   return false;
 }
 
-_CCCL_HOST_DEVICE inline auto inplace_stop_source::_lock() const noexcept -> uint8_t
+_CCCL_HOST_DEVICE inline auto inplace_stop_source::__lock() const noexcept -> uint8_t
 {
-  _stok::_spin_wait _spin;
-  auto _old_state = _state.load(_CUDA_VSTD::memory_order_relaxed);
+  __stok::__spin_wait __spin;
+  auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
   do
   {
-    while ((_old_state & _locked_flag) != 0)
+    while ((__old_state & __locked_flag) != 0)
     {
-      _spin._wait();
-      _old_state = _state.load(_CUDA_VSTD::memory_order_relaxed);
+      __spin.__wait();
+      __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
     }
-  } while (!_state.compare_exchange_weak(
-    _old_state, _old_state | _locked_flag, _CUDA_VSTD::memory_order_acquire, _CUDA_VSTD::memory_order_relaxed));
+  } while (!__state_.compare_exchange_weak(
+    __old_state, __old_state | __locked_flag, _CUDA_VSTD::memory_order_acquire, _CUDA_VSTD::memory_order_relaxed));
 
-  return _old_state;
+  return __old_state;
 }
 
-_CCCL_HOST_DEVICE inline void inplace_stop_source::_unlock(uint8_t _old_state) const noexcept
+_CCCL_HOST_DEVICE inline void inplace_stop_source::__unlock(uint8_t __old_state) const noexcept
 {
-  (void) _state.store(_old_state, _CUDA_VSTD::memory_order_release);
+  (void) __state_.store(__old_state, _CUDA_VSTD::memory_order_release);
 }
 
 _CCCL_HOST_DEVICE inline auto
-inplace_stop_source::_try_lock_unless_stop_requested(bool _set_stop_requested) const noexcept -> bool
+inplace_stop_source::__try_lock_unless_stop_requested(bool __set_stop_requested) const noexcept -> bool
 {
-  _stok::_spin_wait _spin;
-  auto _old_state = _state.load(_CUDA_VSTD::memory_order_relaxed);
+  __stok::__spin_wait __spin;
+  auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
   do
   {
     while (true)
     {
-      if ((_old_state & _stop_requested_flag) != 0)
+      if ((__old_state & __stop_requested_flag) != 0)
       {
         // Stop already requested.
         return false;
       }
-      else if (_old_state == 0)
+      else if (__old_state == 0)
       {
         break;
       }
       else
       {
-        _spin._wait();
-        _old_state = _state.load(_CUDA_VSTD::memory_order_relaxed);
+        __spin.__wait();
+        __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
       }
     }
-  } while (!_state.compare_exchange_weak(
-    _old_state,
-    _set_stop_requested ? (_locked_flag | _stop_requested_flag) : _locked_flag,
+  } while (!__state_.compare_exchange_weak(
+    __old_state,
+    __set_stop_requested ? (__locked_flag | __stop_requested_flag) : __locked_flag,
     _CUDA_VSTD::memory_order_acq_rel,
     _CUDA_VSTD::memory_order_relaxed));
 
@@ -403,81 +403,81 @@ inplace_stop_source::_try_lock_unless_stop_requested(bool _set_stop_requested) c
 }
 
 _CCCL_HOST_DEVICE inline auto
-inplace_stop_source::_try_add_callback(_stok::_inplace_stop_callback_base* _callbk) const noexcept -> bool
+inplace_stop_source::__try_add_callback(__stok::__inplace_stop_callback_base* __callbk) const noexcept -> bool
 {
-  if (!_try_lock_unless_stop_requested(false))
+  if (!__try_lock_unless_stop_requested(false))
   {
     return false;
   }
 
-  _callbk->_next     = _callbacks;
-  _callbk->_prev_ptr = &_callbacks;
-  if (_callbacks != nullptr)
+  __callbk->__next_     = __callbacks_;
+  __callbk->__prev_ptr_ = &__callbacks_;
+  if (__callbacks_ != nullptr)
   {
-    _callbacks->_prev_ptr = &_callbk->_next;
+    __callbacks_->__prev_ptr_ = &__callbk->__next_;
   }
-  _callbacks = _callbk;
+  __callbacks_ = __callbk;
 
-  _unlock(0);
+  __unlock(0);
 
   return true;
 }
 
 _CCCL_HOST_DEVICE inline void
-inplace_stop_source::_remove_callback(_stok::_inplace_stop_callback_base* _callbk) const noexcept
+inplace_stop_source::__remove_callback(__stok::__inplace_stop_callback_base* __callbk) const noexcept
 {
-  auto _old_state = _lock();
+  auto __old_state = __lock();
 
-  if (_callbk->_prev_ptr != nullptr)
+  if (__callbk->__prev_ptr_ != nullptr)
   {
-    // Callback has not been executed yet.
+    // _Callback has not been executed yet.
     // Remove from the list.
-    *_callbk->_prev_ptr = _callbk->_next;
-    if (_callbk->_next != nullptr)
+    *__callbk->__prev_ptr_ = __callbk->__next_;
+    if (__callbk->__next_ != nullptr)
     {
-      _callbk->_next->_prev_ptr = _callbk->_prev_ptr;
+      __callbk->__next_->__prev_ptr_ = __callbk->__prev_ptr_;
     }
-    _unlock(_old_state);
+    __unlock(__old_state);
   }
   else
   {
-    auto _notifying_thread = this->_notifying_thread;
-    _unlock(_old_state);
+    auto __notifying_thread_ = this->__notifying_thread_;
+    __unlock(__old_state);
 
-    // Callback has either already been executed or is
+    // _Callback has either already been executed or is
     // currently executing on another thread.
-    if (__async::_this_thread_id() == _notifying_thread)
+    if (__async::__this_thread_id() == __notifying_thread_)
     {
-      if (_callbk->_removed_during_callback != nullptr)
+      if (__callbk->__removed_during_callback_ != nullptr)
       {
-        *_callbk->_removed_during_callback = true;
+        *__callbk->__removed_during_callback_ = true;
       }
     }
     else
     {
       // Concurrently executing on another thread.
       // Wait until the other thread finishes executing the callback.
-      _stok::_spin_wait _spin;
-      while (!_callbk->_callback_completed.load(_CUDA_VSTD::memory_order_acquire))
+      __stok::__spin_wait __spin;
+      while (!__callbk->__callback_completed_.load(_CUDA_VSTD::memory_order_acquire))
       {
-        _spin._wait();
+        __spin.__wait();
       }
     }
   }
 }
 
-struct _on_stop_request
+struct __on_stop_request
 {
-  inplace_stop_source& _source;
+  inplace_stop_source& __source_;
 
   _CCCL_HOST_DEVICE void operator()() const noexcept
   {
-    _source.request_stop();
+    __source_.request_stop();
   }
 };
 
-template <class Token, class Callback>
-using stop_callback_for_t = typename Token::template callback_type<Callback>;
+template <class _Token, class _Callback>
+using stop_callback_for_t = typename _Token::template callback_type<_Callback>;
 } // namespace cuda::experimental::__async
 
 _CCCL_NV_DIAG_DEFAULT(20012)

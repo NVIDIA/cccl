@@ -34,112 +34,112 @@
 namespace cuda::experimental::__async
 {
 /// @brief A lazy type that can be used to delay the construction of a type.
-template <class Ty>
-struct _lazy
+template <class _Ty>
+struct __lazy
 {
-  _CCCL_HOST_DEVICE _lazy() noexcept {}
+  _CCCL_HOST_DEVICE __lazy() noexcept {}
 
-  _CCCL_HOST_DEVICE ~_lazy() {}
+  _CCCL_HOST_DEVICE ~__lazy() {}
 
-  template <class... Ts>
-  _CCCL_HOST_DEVICE Ty& construct(Ts&&... ts) noexcept(_nothrow_constructible<Ty, Ts...>)
+  template <class... _Ts>
+  _CCCL_HOST_DEVICE _Ty& construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>)
   {
-    Ty* _value = ::new (static_cast<void*>(_CUDA_VSTD::addressof(value))) Ty{static_cast<Ts&&>(ts)...};
-    return *_CUDA_VSTD::launder(_value);
+    _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_))) _Ty{static_cast<_Ts&&>(__ts)...};
+    return *_CUDA_VSTD::launder(__value_);
   }
 
-  template <class Fn, class... Ts>
-  _CCCL_HOST_DEVICE Ty& construct_from(Fn&& fn, Ts&&... ts) noexcept(_nothrow_callable<Fn, Ts...>)
+  template <class _Fn, class... _Ts>
+  _CCCL_HOST_DEVICE _Ty& construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>)
   {
-    Ty* _value = ::new (static_cast<void*>(_CUDA_VSTD::addressof(value)))
-      Ty{static_cast<Fn&&>(fn)(static_cast<Ts&&>(ts)...)};
-    return *_CUDA_VSTD::launder(_value);
+    _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_)))
+      _Ty{static_cast<_Fn&&>(__fn)(static_cast<_Ts&&>(__ts)...)};
+    return *_CUDA_VSTD::launder(__value_);
   }
 
   _CCCL_HOST_DEVICE void destroy() noexcept
   {
-    _CUDA_VSTD::destroy_at(&value);
+    _CUDA_VSTD::destroy_at(&__value_);
   }
 
   union
   {
-    Ty value;
+    _Ty __value_;
   };
 };
 
-namespace _detail
+namespace __detail
 {
-template <size_t Idx, size_t Size, size_t Align>
-struct _lazy_box_
+template <size_t _Idx, size_t _Size, size_t _Align>
+struct __lazy_box_
 {
-  static_assert(Size != 0);
-  alignas(Align) unsigned char _data[Size];
+  static_assert(_Size != 0);
+  alignas(_Align) unsigned char __data_[_Size];
 };
 
-template <size_t Idx, class Ty>
-using _lazy_box = _lazy_box_<Idx, sizeof(Ty), alignof(Ty)>;
-} // namespace _detail
+template <size_t _Idx, class _Ty>
+using __lazy_box = __lazy_box_<_Idx, sizeof(_Ty), alignof(_Ty)>;
+} // namespace __detail
 
-template <class Idx, class... Ts>
-struct _lazy_tupl;
+template <class _Idx, class... _Ts>
+struct __lazy_tupl;
 
 template <>
-struct _lazy_tupl<_mindices<>>
+struct __lazy_tupl<__mindices<>>
 {
-  template <class Fn, class Self, class... Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto apply(Fn&& fn, Self&& self, Us&&... us) //
-    noexcept(_nothrow_callable<Fn, Us...>) -> _call_result_t<Fn, Us...>
+  template <class _Fn, class _Self, class... _Us>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+    noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
   {
-    return static_cast<Fn&&>(fn)(static_cast<Us&&>(us)...);
+    return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
   }
 };
 
-template <size_t... Idx, class... Ts>
-struct _lazy_tupl<_mindices<Idx...>, Ts...> : _detail::_lazy_box<Idx, Ts>...
+template <size_t... _Idx, class... _Ts>
+struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts>...
 {
-  template <size_t Ny>
-  using _at = _m_at_c<Ny, Ts...>;
+  template <size_t _Ny>
+  using __at = __m_at_c<_Ny, _Ts...>;
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE _lazy_tupl() noexcept {}
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE __lazy_tupl() noexcept {}
 
-  _CCCL_HOST_DEVICE ~_lazy_tupl()
+  _CCCL_HOST_DEVICE ~__lazy_tupl()
   {
-    ((_engaged[Idx] ? _CUDA_VSTD::destroy_at(_get<Idx, Ts>()) : void(0)), ...);
+    ((__engaged_[_Idx] ? _CUDA_VSTD::destroy_at(__get<_Idx, _Ts>()) : void(0)), ...);
   }
 
-  template <size_t Ny, class Ty>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE Ty* _get() noexcept
+  template <size_t _Ny, class _Ty>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE _Ty* __get() noexcept
   {
-    return reinterpret_cast<Ty*>(this->_detail::_lazy_box<Ny, Ty>::_data);
+    return reinterpret_cast<_Ty*>(this->__detail::__lazy_box<_Ny, _Ty>::__data_);
   }
 
-  template <size_t Ny, class... Us>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE _at<Ny>& _emplace(Us&&... us) //
-    noexcept(_nothrow_constructible<_at<Ny>, Us...>)
+  template <size_t _Ny, class... _Us>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE __at<_Ny>& __emplace(_Us&&... __us) //
+    noexcept(__nothrow_constructible<__at<_Ny>, _Us...>)
   {
-    using Ty     = _at<Ny>;
-    Ty* _value   = ::new (static_cast<void*>(_get<Ny, Ty>())) Ty{static_cast<Us&&>(us)...};
-    _engaged[Ny] = true;
-    return *_CUDA_VSTD::launder(_value);
+    using _Ty       = __at<_Ny>;
+    _Ty* __value_   = ::new (static_cast<void*>(__get<_Ny, _Ty>())) _Ty{static_cast<_Us&&>(__us)...};
+    __engaged_[_Ny] = true;
+    return *_CUDA_VSTD::launder(__value_);
   }
 
-  template <class Fn, class Self, class... Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto apply(Fn&& fn, Self&& self, Us&&... us) //
-    noexcept(_nothrow_callable<Fn, Us..., _copy_cvref_t<Self, Ts>...>)
-      -> _call_result_t<Fn, Us..., _copy_cvref_t<Self, Ts>...>
+  template <class _Fn, class _Self, class... _Us>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+    noexcept(__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>)
+      -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>
   {
-    return static_cast<Fn&&>(
-      fn)(static_cast<Us&&>(us)..., static_cast<_copy_cvref_t<Self, Ts>&&>(*self.template _get<Idx, Ts>())...);
+    return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)..., static_cast<__copy_cvref_t<_Self, _Ts>&&>(*__self.template __get<_Idx, _Ts>())...);
   }
 
-  bool _engaged[sizeof...(Ts)] = {};
+  bool __engaged_[sizeof...(_Ts)] = {};
 };
 
-template <class... Ts>
-using _lazy_tuple = _lazy_tupl<_mmake_indices<sizeof...(Ts)>, Ts...>;
+template <class... _Ts>
+using __lazy_tuple = __lazy_tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
 
-template <class... Ts>
-using _decayed_lazy_tuple = _lazy_tuple<_decay_t<Ts>...>;
+template <class... _Ts>
+using __decayed_lazy_tuple = __lazy_tuple<__decay_t<_Ts>...>;
 
 } // namespace cuda::experimental::__async
 

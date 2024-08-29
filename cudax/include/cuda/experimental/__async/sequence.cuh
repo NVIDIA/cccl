@@ -32,117 +32,117 @@
 
 namespace cuda::experimental::__async
 {
-struct _seq
+struct __seq
 {
-  template <class Rcvr, class Sndr1, class Sndr2>
-  struct _args
+  template <class _Rcvr, class _Sndr1, class _Sndr2>
+  struct __args
   {
-    using _rcvr_t  = Rcvr;
-    using _sndr1_t = Sndr1;
-    using _sndr2_t = Sndr2;
+    using __rcvr_t  = _Rcvr;
+    using __sndr1_t = _Sndr1;
+    using __sndr2_t = _Sndr2;
   };
 
-  template <class Zip>
-  struct _opstate
+  template <class _Zip>
+  struct __opstate
   {
     using operation_state_concept = operation_state_t;
 
-    using _args_t  = _unzip<Zip>; // _unzip<Zip> is _args<Rcvr, Sndr1, Sndr2>
-    using _rcvr_t  = typename _args_t::_rcvr_t;
-    using _sndr1_t = typename _args_t::_sndr1_t;
-    using _sndr2_t = typename _args_t::_sndr2_t;
+    using __args_t  = __unzip<_Zip>; // __unzip<_Zip> is __args<_Rcvr, _Sndr1, _Sndr2>
+    using __rcvr_t  = typename __args_t::__rcvr_t;
+    using __sndr1_t = typename __args_t::__sndr1_t;
+    using __sndr2_t = typename __args_t::__sndr2_t;
 
     using completion_signatures = //
       transform_completion_signatures_of< //
-        _sndr1_t,
-        _opstate*,
-        completion_signatures_of_t<_sndr2_t, _rcvr_ref_t<_rcvr_t&>>,
-        _malways<__async::completion_signatures<>>::_f>; // swallow the first sender's value completions
+        __sndr1_t,
+        __opstate*,
+        completion_signatures_of_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>>,
+        __malways<__async::completion_signatures<>>::__f>; // swallow the first sender's value completions
 
-    _CCCL_HOST_DEVICE friend env_of_t<_rcvr_t> get_env(const _opstate* self) noexcept
+    _CCCL_HOST_DEVICE friend env_of_t<__rcvr_t> get_env(const __opstate* __self) noexcept
     {
-      return __async::get_env(self->_rcvr);
+      return __async::get_env(__self->__rcvr_);
     }
 
-    _rcvr_t _rcvr;
-    connect_result_t<_sndr1_t, _opstate*> _op1;
-    connect_result_t<_sndr2_t, _rcvr_ref_t<_rcvr_t&>> _op2;
+    __rcvr_t __rcvr_;
+    connect_result_t<__sndr1_t, __opstate*> __opstate1_;
+    connect_result_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>> __opstate2_;
 
-    _CCCL_HOST_DEVICE _opstate(_sndr1_t&& sndr1, _sndr2_t&& sndr2, _rcvr_t&& rcvr)
-        : _rcvr(static_cast<_rcvr_t&&>(rcvr))
-        , _op1(__async::connect(static_cast<_sndr1_t&&>(sndr1), this))
-        , _op2(__async::connect(static_cast<_sndr2_t&&>(sndr2), _rcvr_ref(_rcvr)))
+    _CCCL_HOST_DEVICE __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
+        : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
+        , __opstate1_(__async::connect(static_cast<__sndr1_t&&>(__sndr1), this))
+        , __opstate2_(__async::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref(__rcvr_)))
     {}
 
     _CCCL_HOST_DEVICE void start() noexcept
     {
-      __async::start(_op1);
+      __async::start(__opstate1_);
     }
 
-    template <class... Values>
-    _CCCL_HOST_DEVICE void set_value(Values&&...) && noexcept
+    template <class... _Values>
+    _CCCL_HOST_DEVICE void set_value(_Values&&...) && noexcept
     {
-      __async::start(_op2);
+      __async::start(__opstate2_);
     }
 
-    template <class Error>
-    _CCCL_HOST_DEVICE void set_error(Error&& err) && noexcept
+    template <class _Error>
+    _CCCL_HOST_DEVICE void set_error(_Error&& __error) && noexcept
     {
-      __async::set_error(static_cast<_rcvr_t&&>(_rcvr), static_cast<Error&&>(err));
+      __async::set_error(static_cast<__rcvr_t&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
     _CCCL_HOST_DEVICE void set_stopped() && noexcept
     {
-      __async::set_stopped(static_cast<_rcvr_t&&>(_rcvr));
+      __async::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
     }
   };
 
-  template <class Sndr1, class Sndr2>
-  struct _sndr;
+  template <class _Sndr1, class _Sndr2>
+  struct __sndr_t;
 
-  template <class Sndr1, class Sndr2>
-  _CCCL_HOST_DEVICE auto operator()(Sndr1 sndr1, Sndr2 sndr2) const -> _sndr<Sndr1, Sndr2>;
+  template <class _Sndr1, class _Sndr2>
+  _CCCL_HOST_DEVICE auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>;
 };
 
-template <class Sndr1, class Sndr2>
-struct _seq::_sndr
+template <class _Sndr1, class _Sndr2>
+struct __seq::__sndr_t
 {
   using sender_concept = sender_t;
-  using _sndr1_t       = Sndr1;
-  using _sndr2_t       = Sndr2;
+  using __sndr1_t      = _Sndr1;
+  using __sndr2_t      = _Sndr2;
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) &&
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) &&
   {
-    using _opstate_t = _opstate<_zip<_args<Rcvr, Sndr1, Sndr2>>>;
-    return _opstate_t{static_cast<Sndr1&&>(_sndr1), static_cast<Sndr2>(_sndr2), static_cast<Rcvr&&>(rcvr)};
+    using __opstate_t = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
+    return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const&
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const&
   {
-    using _opstate_t = _opstate<_zip<_args<Rcvr, const Sndr1&, const Sndr2&>>>;
-    return _opstate_t{_sndr1, _sndr2, static_cast<Rcvr&&>(rcvr)};
+    using __opstate_t = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
+    return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<Sndr2> get_env() const noexcept
+  _CCCL_HOST_DEVICE env_of_t<_Sndr2> get_env() const noexcept
   {
-    return __async::get_env(_sndr2);
+    return __async::get_env(__sndr2_);
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _seq _tag;
-  _CCCL_NO_UNIQUE_ADDRESS _ignore _ign;
-  _sndr1_t _sndr1;
-  _sndr2_t _sndr2;
+  _CCCL_NO_UNIQUE_ADDRESS __seq __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __ignore __ign_;
+  __sndr1_t __sndr1_;
+  __sndr2_t __sndr2_;
 };
 
-template <class Sndr1, class Sndr2>
-_CCCL_HOST_DEVICE auto _seq::operator()(Sndr1 sndr1, Sndr2 sndr2) const -> _sndr<Sndr1, Sndr2>
+template <class _Sndr1, class _Sndr2>
+_CCCL_HOST_DEVICE auto __seq::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>
 {
-  return _sndr<Sndr1, Sndr2>{{}, {}, static_cast<Sndr1&&>(sndr1), static_cast<Sndr2&&>(sndr2)};
+  return __sndr_t<_Sndr1, _Sndr2>{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
 }
 
-using sequence_t = _seq;
+using sequence_t = __seq;
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::__async
 

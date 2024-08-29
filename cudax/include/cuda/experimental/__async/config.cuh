@@ -38,9 +38,9 @@ namespace cuda::experimental::__async
 
 // GCC struggles with guaranteed copy elision of immovable types.
 #if defined(_CCCL_COMPILER_GCC)
-#  define _CUDAX_IMMOVABLE(XP) XP(XP&&)
+#  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&)
 #else
-#  define _CUDAX_IMMOVABLE(XP) XP(XP&&) = delete
+#  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&) = delete
 #endif
 
 #endif

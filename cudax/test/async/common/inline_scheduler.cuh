@@ -28,7 +28,7 @@ private:
   };
 
   template <class Rcvr>
-  struct opstate_t : cudax_async::_immovable
+  struct opstate_t : cudax_async::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
     using completion_signatures   = cudax_async::completion_signatures<cudax_async::set_value_t()>;

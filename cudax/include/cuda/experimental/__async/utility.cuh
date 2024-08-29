@@ -32,154 +32,155 @@
 
 namespace cuda::experimental::__async
 {
-_CCCL_GLOBAL_CONSTANT size_t _npos = ~0UL;
+_CCCL_GLOBAL_CONSTANT size_t __npos = ~0UL;
 
-struct _ignore
+struct __ignore
 {
-  template <class... As>
-  _CCCL_HOST_DEVICE constexpr _ignore(As&&...) noexcept {};
+  template <class... _As>
+  _CCCL_HOST_DEVICE constexpr __ignore(_As&&...) noexcept {};
 };
 
 template <class...>
-struct _undefined;
+struct __undefined;
 
-struct _empty
+struct __empty
 {};
 
-struct [[deprecated]] _deprecated
+struct [[deprecated]] __deprecated
 {};
 
-struct _nil
+struct __nil
 {};
 
-struct _immovable
+struct __immovable
 {
-  _immovable() = default;
-  _CUDAX_IMMOVABLE(_immovable);
+  __immovable() = default;
+  _CUDAX_IMMOVABLE(__immovable);
 };
 
-_CCCL_HOST_DEVICE constexpr size_t _max(_CUDA_VSTD::initializer_list<size_t> il) noexcept
+_CCCL_HOST_DEVICE constexpr size_t __max(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
 {
-  size_t max = 0;
-  for (auto i : il)
+  size_t __max = 0;
+  for (auto i : __il)
   {
-    if (i > max)
+    if (i > __max)
     {
-      max = i;
+      __max = i;
     }
   }
-  return max;
+  return __max;
 }
 
-_CCCL_HOST_DEVICE constexpr size_t _find_pos(bool const* const begin, bool const* const end) noexcept
+_CCCL_HOST_DEVICE constexpr size_t __find_pos(bool const* const __begin, bool const* const __end) noexcept
 {
-  for (bool const* where = begin; where != end; ++where)
+  for (bool const* __where = __begin; __where != __end; ++__where)
   {
-    if (*where)
+    if (*__where)
     {
-      return static_cast<size_t>(where - begin);
+      return static_cast<size_t>(__where - __begin);
     }
   }
-  return _npos;
+  return __npos;
 }
 
-template <class Ty, class... Ts>
-_CCCL_HOST_DEVICE constexpr size_t _index_of() noexcept
+template <class _Ty, class... _Ts>
+_CCCL_HOST_DEVICE constexpr size_t __index_of() noexcept
 {
-  constexpr bool _same[] = {_CUDA_VSTD::is_same_v<Ty, Ts>...};
-  return __async::_find_pos(_same, _same + sizeof...(Ts));
+  constexpr bool __same[] = {_CUDA_VSTD::is_same_v<_Ty, _Ts>...};
+  return __async::__find_pos(__same, __same + sizeof...(_Ts));
 }
 
-template <class Ty, class Uy = Ty>
-_CCCL_HOST_DEVICE constexpr Ty _exchange(Ty& obj, Uy&& new_value) noexcept
+template <class _Ty, class _Uy = _Ty>
+_CCCL_HOST_DEVICE constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexcept
 {
-  constexpr bool _nothrow = //
-    noexcept(Ty(static_cast<Ty&&>(obj))) && //
-    noexcept(obj = static_cast<Uy&&>(new_value)); //
-  static_assert(_nothrow);
+  constexpr bool __nothrow = //
+    noexcept(_Ty(static_cast<_Ty&&>(__obj))) && //
+    noexcept(__obj = static_cast<_Uy&&>(__new_value)); //
+  static_assert(__nothrow);
 
-  Ty old_value = static_cast<Ty&&>(obj);
-  obj          = static_cast<Uy&&>(new_value);
+  _Ty old_value = static_cast<_Ty&&>(__obj);
+  __obj         = static_cast<_Uy&&>(__new_value);
   return old_value;
 }
 
-template <class Ty>
-_CCCL_HOST_DEVICE constexpr void _swap(Ty& left, Ty& right) noexcept
+template <class _Ty>
+_CCCL_HOST_DEVICE constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
-  constexpr bool _nothrow = //
-    noexcept(Ty(static_cast<Ty&&>(left))) && //
-    noexcept(left = static_cast<Ty&&>(right)); //
-  static_assert(_nothrow);
+  constexpr bool __nothrow = //
+    noexcept(_Ty(static_cast<_Ty&&>(__left))) && //
+    noexcept(__left = static_cast<_Ty&&>(__right)); //
+  static_assert(__nothrow);
 
-  Ty tmp = static_cast<Ty&&>(left);
-  left   = static_cast<Ty&&>(right);
-  right  = static_cast<Ty&&>(tmp);
+  _Ty __tmp = static_cast<_Ty&&>(__left);
+  __left    = static_cast<_Ty&&>(__right);
+  __right   = static_cast<_Ty&&>(__tmp);
 }
 
-template <class Ty>
-_CCCL_HOST_DEVICE constexpr Ty _decay_copy(Ty&& ty) noexcept(_nothrow_decay_copyable<Ty>)
+template <class _Ty>
+_CCCL_HOST_DEVICE constexpr _Ty __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
 {
-  return static_cast<Ty&&>(ty);
+  return static_cast<_Ty&&>(__ty);
 }
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 _CCCL_NV_DIAG_SUPPRESS(probable_guiding_friend)
 
-// _zip/_unzip is for keeping type names short. It has the unfortunate side
+// __zip/__unzip is for keeping type names short. It has the unfortunate side
 // effect of obfuscating the types.
 namespace
 {
-template <size_t N>
-struct _slot
+template <size_t _Ny>
+struct __slot
 {
-  friend constexpr auto _slot_allocated(_slot<N>);
-  static constexpr size_t value = N;
+  friend constexpr auto __slot_allocated(__slot<_Ny>);
+  static constexpr size_t __value = _Ny;
 };
 
-template <class Type, size_t N>
-struct _allocate_slot : _slot<N>
+template <class _Type, size_t _Ny>
+struct __allocate_slot : __slot<_Ny>
 {
-  friend constexpr auto _slot_allocated(_slot<N>)
+  friend constexpr auto __slot_allocated(__slot<_Ny>)
   {
-    return static_cast<Type (*)()>(nullptr);
+    return static_cast<_Type (*)()>(nullptr);
   }
 };
 
-template <class Type, size_t Id = 0, size_t Pow2 = 0>
-constexpr size_t _next(long);
+template <class _Type, size_t _Id = 0, size_t _Pow2 = 0>
+constexpr size_t __next(long);
 
-// If _slot_allocated(_slot<Id>) has NOT been defined, then SFINAE will keep this function out of the overload set...
-template <class Type, //
-          size_t Id   = 0,
-          size_t Pow2 = 0,
-          bool        = !_slot_allocated(_slot<Id + (1 << Pow2) - 1>())>
-constexpr size_t _next(int)
+// If __slot_allocated(__slot<_Id>) has NOT been defined, then SFINAE will keep this function out of the overload
+// set...
+template <class _Type, //
+          size_t _Id   = 0,
+          size_t _Pow2 = 0,
+          bool         = !__slot_allocated(__slot<_Id + (1 << _Pow2) - 1>())>
+constexpr size_t __next(int)
 {
-  return __async::_next<Type, Id, Pow2 + 1>(0);
+  return __async::__next<_Type, _Id, _Pow2 + 1>(0);
 }
 
-template <class Type, size_t Id, size_t Pow2>
-constexpr size_t _next(long)
+template <class _Type, size_t _Id, size_t _Pow2>
+constexpr size_t __next(long)
 {
-  if constexpr (Pow2 == 0)
+  if constexpr (_Pow2 == 0)
   {
-    return _allocate_slot<Type, Id>::value;
+    return __allocate_slot<_Type, _Id>::__value;
   }
   else
   {
-    return __async::_next<Type, Id + (1 << (Pow2 - 1)), 0>(0);
+    return __async::__next<_Type, _Id + (1 << (_Pow2 - 1)), 0>(0);
   }
 }
 
-template <class Type, size_t Val = __async::_next<Type>(0)>
-using _zip = _slot<Val>;
+template <class _Type, size_t _Val = __async::__next<_Type>(0)>
+using __zip = __slot<_Val>;
 
-template <class Id>
-using _unzip = decltype(_slot_allocated(Id())());
+template <class _Id>
+using __unzip = decltype(__slot_allocated(_Id())());
 
 // burn the first slot
-using _ignore_this_typedef [[maybe_unused]] = _zip<void>;
+using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
 } // namespace
 
 _CCCL_NV_DIAG_DEFAULT(probable_guiding_friend)

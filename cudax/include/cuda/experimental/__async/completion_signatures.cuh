@@ -29,295 +29,303 @@
 namespace cuda::experimental::__async
 {
 // A typelist for completion signatures
-template <class... Ts>
+template <class... _Ts>
 struct completion_signatures
 {};
 
 // A metafunction to determine if a type is a completion signature
 template <class>
-_CCCL_INLINE_VAR constexpr bool _is_valid_signature = false;
+_CCCL_INLINE_VAR constexpr bool __is_valid_signature = false;
 
-template <class... Ts>
-_CCCL_INLINE_VAR constexpr bool _is_valid_signature<set_value_t(Ts...)> = true;
+template <class... _Ts>
+_CCCL_INLINE_VAR constexpr bool __is_valid_signature<set_value_t(_Ts...)> = true;
 
-template <class Error>
-_CCCL_INLINE_VAR constexpr bool _is_valid_signature<set_error_t(Error)> = true;
+template <class _Error>
+_CCCL_INLINE_VAR constexpr bool __is_valid_signature<set_error_t(_Error)> = true;
 
 template <>
-_CCCL_INLINE_VAR constexpr bool _is_valid_signature<set_stopped_t()> = true;
+_CCCL_INLINE_VAR constexpr bool __is_valid_signature<set_stopped_t()> = true;
 
 // The implementation of transform_completion_signatures starts here
-template <class Sig, template <class...> class V, template <class...> class E, class S>
-extern _undefined<Sig> _transform_sig;
+template <class _Sig, template <class...> class _Vy, template <class...> class _Ey, class _Sy>
+extern __undefined<_Sig> __transform_sig;
 
-template <class... Values, template <class...> class V, template <class...> class E, class S>
-extern _fn_t<V<Values...>>* _transform_sig<set_value_t(Values...), V, E, S>;
+template <class... _Values, template <class...> class _Vy, template <class...> class _Ey, class _Sy>
+extern __fn_t<_Vy<_Values...>>* __transform_sig<set_value_t(_Values...), _Vy, _Ey, _Sy>;
 
-template <class Error, template <class...> class V, template <class...> class E, class S>
-extern _fn_t<E<Error>>* _transform_sig<set_error_t(Error), V, E, S>;
+template <class _Error, template <class...> class _Vy, template <class...> class _Ey, class _Sy>
+extern __fn_t<_Ey<_Error>>* __transform_sig<set_error_t(_Error), _Vy, _Ey, _Sy>;
 
-template <template <class...> class V, template <class...> class E, class S>
-extern _fn_t<S>* _transform_sig<set_stopped_t(), V, E, S>;
+template <template <class...> class _Vy, template <class...> class _Ey, class _Sy>
+extern __fn_t<_Sy>* __transform_sig<set_stopped_t(), _Vy, _Ey, _Sy>;
 
-template <class Sig, template <class...> class V, template <class...> class E, class S>
-using _transform_sig_t = decltype(_transform_sig<Sig, V, E, S>());
+template <class _Sig, template <class...> class _Vy, template <class...> class _Ey, class _Sy>
+using __transform_sig_t = decltype(__transform_sig<_Sig, _Vy, _Ey, _Sy>());
 
-template <class Sigs,
+template <class _Sigs,
           template <class...>
-          class V,
+          class _Vy,
           template <class...>
-          class E,
-          class S,
+          class _Ey,
+          class _Sy,
           template <class...>
-          class Variant,
-          class... More>
-extern DIAGNOSTIC<Sigs> _transform_completion_signatures_v;
+          class _Variant,
+          class... _More>
+extern _DIAGNOSTIC<_Sigs> __transform_completion_signatures_v;
 
-template <class... What,
+template <class... _What,
           template <class...>
-          class V,
+          class _Vy,
           template <class...>
-          class E,
-          class S,
+          class _Ey,
+          class _Sy,
           template <class...>
-          class Variant,
-          class... More>
-extern _fn_t<ERROR<What...>>* _transform_completion_signatures_v<ERROR<What...>, V, E, S, Variant, More...>;
+          class _Variant,
+          class... _More>
+extern __fn_t<_ERROR<_What...>>*
+  __transform_completion_signatures_v<_ERROR<_What...>, _Vy, _Ey, _Sy, _Variant, _More...>;
 
-template <class... Sigs,
+template <class... _Sigs,
           template <class...>
-          class V,
+          class _Vy,
           template <class...>
-          class E,
-          class S,
+          class _Ey,
+          class _Sy,
           template <class...>
-          class Variant,
-          class... More>
-extern _fn_t<Variant<_transform_sig_t<Sigs, V, E, S>..., More...>>*
-  _transform_completion_signatures_v<completion_signatures<Sigs...>, V, E, S, Variant, More...>;
+          class _Variant,
+          class... _More>
+extern __fn_t<_Variant<__transform_sig_t<_Sigs, _Vy, _Ey, _Sy>..., _More...>>*
+  __transform_completion_signatures_v<completion_signatures<_Sigs...>, _Vy, _Ey, _Sy, _Variant, _More...>;
 
-template <class Sigs,
+template <class _Sigs,
           template <class...>
-          class V,
+          class _Vy,
           template <class...>
-          class E,
-          class S,
+          class _Ey,
+          class _Sy,
           template <class...>
-          class Variant,
-          class... More>
-using _transform_completion_signatures =
-  decltype(_transform_completion_signatures_v<Sigs, V, E, S, Variant, More...>());
+          class _Variant,
+          class... _More>
+using __transform_completion_signatures =
+  decltype(__transform_completion_signatures_v<_Sigs, _Vy, _Ey, _Sy, _Variant, _More...>());
 
-template <class WantedTag>
-struct _gather_sigs_fn;
+template <class _WantedTag>
+struct __gather_sigs_fn;
 
 template <>
-struct _gather_sigs_fn<set_value_t>
+struct __gather_sigs_fn<set_value_t>
 {
-  template <class Sigs,
+  template <class _Sigs,
             template <class...>
-            class Then,
+            class _Then,
             template <class...>
-            class Else,
+            class _Else,
             template <class...>
-            class Variant,
-            class... More>
-  using _f = _transform_completion_signatures<
-    Sigs,
-    Then,
-    _mbind_front_q<Else, set_error_t>::template _f,
-    Else<set_stopped_t>,
-    Variant,
-    More...>;
+            class _Variant,
+            class... _More>
+  using __f = __transform_completion_signatures<
+    _Sigs,
+    _Then,
+    __mbind_front_q<_Else, set_error_t>::template __f,
+    _Else<set_stopped_t>,
+    _Variant,
+    _More...>;
 };
 
 template <>
-struct _gather_sigs_fn<set_error_t>
+struct __gather_sigs_fn<set_error_t>
 {
-  template <class Sigs,
+  template <class _Sigs,
             template <class...>
-            class Then,
+            class _Then,
             template <class...>
-            class Else,
+            class _Else,
             template <class...>
-            class Variant,
-            class... More>
-  using _f = _transform_completion_signatures<
-    Sigs,
-    _mbind_front_q<Else, set_value_t>::template _f,
-    Then,
-    Else<set_stopped_t>,
-    Variant,
-    More...>;
+            class _Variant,
+            class... _More>
+  using __f = __transform_completion_signatures<
+    _Sigs,
+    __mbind_front_q<_Else, set_value_t>::template __f,
+    _Then,
+    _Else<set_stopped_t>,
+    _Variant,
+    _More...>;
 };
 
 template <>
-struct _gather_sigs_fn<set_stopped_t>
+struct __gather_sigs_fn<set_stopped_t>
 {
-  template <class Sigs,
+  template <class _Sigs,
             template <class...>
-            class Then,
+            class _Then,
             template <class...>
-            class Else,
+            class _Else,
             template <class...>
-            class Variant,
-            class... More>
-  using _f = _transform_completion_signatures<
-    Sigs,
-    _mbind_front_q<Else, set_value_t>::template _f,
-    _mbind_front_q<Else, set_error_t>::template _f,
-    Then<>,
-    Variant,
-    More...>;
+            class _Variant,
+            class... _More>
+  using __f = __transform_completion_signatures<
+    _Sigs,
+    __mbind_front_q<_Else, set_value_t>::template __f,
+    __mbind_front_q<_Else, set_error_t>::template __f,
+    _Then<>,
+    _Variant,
+    _More...>;
 };
 
-template <class Sigs,
-          class WantedTag,
+template <class _Sigs,
+          class _WantedTag,
           template <class...>
-          class Then,
+          class _Then,
           template <class...>
-          class Else,
+          class _Else,
           template <class...>
-          class Variant,
-          class... More>
-using _gather_completion_signatures =
-  typename _gather_sigs_fn<WantedTag>::template _f<Sigs, Then, Else, Variant, More...>;
+          class _Variant,
+          class... _More>
+using __gather_completion_signatures =
+  typename __gather_sigs_fn<_WantedTag>::template __f<_Sigs, _Then, _Else, _Variant, _More...>;
 
-template <class... Ts>
-using _set_value_transform_t = completion_signatures<set_value_t(Ts...)>;
+template <class... _Ts>
+using __set_value_transform_t = completion_signatures<set_value_t(_Ts...)>;
 
-template <class Ty>
-using _set_error_transform_t = completion_signatures<set_error_t(Ty)>;
+template <class _Ty>
+using __set_error_transform_t = completion_signatures<set_error_t(_Ty)>;
 
-template <class... Ts, class... Us>
-auto operator*(_mset<Ts...>&, _undefined<completion_signatures<Us...>>&) -> _mset_insert<_mset<Ts...>, Us...>&;
+template <class... _Ts, class... _Us>
+auto operator*(__mset<_Ts...>&, __undefined<completion_signatures<_Us...>>&) -> __mset_insert<__mset<_Ts...>, _Us...>&;
 
-template <class... Ts, class... What>
-auto operator*(_mset<Ts...>&, _undefined<ERROR<What...>>&) -> ERROR<What...>&;
+template <class... _Ts, class... _What>
+auto operator*(__mset<_Ts...>&, __undefined<_ERROR<_What...>>&) -> _ERROR<_What...>&;
 
-template <class... What, class... Us>
-auto operator*(ERROR<What...>&, _undefined<completion_signatures<Us...>>&) -> ERROR<What...>&;
+template <class... _What, class... _Us>
+auto operator*(_ERROR<_What...>&, __undefined<completion_signatures<_Us...>>&) -> _ERROR<_What...>&;
 
-template <class... Sigs>
-using _concat_completion_signatures = //
-  _mapply_q<completion_signatures, _mconcat_into_q<_mmake_set>::_f<Sigs...>>;
+template <class... _Sigs>
+using __concat_completion_signatures = //
+  __mapply_q<completion_signatures, __mconcat_into_q<__mmake_set>::__f<_Sigs...>>;
 
-template <class Tag, class... Ts>
-using _default_completions = completion_signatures<Tag(Ts...)>;
+template <class _Tag, class... _Ts>
+using __default_completions = completion_signatures<_Tag(_Ts...)>;
 
-template <class Sigs,
-          class MoreSigs                           = completion_signatures<>,
-          template <class...> class ValueTransform = _set_value_transform_t,
-          template <class> class ErrorTransform    = _set_error_transform_t,
-          class StoppedSigs                        = completion_signatures<set_stopped_t()>>
+template <class _Sigs,
+          class _MoreSigs                           = completion_signatures<>,
+          template <class...> class _ValueTransform = __set_value_transform_t,
+          template <class> class _ErrorTransform    = __set_error_transform_t,
+          class _StoppedSigs                        = completion_signatures<set_stopped_t()>>
 using transform_completion_signatures = //
-  _transform_completion_signatures<Sigs,
-                                   ValueTransform,
-                                   ErrorTransform,
-                                   StoppedSigs,
-                                   _mtry_quote<_concat_completion_signatures>::_f,
-                                   MoreSigs>;
+  __transform_completion_signatures<_Sigs,
+                                    _ValueTransform,
+                                    _ErrorTransform,
+                                    _StoppedSigs,
+                                    __mtry_quote<__concat_completion_signatures>::__f,
+                                    _MoreSigs>;
 
-template <class Sndr,
-          class Rcvr,
-          class MoreSigs                           = completion_signatures<>,
-          template <class...> class ValueTransform = _set_value_transform_t,
-          template <class> class ErrorTransform    = _set_error_transform_t,
-          class StoppedSigs                        = completion_signatures<set_stopped_t()>>
+template <class _Sndr,
+          class _Rcvr,
+          class _MoreSigs                           = completion_signatures<>,
+          template <class...> class _ValueTransform = __set_value_transform_t,
+          template <class> class _ErrorTransform    = __set_error_transform_t,
+          class _StoppedSigs                        = completion_signatures<set_stopped_t()>>
 using transform_completion_signatures_of = //
-  transform_completion_signatures<completion_signatures_of_t<Sndr, Rcvr>,
-                                  MoreSigs,
-                                  ValueTransform,
-                                  ErrorTransform,
-                                  StoppedSigs>;
+  transform_completion_signatures<completion_signatures_of_t<_Sndr, _Rcvr>,
+                                  _MoreSigs,
+                                  _ValueTransform,
+                                  _ErrorTransform,
+                                  _StoppedSigs>;
 
-template <class Sigs,
+template <class _Sigs,
           template <class...>
-          class Tuple,
+          class _Tuple,
           template <class...>
-          class Variant>
-using _value_types = //
-  _transform_completion_signatures<Sigs,
-                                   _mcompose_q<_mlist, Tuple>::template _f,
-                                   _malways<_mlist<>>::_f,
-                                   _mlist<>,
-                                   _mconcat_into_q<Variant>::template _f>;
+          class _Variant>
+using __value_types = //
+  __transform_completion_signatures<_Sigs,
+                                    __mcompose_q<__mlist, _Tuple>::template __f,
+                                    __malways<__mlist<>>::__f,
+                                    __mlist<>,
+                                    __mconcat_into_q<_Variant>::template __f>;
 
-template <class Sndr, class Rcvr, template <class...> class Tuple, template <class...> class Variant>
-using value_types_of_t = _value_types<completion_signatures_of_t<Sndr, Rcvr>, Tuple, _mtry_quote<Variant>::template _f>;
+template <class _Sndr, class _Rcvr, template <class...> class _Tuple, template <class...> class _Variant>
+using value_types_of_t =
+  __value_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Tuple, __mtry_quote<_Variant>::template __f>;
 
-template <class Sigs,
+template <class _Sigs,
           template <class...>
-          class Variant>
-using _error_types = //
-  _transform_completion_signatures<Sigs, _malways<_mlist<>>::_f, _mlist, _mlist<>, _mconcat_into_q<Variant>::template _f>;
+          class _Variant>
+using __error_types = //
+  __transform_completion_signatures<_Sigs,
+                                    __malways<__mlist<>>::__f,
+                                    __mlist,
+                                    __mlist<>,
+                                    __mconcat_into_q<_Variant>::template __f>;
 
-template <class Sndr, class Rcvr, template <class...> class Variant>
-using error_types_of_t = _error_types<completion_signatures_of_t<Sndr, Rcvr>, Variant>;
+template <class _Sndr, class _Rcvr, template <class...> class _Variant>
+using error_types_of_t = __error_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Variant>;
 
-template <class Sigs>
-_CCCL_INLINE_VAR constexpr bool _sends_stopped = //
-  _transform_completion_signatures<Sigs, _malways<_mfalse>::_f, _malways<_mfalse>::_f, _mtrue, _mor>::value;
+template <class _Sigs>
+_CCCL_INLINE_VAR constexpr bool __sends_stopped = //
+  __transform_completion_signatures<_Sigs, __malways<__mfalse>::__f, __malways<__mfalse>::__f, __mtrue, __mor>::__value;
 
-template <class Sndr, class Rcvr = receiver_archetype>
+template <class _Sndr, class _Rcvr = receiver_archetype>
 _CCCL_INLINE_VAR constexpr bool sends_stopped = //
-  _sends_stopped<completion_signatures_of_t<Sndr, Rcvr>>;
+  __sends_stopped<completion_signatures_of_t<_Sndr, _Rcvr>>;
 
-using _eptr_completion = completion_signatures<set_error_t(::std::exception_ptr)>;
+using __eptr_completion = completion_signatures<set_error_t(::std::exception_ptr)>;
 
-template <bool NoExcept>
-using _eptr_completion_if = _mif<NoExcept, completion_signatures<>, _eptr_completion>;
+template <bool _NoExcept>
+using __eptr_completion_if = __mif<_NoExcept, completion_signatures<>, __eptr_completion>;
 
 template <class>
-_CCCL_INLINE_VAR constexpr bool _is_completion_signatures = false;
+_CCCL_INLINE_VAR constexpr bool __is_completion_signatures = false;
 
-template <class... Sigs>
-_CCCL_INLINE_VAR constexpr bool _is_completion_signatures<completion_signatures<Sigs...>> = true;
+template <class... _Sigs>
+_CCCL_INLINE_VAR constexpr bool __is_completion_signatures<completion_signatures<_Sigs...>> = true;
 
-template <class Sndr>
-using _is_non_dependent_detail_ = //
-  _mif<_is_completion_signatures<completion_signatures_of_t<Sndr>>>;
+template <class _Sndr>
+using __is_non_dependent_detail_ = //
+  __mif<__is_completion_signatures<completion_signatures_of_t<_Sndr>>>;
 
-template <class Sndr>
-_CCCL_INLINE_VAR constexpr bool _is_non_dependent_sender = _mvalid_q<_is_non_dependent_detail_, Sndr>;
+template <class _Sndr>
+_CCCL_INLINE_VAR constexpr bool __is_non_dependent_sender = __mvalid_q<__is_non_dependent_detail_, _Sndr>;
 
-namespace _csig
+namespace __csig
 {
-struct _dep
+struct __dep
 {};
 
-template <class... Sigs>
-struct _sigs;
+template <class... _Sigs>
+struct __sigs;
 
-template <class... As, class... Bs>
-auto operator+(_sigs<As...>&, _sigs<Bs...>&) -> _sigs<As..., Bs...>&;
+template <class... _As, class... _Bs>
+auto operator+(__sigs<_As...>&, __sigs<_Bs...>&) -> __sigs<_As..., _Bs...>&;
 
-template <class... Sigs>
-auto operator+(_sigs<Sigs...>&) //
-  -> _concat_completion_signatures<completion_signatures<Sigs...>>;
+template <class... _Sigs>
+auto operator+(__sigs<_Sigs...>&) //
+  -> __concat_completion_signatures<completion_signatures<_Sigs...>>;
 
-template <class Other>
-auto _to_sigs(Other&) -> Other&;
+template <class _Other>
+auto __to_sigs(_Other&) -> _Other&;
 
-template <class... Sigs>
-auto _to_sigs(completion_signatures<Sigs...>&) -> _sigs<Sigs...>&;
-} // namespace _csig
+template <class... _Sigs>
+auto __to_sigs(completion_signatures<_Sigs...>&) -> __sigs<_Sigs...>&;
+} // namespace __csig
 
-using dependent_completions = _csig::_dep;
+using dependent_completions = __csig::__dep;
 
 namespace meta
 {
-template <class... Sigs>
-using sigs = _csig::_sigs<Sigs...>*;
+template <class... _Sigs>
+using sigs = __csig::__sigs<_Sigs...>*;
 
-template <class Tag, class... Args>
-auto completion(Tag, Args&&...) -> _csig::_sigs<Tag(Args...)>&;
+template <class _Tag, class... _Args>
+auto completion(_Tag, _Args&&...) -> __csig::__sigs<_Tag(_Args...)>&;
 
-template <class Sndr, class Rcvr = receiver_archetype>
-auto completions_of(Sndr&&, Rcvr = {}) -> decltype(_csig::_to_sigs(DECLVAL(completion_signatures_of_t<Sndr, Rcvr>&)));
+template <class _Sndr, class _Rcvr = receiver_archetype>
+auto completions_of(_Sndr&&,
+                    _Rcvr = {}) -> decltype(__csig::__to_sigs(DECLVAL(completion_signatures_of_t<_Sndr, _Rcvr>&)));
 
-template <bool PotentiallyThrowing>
-auto eptr_completion_if() -> _mif<PotentiallyThrowing, _csig::_sigs<set_error_t(::std::exception_ptr)>, _csig::_sigs<>>&;
+template <bool _PotentiallyThrowing>
+auto eptr_completion_if()
+  -> __mif<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
 } // namespace meta
 } // namespace cuda::experimental::__async
 

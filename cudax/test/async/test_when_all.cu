@@ -191,7 +191,7 @@ struct just_ref
 {
   using sender_concept        = cudax_async::sender_t;
   using completion_signatures = cudax_async::completion_signatures<cudax_async::set_value_t(Ts&...)>;
-  _CCCL_HOST_DEVICE just_ref connect(cudax_async::_ignore) const
+  _CCCL_HOST_DEVICE just_ref connect(cudax_async::__ignore) const
   {
     return {};
   }

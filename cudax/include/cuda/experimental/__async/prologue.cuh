@@ -10,7 +10,7 @@
 #include <cuda/std/detail/__config>
 
 #if defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
-#  error multiple inclusion of prologue.cuh
+#  __error multiple inclusion of prologue.cuh
 #endif
 
 #define _CUDAX_ASYNC_PROLOGUE_INCLUDED

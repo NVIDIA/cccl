@@ -27,9 +27,9 @@
 
 #if defined(__CUDACC__)
 #  include <nv/target>
-#  define _CUDAX_FOR_HOST_OR_DEVICE(FOR_HOST, FOR_DEVICE) NV_IF_TARGET(NV_IS_HOST, FOR_HOST, FOR_DEVICE)
+#  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) NV_IF_TARGET(NV_IS_HOST, _FOR_HOST, _FOR_DEVICE)
 #else
-#  define _CUDAX_FOR_HOST_OR_DEVICE(FOR_HOST, FOR_DEVICE) {_NV_EVAL FOR_HOST}
+#  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_NV_EVAL _FOR_HOST}
 #endif
 
 #if (defined(__i386__) || defined(__x86_64__)) && __has_include(<xmmintrin.h>)
@@ -45,47 +45,48 @@
 namespace cuda::experimental::__async
 {
 #if defined(__CUDA_ARCH__)
-using _thread_id = int;
+using __thread_id = int;
 #elif defined(_CCCL_COMPILER_NVHPC)
-struct _thread_id
+struct __thread_id
 {
   union
   {
-    ::std::thread::id _host;
-    int _device;
+    ::std::thread::id __host_;
+    int __device_;
   };
 
-  _CCCL_HOST_DEVICE _thread_id() noexcept
-      : _host()
+  _CCCL_HOST_DEVICE __thread_id() noexcept
+      : __host_()
   {}
-  _CCCL_HOST_DEVICE _thread_id(::std::thread::id host) noexcept
-      : _host(host)
+  _CCCL_HOST_DEVICE __thread_id(::std::thread::id __host) noexcept
+      : __host_(__host)
   {}
-  _CCCL_HOST_DEVICE _thread_id(int device) noexcept
-      : _device(device)
+  _CCCL_HOST_DEVICE __thread_id(int __device) noexcept
+      : __device_(__device)
   {}
 
-  _CCCL_HOST_DEVICE friend bool operator==(const _thread_id& self, const _thread_id& other) noexcept
+  _CCCL_HOST_DEVICE friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
   {
-    _CUDAX_FOR_HOST_OR_DEVICE((return self._host == other._host;), (return self._device == other._device;))
+    _CUDAX_FOR_HOST_OR_DEVICE((return __self.__host_ == __other.__host_;),
+                              (return __self.__device_ == __other.__device_;))
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(const _thread_id& self, const _thread_id& other) noexcept
+  _CCCL_HOST_DEVICE friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
   {
-    return !(self == other);
+    return !(__self == __other);
   }
 };
 #else
-using _thread_id = ::std::thread::id;
+using __thread_id = ::std::thread::id;
 #endif
 
-inline _CCCL_HOST_DEVICE _thread_id _this_thread_id() noexcept
+inline _CCCL_HOST_DEVICE __thread_id __this_thread_id() noexcept
 {
   _CUDAX_FOR_HOST_OR_DEVICE((return ::std::this_thread::get_id();),
                             (return static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);))
 }
 
-inline _CCCL_HOST_DEVICE void _this_thread_yield() noexcept
+inline _CCCL_HOST_DEVICE void __this_thread_yield() noexcept
 {
   _CUDAX_FOR_HOST_OR_DEVICE((::std::this_thread::yield();), (void();))
 }

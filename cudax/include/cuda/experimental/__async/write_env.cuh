@@ -39,71 +39,72 @@ struct write_env_t
 
 private:
 #endif
-  template <class Rcvr, class Sndr, class Env>
-  struct _opstate_t
+  template <class _Rcvr, class _Sndr, class _Env>
+  struct __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = completion_signatures_of_t<Sndr, _rcvr_with_env_t<Rcvr, Env>*>;
+    using completion_signatures   = completion_signatures_of_t<_Sndr, __rcvr_with_env_t<_Rcvr, _Env>*>;
 
-    _rcvr_with_env_t<Rcvr, Env> _env_rcvr;
-    connect_result_t<Sndr, _rcvr_with_env_t<Rcvr, Env>*> _op;
+    __rcvr_with_env_t<_Rcvr, _Env> __env_rcvr_;
+    connect_result_t<_Sndr, __rcvr_with_env_t<_Rcvr, _Env>*> __opstate_;
 
-    _CCCL_HOST_DEVICE explicit _opstate_t(Sndr&& sndr, Env env, Rcvr rcvr)
-        : _env_rcvr(static_cast<Env&&>(env), static_cast<Rcvr&&>(rcvr))
-        , _op(__async::connect(static_cast<Sndr&&>(sndr), &_env_rcvr))
+    _CCCL_HOST_DEVICE explicit __opstate_t(_Sndr&& __sndr, _Env __env, _Rcvr __rcvr)
+        : __env_rcvr_(static_cast<_Env&&>(__env), static_cast<_Rcvr&&>(__rcvr))
+        , __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), &__env_rcvr_))
     {}
 
-    _CUDAX_IMMOVABLE(_opstate_t);
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CCCL_HOST_DEVICE void start() noexcept
     {
-      __async::start(_op);
+      __async::start(__opstate_);
     }
   };
 
-  template <class Sndr, class Env>
-  struct _sndr_t;
+  template <class _Sndr, class _Env>
+  struct __sndr_t;
 
 public:
   /// @brief Wraps one sender in another that modifies the execution
   /// environment by merging in the environment specified.
-  template <class Sndr, class Env>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr auto operator()(Sndr, Env) const //
-    -> _sndr_t<Sndr, Env>;
+  template <class _Sndr, class _Env>
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr auto operator()(_Sndr, _Env) const //
+    -> __sndr_t<_Sndr, _Env>;
 };
 
-template <class Sndr, class Env>
-struct write_env_t::_sndr_t
+template <class _Sndr, class _Env>
+struct write_env_t::__sndr_t
 {
   using sender_concept = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS write_env_t _tag;
-  Env _env;
-  Sndr _sndr;
+  _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
+  _Env __env_;
+  _Sndr __sndr_;
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) && -> _opstate_t<Rcvr, Sndr, Env>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Env>
   {
-    return _opstate_t<Rcvr, Sndr, Env>{static_cast<Sndr&&>(_sndr), static_cast<Env&&>(_env), static_cast<Rcvr&&>(rcvr)};
+    return __opstate_t<_Rcvr, _Sndr, _Env>{
+      static_cast<_Sndr&&>(__sndr_), static_cast<_Env&&>(__env_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const& //
-    -> _opstate_t<Rcvr, const Sndr&, Env>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& //
+    -> __opstate_t<_Rcvr, const _Sndr&, _Env>
   {
-    return _opstate_t<Rcvr, const Sndr&, Env>{_sndr, _env, static_cast<Rcvr&&>(rcvr)};
+    return __opstate_t<_Rcvr, const _Sndr&, _Env>{__sndr_, __env_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<Sndr> get_env() const noexcept
+  _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
   {
-    return __async::get_env(_sndr);
+    return __async::get_env(__sndr_);
   }
 };
 
-template <class Sndr, class Env>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr auto write_env_t::operator()(Sndr sndr, Env env) const //
-  -> write_env_t::_sndr_t<Sndr, Env>
+template <class _Sndr, class _Env>
+_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const //
+  -> write_env_t::__sndr_t<_Sndr, _Env>
 {
-  return write_env_t::_sndr_t<Sndr, Env>{{}, static_cast<Env&&>(env), static_cast<Sndr&&>(sndr)};
+  return write_env_t::__sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
 }
 
 _CCCL_GLOBAL_CONSTANT write_env_t write_env{};

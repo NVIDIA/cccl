@@ -41,137 +41,138 @@ namespace cuda::experimental::__async
 /* the need for a default constructor for each alternative type.                */
 /********************************************************************************/
 
-template <class Idx, class... Ts>
-class _variant_impl;
+template <class _Idx, class... _Ts>
+class __variant_impl;
 
 template <>
-class _variant_impl<_mindices<>>
+class __variant_impl<__mindices<>>
 {
 public:
-  template <class Fn, class... Us>
-  _CCCL_HOST_DEVICE void visit(Fn&&, Us&&...) const noexcept
+  template <class _Fn, class... _Us>
+  _CCCL_HOST_DEVICE void __visit(_Fn&&, _Us&&...) const noexcept
   {}
 };
 
-template <size_t... Idx, class... Ts>
-class _variant_impl<_mindices<Idx...>, Ts...>
+template <size_t... _Idx, class... _Ts>
+class __variant_impl<__mindices<_Idx...>, _Ts...>
 {
-  static constexpr size_t _max_size = _max({sizeof(Ts)...});
-  static_assert(_max_size != 0);
-  size_t _index{_npos};
-  alignas(Ts...) unsigned char _storage[_max_size];
+  static constexpr size_t __max_size = __max({sizeof(_Ts)...});
+  static_assert(__max_size != 0);
+  size_t __index_{__npos};
+  alignas(_Ts...) unsigned char __storage_[__max_size];
 
-  template <size_t Ny>
-  using _at = _m_at_c<Ny, Ts...>;
+  template <size_t _Ny>
+  using __at = __m_at_c<_Ny, _Ts...>;
 
-  _CCCL_HOST_DEVICE void _destroy() noexcept
+  _CCCL_HOST_DEVICE void __destroy() noexcept
   {
-    if (_index != _npos)
+    if (__index_ != __npos)
     {
       // make this local in case destroying the sub-object destroys *this
-      const auto index = __async::_exchange(_index, _npos);
-      ((Idx == index ? _CUDA_VSTD::destroy_at(static_cast<_at<Idx>*>(_ptr())) : void(0)), ...);
+      const auto index = __async::__exchange(__index_, __npos);
+      ((_Idx == index ? _CUDA_VSTD::destroy_at(static_cast<__at<_Idx>*>(__ptr())) : void(0)), ...);
     }
   }
 
 public:
-  _CUDAX_IMMOVABLE(_variant_impl);
+  _CUDAX_IMMOVABLE(__variant_impl);
 
-  _CCCL_HOST_DEVICE _variant_impl() noexcept {}
+  _CCCL_HOST_DEVICE __variant_impl() noexcept {}
 
-  _CCCL_HOST_DEVICE ~_variant_impl()
+  _CCCL_HOST_DEVICE ~__variant_impl()
   {
-    _destroy();
+    __destroy();
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void* _ptr() noexcept
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void* __ptr() noexcept
   {
-    return _storage;
+    return __storage_;
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE size_t index() const noexcept
+  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE size_t __index() const noexcept
   {
-    return _index;
+    return __index_;
   }
 
-  template <class Ty, class... As>
-  _CCCL_HOST_DEVICE Ty& emplace(As&&... as) //
-    noexcept(_nothrow_constructible<Ty, As...>)
+  template <class _Ty, class... _As>
+  _CCCL_HOST_DEVICE _Ty& __emplace(_As&&... __as) //
+    noexcept(__nothrow_constructible<_Ty, _As...>)
   {
-    constexpr size_t _new_index = __async::_index_of<Ty, Ts...>();
-    static_assert(_new_index != _npos, "Type not in variant");
+    constexpr size_t __new_index = __async::__index_of<_Ty, _Ts...>();
+    static_assert(__new_index != __npos, "_Type not in variant");
 
-    _destroy();
-    Ty* _value = ::new (_ptr()) Ty{static_cast<As&&>(as)...};
-    _index     = _new_index;
-    return *_CUDA_VSTD::launder(_value);
+    __destroy();
+    _Ty* __value = ::new (__ptr()) _Ty{static_cast<_As&&>(__as)...};
+    __index_     = __new_index;
+    return *_CUDA_VSTD::launder(__value);
   }
 
-  template <size_t Ny, class... As>
-  _CCCL_HOST_DEVICE _at<Ny>& emplace_at(As&&... as) //
-    noexcept(_nothrow_constructible<_at<Ny>, As...>)
+  template <size_t _Ny, class... _As>
+  _CCCL_HOST_DEVICE __at<_Ny>& __emplace_at(_As&&... __as) //
+    noexcept(__nothrow_constructible<__at<_Ny>, _As...>)
   {
-    static_assert(Ny < sizeof...(Ts), "variant index is too large");
+    static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 
-    _destroy();
-    _at<Ny>* _value = ::new (_ptr()) _at<Ny>{static_cast<As&&>(as)...};
-    _index          = Ny;
-    return *_CUDA_VSTD::launder(_value);
+    __destroy();
+    __at<_Ny>* __value = ::new (__ptr()) __at<_Ny>{static_cast<_As&&>(__as)...};
+    __index_           = _Ny;
+    return *_CUDA_VSTD::launder(__value);
   }
 
-  template <class Fn, class... As>
-  _CCCL_HOST_DEVICE auto emplace_from(Fn&& fn, As&&... as) //
-    noexcept(_nothrow_callable<Fn, As...>) -> _call_result_t<Fn, As...>&
+  template <class _Fn, class... _As>
+  _CCCL_HOST_DEVICE auto __emplace_from(_Fn&& __fn, _As&&... __as) //
+    noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
-    using _result_t             = _call_result_t<Fn, As...>;
-    constexpr size_t _new_index = __async::_index_of<_result_t, Ts...>();
-    static_assert(_new_index != _npos, "Type not in variant");
+    using __result_t             = __call_result_t<_Fn, _As...>;
+    constexpr size_t __new_index = __async::__index_of<__result_t, _Ts...>();
+    static_assert(__new_index != __npos, "_Type not in variant");
 
-    _destroy();
-    _result_t* _value = ::new (_ptr()) _result_t(static_cast<Fn&&>(fn)(static_cast<As&&>(as)...));
-    _index            = _new_index;
-    return *_CUDA_VSTD::launder(_value);
+    __destroy();
+    __result_t* __value = ::new (__ptr()) __result_t(static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)...));
+    __index_            = __new_index;
+    return *_CUDA_VSTD::launder(__value);
   }
 
-  template <class Fn, class Self, class... As>
-  _CCCL_HOST_DEVICE static void visit(Fn&& fn, Self&& self, As&&... as) //
-    noexcept((_nothrow_callable<Fn, As..., _copy_cvref_t<Self, Ts>> && ...))
+  template <class _Fn, class _Self, class... _As>
+  _CCCL_HOST_DEVICE static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
+    noexcept((__nothrow_callable<_Fn, _As..., __copy_cvref_t<_Self, _Ts>> && ...))
   {
     // make this local in case destroying the sub-object destroys *this
-    const auto index = self._index;
-    _LIBCUDACXX_ASSERT(index != _npos, "");
-    ((Idx == index ? static_cast<Fn&&>(fn)(static_cast<As&&>(as)..., static_cast<Self&&>(self).template get<Idx>())
-                   : void()),
+    const auto index = __self.__index_;
+    _LIBCUDACXX_ASSERT(index != __npos, "");
+    ((_Idx == index
+        ? static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)..., static_cast<_Self&&>(__self).template __get<_Idx>())
+        : void()),
      ...);
   }
 
-  template <size_t Ny>
-  _CCCL_HOST_DEVICE _at<Ny>&& get() && noexcept
+  template <size_t _Ny>
+  _CCCL_HOST_DEVICE __at<_Ny>&& __get() && noexcept
   {
-    _LIBCUDACXX_ASSERT(Ny == _index, "");
-    return static_cast<_at<Ny>&&>(*static_cast<_at<Ny>*>(_ptr()));
+    _LIBCUDACXX_ASSERT(_Ny == __index_, "");
+    return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
-  template <size_t Ny>
-  _CCCL_HOST_DEVICE _at<Ny>& get() & noexcept
+  template <size_t _Ny>
+  _CCCL_HOST_DEVICE __at<_Ny>& __get() & noexcept
   {
-    _LIBCUDACXX_ASSERT(Ny == _index, "");
-    return *static_cast<_at<Ny>*>(_ptr());
+    _LIBCUDACXX_ASSERT(_Ny == __index_, "");
+    return *static_cast<__at<_Ny>*>(__ptr());
   }
 
-  template <size_t Ny>
-  _CCCL_HOST_DEVICE const _at<Ny>& get() const& noexcept
+  template <size_t _Ny>
+  _CCCL_HOST_DEVICE const __at<_Ny>& __get() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(Ny == _index, "");
-    return *static_cast<const _at<Ny>*>(_ptr());
+    _LIBCUDACXX_ASSERT(_Ny == __index_, "");
+    return *static_cast<const __at<_Ny>*>(__ptr());
   }
 };
 
-template <class... Ts>
-using _variant = _variant_impl<_mmake_indices<sizeof...(Ts)>, Ts...>;
+template <class... _Ts>
+using __variant = __variant_impl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
 
-template <class... Ts>
-using _decayed_variant = _variant<_decay_t<Ts>...>;
+template <class... _Ts>
+using __decayed_variant = __variant<__decay_t<_Ts>...>;
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/epilogue.cuh>

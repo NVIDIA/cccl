@@ -32,37 +32,37 @@
 
 namespace cuda::experimental::__async
 {
-template <class Ty, class Query>
-auto _query_result_() -> decltype(DECLVAL(Ty).query(Query()));
+template <class _Ty, class _Query>
+auto __query_result_() -> decltype(DECLVAL(_Ty).__query(_Query()));
 
-template <class Ty, class Query>
-using _query_result_t = decltype(_query_result_<Ty, Query>());
+template <class _Ty, class _Query>
+using __query_result_t = decltype(__query_result_<_Ty, _Query>());
 
-template <class Ty, class Query>
-_CCCL_INLINE_VAR constexpr bool _queryable = _mvalid_q<_query_result_t, Ty, Query>;
+template <class _Ty, class _Query>
+_CCCL_INLINE_VAR constexpr bool __queryable = __mvalid_q<__query_result_t, _Ty, _Query>;
 
 #if defined(__CUDA_ARCH__)
-template <class Ty, class Query>
-_CCCL_INLINE_VAR constexpr bool _nothrow_queryable = true;
+template <class _Ty, class _Query>
+_CCCL_INLINE_VAR constexpr bool __nothrow_queryable = true;
 #else
-template <class Ty, class Query>
-using _nothrow_queryable_ = _mif<noexcept(DECLVAL(Ty).query(Query()))>;
+template <class _Ty, class _Query>
+using __nothrow_queryable_ = __mif<noexcept(DECLVAL(_Ty).__query(_Query()))>;
 
-template <class Ty, class Query>
-_CCCL_INLINE_VAR constexpr bool _nothrow_queryable = _mvalid_q<_nothrow_queryable_, Ty, Query>;
+template <class _Ty, class _Query>
+_CCCL_INLINE_VAR constexpr bool __nothrow_queryable = __mvalid_q<__nothrow_queryable_, _Ty, _Query>;
 #endif
 
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
-  template <class Env>
-  _CCCL_HOST_DEVICE auto operator()(const Env& env) const noexcept //
-    -> decltype(env.query(*this))
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto operator()(const _Env& __env) const noexcept //
+    -> decltype(__env.__query(*this))
   {
-    static_assert(noexcept(env.query(*this)));
-    return env.query(*this);
+    static_assert(noexcept(__env.__query(*this)));
+    return __env.__query(*this);
   }
 
-  _CCCL_HOST_DEVICE auto operator()(_ignore) const noexcept -> _CUDA_VSTD::allocator<void>
+  _CCCL_HOST_DEVICE auto operator()(__ignore) const noexcept -> _CUDA_VSTD::allocator<void>
   {
     return {};
   }
@@ -70,57 +70,57 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 
 _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
-  template <class Env>
-  _CCCL_HOST_DEVICE auto operator()(const Env& env) const noexcept //
-    -> decltype(env.query(*this))
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto operator()(const _Env& __env) const noexcept //
+    -> decltype(__env.__query(*this))
   {
-    static_assert(noexcept(env.query(*this)));
-    return env.query(*this);
+    static_assert(noexcept(__env.__query(*this)));
+    return __env.__query(*this);
   }
 
-  _CCCL_HOST_DEVICE auto operator()(_ignore) const noexcept -> never_stop_token
+  _CCCL_HOST_DEVICE auto operator()(__ignore) const noexcept -> never_stop_token
   {
     return {};
   }
 } get_stop_token{};
 
-template <class T>
-using stop_token_of_t = _decay_t<_call_result_t<get_stop_token_t, T>>;
+template <class _Ty>
+using stop_token_of_t = __decay_t<__call_result_t<get_stop_token_t, _Ty>>;
 
-template <class Tag>
+template <class _Tag>
 struct get_completion_scheduler_t
 {
-  template <class Env>
-  _CCCL_HOST_DEVICE auto operator()(const Env& env) const noexcept //
-    -> decltype(env.query(*this))
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto operator()(const _Env& __env) const noexcept //
+    -> decltype(__env.__query(*this))
   {
-    static_assert(noexcept(env.query(*this)));
-    return env.query(*this);
+    static_assert(noexcept(__env.__query(*this)));
+    return __env.__query(*this);
   }
 };
 
-template <class Tag>
-_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<Tag> get_completion_scheduler{};
+template <class _Tag>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<_Tag> get_completion_scheduler{};
 
 _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
-  template <class Env>
-  _CCCL_HOST_DEVICE auto operator()(const Env& env) const noexcept //
-    -> decltype(env.query(*this))
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto operator()(const _Env& __env) const noexcept //
+    -> decltype(__env.__query(*this))
   {
-    static_assert(noexcept(env.query(*this)));
-    return env.query(*this);
+    static_assert(noexcept(__env.__query(*this)));
+    return __env.__query(*this);
   }
 } get_scheduler{};
 
 _CCCL_GLOBAL_CONSTANT struct get_delegatee_scheduler_t
 {
-  template <class Env>
-  _CCCL_HOST_DEVICE auto operator()(const Env& env) const noexcept //
-    -> decltype(env.query(*this))
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto operator()(const _Env& __env) const noexcept //
+    -> decltype(__env.__query(*this))
   {
-    static_assert(noexcept(env.query(*this)));
-    return env.query(*this);
+    static_assert(noexcept(__env.__query(*this)));
+    return __env.__query(*this);
   }
 } get_delegatee_scheduler{};
 
@@ -133,15 +133,15 @@ enum class forward_progress_guarantee
 
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
-  template <class Sch>
-  _CCCL_HOST_DEVICE auto operator()(const Sch& sch) const noexcept //
-    -> decltype(__async::_decay_copy(sch.query(*this)))
+  template <class _Sch>
+  _CCCL_HOST_DEVICE auto operator()(const _Sch& __sch) const noexcept //
+    -> decltype(__async::__decay_copy(__sch.__query(*this)))
   {
-    static_assert(noexcept(sch.query(*this)));
-    return sch.query(*this);
+    static_assert(noexcept(__sch.__query(*this)));
+    return __sch.__query(*this);
   }
 
-  _CCCL_HOST_DEVICE auto operator()(_ignore) const noexcept -> forward_progress_guarantee
+  _CCCL_HOST_DEVICE auto operator()(__ignore) const noexcept -> forward_progress_guarantee
   {
     return forward_progress_guarantee::weakly_parallel;
   }
@@ -149,16 +149,16 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 
 _CCCL_GLOBAL_CONSTANT struct get_domain_t
 {
-  template <class Sch>
-  _CCCL_HOST_DEVICE constexpr auto operator()(const Sch& sch) const noexcept //
-    -> decltype(__async::_decay_copy(sch.query(*this)))
+  template <class _Sch>
+  _CCCL_HOST_DEVICE constexpr auto operator()(const _Sch& __sch) const noexcept //
+    -> decltype(__async::__decay_copy(__sch.__query(*this)))
   {
     return {};
   }
 } get_domain{};
 
-template <class Sch>
-using domain_of_t = _call_result_t<get_domain_t, Sch>;
+template <class _Sch>
+using domain_of_t = __call_result_t<get_domain_t, _Sch>;
 
 } // namespace cuda::experimental::__async
 

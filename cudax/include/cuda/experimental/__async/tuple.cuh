@@ -29,64 +29,62 @@
 
 namespace cuda::experimental::__async
 {
-template <size_t Idx, class Ty>
-struct _box
+template <size_t _Idx, class _Ty>
+struct __box
 {
   // Too many compiler bugs with [[no_unique_address]] to use it here.
   // E.g., https://github.com/llvm/llvm-project/issues/88077
   // _CCCL_NO_UNIQUE_ADDRESS
-  Ty _value;
+  _Ty __value_;
 };
 
-template <size_t Idx, class Ty>
-_CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto _cget(_box<Idx, Ty> const& box) noexcept -> Ty const&
+template <size_t _Idx, class _Ty>
+_CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto __cget(__box<_Idx, _Ty> const& __box) noexcept -> _Ty const&
 {
-  return box._value;
+  return __box.__value_;
 }
 
-template <class Idx, class... Ts>
-struct _tupl;
+template <class _Idx, class... _Ts>
+struct __tupl;
 
-template <size_t... Idx, class... Ts>
-struct _tupl<_mindices<Idx...>, Ts...> : _box<Idx, Ts>...
+template <size_t... _Idx, class... _Ts>
+struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 {
-  template <class Fn, class Self, class... Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto apply(Fn&& fn, Self&& self, Us&&... us) //
-    noexcept(
-      noexcept(static_cast<Fn&&>(fn)(static_cast<Us&&>(us)..., static_cast<Self&&>(self)._box<Idx, Ts>::_value...)))
-      -> decltype(static_cast<Fn&&>(fn)(static_cast<Us&&>(us)..., static_cast<Self&&>(self)._box<Idx, Ts>::_value...))
+  template <class _Fn, class _Self, class... _Us>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+    noexcept(noexcept(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...,
+                                               static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...)))
+      -> decltype(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...,
+                                           static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...))
   {
-    return static_cast<Fn&&>(fn)(static_cast<Us&&>(us)..., static_cast<Self&&>(self)._box<Idx, Ts>::_value...);
+    return static_cast<_Fn&&>(
+      __fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...);
   }
 
-  template <class Fn, class Self, class... Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto for_each(Fn&& fn, Self&& self, Us&&... us) //
-    noexcept((_nothrow_callable<Fn, Us..., _copy_cvref_t<Self, Ts>>
-              && ...)) -> _mif<(_callable<Fn, Us..., _copy_cvref_t<Self, Ts>> && ...)>
+  template <class _Fn, class _Self, class... _Us>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __for_each(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+    noexcept((__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>>
+              && ...)) -> __mif<(__callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...)>
   {
-    return (static_cast<Fn&&>(fn)(static_cast<Us&&>(us)..., static_cast<Self&&>(self)._box<Idx, Ts>::_value), ...);
+    return (
+      static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_),
+      ...);
   }
 };
 
-template <class... Ts>
-_CCCL_HOST_DEVICE _tupl(Ts...) //
-  -> _tupl<_mmake_indices<sizeof...(Ts)>, Ts...>;
+template <class... _Ts>
+_CCCL_HOST_DEVICE __tupl(_Ts...) //
+  -> __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
 
-template <class... Ts>
-using _tuple = _tupl<_mmake_indices<sizeof...(Ts)>, Ts...>;
+template <class... _Ts>
+using __tuple = __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
 
-template <class Fn, class Tupl, class... Us>
-using _apply_result_t = decltype(DECLVAL(Tupl).apply(DECLVAL(Fn), DECLVAL(Tupl), DECLVAL(Us)...));
+template <class _Fn, class _Tupl, class... _Us>
+using __apply_result_t =
+  decltype(__declval<_Tupl>().__apply(__declval<_Fn>(), __declval<_Tupl>(), __declval<_Us>()...));
 
-template <class First, class Second>
-struct _pair
-{
-  First first;
-  Second second;
-};
-
-template <class... Ts>
-using _decayed_tuple = _tuple<_decay_t<Ts>...>;
+template <class... _Ts>
+using __decayed_tuple = __tuple<__decay_t<_Ts>...>;
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/epilogue.cuh>

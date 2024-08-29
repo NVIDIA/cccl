@@ -23,9 +23,9 @@ struct checked_value_receiver
   template <class... As>
   _CCCL_HOST_DEVICE void set_value(As... as) && noexcept
   {
-    if constexpr (_CUDA_VSTD::is_same_v<cudax_async::_mlist<Values...>, cudax_async::_mlist<As...>>)
+    if constexpr (_CUDA_VSTD::is_same_v<cudax_async::__mlist<Values...>, cudax_async::__mlist<As...>>)
     {
-      _values.apply(
+      _values.__apply(
         [&](auto const&... vs) {
           CUDAX_CHECK(((vs == as) && ...));
         },
@@ -48,7 +48,7 @@ struct checked_value_receiver
     CUDAX_FAIL("expected a value completion; got stopped");
   }
 
-  cudax_async::_tuple<Values...> _values;
+  cudax_async::__tuple<Values...> _values;
 };
 
 template <class... Values>

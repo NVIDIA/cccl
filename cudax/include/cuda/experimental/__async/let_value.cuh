@@ -33,7 +33,7 @@
 namespace cuda::experimental::__async
 {
 // Declare types to use for diagnostics:
-struct FUNCTION_MUST_RETURN_A_SENDER;
+struct _FUNCTION_MUST_RETURN_A_SENDER;
 
 // Forward-declate the let_* algorithm tag types:
 struct let_value_t;
@@ -41,269 +41,279 @@ struct let_error_t;
 struct let_stopped_t;
 
 // Map from a disposition to the corresponding tag types:
-namespace _detail
+namespace __detail
 {
-template <_disposition_t, class Void = void>
-extern _undefined<Void> _let_tag;
-template <class Void>
-extern _fn_t<let_value_t>* _let_tag<_value, Void>;
-template <class Void>
-extern _fn_t<let_error_t>* _let_tag<_error, Void>;
-template <class Void>
-extern _fn_t<let_stopped_t>* _let_tag<_stopped, Void>;
-} // namespace _detail
+template <__disposition_t, class _Void = void>
+extern __undefined<_Void> __let_tag;
+template <class _Void>
+extern __fn_t<let_value_t>* __let_tag<__value, _Void>;
+template <class _Void>
+extern __fn_t<let_error_t>* __let_tag<__error, _Void>;
+template <class _Void>
+extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
+} // namespace __detail
 
-template <_disposition_t Disposition>
-struct _let
+template <__disposition_t _Disposition>
+struct __let
 {
 #ifndef __CUDACC__
 
 private:
 #endif
-  using LetTag = decltype(_detail::_let_tag<Disposition>());
-  using SetTag = decltype(_detail::_set_tag<Disposition>());
+  using _LetTag = decltype(__detail::__let_tag<_Disposition>());
+  using _SetTag = decltype(__detail::__set_tag<_Disposition>());
 
   template <class...>
-  using _empty_tuple = _tuple<>;
+  using __empty_tuple = __tuple<>;
 
   /// @brief Computes the type of a variant of tuples to hold the results of
   /// the predecessor sender.
-  template <class CvSndr, class Rcvr>
-  using _results =
-    _gather_completion_signatures<completion_signatures_of_t<CvSndr, Rcvr>, SetTag, _decayed_tuple, _empty_tuple, _variant>;
+  template <class _CvSndr, class _Rcvr>
+  using __results =
+    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
+                                   _SetTag,
+                                   __decayed_tuple,
+                                   __empty_tuple,
+                                   __variant>;
 
-  template <class Fn, class Rcvr>
-  struct _opstate_fn
+  template <class _Fn, class _Rcvr>
+  struct __opstate_fn
   {
-    template <class... As>
-    using _f = connect_result_t<_call_result_t<Fn, _decay_t<As>&...>, _rcvr_ref_t<Rcvr&>>;
+    template <class... _As>
+    using __f = connect_result_t<__call_result_t<_Fn, __decay_t<_As>&...>, __rcvr_ref_t<_Rcvr&>>;
   };
 
   /// @brief Computes the type of a variant of operation states to hold
   /// the second operation state.
-  template <class CvSndr, class Fn, class Rcvr>
-  using _opstate2_t =
-    _gather_completion_signatures<completion_signatures_of_t<CvSndr, Rcvr>,
-                                  SetTag,
-                                  _opstate_fn<Fn, Rcvr>::template _f,
-                                  _empty_tuple,
-                                  _variant>;
+  template <class _CvSndr, class _Fn, class _Rcvr>
+  using __opstate2_t =
+    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
+                                   _SetTag,
+                                   __opstate_fn<_Fn, _Rcvr>::template __f,
+                                   __empty_tuple,
+                                   __variant>;
 
-  template <class Fn, class Rcvr>
-  struct _completions_fn
+  template <class _Fn, class _Rcvr>
+  struct __completions_fn
   {
-    using _error_non_sender_return = //
-      ERROR<WHERE(IN_ALGORITHM, LetTag), WHAT(FUNCTION_MUST_RETURN_A_SENDER), WITH_FUNCTION(Fn)>;
+    using __error_non_sender_return = //
+      _ERROR<_WHERE(_IN_ALGORITHM, _LetTag), _WHAT(_FUNCTION_MUST_RETURN_A_SENDER), _WITH_FUNCTION(_Fn)>;
 
-    template <class Ty>
-    using _ensure_sender = //
-      _mif<_is_sender<Ty> || _is_error<Ty>, Ty, _error_non_sender_return>;
+    template <class _Ty>
+    using __ensure_sender = //
+      __mif<__is_sender<_Ty> || __is_error<_Ty>, _Ty, __error_non_sender_return>;
 
-    template <class... As>
-    using _error_not_callable_with = //
-      ERROR<WHERE(IN_ALGORITHM, LetTag), WHAT(FUNCTION_IS_NOT_CALLABLE), WITH_FUNCTION(Fn), WITH_ARGUMENTS(As...)>;
+    template <class... _As>
+    using __error_not_callable_with = //
+      _ERROR<_WHERE(_IN_ALGORITHM, _LetTag),
+             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
+             _WITH_FUNCTION(_Fn),
+             _WITH_ARGUMENTS(_As...)>;
 
     // This computes the result of calling the function with the
     // predecessor sender's results. If the function is not callable with
-    // the results, it returns an ERROR.
-    template <class... As>
-    using _call_result = _minvoke<_mtry_quote<_call_result_t, _error_not_callable_with<As...>>, Fn, _decay_t<As>&...>;
+    // the results, it returns an _ERROR.
+    template <class... _As>
+    using __call_result =
+      __minvoke<__mtry_quote<__call_result_t, __error_not_callable_with<_As...>>, _Fn, __decay_t<_As>&...>;
 
     // This computes the completion signatures of sender returned by the
-    // function when called with the given arguments. It return an ERROR if
+    // function when called with the given arguments. It returns an _ERROR if
     // the function is not callable with the arguments or if the function
     // returns a non-sender.
-    template <class... As>
-    using _f = _mtry_invoke_q<completion_signatures_of_t, _ensure_sender<_call_result<As...>>, _rcvr_ref_t<Rcvr&>>;
+    template <class... _As>
+    using __f =
+      __mtry_invoke_q<completion_signatures_of_t, __ensure_sender<__call_result<_As...>>, __rcvr_ref_t<_Rcvr&>>;
   };
 
   /// @brief Computes the completion signatures of the
   /// `let_(value|error|stopped)` sender.
-  template <class CvSndr, class Fn, class Rcvr>
-  using _completions =
-    _gather_completion_signatures<completion_signatures_of_t<CvSndr, Rcvr>,
-                                  SetTag,
-                                  _completions_fn<Fn, Rcvr>::template _f,
-                                  _default_completions,
-                                  _mbind_front<_mtry_quote<_concat_completion_signatures>, _eptr_completion>::_f>;
+  template <class _CvSndr, class _Fn, class _Rcvr>
+  using __completions =
+    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
+                                   _SetTag,
+                                   __completions_fn<_Fn, _Rcvr>::template __f,
+                                   __default_completions,
+                                   __mbind_front<__mtry_quote<__concat_completion_signatures>, __eptr_completion>::__f>;
 
   /// @brief The `let_(value|error|stopped)` operation state.
-  /// @tparam CvSndr The cvref-qualified predecessor sender type.
-  /// @tparam Fn The function to be called when the predecessor sender
+  /// @tparam _CvSndr The cvref-qualified predecessor sender type.
+  /// @tparam _Fn The function to be called when the predecessor sender
   /// completes.
-  /// @tparam Rcvr The receiver connected to the `let_(value|error|stopped)`
+  /// @tparam _Rcvr The receiver connected to the `let_(value|error|stopped)`
   /// sender.
-  template <class Rcvr, class CvSndr, class Fn>
-  struct _opstate_t
+  template <class _Rcvr, class _CvSndr, class _Fn>
+  struct __opstate_t
   {
-    _CCCL_HOST_DEVICE friend env_of_t<Rcvr> get_env(const _opstate_t* self) noexcept
+    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
     {
-      return __async::get_env(self->_rcvr);
+      return __async::get_env(__self->__rcvr_);
     }
 
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = _completions<CvSndr, Fn, Rcvr>;
+    using completion_signatures   = __completions<_CvSndr, _Fn, _Rcvr>;
 
     // Don't try to compute the type of the variant of operation states
     // if the computation of the completion signatures failed.
-    using _deferred_opstate_fn = _mbind_back<_mtry_quote<_opstate2_t>, CvSndr, Fn, Rcvr>;
-    using _opstate_variant_fn  = _mif<_is_error<completion_signatures>, _malways<_empty>, _deferred_opstate_fn>;
-    using _opstate_variant_t   = _mtry_invoke<_opstate_variant_fn>;
+    using __deferred_opstate_fn = __mbind_back<__mtry_quote<__opstate2_t>, _CvSndr, _Fn, _Rcvr>;
+    using __opstate_variant_fn  = __mif<__is_error<completion_signatures>, __malways<__empty>, __deferred_opstate_fn>;
+    using __opstate_variant_t   = __mtry_invoke<__opstate_variant_fn>;
 
-    Rcvr _rcvr;
-    Fn _fn;
-    _results<CvSndr, _opstate_t*> _result;
-    connect_result_t<CvSndr, _opstate_t*> _opstate1;
-    _opstate_variant_t _opstate2;
+    _Rcvr __rcvr_;
+    _Fn __fn_;
+    __results<_CvSndr, __opstate_t*> __result_;
+    connect_result_t<_CvSndr, __opstate_t*> __opstate1_;
+    __opstate_variant_t __opstate2_;
 
-    _CCCL_HOST_DEVICE _opstate_t(CvSndr&& sndr, Fn fn, Rcvr rcvr) noexcept(
-      _nothrow_decay_copyable<Fn, Rcvr> && _nothrow_connectable<CvSndr, _opstate_t*>)
-        : _rcvr(static_cast<Rcvr&&>(rcvr))
-        , _fn(static_cast<Fn&&>(fn))
-        , _opstate1(__async::connect(static_cast<CvSndr&&>(sndr), this))
+    _CCCL_HOST_DEVICE __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
+      __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
+        : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
+        , __fn_(static_cast<_Fn&&>(__fn))
+        , __opstate1_(__async::connect(static_cast<_CvSndr&&>(__sndr), this))
     {}
 
     _CCCL_HOST_DEVICE void start() noexcept
     {
-      __async::start(_opstate1);
+      __async::start(__opstate1_);
     }
 
-    template <class Tag, class... As>
-    _CCCL_HOST_DEVICE void _complete(Tag, As&&... as) noexcept
+    template <class _Tag, class... _As>
+    _CCCL_HOST_DEVICE void __complete(_Tag, _As&&... __as) noexcept
     {
-      if constexpr (_CUDA_VSTD::is_same_v<Tag, SetTag>)
+      if constexpr (_CUDA_VSTD::is_same_v<_Tag, _SetTag>)
       {
         _CUDAX_TRY( //
           ({ //
             // Store the results so the lvalue refs we pass to the function
             // will be valid for the duration of the async op.
-            auto& tupl = _result.template emplace<_decayed_tuple<As...>>(static_cast<As&&>(as)...);
-            if constexpr (!_is_error<completion_signatures>)
+            auto& __tupl = __result_.template __emplace<__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
+            if constexpr (!__is_error<completion_signatures>)
             {
               // Call the function with the results and connect the resulting
-              // sender, storing the operation state in _opstate2.
-              auto& nextop = _opstate2.emplace_from(
-                __async::connect, tupl.apply(static_cast<Fn&&>(_fn), tupl), __async::_rcvr_ref(_rcvr));
-              __async::start(nextop);
+              // sender, storing the operation state in __opstate2_.
+              auto& __nextop = __opstate2_.__emplace_from(
+                __async::connect, __tupl.__apply(static_cast<_Fn&&>(__fn_), __tupl), __async::__rcvr_ref(__rcvr_));
+              __async::start(__nextop);
             }
           }),
           _CUDAX_CATCH(...)( //
             { //
-              __async::set_error(static_cast<Rcvr&&>(_rcvr), ::std::current_exception());
+              __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
             }))
       }
       else
       {
         // Forward the completion to the receiver unchanged.
-        Tag()(static_cast<Rcvr&&>(_rcvr), static_cast<As&&>(as)...);
+        _Tag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_As&&>(__as)...);
       }
     }
 
-    template <class... As>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(As&&... as) noexcept
+    template <class... _As>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_As&&... __as) noexcept
     {
-      _complete(set_value_t(), static_cast<As&&>(as)...);
+      __complete(set_value_t(), static_cast<_As&&>(__as)...);
     }
 
-    template <class Error>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(Error&& error) noexcept
+    template <class _Error>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
     {
-      _complete(set_error_t(), static_cast<Error&&>(error));
+      __complete(set_error_t(), static_cast<_Error&&>(__error));
     }
 
     _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_stopped() noexcept
     {
-      _complete(set_stopped_t());
+      __complete(set_stopped_t());
     }
   };
 
   /// @brief The `let_(value|error|stopped)` sender.
-  /// @tparam Sndr The predecessor sender.
-  /// @tparam Fn The function to be called when the predecessor sender
+  /// @tparam _Sndr The predecessor sender.
+  /// @tparam _Fn The function to be called when the predecessor sender
   /// completes.
-  template <class Sndr, class Fn>
-  struct _sndr_t
+  template <class _Sndr, class _Fn>
+  struct __sndr_t
   {
     using sender_concept = sender_t;
-    _CCCL_NO_UNIQUE_ADDRESS LetTag _tag;
-    Fn _fn;
-    Sndr _sndr;
+    _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
+    _Fn __fn_;
+    _Sndr __sndr_;
 
-    template <class Rcvr>
-    _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) && noexcept(
-      _nothrow_constructible<_opstate_t<Rcvr, Sndr, Fn>, Sndr, Fn, Rcvr>) -> _opstate_t<Rcvr, Sndr, Fn>
+    template <class _Rcvr>
+    _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && noexcept(
+      __nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Fn, _Rcvr>) -> __opstate_t<_Rcvr, _Sndr, _Fn>
     {
-      return _opstate_t<Rcvr, Sndr, Fn>(static_cast<Sndr&&>(_sndr), static_cast<Fn&&>(_fn), static_cast<Rcvr&&>(rcvr));
+      return __opstate_t<_Rcvr, _Sndr, _Fn>(
+        static_cast<_Sndr&&>(__sndr_), static_cast<_Fn&&>(__fn_), static_cast<_Rcvr&&>(__rcvr));
     }
 
-    template <class Rcvr>
-    _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const& noexcept( //
-      _nothrow_constructible<_opstate_t<Rcvr, const Sndr&, Fn>,
-                             const Sndr&,
-                             const Fn&,
-                             Rcvr>) //
-      -> _opstate_t<Rcvr, const Sndr&, Fn>
+    template <class _Rcvr>
+    _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& noexcept( //
+      __nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
+                              const _Sndr&,
+                              const _Fn&,
+                              _Rcvr>) //
+      -> __opstate_t<_Rcvr, const _Sndr&, _Fn>
     {
-      return _opstate_t<Rcvr, const Sndr&, Fn>(_sndr, _fn, static_cast<Rcvr&&>(rcvr));
+      return __opstate_t<_Rcvr, const _Sndr&, _Fn>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
     }
 
-    _CCCL_HOST_DEVICE env_of_t<Sndr> get_env() const noexcept
+    _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
     {
-      return __async::get_env(_sndr);
+      return __async::get_env(__sndr_);
     }
   };
 
-  template <class Fn>
-  struct _closure_t
+  template <class _Fn>
+  struct __closure_t
   {
-    using LetTag = decltype(_detail::_let_tag<Disposition>());
-    Fn _fn;
+    using _LetTag = decltype(__detail::__let_tag<_Disposition>());
+    _Fn __fn_;
 
-    template <class Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(Sndr sndr) const //
-      -> _call_result_t<LetTag, Sndr, Fn>
+    template <class _Sndr>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr) const //
+      -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
-      return LetTag()(static_cast<Sndr&&>(sndr), _fn);
+      return _LetTag()(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
-    template <class Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(Sndr sndr, const _closure_t& _self) //
-      -> _call_result_t<LetTag, Sndr, Fn>
+    template <class _Sndr>
+    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, const __closure_t& __self) //
+      -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
-      return LetTag()(static_cast<Sndr&&>(sndr), _self._fn);
+      return _LetTag()(static_cast<_Sndr&&>(__sndr), __self.__fn_);
     }
   };
 
 public:
-  template <class Sndr, class Fn>
-  _CCCL_HOST_DEVICE _sndr_t<Sndr, Fn> operator()(Sndr sndr, Fn fn) const
+  template <class _Sndr, class _Fn>
+  _CCCL_HOST_DEVICE __sndr_t<_Sndr, _Fn> operator()(_Sndr __sndr, _Fn __fn) const
   {
     // If the incoming sender is non-dependent, we can check the completion
     // signatures of the composed sender immediately.
-    if constexpr (_is_non_dependent_sender<Sndr>)
+    if constexpr (__is_non_dependent_sender<_Sndr>)
     {
-      using _completions = completion_signatures_of_t<_sndr_t<Sndr, Fn>>;
-      static_assert(_is_completion_signatures<_completions>);
+      using __completions = completion_signatures_of_t<__sndr_t<_Sndr, _Fn>>;
+      static_assert(__is_completion_signatures<__completions>);
     }
-    return _sndr_t<Sndr, Fn>{{}, static_cast<Fn&&>(fn), static_cast<Sndr&&>(sndr)};
+    return __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)};
   }
 
-  template <class Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(Fn fn) const noexcept
+  template <class _Fn>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
   {
-    return _closure_t<Fn>{static_cast<Fn&&>(fn)};
+    return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct let_value_t : _let<_value>
+_CCCL_GLOBAL_CONSTANT struct let_value_t : __let<__value>
 {
 } let_value{};
 
-_CCCL_GLOBAL_CONSTANT struct let_error_t : _let<_error>
+_CCCL_GLOBAL_CONSTANT struct let_error_t : __let<__error>
 {
 } let_error{};
 
-_CCCL_GLOBAL_CONSTANT struct let_stopped_t : _let<_stopped>
+_CCCL_GLOBAL_CONSTANT struct let_stopped_t : __let<__stopped>
 {
 } let_stopped{};
 } // namespace cuda::experimental::__async

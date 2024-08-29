@@ -1,9 +1,9 @@
 //===----------------------------------------------------------------------===//
 //
 // Part of CUDA Experimental in CUDA C++ Core Libraries,
-// under the Apache License v2.0 with LLVM Exceptions.
+// under the _Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: _Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
@@ -28,111 +28,111 @@
 
 namespace cuda::experimental::__async
 {
-template <class Rcvr, class Env>
-struct _rcvr_with_env_t : Rcvr
+template <class _Rcvr, class _Env>
+struct __rcvr_with_env_t : _Rcvr
 {
-  using _env_t = _rcvr_with_env_t const&;
+  using __env_t = __rcvr_with_env_t const&;
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto rcvr() noexcept -> Rcvr&
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto __rcvr() noexcept -> _Rcvr&
   {
     return *this;
   }
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto rcvr() const noexcept -> const Rcvr&
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto __rcvr() const noexcept -> const _Rcvr&
   {
     return *this;
   }
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto get_env() const noexcept -> _env_t
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto get_env() const noexcept -> __env_t
   {
-    return _env_t{*this};
+    return __env_t{*this};
   }
 
-  template <class Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr decltype(auto) _get_1st(Query) const noexcept
+  template <class _Query>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr decltype(auto) __get_1st(_Query) const noexcept
   {
-    if constexpr (_queryable<Env, Query>)
+    if constexpr (__queryable<_Env, _Query>)
     {
-      return (_env);
+      return (__env_);
     }
-    else if constexpr (_queryable<env_of_t<Rcvr>, Query>)
+    else if constexpr (__queryable<env_of_t<_Rcvr>, _Query>)
     {
-      return __async::get_env(static_cast<const Rcvr&>(*this));
+      return __async::get_env(static_cast<const _Rcvr&>(*this));
     }
   }
 
-  template <class Query, class Self = _rcvr_with_env_t>
-  using _1st_env_t = decltype(DECLVAL(const Self&)._get_1st(Query{}));
+  template <class _Query, class _Self = __rcvr_with_env_t>
+  using _1st_env_t = decltype(DECLVAL(const _Self&).__get_1st(_Query{}));
 
-  template <class Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(Query query) const
-    noexcept(_nothrow_queryable<_1st_env_t<Query>, Query>) //
-    -> _query_result_t<_1st_env_t<Query>, Query>
+  template <class _Query>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query __query) const
+    noexcept(__nothrow_queryable<_1st_env_t<_Query>, _Query>) //
+    -> __query_result_t<_1st_env_t<_Query>, _Query>
   {
-    return _get_1st(query).query(query);
+    return __get_1st(__query).__query(__query);
   }
 
-  Env _env;
+  _Env __env_;
 };
 
-template <class Rcvr, class Env>
-struct _rcvr_with_env_t<Rcvr*, Env>
+template <class _Rcvr, class _Env>
+struct __rcvr_with_env_t<_Rcvr*, _Env>
 {
-  using _env_t = _rcvr_with_env_t const&;
+  using __env_t = __rcvr_with_env_t const&;
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto rcvr() const noexcept -> Rcvr*
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto __rcvr() const noexcept -> _Rcvr*
   {
-    return _rcvr;
+    return __rcvr_;
   }
 
-  template <class... As>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE void set_value(As&&... as) && noexcept
+  template <class... _As>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE void set_value(_As&&... __as) && noexcept
   {
-    __async::set_value(_rcvr, static_cast<As&&>(as)...);
+    __async::set_value(__rcvr_, static_cast<_As&&>(__as)...);
   }
 
-  template <class Error>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE void set_error(Error&& error) && noexcept
+  template <class _Error>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE void set_error(_Error&& __error) && noexcept
   {
-    __async::set_error(_rcvr, static_cast<Error&&>(error));
+    __async::set_error(__rcvr_, static_cast<_Error&&>(__error));
   }
 
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE void set_stopped() && noexcept
   {
-    __async::set_stopped(_rcvr);
+    __async::set_stopped(__rcvr_);
   }
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto get_env() const noexcept -> _env_t
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto get_env() const noexcept -> __env_t
   {
-    return _env_t{*this};
+    return __env_t{*this};
   }
 
-  template <class Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr decltype(auto) _get_1st(Query) const noexcept
+  template <class _Query>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr decltype(auto) __get_1st(_Query) const noexcept
   {
-    if constexpr (_queryable<Env, Query>)
+    if constexpr (__queryable<_Env, _Query>)
     {
-      return (_env);
+      return (__env_);
     }
-    else if constexpr (_queryable<env_of_t<Rcvr>, Query>)
+    else if constexpr (__queryable<env_of_t<_Rcvr>, _Query>)
     {
-      return __async::get_env(_rcvr);
+      return __async::get_env(__rcvr_);
     }
   }
 
-  template <class Query, class Self = _rcvr_with_env_t>
-  using _1st_env_t = decltype(DECLVAL(const Self&)._get_1st(Query{}));
+  template <class _Query, class _Self = __rcvr_with_env_t>
+  using _1st_env_t = decltype(DECLVAL(const _Self&).__get_1st(_Query{}));
 
-  template <class Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(Query query) const
-    noexcept(_nothrow_queryable<_1st_env_t<Query>, Query>) //
-    -> _query_result_t<_1st_env_t<Query>, Query>
+  template <class _Query>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query __query) const
+    noexcept(__nothrow_queryable<_1st_env_t<_Query>, _Query>) //
+    -> __query_result_t<_1st_env_t<_Query>, _Query>
   {
-    return _get_1st(query).query(query);
+    return __get_1st(__query).__query(__query);
   }
 
-  Rcvr* _rcvr;
-  Env _env;
+  _Rcvr* __rcvr_;
+  _Env __env_;
 };
 } // namespace cuda::experimental::__async
 

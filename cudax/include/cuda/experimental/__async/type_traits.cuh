@@ -32,18 +32,18 @@ namespace cuda::experimental::__async
 {
 #if __has_builtin(__remove_reference)
 
-template <class Ty>
-using _remove_reference_t = __remove_reference(Ty);
+template <class _Ty>
+using __remove_reference_t = __remove_reference(_Ty);
 
 #elif __has_builtin(__remove_reference_t)
 
-template <class Ty>
-using _remove_reference_t = __remove_reference_t(Ty);
+template <class _Ty>
+using __remove_reference_t = __remove_reference_t(_Ty);
 
 #else
 
-template <class Ty>
-using _remove_reference_t = _CUDA_VSTD::remove_reference_t<Ty>;
+template <class _Ty>
+using __remove_reference_t = _CUDA_VSTD::remove_reference_t<_Ty>;
 
 #endif
 
@@ -51,205 +51,205 @@ using _remove_reference_t = _CUDA_VSTD::remove_reference_t<Ty>;
 // __decay_t: An efficient implementation for ::std::decay
 #if __has_builtin(__decay)
 
-template <class Ty>
-using _decay_t = __decay(Ty);
+template <class _Ty>
+using __decay_t = __decay(_Ty);
 
 // #elif defined(_CCCL_COMPILER_NVHPC)
 
-//   template <class Ty>
-//   using _decay_t = _CUDA_VSTD::decay_t<Ty>;
+//   template <class _Ty>
+//   using __decay_t = _CUDA_VSTD::decay_t<_Ty>;
 
 #else
 
-struct _decay_object
+struct __decay_object
 {
-  template <class Ty>
-  static Ty _g(Ty const&);
-  template <class Ty>
-  using _f = decltype(_g(DECLVAL(Ty)));
+  template <class _Ty>
+  static _Ty __g(_Ty const&);
+  template <class _Ty>
+  using __f = decltype(__g(DECLVAL(_Ty)));
 };
 
-struct _decay_default
+struct __decay_default
 {
-  template <class Ty>
-  static Ty _g(Ty);
-  template <class Ty>
-  using _f = decltype(_g(DECLVAL(Ty)));
+  template <class _Ty>
+  static _Ty __g(_Ty);
+  template <class _Ty>
+  using __f = decltype(__g(DECLVAL(_Ty)));
 };
 
 // I don't care to support abominable function types,
 // but if that's needed, this is the way to do it:
-// struct _decay_abominable {
-//   template <class Ty>
-//   using _f = Ty;
+// struct __decay_abominable {
+//   template <class _Ty>
+//   using __f = _Ty;
 // };
 
-struct _decay_void
+struct __decay_void
 {
-  template <class Ty>
-  using _f = void;
+  template <class _Ty>
+  using __f = void;
 };
 
-template <class Ty>
-extern _decay_object _mdecay;
+template <class _Ty>
+extern __decay_object __mdecay;
 
-template <class Ty, class... Us>
-extern _decay_default _mdecay<Ty(Us...)>;
+template <class _Ty, class... _Us>
+extern __decay_default __mdecay<_Ty(_Us...)>;
 
-template <class Ty, class... Us>
-extern _decay_default _mdecay<Ty(Us...) noexcept>;
+template <class _Ty, class... _Us>
+extern __decay_default __mdecay<_Ty(_Us...) noexcept>;
 
-template <class Ty, class... Us>
-extern _decay_default _mdecay<Ty (&)(Us...)>;
+template <class _Ty, class... _Us>
+extern __decay_default __mdecay<_Ty (&)(_Us...)>;
 
-template <class Ty, class... Us>
-extern _decay_default _mdecay<Ty (&)(Us...) noexcept>;
+template <class _Ty, class... _Us>
+extern __decay_default __mdecay<_Ty (&)(_Us...) noexcept>;
 
-// template <class Ty, class... Us>
-// extern _decay_abominable _mdecay<Ty(Us...) const>;
+// template <class _Ty, class... _Us>
+// extern __decay_abominable __mdecay<_Ty(_Us...) const>;
 
-// template <class Ty, class... Us>
-// extern _decay_abominable _mdecay<Ty(Us...) const noexcept>;
+// template <class _Ty, class... _Us>
+// extern __decay_abominable __mdecay<_Ty(_Us...) const noexcept>;
 
-// template <class Ty, class... Us>
-// extern _decay_abominable _mdecay<Ty(Us...) const &>;
+// template <class _Ty, class... _Us>
+// extern __decay_abominable __mdecay<_Ty(_Us...) const &>;
 
-// template <class Ty, class... Us>
-// extern _decay_abominable _mdecay<Ty(Us...) const & noexcept>;
+// template <class _Ty, class... _Us>
+// extern __decay_abominable __mdecay<_Ty(_Us...) const & noexcept>;
 
-// template <class Ty, class... Us>
-// extern _decay_abominable _mdecay<Ty(Us...) const &&>;
+// template <class _Ty, class... _Us>
+// extern __decay_abominable __mdecay<_Ty(_Us...) const &&>;
 
-// template <class Ty, class... Us>
-// extern _decay_abominable _mdecay<Ty(Us...) const && noexcept>;
+// template <class _Ty, class... _Us>
+// extern __decay_abominable __mdecay<_Ty(_Us...) const && noexcept>;
 
-template <class Ty>
-extern _decay_default _mdecay<Ty[]>;
+template <class _Ty>
+extern __decay_default __mdecay<_Ty[]>;
 
-template <class Ty, size_t N>
-extern _decay_default _mdecay<Ty[N]>;
+template <class _Ty, size_t _Ny>
+extern __decay_default __mdecay<_Ty[_Ny]>;
 
-template <class Ty, size_t N>
-extern _decay_default _mdecay<Ty (&)[N]>;
-
-template <>
-inline _decay_void _mdecay<void>;
+template <class _Ty, size_t _Ny>
+extern __decay_default __mdecay<_Ty (&)[_Ny]>;
 
 template <>
-inline _decay_void _mdecay<void const>;
+inline __decay_void __mdecay<void>;
 
-template <class Ty>
-using _decay_t = typename decltype(_mdecay<Ty>)::template _f<Ty>;
+template <>
+inline __decay_void __mdecay<void const>;
+
+template <class _Ty>
+using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
 
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// _copy_cvref_t: For copying cvref from one type to another
-struct _cp
+// __copy_cvref_t: For copying cvref from one type to another
+struct __cp
 {
-  template <class Tp>
-  using _f = Tp;
+  template <class _Tp>
+  using __f = _Tp;
 };
 
-struct _cpc
+struct __cpc
 {
-  template <class Tp>
-  using _f = const Tp;
+  template <class _Tp>
+  using __f = const _Tp;
 };
 
-struct _cplr
+struct __cplr
 {
-  template <class Tp>
-  using _f = Tp&;
+  template <class _Tp>
+  using __f = _Tp&;
 };
 
-struct _cprr
+struct __cprr
 {
-  template <class Tp>
-  using _f = Tp&&;
+  template <class _Tp>
+  using __f = _Tp&&;
 };
 
-struct _cpclr
+struct __cpclr
 {
-  template <class Tp>
-  using _f = const Tp&;
+  template <class _Tp>
+  using __f = const _Tp&;
 };
 
-struct _cpcrr
+struct __cpcrr
 {
-  template <class Tp>
-  using _f = const Tp&&;
+  template <class _Tp>
+  using __f = const _Tp&&;
 };
 
 template <class>
-extern _cp _cpcvr;
-template <class Tp>
-extern _cpc _cpcvr<const Tp>;
-template <class Tp>
-extern _cplr _cpcvr<Tp&>;
-template <class Tp>
-extern _cprr _cpcvr<Tp&&>;
-template <class Tp>
-extern _cpclr _cpcvr<const Tp&>;
-template <class Tp>
-extern _cpcrr _cpcvr<const Tp&&>;
-template <class Tp>
-using _copy_cvref_fn = decltype(_cpcvr<Tp>);
+extern __cp __cpcvr;
+template <class _Tp>
+extern __cpc __cpcvr<const _Tp>;
+template <class _Tp>
+extern __cplr __cpcvr<_Tp&>;
+template <class _Tp>
+extern __cprr __cpcvr<_Tp&&>;
+template <class _Tp>
+extern __cpclr __cpcvr<const _Tp&>;
+template <class _Tp>
+extern __cpcrr __cpcvr<const _Tp&&>;
+template <class _Tp>
+using __copy_cvref_fn = decltype(__cpcvr<_Tp>);
 
-template <class From, class To>
-using _copy_cvref_t = typename _copy_cvref_fn<From>::template _f<To>;
+template <class _From, class _To>
+using __copy_cvref_t = typename __copy_cvref_fn<_From>::template __f<_To>;
 
-template <class Fn, class... As>
-using _call_result_t = decltype(DECLVAL(Fn)(DECLVAL(As)...));
+template <class _Fn, class... _As>
+using __call_result_t = decltype(DECLVAL(_Fn)(DECLVAL(_As)...));
 
-template <class Fn, class... As>
-_CCCL_INLINE_VAR constexpr bool _callable = _mvalid_q<_call_result_t, Fn, As...>;
+template <class _Fn, class... _As>
+_CCCL_INLINE_VAR constexpr bool __callable = __mvalid_q<__call_result_t, _Fn, _As...>;
 
 #if defined(__CUDA_ARCH__)
-template <class Fn, class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_callable = true;
+template <class _Fn, class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_callable = true;
 
-template <class Ty, class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_constructible = true;
+template <class _Ty, class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_constructible = true;
 
-template <class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_decay_copyable = true;
+template <class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_decay_copyable = true;
 
-template <class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_movable = true;
+template <class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_movable = true;
 
-template <class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_copyable = true;
+template <class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_copyable = true;
 #else
-template <class Fn, class... As>
-using _nothrow_callable_ = _mif<noexcept(DECLVAL(Fn)(DECLVAL(As)...))>;
+template <class _Fn, class... _As>
+using __nothrow_callable_ = __mif<noexcept(DECLVAL(_Fn)(DECLVAL(_As)...))>;
 
-template <class Fn, class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_callable = _mvalid_q<_nothrow_callable_, Fn, As...>;
+template <class _Fn, class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_callable = __mvalid_q<__nothrow_callable_, _Fn, _As...>;
 
-template <class Ty, class... As>
-using _nothrow_constructible_ = _mif<noexcept(Ty{DECLVAL(As)...})>;
+template <class _Ty, class... _As>
+using __nothrow_constructible_ = __mif<noexcept(_Ty{DECLVAL(_As)...})>;
 
-template <class Ty, class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_constructible = _mvalid_q<_nothrow_constructible_, Ty, As...>;
+template <class _Ty, class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_constructible = __mvalid_q<__nothrow_constructible_, _Ty, _As...>;
 
-template <class Ty>
-using _nothrow_decay_copyable_ = _mif<noexcept(_decay_t<Ty>(DECLVAL(Ty)))>;
+template <class _Ty>
+using __nothrow_decay_copyable_ = __mif<noexcept(__decay_t<_Ty>(DECLVAL(_Ty)))>;
 
-template <class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_decay_copyable = (_mvalid_q<_nothrow_decay_copyable_, As> && ...);
+template <class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_decay_copyable = (__mvalid_q<__nothrow_decay_copyable_, _As> && ...);
 
-template <class Ty>
-using _nothrow_movable_ = _mif<noexcept(Ty(DECLVAL(Ty&&)))>;
+template <class _Ty>
+using __nothrow_movable_ = __mif<noexcept(_Ty(DECLVAL(_Ty&&)))>;
 
-template <class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_movable = (_mvalid_q<_nothrow_movable_, As> && ...);
+template <class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_movable = (__mvalid_q<__nothrow_movable_, _As> && ...);
 
-template <class Ty>
-using _nothrow_copyable_ = _mif<noexcept(Ty(DECLVAL(const Ty&)))>;
+template <class _Ty>
+using __nothrow_copyable_ = __mif<noexcept(_Ty(DECLVAL(const _Ty&)))>;
 
-template <class... As>
-_CCCL_INLINE_VAR constexpr bool _nothrow_copyable = (_mvalid_q<_nothrow_copyable_, As> && ...);
+template <class... _As>
+_CCCL_INLINE_VAR constexpr bool __nothrow_copyable = (__mvalid_q<__nothrow_copyable_, _As> && ...);
 #endif
 } // namespace cuda::experimental::__async
 

@@ -41,61 +41,61 @@ namespace cuda::experimental::__async
 {
 class run_loop;
 
-struct _task : _immovable
+struct __task : __immovable
 {
-  _task* _next = this;
+  __task* __next_ = this;
 
   union
   {
-    _task* _tail;
-    void (*_execute_fn)(_task*) noexcept;
+    __task* __tail_;
+    void (*__execute_fn_)(__task*) noexcept;
   };
 
-  _CCCL_HOST_DEVICE void _execute() noexcept
+  _CCCL_HOST_DEVICE void __execute() noexcept
   {
-    (*_execute_fn)(this);
+    (*__execute_fn_)(this);
   }
 };
 
-template <class Rcvr>
-struct _operation : _task
+template <class _Rcvr>
+struct __operation : __task
 {
-  run_loop* _loop;
-  _CCCL_NO_UNIQUE_ADDRESS Rcvr _rcvr;
+  run_loop* __loop_;
+  _CCCL_NO_UNIQUE_ADDRESS _Rcvr __rcvr_;
 
   using completion_signatures = //
     __async::completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>;
 
-  _CCCL_HOST_DEVICE static void _execute_impl(_task* _p) noexcept
+  _CCCL_HOST_DEVICE static void __execute_impl(__task* __p) noexcept
   {
-    auto& _rcvr = static_cast<_operation*>(_p)->_rcvr;
+    auto& __rcvr = static_cast<__operation*>(__p)->__rcvr_;
     _CUDAX_TRY( //
       ({ //
-        if (get_stop_token(get_env(_rcvr)).stop_requested())
+        if (get_stop_token(get_env(__rcvr)).stop_requested())
         {
-          set_stopped(static_cast<Rcvr&&>(_rcvr));
+          set_stopped(static_cast<_Rcvr&&>(__rcvr));
         }
         else
         {
-          set_value(static_cast<Rcvr&&>(_rcvr));
+          set_value(static_cast<_Rcvr&&>(__rcvr));
         }
       }),
       _CUDAX_CATCH(...)( //
         { //
-          set_error(static_cast<Rcvr&&>(_rcvr), ::std::current_exception());
+          set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
         }))
   }
 
-  _CCCL_HOST_DEVICE explicit _operation(_task* _tail) noexcept
-      : _task{{}, this, _tail}
+  _CCCL_HOST_DEVICE explicit __operation(__task* __tail_) noexcept
+      : __task{{}, this, __tail_}
   {}
 
-  _CCCL_HOST_DEVICE _operation(_task* _next, run_loop* _loop, Rcvr _rcvr)
-      : _task{{}, _next}
-      , _loop{_loop}
-      , _rcvr{static_cast<Rcvr&&>(_rcvr)}
+  _CCCL_HOST_DEVICE __operation(__task* __next_, run_loop* __loop, _Rcvr __rcvr)
+      : __task{{}, __next_}
+      , __loop_{__loop}
+      , __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
   {
-    _execute_fn = &_execute_impl;
+    __execute_fn_ = &__execute_impl;
   }
 
   _CCCL_HOST_DEVICE void start() & noexcept;
@@ -103,62 +103,62 @@ struct _operation : _task
 
 class run_loop
 {
-  template <class... Ts>
-  using _completion_signatures = completion_signatures<Ts...>;
+  template <class... _Ts>
+  using __completion_signatures = completion_signatures<_Ts...>;
 
   template <class>
-  friend struct _operation;
+  friend struct __operation;
 
 public:
   run_loop() noexcept
   {
-    _head._next = _head._tail = &_head;
+    __head.__next_ = __head.__tail_ = &__head;
   }
 
-  class _scheduler
+  class __scheduler
   {
-    struct _schedule_task
+    struct __schedule_task
     {
-      using _t             = _schedule_task;
-      using _id            = _schedule_task;
+      using __t            = __schedule_task;
+      using __id           = __schedule_task;
       using sender_concept = sender_t;
 
-      template <class Rcvr>
-      _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const noexcept -> _operation<Rcvr>
+      template <class _Rcvr>
+      _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const noexcept -> __operation<_Rcvr>
       {
-        return {&_loop->_head, _loop, static_cast<Rcvr&&>(rcvr)};
+        return {&__loop_->__head, __loop_, static_cast<_Rcvr&&>(__rcvr)};
       }
 
     private:
-      friend _scheduler;
+      friend __scheduler;
 
-      struct _env
+      struct __env
       {
-        run_loop* _loop;
+        run_loop* __loop_;
 
-        template <class Tag>
-        _CCCL_HOST_DEVICE auto query(get_completion_scheduler_t<Tag>) const noexcept -> _scheduler
+        template <class _Tag>
+        _CCCL_HOST_DEVICE auto query(get_completion_scheduler_t<_Tag>) const noexcept -> __scheduler
         {
-          return _loop->get_scheduler();
+          return __loop_->get_scheduler();
         }
       };
 
-      _CCCL_HOST_DEVICE auto get_env() const noexcept -> _env
+      _CCCL_HOST_DEVICE auto get_env() const noexcept -> __env
       {
-        return _env{_loop};
+        return __env{__loop_};
       }
 
-      _CCCL_HOST_DEVICE explicit _schedule_task(run_loop* _loop) noexcept
-          : _loop(_loop)
+      _CCCL_HOST_DEVICE explicit __schedule_task(run_loop* __loop) noexcept
+          : __loop_(__loop)
       {}
 
-      run_loop* const _loop;
+      run_loop* const __loop_;
     };
 
     friend run_loop;
 
-    _CCCL_HOST_DEVICE explicit _scheduler(run_loop* _loop) noexcept
-        : _loop(_loop)
+    _CCCL_HOST_DEVICE explicit __scheduler(run_loop* __loop) noexcept
+        : __loop_(__loop)
     {}
 
     _CCCL_HOST_DEVICE auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee
@@ -166,30 +166,30 @@ public:
       return forward_progress_guarantee::parallel;
     }
 
-    run_loop* _loop;
+    run_loop* __loop_;
 
   public:
     using scheduler_concept = scheduler_t;
 
-    [[nodiscard]] _CCCL_HOST_DEVICE auto schedule() const noexcept -> _schedule_task
+    [[nodiscard]] _CCCL_HOST_DEVICE auto schedule() const noexcept -> __schedule_task
     {
-      return _schedule_task{_loop};
+      return __schedule_task{__loop_};
     }
 
-    _CCCL_HOST_DEVICE friend bool operator==(const _scheduler& _a, const _scheduler& _b) noexcept
+    _CCCL_HOST_DEVICE friend bool operator==(const __scheduler& __a, const __scheduler& __b) noexcept
     {
-      return _a._loop == _b._loop;
+      return __a.__loop_ == __b.__loop_;
     }
 
-    _CCCL_HOST_DEVICE friend bool operator!=(const _scheduler& _a, const _scheduler& _b) noexcept
+    _CCCL_HOST_DEVICE friend bool operator!=(const __scheduler& __a, const __scheduler& __b) noexcept
     {
-      return _a._loop != _b._loop;
+      return __a.__loop_ != __b.__loop_;
     }
   };
 
-  _CCCL_HOST_DEVICE auto get_scheduler() noexcept -> _scheduler
+  _CCCL_HOST_DEVICE auto get_scheduler() noexcept -> __scheduler
   {
-    return _scheduler{this};
+    return __scheduler{this};
   }
 
   _CCCL_HOST_DEVICE void run();
@@ -197,61 +197,61 @@ public:
   _CCCL_HOST_DEVICE void finish();
 
 private:
-  _CCCL_HOST_DEVICE void _push_back(_task* _task);
-  _CCCL_HOST_DEVICE auto _pop_front() -> _task*;
+  _CCCL_HOST_DEVICE void __push_back(__task* __task);
+  _CCCL_HOST_DEVICE auto __pop_front() -> __task*;
 
-  ::std::mutex _mutex{};
-  ::std::condition_variable _cv{};
-  _task _head{};
-  bool _stop = false;
+  ::std::mutex __mutex{};
+  ::std::condition_variable __cv{};
+  __task __head{};
+  bool __stop = false;
 };
 
-template <class Rcvr>
-_CCCL_HOST_DEVICE inline void _operation<Rcvr>::start() & noexcept {
+template <class _Rcvr>
+_CCCL_HOST_DEVICE inline void __operation<_Rcvr>::start() & noexcept {
   _CUDAX_TRY( //
     ({ //
-      _loop->_push_back(this); //
+      __loop_->__push_back(this); //
     }), //
     _CUDAX_CATCH(...)( //
       { //
-        set_error(static_cast<Rcvr&&>(_rcvr), ::std::current_exception()); //
+        set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception()); //
       })) //
 }
 
 _CCCL_HOST_DEVICE inline void run_loop::run()
 {
-  for (_task* _task; (_task = _pop_front()) != &_head;)
+  for (__task* __task; (__task = __pop_front()) != &__head;)
   {
-    _task->_execute();
+    __task->__execute();
   }
 }
 
 _CCCL_HOST_DEVICE inline void run_loop::finish()
 {
-  ::std::unique_lock _lock{_mutex};
-  _stop = true;
-  _cv.notify_all();
+  ::std::unique_lock __lock{__mutex};
+  __stop = true;
+  __cv.notify_all();
 }
 
-_CCCL_HOST_DEVICE inline void run_loop::_push_back(_task* _task)
+_CCCL_HOST_DEVICE inline void run_loop::__push_back(__task* __task)
 {
-  ::std::unique_lock _lock{_mutex};
-  _task->_next = &_head;
-  _head._tail = _head._tail->_next = _task;
-  _cv.notify_one();
+  ::std::unique_lock __lock{__mutex};
+  __task->__next_ = &__head;
+  __head.__tail_ = __head.__tail_->__next_ = __task;
+  __cv.notify_one();
 }
 
-_CCCL_HOST_DEVICE inline auto run_loop::_pop_front() -> _task*
+_CCCL_HOST_DEVICE inline auto run_loop::__pop_front() -> __task*
 {
-  ::std::unique_lock _lock{_mutex};
-  _cv.wait(_lock, [this] {
-    return _head._next != &_head || _stop;
+  ::std::unique_lock __lock{__mutex};
+  __cv.wait(__lock, [this] {
+    return __head.__next_ != &__head || __stop;
   });
-  if (_head._tail == _head._next)
+  if (__head.__tail_ == __head.__next_)
   {
-    _head._tail = &_head;
+    __head.__tail_ = &__head;
   }
-  return __async::_exchange(_head._next, _head._next->_next);
+  return __async::__exchange(__head.__next_, __head.__next_->__next_);
 }
 } // namespace cuda::experimental::__async
 

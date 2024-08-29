@@ -38,118 +38,119 @@ struct just_error_from_t;
 struct just_stopped_from_t;
 
 // Map from a disposition to the corresponding tag types:
-namespace _detail
+namespace __detail
 {
-template <_disposition_t, class Void = void>
-extern _undefined<Void> _just_from_tag;
-template <class Void>
-extern _fn_t<just_from_t>* _just_from_tag<_value, Void>;
-template <class Void>
-extern _fn_t<just_error_from_t>* _just_from_tag<_error, Void>;
-template <class Void>
-extern _fn_t<just_stopped_from_t>* _just_from_tag<_stopped, Void>;
-} // namespace _detail
+template <__disposition_t, class _Void = void>
+extern __undefined<_Void> __just_from_tag;
+template <class _Void>
+extern __fn_t<just_from_t>* __just_from_tag<__value, _Void>;
+template <class _Void>
+extern __fn_t<just_error_from_t>* __just_from_tag<__error, _Void>;
+template <class _Void>
+extern __fn_t<just_stopped_from_t>* __just_from_tag<__stopped, _Void>;
+} // namespace __detail
 
-struct AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT;
-struct A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
+struct _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT;
+struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 
-template <_disposition_t Disposition>
-struct _just_from
+template <__disposition_t _Disposition>
+struct __just_from
 {
 #ifndef __CUDACC__
 
 private:
 #endif
 
-  using JustTag = decltype(_detail::_just_from_tag<Disposition>());
-  using SetTag  = decltype(_detail::_set_tag<Disposition>());
+  using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
+  using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  using _diag_t = _mif<_CUDA_VSTD::is_same_v<SetTag, set_error_t>,
-                       AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
-                       A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
+  using __diag_t = __mif<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
+                         _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
+                         _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
-  template <class... Ts>
-  using _error_t = ERROR<WHERE(IN_ALGORITHM, JustTag), WHAT(_diag_t), WITH_COMPLETION_SIGNATURE<SetTag(Ts...)>>;
+  template <class... _Ts>
+  using __error_t =
+    _ERROR<_WHERE(_IN_ALGORITHM, _JustTag), _WHAT(__diag_t), _WITH_COMPLETION_SIGNATURE<_SetTag(_Ts...)>>;
 
-  struct _probe_fn
+  struct __probe_fn
   {
-    template <class... Ts>
-    auto operator()(Ts&&... ts) const noexcept
-      -> _mif<_is_valid_signature<SetTag(Ts...)>, completion_signatures<SetTag(Ts...)>, _error_t<Ts...>>;
+    template <class... _Ts>
+    auto operator()(_Ts&&... __ts) const noexcept
+      -> __mif<__is_valid_signature<_SetTag(_Ts...)>, completion_signatures<_SetTag(_Ts...)>, __error_t<_Ts...>>;
   };
 
-  template <class Rcvr = receiver_archetype>
-  struct _complete_fn
+  template <class _Rcvr = receiver_archetype>
+  struct __complete_fn
   {
-    Rcvr& _rcvr;
+    _Rcvr& __rcvr_;
 
-    template <class... Ts>
-    _CCCL_HOST_DEVICE auto operator()(Ts&&... ts) const noexcept
+    template <class... _Ts>
+    _CCCL_HOST_DEVICE auto operator()(_Ts&&... __ts) const noexcept
     {
-      SetTag()(static_cast<Rcvr&>(_rcvr), static_cast<Ts&&>(ts)...);
+      _SetTag()(static_cast<_Rcvr&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
   };
 
-  template <class Rcvr, class Fn>
-  struct _opstate
+  template <class _Rcvr, class _Fn>
+  struct __opstate
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = _call_result_t<Fn, _probe_fn>;
-    static_assert(_is_completion_signatures<completion_signatures>);
+    using completion_signatures   = __call_result_t<_Fn, __probe_fn>;
+    static_assert(__is_completion_signatures<completion_signatures>);
 
-    Rcvr _rcvr;
-    Fn _fn;
+    _Rcvr __rcvr_;
+    _Fn __fn_;
 
     _CCCL_HOST_DEVICE void start() & noexcept
     {
-      static_cast<Fn&&>(_fn)(_complete_fn<Rcvr>{_rcvr});
+      static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});
     }
   };
 
-  template <class Fn>
-  struct _sndr_t
+  template <class _Fn>
+  struct __sndr_t
   {
     using sender_concept = sender_t;
 
-    _CCCL_NO_UNIQUE_ADDRESS JustTag _tag;
-    Fn _fn;
+    _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+    _Fn __fn_;
 
-    template <class Rcvr>
-    _CCCL_HOST_DEVICE _opstate<Rcvr, Fn> connect(Rcvr rcvr) && //
-      noexcept(_nothrow_decay_copyable<Rcvr, Fn>)
+    template <class _Rcvr>
+    _CCCL_HOST_DEVICE __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
+      noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>)
     {
-      return _opstate<Rcvr, Fn>{static_cast<Rcvr&&>(rcvr), static_cast<Fn&&>(_fn)};
+      return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
     }
 
-    template <class Rcvr>
-    _CCCL_HOST_DEVICE _opstate<Rcvr, Fn> connect(Rcvr rcvr) const& //
-      noexcept(_nothrow_decay_copyable<Rcvr, Fn const&>)
+    template <class _Rcvr>
+    _CCCL_HOST_DEVICE __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) const& //
+      noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>)
     {
-      return _opstate<Rcvr, Fn>{static_cast<Rcvr&&>(rcvr), _fn};
+      return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
     }
   };
 
 public:
-  template <class Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(Fn fn) const noexcept
+  template <class _Fn>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
   {
-    using _completions = _call_result_t<Fn, _probe_fn>;
-    static_assert(_is_completion_signatures<_completions>,
+    using __completions = __call_result_t<_Fn, __probe_fn>;
+    static_assert(__is_completion_signatures<__completions>,
                   "The function passed to just_from must return an instance of a specialization of "
                   "completion_signatures<>.");
-    return _sndr_t<Fn>{{}, static_cast<Fn&&>(fn)};
+    return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct just_from_t : _just_from<_value>
+_CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from<__value>
 {
 } just_from{};
 
-_CCCL_GLOBAL_CONSTANT struct just_error_from_t : _just_from<_error>
+_CCCL_GLOBAL_CONSTANT struct just_error_from_t : __just_from<__error>
 {
 } just_error_from{};
 
-_CCCL_GLOBAL_CONSTANT struct just_stopped_from_t : _just_from<_stopped>
+_CCCL_GLOBAL_CONSTANT struct just_stopped_from_t : __just_from<__stopped>
 {
 } just_stopped_from{};
 } // namespace cuda::experimental::__async

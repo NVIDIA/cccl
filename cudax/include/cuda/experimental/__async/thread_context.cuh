@@ -36,8 +36,8 @@ namespace cuda::experimental::__async
 struct thread_context
 {
   thread_context() noexcept
-      : _thread{[this] {
-        _loop.run();
+      : __thrd_{[this] {
+        __loop_.run();
       }}
   {}
 
@@ -48,21 +48,21 @@ struct thread_context
 
   void join() noexcept
   {
-    if (_thread.joinable())
+    if (__thrd_.joinable())
     {
-      _loop.finish();
-      _thread.join();
+      __loop_.finish();
+      __thrd_.join();
     }
   }
 
   auto get_scheduler()
   {
-    return _loop.get_scheduler();
+    return __loop_.get_scheduler();
   }
 
 private:
-  run_loop _loop;
-  ::std::thread _thread;
+  run_loop __loop_;
+  ::std::thread __thrd_;
 };
 } // namespace cuda::experimental::__async
 

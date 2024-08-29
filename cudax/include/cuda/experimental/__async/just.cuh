@@ -37,94 +37,94 @@ struct just_error_t;
 struct just_stopped_t;
 
 // Map from a disposition to the corresponding tag types:
-namespace _detail
+namespace __detail
 {
-template <_disposition_t, class Void = void>
-extern _undefined<Void> _just_tag;
-template <class Void>
-extern _fn_t<just_t>* _just_tag<_value, Void>;
-template <class Void>
-extern _fn_t<just_error_t>* _just_tag<_error, Void>;
-template <class Void>
-extern _fn_t<just_stopped_t>* _just_tag<_stopped, Void>;
-} // namespace _detail
+template <__disposition_t, class _Void = void>
+extern __undefined<_Void> __just_tag;
+template <class _Void>
+extern __fn_t<just_t>* __just_tag<__value, _Void>;
+template <class _Void>
+extern __fn_t<just_error_t>* __just_tag<__error, _Void>;
+template <class _Void>
+extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
+} // namespace __detail
 
-template <_disposition_t Disposition>
-struct _just
+template <__disposition_t _Disposition>
+struct __just
 {
 #ifndef __CUDACC__
 
 private:
 #endif
 
-  using JustTag = decltype(_detail::_just_tag<Disposition>());
-  using SetTag  = decltype(_detail::_set_tag<Disposition>());
+  using _JustTag = decltype(__detail::__just_tag<_Disposition>());
+  using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  template <class Rcvr, class... Ts>
-  struct opstate_t
+  template <class _Rcvr, class... _Ts>
+  struct __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __async::completion_signatures<SetTag(Ts...)>;
-    Rcvr _rcvr;
-    _tuple<Ts...> _values;
+    using completion_signatures   = __async::completion_signatures<_SetTag(_Ts...)>;
+    _Rcvr __rcvr_;
+    __tuple<_Ts...> __values_;
 
-    struct _complete_fn
+    struct __complete_fn
     {
-      opstate_t* _self;
+      __opstate_t* __self_;
 
-      _CCCL_HOST_DEVICE void operator()(Ts&... ts) const noexcept
+      _CCCL_HOST_DEVICE void operator()(_Ts&... __ts) const noexcept
       {
-        SetTag()(static_cast<Rcvr&&>(_self->_rcvr), static_cast<Ts&&>(ts)...);
+        _SetTag()(static_cast<_Rcvr&&>(__self_->__rcvr_), static_cast<_Ts&&>(__ts)...);
       }
     };
 
     _CCCL_HOST_DEVICE void start() & noexcept
     {
-      _values.apply(_complete_fn{this}, _values);
+      __values_.__apply(__complete_fn{this}, __values_);
     }
   };
 
-  template <class... Ts>
-  struct _sndr_t
+  template <class... _Ts>
+  struct __sndr_t
   {
     using sender_concept        = sender_t;
-    using completion_signatures = __async::completion_signatures<SetTag(Ts...)>;
+    using completion_signatures = __async::completion_signatures<_SetTag(_Ts...)>;
 
-    _CCCL_NO_UNIQUE_ADDRESS JustTag _tag;
-    _tuple<Ts...> _values;
+    _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+    __tuple<_Ts...> __values_;
 
-    template <class Rcvr>
-    _CCCL_HOST_DEVICE opstate_t<Rcvr, Ts...> connect(Rcvr rcvr) && //
-      noexcept(_nothrow_decay_copyable<Rcvr, Ts...>)
+    template <class _Rcvr>
+    _CCCL_HOST_DEVICE __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) && //
+      noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
     {
-      return opstate_t<Rcvr, Ts...>{static_cast<Rcvr&&>(rcvr), static_cast<_tuple<Ts...>&&>(_values)};
+      return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), static_cast<__tuple<_Ts...>&&>(__values_)};
     }
 
-    template <class Rcvr>
-    _CCCL_HOST_DEVICE opstate_t<Rcvr, Ts...> connect(Rcvr rcvr) const& //
-      noexcept(_nothrow_decay_copyable<Rcvr, Ts const&...>)
+    template <class _Rcvr>
+    _CCCL_HOST_DEVICE __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) const& //
+      noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
     {
-      return opstate_t<Rcvr, Ts...>{static_cast<Rcvr&&>(rcvr), _values};
+      return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
     }
   };
 
 public:
-  template <class... Ts>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(Ts... ts) const noexcept
+  template <class... _Ts>
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Ts... __ts) const noexcept
   {
-    return _sndr_t<Ts...>{{}, {static_cast<Ts&&>(ts)...}};
+    return __sndr_t<_Ts...>{{}, {static_cast<_Ts&&>(__ts)...}};
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct just_t : _just<_value>
+_CCCL_GLOBAL_CONSTANT struct just_t : __just<__value>
 {
 } just{};
 
-_CCCL_GLOBAL_CONSTANT struct just_error_t : _just<_error>
+_CCCL_GLOBAL_CONSTANT struct just_error_t : __just<__error>
 {
 } just_error{};
 
-_CCCL_GLOBAL_CONSTANT struct just_stopped_t : _just<_stopped>
+_CCCL_GLOBAL_CONSTANT struct just_stopped_t : __just<__stopped>
 {
 } just_stopped{};
 } // namespace cuda::experimental::__async

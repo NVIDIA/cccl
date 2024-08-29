@@ -33,14 +33,14 @@
 
 namespace cuda::experimental::__async
 {
-template <class Sch>
-struct _sch_env_t
+template <class _Sch>
+struct __sch_env_t
 {
-  Sch _sch;
+  _Sch __sch_;
 
-  Sch query(get_scheduler_t) const noexcept
+  _Sch __query(get_scheduler_t) const noexcept
   {
-    return _sch;
+    return __sch_;
   }
 };
 
@@ -51,96 +51,97 @@ _CCCL_GLOBAL_CONSTANT struct start_on_t
 private:
 #endif
 
-  template <class Rcvr, class Sch, class CvSndr>
-  struct _opstate_t
+  template <class _Rcvr, class _Sch, class _CvSndr>
+  struct __opstate_t
   {
-    _CCCL_HOST_DEVICE friend env_of_t<Rcvr> get_env(const _opstate_t* self) noexcept
+    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
     {
-      return __async::get_env(self->_env_rcvr.rcvr());
+      return __async::get_env(__self->__env_rcvr_.__rcvr());
     }
 
     using operation_state_concept = operation_state_t;
 
     using completion_signatures = //
       transform_completion_signatures<
-        completion_signatures_of_t<CvSndr, _rcvr_with_env_t<Rcvr, _sch_env_t<Sch>>*>,
-        transform_completion_signatures<completion_signatures_of_t<schedule_result_t<Sch>, _opstate_t*>,
+        completion_signatures_of_t<_CvSndr, __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>*>,
+        transform_completion_signatures<completion_signatures_of_t<schedule_result_t<_Sch>, __opstate_t*>,
                                         __async::completion_signatures<>,
-                                        _malways<__async::completion_signatures<>>::_f>>;
+                                        __malways<__async::completion_signatures<>>::__f>>;
 
-    _rcvr_with_env_t<Rcvr, _sch_env_t<Sch>> _env_rcvr;
-    connect_result_t<schedule_result_t<Sch>, _opstate_t*> _opstate1;
-    connect_result_t<CvSndr, _rcvr_with_env_t<Rcvr, _sch_env_t<Sch>>*> _opstate2;
+    __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
+    connect_result_t<schedule_result_t<_Sch>, __opstate_t*> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>*> __opstate2_;
 
-    _CCCL_HOST_DEVICE _opstate_t(Sch sch, Rcvr rcvr, CvSndr&& sndr)
-        : _env_rcvr{static_cast<Rcvr&&>(rcvr), {sch}}
-        , _opstate1{connect(schedule(_env_rcvr._env._sch), this)}
-        , _opstate2{connect(static_cast<CvSndr&&>(sndr), &_env_rcvr)}
+    _CCCL_HOST_DEVICE __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
+        : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), {__sch}}
+        , __opstate1_{connect(schedule(__env_rcvr_.__env_.__sch_), this)}
+        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), &__env_rcvr_)}
     {}
 
-    _CUDAX_IMMOVABLE(_opstate_t);
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CCCL_HOST_DEVICE void start() noexcept
     {
-      __async::start(_opstate1);
+      __async::start(__opstate1_);
     }
 
     _CCCL_HOST_DEVICE void set_value() noexcept
     {
-      __async::start(_opstate2);
+      __async::start(__opstate2_);
     }
 
-    template <class Error>
-    _CCCL_HOST_DEVICE void set_error(Error&& error) noexcept
+    template <class _Error>
+    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
     {
-      __async::set_error(static_cast<Rcvr&&>(_env_rcvr.rcvr()), static_cast<Error&&>(error));
+      __async::set_error(static_cast<_Rcvr&&>(__env_rcvr_.__rcvr()), static_cast<_Error&&>(__error));
     }
 
     _CCCL_HOST_DEVICE void set_stopped() noexcept
     {
-      __async::set_stopped(static_cast<Rcvr&&>(_env_rcvr.rcvr()));
+      __async::set_stopped(static_cast<_Rcvr&&>(__env_rcvr_.__rcvr()));
     }
   };
 
-  template <class Sch, class Sndr>
-  struct _sndr_t;
+  template <class _Sch, class _Sndr>
+  struct __sndr_t;
 
 public:
-  template <class Sch, class Sndr>
-  _CCCL_HOST_DEVICE auto operator()(Sch sch, Sndr sndr) const noexcept //
-    -> _sndr_t<Sch, Sndr>;
+  template <class _Sch, class _Sndr>
+  _CCCL_HOST_DEVICE auto operator()(_Sch __sch, _Sndr __sndr) const noexcept //
+    -> __sndr_t<_Sch, _Sndr>;
 } start_on{};
 
-template <class Sch, class Sndr>
-struct start_on_t::_sndr_t
+template <class _Sch, class _Sndr>
+struct start_on_t::__sndr_t
 {
   using sender_concept = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS start_on_t _tag;
-  Sch _sch;
-  Sndr _sndr;
+  _CCCL_NO_UNIQUE_ADDRESS start_on_t __tag_;
+  _Sch __sch_;
+  _Sndr __sndr_;
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) && -> _opstate_t<Rcvr, Sch, Sndr>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
   {
-    return _opstate_t<Rcvr, Sch, Sndr>{_sch, static_cast<Rcvr&&>(rcvr), static_cast<Sndr&&>(_sndr)};
+    return __opstate_t<_Rcvr, _Sch, _Sndr>{__sch_, static_cast<_Rcvr&&>(__rcvr), static_cast<_Sndr&&>(__sndr_)};
   }
 
-  template <class Rcvr>
-  _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const& -> _opstate_t<Rcvr, Sch, const Sndr&>
+  template <class _Rcvr>
+  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, _Sch, const _Sndr&>
   {
-    return _opstate_t<Rcvr, Sch, const Sndr&>{_sch, static_cast<Rcvr&&>(rcvr), _sndr};
+    return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<Sndr> get_env() const noexcept
+  _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
   {
-    return __async::get_env(_sndr);
+    return __async::get_env(__sndr_);
   }
 };
 
-template <class Sch, class Sndr>
-_CCCL_HOST_DEVICE auto start_on_t::operator()(Sch sch, Sndr sndr) const noexcept -> start_on_t::_sndr_t<Sch, Sndr>
+template <class _Sch, class _Sndr>
+_CCCL_HOST_DEVICE auto
+start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept -> start_on_t::__sndr_t<_Sch, _Sndr>
 {
-  return _sndr_t<Sch, Sndr>{{}, sch, sndr};
+  return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
 }
 } // namespace cuda::experimental::__async
 
