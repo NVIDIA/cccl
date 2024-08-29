@@ -130,9 +130,9 @@ template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>>
-_CCCL_DEVICE
-_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<!enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), AccumT>
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>,
+          ::cuda::std::__enable_if_t<!enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), int> = 0>
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
   AccumT retval = prefix;
@@ -145,9 +145,8 @@ ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH
 }
 
 /// Specialization for single-element arrays
-template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::__enable_if_t<LENGTH == 1, T>
-ThreadReduce(T* input, ReductionOp reduction_op)
+template <int LENGTH, typename T, typename ReductionOp, ::cuda::std::__enable_if_t<LENGTH == 1, int> = 0>
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
 {
   return input[0];
 }
@@ -172,20 +171,22 @@ ThreadReduce(T* input, ReductionOp reduction_op)
  * @param[in] reduction_op
  *   Binary reduction operator
  */
-template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_DEVICE
-_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<(!enable_dpx_reduction<LENGTH, T, ReductionOp>() && LENGTH > 1), T>
-ThreadReduce(T* input, ReductionOp reduction_op)
+template <int LENGTH,
+          typename T,
+          typename ReductionOp,
+          ::cuda::std::__enable_if_t<(!enable_dpx_reduction<LENGTH, T, ReductionOp>() && LENGTH > 1), int> = 0>
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
 {
   T prefix = input[0];
   return ThreadReduce(input + 1, reduction_op, prefix, Int2Type<LENGTH - 1>{});
 }
 
 /// Specialization for DPX reduction
-template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE
-_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp>(), T>
-ThreadReduce(T* input, ReductionOp reduction_op)
+template <int LENGTH,
+          typename T,
+          typename ReductionOp,
+          ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp>(), int> = 0>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
 {
   using DpxReduceOp     = cub_operator_to_dpx_t<ReductionOp, T>;
   using SimdType        = ::cuda::std::pair<T, T>;
@@ -201,9 +202,9 @@ template <int LENGTH,
           typename T,
           typename ReductionOp,
           typename PrefixT,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, PrefixT, T>>
-_CCCL_NODISCARD _CCCL_DEVICE
-_CCCL_FORCEINLINE ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), T>
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, PrefixT, T>,
+          ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>(), int> = 0>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH>)
 {
   return reduction_op(ThreadReduce<LENGTH>(input, reduction_op), prefix);
