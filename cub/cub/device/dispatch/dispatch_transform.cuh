@@ -529,10 +529,8 @@ _CCCL_DEVICE void bulk_copy_tile(
   assert(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0);
   assert(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0);
 
-  const int padded_num_bytes         = aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size;
-  const int padded_num_bytes_rounded = round_up_to_po2_multiple(padded_num_bytes, bulk_copy_size_multiple);
-
-  int bytes_to_copy = padded_num_bytes_rounded;
+  int bytes_to_copy = round_up_to_po2_multiple(
+    aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_size, bulk_copy_size_multiple);
 
   // out-of-bounds access at the front can happen, so check for it
   const bool special_front = alignof(T) < bulk_copy_alignment && blockIdx.x == 0 && aligned_ptr.head_padding > 0;
@@ -628,7 +626,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   // TODO(bgruber) use: `cooperative_groups::invoke_one(cooperative_groups::this_thread_block(), [&]() {` with CTK
   // >= 12.1
-  if (true)
+  if (threadIdx.x < ::cuda::std::max({bulk_copy_alignment / sizeof(InTs)...}))
   {
     if (threadIdx.x == 0)
     {
