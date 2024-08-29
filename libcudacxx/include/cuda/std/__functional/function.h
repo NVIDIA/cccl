@@ -67,7 +67,7 @@ _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_function_ca
 }
 
 template <class _Fp>
-class _LIBCUDACXX_TEMPLATE_VIS function; // undefined
+class _CCCL_TYPE_VISIBILITY_DEFAULT function; // undefined
 
 namespace __function
 {
@@ -252,7 +252,7 @@ public:
 // __base provides an abstract interface for copyable functors.
 
 template <class _Fp>
-class _LIBCUDACXX_TEMPLATE_VIS __base;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __base;
 
 template <class _Rp, class... _ArgTypes>
 class __base<_Rp(_ArgTypes...)>
@@ -997,7 +997,7 @@ public:
 } // namespace __function
 
 template <class _Rp, class... _ArgTypes>
-class _LIBCUDACXX_TEMPLATE_VIS function<_Rp(_ArgTypes...)>
+class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
     : public __function::__maybe_derive_from_unary_function<_Rp(_ArgTypes...)>
     , public __function::__maybe_derive_from_binary_function<_Rp(_ArgTypes...)>
 {

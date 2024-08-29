@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_signed : public integral_constant<bool, _LIBCUDACXX_IS_SIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, _LIBCUDACXX_IS_SIGNED(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -58,7 +58,7 @@ struct __libcpp_is_signed<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_signed : public __libcpp_is_signed<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public __libcpp_is_signed<_Tp>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

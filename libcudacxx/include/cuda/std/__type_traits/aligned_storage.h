@@ -102,7 +102,7 @@ struct __find_max_align<__type_list<_Hp, _Tp>, _Len>
 {};
 
 template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::value>
-struct _LIBCUDACXX_TEMPLATE_VIS aligned_storage
+struct _CCCL_TYPE_VISIBILITY_DEFAULT aligned_storage
 {
   typedef typename __find_pod<__all_types, _Align>::type _Aligner;
   union type
@@ -117,14 +117,14 @@ template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::valu
 using aligned_storage_t = typename aligned_storage<_Len, _Align>::type;
 #endif
 
-#define _CREATE_ALIGNED_STORAGE_SPECIALIZATION(n)          \
-  template <size_t _Len>                                   \
-  struct _LIBCUDACXX_TEMPLATE_VIS aligned_storage<_Len, n> \
-  {                                                        \
-    struct _CCCL_ALIGNAS(n) type                           \
-    {                                                      \
-      unsigned char __lx[(_Len + n - 1) / n * n];          \
-    };                                                     \
+#define _CREATE_ALIGNED_STORAGE_SPECIALIZATION(n)               \
+  template <size_t _Len>                                        \
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT aligned_storage<_Len, n> \
+  {                                                             \
+    struct _CCCL_ALIGNAS(n) type                                \
+    {                                                           \
+      unsigned char __lx[(_Len + n - 1) / n * n];               \
+    };                                                          \
   }
 
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x1);
@@ -142,9 +142,9 @@ _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x800);
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x1000);
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x2000);
 // PE/COFF does not support alignment beyond 8192 (=0x2000)
-#if !defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
+#if !defined(_WIN32)
 _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x4000);
-#endif // !defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
+#endif // !defined(_WIN32)
 
 #undef _CREATE_ALIGNED_STORAGE_SPECIALIZATION
 

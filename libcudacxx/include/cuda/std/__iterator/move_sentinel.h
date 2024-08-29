@@ -34,7 +34,7 @@ template <semiregular _Sent>
 #  else
 template <class _Sent, enable_if_t<semiregular<_Sent>, int> = 0>
 #  endif
-class _LIBCUDACXX_TEMPLATE_VIS move_sentinel
+class _CCCL_TYPE_VISIBILITY_DEFAULT move_sentinel
 {
 public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel() = default;

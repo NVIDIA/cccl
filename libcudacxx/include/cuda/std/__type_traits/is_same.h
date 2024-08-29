@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_same : bool_constant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -51,10 +51,10 @@ using _IsNotSame = bool_constant<!_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
 #else
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_same : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : public false_type
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_same<_Tp, _Tp> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : public true_type
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

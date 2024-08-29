@@ -36,17 +36,17 @@ using __remove_extent_t = _LIBCUDACXX_REMOVE_EXTENT(_Tp);
 
 #else
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_extent
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent
 {
   typedef _Tp type;
 };
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_extent<_Tp[]>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[]>
 {
   typedef _Tp type;
 };
 template <class _Tp, size_t _Np>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_extent<_Tp[_Np]>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[_Np]>
 {
   typedef _Tp type;
 };

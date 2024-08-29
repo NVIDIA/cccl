@@ -44,7 +44,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_copy_assignable_v = _LIBCUDAC
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copy_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copy_assignable
     : public is_trivially_assignable<__add_lvalue_reference_t<_Tp>,
                                      __add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};

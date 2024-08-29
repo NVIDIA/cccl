@@ -35,7 +35,7 @@ struct __select_2nd
 #if defined(_LIBCUDACXX_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS is_assignable : public integral_constant<bool, _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_assignable : public integral_constant<bool, _LIBCUDACXX_IS_ASSIGNABLE(_T1, _T2)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

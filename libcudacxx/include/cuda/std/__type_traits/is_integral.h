@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_INTEGRAL) && !defined(_LIBCUDACXX_USE_IS_INTEGRAL_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_integral : public integral_constant<bool, _LIBCUDACXX_IS_INTEGRAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral : public integral_constant<bool, _LIBCUDACXX_IS_INTEGRAL(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -103,7 +103,7 @@ struct __libcpp_is_integral<__uint128_t> : public true_type
 #  endif
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_integral
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral
     : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp>>::value>
 {};
 

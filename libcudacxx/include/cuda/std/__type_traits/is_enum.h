@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_enum : public integral_constant<bool, _LIBCUDACXX_IS_ENUM(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum : public integral_constant<bool, _LIBCUDACXX_IS_ENUM(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -48,7 +48,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_enum_v = _LIBCUDACXX_IS_ENUM(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_enum
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum
     : public integral_constant<
         bool,
         !is_void<_Tp>::value && !is_integral<_Tp>::value && !is_floating_point<_Tp>::value && !is_array<_Tp>::value

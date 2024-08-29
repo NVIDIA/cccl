@@ -183,7 +183,7 @@ using __make_indices_imp = typename __detail::__make<_Ep - _Sp>::type::template 
 #endif
 
 template <class _Tp, _Tp... _Ip>
-struct _LIBCUDACXX_TEMPLATE_VIS integer_sequence
+struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 {
   typedef _Tp value_type;
   static_assert(is_integral<_Tp>::value, "std::integer_sequence can only be instantiated with an integral type");

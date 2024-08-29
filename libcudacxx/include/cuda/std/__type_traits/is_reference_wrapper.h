@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS reference_wrapper;
+class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper;
 
 template <class _Tp>
 struct __is_reference_wrapper_impl : public false_type

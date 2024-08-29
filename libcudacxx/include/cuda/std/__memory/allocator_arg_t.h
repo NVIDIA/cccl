@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct _LIBCUDACXX_TEMPLATE_VIS allocator_arg_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t
 {
   explicit allocator_arg_t() = default;
 };

@@ -47,7 +47,7 @@ class allocator;
 // These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED_IN_CXX17.
 // Specializing allocator<void> is deprecated, but not using it.
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS allocator<void>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<void>
 {
 public:
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef void* pointer;
@@ -62,7 +62,7 @@ public:
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS allocator<const void>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const void>
 {
 public:
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* pointer;
@@ -105,7 +105,7 @@ struct __non_trivial_if<true, _Unique>
 //       allocator<void> trivial in C++20.
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS allocator : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<_Tp>>
 {
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 
@@ -209,7 +209,7 @@ public:
 };
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS allocator<const _Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const _Tp>
     : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<const _Tp>>
 {
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");

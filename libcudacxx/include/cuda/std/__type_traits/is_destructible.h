@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_destructible : public integral_constant<bool, _LIBCUDACXX_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible : public integral_constant<bool, _LIBCUDACXX_IS_DESTRUCTIBLE(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

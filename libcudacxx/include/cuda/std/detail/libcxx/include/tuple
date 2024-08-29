@@ -685,7 +685,7 @@ struct __tuple_constraints
 };
 
 template <class... _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS tuple
+class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 {
   typedef __tuple_impl<__make_tuple_indices_t<sizeof...(_Tp)>, _Tp...> _BaseT;
 
@@ -934,7 +934,7 @@ public:
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS tuple<>
+class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
 public:
   constexpr tuple() noexcept = default;
@@ -1319,7 +1319,7 @@ tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
 }
 
 template <class... _Tp, class _Alloc>
-struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator<tuple<_Tp...>, _Alloc> : true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator<tuple<_Tp...>, _Alloc> : true_type
 {};
 
 template <class _T1, class _T2, bool _IsRef>
