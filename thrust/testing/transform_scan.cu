@@ -26,6 +26,25 @@ void TestTransformInclusiveScanDispatchExplicit()
 }
 DECLARE_UNITTEST(TestTransformInclusiveScanDispatchExplicit);
 
+template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
+OutputIterator transform_inclusive_scan(
+  my_system& system, InputIterator, InputIterator, OutputIterator result, UnaryFunction, T, AssociativeOperator)
+{
+  system.validate_dispatch();
+  return result;
+}
+
+void TestTransformInclusiveScanInitDispatchExplicit()
+{
+  thrust::device_vector<int> vec(1);
+
+  my_system sys(0);
+  thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
+
+  ASSERT_EQUAL(true, sys.is_valid());
+}
+DECLARE_UNITTEST(TestTransformInclusiveScanInitDispatchExplicit);
+
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename AssociativeOperator>
 OutputIterator transform_inclusive_scan(
   my_tag, InputIterator, InputIterator, OutputIterator result, UnaryFunction, AssociativeOperator)

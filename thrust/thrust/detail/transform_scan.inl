@@ -129,7 +129,7 @@ OutputIterator transform_inclusive_scan(
 
   return thrust::transform_inclusive_scan(
     select_system(system1, system2), first, last, result, unary_op, init, binary_op);
-} // end transform_exclusive_scan()
+} // end transform_inclusive_scan()
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(

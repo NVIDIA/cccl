@@ -29,6 +29,26 @@ template <typename ExecutionPolicy,
           typename T,
           typename Function2,
           typename Iterator3>
+__global__ void transform_inclusive_scan_init_kernel(
+  ExecutionPolicy exec,
+  Iterator1 first,
+  Iterator1 last,
+  Iterator2 result1,
+  Function1 f1,
+  T init,
+  Function2 f2,
+  Iterator3 result2)
+{
+  *result2 = thrust::transform_inclusive_scan(exec, first, last, result1, f1, init, f2);
+}
+
+template <typename ExecutionPolicy,
+          typename Iterator1,
+          typename Iterator2,
+          typename Function1,
+          typename T,
+          typename Function2,
+          typename Iterator3>
 __global__ void transform_exclusive_scan_kernel(
   ExecutionPolicy exec,
   Iterator1 first,
@@ -78,6 +98,24 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   ref[2] = -2;
   ref[3] = -6;
   ref[4] = -1;
+  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
+  ASSERT_EQUAL(input, input_copy);
+  ASSERT_EQUAL(ref, output);
+
+  // inclusive scan with nonzero init
+  transform_inclusive_scan_init_kernel<<<1, 1>>>(
+    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>(), iter_vec.begin());
+  {
+    cudaError_t const err = cudaDeviceSynchronize();
+    ASSERT_EQUAL(cudaSuccess, err);
+  }
+
+  iter   = iter_vec[0];
+  ref[0] = 2;
+  ref[1] = -1;
+  ref[2] = 1;
+  ref[3] = -3;
+  ref[4] = 2;
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(ref, output);
@@ -132,6 +170,24 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   ref[2] = -2;
   ref[3] = -6;
   ref[4] = -1;
+  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
+  ASSERT_EQUAL(ref, input);
+
+  // inplace inclusive scan with init
+  input = input_copy;
+  transform_inclusive_scan_init_kernel<<<1, 1>>>(
+    exec, input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>(), iter_vec.begin());
+  {
+    cudaError_t const err = cudaDeviceSynchronize();
+    ASSERT_EQUAL(cudaSuccess, err);
+  }
+
+  iter   = iter_vec[0];
+  ref[0] = 2;
+  ref[1] = -1;
+  ref[2] = 1;
+  ref[3] = -3;
+  ref[4] = 2;
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(ref, input);
 
@@ -203,6 +259,20 @@ void TestTransformScanCudaStreams()
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
 
+  // inclusive scan with nonzero init
+  iter = thrust::transform_inclusive_scan(
+    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+  cudaStreamSynchronize(s);
+
+  result[0] = 2;
+  result[1] = -1;
+  result[2] = 1;
+  result[3] = -3;
+  result[4] = 2;
+  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
+  ASSERT_EQUAL(input, input_copy);
+  ASSERT_EQUAL(output, result);
+
   // exclusive scan with 0 init
   iter = thrust::transform_exclusive_scan(
     thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>(), 0, thrust::plus<T>());
@@ -242,6 +312,20 @@ void TestTransformScanCudaStreams()
   result[2] = -2;
   result[3] = -6;
   result[4] = -1;
+  ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
+  ASSERT_EQUAL(input, result);
+
+  // inplace inclusive scan with init
+  input = input_copy;
+  iter  = thrust::transform_inclusive_scan(
+    thrust::cuda::par.on(s), input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+  cudaStreamSynchronize(s);
+
+  result[0] = 2;
+  result[1] = -1;
+  result[2] = 1;
+  result[3] = -3;
+  result[4] = 2;
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
 
