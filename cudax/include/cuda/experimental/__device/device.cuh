@@ -78,7 +78,7 @@ public:
 #  endif
 #endif
 
-  const arch_traits_t& arch_traits() const
+  const arch_traits_t& arch_traits() const noexcept
   {
     return __traits;
   }
