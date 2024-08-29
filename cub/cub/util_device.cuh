@@ -703,8 +703,8 @@ private:
 };
 
 /// Helper for dispatching into a policy chain (end-of-chain specialization)
-template <int PTX_VERSION, typename PolicyT>
-struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
+template <int PolicyPtxVersion, typename PolicyT>
+struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
 {
   template <int, typename, typename>
   friend struct ChainedPolicy; // befriend primary template, so it can call invoke_static
