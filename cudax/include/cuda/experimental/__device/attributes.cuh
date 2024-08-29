@@ -723,6 +723,8 @@ struct __device_attrs
 
 #endif // CUDART_VERSION >= 12020
 
+  // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
+  // capability in a single query
   struct compute_capability_t
   {
     _CCCL_NODISCARD int operator()(device_ref __dev_id) const
