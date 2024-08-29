@@ -30,8 +30,8 @@
 #include <thrust/detail/integer_traits.h>
 #include <thrust/detail/preprocessor.h>
 
-#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/type_traits>
 
 #include <cstdint>
 #include <string>
