@@ -491,7 +491,7 @@ _CCCL_DEVICE void transform_kernel_impl(
     if (idx < tile_size)
     {
       out[idx] = poor_apply(
-        [&](const InTs*... smem_base_ptrs) {
+        [&](const InTs* __restrict__... smem_base_ptrs) {
           return f(smem_base_ptrs[idx]...);
         },
         smem_ptrs);
