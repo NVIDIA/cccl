@@ -45,6 +45,8 @@ workflows:
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc', 'clang']}
+    # Edge-case jobs
+    - {jobs: ['limited'], project: 'cub', std: 17}
 
   nightly:
   # libcudacxx build fails, CUB tests fail:
@@ -200,6 +202,9 @@ jobs:
   test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid1'} }
   # - captured in a CUDA graph for deferred launch (lid2):
   test_lid2:  { name: 'GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid2'} }
+  # Limited build reduces the number of runtime test cases, available device memory, etc, and may be used
+  # to reduce test runtime in limited environments.
+  limited:    { name: "SmallGMem",   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-limited'} }
 
   # Thrust:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }

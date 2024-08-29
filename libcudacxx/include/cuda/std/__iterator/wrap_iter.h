@@ -317,7 +317,7 @@ struct __is_cpp17_contiguous_iterator<__wrap_iter<_It>> : true_type
 #endif
 
 template <class _It>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<__wrap_iter<_It>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
 {
   typedef __wrap_iter<_It> pointer;
   typedef typename pointer_traits<_It>::element_type element_type;

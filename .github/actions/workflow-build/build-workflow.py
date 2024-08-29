@@ -580,6 +580,14 @@ def remove_dispatch_job_from_container(job, container):
     return False
 
 
+def index_of_dispatch_job_in_container(job, container):
+    "Find the index of a dispatch job in a container, using compare_dispatch_jobs."
+    for idx, job2 in enumerate(container):
+        if compare_dispatch_jobs(job, job2):
+            return idx
+    return None
+
+
 def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     workflow_dispatch_groups = copy.deepcopy(workflow_dispatch_groups_orig)
 
@@ -614,7 +622,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
             producer = producers[0]
 
             if dispatch_job_in_container(producer, merged_producers):
-                producer_index = merged_producers.index(producers)
+                producer_index = index_of_dispatch_job_in_container(producer, merged_producers)
                 matching_consumers = merged_consumers[producer_index]
 
                 producer_name = producer['name']

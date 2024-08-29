@@ -1558,7 +1558,7 @@ __sort4(_ForwardIterator __x1, _ForwardIterator __x2, _ForwardIterator __x3, _Fo
 // stable, 4-10 compares, 0-9 swaps
 
 template <class _Compare, class _ForwardIterator>
-_LIBCUDACXX_HIDDEN _CCCL_HOST_DEVICE unsigned __sort5(
+_CCCL_VISIBILITY_HIDDEN _CCCL_HOST_DEVICE unsigned __sort5(
   _ForwardIterator __x1,
   _ForwardIterator __x2,
   _ForwardIterator __x3,

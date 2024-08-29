@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_FUNCTION) && !defined(_LIBCUDACXX_USE_IS_FUNCTION_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_function : integral_constant<bool, _LIBCUDACXX_IS_FUNCTION(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function : integral_constant<bool, _LIBCUDACXX_IS_FUNCTION(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -40,7 +40,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_function_v = _LIBCUDACXX_IS_FUNCTION(_T
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_function
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function
     : public integral_constant<bool, !(is_reference<_Tp>::value || is_const<const _Tp>::value)>
 {};
 

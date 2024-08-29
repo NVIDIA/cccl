@@ -23,7 +23,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, _Tp __v>
-struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
+struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
   static constexpr const _Tp value = __v;
   typedef _Tp value_type;

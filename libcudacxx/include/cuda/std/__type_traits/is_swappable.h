@@ -157,24 +157,24 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 #if _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_swappable_with
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
     : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_swappable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
     : public __conditional_t<__libcpp_is_referenceable<_Tp>::value,
                              is_swappable_with<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<_Tp>>,
                              false_type>
 {};
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable_with
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
     : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
     : public __conditional_t<__libcpp_is_referenceable<_Tp>::value,
                              is_nothrow_swappable_with<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<_Tp>>,
                              false_type>
