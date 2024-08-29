@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_copy_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_assignable
     : public integral_constant<bool,
                                _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(
                                  __add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>)>
@@ -44,7 +44,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_copy_assignable_v = _LIBCUDACXX
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_copy_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_assignable
     : public is_nothrow_assignable<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 

@@ -347,7 +347,7 @@ struct __is_cpp17_copy_insertable<
 {};
 
 template <class _Alloc>
-struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
+struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 {
   using allocator_type     = _Alloc;
   using value_type         = typename allocator_type::value_type;

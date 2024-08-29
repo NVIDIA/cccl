@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS reference_wrapper : public __weak_result_type<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper : public __weak_result_type<_Tp>
 {
 public:
   // types

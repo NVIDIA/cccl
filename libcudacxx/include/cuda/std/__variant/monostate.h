@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct _LIBCUDACXX_TEMPLATE_VIS monostate
+struct _CCCL_TYPE_VISIBILITY_DEFAULT monostate
 {};
 
 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(monostate, monostate) noexcept
@@ -78,7 +78,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(monostate, monostate) no
 
 #ifndef __cuda_std__
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<monostate>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
 {
   using argument_type = monostate;
   using result_type   = size_t;

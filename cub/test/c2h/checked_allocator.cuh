@@ -35,24 +35,62 @@
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
 
+#include <cstdlib>
+#include <iostream>
 #include <new>
-
-// #define DEBUG_CHECKED_ALLOC_FAILURE
-
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-#  include <iostream>
-#endif
 
 namespace c2h
 {
 namespace detail
 {
 
+struct memory_info
+{
+  std::size_t free{};
+  std::size_t total{};
+  bool override{false};
+};
+
+// If the environment variable CCCL_DEVICE_MEMORY_LIMIT is set, the total device memory
+// will be limited to this number of bytes.
+inline std::size_t get_device_memory_limit()
+{
+  static const char* override_str = std::getenv("CCCL_DEVICE_MEMORY_LIMIT");
+  static std::size_t result       = override_str ? static_cast<std::size_t>(std::atoll(override_str)) : 0;
+  return result;
+}
+
+inline bool get_debug_checked_allocs()
+{
+  static const char* debug_checked_allocs = std::getenv("CCCL_DEBUG_CHECKED_ALLOC_FAILURES");
+  static bool result                      = debug_checked_allocs && (std::atoi(debug_checked_allocs) != 0);
+  return result;
+}
+
+inline cudaError_t get_device_memory(memory_info& info)
+{
+  static std::size_t device_memory_limit = get_device_memory_limit();
+
+  cudaError_t status = cudaMemGetInfo(&info.free, &info.total);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
+
+  if (device_memory_limit > 0)
+  {
+    info.free  = (std::max)(std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
+    info.total = device_memory_limit;
+    info.override = true;
+  }
+
+  return cudaSuccess;
+}
+
 inline cudaError_t check_free_device_memory(std::size_t bytes)
 {
-  std::size_t free_bytes{};
-  std::size_t total_bytes{};
-  cudaError_t status = cudaMemGetInfo(&free_bytes, &total_bytes);
+  memory_info info;
+  cudaError_t status = get_device_memory(info);
   if (status != cudaSuccess)
   {
     return status;
@@ -60,20 +98,31 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
 
   // Avoid allocating all available memory:
   constexpr std::size_t padding = 16 * 1024 * 1024; // 16 MiB
-  if (free_bytes < (bytes + padding))
+  if (info.free < (bytes + padding))
   {
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const double total_GiB     = static_cast<double>(total_bytes) / (1024 * 1024 * 1024);
-    const double free_GiB      = static_cast<double>(free_bytes) / (1024 * 1024 * 1024);
-    const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
-    const double padded_GiB    = static_cast<double>(bytes + padding) / (1024 * 1024 * 1024);
+    if (get_debug_checked_allocs())
+    {
+      const double total_GiB     = static_cast<double>(info.total) / (1024 * 1024 * 1024);
+      const double free_GiB      = static_cast<double>(info.free) / (1024 * 1024 * 1024);
+      const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
+      const double padded_GiB    = static_cast<double>(bytes + padding) / (1024 * 1024 * 1024);
 
-    std::cerr
-      << "Total device mem:     " << total_GiB << " GiB\n" //
-      << "Free device mem:      " << free_GiB << " GiB\n" //
-      << "Requested device mem: " << requested_GiB << " GiB\n" //
-      << "Padded device mem:    " << padded_GiB << " GiB\n";
-#endif
+      std::cerr << "Device memory allocation failed due to insufficient free device memory.\n";
+
+      if (info.override)
+      {
+        std::cerr
+          << "Available device memory has been limited (env var CCCL_DEVICE_MEMORY_LIMIT=" << get_device_memory_limit()
+          << ").\n";
+      }
+
+      std::cerr
+        << "Total device mem:     " << total_GiB << " GiB\n" //
+        << "Free device mem:      " << free_GiB << " GiB\n" //
+        << "Requested device mem: " << requested_GiB << " GiB\n" //
+        << "Padded device mem:    " << padded_GiB << " GiB\n";
+    }
+
     return cudaErrorMemoryAllocation;
   }
 

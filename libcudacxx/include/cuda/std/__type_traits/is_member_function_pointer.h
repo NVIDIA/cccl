@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_MEMBER_FUNCTION_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_FUNCTION_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_member_function_pointer
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
     : public integral_constant<bool, _LIBCUDACXX_IS_MEMBER_FUNCTION_POINTER(_Tp)>
 {};
 
@@ -63,7 +63,7 @@ struct __libcpp_is_member_pointer<_Tp _Up::*>
 };
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_member_function_pointer
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
     : public integral_constant<bool, __libcpp_is_member_pointer<__remove_cv_t<_Tp>>::__is_func>
 {};
 

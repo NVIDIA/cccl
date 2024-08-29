@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_union : public integral_constant<bool, _LIBCUDACXX_IS_UNION(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public integral_constant<bool, _LIBCUDACXX_IS_UNION(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -42,7 +42,7 @@ template <class _Tp>
 struct __libcpp_union : public false_type
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_union : public __libcpp_union<__remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public __libcpp_union<__remove_cv_t<_Tp>>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

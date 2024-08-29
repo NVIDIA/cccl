@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS has_unique_object_representations
+struct _CCCL_TYPE_VISIBILITY_DEFAULT has_unique_object_representations
     : public integral_constant<bool, __has_unique_object_representations(remove_cv_t<remove_all_extents_t<_Tp>>)>
 {};
 

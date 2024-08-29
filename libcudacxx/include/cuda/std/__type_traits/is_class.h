@@ -33,7 +33,7 @@ struct __two
 #if defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_class : public integral_constant<bool, _LIBCUDACXX_IS_CLASS(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class : public integral_constant<bool, _LIBCUDACXX_IS_CLASS(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_class_imp
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_class
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class
     : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value>
 {};
 

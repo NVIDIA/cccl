@@ -222,7 +222,7 @@ protected:
 };
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 {
   using __base = __pair_base<_T1, _T2>;
 
@@ -643,23 +643,23 @@ make_pair(_T1&& __t1, _T2&& __t2)
 }
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<pair<_T1, _T2>> : public integral_constant<size_t, 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<pair<_T1, _T2>> : public integral_constant<size_t, 2>
 {};
 
 template <size_t _Ip, class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, pair<_T1, _T2>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, pair<_T1, _T2>>
 {
   static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<std::pair<T1, T2>>");
 };
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<0, pair<_T1, _T2>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, pair<_T1, _T2>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _T1 type;
 };
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<1, pair<_T1, _T2>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, pair<_T1, _T2>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _T2 type;
 };
