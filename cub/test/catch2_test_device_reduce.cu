@@ -153,7 +153,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
 // Skip DeviceReduce::Sum tests for extended floating-point types because of unbounded epsilon due
 // to pseudo associativity of the addition operation over floating point numbers
-#if TEST_TYPES != 3 && TEST_TYPES != 4
+#if TEST_TYPES != 3
   SECTION("sum")
   {
     using op_t    = cub::Sum;

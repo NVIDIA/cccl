@@ -62,7 +62,7 @@ CUB_NAMESPACE_BEGIN
 namespace internal
 {
 
-/// DPX instructions compute min and max for up to three 16 and 32-bit signed or unsigned integer parameters
+/// DPX instructions compute min, max, and sum for up to three 16 and 32-bit signed or unsigned integer parameters
 /// see DPX documetation https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dpx
 /// NOTE: The compiler is able to automatically vectorize all cases with 3 operands
 ///       However, all other cases with per-halfword comparison need to be explicitly vectorized
@@ -73,7 +73,7 @@ namespace internal
 /// - The number of elements must be large enough for performance reasons (see below)
 /// - All types must be the same
 /// - Only works with integral types of 2 bytes
-/// - DPX instructions provide Min and Max SIMD operations
+/// - DPX instructions provide Min, Max, and Sum SIMD operations
 /// If the number of instructions is the same, we favor the compiler
 
 template <int LENGTH, typename T, typename ReductionOp, typename PrefixT = T, typename AccumT = T>
@@ -82,15 +82,15 @@ constexpr bool enable_dpx_reduction()
 {
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
-    (return LENGTH >= 10
+    (return ((LENGTH >= 9 && ::cuda::is_same<ReductionOp, cub::Sum>::value) || LENGTH >= 10)
             && detail::are_same<T, PrefixT, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
-            && detail::is_one_of<ReductionOp, cub::Min, cub::Max>();),
+            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum>();),
     (return false;));
 }
 // clang-format on
 
-// Considering compiler vectorization with 3-way reduction, the number of SASS instructions is
+// Considering compiler vectorization with 3-way comparison, the number of SASS instructions is
 // Standard: ceil((L - 3) / 2) + 1
 //   replacing L with L/2 for SIMD
 // DPX:      ceil((L/2 - 3) / 2) + 1 + 2 [for halfword comparison: PRMT, VIMNMX] + L % 2 [for last element]
@@ -187,8 +187,7 @@ _CCCL_NODISCARD _CCCL_DEVICE
 _CCCL_FORCEINLINE ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp>(), T>
 ThreadReduce(T* input, ReductionOp reduction_op)
 {
-  constexpr auto IS_MIN = ::cuda::std::is_same<ReductionOp, cub::Min>::value;
-  using DpxReduceOp     = ::cuda::std::_If<IS_MIN, DpxMin<T>, DpxMax<T>>;
+  using DpxReduceOp     = cub_operator_to_dpx_t<ReductionOp, T>;
   using SimdType        = ::cuda::std::pair<T, T>;
   auto unsigned_input   = reinterpret_cast<unsigned*>(input);
   auto simd_reduction   = ThreadReduce<LENGTH / 2>(unsigned_input, DpxReduceOp{});
