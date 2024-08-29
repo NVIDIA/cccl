@@ -189,7 +189,7 @@ inline const ::std::vector<device>& all_devices::__devices()
 //! * device_ref
 inline constexpr detail::all_devices devices{};
 
-inline arch_traits_t device_ref::arch_traits() const
+inline const arch_traits_t& device_ref::arch_traits() const
 {
   return devices[get()].arch_traits();
 }

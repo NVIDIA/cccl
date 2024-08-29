@@ -78,7 +78,7 @@ public:
 #  endif
 #endif
 
-  inline arch_traits_t arch_traits() const
+  const arch_traits_t& arch_traits() const
   {
     return __traits;
   }
@@ -111,11 +111,15 @@ private:
   mutable CUcontext __primary_ctx = nullptr;
   mutable CUdevice __device{};
   mutable ::std::once_flag __init_once;
-  const arch_traits_t __traits;
+
+  // TODO should this be a reference/pointer to the constexpr traits instances?
+  //  Do we care about lazy init?
+  //  We should have some of the attributes just return from the arch traits
+  arch_traits_t __traits;
 
   explicit device(int __id)
       : device_ref(__id)
-      , __traits(cuda::experimental::arch_traits(attrs::compute_capability(__id)))
+      , __traits(detail::__arch_traits_might_be_unknown(__id, attrs::compute_capability(__id)))
   {}
 
   // `device` objects are not movable or copyable.
