@@ -69,6 +69,29 @@ template <typename ExecutionPolicy,
           typename OutputIterator,
           typename UnaryFunction,
           typename InitialValueType,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  UnaryFunction unary_op,
+  InitialValueType init,
+  BinaryFunction binary_op)
+{
+  using ValueType = thrust::remove_cvref_t<InitialValueType>; // cuda::std::__accumulator_t?
+
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
+  thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
+
+  return thrust::inclusive_scan(exec, _first, _last, result, init, binary_op);
+} // end transform_inclusive_scan()
+
+template <typename ExecutionPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename UnaryFunction,
+          typename InitialValueType,
           typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,

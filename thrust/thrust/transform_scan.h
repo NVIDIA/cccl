@@ -168,6 +168,20 @@ template <typename InputIterator, typename OutputIterator, typename UnaryFunctio
 OutputIterator transform_inclusive_scan(
   InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, AssociativeOperator binary_op);
 
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename UnaryFunction,
+          typename T,
+          typename AssociativeOperator>
+_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  T init,
+  AssociativeOperator binary_op);
+
 /*! \p transform_exclusive_scan fuses the \p transform and \p exclusive_scan
  *  operations.  \p transform_exclusive_scan is equivalent to performing a
  *  tranformation defined by \p unary_op into a temporary sequence and then
@@ -294,6 +308,15 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  */
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  UnaryFunction unary_op,
+  T init,
+  AssociativeOperator binary_op);
+
+template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
+OutputIterator transform_inclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
