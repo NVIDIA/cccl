@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_POD) && !defined(_LIBCUDACXX_USE_IS_POD_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_pod : public integral_constant<bool, _LIBCUDACXX_IS_POD(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pod : public integral_constant<bool, _LIBCUDACXX_IS_POD(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -43,7 +43,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_pod_v = _LIBCUDACXX_IS_POD(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_pod
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pod
     : public integral_constant<
         bool,
         is_trivially_default_constructible<_Tp>::value && is_trivially_copy_constructible<_Tp>::value

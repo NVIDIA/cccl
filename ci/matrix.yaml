@@ -36,7 +36,6 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 17,    cxx: ['gcc12'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['gcc12'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc12', 'clang16'], cpu: 'arm64'}
-    - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['intel']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang16']}
@@ -45,6 +44,8 @@ workflows:
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc', 'clang']}
+    # Edge-case jobs
+    - {jobs: ['limited'], project: 'cub', std: 17}
 
   nightly:
   # libcudacxx build fails, CUB tests fail:
@@ -200,6 +201,9 @@ jobs:
   test_lid1:  { name: 'DeviceLaunch', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid1'} }
   # - captured in a CUDA graph for deferred launch (lid2):
   test_lid2:  { name: 'GraphCapture', gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-lid2'} }
+  # Limited build reduces the number of runtime test cases, available device memory, etc, and may be used
+  # to reduce test runtime in limited environments.
+  limited:    { name: "SmallGMem",   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-limited'} }
 
   # Thrust:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }

@@ -34,12 +34,12 @@ using __remove_volatile_t = _LIBCUDACXX_REMOVE_VOLATILE(_Tp);
 
 #else
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_volatile
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile
 {
   typedef _Tp type;
 };
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_volatile<volatile _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile<volatile _Tp>
 {
   typedef _Tp type;
 };

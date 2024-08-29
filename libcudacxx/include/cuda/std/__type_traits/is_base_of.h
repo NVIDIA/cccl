@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 template <class _Bp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_base_of : public integral_constant<bool, _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of : public integral_constant<bool, _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -67,7 +67,7 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_base_of
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
     : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
 {};
 

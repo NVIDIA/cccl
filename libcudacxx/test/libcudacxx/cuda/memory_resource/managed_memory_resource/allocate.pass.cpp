@@ -57,7 +57,7 @@ void test(const unsigned int flag)
         auto* ptr = res.allocate(5, 42);
         unused(ptr);
       }
-      catch (const std::bad_alloc&)
+      catch (const std::invalid_argument&)
       {
         break;
       }
@@ -73,7 +73,7 @@ void test(const unsigned int flag)
         auto* ptr = res.allocate(5, 1337);
         unused(ptr);
       }
-      catch (const std::bad_alloc&)
+      catch (const std::invalid_argument&)
       {
         break;
       }

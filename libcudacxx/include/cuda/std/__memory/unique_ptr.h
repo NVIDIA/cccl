@@ -55,7 +55,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS default_delete
+struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 {
   static_assert(!_CCCL_TRAIT(is_function, _Tp), "default_delete cannot be instantiated for function types");
 
@@ -76,7 +76,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS default_delete
 };
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS default_delete<_Tp[]>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
 {
   _LIBCUDACXX_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
@@ -127,7 +127,7 @@ struct __unique_ptr_deleter_sfinae<_Deleter&>
 #endif
 
 template <class _Tp, class _Dp = default_delete<_Tp>>
-class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _LIBCUDACXX_TEMPLATE_VIS unique_ptr
+class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr
 {
 public:
   typedef _Tp element_type;
@@ -311,7 +311,7 @@ public:
 };
 
 template <class _Tp, class _Dp>
-class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _LIBCUDACXX_TEMPLATE_VIS unique_ptr<_Tp[], _Dp>
+class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr<_Tp[], _Dp>
 {
 public:
   typedef _Tp element_type;
@@ -785,11 +785,11 @@ _LIBCUDACXX_INLINE_VISIBILITY typename __unique_if<_Tp>::__unique_array_known_bo
 make_unique_for_overwrite(_Args&&...) = delete;
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS hash;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash;
 
 #ifndef __cuda_std__
 template <class _Tp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<unique_ptr<_Tp, _Dp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 {
 #  if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef unique_ptr<_Tp, _Dp> argument_type;
