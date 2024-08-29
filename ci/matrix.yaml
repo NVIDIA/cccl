@@ -46,7 +46,7 @@ workflows:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc', 'clang']}
     # Edge-case jobs
-    - {jobs: ['limited'], project: 'cub'}
+    - {jobs: ['limited'], project: 'cub', std: 17}
 
   nightly:
   # libcudacxx build fails, CUB tests fail:
