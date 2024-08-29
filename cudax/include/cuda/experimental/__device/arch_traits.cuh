@@ -419,6 +419,7 @@ _CCCL_NODISCARD inline constexpr arch_traits_t __arch_traits_might_be_unknown(in
     __traits.elect_intrinsic    = __arch >= 900;
     __traits.cp_async_supported = __arch >= 800;
     __traits.tma_supported      = __arch >= 900;
+    return __traits;
   }
 }
 } // namespace detail
