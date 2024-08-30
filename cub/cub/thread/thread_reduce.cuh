@@ -188,12 +188,12 @@ template <int LENGTH,
           ::cuda::std::__enable_if_t<enable_dpx_reduction<LENGTH, T, ReductionOp>(), int> = 0>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
 {
-  using DpxReduceOp     = cub_operator_to_dpx_t<ReductionOp, T>;
-  using SimdType        = ::cuda::std::pair<T, T>;
-  auto unsigned_input   = reinterpret_cast<unsigned*>(input);
-  auto simd_reduction   = ThreadReduce<LENGTH / 2>(unsigned_input, DpxReduceOp{});
-  auto simd_values      = ::cuda::std::bit_cast<SimdType>(simd_reduction);
-  auto ret_value        = reduction_op(simd_values.first, simd_values.second);
+  using DpxReduceOp   = cub_operator_to_dpx_t<ReductionOp, T>;
+  using SimdType      = ::cuda::std::pair<T, T>;
+  auto unsigned_input = reinterpret_cast<unsigned*>(input);
+  auto simd_reduction = ThreadReduce<LENGTH / 2>(unsigned_input, DpxReduceOp{});
+  auto simd_values    = ::cuda::std::bit_cast<SimdType>(simd_reduction);
+  auto ret_value      = reduction_op(simd_values.first, simd_values.second);
   return (LENGTH % 2 == 0) ? ret_value : reduction_op(ret_value, input[LENGTH - 1]);
 }
 
