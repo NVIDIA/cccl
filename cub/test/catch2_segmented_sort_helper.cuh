@@ -26,7 +26,7 @@
  ******************************************************************************/
 #pragma once
 
-//#define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
+// #define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 #include <cub/device/device_segmented_sort.cuh>
 
 #include <thrust/device_ptr.h>

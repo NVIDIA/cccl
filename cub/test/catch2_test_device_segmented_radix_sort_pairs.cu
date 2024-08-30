@@ -331,7 +331,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
 
 CUB_TEST("DeviceSegmentedRadixSort::SortPairs: very large num. items and num. segments",
          "[pairs][segmented][radix][sort][device]",
-         all_offset_types) try
+         all_offset_types)
+try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using value_t                    = cuda::std::uint8_t;
@@ -390,8 +391,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: very large num. items and num. se
       is_overwrite);
   }
   // compute the reference only if the routine is able to terminate correctly
-  auto refs =
-    segmented_radix_sort_reference(in_keys, in_values, is_descending, num_segments, offsets, offsets_plus_1);
+  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, num_segments, offsets, offsets_plus_1);
   auto& ref_keys   = refs.first;
   auto& ref_values = refs.second;
   REQUIRE(ref_keys == out_keys);
@@ -402,7 +402,8 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortPairs: very large segments", "[pairs][segmented][radix][sort][device]",
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs: very large segments",
+         "[pairs][segmented][radix][sort][device]",
          all_offset_types)
 try
 {

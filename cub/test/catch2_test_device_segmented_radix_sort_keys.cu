@@ -131,7 +131,6 @@ using fp_key_types         = c2h::type_list<double>;
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
-
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
          "[keys][segmented][radix][sort][device]",
          key_types,
@@ -559,7 +558,8 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments", "[keys][segmented][radix][sort][device]",
+CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
+         "[keys][segmented][radix][sort][device]",
          all_offset_types)
 try
 {

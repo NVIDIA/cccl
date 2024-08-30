@@ -215,7 +215,8 @@ CUB_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][s
 // we can reuse the same structure of DeviceSegmentedRadixSortKeys for simplicity
 CUB_TEST("DeviceSegmentedSortKeys: very large num. items and num. segments",
          "[keys][segmented][sort][device]",
-         all_offset_types) try
+         all_offset_types)
+try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using offset_t                   = c2h::get<0, TestType>;
@@ -268,8 +269,7 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
-CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments", "[keys][segmented][sort][device]",
-         all_offset_types)
+CUB_TEST("DeviceSegmentedSort::SortKeys: very large segments", "[keys][segmented][sort][device]", all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs

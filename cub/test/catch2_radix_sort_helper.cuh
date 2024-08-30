@@ -55,8 +55,6 @@ using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
 using all_offset_types =
   c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t, cuda::std::int64_t, cuda::std::uint64_t>;
 
-
-
 // Create a segment iterator that returns the next multiple of Step except for a few cases. This allows to save memory
 template <typename OffsetT, OffsetT Step>
 struct segment_iterator
@@ -90,7 +88,6 @@ struct segment_iterator
     }
   }
 };
-
 
 // The launchers defined in catch2_test_launch_helper.h do not support
 // passing objects by reference since the device-launch tests cannot
