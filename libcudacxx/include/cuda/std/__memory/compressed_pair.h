@@ -215,7 +215,7 @@ public:
 };
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void swap(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void swap(
   __compressed_pair<_T1, _T2>& __x,
   __compressed_pair<_T1, _T2>& __y) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
 {

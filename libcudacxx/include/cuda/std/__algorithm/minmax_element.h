@@ -125,7 +125,7 @@ minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __com
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::minmax_element(__first, __last, __less{});

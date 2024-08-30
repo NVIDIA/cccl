@@ -78,17 +78,17 @@ struct __complex_can_implicitly_construct<double, __half> : true_type
 {};
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const _Tp& __value) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const _Tp& __value) noexcept
 {
   return __value;
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const float& __value) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const float& __value) noexcept
 {
   return __float2half(__value);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const double& __value) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const double& __value) noexcept
 {
   return __double2half(__value);
 }
@@ -227,21 +227,21 @@ public:
 
 template <> // complex<float>
 template <> // complex<__half>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<float>::complex(const complex<__half>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<float>::complex(const complex<__half>& __c)
     : __re_(__half2float(__c.real()))
     , __im_(__half2float(__c.imag()))
 {}
 
 template <> // complex<double>
 template <> // complex<__half>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<double>::complex(const complex<__half>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<double>::complex(const complex<__half>& __c)
     : __re_(__half2float(__c.real()))
     , __im_(__half2float(__c.imag()))
 {}
 
 template <> // complex<float>
 template <> // complex<__half>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const complex<__half>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const complex<__half>& __c)
 {
   __re_ = __half2float(__c.real());
   __im_ = __half2float(__c.imag());
@@ -250,36 +250,36 @@ inline _LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const
 
 template <> // complex<double>
 template <> // complex<__half>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<double>& complex<double>::operator=(const complex<__half>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<double>& complex<double>::operator=(const complex<__half>& __c)
 {
   __re_ = __half2float(__c.real());
   __im_ = __half2float(__c.imag());
   return *this;
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half arg(__half __re)
+_LIBCUDACXX_HIDE_FROM_ABI __half arg(__half __re)
 {
   return _CUDA_VSTD::atan2(__int2half_rn(0), __re);
 }
 
 // We have performance issues with some trigonometric functions with __half
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__half> asinh(const complex<__half>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__half> asinh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__half> acosh(const complex<__half>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__half> atanh(const complex<__half>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__half> acos(const complex<__half>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__half> acos(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
 }

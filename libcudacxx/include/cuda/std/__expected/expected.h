@@ -128,7 +128,6 @@ public:
   // [expected.object.ctor], constructors
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_HIDE_FROM_ABI constexpr expected() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
       : __base(true)
   {}
@@ -260,7 +259,6 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                          _LIBCUDACXX_AND(!_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(unexpect, __unex.error())
@@ -1284,7 +1282,6 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                          _LIBCUDACXX_AND(!_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
       : __base(unexpect, __unex.error())

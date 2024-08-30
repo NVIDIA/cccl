@@ -535,8 +535,7 @@ _CCCL_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
 // [pairs.spec], specialized algorithms
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return __x.first == __y.first && __x.second == __y.second;
 }
@@ -544,7 +543,6 @@ operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI
 _LIBCUDACXX_HIDE_FROM_ABI constexpr common_comparison_category_t<__synth_three_way_result<_T1>,
                                                                  __synth_three_way_result<_T2>>
 operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
@@ -559,36 +557,31 @@ operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 #else // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator<(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator<(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return __x.first < __y.first || (!(__y.first < __x.first) && __x.second < __y.second);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return __y < __x;
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator>=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator>=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return !(__x < __y);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator<=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator<=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return !(__y < __x);
 }
@@ -614,7 +607,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
 swap(pair<_T1, _T2>& __x,
      pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
@@ -633,7 +626,7 @@ swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 _CCCL_CONSTEXPR_CXX14 pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
 make_pair(_T1&& __t1, _T2&& __t2)
 {
@@ -723,28 +716,27 @@ struct __get_pair<1>
 };
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&
-get(pair<_T1, _T2>& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
 get(const pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(const pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
@@ -752,49 +744,49 @@ get(const pair<_T1, _T2>&& __p) noexcept
 
 #if _CCCL_STD_VER >= 2014
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const& get(pair<_T1, _T2> const& __p) noexcept
 {
   return __get_pair<0>::get(__p);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1&& get(pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<0>::get(_CUDA_VSTD::move(__p));
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T1, _T2> const&& __p) noexcept
 {
   return __get_pair<0>::get(_CUDA_VSTD::move(__p));
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(pair<_T2, _T1>& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(pair<_T2, _T1>& __p) noexcept
 {
   return __get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const& get(pair<_T2, _T1> const& __p) noexcept
 {
   return __get_pair<1>::get(__p);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1&& get(pair<_T2, _T1>&& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1&& get(pair<_T2, _T1>&& __p) noexcept
 {
   return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) noexcept
 {
   return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }

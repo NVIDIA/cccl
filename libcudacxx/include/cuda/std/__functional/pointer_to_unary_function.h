@@ -46,7 +46,7 @@ public:
 };
 
 template <class _Arg, class _Result>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI pointer_to_unary_function<_Arg, _Result>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI pointer_to_unary_function<_Arg, _Result>
 ptr_fun(_Result (*__f)(_Arg))
 {
   return pointer_to_unary_function<_Arg, _Result>(__f);

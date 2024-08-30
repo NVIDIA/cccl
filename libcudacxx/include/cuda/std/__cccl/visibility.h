@@ -65,13 +65,11 @@
 #if __has_attribute(exclude_from_explicit_instantiation)
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
 #else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
-// Try to approximate the effect of exclude_from_explicit_instantiation
-// (which is that entities are not assumed to be provided by explicit
-// template instantiations in the dylib) by always inlining those entities.
-#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION _CCCL_ALWAYS_INLINE
+// NVCC complains mightily about being unable to inline functions if we use _CCCL_ALWAYS_INLINE here
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !exclude_from_explicit_instantiation
 
-#define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN

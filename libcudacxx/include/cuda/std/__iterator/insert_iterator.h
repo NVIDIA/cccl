@@ -90,7 +90,7 @@ public:
 };
 
 template <class _Container>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
 inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
 {
   return insert_iterator<_Container>(__x, __i);

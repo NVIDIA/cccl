@@ -516,14 +516,14 @@ public:
 };
 
 template <class _Tp, class _Dp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_Dp>::value, void>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_Dp>::value, void>
 swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept
 {
   __x.swap(__y);
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool
 operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
   return __x.get() == __y.get();
@@ -531,8 +531,7 @@ operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 
 #if _CCCL_STD_VER <= 2017
 template <class _T1, class _D1, class _T2, class _D2>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -542,8 +541,7 @@ inline
 #endif
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator<(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -555,8 +553,7 @@ inline
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -565,8 +562,7 @@ inline
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator<=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -575,8 +571,7 @@ inline
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator>=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -598,16 +593,14 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool
-operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
 {
   return !__x;
 }
 
 #if _CCCL_STD_VER <= 2017
 template <class _T1, class _D1>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
@@ -616,8 +609,7 @@ inline
 }
 
 template <class _T1, class _D1>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator!=(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
@@ -626,8 +618,7 @@ inline
 }
 
 template <class _T1, class _D1>
-inline
-  _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 
   bool
   operator!=(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
@@ -637,51 +628,51 @@ inline
 #endif // _CCCL_STD_VER <= 2017
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   typedef typename unique_ptr<_T1, _D1>::pointer _P1;
   return less<_P1>()(__x.get(), nullptr);
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   typedef typename unique_ptr<_T1, _D1>::pointer _P1;
   return less<_P1>()(nullptr, __x.get());
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return nullptr < __x;
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   return __x < nullptr;
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return !(nullptr < __x);
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   return !(__x < nullptr);
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return !(__x < nullptr);
 }
 
 template <class _T1, class _D1>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   return !(nullptr < __x);
 }
@@ -717,14 +708,13 @@ struct __unique_if<_Tp[_Np]>
 };
 
 template <class _Tp, class... _Args>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single
-make_unique(_Args&&... __args)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique(_Args&&... __args)
 {
   return unique_ptr<_Tp>(new _Tp(_CUDA_VSTD::forward<_Args>(__args)...));
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique(size_t __n)
 {
   typedef __remove_extent_t<_Tp> _Up;

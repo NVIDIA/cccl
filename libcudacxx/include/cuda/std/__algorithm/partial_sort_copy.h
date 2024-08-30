@@ -81,7 +81,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_InputIterator, _RandomAcce
 }
 
 template <class _InputIterator, class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator partial_sort_copy(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,
@@ -103,7 +103,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator par
 }
 
 template <class _InputIterator, class _RandomAccessIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator partial_sort_copy(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,

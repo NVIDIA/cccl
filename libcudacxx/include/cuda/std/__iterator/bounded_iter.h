@@ -62,7 +62,6 @@ struct __bounded_iter
   _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter&&)      = default;
 
   template <class _OtherIterator, class = __enable_if_t<is_convertible<_OtherIterator, _Iterator>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __bounded_iter(__bounded_iter<_OtherIterator> const& __other) noexcept
       : __current_(__other.__current_)
       , __begin_(__other.__begin_)

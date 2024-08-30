@@ -83,7 +83,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
   using argument_type = monostate;
   using result_type   = size_t;
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(const argument_type&) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(const argument_type&) const noexcept
   {
     return 66740831; // return a fundamentally attractive random value.
   }

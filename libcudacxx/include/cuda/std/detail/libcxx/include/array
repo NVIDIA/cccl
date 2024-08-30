@@ -495,49 +495,49 @@ _CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator==(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return _CUDA_VSTD::equal(__x.begin(), __x.end(), __y.begin());
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return _CUDA_VSTD::lexicographical_compare(__x.begin(), __x.end(), __y.begin(), __y.end());
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return __y < __x;
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__y < __x);
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 {
   return !(__x < __y);
 }
 
 template <class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<_Size == 0 || __is_swappable<_Tp>::value, void>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<_Size == 0 || __is_swappable<_Tp>::value, void>
 swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
 {
   __x.swap(__y);
@@ -555,28 +555,28 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, array<_Tp, _Size>>
 };
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp& get(array<_Tp, _Size>& __a) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp& get(array<_Tp, _Size>& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (std::array)");
   return __a.__elems_[_Ip];
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp& get(const array<_Tp, _Size>& __a) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp& get(const array<_Tp, _Size>& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array)");
   return __a.__elems_[_Ip];
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&& __a) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (std::array &&)");
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
 template <size_t _Ip, class _Tp, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&& __a) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&& __a) noexcept
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::get<> (const std::array &&)");
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);

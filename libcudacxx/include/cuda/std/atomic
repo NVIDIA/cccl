@@ -642,108 +642,105 @@ struct atomic_flag
   atomic_flag& operator=(const atomic_flag&) volatile = delete;
 };
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test(const volatile atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test(const volatile atomic_flag* __o) noexcept
 {
   return __o->test();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test(const atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test(const atomic_flag* __o) noexcept
 {
   return __o->test();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool
-atomic_flag_test_explicit(const volatile atomic_flag* __o, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_explicit(const volatile atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test(__m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_explicit(const atomic_flag* __o, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_explicit(const atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test(__m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set(volatile atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set(volatile atomic_flag* __o) noexcept
 {
   return __o->test_and_set();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set(atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set(atomic_flag* __o) noexcept
 {
   return __o->test_and_set();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool
-atomic_flag_test_and_set_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test_and_set(__m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set_explicit(atomic_flag* __o, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool atomic_flag_test_and_set_explicit(atomic_flag* __o, memory_order __m) noexcept
 {
   return __o->test_and_set(__m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear(volatile atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear(volatile atomic_flag* __o) noexcept
 {
   __o->clear();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear(atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear(atomic_flag* __o) noexcept
 {
   __o->clear();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear_explicit(volatile atomic_flag* __o, memory_order __m) noexcept
 {
   __o->clear(__m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear_explicit(atomic_flag* __o, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_clear_explicit(atomic_flag* __o, memory_order __m) noexcept
 {
   __o->clear(__m);
 }
 
 #if !defined(__CUDA_MINIMUM_ARCH__) || __CUDA_MINIMUM_ARCH__ >= 700
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait(const volatile atomic_flag* __o, bool __v) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait(const volatile atomic_flag* __o, bool __v) noexcept
 {
   __o->wait(__v);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait(const atomic_flag* __o, bool __v) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait(const atomic_flag* __o, bool __v) noexcept
 {
   __o->wait(__v);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void
+_LIBCUDACXX_HIDE_FROM_ABI void
 atomic_flag_wait_explicit(const volatile atomic_flag* __o, bool __v, memory_order __m) noexcept
 {
   __o->wait(__v, __m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void
-atomic_flag_wait_explicit(const atomic_flag* __o, bool __v, memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_wait_explicit(const atomic_flag* __o, bool __v, memory_order __m) noexcept
 {
   __o->wait(__v, __m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_one(volatile atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_one(volatile atomic_flag* __o) noexcept
 {
   __o->notify_one();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_one(atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_one(atomic_flag* __o) noexcept
 {
   __o->notify_one();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(volatile atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(volatile atomic_flag* __o) noexcept
 {
   __o->notify_all();
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(atomic_flag* __o) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(atomic_flag* __o) noexcept
 {
   __o->notify_all();
 }
@@ -752,12 +749,12 @@ inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_flag_notify_all(atomic_flag* __o) n
 
 // fences
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_thread_fence(memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_thread_fence(memory_order __m) noexcept
 {
   __atomic_thread_fence_dispatch(__m);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI void atomic_signal_fence(memory_order __m) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void atomic_signal_fence(memory_order __m) noexcept
 {
   __atomic_signal_fence_dispatch(__m);
 }

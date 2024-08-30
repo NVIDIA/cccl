@@ -48,7 +48,7 @@ public:
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI unary_negate<_Predicate>
+_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 unary_negate<_Predicate>
 not1(const _Predicate& __pred)
 {
   return unary_negate<_Predicate>(__pred);

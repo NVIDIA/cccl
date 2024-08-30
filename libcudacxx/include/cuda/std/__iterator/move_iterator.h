@@ -401,7 +401,7 @@ struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 #endif // _CCCL_COMPILER_GCC || _CCCL_COMPILER_MSVC
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator==(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() == __y.base();
@@ -409,7 +409,7 @@ operator==(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 
 #if _CCCL_STD_VER <= 2017
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() != __y.base();
@@ -419,36 +419,36 @@ operator!=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(
-  const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) -> compare_three_way_result_t<_Iter1, _Iter2>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
+  -> compare_three_way_result_t<_Iter1, _Iter2>
 {
   return __x.base() <=> __y.base();
 }
 
 #else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() < __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() > __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() <= __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() >= __y.base();
@@ -456,7 +456,7 @@ operator>=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto
 operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) -> decltype(__x.base() - __y.base())
 {
   return __x.base() - __y.base();
@@ -464,7 +464,7 @@ operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) ->
 
 #if _CCCL_STD_VER > 2017
 template <class _Iter>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter>
 operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
   requires requires {
     { __x.base() + __n } -> same_as<_Iter>;
@@ -474,7 +474,7 @@ operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
 }
 #else // ^^^ _CCCL_STD_VER > 2017 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
 template <class _Iter>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter>
 operator+(typename move_iterator<_Iter>::difference_type __n, const move_iterator<_Iter>& __x)
 {
   return move_iterator<_Iter>(__x.base() + __n);
@@ -482,7 +482,7 @@ operator+(typename move_iterator<_Iter>::difference_type __n, const move_iterato
 #endif // _CCCL_STD_VER < 2020
 
 template <class _Iter>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter> make_move_iterator(_Iter __i)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter> make_move_iterator(_Iter __i)
 {
   return move_iterator<_Iter>(_CUDA_VSTD::move(__i));
 }

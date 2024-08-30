@@ -60,7 +60,7 @@ unique(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pre
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::unique(__first, __last, __equal_to{});

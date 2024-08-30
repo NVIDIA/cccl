@@ -122,15 +122,15 @@ public:
 };
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-                                                 const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
+                                          const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
 {
   return __x.__in_stream_ == __y.__in_stream_;
 }
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-                                                 const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
+                                          const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
 {
   return !(__x == __y);
 }

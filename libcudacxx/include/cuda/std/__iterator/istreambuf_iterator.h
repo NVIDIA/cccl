@@ -139,7 +139,7 @@ public:
 };
 
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 operator==(const istreambuf_iterator<_CharT, _Traits>& __a, const istreambuf_iterator<_CharT, _Traits>& __b)
 {
   return __a.equal(__b);
@@ -147,7 +147,7 @@ operator==(const istreambuf_iterator<_CharT, _Traits>& __a, const istreambuf_ite
 
 #if _CCCL_STD_VER <= 2017
 template <class _CharT, class _Traits>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool
+_LIBCUDACXX_HIDE_FROM_ABI bool
 operator!=(const istreambuf_iterator<_CharT, _Traits>& __a, const istreambuf_iterator<_CharT, _Traits>& __b)
 {
   return !__a.equal(__b);

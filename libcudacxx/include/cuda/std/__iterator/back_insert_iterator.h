@@ -89,7 +89,7 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator<_Container> back_inserter(_Container& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 back_insert_iterator<_Container> back_inserter(_Container& __x)
 {
   return back_insert_iterator<_Container>(__x);
 }

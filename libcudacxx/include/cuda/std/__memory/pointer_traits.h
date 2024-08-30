@@ -340,13 +340,13 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
 {
   return _CUDA_VSTD::__to_address(__p);
 }
 
 template <class _Pointer>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);

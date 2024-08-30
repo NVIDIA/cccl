@@ -84,7 +84,7 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(front_insert_iterator);
 
 template <class _Container>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 front_insert_iterator<_Container> front_inserter(_Container& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 front_insert_iterator<_Container> front_inserter(_Container& __x)
 {
   return front_insert_iterator<_Container>(__x);
 }

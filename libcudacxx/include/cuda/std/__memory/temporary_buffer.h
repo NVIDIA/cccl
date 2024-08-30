@@ -78,7 +78,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
 {
   _CUDA_VSTD::__libcpp_deallocate_unsized((void*) __p, _LIBCUDACXX_ALIGNOF(_Tp));
 }

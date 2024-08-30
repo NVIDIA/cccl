@@ -277,27 +277,27 @@ struct __has_select_on_container_copy_construction<
 {};
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __to_raw_pointer(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __to_raw_pointer(_Tp* __p) noexcept
 {
   return __p;
 }
 
 #if _CCCL_STD_VER <= 2017
 template <class _Pointer>
-inline _LIBCUDACXX_HIDE_FROM_ABI typename pointer_traits<_Pointer>::element_type* __to_raw_pointer(_Pointer __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI typename pointer_traits<_Pointer>::element_type* __to_raw_pointer(_Pointer __p) noexcept
 {
   return _CUDA_VSTD::__to_raw_pointer(__p.operator->());
 }
 #else // ^^^ C++17 ^^^ / vvv C++20 vvv
 template <class _Pointer>
-inline _LIBCUDACXX_HIDE_FROM_ABI auto
+_LIBCUDACXX_HIDE_FROM_ABI auto
 __to_raw_pointer(const _Pointer& __p) noexcept -> decltype(pointer_traits<_Pointer>::to_address(__p))
 {
   return pointer_traits<_Pointer>::to_address(__p);
 }
 
 template <class _Pointer, class... _None>
-inline _LIBCUDACXX_HIDE_FROM_ABI auto __to_raw_pointer(const _Pointer& __p, _None...) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI auto __to_raw_pointer(const _Pointer& __p, _None...) noexcept
 {
   return _CUDA_VSTD::__to_raw_pointer(__p.operator->());
 }

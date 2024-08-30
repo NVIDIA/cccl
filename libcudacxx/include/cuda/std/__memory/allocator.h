@@ -303,15 +303,13 @@ public:
 };
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool
-operator==(const allocator<_Tp>&, const allocator<_Up>&) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator==(const allocator<_Tp>&, const allocator<_Up>&) noexcept
 {
   return true;
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool
-operator!=(const allocator<_Tp>&, const allocator<_Up>&) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, const allocator<_Up>&) noexcept
 {
   return false;
 }

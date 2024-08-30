@@ -1154,7 +1154,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator __sample(
 
 #  if _CCCL_STD_VER > 2014
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _SampleIterator sample(
+_LIBCUDACXX_HIDE_FROM_ABI _SampleIterator sample(
   _PopulationIterator __first,
   _PopulationIterator __last,
   _SampleIterator __output_iter,
@@ -1483,7 +1483,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
 }
 
 template <class _ForwardIterator, class _Predicate>
-inline _LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
 stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   return __stable_partition<__add_lvalue_reference_t<_Predicate>>(
@@ -1954,32 +1954,32 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
 
 // This forwarder keeps the top call and the recursive calls using the same instantiation, forcing a reference _Compare
 template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI void sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+_LIBCUDACXX_HIDE_FROM_ABI void sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   using _Comp_ref = __comp_ref_type<_Compare>;
   _CUDA_VSTD::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
 }
 
 template <class _RandomAccessIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::sort(__first, __last, __less{});
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI void sort(_Tp** __first, _Tp** __last)
+_LIBCUDACXX_HIDE_FROM_ABI void sort(_Tp** __first, _Tp** __last)
 {
   _CUDA_VSTD::sort((size_t*) __first, (size_t*) __last, __less{});
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last)
+_LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last)
 {
   _CUDA_VSTD::sort(__first.base(), __last.base());
 }
 
 template <class _Tp, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
+_LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
 {
   typedef __add_lvalue_reference_t<_Compare> _Comp_ref;
   _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
@@ -2208,7 +2208,7 @@ _CCCL_HOST_DEVICE void __inplace_merge(
 }
 
 template <class _BidirectionalIterator, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI void inplace_merge(
+_LIBCUDACXX_HIDE_FROM_ABI void inplace_merge(
   _BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last, _Compare __comp)
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
@@ -2224,7 +2224,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI void inplace_merge(
 }
 
 template <class _BidirectionalIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI void
+_LIBCUDACXX_HIDE_FROM_ABI void
 inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last)
 {
   _CUDA_VSTD::inplace_merge(__first, __middle, __last, __less{});
@@ -2430,8 +2430,7 @@ _CCCL_HOST_DEVICE void __stable_sort(
 }
 
 template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI void
-stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+_LIBCUDACXX_HIDE_FROM_ABI void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
@@ -2448,7 +2447,7 @@ stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compar
 }
 
 template <class _RandomAccessIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::stable_sort(__first, __last, __less{});
 }
@@ -2668,7 +2667,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
 }
 
 template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI void
+_LIBCUDACXX_HIDE_FROM_ABI void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last, _Compare __comp)
 {
   using _Comp_ref = __comp_ref_type<_Compare>;
@@ -2676,7 +2675,7 @@ nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomA
 }
 
 template <class _RandomAccessIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI void
+_LIBCUDACXX_HIDE_FROM_ABI void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::nth_element(__first, __nth, __last, __less{});

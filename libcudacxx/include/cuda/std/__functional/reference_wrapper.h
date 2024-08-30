@@ -82,26 +82,25 @@ _CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 #endif
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(_Tp& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(_Tp& __t) noexcept
 {
   return reference_wrapper<_Tp>(__t);
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(reference_wrapper<_Tp> __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(reference_wrapper<_Tp> __t) noexcept
 {
   return __t;
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(const _Tp& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(const _Tp& __t) noexcept
 {
   return reference_wrapper<const _Tp>(__t);
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp>
-cref(reference_wrapper<_Tp> __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(reference_wrapper<_Tp> __t) noexcept
 {
   return __t;
 }

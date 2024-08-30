@@ -32,7 +32,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // trigonometric functions
-inline _LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __v)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__v);), ({
                       float __vf            = __half2float(__v);
@@ -59,13 +59,13 @@ inline _LIBCUDACXX_HIDE_FROM_ABI __half sin(__half __v)
                     }))
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __v)
 {
   return __float2half(::sinhf(__half2float(__v)));
 }
 
 // clang-format off
-inline _LIBCUDACXX_HIDE_FROM_ABI __half cos(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI  __half cos(__half __v)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
     return ::hcos(__v);
@@ -92,13 +92,13 @@ inline _LIBCUDACXX_HIDE_FROM_ABI __half cos(__half __v)
 }
 // clang-format on
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __v)
 {
   return __float2half(::coshf(__half2float(__v)));
 }
 
 // clang-format off
-inline _LIBCUDACXX_HIDE_FROM_ABI __half exp(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI  __half exp(__half __v)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
     return ::hexp(__v);
@@ -125,18 +125,18 @@ inline _LIBCUDACXX_HIDE_FROM_ABI __half exp(__half __v)
 }
 // clang-format on
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y)
+_LIBCUDACXX_HIDE_FROM_ABI __half hypot(__half __x, __half __y)
 {
   return __float2half(::hypotf(__half2float(__x), __half2float(__y)));
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half atan2(__half __x, __half __y)
+_LIBCUDACXX_HIDE_FROM_ABI __half atan2(__half __x, __half __y)
 {
   return __float2half(::atan2f(__half2float(__x), __half2float(__y)));
 }
 
 // clang-format off
-inline _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x)
+_LIBCUDACXX_HIDE_FROM_ABI  __half log(__half __x)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
     return ::hlog(__x);
@@ -162,28 +162,28 @@ inline _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x)
 }
 // clang-format on
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half sqrt(__half __x)
+_LIBCUDACXX_HIDE_FROM_ABI __half sqrt(__half __x)
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::sqrtf(__half2float(__x)));))
 }
 
 // floating point helper
-inline _LIBCUDACXX_HIDE_FROM_ABI bool signbit(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI bool signbit(__half __v)
 {
   return ::signbit(::__half2float(__v));
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isnan(__half __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isnan(__half __x) noexcept
 {
   return ::__hisnan(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool isnan(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI bool isnan(__half __v)
 {
   return __constexpr_isnan(__v);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2020 && defined(_CCCL_CUDACC_BELOW_12_3)
   // this is a workaround for nvbug 4362808
@@ -193,47 +193,47 @@ inline _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
 #  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_VER < 1203000
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool isinf(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI bool isinf(__half __v)
 {
   return __constexpr_isinf(__v);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isfinite(__half __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isfinite(__half __x) noexcept
 {
   return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI bool isfinite(__half __v)
+_LIBCUDACXX_HIDE_FROM_ABI bool isfinite(__half __v)
 {
   return __constexpr_isfinite(__v);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
 {
   return __float2half(::copysignf(__half2float(__x), __half2float(__y)));
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half copysign(__half __x, __half __y)
+_LIBCUDACXX_HIDE_FROM_ABI __half copysign(__half __x, __half __y)
 {
   return __constexpr_copysign(__x, __y);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
 {
   return ::__habs(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half fabs(__half __x)
+_LIBCUDACXX_HIDE_FROM_ABI __half fabs(__half __x)
 {
   return __constexpr_fabs(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half abs(__half __x)
+_LIBCUDACXX_HIDE_FROM_ABI __half abs(__half __x)
 {
   return __constexpr_fabs(__x);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexcept
 {
   return ::__hmax(__x, __y);
 }

@@ -218,7 +218,7 @@ template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choo
 class __tuple_leaf;
 
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
-inline _LIBCUDACXX_HIDE_FROM_ABI void
+_LIBCUDACXX_HIDE_FROM_ABI void
 swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(__is_nothrow_swappable<_Hp>::value)
 {
   swap(__x.get(), __y.get());
@@ -961,7 +961,7 @@ _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>
 #endif // _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
 
 template <class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
+_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
 swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
 {
   __t.swap(__u);
@@ -969,28 +969,26 @@ swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappab
 
 // get
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&
-get(tuple<_Tp...>& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>& __t) noexcept
 {
   return __t.template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&
 get(const tuple<_Tp...>& __t) noexcept
 {
   return __t.template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&&
-get(tuple<_Tp...>&& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&& __t) noexcept
 {
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&&
 get(const tuple<_Tp...>&& __t) noexcept
 {
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
@@ -1004,13 +1002,13 @@ namespace __find_detail
 static constexpr size_t __not_found = ~size_t(0);
 static constexpr size_t __ambiguous = __not_found - 1;
 
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __find_idx_return(size_t __curr_i, size_t __res, bool __matches)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __find_idx_return(size_t __curr_i, size_t __res, bool __matches)
 {
   return !__matches ? __res : (__res == __not_found ? __curr_i : __ambiguous);
 }
 
 template <size_t _Nx>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __find_idx(size_t __i, const bool (&__matches)[_Nx])
+_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __find_idx(size_t __i, const bool (&__matches)[_Nx])
 {
   return __i == _Nx ? __not_found : __find_idx_return(__i, __find_idx(__i + 1, __matches), __matches[__i]);
 }
@@ -1037,25 +1035,25 @@ struct __find_exactly_one_t : public __find_detail::__find_exactly_one_checked<_
 {};
 
 template <class _T1, class... _Args>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(tuple<_Args...>& __tup) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1& get(tuple<_Args...>& __tup) noexcept
 {
   return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(__tup);
 }
 
 template <class _T1, class... _Args>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const& get(tuple<_Args...> const& __tup) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const& get(tuple<_Args...> const& __tup) noexcept
 {
   return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(__tup);
 }
 
 template <class _T1, class... _Args>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1&& get(tuple<_Args...>&& __tup) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1&& get(tuple<_Args...>&& __tup) noexcept
 {
   return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(_CUDA_VSTD::move(__tup));
 }
 
 template <class _T1, class... _Args>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(tuple<_Args...> const&& __tup) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(tuple<_Args...> const&& __tup) noexcept
 {
   return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(_CUDA_VSTD::move(__tup));
 }
@@ -1065,7 +1063,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(tuple<_Args...> const
 // tie
 
 template <class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<_Tp&...> tie(_Tp&... __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<_Tp&...> tie(_Tp&... __t) noexcept
 {
   return tuple<_Tp&...>(__t...);
 }
@@ -1086,14 +1084,13 @@ _CCCL_GLOBAL_CONSTANT __ignore_t<unsigned char> ignore{};
 } // namespace
 
 template <class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<typename __unwrap_ref_decay<_Tp>::type...>
-make_tuple(_Tp&&... __t)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<typename __unwrap_ref_decay<_Tp>::type...> make_tuple(_Tp&&... __t)
 {
   return tuple<typename __unwrap_ref_decay<_Tp>::type...>(_CUDA_VSTD::forward<_Tp>(__t)...);
 }
 
 template <class... _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<_Tp&&...> forward_as_tuple(_Tp&&... __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<_Tp&&...> forward_as_tuple(_Tp&&... __t) noexcept
 {
   return tuple<_Tp&&...>(_CUDA_VSTD::forward<_Tp>(__t)...);
 }
@@ -1119,16 +1116,14 @@ struct __tuple_equal<0>
 };
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator==(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
 {
   static_assert(sizeof...(_Tp) == sizeof...(_Up), "Can't compare tuples of different sizes");
   return __tuple_equal<sizeof...(_Tp)>()(__x, __y);
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator!=(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
 {
   return !(__x == __y);
 }
@@ -1163,28 +1158,26 @@ struct __tuple_less<0>
 };
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator<(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator<(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
 {
   static_assert(sizeof...(_Tp) == sizeof...(_Up), "Can't compare tuples of different sizes");
   return __tuple_less<sizeof...(_Tp)>()(__x, __y);
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator>(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator>(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
 {
   return __y < __x;
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator>=(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator>=(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
 {
   return !(__x < __y);
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
-operator<=(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator<=(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
 {
   return !(__y < __x);
 }
@@ -1234,7 +1227,7 @@ struct __tuple_cat_return<>
   typedef _LIBCUDACXX_NODEBUG_TYPE tuple<> type;
 };
 
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<> tuple_cat()
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<> tuple_cat()
 {
   return tuple<>();
 }
@@ -1301,7 +1294,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
 };
 
 template <class _Tuple0, class... _Tuples>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename __tuple_cat_return<_Tuple0, _Tuples...>::type
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename __tuple_cat_return<_Tuple0, _Tuples...>::type
 tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
@@ -1315,7 +1308,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator<tuple<_Tp...>, _Alloc> : tru
 
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
   piecewise_construct_t,
   tuple<_Args1...>& __first_args,
   tuple<_Args2...>& __second_args,
@@ -1333,23 +1326,24 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _Is
     }
 
 template <class _Fn, class _Tuple, size_t... _Id>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
-__apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>) _LIBCUDACXX_NOEXCEPT_RETURN(
-  _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::get<_Id>(_CUDA_VSTD::forward<_Tuple>(__t))...))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
+  _LIBCUDACXX_NOEXCEPT_RETURN(
+    _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::get<_Id>(_CUDA_VSTD::forward<_Tuple>(__t))...))
 
-  template <class _Fn, class _Tuple>
-  inline _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) apply(_Fn&& __f, _Tuple&& __t)
-    _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__apply_tuple_impl(
-      _CUDA_VSTD::forward<_Fn>(__f),
-      _CUDA_VSTD::forward<_Tuple>(__t),
-      __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
+    template <class _Fn, class _Tuple>
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) apply(_Fn&& __f, _Tuple&& __t)
+      _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__apply_tuple_impl(
+        _CUDA_VSTD::forward<_Fn>(__f),
+        _CUDA_VSTD::forward<_Tuple>(__t),
+        __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
-      template <class _Tp, class _Tuple, size_t... _Idx>
-      inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
-        _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::forward<_Tuple>(__t))...))
+        template <class _Tp, class _Tuple, size_t... _Idx>
+        _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+  __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
+    _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::forward<_Tuple>(__t))...))
 
-          template <class _Tp, class _Tuple>
-          inline _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
+      template <class _Tp, class _Tuple>
+      _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
   make_from_tuple(_Tuple&& __t) _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__make_from_tuple_impl<_Tp>(
     _CUDA_VSTD::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 

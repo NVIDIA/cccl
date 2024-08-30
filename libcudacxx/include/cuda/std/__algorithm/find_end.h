@@ -189,7 +189,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIte
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1 find_end(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1 find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -207,7 +207,7 @@ _CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardI
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator1
 find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
   return _CUDA_VSTD::find_end(__first1, __last1, __first2, __last2, __equal_to{});

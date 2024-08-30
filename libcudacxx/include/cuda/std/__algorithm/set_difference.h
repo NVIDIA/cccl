@@ -61,7 +61,7 @@ __set_difference(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -75,7 +75,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_diffe
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,

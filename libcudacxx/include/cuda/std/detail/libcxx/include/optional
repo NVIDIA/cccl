@@ -247,7 +247,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_optional_access()
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_optional_access()
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -1390,7 +1390,7 @@ operator>=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
   _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_swappable, _Tp),
   void>
 swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))

@@ -52,12 +52,12 @@ template <>
 class bad_expected_access<void> : public ::std::exception
 {
 protected:
-  _CCCL_HIDE_FROM_ABI bad_expected_access() noexcept                                                     = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access(const bad_expected_access&)                                    = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access(bad_expected_access&&) & operator=(const bad_expected_access&) = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(const bad_expected_access&)                         = default;
-  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(bad_expected_access&&)                              = default;
-  ~bad_expected_access() noexcept override                                                               = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access(const bad_expected_access&)            = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access(bad_expected_access&&)                 = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(const bad_expected_access&) = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(bad_expected_access&&)      = default;
+  ~bad_expected_access() noexcept override                                       = default;
 
 public:
   // The way this has been designed (by using a class template below) means that we'll already
@@ -106,7 +106,7 @@ private:
 #  endif // _LIBCUDACXX_NO_EXCEPTIONS
 
 template <class _Err, class _Arg>
-_CCCL_NORETURN inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access(_Arg&& __arg)
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access(_Arg&& __arg)
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,

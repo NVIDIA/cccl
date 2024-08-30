@@ -62,13 +62,13 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)())
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)())
 {
   return mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap))
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI mem_fun1_t<_Sp, _Tp, _Ap> mem_fun(_Sp (_Tp::*__f)(_Ap))
 {
   return mem_fun1_t<_Sp, _Tp, _Ap>(__f);
 }
@@ -105,14 +105,13 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)())
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI mem_fun_ref_t<_Sp, _Tp> mem_fun_ref(_Sp (_Tp::*__f)())
 {
   return mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI mem_fun1_ref_t<_Sp, _Tp, _Ap>
-mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref(_Sp (_Tp::*__f)(_Ap))
 {
   return mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
@@ -150,14 +149,13 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun_t<_Sp, _Tp>
-mem_fun(_Sp (_Tp::*__f)() const)
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun_t<_Sp, _Tp> mem_fun(_Sp (_Tp::*__f)() const)
 {
   return const_mem_fun_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun1_t<_Sp, _Tp, _Ap>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun1_t<_Sp, _Tp, _Ap>
 mem_fun(_Sp (_Tp::*__f)(_Ap) const)
 {
   return const_mem_fun1_t<_Sp, _Tp, _Ap>(__f);
@@ -196,14 +194,14 @@ public:
 };
 
 template <class _Sp, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun_ref_t<_Sp, _Tp>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun_ref_t<_Sp, _Tp>
 mem_fun_ref(_Sp (_Tp::*__f)() const)
 {
   return const_mem_fun_ref_t<_Sp, _Tp>(__f);
 }
 
 template <class _Sp, class _Tp, class _Ap>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun1_ref_t<_Sp, _Tp, _Ap>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI const_mem_fun1_ref_t<_Sp, _Tp, _Ap>
 mem_fun_ref(_Sp (_Tp::*__f)(_Ap) const)
 {
   return const_mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);

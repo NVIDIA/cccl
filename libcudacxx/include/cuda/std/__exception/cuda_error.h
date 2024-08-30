@@ -62,7 +62,7 @@ public:
   {}
 };
 
-_CCCL_NORETURN inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t __status, const char* __msg)
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t __status, const char* __msg)
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw ::cuda::cuda_error(__status, __msg);),
@@ -75,7 +75,7 @@ public:
   cuda_error(::cudaError_t, const char*) noexcept {}
 };
 
-_CCCL_NORETURN inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t, const char*)
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t, const char*)
 {
   _CUDA_VSTD_NOVERSION::terminate();
 }

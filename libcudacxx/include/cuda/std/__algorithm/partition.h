@@ -91,7 +91,7 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
 }
 
 template <class _AlgPolicy, class _ForwardIterator, class _Sentinel, class _Predicate, class _IterCategory>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
 __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _IterCategory __iter_category)
 {
   return _CUDA_VSTD::__partition_impl<__remove_cvref_t<_Predicate>&, _AlgPolicy>(
@@ -99,7 +99,7 @@ __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _It
 }
 
 template <class _ForwardIterator, class _Predicate>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;

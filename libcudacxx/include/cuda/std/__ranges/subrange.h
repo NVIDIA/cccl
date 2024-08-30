@@ -254,7 +254,6 @@ public:
   = default;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
   template <class _It = _Iter, enable_if_t<default_initializable<_It>, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
       : view_interface<subrange<_Iter, _Sent, _Kind>>(){};
 #  endif // _CCCL_STD_VER <= 2017
@@ -296,7 +295,6 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
-  _LIBCUDACXX_HIDE_FROM_ABI
   _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}

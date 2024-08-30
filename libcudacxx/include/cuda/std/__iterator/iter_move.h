@@ -40,7 +40,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_move)
 
-_LIBCUDACXX_HIDE_FROM_ABI void iter_move();
+_CCCL_HOST_DEVICE void iter_move();
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>

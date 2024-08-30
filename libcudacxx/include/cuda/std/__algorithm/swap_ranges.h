@@ -58,7 +58,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator2
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator2
 swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
   return _CUDA_VSTD::__swap_ranges<_ClassicAlgPolicy>(

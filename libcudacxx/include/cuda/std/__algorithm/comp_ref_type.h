@@ -56,7 +56,7 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  inline _LIBCUDACXX_HIDE_FROM_ABI
+  _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
   __do_compare_assert(int, _LHS& __l, _RHS& __r)
   {
@@ -66,7 +66,7 @@ struct __debug_less
   }
 
   template <class _LHS, class _RHS>
-  inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __do_compare_assert(long, _LHS&, _RHS&)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __do_compare_assert(long, _LHS&, _RHS&)
   {}
 };
 

@@ -57,7 +57,7 @@ public:
 };
 
 template <class __Operation, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_HIDE_FROM_ABI binder1st<__Operation>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI binder1st<__Operation>
 bind1st(const __Operation& __op, const _Tp& __x)
 {
   return binder1st<__Operation>(__op, __x);

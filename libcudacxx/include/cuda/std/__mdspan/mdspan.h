@@ -255,8 +255,8 @@ public:
   _CCCL_HIDE_FROM_ABI ~mdspan() = default;
   */
 
-  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED _CCCL_HIDE_FROM_ABI mdspan& operator=(const mdspan&) = default;
-  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED _CCCL_HIDE_FROM_ABI mdspan& operator=(mdspan&&)      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mdspan& operator=(const mdspan&) = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mdspan& operator=(mdspan&&)      = default;
 
   //--------------------------------------------------------------------------------
   // [mdspan.basic.mapping], mdspan mapping domain multidimensional index to access codomain element

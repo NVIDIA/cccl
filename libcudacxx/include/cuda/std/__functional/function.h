@@ -57,7 +57,7 @@
 #    include <function>
 #  endif // _LIBCUDACXX_NO_EXCEPTIONS
 
-_CCCL_NORETURN inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
 {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
@@ -1302,31 +1302,31 @@ const _Tp* function<_Rp(_ArgTypes...)>::target() const noexcept
 #  endif // _LIBCUDACXX_NO_RTTI
 
 template <class _Rp, class... _ArgTypes>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
 {
   return !__f;
 }
 
 template <class _Rp, class... _ArgTypes>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
 {
   return !__f;
 }
 
 template <class _Rp, class... _ArgTypes>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
 {
   return (bool) __f;
 }
 
 template <class _Rp, class... _ArgTypes>
-inline _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
 {
   return (bool) __f;
 }
 
 template <class _Rp, class... _ArgTypes>
-inline _LIBCUDACXX_HIDE_FROM_ABI void swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
 {
   return __x.swap(__y);
 }

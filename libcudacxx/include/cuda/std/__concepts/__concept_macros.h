@@ -345,7 +345,7 @@ using _Requires_t = typename _Select<_Bp>::template type<_Tp>;
 template <typename...>
 struct _Tag;
 template <class>
-_LIBCUDACXX_HIDE_FROM_ABI inline constexpr bool _Is_true()
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool _Is_true()
 {
   return true;
 }

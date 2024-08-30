@@ -242,7 +242,7 @@ public:
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI inline bool __test_wait_sm_80(arrival_token __token) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_sm_80(arrival_token __token) const
   {
     (void) __token;
     int32_t __ready = 0;
@@ -343,7 +343,7 @@ private:
                 _CUDA_VSTD::chrono::nanoseconds(__nanosec));))
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI inline bool __test_wait_parity_sm_80(bool __phase_parity) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_parity_sm_80(bool __phase_parity) const
   {
     (void) __phase_parity;
     uint16_t __ready = 0;
@@ -459,7 +459,7 @@ public:
       _CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity));
   }
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_wait()
+  _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_wait()
   {
     wait(arrive());
   }
@@ -723,13 +723,13 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __
 
 // __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
 template <thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI inline _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
+_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
 {
   return nullptr;
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI inline _CUDA_VSTD::uint64_t*
+_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t*
 __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
   barrier<::cuda::thread_scope_block>& __barrier)
 {

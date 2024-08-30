@@ -37,8 +37,7 @@ struct allocation_result
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(allocation_result);
 
 template <class _Alloc>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<typename allocator_traits<_Alloc>::pointer>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<typename allocator_traits<_Alloc>::pointer>
 allocate_at_least(_Alloc& __alloc, size_t __n)
 {
   if constexpr (requires { __alloc.allocate_at_least(__n); })
@@ -65,8 +64,7 @@ struct __allocation_result
 };
 
 template <class _Alloc>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __allocation_result<typename allocator_traits<_Alloc>::pointer>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __allocation_result<typename allocator_traits<_Alloc>::pointer>
 __allocate_at_least(_Alloc& __alloc, size_t __n)
 {
   return {__alloc.allocate(__n), __n};

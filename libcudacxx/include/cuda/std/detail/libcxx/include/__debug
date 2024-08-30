@@ -218,7 +218,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_insert_c(_Tp* __c)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __debug_db_insert_c(_Tp* __c)
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
   if (!__libcpp_is_constant_evaluated())
@@ -231,7 +231,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_insert_c(
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_insert_i(_Tp* __i)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __debug_db_insert_i(_Tp* __i)
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
   if (!__libcpp_is_constant_evaluated())
@@ -244,7 +244,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_insert_i(
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_erase_c(_Tp* __c)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __debug_db_erase_c(_Tp* __c)
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
   if (!__libcpp_is_constant_evaluated())
@@ -257,7 +257,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_erase_c(_
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_swap(_Tp* __lhs, _Tp* __rhs)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __debug_db_swap(_Tp* __lhs, _Tp* __rhs)
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
   if (!__libcpp_is_constant_evaluated())
@@ -271,7 +271,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_swap(_Tp*
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 inline void __debug_db_invalidate_all(_Tp* __c)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __debug_db_invalidate_all(_Tp* __c)
 {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
   if (!__libcpp_is_constant_evaluated())

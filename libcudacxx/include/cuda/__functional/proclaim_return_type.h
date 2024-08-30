@@ -95,7 +95,7 @@ public:
 } // namespace __detail
 
 template <class _Ret, class _Fn>
-inline _LIBCUDACXX_HIDE_FROM_ABI __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>
+_LIBCUDACXX_HIDE_FROM_ABI __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>
 proclaim_return_type(_Fn&& __fn) noexcept
 {
   return __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__fn));

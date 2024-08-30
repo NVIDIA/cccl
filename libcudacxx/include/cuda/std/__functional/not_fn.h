@@ -63,7 +63,7 @@ struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn>
 };
 
 template <class _Fn, class = enable_if_t<is_constructible_v<decay_t<_Fn>, _Fn> && is_move_constructible_v<decay_t<_Fn>>>>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto not_fn(_Fn&& __f)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto not_fn(_Fn&& __f)
 {
   return __not_fn_t<decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__f));
 }

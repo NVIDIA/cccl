@@ -106,20 +106,20 @@ struct is_placeholder<placeholders::__ph<_Np>> : public integral_constant<int, _
 {};
 
 template <class _Tp, class _Uj>
-inline _LIBCUDACXX_HIDE_FROM_ABI _Tp& __mu(reference_wrapper<_Tp> __t, _Uj&)
+_LIBCUDACXX_HIDE_FROM_ABI _Tp& __mu(reference_wrapper<_Tp> __t, _Uj&)
 {
   return __t.get();
 }
 
 template <class _Ti, class... _Uj, size_t... _Indx>
-inline _LIBCUDACXX_HIDE_FROM_ABI typename __invoke_of<_Ti&, _Uj...>::type
+_LIBCUDACXX_HIDE_FROM_ABI typename __invoke_of<_Ti&, _Uj...>::type
 __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 {
   return __ti(_CUDA_VSTD::forward<_Uj>(_CUDA_VSTD::get<_Indx>(__uj))...);
 }
 
 template <class _Ti, class... _Uj>
-inline _LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _Uj...>>
+_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _Uj...>>
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
   typedef __make_tuple_indices_t<sizeof...(_Uj)> __indices;
@@ -137,7 +137,7 @@ struct __mu_return2<true, _Ti, _Uj>
 };
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t<0 < is_placeholder<_Ti>::value, typename __mu_return2<0 < is_placeholder<_Ti>::value, _Ti, _Uj>::type>
 __mu(_Ti&, _Uj& __uj)
 {
@@ -146,7 +146,7 @@ __mu(_Ti&, _Uj& __uj)
 }
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_HIDE_FROM_ABI
+_LIBCUDACXX_HIDE_FROM_ABI
 __enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__is_reference_wrapper<_Ti>::value,
               _Ti&>
 __mu(_Ti& __ti, _Uj&)
@@ -239,7 +239,7 @@ template <class _Fp, class _BoundArgs, class _TupleUj>
 using __bind_return_t = typename __bind_return<_Fp, _BoundArgs, _TupleUj>::type;
 
 template <class _Fp, class _BoundArgs, size_t... _Indx, class _Args>
-inline _LIBCUDACXX_HIDE_FROM_ABI __bind_return_t<_Fp, _BoundArgs, _Args>
+_LIBCUDACXX_HIDE_FROM_ABI __bind_return_t<_Fp, _BoundArgs, _Args>
 __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>, _Args&& __args)
 {
   return _CUDA_VSTD::__invoke(__f, _CUDA_VSTD::__mu(_CUDA_VSTD::get<_Indx>(__bound_args), __args)...);
@@ -333,15 +333,14 @@ struct is_bind_expression<__bind_r<_Rp, _Fp, _BoundArgs...>> : public true_type
 {};
 
 template <class _Fp, class... _BoundArgs>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind<_Fp, _BoundArgs...>
-bind(_Fp&& __f, _BoundArgs&&... __bound_args)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind<_Fp, _BoundArgs...> bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
   typedef __bind<_Fp, _BoundArgs...> type;
   return type(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_BoundArgs>(__bound_args)...);
 }
 
 template <class _Rp, class _Fp, class... _BoundArgs>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind_r<_Rp, _Fp, _BoundArgs...>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind_r<_Rp, _Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
   typedef __bind_r<_Rp, _Fp, _BoundArgs...> type;

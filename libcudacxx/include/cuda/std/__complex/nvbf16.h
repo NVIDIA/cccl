@@ -81,17 +81,17 @@ struct __complex_can_implicitly_construct<double, __nv_bfloat16> : true_type
 {};
 
 template <class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
 {
   return __value;
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const float& __value) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const float& __value) noexcept
 {
   return __float2bfloat16(__value);
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const double& __value) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const double& __value) noexcept
 {
   return __double2bfloat16(__value);
 }
@@ -230,21 +230,21 @@ public:
 
 template <> // complex<float>
 template <> // complex<__half>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<float>::complex(const complex<__nv_bfloat16>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<float>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(__bfloat162float(__c.real()))
     , __im_(__bfloat162float(__c.imag()))
 {}
 
 template <> // complex<double>
 template <> // complex<__half>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<double>::complex(const complex<__nv_bfloat16>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<double>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(__bfloat162float(__c.real()))
     , __im_(__bfloat162float(__c.imag()))
 {}
 
 template <> // complex<float>
 template <> // complex<__nv_bfloat16>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const complex<__nv_bfloat16>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const complex<__nv_bfloat16>& __c)
 {
   __re_ = __bfloat162float(__c.real());
   __im_ = __bfloat162float(__c.imag());
@@ -253,36 +253,36 @@ inline _LIBCUDACXX_HIDE_FROM_ABI complex<float>& complex<float>::operator=(const
 
 template <> // complex<double>
 template <> // complex<__nv_bfloat16>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
+_LIBCUDACXX_HIDE_FROM_ABI complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
 {
   __re_ = __bfloat162float(__c.real());
   __im_ = __bfloat162float(__c.imag());
   return *this;
 }
 
-inline _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 arg(__nv_bfloat16 __re)
+_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
   return _CUDA_VSTD::atan2(__int2bfloat16_rn(0), __re);
 }
 
 // We have performance issues with some trigonometric functions with __nv_bfloat16
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
+_LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }

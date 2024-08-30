@@ -645,7 +645,7 @@ template <size_t _Size>
 struct hash<bitset<_Size>>;
 
 template <size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range(size_t __pos, const char* __msg)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_range(size_t __pos, const char* __msg)
 {
   if (__pos >= _Size)
   {
@@ -654,7 +654,7 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __throw_if_out_of_ra
 }
 
 template <>
-inline _LIBCUDACXX_HIDE_FROM_ABI void __throw_if_out_of_range<0>(size_t __pos, const char* __msg)
+_LIBCUDACXX_HIDE_FROM_ABI void __throw_if_out_of_range<0>(size_t __pos, const char* __msg)
 {
   _CUDA_VSTD::__throw_out_of_range(__msg);
 }
@@ -978,7 +978,7 @@ private:
 };
 
 template <size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bitset<_Size>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bitset<_Size>
 operator&(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 {
   bitset<_Size> __r = __x;
@@ -987,7 +987,7 @@ operator&(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 }
 
 template <size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bitset<_Size>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bitset<_Size>
 operator|(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 {
   bitset<_Size> __r = __x;
@@ -996,7 +996,7 @@ operator|(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 }
 
 template <size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bitset<_Size>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bitset<_Size>
 operator^(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 {
   bitset<_Size> __r = __x;
