@@ -245,7 +245,7 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if !defined(LIBCUDACXX_ENABLE_EXCEPTIONS) || (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
+#  if (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
     || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif

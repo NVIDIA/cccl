@@ -24,13 +24,21 @@
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 
 namespace cuda::experimental
 {
 
 namespace detail
 {
+
+_CCCL_NODISCARD inline int __get_attr_impl(::cudaDeviceAttr __attr, int __dev)
+{
+  int __value = 0;
+  _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, __attr, __dev);
+  return __value;
+}
+
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr
 {
@@ -43,7 +51,7 @@ struct __dev_attr
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return __dev_id.attr<_Attr>();
+    return __get_attr_impl(_Attr, __dev_id.get());
   }
 };
 
@@ -59,7 +67,7 @@ struct __dev_attr_with_type
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return __dev_id.attr<_Attr>();
+    return static_cast<type>(__get_attr_impl(_Attr, __dev_id.get()));
   }
 };
 
@@ -249,9 +257,8 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
 #endif
-} // namespace detail
 
-struct device::attrs
+struct __device_attrs
 {
   // Maximum number of threads per block
   using max_threads_per_block_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerBlock>;
@@ -715,14 +722,21 @@ struct device::attrs
   static constexpr numa_id_t numa_id{};
 
 #endif // CUDART_VERSION >= 12020
+
+  // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
+  // capability in a single query
+  struct compute_capability_t
+  {
+    _CCCL_NODISCARD int operator()(device_ref __dev_id) const
+    {
+      return 100 * compute_capability_major(__dev_id) + 10 * compute_capability_minor(__dev_id);
+    }
+  };
+  static constexpr compute_capability_t compute_capability{};
 };
 
-inline arch_traits_t device_ref::arch_traits() const
-{
-  // TODO we might want to get the CC with device init and store it device struct
-  return cuda::experimental::arch_traits(
-    attr<cudaDevAttrComputeCapabilityMajor>() * 100 + attr<cudaDevAttrComputeCapabilityMinor>() * 10);
-}
+} // namespace detail
+
 } // namespace cuda::experimental
 
 #endif // _CUDAX__DEVICE_ATTRIBUTES_
