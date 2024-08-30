@@ -15,11 +15,11 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
-#include <format>
 #include <iostream>
 #include <memory>
 
 #include <cccl/reduce.h>
+#include <fmt/core.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
 
@@ -455,7 +455,7 @@ std::string get_single_tile_kernel_name(
   std::string reduction_op_t;
   check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
 
-  return std::format(
+  return fmt::format(
     "cub::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
     chained_policy_t,
     input_iterator_t,
@@ -487,7 +487,7 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
   std::string transform_op_t;
   check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
 
-  return std::format(
+  return fmt::format(
     "cub::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
     input_iterator_t,
@@ -545,7 +545,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const std::string input_iterator_src =
       input_it.type == cccl_iterator_kind_t::pointer
         ? std::string{}
-        : std::format(
+        : fmt::format(
             "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
             "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
             "struct __align__({2}) input_iterator_state_t {{\n;"
@@ -579,7 +579,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const std::string output_iterator_src =
       output_it.type == cccl_iterator_kind_t::pointer
         ? std::string{}
-        : std::format(
+        : fmt::format(
             "extern \"C\" __device__ void {2}(const void *self_ptr, {1} x);\n"
             "extern \"C\" __device__ void {3}(void *self_ptr, {0} offset);\n"
             "struct __align__({5}) output_iterator_state_t{{\n"
@@ -624,7 +624,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
     const std::string op_src =
       op.type == cccl_op_kind_t::stateless
-        ? std::format(
+        ? fmt::format(
             "extern \"C\" __device__ {0} {1}({0} lhs, {0} rhs);\n"
             "struct op_wrapper {{\n"
             "  __device__ {0} operator()({0} lhs, {0} rhs) const {{\n"
@@ -633,7 +633,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             "}};\n",
             accum_cpp,
             op.name)
-        : std::format(
+        : fmt::format(
             "struct __align__({2}) op_state {{\n"
             "  char data[{3}];\n"
             "}};"
@@ -649,7 +649,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             op.alignment,
             op.size);
 
-    const std::string src = std::format(
+    const std::string src = fmt::format(
       "#include <cub/block/block_reduce.cuh>\n"
       "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
       "struct __align__({1}) storage_t {{\n"
@@ -691,7 +691,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     std::string reduction_kernel_name = get_device_reduce_kernel_name(op, input_it, init);
     check(nvrtcAddNameExpression(prog, reduction_kernel_name.c_str()));
 
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+    const std::string arch = fmt::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     constexpr int num_args     = 7;
     const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
