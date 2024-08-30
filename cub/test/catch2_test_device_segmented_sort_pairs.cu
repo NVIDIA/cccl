@@ -252,19 +252,13 @@ CUB_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
   using offset_t                   = c2h::get<0, TestType>;
   constexpr std::size_t Step       = 500;
   using segment_iterator_t         = segment_iterator<offset_t, Step>;
-  constexpr std::size_t int32_max  = ::cuda::std::numeric_limits<std::int32_t>::max();
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr std::size_t range      = std::size_t{1} << 20;
-
-  constexpr std::size_t min_num_items =
-    (sizeof(offset_t) == 8) ? uint32_max : (::cuda::std::is_signed_v<offset_t> ? int32_max : uint32_max) - range;
-  constexpr std::size_t max_num_items = min_num_items + range;
-  constexpr int num_key_seeds         = 1;
-  constexpr int num_value_seeds       = 1;
-  const bool is_descending            = GENERATE(false, true);
-  const bool is_overwrite             = GENERATE(false, true);
-  const std::size_t num_items         = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = ::cuda::ceil_div(num_items, Step);
+  constexpr int num_key_seeds      = 1;
+  constexpr int num_value_seeds    = 1;
+  const bool is_descending         = GENERATE(false, true);
+  const bool is_overwrite          = GENERATE(false, true);
+  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_segments = ::cuda::ceil_div(num_items, Step);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
 
   c2h::device_vector<key_t> in_keys(num_items);
@@ -276,9 +270,9 @@ CUB_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
   c2h::device_vector<key_t> out_keys(num_items);
   c2h::device_vector<value_t> out_values(num_items);
   auto offsets =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{max_num_items});
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
   auto offsets_plus_1 =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{1}), segment_iterator_t{max_num_items});
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{1}), segment_iterator_t{num_items});
 
   if (is_descending)
   {
@@ -316,6 +310,70 @@ CUB_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
 catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+}
+
+
+CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]",
+         all_offset_types)
+try
+{
+  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using value_t                    = cuda::std::uint8_t;
+  using offset_t                   = c2h::get<0, TestType>;
+  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr int num_key_seeds      = 1;
+  constexpr int num_value_seeds    = 1;
+  const bool is_descending         = GENERATE(false, true);
+  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_segments = 2;
+  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
+
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
+  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(CUB_SEED(num_value_seeds), in_values);
+  c2h::device_vector<value_t> out_values(num_items);
+  c2h::device_vector<offset_t> offsets(num_segments + 1);
+  offsets[0] = 0;
+  offsets[1] = static_cast<offset_t>(num_items);
+  offsets[2] = static_cast<offset_t>(num_items);
+
+  if (is_descending)
+  {
+    dispatch_segmented_sort_pairs_descending(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      thrust::raw_pointer_cast(in_values.data()),
+      thrust::raw_pointer_cast(out_values.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1);
+  }
+  else
+  {
+    dispatch_segmented_sort_pairs(
+      thrust::raw_pointer_cast(in_keys.data()),
+      thrust::raw_pointer_cast(out_keys.data()),
+      thrust::raw_pointer_cast(in_values.data()),
+      thrust::raw_pointer_cast(out_values.data()),
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1);
+  }
+  // compute the reference only if the routine is able to terminate correctly
+  auto refs = segmented_radix_sort_reference(
+    in_keys, in_values, is_descending, num_segments, offsets.cbegin(), offsets.cbegin() + 1);
+  auto& ref_keys   = refs.first;
+  auto& ref_values = refs.second;
+  REQUIRE(ref_keys == out_keys);
+  REQUIRE(ref_values == out_values);
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Skipping segmented sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
 #endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
