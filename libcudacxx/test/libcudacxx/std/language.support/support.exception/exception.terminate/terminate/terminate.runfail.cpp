@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // test terminate
+// UNSUPPORTED: no_execute
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/__exception/terminate.h>

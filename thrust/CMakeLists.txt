@@ -59,6 +59,10 @@ option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 
+# Allow the user to optionally select offset type dispatch to fixed 32 or 64 bit types
+set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select Thrust offset type dispatch." FORCE)
+set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit")
+
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
 # need the install rules. See GH issue NVIDIA/thrust#1211.

@@ -664,12 +664,12 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER > 2011
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
 #  define _LIBCUDACXX_THROW_RUNTIME_ERROR(_COND, _MESSAGE) \
     if (!(_COND))                                          \
     __throw_runtime_error(_MESSAGE)
-#else
+#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
 #  define _LIBCUDACXX_THROW_RUNTIME_ERROR(_COND, _MESSAGE) _LIBCUDACXX_ASSERT(_COND, _MESSAGE)
-#endif
+#endif // _CCCL_NO_EXCEPTIONS
 
 #endif // _LIBCUDACXX___MDSPAN_MACROS_HPP
