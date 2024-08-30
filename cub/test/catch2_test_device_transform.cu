@@ -197,8 +197,7 @@ struct alignas(Alignment) overaligned_addable_t
 CUB_TEST("DeviceTransform::Transform overaligned type",
          "[device][device_transform]",
          c2h::type_list<overaligned_addable_t<32>,
-#ifndef _CCCL_COMPILER_MSVC // error C2719: 'unnamed-parameter': formal parameter with requested alignment of 256 won't
-                            // be aligned
+#ifndef _CCCL_COMPILER_MSVC // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
                         overaligned_addable_t<256>
 #endif // _CCCL_COMPILER_MSVC
                         >)
@@ -584,10 +583,11 @@ namespace Catch
 template <typename T>
 struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
 {
-  static auto convert(cub::detail::transform::aligned_base_ptr<T> ps) -> std::string
+  static auto convert(cub::detail::transform::aligned_base_ptr<T> abp) -> std::string
   {
     std::stringstream ss;
-    ss << "{ptr: " << ps.ptr << ", offset: " << ps.head_padding << "}";
+    ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << ", tail_elements_2nd_last_tile: "
+       << abp.tail_elements_2nd_last_tile << ", tail_elements_last_tile: " << abp.tail_elements_last_tile << "}";
     return ss.str();
   }
 };
@@ -597,14 +597,18 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
-  const auto ni = 42;
-  CHECK(make_aligned_base_ptr(&arr[0], ni, 128) == aligned_base_ptr<const int>{&arr[0], &arr[ni + 0], 0});
-  CHECK(make_aligned_base_ptr(&arr[1], ni, 128) == aligned_base_ptr<const int>{&arr[0], &arr[ni + 1], 4});
-  CHECK(make_aligned_base_ptr(&arr[5], ni, 128) == aligned_base_ptr<const int>{&arr[0], &arr[ni + 5], 20});
-  CHECK(make_aligned_base_ptr(&arr[31], ni, 128) == aligned_base_ptr<const int>{&arr[0], &arr[ni + 31], 124});
-  CHECK(make_aligned_base_ptr(&arr[32], ni, 128) == aligned_base_ptr<const int>{&arr[32], &arr[ni + 32], 0});
-  CHECK(make_aligned_base_ptr(&arr[33], ni, 128) == aligned_base_ptr<const int>{&arr[32], &arr[ni + 33], 4});
-  CHECK(make_aligned_base_ptr(&arr[127], ni, 128) == aligned_base_ptr<const int>{&arr[96], &arr[ni + 127], 124});
-  CHECK(make_aligned_base_ptr(&arr[128], ni, 128) == aligned_base_ptr<const int>{&arr[128], &arr[ni + 128], 0});
-  CHECK(make_aligned_base_ptr(&arr[129], ni, 128) == aligned_base_ptr<const int>{&arr[128], &arr[ni + 129], 4});
+  constexpr auto num_items = 34;
+  constexpr auto tile_size = 32;
+  auto make                = [](int* p) {
+    return make_aligned_base_ptr(p, num_items, tile_size, 128, 16);
+  };
+  CHECK(make(&arr[0]) == aligned_base_ptr<const int>{&arr[0], 0, 0, 2});
+  CHECK(make(&arr[1]) == aligned_base_ptr<const int>{&arr[0], 4, 1, 2});
+  CHECK(make(&arr[5]) == aligned_base_ptr<const int>{&arr[0], 20, 1, 2});
+  CHECK(make(&arr[31]) == aligned_base_ptr<const int>{&arr[0], 124, 0, 1});
+  CHECK(make(&arr[32]) == aligned_base_ptr<const int>{&arr[32], 0, 0, 2});
+  CHECK(make(&arr[33]) == aligned_base_ptr<const int>{&arr[32], 4, 1, 2});
+  CHECK(make(&arr[127]) == aligned_base_ptr<const int>{&arr[96], 124, 0, 1});
+  CHECK(make(&arr[128]) == aligned_base_ptr<const int>{&arr[128], 0, 0, 2});
+  CHECK(make(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4, 1, 2});
 }
