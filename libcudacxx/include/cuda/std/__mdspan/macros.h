@@ -71,10 +71,6 @@
 #    endif
 #  endif
 
-#  ifndef __MDSPAN_INLINE_FUNCTION
-#    define __MDSPAN_INLINE_FUNCTION inline _CCCL_HOST_DEVICE
-#  endif
-
 //==============================================================================
 // <editor-fold desc="Preprocessor helpers"> {{{1
 

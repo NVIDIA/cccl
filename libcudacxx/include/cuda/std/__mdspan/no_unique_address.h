@@ -130,12 +130,10 @@ struct __no_unique_address_emulation<_Tp,
 
   // Explicitly make this not a reference so that the copy or move
   // constructor still gets called.
-  __MDSPAN_INLINE_FUNCTION
-  explicit constexpr __no_unique_address_emulation(_Tp const& __v) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __no_unique_address_emulation(_Tp const& __v) noexcept
       : _Tp(__v)
   {}
-  __MDSPAN_INLINE_FUNCTION
-  explicit constexpr __no_unique_address_emulation(_Tp&& __v) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __no_unique_address_emulation(_Tp&& __v) noexcept
       : _Tp(_CUDA_VSTD::move(__v))
   {}
 };

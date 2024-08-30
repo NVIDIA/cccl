@@ -182,14 +182,14 @@ struct layout_stride
     struct __deduction_workaround<_CUDA_VSTD::index_sequence<_Idxs...>>
     {
       template <class _OtherExtents>
-      __MDSPAN_INLINE_FUNCTION static constexpr bool
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
       _eq_impl(mapping const& __self, mapping<_OtherExtents> const& __other) noexcept
       {
         return __MDSPAN_FOLD_AND((__self.stride(_Idxs) == __other.stride(_Idxs)) /* && ... */)
             && __MDSPAN_FOLD_AND((__self.extents().extent(_Idxs) == __other.extents().extent(_Idxs)) /* || ... */);
       }
       template <class _OtherExtents>
-      __MDSPAN_INLINE_FUNCTION static constexpr bool
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
       _not_eq_impl(mapping const& __self, mapping<_OtherExtents> const& __other) noexcept
       {
         return __MDSPAN_FOLD_OR((__self.stride(_Idxs) != __other.stride(_Idxs)) /* || ... */)
@@ -203,54 +203,51 @@ struct layout_stride
         return __MDSPAN_FOLD_PLUS_RIGHT((__idxs * __self.stride(_Idxs)), /* + ... + */ 0);
       }
 
-      __MDSPAN_INLINE_FUNCTION
-      static constexpr size_t _req_span_size_impl(mapping const& __self) noexcept
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t _req_span_size_impl(mapping const& __self) noexcept
       {
         // assumes no negative strides; not sure if I'm allowed to assume that or not
         return __impl::_call_op_impl(__self, (__self.extents().template __extent<_Idxs>() - 1)...) + 1;
       }
 
       template <class _OtherMapping>
-      __MDSPAN_INLINE_FUNCTION static constexpr const __strides_storage_t fill_strides(const _OtherMapping& __map)
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t fill_strides(const _OtherMapping& __map)
       {
         return __strides_storage_t{static_cast<index_type>(__map.stride(_Idxs))...};
       }
 
-      __MDSPAN_INLINE_FUNCTION
-      static constexpr const __strides_storage_t& fill_strides(const __strides_storage_t& __s)
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t& fill_strides(const __strides_storage_t& __s)
       {
         return __s;
       }
 
       template <class _IntegralType>
-      __MDSPAN_INLINE_FUNCTION static constexpr const __strides_storage_t
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t
       fill_strides(const _CUDA_VSTD::array<_IntegralType, extents_type::rank()>& __s)
       {
         return __strides_storage_t{static_cast<index_type>(__s[_Idxs])...};
       }
 
       template <class _IntegralType>
-      __MDSPAN_INLINE_FUNCTION static constexpr const __strides_storage_t
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t
       fill_strides(const _CUDA_VSTD::span<_IntegralType, extents_type::rank()>& __s)
       {
         return __strides_storage_t{static_cast<index_type>(__s[_Idxs])...};
       }
 
-      __MDSPAN_INLINE_FUNCTION
-      static constexpr const __strides_storage_t fill_strides(
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr const __strides_storage_t fill_strides(
         __detail::__extents_to_partially_static_sizes_t<_CUDA_VSTD::dextents<index_type, extents_type::rank()>>&& __s)
       {
         return __strides_storage_t{static_cast<index_type>(__s.template __get_n<_Idxs>())...};
       }
 
       template <size_t K>
-      __MDSPAN_INLINE_FUNCTION static constexpr size_t __return_zero()
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __return_zero()
       {
         return 0;
       }
 
       template <class _Mapping>
-      __MDSPAN_INLINE_FUNCTION static constexpr typename _Mapping::index_type __OFFSET(const _Mapping& m)
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr typename _Mapping::index_type __OFFSET(const _Mapping& m)
       {
         return m(__return_zero<_Idxs>()...);
       }
@@ -262,18 +259,17 @@ struct layout_stride
     //----------------------------------------------------------------------------
 
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-    __MDSPAN_INLINE_FUNCTION constexpr explicit mapping(__member_pair_t&& __m)
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(__member_pair_t&& __m)
         : __members(_CUDA_VSTD::move(__m))
     {}
 #  else
-    __MDSPAN_INLINE_FUNCTION constexpr explicit mapping(__base_t&& __b)
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit mapping(__base_t&& __b)
         : __base_t(_CUDA_VSTD::move(__b))
     {}
 #  endif
 
   public: // but not really
-    __MDSPAN_INLINE_FUNCTION
-    static constexpr mapping __make_mapping(
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr mapping __make_mapping(
       __detail::__extents_to_partially_static_sizes_t<_Extents>&& __exts,
       __detail::__extents_to_partially_static_sizes_t<_CUDA_VSTD::dextents<index_type, _Extents::rank()>>&&
         __strs) noexcept
@@ -303,7 +299,7 @@ struct layout_stride
       class _IntegralTypes,
       enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
       enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
-    __MDSPAN_INLINE_FUNCTION constexpr mapping(
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       extents_type const& __e, _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
@@ -332,7 +328,7 @@ struct layout_stride
       class _IntegralTypes,
       enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
       enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
-    __MDSPAN_INLINE_FUNCTION constexpr mapping(
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       extents_type const& __e, _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
@@ -374,8 +370,8 @@ struct layout_stride
       && (__detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
           || __detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
           || __detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>) ) // needs two () due to comma
-    __MDSPAN_INLINE_FUNCTION
-    constexpr mapping(_StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
+      _StridedLayoutMapping const& __other) noexcept // NOLINT(google-explicit-constructor)
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
         : __members{
 #  else
@@ -400,7 +396,7 @@ struct layout_stride
 
     _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
 
-    __MDSPAN_INLINE_FUNCTION constexpr const extents_type& extents() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
     {
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       return __members.__first();
@@ -409,14 +405,12 @@ struct layout_stride
 #  endif
     };
 
-    __MDSPAN_INLINE_FUNCTION
-    constexpr _CUDA_VSTD::array<index_type, extents_type::rank()> strides() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<index_type, extents_type::rank()> strides() const noexcept
     {
       return __strides_storage();
     }
 
-    __MDSPAN_INLINE_FUNCTION
-    constexpr index_type required_span_size() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
     {
       index_type __span_size = 1;
       for (unsigned __r = 0; __r < extents_type::rank(); __r++)
@@ -444,36 +438,35 @@ struct layout_stride
       return static_cast<index_type>(__impl::_call_op_impl(*this, static_cast<index_type>(__idxs)...));
     }
 
-    __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_unique() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
     {
       return true;
     }
-    __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_exhaustive() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
     {
       return false;
     }
-    __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_strided() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
     {
       return true;
     }
 
-    __MDSPAN_INLINE_FUNCTION static constexpr bool is_unique() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_unique() noexcept
     {
       return true;
     }
-    __MDSPAN_INLINE_FUNCTION constexpr bool is_exhaustive() const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
     {
       return required_span_size() == __get_size(extents(), _CUDA_VSTD::make_index_sequence<extents_type::rank()>());
     }
-    __MDSPAN_INLINE_FUNCTION static constexpr bool is_strided() noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_strided() noexcept
     {
       return true;
     }
 
     _LIBCUDACXX_TEMPLATE(class _Ext = _Extents)
     _LIBCUDACXX_REQUIRES((_Ext::rank() > 0))
-    __MDSPAN_INLINE_FUNCTION
-    constexpr index_type stride(rank_type __r) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const noexcept
     {
       return __strides_storage()[__r];
     }
@@ -490,8 +483,8 @@ struct layout_stride
                && (extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
                && _StridedLayoutMapping::is_always_strided())
 #  endif
-    __MDSPAN_INLINE_FUNCTION
-    friend constexpr bool operator==(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+    operator==(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
       bool __strides_match = true;
       for (rank_type __r = 0; __r < extents_type::rank(); __r++)
@@ -505,7 +498,7 @@ struct layout_stride
     // This one is not technically part of the proposal. Just here to make implementation a bit more optimal hopefully
     _LIBCUDACXX_TEMPLATE(class _OtherExtents)
     _LIBCUDACXX_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
-    __MDSPAN_INLINE_FUNCTION friend constexpr bool
+    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
     {
       return __impl::_eq_impl(__lhs, __rhs);
@@ -517,7 +510,7 @@ struct layout_stride
       __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> _LIBCUDACXX_AND(
         extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
         _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
-    __MDSPAN_INLINE_FUNCTION friend constexpr bool
+    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
       return not(__x == __y);
@@ -525,7 +518,7 @@ struct layout_stride
 
     _LIBCUDACXX_TEMPLATE(class _OtherExtents)
     _LIBCUDACXX_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
-    __MDSPAN_INLINE_FUNCTION friend constexpr bool
+    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
     {
       return __impl::_not_eq_impl(__lhs, __rhs);

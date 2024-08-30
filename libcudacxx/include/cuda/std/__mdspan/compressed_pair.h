@@ -101,7 +101,7 @@ struct __compressed_pair
   operator=(__compressed_pair&&) noexcept           = default;
   _CCCL_HIDE_FROM_ABI ~__compressed_pair() noexcept = default;
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
       : __t_val((_TLike&&) __t)
       , __u_val((_ULike&&) __u)
   {}
@@ -144,7 +144,7 @@ struct __compressed_pair<
   operator=(__compressed_pair&&) noexcept           = default;
   _CCCL_HIDE_FROM_ABI ~__compressed_pair() noexcept = default;
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
       : _Tp((_TLike&&) __t)
       , __u_val((_ULike&&) __u)
   {}
@@ -186,7 +186,7 @@ struct __compressed_pair<
   _CCCL_HIDE_FROM_ABI ~__compressed_pair() noexcept = default;
 
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
       : _Up((_ULike&&) __u)
       , __t_val((_TLike&&) __t)
   {}
@@ -239,7 +239,7 @@ struct __compressed_pair<
   operator=(__compressed_pair&&) noexcept           = default;
   _CCCL_HIDE_FROM_ABI ~__compressed_pair() noexcept = default;
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __compressed_pair(_TLike&& __t, _ULike&& __u) noexcept
       : __first_base_t(_Tp((_TLike&&) __t))
       , __second_base_t(_Up((_ULike&&) __u))
   {}

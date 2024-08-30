@@ -179,7 +179,7 @@ private:
   friend class extents;
 
   template <class _OtherIndexType, size_t... _OtherExtents, size_t... _Idxs>
-  __MDSPAN_INLINE_FUNCTION constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   _eq_impl(_CUDA_VSTD::extents<_OtherIndexType, _OtherExtents...>,
            false_type,
            _CUDA_VSTD::index_sequence<_Idxs...>) const noexcept
@@ -187,7 +187,7 @@ private:
     return false;
   }
   template <class _OtherIndexType, size_t... _OtherExtents, size_t... _Idxs>
-  __MDSPAN_INLINE_FUNCTION constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   _eq_impl(_CUDA_VSTD::extents<_OtherIndexType, _OtherExtents...> __other,
            true_type,
            _CUDA_VSTD::index_sequence<_Idxs...>) const noexcept
@@ -198,7 +198,7 @@ private:
   }
 
   template <class _OtherIndexType, size_t... _OtherExtents, size_t... _Idxs>
-  __MDSPAN_INLINE_FUNCTION constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   _not_eq_impl(_CUDA_VSTD::extents<_OtherIndexType, _OtherExtents...>,
                false_type,
                _CUDA_VSTD::index_sequence<_Idxs...>) const noexcept
@@ -206,7 +206,7 @@ private:
     return true;
   }
   template <class _OtherIndexType, size_t... _OtherExtents, size_t... _Idxs>
-  __MDSPAN_INLINE_FUNCTION constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   _not_eq_impl(_CUDA_VSTD::extents<_OtherIndexType, _OtherExtents...> __other,
                true_type,
                _CUDA_VSTD::index_sequence<_Idxs...>) const noexcept
@@ -217,7 +217,7 @@ private:
   }
 
 #  ifdef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-  __MDSPAN_INLINE_FUNCTION constexpr explicit extents(__base_t&& __b) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit extents(__base_t&& __b) noexcept
       : __base_t(_CUDA_VSTD::move(__b))
   {}
 #  endif
@@ -230,13 +230,11 @@ public:
   using index_type = _ThisIndexType;
   */
 
-  __MDSPAN_INLINE_FUNCTION
-  static constexpr rank_type rank() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
   {
     return sizeof...(_Extents);
   }
-  __MDSPAN_INLINE_FUNCTION
-  static constexpr rank_type rank_dynamic() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
   {
     return __MDSPAN_FOLD_PLUS_RIGHT((rank_type(_Extents == dynamic_extent)), /* + ... + */ 0);
   }
@@ -255,11 +253,10 @@ public:
       integral_constant<bool, sizeof...(_Extents) == sizeof...(_OtherExtents)>{},
       _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
       _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value))
-  __MDSPAN_INLINE_FUNCTION
-  __MDSPAN_CONDITIONAL_EXPLICIT(
+  _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_CONDITIONAL_EXPLICIT(
     (((_Extents != dynamic_extent) && (_OtherExtents == dynamic_extent)) || ...)
-    || (_CUDA_VSTD::numeric_limits<index_type>::max() < _CUDA_VSTD::numeric_limits<_OtherIndexType>::max()))
-  constexpr extents(const extents<_OtherIndexType, _OtherExtents...>& __other) noexcept
+    || (_CUDA_VSTD::numeric_limits<index_type>::max() < _CUDA_VSTD::numeric_limits<
+          _OtherIndexType>::max())) constexpr extents(const extents<_OtherIndexType, _OtherExtents...>& __other) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
@@ -302,8 +299,7 @@ public:
         _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
         _LIBCUDACXX_AND((sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank())))
 #  endif
-  __MDSPAN_INLINE_FUNCTION
-  explicit constexpr extents(_Integral... __exts) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr extents(_Integral... __exts) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
@@ -346,8 +342,7 @@ public:
                            _LIBCUDACXX_AND(_Np == rank() || _Np == rank_dynamic()))
 #  endif
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
-  __MDSPAN_INLINE_FUNCTION
-  constexpr extents(_CUDA_VSTD::array<_IndexType, _Np> const& __exts) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr extents(_CUDA_VSTD::array<_IndexType, _Np> const& __exts) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
@@ -390,8 +385,7 @@ public:
                            _LIBCUDACXX_AND(_Np == rank() || _Np == rank_dynamic()))
 #  endif
   __MDSPAN_CONDITIONAL_EXPLICIT(_Np != rank_dynamic())
-  __MDSPAN_INLINE_FUNCTION
-  constexpr extents(_CUDA_VSTD::span<_IndexType, _Np> __exts) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr extents(_CUDA_VSTD::span<_IndexType, _Np> __exts) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
@@ -420,8 +414,7 @@ public:
 
   // Need this constructor for some submdspan implementation stuff
   // for the layout_stride case where I use an extents object for strides
-  __MDSPAN_INLINE_FUNCTION
-  constexpr explicit extents(__storage_t const& __sto) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit extents(__storage_t const& __sto) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __storage_{
 #  else
@@ -437,16 +430,14 @@ public:
 
   //--------------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION
-  static constexpr size_t static_extent(size_t __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(size_t __n) noexcept
   {
     // Can't do assert here since that breaks true constexpr ness
     // assert(__n<rank());
     return _static_extent_impl(__n, _CUDA_VSTD::make_integer_sequence<size_t, sizeof...(_Extents)>{});
   }
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr index_type extent(size_t __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(size_t __n) const noexcept
   {
     // Can't do assert here since that breaks true constexpr ness
     // assert(__n<rank());
@@ -456,7 +447,7 @@ public:
   //--------------------------------------------------------------------------------
 
   template <class _OtherIndexType, size_t... _RHS>
-  __MDSPAN_INLINE_FUNCTION friend constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(extents const& lhs, extents<_OtherIndexType, _RHS...> const& __rhs) noexcept
   {
     return lhs._eq_impl(__rhs,
@@ -466,7 +457,7 @@ public:
 
 #  if !(__MDSPAN_HAS_CXX_20)
   template <class _OtherIndexType, size_t... _RHS>
-  __MDSPAN_INLINE_FUNCTION friend constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(extents const& lhs, extents<_OtherIndexType, _RHS...> const& __rhs) noexcept
   {
     return lhs._not_eq_impl(__rhs,
@@ -478,7 +469,7 @@ public:
   // End of public interface
 
 public: // (but not really)
-  __MDSPAN_INLINE_FUNCTION static constexpr extents
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr extents
   __make_extents_impl(__detail::__partially_static_sizes<index_type, size_t, _Extents...>&& __bs) noexcept
   {
     // This effectively amounts to a sideways cast that can be done in a constexpr
@@ -503,7 +494,7 @@ public: // (but not really)
   }
 
   template <size_t _Np, size_t _Default = dynamic_extent>
-  __MDSPAN_INLINE_FUNCTION static constexpr index_type __static_extent() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type __static_extent() noexcept
   {
     return __storage_t::template __get_static_n<_Np, _Default>();
   }

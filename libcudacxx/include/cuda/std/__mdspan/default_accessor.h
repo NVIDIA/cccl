@@ -74,10 +74,9 @@ struct default_accessor
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  __MDSPAN_INLINE_FUNCTION constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __p + __i;
   }

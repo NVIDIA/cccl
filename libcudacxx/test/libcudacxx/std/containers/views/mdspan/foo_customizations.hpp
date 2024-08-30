@@ -22,20 +22,19 @@ struct foo_accessor
   using reference        = T&;
   using data_handle_type = foo_ptr<T>;
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr foo_accessor(int* ptr = nullptr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr foo_accessor(int* ptr = nullptr) noexcept
   {
     flag = ptr;
   }
 
   template <class OtherElementType>
-  __MDSPAN_INLINE_FUNCTION constexpr foo_accessor(cuda::std::default_accessor<OtherElementType>) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr foo_accessor(cuda::std::default_accessor<OtherElementType>) noexcept
   {
     flag = nullptr;
   }
 
   template <class OtherElementType>
-  __MDSPAN_INLINE_FUNCTION constexpr foo_accessor(foo_accessor<OtherElementType> other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr foo_accessor(foo_accessor<OtherElementType> other) noexcept
   {
     flag = other.flag;
   }
@@ -97,7 +96,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
                                                                                                  // comma
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     mapping<OtherExtents> const& other) noexcept // NOLINT(google-explicit-constructor)
       : __extents(other.extents())
   {
@@ -111,7 +110,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due
                                                                                                  // to comma
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     cuda::std::layout_right::mapping<OtherExtents> const& other) noexcept // NOLINT(google-explicit-constructor)
       : __extents(other.extents())
   {}
@@ -121,7 +120,7 @@ public:
                        && (extents_type::rank() <= 1))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
                                                                                                  // comma
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     cuda::std::layout_left::mapping<OtherExtents> const& other) noexcept // NOLINT(google-explicit-constructor)
       : __extents(other.extents())
   {}
@@ -129,7 +128,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class OtherExtents)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     cuda::std::layout_stride::mapping<OtherExtents> const& other) // NOLINT(google-explicit-constructor)
       : __extents(other.extents())
   {
@@ -147,14 +146,12 @@ public:
 
   _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr const extents_type& extents() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
   {
     return __extents;
   }
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr index_type required_span_size() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
   {
     index_type value = 1;
     for (rank_type r = 0; r != extents_type::rank(); ++r)
@@ -166,51 +163,49 @@ public:
 
   //--------------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr index_type operator()() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()() const noexcept
   {
     return index_type(0);
   }
 
   template <class Indx0>
-  __MDSPAN_INLINE_FUNCTION constexpr index_type operator()(Indx0 idx0) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()(Indx0 idx0) const noexcept
   {
     return static_cast<index_type>(idx0);
   }
 
   template <class Indx0, class Indx1>
-  __MDSPAN_INLINE_FUNCTION constexpr index_type operator()(Indx0 idx0, Indx1 idx1) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()(Indx0 idx0, Indx1 idx1) const noexcept
   {
     return static_cast<index_type>(idx0 * __extents.extent(0) + idx1);
   }
 
-  __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_unique() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_exhaustive() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_strided() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION constexpr bool is_unique() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION constexpr bool is_exhaustive() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION constexpr bool is_strided() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept
   {
     return true;
   }
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr index_type stride(rank_type i) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type i) const noexcept
   {
     index_type value = 1;
     for (rank_type r = extents_type::rank() - 1; r > i; r--)
@@ -221,7 +216,7 @@ public:
   }
 
   template <class OtherExtents>
-  __MDSPAN_INLINE_FUNCTION friend constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(mapping const& lhs, mapping<OtherExtents> const& rhs) noexcept
   {
     return lhs.extents() == rhs.extents();
@@ -230,7 +225,7 @@ public:
   // In C++ 20 the not equal exists if equal is found
 #if !(__MDSPAN_HAS_CXX_20)
   template <class OtherExtents>
-  __MDSPAN_INLINE_FUNCTION friend constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(mapping const& lhs, mapping<OtherExtents> const& rhs) noexcept
   {
     return lhs.extents() != rhs.extents();
