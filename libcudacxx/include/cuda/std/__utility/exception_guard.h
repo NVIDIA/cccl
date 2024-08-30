@@ -47,7 +47,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // less common, especially one that tries to catch an exception through -fno-exceptions code.
 //
 // __exception_guard can help greatly simplify code that would normally be cluttered by
-// `#if _LIBCUDACXX_NO_EXCEPTIONS`. For example:
+// `#if _CCCL_NO_EXCEPTIONS`. For example:
 //
 //    template <class Iterator, class Size, class OutputIterator>
 //    Iterator uninitialized_copy_n(Iterator iter, Size n, OutputIterator out) {
@@ -141,13 +141,13 @@ private:
 
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
-#ifdef _LIBCUDACXX_NO_EXCEPTIONS
+#ifdef _CCCL_NO_EXCEPTIONS
 template <class _Rollback>
 using __exception_guard = __exception_guard_noexceptions<_Rollback>;
-#else
+#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
 template <class _Rollback>
 using __exception_guard = __exception_guard_exceptions<_Rollback>;
-#endif
+#endif // !_CCCL_NO_EXCEPTIONS
 
 template <class _Rollback>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollback __rollback)
