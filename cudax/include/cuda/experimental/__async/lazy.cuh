@@ -87,7 +87,7 @@ template <>
 struct __lazy_tupl<__mindices<>>
 {
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);

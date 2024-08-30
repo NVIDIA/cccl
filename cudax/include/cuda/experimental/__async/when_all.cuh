@@ -403,9 +403,9 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   }
 
   template <size_t _Index, size_t... _Jdx, class... _Ts>
-  _CCCL_HOST_DEVICE void __set_value(__mindices<_Jdx...>, _Ts&&... __ts) noexcept
+  _CCCL_HOST_DEVICE void __set_value(__mindices<_Jdx...>, [[maybe_unused]] _Ts&&... __ts) noexcept
   {
-    constexpr size_t _Offset = __offset_for<_Index>(static_cast<__offsets_t*>(nullptr));
+    [[maybe_unused]] constexpr size_t _Offset = __offset_for<_Index>(static_cast<__offsets_t*>(nullptr));
     if constexpr (!_CUDA_VSTD::is_same_v<__values_t, __nil>)
     {
       if constexpr (__nothrow_decay_copyable<_Ts...>)

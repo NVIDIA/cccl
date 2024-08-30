@@ -151,7 +151,7 @@ private:
     }
 
     template <bool _CanThrow = false, class... _Ts>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void __set(_Ts&&... __ts) noexcept(!_CanThrow)
+    _CCCL_HOST_DEVICE void __set(_Ts&&... __ts) noexcept(!_CanThrow)
     {
       if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
       {
