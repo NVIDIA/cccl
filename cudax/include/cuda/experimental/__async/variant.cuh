@@ -168,8 +168,20 @@ public:
   }
 };
 
+#if defined(_CCCL_COMPILER_MSVC)
+template <class... _Ts>
+struct __mk_variant_
+{
+  using __indices_t = __mmake_indices<sizeof...(_Ts)>;
+  using type        = __variant_impl<__indices_t, _Ts...>;
+};
+
+template <class... _Ts>
+using __variant = __t<__mk_variant_<_Ts...>>;
+#else
 template <class... _Ts>
 using __variant = __variant_impl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+#endif
 
 template <class... _Ts>
 using __decayed_variant = __variant<__decay_t<_Ts>...>;

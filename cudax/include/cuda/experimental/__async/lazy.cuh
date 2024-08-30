@@ -135,8 +135,20 @@ struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts
   bool __engaged_[sizeof...(_Ts)] = {};
 };
 
+#if defined(_CCCL_COMPILER_MSVC)
+template <class... _Ts>
+struct __mk_lazy_tuple_
+{
+  using __indices_t = __mmake_indices<sizeof...(_Ts)>;
+  using type        = __lazy_tupl<__indices_t, _Ts...>;
+};
+
+template <class... _Ts>
+using __lazy_tuple = __t<__mk_lazy_tuple_<_Ts...>>;
+#else
 template <class... _Ts>
 using __lazy_tuple = __lazy_tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+#endif
 
 template <class... _Ts>
 using __decayed_lazy_tuple = __lazy_tuple<__decay_t<_Ts>...>;

@@ -91,7 +91,7 @@ struct __cond_t
           connect,
           static_cast<_Then&&>(__data_.__then_)(just_from(__cond_t::__mk_complete_fn(static_cast<_Args&&>(__args)...))),
           __rcvr_ref(__rcvr_));
-        __async::start(__op_);
+        __async::start(__op);
       }
       else
       {

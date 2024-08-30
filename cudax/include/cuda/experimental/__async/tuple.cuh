@@ -76,12 +76,24 @@ template <class... _Ts>
 _CCCL_HOST_DEVICE __tupl(_Ts...) //
   -> __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
 
-template <class... _Ts>
-using __tuple = __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
-
 template <class _Fn, class _Tupl, class... _Us>
 using __apply_result_t =
   decltype(__declval<_Tupl>().__apply(__declval<_Fn>(), __declval<_Tupl>(), __declval<_Us>()...));
+
+#if defined(_CCCL_COMPILER_MSVC)
+template <class... _Ts>
+struct __mk_tuple_
+{
+  using __indices_t = __mmake_indices<sizeof...(_Ts)>;
+  using type        = __tupl<__indices_t, _Ts...>;
+};
+
+template <class... _Ts>
+using __tuple = __t<__mk_tuple_<_Ts...>>;
+#else
+template <class... _Ts>
+using __tuple = __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+#endif
 
 template <class... _Ts>
 using __decayed_tuple = __tuple<__decay_t<_Ts>...>;
