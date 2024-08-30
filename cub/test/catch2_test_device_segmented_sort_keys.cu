@@ -24,7 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 #include "catch2_radix_sort_helper.cuh"
@@ -34,7 +33,7 @@
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
 
-// TODO replace with DeviceSegmentedSort::If interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
+// TODO replace with DeviceSegmentedSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
 // Temporary wrapper that allows specializing the DeviceSegmentedSort algorithm for different offset types
 template <bool IS_DESCENDING, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sort_wrapper(
@@ -46,6 +45,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
+  bool is_overwrite   = false,
   cudaStream_t stream = 0)
 {
   cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -61,7 +61,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
         num_segments,
         d_begin_offsets,
         d_end_offsets,
-        false,
+        is_overwrite,
         stream);
 }
 
@@ -209,28 +209,38 @@ CUB_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][s
   test_unspecified_segments_random<KeyT>(CUB_SEED(4));
 }
 
-#if defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
+#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 
 // we can reuse the same structure of DeviceSegmentedRadixSortKeys for simplicity
-CUB_TEST("DeviceSegmentedSortKeys: 64-bit num. items and num. segments", "[keys][segmented][sort][device]")
+CUB_TEST("DeviceSegmentedSortKeys: very large num. items and num. segments",
+         "[keys][segmented][sort][device]",
+         all_offset_types) try
 {
-  using key_t    = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
-  using offset_t = cuda::std::int64_t; // the test requires ~30 GB GPU memory including temporary buffer size
+  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using offset_t                   = c2h::get<0, TestType>;
+  constexpr std::size_t Step       = 500;
+  using segment_iterator_t         = segment_iterator<offset_t, Step>;
+  constexpr std::size_t int32_max  = ::cuda::std::numeric_limits<std::int32_t>::max();
+  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t range      = std::size_t{1} << 20;
 
-  constexpr std::size_t min_num_items = std::size_t{1} << 31;
-  constexpr std::size_t max_num_items = min_num_items + (std::size_t{1} << 20);
+  constexpr std::size_t min_num_items =
+    (sizeof(offset_t) == 8) ? uint32_max : (::cuda::std::is_signed_v<offset_t> ? int32_max : uint32_max) - range;
+  constexpr std::size_t max_num_items = min_num_items + range;
   constexpr int num_key_seeds         = 1;
-  constexpr int num_segment_seeds     = 1;
-  const std::size_t num_items         = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
   const bool is_descending            = GENERATE(false, true);
-  CAPTURE(num_items, num_segments, is_descending);
+  const bool is_overwrite             = GENERATE(false, true);
+  const std::size_t num_items         = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
+  const std::size_t num_segments      = ::cuda::ceil_div(num_items, Step);
+  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
-  c2h::device_vector<offset_t> offsets(num_segments + 1);
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  auto offsets =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{max_num_items});
+  auto offsets_plus_1 =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{1}), segment_iterator_t{max_num_items});
 
   if (is_descending)
   {
@@ -239,9 +249,9 @@ CUB_TEST("DeviceSegmentedSortKeys: 64-bit num. items and num. segments", "[keys]
       thrust::raw_pointer_cast(out_keys.data()),
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
-      // Mix pointers/iterators for segment info to test using different iterable types:
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1);
+      offsets,
+      offsets_plus_1,
+      is_overwrite);
   }
   else
   {
@@ -250,13 +260,17 @@ CUB_TEST("DeviceSegmentedSortKeys: 64-bit num. items and num. segments", "[keys]
       thrust::raw_pointer_cast(out_keys.data()),
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
-      // Mix pointers/iterators for segment info to test using different iterable types:
-      thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1);
+      offsets,
+      offsets_plus_1,
+      is_overwrite);
   }
-  // compoute the reference only if the routine is able to terminate correctly
-  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, offsets);
+  // compute the reference only if the routine is able to terminate correctly
+  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, num_segments, offsets, offsets_plus_1);
   REQUIRE((ref_keys == out_keys) == true);
 }
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+}
 
-#endif // defined(CCCL_TEST_ENABLE_64BIT_SEGMENTED_SORT)
+#endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
