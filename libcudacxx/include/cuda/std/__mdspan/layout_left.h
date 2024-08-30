@@ -114,8 +114,8 @@ private:
 public:
   //--------------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept               = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping(mapping const&) noexcept = default;
 
   _CCCL_HOST_DEVICE constexpr mapping(extents_type const& __exts) noexcept
       : __extents(__exts)
@@ -168,8 +168,7 @@ public:
                  }))
   }
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mapping&
-  operator=(mapping const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
 
   __MDSPAN_INLINE_FUNCTION
   constexpr const extents_type& extents() const noexcept

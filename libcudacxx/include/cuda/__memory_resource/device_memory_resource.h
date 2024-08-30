@@ -49,7 +49,7 @@ private:
 
 public:
   //! @brief default constructs a device_memory_resource allocating memory on device 0
-  device_memory_resource() = default;
+  _CCCL_HIDE_FROM_ABI device_memory_resource() = default;
 
   //! @brief default constructs a device_memory_resource allocating memory on device \p __device_id
   //! @param __device_id The id of the device we are allocating memory on

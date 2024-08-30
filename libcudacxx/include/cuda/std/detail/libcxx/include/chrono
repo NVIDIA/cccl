@@ -1091,7 +1091,7 @@ private:
   rep __rep_;
 
 public:
-  constexpr duration() = default;
+  _CCCL_HIDE_FROM_ABI constexpr duration() = default;
 
   template <class _Rep2>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit duration(
@@ -1658,7 +1658,7 @@ using local_days    = local_time<days>;
 
 struct last_spec
 {
-  explicit last_spec() = default;
+  _CCCL_HIDE_FROM_ABI explicit last_spec() = default;
 };
 
 class day
@@ -1667,7 +1667,7 @@ private:
   unsigned char __d;
 
 public:
-  day() = default;
+  _CCCL_HIDE_FROM_ABI day() = default;
   _LIBCUDACXX_HIDE_FROM_ABI explicit inline constexpr day(unsigned __val) noexcept
       : __d(static_cast<unsigned char>(__val))
   {}
@@ -1773,7 +1773,7 @@ private:
   unsigned char __m;
 
 public:
-  month() = default;
+  _CCCL_HIDE_FROM_ABI month() = default;
   _LIBCUDACXX_HIDE_FROM_ABI explicit inline constexpr month(unsigned __val) noexcept
       : __m(static_cast<unsigned char>(__val))
   {}
@@ -1882,7 +1882,7 @@ private:
   short __y;
 
 public:
-  year() = default;
+  _CCCL_HIDE_FROM_ABI year() = default;
   _LIBCUDACXX_HIDE_FROM_ABI explicit inline constexpr year(int __val) noexcept
       : __y(static_cast<short>(__val))
   {}
@@ -2015,7 +2015,7 @@ private:
   unsigned char __wd;
 
 public:
-  weekday() = default;
+  _CCCL_HIDE_FROM_ABI weekday() = default;
   _LIBCUDACXX_HIDE_FROM_ABI inline explicit constexpr weekday(unsigned __val) noexcept
       : __wd(static_cast<unsigned char>(__val == 7 ? 0 : __val))
   {}
@@ -2148,7 +2148,7 @@ private:
   unsigned char __idx;
 
 public:
-  weekday_indexed() = default;
+  _CCCL_HIDE_FROM_ABI weekday_indexed() = default;
   _LIBCUDACXX_HIDE_FROM_ABI inline constexpr weekday_indexed(
     const _CUDA_VSTD::chrono::weekday& __wdval, unsigned __idxval) noexcept
       : __wd{__wdval}
@@ -2248,7 +2248,7 @@ private:
   chrono::day __d;
 
 public:
-  month_day() = default;
+  _CCCL_HIDE_FROM_ABI month_day() = default;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr month_day(const chrono::month& __mval, const chrono::day& __dval) noexcept
       : __m{__mval}
       , __d{__dval}
@@ -2429,7 +2429,7 @@ private:
   chrono::weekday_indexed __wdi;
 
 public:
-  month_weekday() = default;
+  _CCCL_HIDE_FROM_ABI month_weekday() = default;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr month_weekday(const chrono::month& __mval,
                                                     const chrono::weekday_indexed& __wdival) noexcept
       : __m{__mval}
@@ -2548,7 +2548,7 @@ class year_month
   chrono::month __m;
 
 public:
-  year_month() = default;
+  _CCCL_HIDE_FROM_ABI year_month() = default;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month(const chrono::year& __yval, const chrono::month& __mval) noexcept
       : __y{__yval}
       , __m{__mval}
@@ -2676,7 +2676,7 @@ private:
   chrono::day __d;
 
 public:
-  year_month_day() = default;
+  _CCCL_HIDE_FROM_ABI year_month_day() = default;
   _LIBCUDACXX_HIDE_FROM_ABI inline constexpr year_month_day(
     const chrono::year& __yval, const chrono::month& __mval, const chrono::day& __dval) noexcept
       : __y{__yval}
@@ -3120,7 +3120,7 @@ class year_month_weekday
   chrono::weekday_indexed __wdi;
 
 public:
-  year_month_weekday() = default;
+  _CCCL_HIDE_FROM_ABI year_month_weekday() = default;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr year_month_weekday(
     const chrono::year& __yval, const chrono::month& __mval, const chrono::weekday_indexed& __wdival) noexcept
       : __y{__yval}

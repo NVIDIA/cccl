@@ -98,8 +98,8 @@ public:
       : __unex_(__il, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
-  constexpr unexpected& operator=(const unexpected&) = default;
-  constexpr unexpected& operator=(unexpected&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(const unexpected&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept

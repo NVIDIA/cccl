@@ -32,7 +32,7 @@ struct atomic : public _CUDA_VSTD::__atomic_impl<_Tp, _Sco>
 {
   using value_type = _Tp;
 
-  constexpr atomic() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr atomic() noexcept = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr atomic(_Tp __d) noexcept
       : _CUDA_VSTD::__atomic_impl<_Tp, _Sco>(__d)
@@ -93,9 +93,9 @@ struct atomic_ref : public _CUDA_VSTD::__atomic_ref_impl<_Tp, _Sco>
     return __v;
   }
 
-  atomic_ref(const atomic_ref&) noexcept         = default;
-  atomic_ref& operator=(const atomic_ref&)       = delete;
-  atomic_ref& operator=(const atomic_ref&) const = delete;
+  _CCCL_HIDE_FROM_ABI atomic_ref(const atomic_ref&) noexcept = default;
+  atomic_ref& operator=(const atomic_ref&)                   = delete;
+  atomic_ref& operator=(const atomic_ref&) const             = delete;
 
   _LIBCUDACXX_HIDE_FROM_ABI _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {

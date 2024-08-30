@@ -110,9 +110,9 @@ struct atomic_ref : public __atomic_ref_impl<_Tp>
     return __v;
   }
 
-  atomic_ref(const atomic_ref&) noexcept         = default;
-  atomic_ref& operator=(const atomic_ref&)       = delete;
-  atomic_ref& operator=(const atomic_ref&) const = delete;
+  _CCCL_HIDE_FROM_ABI atomic_ref(const atomic_ref&) noexcept = default;
+  atomic_ref& operator=(const atomic_ref&)                   = delete;
+  atomic_ref& operator=(const atomic_ref&) const             = delete;
 };
 
 // atomic_is_lock_free
@@ -631,7 +631,7 @@ struct atomic_flag
     __atomic_notify_all(&__a, __thread_scope_system_tag{});
   }
 
-  atomic_flag() noexcept = default;
+  _CCCL_HIDE_FROM_ABI atomic_flag() noexcept = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr atomic_flag(bool __b) noexcept
       : __a(__b)

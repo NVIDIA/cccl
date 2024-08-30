@@ -56,10 +56,10 @@ struct __bounded_iter
   //
   // Such an iterator does not point to any object and is conceptually out of bounds, so it is
   // not dereferenceable. Observing operations like comparison and assignment are valid.
-  __bounded_iter() = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter() = default;
 
-  __bounded_iter(__bounded_iter const&) = default;
-  __bounded_iter(__bounded_iter&&)      = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter const&) = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter&&)      = default;
 
   template <class _OtherIterator, class = __enable_if_t<is_convertible<_OtherIterator, _Iterator>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI
@@ -70,8 +70,8 @@ struct __bounded_iter
   {}
 
   // Assign a bounded iterator to another one, rebinding the bounds of the iterator as well.
-  __bounded_iter& operator=(__bounded_iter const&) = default;
-  __bounded_iter& operator=(__bounded_iter&&)      = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter& operator=(__bounded_iter const&) = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter& operator=(__bounded_iter&&)      = default;
 
 private:
   // Create an iterator wrapping the given iterator, and whose bounds are described

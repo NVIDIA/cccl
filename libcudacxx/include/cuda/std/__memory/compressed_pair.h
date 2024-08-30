@@ -98,7 +98,7 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
   using const_reference = const _Tp&;
   using __value_type    = _Tp;
 
-  _CCCL_HIDE_FROM_ABI constexpr explicit __compressed_pair_elem() = default;
+  _CCCL_HIDE_FROM_ABI explicit constexpr __compressed_pair_elem() = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair_elem(__default_init_tag) noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))

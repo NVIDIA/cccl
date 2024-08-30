@@ -165,7 +165,7 @@ template <thread_scope _Scope, uint8_t _Stages_count>
 class pipeline_shared_state
 {
 public:
-  pipeline_shared_state()                                        = default;
+  _CCCL_HIDE_FROM_ABI pipeline_shared_state()                    = default;
   pipeline_shared_state(const pipeline_shared_state&)            = delete;
   pipeline_shared_state(pipeline_shared_state&&)                 = delete;
   pipeline_shared_state& operator=(pipeline_shared_state&&)      = delete;
@@ -212,10 +212,10 @@ template <thread_scope _Scope>
 class pipeline
 {
 public:
-  pipeline(pipeline&&)                 = default;
-  pipeline(const pipeline&)            = delete;
-  pipeline& operator=(pipeline&&)      = delete;
-  pipeline& operator=(const pipeline&) = delete;
+  _CCCL_HIDE_FROM_ABI pipeline(pipeline&&) = default;
+  pipeline(const pipeline&)                = delete;
+  pipeline& operator=(pipeline&&)          = delete;
+  pipeline& operator=(const pipeline&)     = delete;
 
   _LIBCUDACXX_HIDE_FROM_ABI ~pipeline()
   {
@@ -468,10 +468,10 @@ template <>
 class pipeline<thread_scope_thread>
 {
 public:
-  pipeline(pipeline&&)                 = default;
-  pipeline(const pipeline&)            = delete;
-  pipeline& operator=(pipeline&&)      = delete;
-  pipeline& operator=(const pipeline&) = delete;
+  _CCCL_HIDE_FROM_ABI pipeline(pipeline&&) = default;
+  pipeline(const pipeline&)                = delete;
+  pipeline& operator=(pipeline&&)          = delete;
+  pipeline& operator=(const pipeline&)     = delete;
 
   _LIBCUDACXX_HIDE_FROM_ABI ~pipeline() {}
 

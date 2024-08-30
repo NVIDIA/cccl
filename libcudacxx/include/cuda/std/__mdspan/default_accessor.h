@@ -70,7 +70,7 @@ struct default_accessor
   using reference        = _ElementType&;
   using data_handle_type = _ElementType*;
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr default_accessor() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr default_accessor() noexcept = default;
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))

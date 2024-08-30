@@ -75,11 +75,6 @@
 #    define __MDSPAN_INLINE_FUNCTION inline _CCCL_HOST_DEVICE
 #  endif
 
-// In CUDA defaulted functions do not need host device markup
-#  ifndef __MDSPAN_INLINE_FUNCTION_DEFAULTED
-#    define __MDSPAN_INLINE_FUNCTION_DEFAULTED
-#  endif
-
 //==============================================================================
 // <editor-fold desc="Preprocessor helpers"> {{{1
 

@@ -133,10 +133,10 @@ public:
       : __base(true)
   {}
 
-  constexpr expected(const expected&)            = default;
-  constexpr expected(expected&&)                 = default;
-  constexpr expected& operator=(const expected&) = default;
-  constexpr expected& operator=(expected&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected(const expected&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected(expected&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected& operator=(const expected&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected& operator=(expected&&)      = default;
 
 private:
   template <class _Up, class _OtherErr, class _UfQual, class _OtherErrQual>
@@ -1215,11 +1215,11 @@ public:
   using rebind = expected<_Up, error_type>;
 
   // [expected.void.ctor], constructors
-  constexpr expected()                           = default;
-  constexpr expected(const expected&)            = default;
-  constexpr expected(expected&&)                 = default;
-  constexpr expected& operator=(const expected&) = default;
-  constexpr expected& operator=(expected&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected()                           = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected(const expected&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected(expected&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected& operator=(const expected&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr expected& operator=(expected&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class _Up, class _OtherErr)
   _LIBCUDACXX_REQUIRES(__can_convert<_Up, _OtherErr, const _OtherErr&>::value _LIBCUDACXX_AND _CCCL_TRAIT(

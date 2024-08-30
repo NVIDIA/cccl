@@ -52,12 +52,12 @@ template <>
 class bad_expected_access<void> : public ::std::exception
 {
 protected:
-  bad_expected_access() noexcept                             = default;
-  bad_expected_access(const bad_expected_access&)            = default;
-  bad_expected_access(bad_expected_access&&)                 = default;
-  bad_expected_access& operator=(const bad_expected_access&) = default;
-  bad_expected_access& operator=(bad_expected_access&&)      = default;
-  ~bad_expected_access() noexcept override                   = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access() noexcept                                                     = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access(const bad_expected_access&)                                    = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access(bad_expected_access&&) & operator=(const bad_expected_access&) = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(const bad_expected_access&)                         = default;
+  _CCCL_HIDE_FROM_ABI bad_expected_access& operator=(bad_expected_access&&)                              = default;
+  ~bad_expected_access() noexcept override                                                               = default;
 
 public:
   // The way this has been designed (by using a class template below) means that we'll already

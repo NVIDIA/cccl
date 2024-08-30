@@ -40,7 +40,7 @@ struct __atomic_storage
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
 
-  constexpr explicit __atomic_storage() noexcept = default;
+  _CCCL_HIDE_FROM_ABI explicit constexpr __atomic_storage() noexcept = default;
 
   _CCCL_HOST_DEVICE constexpr explicit inline __atomic_storage(_Tp value) noexcept
       : __a_value(value)

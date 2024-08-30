@@ -78,7 +78,7 @@ public:
       : __counter(__expected)
   {}
 
-  ~__latch_base()                              = default;
+  _CCCL_HIDE_FROM_ABI ~__latch_base()          = default;
   __latch_base(const __latch_base&)            = delete;
   __latch_base& operator=(const __latch_base&) = delete;
 

@@ -96,18 +96,14 @@ struct __maybe_static_value
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __maybe_static_value() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __maybe_static_value(__maybe_static_value const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __maybe_static_value(__maybe_static_value&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value& operator=(__maybe_static_value const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value& operator=(__maybe_static_value&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__maybe_static_value() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __maybe_static_value() noexcept                            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __maybe_static_value(__maybe_static_value const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __maybe_static_value(__maybe_static_value&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value&
+  operator=(__maybe_static_value const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value&
+  operator=(__maybe_static_value&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__maybe_static_value() noexcept = default;
 
   __MDSPAN_INLINE_FUNCTION
   constexpr explicit __maybe_static_value(_dynamic_t const&) noexcept

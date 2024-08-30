@@ -295,8 +295,8 @@ struct layout_stride
   public:
     //--------------------------------------------------------------------------------
 
-    __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept               = default;
-    __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
+    _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
+    _CCCL_HIDE_FROM_ABI constexpr mapping(mapping const&) noexcept = default;
 
     // nvcc cannot deduce this constructor when using _LIBCUDACXX_REQUIRES
     template <
@@ -398,8 +398,7 @@ struct layout_stride
 
     //--------------------------------------------------------------------------------
 
-    __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mapping&
-    operator=(mapping const&) noexcept = default;
+    _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
 
     __MDSPAN_INLINE_FUNCTION constexpr const extents_type& extents() const noexcept
     {

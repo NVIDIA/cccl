@@ -1067,7 +1067,7 @@ public:
       , __ctz_(0)
   {}
 
-  _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _IsConst>& __it) = default;
+  _CCCL_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _IsConst>& __it) = default;
 
   template <bool _OtherIsConst, class = __enable_if_t<_IsConst == true && _OtherIsConst == false>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _OtherIsConst>& __it) noexcept

@@ -38,7 +38,7 @@ struct __atomic_common
       : __a(__v)
   {}
 
-  constexpr inline __atomic_common() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_common() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -57,7 +57,7 @@ struct __atomic_arithmetic
       : __a(__v)
   {}
 
-  constexpr inline __atomic_arithmetic() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_arithmetic() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -79,7 +79,7 @@ struct __atomic_bitwise
       : __a(__v)
   {}
 
-  constexpr inline __atomic_bitwise() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_bitwise() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -104,7 +104,7 @@ struct __atomic_pointer
       : __a(__v)
   {}
 
-  constexpr inline __atomic_pointer() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_pointer() = default;
 
   __atomic_storage_t<_Tp> __a;
 

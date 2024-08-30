@@ -1404,12 +1404,12 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
         _CCCL_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
           : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                \
       {}                                                                                                 \
-      constexpr __class() noexcept = default;
+      _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
       using __base = __baseclass<__VA_ARGS__>;                           \
       using __base::__base;                                              \
-      constexpr __class() noexcept = default;
+      _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES

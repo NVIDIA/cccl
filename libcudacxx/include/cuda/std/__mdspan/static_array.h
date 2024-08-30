@@ -134,20 +134,14 @@ public:
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_array_impl() = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_array_impl(__partially_static_array_impl const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_array_impl(__partially_static_array_impl&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_impl()                                              = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_impl(__partially_static_array_impl const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_impl(__partially_static_array_impl&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
   operator=(__partially_static_array_impl const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
-  operator=(__partially_static_array_impl&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__partially_static_array_impl() noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
+  operator=(__partially_static_array_impl&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__partially_static_array_impl() noexcept = default;
 
   __MDSPAN_INLINE_FUNCTION
   constexpr __partially_static_array_impl(__construct_psa_from_all_exts_values_tag_t,
@@ -263,7 +257,7 @@ private:
 
 public:
 #    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
-  constexpr __partially_static_array_with_sentinal() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_with_sentinal() = default;
 
   template <class... _Args>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_array_with_sentinal(_Args&&... __args) noexcept(
@@ -291,7 +285,7 @@ private:
 
 public:
 #    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
-  constexpr __partially_static_sizes() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes() = default;
 
   template <class... _Args>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(

@@ -58,7 +58,7 @@ struct __avoid_promotions
                                  _Int,
                                  __conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
 
-  constexpr __avoid_promotions() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __avoid_promotions() = default;
 
   template <class _Tp, typename = __enable_if_t<_CCCL_TRAIT(is_integral, _Tp)>>
   _CCCL_HOST_DEVICE constexpr __avoid_promotions(_Tp __i)

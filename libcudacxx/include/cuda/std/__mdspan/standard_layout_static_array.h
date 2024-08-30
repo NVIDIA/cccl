@@ -177,18 +177,14 @@ struct __standard_layout_psa<_Tag,
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__standard_layout_psa() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__standard_layout_psa() noexcept = default;
 
   //--------------------------------------------------------------------------
 
@@ -430,18 +426,14 @@ struct __standard_layout_psa<_Tag,
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__standard_layout_psa() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__standard_layout_psa() noexcept = default;
 
   //--------------------------------------------------------------------------
 
@@ -564,18 +556,14 @@ struct __standard_layout_psa<_Tag,
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__standard_layout_psa() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__standard_layout_psa() noexcept = default;
 
   __MDSPAN_INLINE_FUNCTION
   constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t) noexcept {}
@@ -660,18 +648,16 @@ struct __partially_static_sizes_tagged
 #    endif
       // This line seems to be unstable under clang-format
       // clang-format off
-      __MDSPAN_INLINE_FUNCTION_DEFAULTED
-      constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
+      _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
   //clang-format on
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI
   __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged&
   operator=(__partially_static_sizes_tagged const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
+  _CCCL_HIDE_FROM_ABI
   __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged&
   operator=(__partially_static_sizes_tagged&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
+  _CCCL_HIDE_FROM_ABI
   ~__partially_static_sizes_tagged() noexcept = default;
 
   template <class _UTag>

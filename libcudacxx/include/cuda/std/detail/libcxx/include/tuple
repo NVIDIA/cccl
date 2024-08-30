@@ -355,8 +355,8 @@ public:
                   "temporary whose lifetime has ended");
   }
 
-  __tuple_leaf(const __tuple_leaf& __t) = default;
-  __tuple_leaf(__tuple_leaf&& __t)      = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(const __tuple_leaf& __t) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_leaf(__tuple_leaf&& __t)      = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
   {
@@ -561,10 +561,10 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
     return *this;
   }
 
-  __tuple_impl(const __tuple_impl&)            = default;
-  __tuple_impl(__tuple_impl&&)                 = default;
-  __tuple_impl& operator=(const __tuple_impl&) = default;
-  __tuple_impl& operator=(__tuple_impl&&)      = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl(const __tuple_impl&)            = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl(__tuple_impl&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
+  _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI void swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
   {
@@ -734,8 +734,8 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr tuple() noexcept(_Constraints::__nothrow_default_constructible)
   {}
 
-  tuple(tuple const&) = default;
-  tuple(tuple&&)      = default;
+  _CCCL_HIDE_FROM_ABI tuple(tuple const&) = default;
+  _CCCL_HIDE_FROM_ABI tuple(tuple&&)      = default;
 
   template <class _AllocArgT,
             class _Alloc,
@@ -911,8 +911,8 @@ public:
   using _CanCopyAssign = __all<_CCCL_TRAIT(is_copy_assignable, _Tp)...>;
   using _CanMoveAssign = __all<_CCCL_TRAIT(is_move_assignable, _Tp)...>;
 
-  tuple& operator=(const tuple& __t) = default;
-  tuple& operator=(tuple&& __t)      = default;
+  _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
+  _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
 
   template <class _Tuple, __enable_if_t<__tuple_assignable<_Tuple, tuple>::value, bool> = false>
   _LIBCUDACXX_HIDE_FROM_ABI tuple& operator=(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _BaseT&, _Tuple))
@@ -931,7 +931,7 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
 public:
-  constexpr tuple() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr tuple() noexcept = default;
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI tuple(allocator_arg_t, const _Alloc&) noexcept
   {}

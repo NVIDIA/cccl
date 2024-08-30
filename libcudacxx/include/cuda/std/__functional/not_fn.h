@@ -49,7 +49,7 @@ struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn>
 {
   using __base = __perfect_forward<__not_fn_op, _Fn>;
 #  if defined(_CCCL_COMPILER_NVRTC) // nvbug 3961621
-  constexpr __not_fn_t() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __not_fn_t() noexcept = default;
 
   _LIBCUDACXX_TEMPLATE(class _OrigFn)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_same, _Fn, __decay_t<_OrigFn>))

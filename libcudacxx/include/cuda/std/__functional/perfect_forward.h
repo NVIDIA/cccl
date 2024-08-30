@@ -53,11 +53,11 @@ public:
       : __bound_args_(_CUDA_VSTD::forward<_Args>(__bound_args)...)
   {}
 
-  __perfect_forward_impl(__perfect_forward_impl const&) = default;
-  __perfect_forward_impl(__perfect_forward_impl&&)      = default;
+  _CCCL_HIDE_FROM_ABI __perfect_forward_impl(__perfect_forward_impl const&) = default;
+  _CCCL_HIDE_FROM_ABI __perfect_forward_impl(__perfect_forward_impl&&)      = default;
 
-  __perfect_forward_impl& operator=(__perfect_forward_impl const&) = default;
-  __perfect_forward_impl& operator=(__perfect_forward_impl&&)      = default;
+  _CCCL_HIDE_FROM_ABI __perfect_forward_impl& operator=(__perfect_forward_impl const&) = default;
+  _CCCL_HIDE_FROM_ABI __perfect_forward_impl& operator=(__perfect_forward_impl&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
   _LIBCUDACXX_REQUIRES(is_invocable_v<_Op, _BoundArgs&..., _Args...>)

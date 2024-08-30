@@ -438,9 +438,8 @@ public:
   using difference_type = iter_difference_t<_Iter>;
   using reference       = iter_reference_t<_Iter>;
 
-  _CCCL_HIDE_FROM_ABI constexpr __unconstrained_reverse_iterator() = default;
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __unconstrained_reverse_iterator(const __unconstrained_reverse_iterator&) =
-    default;
+  _CCCL_HIDE_FROM_ABI constexpr __unconstrained_reverse_iterator()                                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr __unconstrained_reverse_iterator(const __unconstrained_reverse_iterator&) = default;
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __unconstrained_reverse_iterator(_Iter __iter)
       : __iter_(__iter)
   {}

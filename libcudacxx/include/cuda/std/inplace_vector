@@ -139,7 +139,7 @@ struct __inplace_vector_destruct_base
   __size_type __size_{0};
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  __inplace_vector_destruct_base() = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_destruct_base() = default;
   _LIBCUDACXX_HIDE_FROM_ABI ~__inplace_vector_destruct_base() noexcept
   {
     _Tp* __begin = _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(__elems_));
@@ -157,7 +157,7 @@ struct __inplace_vector_destruct_base<_Tp, _Capacity, true>
   __size_type __size_{0};
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  constexpr __inplace_vector_destruct_base() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_destruct_base() = default;
 };
 
 template <class _Tp, size_t _Capacity>
@@ -357,9 +357,9 @@ struct __inplace_vector_copy : __inplace_vector_storage<_Tp, _Capacity>
     this->__uninitialized_copy(__other.begin(), __other.end(), this->begin());
   }
 
-  __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
-  __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
-  __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
 };
 
 template <class _Tp, size_t _Capacity>
@@ -367,10 +367,10 @@ struct __inplace_vector_copy<_Tp, _Capacity, true> : __inplace_vector_storage<_T
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
 
-  __inplace_vector_copy(const __inplace_vector_copy&)            = default;
-  __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
-  __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
-  __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy(const __inplace_vector_copy&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
 };
 
 // * If is_trivially_move_constructible_v<T> is true, then IV has a trivial move constructor.
@@ -379,7 +379,7 @@ struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
 
-  __inplace_vector_move(const __inplace_vector_move&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&) = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI
   __inplace_vector_move(__inplace_vector_move&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
@@ -388,8 +388,8 @@ struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
     this->__uninitialized_move(__other.begin(), __other.end(), this->begin());
   }
 
-  __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
-  __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
 };
 
 template <class _Tp, size_t _Capacity>
@@ -397,10 +397,10 @@ struct __inplace_vector_move<_Tp, _Capacity, true> : __inplace_vector_copy<_Tp, 
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
 
-  __inplace_vector_move(const __inplace_vector_move&)            = default;
-  __inplace_vector_move(__inplace_vector_move&&)                 = default;
-  __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
-  __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move(__inplace_vector_move&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
 };
 
 // * if is_trivially_copy_constructible_v<T> && is_trivially_copy_assignable_v<T> is true, then IV has a trivial copy
@@ -412,8 +412,8 @@ struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
 
-  __inplace_vector_copy_assign(const __inplace_vector_copy_assign&) = default;
-  __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(const __inplace_vector_copy_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)      = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI __inplace_vector_copy_assign&
   operator=(const __inplace_vector_copy_assign& __other) noexcept(
@@ -431,7 +431,7 @@ struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
     }
     return *this;
   }
-  __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&) = default;
 };
 
 template <class _Tp, size_t _Capacity>
@@ -439,10 +439,10 @@ struct __inplace_vector_copy_assign<_Tp, _Capacity, true> : __inplace_vector_mov
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
 
-  __inplace_vector_copy_assign(const __inplace_vector_copy_assign&)            = default;
-  __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)                 = default;
-  __inplace_vector_copy_assign& operator=(const __inplace_vector_copy_assign&) = default;
-  __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(const __inplace_vector_copy_assign&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign& operator=(const __inplace_vector_copy_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&)      = default;
 };
 
 // * if is_trivially_move_constructible_v<T> && is_trivially_move_assignable_v<T> is true, then IV has a trivial move
@@ -454,9 +454,9 @@ struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacit
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
 
-  __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
-  __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
-  __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
@@ -480,10 +480,10 @@ struct __inplace_vector_move_assign<_Tp, _Capacity, true> : __inplace_vector_cop
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
 
-  __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
-  __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
-  __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
-  __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&&)      = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&&)      = default;
 };
 
 // Specialization for non-trivial types. Nothing in here can be constexpr
@@ -508,11 +508,11 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
   __size_type __size_{0};
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  constexpr __inplace_vector_base()                                        = default;
-  constexpr __inplace_vector_base(const __inplace_vector_base&)            = default;
-  constexpr __inplace_vector_base(__inplace_vector_base&&)                 = default;
-  constexpr __inplace_vector_base& operator=(const __inplace_vector_base&) = default;
-  constexpr __inplace_vector_base& operator=(__inplace_vector_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base()                                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base(const __inplace_vector_base&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base(__inplace_vector_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base& operator=(const __inplace_vector_base&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base& operator=(__inplace_vector_base&&)      = default;
 
   // [containers.sequences.inplace.vector.members] size/capacity
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
@@ -574,8 +574,7 @@ protected:
     __size_ -= static_cast<__size_type>(__last - __first);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void
-  __uninitialized_value_construct(iterator __first, iterator __last) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
   {
     _CUDA_VSTD::fill(__first, __last, _Tp());
     __size_ += static_cast<__size_type>(__last - __first);
@@ -589,8 +588,7 @@ protected:
   }
 
   template <class _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void
-  __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -601,8 +599,7 @@ protected:
   }
 
   template <class _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void
-  __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -624,7 +621,7 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   using const_iterator = const _Tp*;
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  constexpr __inplace_vector_base() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base() = default;
 
   // [containers.sequences.inplace.vector.members] size/capacity
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
@@ -726,11 +723,11 @@ public:
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  constexpr inplace_vector() noexcept                        = default;
-  constexpr inplace_vector(const inplace_vector&)            = default;
-  constexpr inplace_vector(inplace_vector&&)                 = default;
-  constexpr inplace_vector& operator=(const inplace_vector&) = default;
-  constexpr inplace_vector& operator=(inplace_vector&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(const inplace_vector&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(inplace_vector&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(const inplace_vector&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(inplace_vector&&)      = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit inplace_vector(const size_type __count)
       : __base()
@@ -1069,8 +1066,7 @@ public:
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference
-  operator[](const size_type __pos) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
   {
     return *(this->begin() + __pos);
   }
@@ -1166,8 +1162,7 @@ public:
     return emplace(__cpos, _CUDA_VSTD::move(__value));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator
-  insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
   {
     const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
     if (__count > _Capacity - this->size())
@@ -1753,11 +1748,11 @@ public:
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
 
   // [containers.sequences.inplace.vector.cons], construct/copy/destroy
-  constexpr inplace_vector() noexcept                        = default;
-  constexpr inplace_vector(const inplace_vector&)            = default;
-  constexpr inplace_vector(inplace_vector&&)                 = default;
-  constexpr inplace_vector& operator=(const inplace_vector&) = default;
-  constexpr inplace_vector& operator=(inplace_vector&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(const inplace_vector&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(inplace_vector&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(const inplace_vector&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(inplace_vector&&)      = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit inplace_vector(const size_type __count)
       : __base()
@@ -1880,8 +1875,7 @@ public:
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference
-  operator[](const size_type __pos) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
   {
     return *(this->begin() + __pos);
   }

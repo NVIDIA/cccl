@@ -131,7 +131,7 @@ public:
       : __count(__count)
   {}
 
-  ~__atomic_semaphore_base() = default;
+  _CCCL_HIDE_FROM_ABI ~__atomic_semaphore_base() = default;
 
   __atomic_semaphore_base(__atomic_semaphore_base const&)            = delete;
   __atomic_semaphore_base& operator=(__atomic_semaphore_base const&) = delete;
@@ -214,7 +214,7 @@ public:
       : __available(__available)
   {}
 
-  ~__atomic_semaphore_base() = default;
+  _CCCL_HIDE_FROM_ABI ~__atomic_semaphore_base() = default;
 
   __atomic_semaphore_base(__atomic_semaphore_base const&)            = delete;
   __atomic_semaphore_base& operator=(__atomic_semaphore_base const&) = delete;
@@ -477,7 +477,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_semaphore(ptrdiff_t __count = 0)
       : __semaphore_base<__least_max_value, thread_scope_system>(__count)
   {}
-  ~counting_semaphore() = default;
+  _CCCL_HIDE_FROM_ABI ~counting_semaphore() = default;
 
   counting_semaphore(const counting_semaphore&)            = delete;
   counting_semaphore& operator=(const counting_semaphore&) = delete;

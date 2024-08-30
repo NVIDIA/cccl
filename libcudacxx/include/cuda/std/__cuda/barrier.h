@@ -85,7 +85,7 @@ template <thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion
 class barrier : public _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>
 {
 public:
-  barrier() = default;
+  _CCCL_HIDE_FROM_ABI barrier() = default;
 
   barrier(const barrier&)            = delete;
   barrier& operator=(const barrier&) = delete;
@@ -136,8 +136,8 @@ class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __blo
   friend class _CUDA_VSTD::__barrier_poll_tester_parity;
 
 public:
-  using arrival_token = typename __barrier_base::arrival_token;
-  barrier()           = default;
+  using arrival_token           = typename __barrier_base::arrival_token;
+  _CCCL_HIDE_FROM_ABI barrier() = default;
 
   barrier(const barrier&)            = delete;
   barrier& operator=(const barrier&) = delete;

@@ -179,8 +179,8 @@ struct __pair_base<_T1, _T2, true>
       , second()
   {}
 
-  constexpr __pair_base(const __pair_base&) = default;
-  constexpr __pair_base(__pair_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr __pair_base(const __pair_base&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __pair_base(__pair_base&&)      = default;
 
   // We need to ensure that a reference type, which would inhibit the implicit copy assignment still works
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __pair_base& operator=(
@@ -291,8 +291,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   {}
 
   // copy and move constructors
-  pair(pair const&) = default;
-  pair(pair&&)      = default;
+  _CCCL_HIDE_FROM_ABI pair(pair const&) = default;
+  _CCCL_HIDE_FROM_ABI pair(pair&&)      = default;
 
   template <class _U1                                                  = _T1,
             class _U2                                                  = _T2,
@@ -371,8 +371,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #endif // !defined(_CCCL_COMPILER_NVRTC)
 
   // assignments
-  pair& operator=(const pair&) = default;
-  pair& operator=(pair&&)      = default;
+  _CCCL_HIDE_FROM_ABI pair& operator=(const pair&) = default;
+  _CCCL_HIDE_FROM_ABI pair& operator=(pair&&)      = default;
 
   template <class _U1,
             class _U2,

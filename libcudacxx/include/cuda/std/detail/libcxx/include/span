@@ -325,8 +325,8 @@ public:
       : __data_{nullptr}
   {}
 
-  span(const span&) noexcept            = default;
-  span& operator=(const span&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _It)
@@ -574,8 +574,8 @@ public:
       , __size_{0}
   {}
 
-  span(const span&) noexcept            = default;
-  span& operator=(const span&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _It)
   _LIBCUDACXX_REQUIRES(__span_compatible_iterator<_It, element_type>)

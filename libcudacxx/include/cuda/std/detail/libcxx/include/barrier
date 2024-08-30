@@ -168,7 +168,7 @@ public:
     _LIBCUDACXX_ASSERT(__expected >= 0, "");
   }
 
-  inline _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;
+  _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;
 
   __barrier_base(__barrier_base const&)            = delete;
   __barrier_base& operator=(__barrier_base const&) = delete;
@@ -293,7 +293,7 @@ private:
   }
 
 public:
-  __barrier_base() = default;
+  _CCCL_HIDE_FROM_ABI __barrier_base() = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI __barrier_base(ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
       : __expected(__expected)
@@ -302,7 +302,7 @@ public:
       , __phase(false)
   {}
 
-  ~__barrier_base() = default;
+  _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;
 
   __barrier_base(__barrier_base const&)            = delete;
   __barrier_base& operator=(__barrier_base const&) = delete;
@@ -392,7 +392,7 @@ private:
   }
 
 public:
-  __barrier_base() = default;
+  _CCCL_HIDE_FROM_ABI __barrier_base() = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
@@ -401,7 +401,7 @@ public:
     _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "");
   }
 
-  ~__barrier_base() = default;
+  _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;
 
   __barrier_base(__barrier_base const&)            = delete;
   __barrier_base& operator=(__barrier_base const&) = delete;

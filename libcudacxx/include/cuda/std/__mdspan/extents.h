@@ -245,7 +245,7 @@ public:
   // Constructors, Destructors, and Assignment
 
   // Default constructor
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr extents() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr extents() noexcept = default;
 
   // Converting constructor
   _LIBCUDACXX_TEMPLATE(class _OtherIndexType, size_t... _OtherExtents)

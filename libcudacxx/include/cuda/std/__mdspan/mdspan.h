@@ -163,9 +163,9 @@ public:
   // [mdspan.basic.cons], mdspan constructors, assignment, and destructor
 
 #  if !__MDSPAN_HAS_CXX_20
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan() = default;
+  _CCCL_HIDE_FROM_ABI constexpr mdspan() = default;
 #  else
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan()
+  _CCCL_HIDE_FROM_ABI constexpr mdspan()
     requires(
               // Directly using rank_dynamic()>0 here doesn't work for nvcc
               (extents_type::rank_dynamic() > 0) && _CCCL_TRAIT(is_default_constructible, data_handle_type)
@@ -173,8 +173,8 @@ public:
               && _CCCL_TRAIT(is_default_constructible, accessor_type))
   = default;
 #  endif
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan(const mdspan&) = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mdspan(mdspan&&)      = default;
+  _CCCL_HIDE_FROM_ABI constexpr mdspan(const mdspan&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr mdspan(mdspan&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class... _SizeTypes)
   _LIBCUDACXX_REQUIRES(
@@ -254,12 +254,12 @@ public:
   }
 
   /* Might need this on NVIDIA?
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~mdspan() = default;
+  _CCCL_HIDE_FROM_ABI
+  _CCCL_HIDE_FROM_ABI ~mdspan() = default;
   */
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mdspan& operator=(const mdspan&) = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mdspan& operator=(mdspan&&)      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED _CCCL_HIDE_FROM_ABI mdspan& operator=(const mdspan&) = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED _CCCL_HIDE_FROM_ABI mdspan& operator=(mdspan&&)      = default;
 
   //--------------------------------------------------------------------------------
   // [mdspan.basic.mapping], mdspan mapping domain multidimensional index to access codomain element

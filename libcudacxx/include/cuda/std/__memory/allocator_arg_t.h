@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t
 {
-  explicit allocator_arg_t() = default;
+  _CCCL_HIDE_FROM_ABI explicit allocator_arg_t() = default;
 };
 
 _LIBCUDACXX_INLINE_VAR constexpr allocator_arg_t allocator_arg = allocator_arg_t();
