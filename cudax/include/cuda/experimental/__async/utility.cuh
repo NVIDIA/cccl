@@ -93,10 +93,10 @@ _CCCL_HOST_DEVICE constexpr size_t __index_of() noexcept
 template <class _Ty, class _Uy = _Ty>
 _CCCL_HOST_DEVICE constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexcept
 {
-  constexpr bool __nothrow = //
+  constexpr bool __is_nothrow = //
     noexcept(_Ty(static_cast<_Ty&&>(__obj))) && //
     noexcept(__obj = static_cast<_Uy&&>(__new_value)); //
-  static_assert(__nothrow);
+  static_assert(__is_nothrow);
 
   _Ty old_value = static_cast<_Ty&&>(__obj);
   __obj         = static_cast<_Uy&&>(__new_value);
@@ -106,10 +106,10 @@ _CCCL_HOST_DEVICE constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexce
 template <class _Ty>
 _CCCL_HOST_DEVICE constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
-  constexpr bool __nothrow = //
+  constexpr bool __is_nothrow = //
     noexcept(_Ty(static_cast<_Ty&&>(__left))) && //
     noexcept(__left = static_cast<_Ty&&>(__right)); //
-  static_assert(__nothrow);
+  static_assert(__is_nothrow);
 
   _Ty __tmp = static_cast<_Ty&&>(__left);
   __left    = static_cast<_Ty&&>(__right);
