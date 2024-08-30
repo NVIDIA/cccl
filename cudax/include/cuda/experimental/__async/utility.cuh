@@ -58,7 +58,7 @@ struct __immovable
   _CUDAX_IMMOVABLE(__immovable);
 };
 
-_CCCL_HOST_DEVICE constexpr size_t __max(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
+_CCCL_HOST_DEVICE constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
 {
   size_t __max = 0;
   for (auto i : __il)

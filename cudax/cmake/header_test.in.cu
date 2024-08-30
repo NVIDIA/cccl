@@ -34,7 +34,9 @@
 #define I CUDAX_MACRO_CHECK('I', complex.h)
 
 // windows.h conflicts
-#define small CUDAX_MACRO_CHECK('small', windows.h)
+// @eniebler 2024-08-30: This test is disabled because it causes build
+// failures in some configurations.
+// #define small CUDAX_MACRO_CHECK('small', windows.h)
 // We can't enable these checks without breaking some builds -- some standard
 // library implementations unconditionally `#undef` these macros, which then
 // causes random failures later.

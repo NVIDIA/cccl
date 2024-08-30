@@ -56,7 +56,7 @@ public:
 template <size_t... _Idx, class... _Ts>
 class __variant_impl<__mindices<_Idx...>, _Ts...>
 {
-  static constexpr size_t __max_size = __max({sizeof(_Ts)...});
+  static constexpr size_t __max_size = __maximum({sizeof(_Ts)...});
   static_assert(__max_size != 0);
   size_t __index_{__npos};
   alignas(_Ts...) unsigned char __storage_[__max_size];
