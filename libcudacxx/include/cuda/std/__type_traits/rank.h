@@ -39,13 +39,13 @@ _LIBCUDACXX_INLINE_VAR constexpr size_t rank_v = _LIBCUDACXX_ARRAY_RANK(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS rank : public integral_constant<size_t, 0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT rank : public integral_constant<size_t, 0>
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS rank<_Tp[]> : public integral_constant<size_t, rank<_Tp>::value + 1>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT rank<_Tp[]> : public integral_constant<size_t, rank<_Tp>::value + 1>
 {};
 template <class _Tp, size_t _Np>
-struct _LIBCUDACXX_TEMPLATE_VIS rank<_Tp[_Np]> : public integral_constant<size_t, rank<_Tp>::value + 1>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT rank<_Tp[_Np]> : public integral_constant<size_t, rank<_Tp>::value + 1>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

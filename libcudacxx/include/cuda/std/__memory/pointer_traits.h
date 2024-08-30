@@ -226,7 +226,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1, _A2>, _Up, false>
 #endif // _LIBCUDACXX_HAS_NO_VARIADICS
 
 template <class _Ptr>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
 {
   typedef _Ptr pointer;
   typedef typename __pointer_traits_element_type<pointer>::type element_type;
@@ -248,7 +248,7 @@ public:
 };
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<_Tp*>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Tp*>
 {
   typedef _Tp* pointer;
   typedef _Tp element_type;

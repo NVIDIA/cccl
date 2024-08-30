@@ -23,11 +23,10 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/arch_traits.cuh>
-
 namespace cuda::experimental
 {
 class device;
+struct arch_traits_t;
 
 namespace detail
 {
@@ -92,12 +91,10 @@ public:
   //! @throws cuda_error if the attribute query fails
   //!
   //! @sa device::attrs
-  template <::cudaDeviceAttr _Attr>
-  _CCCL_NODISCARD auto attr([[maybe_unused]] detail::__dev_attr<_Attr> __attr) const
+  template <typename _Attr>
+  _CCCL_NODISCARD auto attr(_Attr __attr) const
   {
-    int __value = 0;
-    _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, _Attr, get());
-    return static_cast<typename detail::__dev_attr<_Attr>::type>(__value);
+    return __attr(*this);
   }
 
   //! @overload
@@ -107,7 +104,7 @@ public:
     return attr(detail::__dev_attr<_Attr>());
   }
 
-  arch_traits_t arch_traits() const;
+  const arch_traits_t& arch_traits() const;
 };
 
 } // namespace cuda::experimental

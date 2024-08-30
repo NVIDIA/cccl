@@ -26,7 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-enum class _LIBCUDACXX_ENUM_VIS subrange_kind : bool
+enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
 {
   unsized,
   sized
@@ -38,7 +38,7 @@ template <input_or_output_iterator _Iter,
           sentinel_for<_Iter> _Sent = _Iter,
           subrange_kind _Kind       = sized_sentinel_for<_Sent, _Iter> ? subrange_kind::sized : subrange_kind::unsized>
   requires(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>)
-class _LIBCUDACXX_TEMPLATE_VIS subrange;
+class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Iter,
           class _Sent         = _Iter,
@@ -46,7 +46,7 @@ template <class _Iter,
           enable_if_t<input_or_output_iterator<_Iter>, int>                                      = 0,
           enable_if_t<sentinel_for<_Sent, _Iter>, int>                                           = 0,
           enable_if_t<(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>), int> = 0>
-class _LIBCUDACXX_TEMPLATE_VIS subrange;
+class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 #  endif // _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI

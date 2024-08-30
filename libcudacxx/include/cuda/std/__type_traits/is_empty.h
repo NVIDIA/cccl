@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_EMPTY) && !defined(_LIBCUDACXX_USE_IS_EMPTY_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_empty : public integral_constant<bool, _LIBCUDACXX_IS_EMPTY(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public integral_constant<bool, _LIBCUDACXX_IS_EMPTY(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -58,7 +58,7 @@ struct __libcpp_empty<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_empty : public __libcpp_empty<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __libcpp_empty<_Tp>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

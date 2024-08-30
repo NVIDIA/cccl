@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
 template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
     : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
 {};
 
@@ -54,7 +54,7 @@ struct __libcpp_is_nothrow_assignable<true, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
     : public __libcpp_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 {};
 
@@ -66,11 +66,11 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assig
 #else
 
 template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable : public false_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable<_Tp&, _Tp>
 #  if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
 {};
@@ -81,7 +81,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp>
 #  endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp&>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable<_Tp&, _Tp&>
 #  if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
 {};
@@ -92,7 +92,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp&>
 #  endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, const _Tp&>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable<_Tp&, const _Tp&>
 #  if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
 {};

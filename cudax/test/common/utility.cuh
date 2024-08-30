@@ -19,6 +19,8 @@
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
 
+#include <cuda/experimental/launch.cuh>
+
 #include <new> // IWYU pragma: keep (needed for placement new)
 
 #include "testing.cuh"
@@ -27,31 +29,8 @@ namespace
 {
 namespace test
 {
-struct stream : cuda::stream_ref
-{
-  stream()
-      : cuda::stream_ref(::cudaStream_t{})
-  {
-    ::cudaStream_t stream{};
-    _CCCL_TRY_CUDA_API(::cudaStreamCreate, "failed to create a CUDA stream", &stream);
-    static_cast<cuda::stream_ref&>(*this) = cuda::stream_ref(stream);
-  }
 
-  cuda::stream_ref ref() const noexcept
-  {
-    return *this;
-  }
-
-  void wait() const
-  {
-    _CCCL_TRY_CUDA_API(::cudaStreamSynchronize, "failed to synchronize a CUDA stream", get());
-  }
-
-  ~stream()
-  {
-    [[maybe_unused]] auto status = ::cudaStreamDestroy(get());
-  }
-};
+constexpr auto one_thread_dims = cudax::make_hierarchy(cudax::block_dims<1>(), cudax::grid_dims<1>());
 
 struct _malloc_managed
 {
@@ -143,13 +122,6 @@ struct empty_kernel
 {
   __device__ void operator()() const noexcept {}
 };
-
-/// A kernel that takes a callable object and invokes it with a set of arguments
-template <class Fn, class... Args>
-__global__ void invokernel(Fn fn, Args... args)
-{
-  fn(args...);
-}
 
 inline int count_driver_stack()
 {

@@ -347,7 +347,7 @@ struct __is_cpp17_copy_insertable<
 {};
 
 template <class _Alloc>
-struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
+struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 {
   using allocator_type     = _Alloc;
   using value_type         = typename allocator_type::value_type;
@@ -474,11 +474,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__begin2),
-#ifdef _LIBCUDACXX_NO_EXCEPTIONS
+#ifdef _CCCL_NO_EXCEPTIONS
                 _CUDA_VSTD::move(*__begin1)
-#else
+#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
                 _CUDA_VSTD::move_if_noexcept(*__begin1)
-#endif
+#endif // !_CCCL_NO_EXCEPTIONS
       );
     }
   }
@@ -536,11 +536,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__end2 - 1),
-#ifdef _LIBCUDACXX_NO_EXCEPTIONS
+#ifdef _CCCL_NO_EXCEPTIONS
                 _CUDA_VSTD::move(*--__end1)
-#else
+#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
                 _CUDA_VSTD::move_if_noexcept(*--__end1)
-#endif
+#endif // !_CCCL_NO_EXCEPTIONS
       );
       --__end2;
     }

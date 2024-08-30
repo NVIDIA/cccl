@@ -214,7 +214,7 @@ template<class T>
 
 _CCCL_PUSH_MACROS
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
 #  ifdef __cpp_lib_optional
 #    include <optional>
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
@@ -228,7 +228,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 using ::std::bad_optional_access;
 
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
-class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad_optional_access : public ::std::exception
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad_optional_access
+    : public ::std::exception
 {
 public:
   const char* what() const noexcept override
@@ -240,7 +241,7 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // !_CCCL_NO_EXCEPTIONS
 
 #if _CCCL_STD_VER > 2011
 
@@ -248,12 +249,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_optional_access()
 {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
     NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else
+#  else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#  endif // !_CCCL_NO_EXCEPTIONS
 }
 
 struct nullopt_t
@@ -1422,7 +1423,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr optional<_Tp> make_optional(initializer_
 
 #  ifndef __cuda_std__
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
 {
 #    if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef optional<_Tp> argument_type;

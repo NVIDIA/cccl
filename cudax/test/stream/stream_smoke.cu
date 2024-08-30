@@ -14,13 +14,11 @@
 #include <catch2/catch.hpp>
 #include <utility.cuh>
 
-constexpr auto one_thread_dims = cudax::make_hierarchy(cudax::block_dims<1>(), cudax::grid_dims<1>());
-
 TEST_CASE("Can create a stream and launch work into it", "[stream]")
 {
   cudax::stream str;
   ::test::managed<int> i(0);
-  cudax::launch(str, one_thread_dims, ::test::assign_42{}, i.get());
+  cudax::launch(str, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   str.wait();
   CUDAX_REQUIRE(*i == 42);
 }
@@ -33,7 +31,7 @@ TEST_CASE("From native handle", "[stream]")
     auto stream = cudax::stream::from_native_handle(handle);
 
     ::test::managed<int> i(0);
-    cudax::launch(stream, one_thread_dims, ::test::assign_42{}, i.get());
+    cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
     stream.wait();
     CUDAX_REQUIRE(*i == 42);
     (void) stream.release();
@@ -50,10 +48,10 @@ TEST_CASE("Can add dependency into a stream", "[stream]")
     ::test::managed<int> i(0);
     ::cuda::atomic_ref atomic_i(*i);
 
-    cudax::launch(waitee, one_thread_dims, ::test::spin_until_80{}, i.get());
-    cudax::launch(waitee, one_thread_dims, ::test::assign_42{}, i.get());
+    cudax::launch(waitee, ::test::one_thread_dims, ::test::spin_until_80{}, i.get());
+    cudax::launch(waitee, ::test::one_thread_dims, ::test::assign_42{}, i.get());
     insert_dependency();
-    cudax::launch(waiter, one_thread_dims, ::test::verify_42{}, i.get());
+    cudax::launch(waiter, ::test::one_thread_dims, ::test::verify_42{}, i.get());
     CUDAX_REQUIRE(atomic_i.load() != 42);
     CUDAX_REQUIRE(!waiter.ready());
     atomic_i.store(80);

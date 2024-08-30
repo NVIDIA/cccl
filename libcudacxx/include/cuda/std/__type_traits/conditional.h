@@ -43,12 +43,12 @@ template <bool _Cond, class _IfRes, class _ElseRes>
 using _If _LIBCUDACXX_NODEBUG_TYPE = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
 
 template <bool _Bp, class _If, class _Then>
-struct _LIBCUDACXX_TEMPLATE_VIS conditional
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
 {
   typedef _If type;
 };
 template <class _If, class _Then>
-struct _LIBCUDACXX_TEMPLATE_VIS conditional<false, _If, _Then>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
 {
   typedef _Then type;
 };

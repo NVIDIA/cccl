@@ -35,7 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // default searcher
 template <class _ForwardIterator, class _BinaryPredicate = equal_to<>>
-class _LIBCUDACXX_TEMPLATE_VIS default_searcher
+class _CCCL_TYPE_VISIBILITY_DEFAULT default_searcher
 {
 public:
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20

@@ -290,10 +290,10 @@
 
 #endif
 
-// Define availability attributes that depend on _LIBCUDACXX_NO_EXCEPTIONS.
+// Define availability attributes that depend on _CCCL_NO_EXCEPTIONS.
 // Those are defined in terms of the availability attributes above, and
 // should not be vendor-specific.
-#if defined(_LIBCUDACXX_NO_EXCEPTIONS)
+#if defined(_CCCL_NO_EXCEPTIONS)
 #  define _LIBCUDACXX_AVAILABILITY_FUTURE
 #  define _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST
 #  define _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS
