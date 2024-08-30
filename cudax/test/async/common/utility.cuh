@@ -165,7 +165,7 @@ template <class... Ts>
 using types = cudax_async::__mlist<Ts...>;
 
 template <class... Values, class Sndr>
-_CCCL_HOST_DEVICE void check_value_types(Sndr&& sndr) noexcept
+_CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
   using actual_t   = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, cudax_async::__mmake_set>;
   using expected_t = cudax_async::__mmake_set<Values...>;
@@ -174,7 +174,7 @@ _CCCL_HOST_DEVICE void check_value_types(Sndr&& sndr) noexcept
 }
 
 template <class... Errors, class Sndr>
-_CCCL_HOST_DEVICE void check_error_types(Sndr&& sndr) noexcept
+_CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
   using actual_t   = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, cudax_async::__mmake_set>;
   using expected_t = cudax_async::__mmake_set<Errors...>;
@@ -183,7 +183,7 @@ _CCCL_HOST_DEVICE void check_error_types(Sndr&& sndr) noexcept
 }
 
 template <bool SendsStopped, class Sndr>
-_CCCL_HOST_DEVICE void check_sends_stopped(Sndr&& sndr) noexcept
+_CCCL_HOST_DEVICE void check_sends_stopped(Sndr&&) noexcept
 {
   static_assert(cudax_async::sends_stopped<Sndr> == SendsStopped, "sends_stopped does not match expected value");
 }

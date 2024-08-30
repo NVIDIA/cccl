@@ -384,6 +384,17 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   using __stop_tok_t      = stop_token_of_t<env_of_t<_Rcvr>>;
   using __stop_callback_t = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
 
+  _CCCL_HOST_DEVICE explicit __state_t(_Rcvr __rcvr, size_t __count)
+      : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
+      , __count_{__count}
+      , __stop_source_{}
+      , __stop_token_{__stop_source_.get_token()}
+      , __state_{__started}
+      , __errors_{}
+      , __values_{}
+      , __on_stop_{}
+  {}
+
   template <size_t _Index, size_t... _Offsets>
   static constexpr size_t __offset_for(__moffsets<_Offsets...>*) noexcept
   {
@@ -490,8 +501,8 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   _Rcvr __rcvr_;
   _CUDA_VSTD::atomic<size_t> __count_;
   inplace_stop_source __stop_source_;
-  inplace_stop_token __stop_token_{__stop_source_.get_token()};
-  _CUDA_VSTD::atomic<_CUDA_VSTD::underlying_type_t<__estate_t>> __state_{__started};
+  inplace_stop_token __stop_token_;
+  _CUDA_VSTD::atomic<_CUDA_VSTD::underlying_type_t<__estate_t>> __state_;
   __errors_t __errors_;
   __values_t __values_;
   __lazy<__stop_callback_t> __on_stop_;

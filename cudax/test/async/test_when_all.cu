@@ -22,7 +22,7 @@ namespace
 TEST_CASE("when_all simple example", "[when_all]")
 {
   auto snd  = cudax_async::when_all(cudax_async::just(3), cudax_async::just(0.1415));
-  auto snd1 = std::move(snd) | cudax_async::then([] _CCCL_HOST_DEVICE(int x, double y) {
+  auto snd1 = std::move(snd) | cudax_async::then([](int x, double y) {
                 return x + y;
               });
   auto op   = cudax_async::connect(std::move(snd1), checked_value_receiver{3.1415});
