@@ -13,8 +13,15 @@ export PYTHONPATH="${prefix}:${PYTHONPATH:-}"
 
 pushd ../python/cuda_cooperative >/dev/null
 
-run_command "⚙️  Pip install cuda" pip install --force-reinstall --target "${prefix}" .[test]
-run_command "🚀  Pytest cuda" python -m pytest -v ./tests
+run_command "⚙️  Pip install cuda_cooperative" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
+run_command "🚀  Pytest cuda_cooperative" python -m pytest -v ./tests
+
+popd >/dev/null
+
+pushd ../python/cuda_parallel >/dev/null
+
+run_command "⚙️  Pip install cuda_parallel" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
+run_command "🚀  Pytest cuda_parallel" python -m pytest -v ./tests
 
 popd >/dev/null
 
