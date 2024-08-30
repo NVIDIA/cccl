@@ -24,7 +24,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 template <class _Arg, class _Result>
-struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
 {
   typedef _Arg argument_type;
   typedef _Result result_type;

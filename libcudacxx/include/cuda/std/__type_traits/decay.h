@@ -58,7 +58,7 @@ public:
 };
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS decay
+struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
 private:
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;

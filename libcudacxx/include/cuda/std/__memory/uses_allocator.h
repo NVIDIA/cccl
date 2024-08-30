@@ -56,7 +56,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, class _Alloc>
-struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator
+struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator
     : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
 {};
 

@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_string_view;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view;
 
 typedef basic_string_view<char> string_view;
 #ifndef _LIBCUDACXX_NO_HAS_CHAR8_T

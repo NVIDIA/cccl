@@ -43,9 +43,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct _LIBCUDACXX_TYPE_VIS __c_node;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __c_node;
 
-struct _LIBCUDACXX_TYPE_VIS __i_node
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __i_node
 {
   void* __i_;
   __i_node* __next_;
@@ -62,7 +62,7 @@ struct _LIBCUDACXX_TYPE_VIS __i_node
   ~__i_node();
 };
 
-struct _LIBCUDACXX_TYPE_VIS __c_node
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __c_node
 {
   void* __c_;
   __c_node* __next_;
@@ -88,7 +88,7 @@ struct _LIBCUDACXX_TYPE_VIS __c_node
   virtual bool __subscriptable(const void*, ptrdiff_t) const = 0;
 
   void __add(__i_node* __i);
-  _LIBCUDACXX_HIDDEN void __remove(__i_node* __i);
+  _CCCL_VISIBILITY_HIDDEN void __remove(__i_node* __i);
 };
 
 template <class _Cont>
@@ -140,7 +140,7 @@ inline bool _C_node<_Cont>::__subscriptable(const void* __i, ptrdiff_t __n) cons
   return _Cp->__subscriptable(__j, __n);
 }
 
-class _LIBCUDACXX_TYPE_VIS __libcpp_db
+class _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_db
 {
   __c_node** __cbeg_;
   __c_node** __cend_;
@@ -202,8 +202,8 @@ public:
   bool __less_than_comparable(const void* __i, const void* __j) const;
 
 private:
-  _LIBCUDACXX_HIDDEN __i_node* __insert_iterator(void* __i);
-  _LIBCUDACXX_HIDDEN __i_node* __find_iterator(const void* __i) const;
+  _CCCL_VISIBILITY_HIDDEN __i_node* __insert_iterator(void* __i);
+  _CCCL_VISIBILITY_HIDDEN __i_node* __find_iterator(const void* __i) const;
 
   friend _LIBCUDACXX_INLINE_VISIBILITY __libcpp_db* __get_db();
 };

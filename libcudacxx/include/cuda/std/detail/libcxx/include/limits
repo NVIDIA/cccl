@@ -643,7 +643,7 @@ protected:
 };
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits : private __libcpp_numeric_limits<__remove_cv_t<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits : private __libcpp_numeric_limits<__remove_cv_t<_Tp>>
 {
   typedef __libcpp_numeric_limits<__remove_cv_t<_Tp>> __base;
   typedef typename __base::type type;
@@ -763,7 +763,7 @@ template <class _Tp>
 constexpr float_round_style numeric_limits<_Tp>::round_style;
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<const _Tp> : private numeric_limits<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits<const _Tp> : private numeric_limits<_Tp>
 {
   typedef numeric_limits<_Tp> __base;
   typedef _Tp type;
@@ -883,7 +883,7 @@ template <class _Tp>
 constexpr float_round_style numeric_limits<const _Tp>::round_style;
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<volatile _Tp> : private numeric_limits<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits<volatile _Tp> : private numeric_limits<_Tp>
 {
   typedef numeric_limits<_Tp> __base;
   typedef _Tp type;
@@ -1003,7 +1003,7 @@ template <class _Tp>
 constexpr float_round_style numeric_limits<volatile _Tp>::round_style;
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<const volatile _Tp> : private numeric_limits<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits<const volatile _Tp> : private numeric_limits<_Tp>
 {
   typedef numeric_limits<_Tp> __base;
   typedef _Tp type;

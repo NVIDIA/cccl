@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_move_assignable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_assignable
     : public is_assignable<__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>>
 {};
 

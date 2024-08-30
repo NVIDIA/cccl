@@ -167,7 +167,7 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, size_t _Size>
-struct _LIBCUDACXX_TEMPLATE_VIS array
+struct _CCCL_TYPE_VISIBILITY_DEFAULT array
 {
   // types:
   typedef array __self;
@@ -326,7 +326,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array
 };
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 {
   // types:
   typedef array __self;
@@ -555,11 +555,11 @@ swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(
 }
 
 template <class _Tp, size_t _Size>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_size<array<_Tp, _Size>> : public integral_constant<size_t, _Size>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<array<_Tp, _Size>> : public integral_constant<size_t, _Size>
 {};
 
 template <size_t _Ip, class _Tp, size_t _Size>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, array<_Tp, _Size>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, array<_Tp, _Size>>
 {
   static_assert(_Ip < _Size, "Index out of bounds in std::tuple_element<> (std::array)");
   typedef _Tp type;

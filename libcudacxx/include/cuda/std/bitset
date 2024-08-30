@@ -667,7 +667,7 @@ protected:
 };
 
 template <size_t _Size>
-class _LIBCUDACXX_TEMPLATE_VIS bitset;
+class _CCCL_TYPE_VISIBILITY_DEFAULT bitset;
 template <size_t _Size>
 struct hash<bitset<_Size>>;
 
@@ -689,7 +689,7 @@ __throw_if_out_of_range<0>(size_t __pos, const char* __msg)
 }
 
 template <size_t _Size>
-class _LIBCUDACXX_TEMPLATE_VIS bitset : private __bitset<_Size == 0 ? 0 : (_Size - 1) / 32 + 1, _Size>
+class _CCCL_TYPE_VISIBILITY_DEFAULT bitset : private __bitset<_Size == 0 ? 0 : (_Size - 1) / 32 + 1, _Size>
 {
 public:
   static const unsigned __n_words = _Size == 0 ? 0 : (_Size - 1) / 32 + 1;
@@ -1048,7 +1048,7 @@ operator^(const bitset<_Size>& __x, const bitset<_Size>& __y) noexcept
 }
 
 template <size_t _Size>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<bitset<_Size>> : public __unary_function<bitset<_Size>, size_t>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<bitset<_Size>> : public __unary_function<bitset<_Size>, size_t>
 {
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY size_t operator()(const bitset<_Size>& __bs) const noexcept
   {

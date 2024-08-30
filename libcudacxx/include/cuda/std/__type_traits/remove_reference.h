@@ -37,17 +37,17 @@ using __libcpp_remove_reference_t = _LIBCUDACXX_REMOVE_REFERENCE_T(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_reference
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
 };
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_reference<_Tp&>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference<_Tp&>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
 };
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_reference<_Tp&&>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference<_Tp&&>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
 };

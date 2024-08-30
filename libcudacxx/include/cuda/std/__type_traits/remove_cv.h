@@ -38,7 +38,7 @@ using __remove_cv_t = _LIBCUDACXX_REMOVE_CV(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_cv
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_cv
 {
   typedef __remove_volatile_t<__remove_const_t<_Tp>> type;
 };

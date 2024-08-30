@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_OBJECT) && !defined(_LIBCUDACXX_USE_IS_OBJECT_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_object : public integral_constant<bool, _LIBCUDACXX_IS_OBJECT(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_object : public integral_constant<bool, _LIBCUDACXX_IS_OBJECT(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -42,7 +42,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_object_v = _LIBCUDACXX_IS_OBJECT(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_object
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_object
     : public integral_constant<bool,
                                is_scalar<_Tp>::value || is_array<_Tp>::value || is_union<_Tp>::value
                                  || is_class<_Tp>::value>

@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Predicate>
-class _LIBCUDACXX_TEMPLATE_VIS
+class _CCCL_TYPE_VISIBILITY_DEFAULT
 _LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
 {
   _Predicate __pred_;

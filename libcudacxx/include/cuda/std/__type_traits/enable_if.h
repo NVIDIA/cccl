@@ -23,10 +23,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool, class _Tp = void>
-struct _LIBCUDACXX_TEMPLATE_VIS enable_if
+struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS enable_if<true, _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if<true, _Tp>
 {
   typedef _Tp type;
 };

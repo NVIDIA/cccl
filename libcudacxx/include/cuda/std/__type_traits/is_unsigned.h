@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   && !(defined(_LIBCUDACXX_APPLE_CLANG_VER) && _LIBCUDACXX_APPLE_CLANG_VER < 1400)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_unsigned : public integral_constant<bool, _LIBCUDACXX_IS_UNSIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public integral_constant<bool, _LIBCUDACXX_IS_UNSIGNED(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -61,7 +61,7 @@ struct __libcpp_is_unsigned<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_unsigned : public __libcpp_is_unsigned<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public __libcpp_is_unsigned<_Tp>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

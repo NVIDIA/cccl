@@ -29,17 +29,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   && defined(_LIBCUDACXX_IS_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_REFERENCE_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_lvalue_reference
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference
     : public integral_constant<bool, _LIBCUDACXX_IS_LVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_rvalue_reference
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference
     : public integral_constant<bool, _LIBCUDACXX_IS_RVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_reference : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : public integral_constant<bool, _LIBCUDACXX_IS_REFERENCE(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -54,27 +54,27 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_reference_v = _LIBCUDACXX_IS_REFERENCE(
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_lvalue_reference : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference : public false_type
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_lvalue_reference<_Tp&> : public true_type
-{};
-
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_rvalue_reference : public false_type
-{};
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_rvalue_reference<_Tp&&> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference<_Tp&> : public true_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_reference : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference : public false_type
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_reference<_Tp&> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference<_Tp&&> : public true_type
+{};
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : public false_type
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_reference<_Tp&&> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference<_Tp&> : public true_type
+{};
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference<_Tp&&> : public true_type
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

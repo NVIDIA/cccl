@@ -94,7 +94,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half __convert_to_half(const double& __va
 }
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS _CCCL_ALIGNAS(alignof(__half2)) complex<__half>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__half>
 {
   __half2 __repr_;
 
