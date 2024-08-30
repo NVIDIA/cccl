@@ -37,7 +37,7 @@ declare -A dependencies=(
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
-  [pycuda]="cccl libcudacxx cub thrust cudax"
+  [pycuda]="cccl libcudacxx cub thrust c"
   [c]="cccl libcudacxx cub"
 )
 
