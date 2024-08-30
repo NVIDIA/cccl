@@ -43,12 +43,26 @@ class run_loop;
 
 struct __task : __immovable
 {
+  using __execute_fn_t = void(__task*) noexcept;
+
+  __task() = default;
+
+  _CCCL_HOST_DEVICE explicit __task(__task* __next, __task* __tail) noexcept
+      : __next_{__next}
+      , __tail_{__tail}
+  {}
+
+  _CCCL_HOST_DEVICE explicit __task(__task* __next, __execute_fn_t* __execute) noexcept
+      : __next_{__next}
+      , __execute_fn_{__execute}
+  {}
+
   __task* __next_ = this;
 
   union
   {
-    __task* __tail_;
-    void (*__execute_fn_)(__task*) noexcept;
+    __task* __tail_ = nullptr;
+    __execute_fn_t* __execute_fn_;
   };
 
   _CCCL_HOST_DEVICE void __execute() noexcept
@@ -87,16 +101,14 @@ struct __operation : __task
   }
 
   _CCCL_HOST_DEVICE explicit __operation(__task* __tail_) noexcept
-      : __task{{}, this, __tail_}
+      : __task{this, __tail_}
   {}
 
   _CCCL_HOST_DEVICE __operation(__task* __next_, run_loop* __loop, _Rcvr __rcvr)
-      : __task{{}, __next_}
+      : __task{__next_, &__execute_impl}
       , __loop_{__loop}
       , __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
-  {
-    __execute_fn_ = &__execute_impl;
-  }
+  {}
 
   _CCCL_HOST_DEVICE void start() & noexcept;
 };
@@ -197,7 +209,7 @@ public:
   _CCCL_HOST_DEVICE void finish();
 
 private:
-  _CCCL_HOST_DEVICE void __push_back(__task* __task);
+  _CCCL_HOST_DEVICE void __push_back(__task* __tsk);
   _CCCL_HOST_DEVICE auto __pop_front() -> __task*;
 
   ::std::mutex __mutex{};
@@ -220,9 +232,9 @@ _CCCL_HOST_DEVICE inline void __operation<_Rcvr>::start() & noexcept {
 
 _CCCL_HOST_DEVICE inline void run_loop::run()
 {
-  for (__task* __task; (__task = __pop_front()) != &__head;)
+  for (__task* __tsk = __pop_front(); __tsk != &__head; __tsk = __pop_front())
   {
-    __task->__execute();
+    __tsk->__execute();
   }
 }
 
@@ -233,11 +245,11 @@ _CCCL_HOST_DEVICE inline void run_loop::finish()
   __cv.notify_all();
 }
 
-_CCCL_HOST_DEVICE inline void run_loop::__push_back(__task* __task)
+_CCCL_HOST_DEVICE inline void run_loop::__push_back(__task* __tsk)
 {
   ::std::unique_lock __lock{__mutex};
-  __task->__next_ = &__head;
-  __head.__tail_ = __head.__tail_->__next_ = __task;
+  __tsk->__next_ = &__head;
+  __head.__tail_ = __head.__tail_->__next_ = __tsk;
   __cv.notify_one();
 }
 
