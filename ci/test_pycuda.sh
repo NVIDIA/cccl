@@ -20,7 +20,11 @@ popd >/dev/null
 
 pushd ../python/cuda_parallel >/dev/null
 
-run_command "⚙️  Pip install cuda_parallel" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
+# Temporarily install the package twice to populate include directory as part of the first installation
+# and to let manifest discover these includes during the second installation. Do not forget to remove the
+# second installation after https://github.com/NVIDIA/cccl/issues/2281 is addressed.
+run_command "⚙️  Pip install cuda_parallel once" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
+run_command "⚙️  Pip install cuda_parallel twice" pip install --force-reinstall --upgrade --target "${prefix}" .[test]
 run_command "🚀  Pytest cuda_parallel" python -m pytest -v ./tests
 
 popd >/dev/null
