@@ -138,7 +138,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
   AccumT retval = prefix;
-#pragma unroll
+#  pragma unroll
   for (int i = 0; i < LENGTH; ++i)
   {
     retval = reduction_op(retval, input[i]);
