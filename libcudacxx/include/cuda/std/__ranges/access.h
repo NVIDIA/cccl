@@ -101,6 +101,7 @@ struct __fn
     return __t + 0;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_begin<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -109,6 +110,7 @@ struct __fn
     return _LIBCUDACXX_AUTO_CAST(__t.begin());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_begin<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -189,6 +191,7 @@ struct __fn
     return __t + _Np;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -197,6 +200,7 @@ struct __fn
     return _LIBCUDACXX_AUTO_CAST(__t.end());
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -221,6 +225,7 @@ _CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cbegin)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -230,6 +235,7 @@ struct __fn
     return _CUDA_VRANGES::begin(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -251,6 +257,7 @@ _CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cend)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -260,6 +267,7 @@ struct __fn
     return _CUDA_VRANGES::end(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const

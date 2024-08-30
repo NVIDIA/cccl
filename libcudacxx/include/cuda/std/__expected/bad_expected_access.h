@@ -27,17 +27,17 @@
 
 #if _CCCL_STD_VER > 2011
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
 #    ifdef __cpp_lib_expected
 #      include <expected>
 #    else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
 #      include <exception>
 #    endif // !__cpp_lib_expected
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _CCCL_NO_EXCEPTIONS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
 
 #    ifdef __cpp_lib_expected
 
@@ -103,19 +103,19 @@ private:
 };
 #    endif // !__cpp_lib_expected
 
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#  endif // !_CCCL_NO_EXCEPTIONS
 
 template <class _Err, class _Arg>
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expected_access(_Arg&& __arg)
 {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
                     ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
-#  else
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
   (void) __arg;
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _CCCL_NO_EXCEPTIONS
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
