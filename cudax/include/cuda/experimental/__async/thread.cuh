@@ -32,16 +32,6 @@
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_NV_EVAL _FOR_HOST}
 #endif
 
-#if (defined(__i386__) || defined(__x86_64__)) && __has_include(<xmmintrin.h>)
-#  include <xmmintrin.h>
-#  define _CUDAX_PAUSE() _CUDAX_FOR_HOST_OR_DEVICE((_mm_pause();), (void();))
-#elif defined(_CCCL_COMPILER_MSVC) && __has_include(<intrin.h>)
-#  include <intrin.h>
-#  define _CUDAX_PAUSE() _CUDAX_FOR_HOST_OR_DEVICE((_mm_pause()), (void()))
-#else
-#  define _CUDAX_PAUSE() __asm__ __volatile__("pause")
-#endif
-
 namespace cuda::experimental::__async
 {
 #if defined(__CUDA_ARCH__)
