@@ -974,13 +974,6 @@ typedef __char32_t char32_t;
 #    define _LIBCUDACXX_HAS_NO_WCHAR_H
 #  endif // _LIBCUDACXX_HAS_NO_WCHAR_H
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
-#    if !defined(LIBCUDACXX_ENABLE_EXCEPTIONS) || (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
-      || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
-#      define _LIBCUDACXX_NO_EXCEPTIONS
-#    endif
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
-
 // Try to find out if RTTI is disabled.
 // g++ and cl.exe have RTTI on by default and define a macro when it is.
 #  ifndef _LIBCUDACXX_NO_RTTI

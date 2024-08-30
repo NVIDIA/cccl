@@ -35,7 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning n
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __cccl_terminate() noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::exit(0);), (__trap();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::exit(-1);), (__trap();))
   _LIBCUDACXX_UNREACHABLE();
 }
 

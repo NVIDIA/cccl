@@ -214,7 +214,7 @@ template<class T>
 
 _CCCL_PUSH_MACROS
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
 #  ifdef __cpp_lib_optional
 #    include <optional>
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
@@ -241,7 +241,7 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // !_CCCL_NO_EXCEPTIONS
 
 #if _CCCL_STD_VER > 2011
 
@@ -249,12 +249,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_optional_access()
 {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
     NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else
+#  else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#  endif // !_CCCL_NO_EXCEPTIONS
 }
 
 struct nullopt_t

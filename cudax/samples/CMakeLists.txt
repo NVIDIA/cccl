@@ -45,7 +45,6 @@ add_library(cudax_samples_interface INTERFACE)
 
 target_compile_definitions(
   cudax_samples_interface INTERFACE
-  LIBCUDACXX_ENABLE_EXCEPTIONS
   LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 )
 
