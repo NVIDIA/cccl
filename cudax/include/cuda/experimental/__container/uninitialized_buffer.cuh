@@ -28,7 +28,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
-#include <cuda/experimental/__memory_resource/any_resource.h>
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
