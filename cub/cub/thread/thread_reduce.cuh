@@ -62,6 +62,8 @@ CUB_NAMESPACE_BEGIN
 namespace internal
 {
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+
 /// DPX instructions compute min, max, and sum for up to three 16 and 32-bit signed or unsigned integer parameters
 /// see DPX documetation https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dpx
 /// NOTE: The compiler is able to automatically vectorize all cases with 3 operands
@@ -209,6 +211,8 @@ ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH
 {
   return reduction_op(ThreadReduce<LENGTH>(input, reduction_op), prefix);
 }
+
+#endif // !DOXYGEN_SHOULD_SKIP_THIS
 
 /**
  * @brief Perform a sequential reduction over @p LENGTH elements of the @p input array,
