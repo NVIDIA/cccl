@@ -27,6 +27,7 @@ subprojects=(
   thrust
   cudax
   pycuda
+  c
 )
 
 # ...and their dependencies:
@@ -37,6 +38,7 @@ declare -A dependencies=(
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
   [pycuda]="cccl libcudacxx cub thrust cudax"
+  [c]="cccl libcudacxx cub"
 )
 
 declare -A project_names=(
@@ -46,6 +48,7 @@ declare -A project_names=(
   [thrust]="Thrust"
   [cudax]="CUDA Experimental"
   [pycuda]="pycuda"
+  [c]="CUDA C Core Library "
 )
 
 # By default, the project directory is assumed to be the same as the subproject name,
