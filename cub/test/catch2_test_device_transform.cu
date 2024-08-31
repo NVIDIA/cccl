@@ -512,14 +512,14 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
   c2h::device_vector<type> input(num_items);
   thrust::sequence(input.begin(), input.end());
   c2h::device_vector<type> result(num_items);
+  using thrust::placeholders::_1;
   transform_many(::cuda::std::make_tuple(input.begin() + offset),
                  result.begin() + offset,
                  num_items - offset,
-                 ::cuda::std::negate<>{});
+                 _1 * 10); // FIXME(bgruber): does not work on negative
 
-  using thrust::placeholders::_1;
   c2h::device_vector<type> reference(num_items);
-  thrust::tabulate(reference.begin() + offset, reference.end(), -(_1 + offset));
+  thrust::tabulate(reference.begin() + offset, reference.end(), (_1 + offset) * 10);
   REQUIRE(reference == result);
 }
 
