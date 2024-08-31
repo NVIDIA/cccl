@@ -42,6 +42,8 @@ TEST_CASE("From native handle", "[stream]")
 template <typename StreamType>
 void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 {
+  CUDAX_REQUIRE(waiter != waitee);
+
   auto verify_dependency = [&](const auto& insert_dependency) {
     ::test::managed<int> i(0);
     ::cuda::atomic_ref atomic_i(*i);
@@ -92,7 +94,6 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 TEST_CASE("Can add dependency into a stream", "[stream]")
 {
   cudax::stream waiter, waitee;
-  CUDAX_REQUIRE(waiter != waitee);
 
   add_dependency_test<cudax::stream>(waiter, waitee);
   add_dependency_test<cudax::stream_ref>(waiter, waitee);
