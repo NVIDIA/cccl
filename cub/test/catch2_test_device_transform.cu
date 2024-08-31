@@ -123,7 +123,7 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 CUB_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, int3>,
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, int3, double3>,
          offset_types,
          algorithms)
 {
@@ -610,5 +610,5 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   CHECK(make(&arr[33]) == aligned_base_ptr<const int>{&arr[32], 4, 4, 8});
   CHECK(make(&arr[127]) == aligned_base_ptr<const int>{&arr[96], 124, 0, 4});
   CHECK(make(&arr[128]) == aligned_base_ptr<const int>{&arr[128], 0, 0, 8});
-  CHECK(make(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4, 1, 8});
+  CHECK(make(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4, 4, 8});
 }
