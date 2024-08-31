@@ -586,8 +586,8 @@ struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
   static auto convert(cub::detail::transform::aligned_base_ptr<T> abp) -> std::string
   {
     std::stringstream ss;
-    ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << ", tail_elements_2nd_last_tile: "
-       << abp.tail_elements_2nd_last_tile << ", tail_elements_last_tile: " << abp.tail_elements_last_tile << "}";
+    ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << ", tail_bytes_2nd_last_tile: "
+       << abp.tail_bytes_2nd_last_tile << ", tail_bytes_last_tile: " << abp.tail_bytes_last_tile << "}";
     return ss.str();
   }
 };
@@ -602,13 +602,13 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   auto make                = [](int* p) {
     return make_aligned_base_ptr(p, num_items, tile_size, 128, 16);
   };
-  CHECK(make(&arr[0]) == aligned_base_ptr<const int>{&arr[0], 0, 0, 2});
-  CHECK(make(&arr[1]) == aligned_base_ptr<const int>{&arr[0], 4, 1, 2});
-  CHECK(make(&arr[5]) == aligned_base_ptr<const int>{&arr[0], 20, 1, 2});
-  CHECK(make(&arr[31]) == aligned_base_ptr<const int>{&arr[0], 124, 0, 1});
-  CHECK(make(&arr[32]) == aligned_base_ptr<const int>{&arr[32], 0, 0, 2});
-  CHECK(make(&arr[33]) == aligned_base_ptr<const int>{&arr[32], 4, 1, 2});
-  CHECK(make(&arr[127]) == aligned_base_ptr<const int>{&arr[96], 124, 0, 1});
-  CHECK(make(&arr[128]) == aligned_base_ptr<const int>{&arr[128], 0, 0, 2});
-  CHECK(make(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4, 1, 2});
+  CHECK(make(&arr[0]) == aligned_base_ptr<const int>{&arr[0], 0, 0, 8});
+  CHECK(make(&arr[1]) == aligned_base_ptr<const int>{&arr[0], 4, 4, 8});
+  CHECK(make(&arr[5]) == aligned_base_ptr<const int>{&arr[0], 20, 4, 8});
+  CHECK(make(&arr[31]) == aligned_base_ptr<const int>{&arr[0], 124, 0, 4});
+  CHECK(make(&arr[32]) == aligned_base_ptr<const int>{&arr[32], 0, 0, 8});
+  CHECK(make(&arr[33]) == aligned_base_ptr<const int>{&arr[32], 4, 4, 8});
+  CHECK(make(&arr[127]) == aligned_base_ptr<const int>{&arr[96], 124, 0, 4});
+  CHECK(make(&arr[128]) == aligned_base_ptr<const int>{&arr[128], 0, 0, 8});
+  CHECK(make(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4, 1, 8});
 }

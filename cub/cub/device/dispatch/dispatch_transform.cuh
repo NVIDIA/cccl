@@ -332,14 +332,13 @@ struct aligned_base_ptr
 {
   T* ptr; // aligned pointer before the original pointer (16-byte or 128-byte, or higher if alignof(T) is larger)
   int head_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
-  short tail_elements_2nd_last_tile; // Value inside [0;15]
-  short tail_elements_last_tile; // Value inside [0;15]
+  short tail_bytes_2nd_last_tile; // Value inside [0;15]
+  short tail_bytes_last_tile; // Value inside [0;15]
 
   _CCCL_HOST_DEVICE friend bool operator==(const aligned_base_ptr& a, const aligned_base_ptr& b)
   {
     return a.ptr == b.ptr && a.head_padding == b.head_padding
-        && a.tail_elements_2nd_last_tile == b.tail_elements_2nd_last_tile
-        && a.tail_elements_last_tile == b.tail_elements_last_tile;
+        && a.tail_bytes_2nd_last_tile == b.tail_bytes_2nd_last_tile && a.tail_bytes_last_tile == b.tail_bytes_last_tile;
   }
 };
 
@@ -347,14 +346,14 @@ template <typename T, typename Offset>
 _CCCL_HOST_DEVICE auto make_aligned_base_ptr(
   const T* ptr, Offset num_items, int tile_size, int alignment, int size_multiple) -> aligned_base_ptr<const T>
 {
-  const T* base_ptr = round_down_ptr(ptr, alignment);
-  const int tail_elements =
-    static_cast<int>((reinterpret_cast<uintptr_t>(ptr + num_items) % size_multiple) / sizeof(T));
-  const int last_tile_elements            = static_cast<int>(num_items % tile_size);
-  const short tail_elements_last_tile     = static_cast<short>(::cuda::std::min(tail_elements, last_tile_elements));
-  const short tail_elements_2nd_last_tile = static_cast<short>(tail_elements - tail_elements_last_tile);
+  const T* base_ptr            = round_down_ptr(ptr, alignment);
+  const int tail_bytes         = static_cast<int>((reinterpret_cast<uintptr_t>(ptr + num_items) % size_multiple));
+  const int last_tile_elements = static_cast<int>(num_items % tile_size);
+  const short tail_bytes_last_tile =
+    static_cast<short>(::cuda::std::min(tail_bytes, last_tile_elements * int{sizeof(T)}));
+  const short tail_bytes_2nd_last_tile = static_cast<short>(tail_bytes - tail_bytes_last_tile);
   return aligned_base_ptr<const T>{
-    base_ptr, static_cast<int>((ptr - base_ptr) * sizeof(T)), tail_elements_2nd_last_tile, tail_elements_last_tile};
+    base_ptr, static_cast<int>((ptr - base_ptr) * sizeof(T)), tail_bytes_2nd_last_tile, tail_bytes_last_tile};
 }
 
 constexpr int memcpy_async_alignment     = 16;
@@ -373,11 +372,22 @@ struct aligned_size_t
 };
 
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void fallback_copy(const char* src, char* dst, int num_elements)
+_CCCL_DEVICE _CCCL_FORCEINLINE void fallback_copy(const char* src, char* dst, int num_bytes)
 {
-  if (threadIdx.x < num_elements)
+  _CCCL_IF_CONSTEXPR (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
   {
-    reinterpret_cast<T*>(dst)[threadIdx.x] = reinterpret_cast<const T*>(src)[threadIdx.x];
+    // sizeof(T) divides size multiple, so num_bytes must consist of whole instances of T
+    if (threadIdx.x < num_bytes / sizeof(T))
+    {
+      reinterpret_cast<T*>(dst)[threadIdx.x] = reinterpret_cast<const T*>(src)[threadIdx.x];
+    }
+  }
+  else
+  {
+    if (threadIdx.x < num_bytes)
+    {
+      dst[threadIdx.x] = src[threadIdx.x];
+    }
   }
 }
 
@@ -391,8 +401,8 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   Offset global_offset,
   aligned_base_ptr<const T> aligned_ptr)
 {
-  // because SMEM base pointer and count are always multiples of 16-byte, we only need to align the SMEM start for types
-  // with larger alignment
+  // because SMEM base pointer and bytes_to_copy are always multiples of 16-byte, we only need to align the SMEM start
+  // for types with larger alignment
   _CCCL_IF_CONSTEXPR (alignof(T) > memcpy_async_alignment)
   {
     smem_offset = round_up_to_po2_multiple(smem_offset, static_cast<int>(alignof(T)));
@@ -415,13 +425,22 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   // cooperative_groups::details::copy_like<int4>(group, dst, src, sizeof(T) * tile_size), which already handles all the
   // peeling we do here
 
+  // if (threadIdx.x == 0)
+  // {
+  //   printf("bytes_to_copy: %d, head_padding: %d, tail_bytes_2nd_last_tile: %d, tail_bytes_last_tile: %d\n",
+  //          bytes_to_copy,
+  //          aligned_ptr.head_padding,
+  //          aligned_ptr.tail_bytes_2nd_last_tile,
+  //          aligned_ptr.tail_bytes_last_tile);
+  // }
+
   // out-of-bounds access at the front can happen in the first block, so check for it
   const bool special_front = alignof(T) < memcpy_async_alignment && blockIdx.x == 0 && aligned_ptr.head_padding > 0;
   if (special_front)
   {
     const int peeled_bytes_front = memcpy_async_alignment - aligned_ptr.head_padding;
     assert(peeled_bytes_front < memcpy_async_alignment);
-    fallback_copy<T>(src + aligned_ptr.head_padding, dst + aligned_ptr.head_padding, peeled_bytes_front / sizeof(T));
+    fallback_copy<T>(src + aligned_ptr.head_padding, dst + aligned_ptr.head_padding, peeled_bytes_front);
 
     // move async copy start into the buffer
     src += memcpy_async_alignment;
@@ -430,23 +449,31 @@ _CCCL_DEVICE const T* copy_and_return_smem_dst(
   }
 
   // check for out-of-bounds read at the end
-  const bool special_2nd_last_block = alignof(T) < memcpy_async_size_multiple && blockIdx.x == gridDim.x - 2
-                                   && aligned_ptr.tail_elements_2nd_last_tile > 0;
+  const bool special_2nd_last_block =
+    alignof(T) < memcpy_async_size_multiple && blockIdx.x == gridDim.x - 2 && aligned_ptr.tail_bytes_2nd_last_tile > 0;
   if (special_2nd_last_block)
   {
     bytes_to_copy -= memcpy_async_size_multiple; // may result in a negative value
-    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_elements_2nd_last_tile);
+    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_bytes_2nd_last_tile);
   }
   const bool special_last_block =
-    alignof(T) < memcpy_async_size_multiple && blockIdx.x == gridDim.x - 1 && aligned_ptr.tail_elements_last_tile > 0;
+    alignof(T) < memcpy_async_size_multiple && blockIdx.x == gridDim.x - 1 && aligned_ptr.tail_bytes_last_tile > 0;
   if (special_last_block)
   {
+    // if (threadIdx.x == 0)
+    // {
+    //   printf("special_last_block: %d\n", aligned_ptr.tail_bytes_last_tile);
+    // }
     bytes_to_copy -= memcpy_async_size_multiple; // may result in a negative value
-    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_elements_last_tile);
+    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_bytes_last_tile);
   }
 
   if (bytes_to_copy > aligned_ptr.head_padding)
   {
+    // if (threadIdx.x == 0)
+    // {
+    //   printf("memcpy_async bytes_to_copy: %d\n", bytes_to_copy);
+    // }
     cooperative_groups::memcpy_async(
       group, dst, src, aligned_size_t<memcpy_async_size_multiple>{static_cast<::cuda::std::size_t>(bytes_to_copy)});
   }
@@ -537,7 +564,7 @@ _CCCL_DEVICE void bulk_copy_tile(
     // peel front bytes
     const int peeled_bytes_front = bulk_copy_alignment - aligned_ptr.head_padding;
     assert(peeled_bytes_front < bulk_copy_alignment);
-    fallback_copy<T>(src + aligned_ptr.head_padding, dst + aligned_ptr.head_padding, peeled_bytes_front / sizeof(T));
+    fallback_copy<T>(src + aligned_ptr.head_padding, dst + aligned_ptr.head_padding, peeled_bytes_front);
 
     // move bulk copy start into the buffer
     src += bulk_copy_alignment;
@@ -547,18 +574,18 @@ _CCCL_DEVICE void bulk_copy_tile(
 
   // check for out-of-bounds read at the end
   const bool special_2nd_last_block =
-    alignof(T) < bulk_copy_size_multiple && blockIdx.x == gridDim.x - 2 && aligned_ptr.tail_elements_2nd_last_tile > 0;
+    alignof(T) < bulk_copy_size_multiple && blockIdx.x == gridDim.x - 2 && aligned_ptr.tail_bytes_2nd_last_tile > 0;
   if (special_2nd_last_block)
   {
     bytes_to_copy -= bulk_copy_size_multiple; // may result in a negative value
-    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_elements_2nd_last_tile);
+    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_bytes_2nd_last_tile);
   }
   const bool special_last_block =
-    alignof(T) < bulk_copy_size_multiple && blockIdx.x == gridDim.x - 1 && aligned_ptr.tail_elements_last_tile > 0;
+    alignof(T) < bulk_copy_size_multiple && blockIdx.x == gridDim.x - 1 && aligned_ptr.tail_bytes_last_tile > 0;
   if (special_last_block)
   {
     bytes_to_copy -= bulk_copy_size_multiple; // may result in a negative value
-    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_elements_last_tile);
+    fallback_copy<T>(src + bytes_to_copy, dst + bytes_to_copy, aligned_ptr.tail_bytes_last_tile);
   }
 
   if (threadIdx.x == 0 && bytes_to_copy > aligned_ptr.head_padding)
@@ -629,8 +656,8 @@ _CCCL_DEVICE void transform_kernel_impl(
   if (threadIdx.x < ::cuda::std::max(
         {1,
          ::cuda::std::max({aligned_ptrs.head_padding / int{sizeof(*aligned_ptrs.ptr)},
-                           int{aligned_ptrs.tail_elements_2nd_last_tile},
-                           int{aligned_ptrs.tail_elements_last_tile}})...}))
+                           int{aligned_ptrs.tail_bytes_2nd_last_tile},
+                           int{aligned_ptrs.tail_bytes_last_tile}})...}))
   {
     if (threadIdx.x == 0)
     {
