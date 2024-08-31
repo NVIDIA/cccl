@@ -109,8 +109,6 @@ struct stream : stream_ref
 
   stream& operator=(const stream&) = delete;
 
-  using stream_ref::wait;
-
   //! @brief Construct an `stream` object from a native `cudaStream_t` handle.
   //!
   //! @param __handle The native handle
