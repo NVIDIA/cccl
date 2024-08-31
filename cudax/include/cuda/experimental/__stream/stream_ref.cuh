@@ -35,8 +35,9 @@ namespace cuda::experimental
 //! @brief A non-owning wrapper for cudaStream_t.
 struct stream_ref : ::cuda::stream_ref
 {
-  // TODO consider removing the argumentless constructor, currently creates a NULL stream reference
   using ::cuda::stream_ref::stream_ref;
+
+  stream_ref() = delete;
 
   //! @brief Create a new event and record it into this stream
   //!

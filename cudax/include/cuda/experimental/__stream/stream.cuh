@@ -50,6 +50,7 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
+      : stream_ref(detail::invalid_stream)
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
