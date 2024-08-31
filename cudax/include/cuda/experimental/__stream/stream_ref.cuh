@@ -32,7 +32,7 @@
 namespace cuda::experimental
 {
 
-//! @brief An non-owning wrapper for cudaStream_t.
+//! @brief A non-owning wrapper for cudaStream_t.
 struct stream_ref : ::cuda::stream_ref
 {
   using ::cuda::stream_ref::stream_ref;
