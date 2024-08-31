@@ -39,11 +39,9 @@ TEST_CASE("From native handle", "[stream]")
   CUDART(cudaStreamDestroy(handle));
 }
 
-TEST_CASE("Can add dependency into a stream", "[stream]")
+template <typename StreamType>
+void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 {
-  cudax::stream waiter, waitee;
-  CUDAX_REQUIRE(waiter != waitee);
-
   auto verify_dependency = [&](const auto& insert_dependency) {
     ::test::managed<int> i(0);
     ::cuda::atomic_ref atomic_i(*i);
@@ -91,6 +89,15 @@ TEST_CASE("Can add dependency into a stream", "[stream]")
   }
 }
 
+TEST_CASE("Can add dependency into a stream", "[stream]")
+{
+  cudax::stream waiter, waitee;
+  CUDAX_REQUIRE(waiter != waitee);
+
+  add_dependency_test<cudax::stream>(waiter, waitee);
+  add_dependency_test<cudax::stream_ref>(waiter, waitee);
+}
+
 TEST_CASE("Stream priority", "[stream]")
 {
   cudax::stream stream_default_prio;
@@ -111,4 +118,6 @@ TEST_CASE("Stream get device", "[stream]")
   CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cudax::stream::from_native_handle(stream_handle);
   CUDAX_REQUIRE(stream_cudart.device() == *std::prev(cudax::devices.end()));
+  auto stream_ref_cudart = cudax::stream_ref(stream_handle);
+  CUDAX_REQUIRE(stream_ref_cudart.device() == *std::prev(cudax::devices.end()));
 }
