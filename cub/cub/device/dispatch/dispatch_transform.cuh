@@ -374,15 +374,16 @@ struct aligned_size_t
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void fallback_copy(const char* src, char* dst, int num_bytes)
 {
-  _CCCL_IF_CONSTEXPR (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
-  {
-    // sizeof(T) divides size multiple, so num_bytes must consist of whole instances of T
-    if (threadIdx.x < num_bytes / sizeof(T))
-    {
-      reinterpret_cast<T*>(dst)[threadIdx.x] = reinterpret_cast<const T*>(src)[threadIdx.x];
-    }
-  }
-  else
+  // TODO(bgruber): must also consider alignment here !!!
+  // _CCCL_IF_CONSTEXPR (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
+  // {
+  //   // sizeof(T) divides size multiple, so num_bytes must consist of whole instances of T
+  //   if (threadIdx.x < num_bytes / sizeof(T))
+  //   {
+  //     reinterpret_cast<T*>(dst)[threadIdx.x] = reinterpret_cast<const T*>(src)[threadIdx.x];
+  //   }
+  // }
+  // else
   {
     if (threadIdx.x < num_bytes)
     {
@@ -1217,10 +1218,10 @@ struct dispatch_t<RequiresStableAddress,
       {ap.head_padding, int{ap.tail_bytes_2nd_last_tile}, int {
          ap.tail_bytes_last_tile
        }});
-    if (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
-    {
-      return max_bytes / sizeof(T);
-    }
+    // if (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
+    // {
+    //   return max_bytes / sizeof(T);
+    // }
     return max_bytes;
   }
 
