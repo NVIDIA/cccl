@@ -643,6 +643,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   aligned_base_ptr<const InTs>... aligned_ptrs)
 {
 #  if CUB_PTX_ARCH >= 900
+  const int copy_threads = num_elem_per_thread >> 16;
+  num_elem_per_thread &= 0xFFFF;
+
   __shared__ uint64_t bar;
   extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
 
@@ -652,12 +655,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
 
-  // we need enough threads to copy any padding elements, but at least 1
-  if (threadIdx.x < ::cuda::std::max(
-        {1,
-         ::cuda::std::max({aligned_ptrs.head_padding / int{sizeof(*aligned_ptrs.ptr)},
-                           int{aligned_ptrs.tail_bytes_2nd_last_tile},
-                           int{aligned_ptrs.tail_bytes_last_tile}})...}))
+  if (threadIdx.x < copy_threads)
   {
     if (threadIdx.x == 0)
     {
@@ -1212,6 +1210,26 @@ struct dispatch_t<RequiresStableAddress,
       config->elem_per_thread);
   }
 
+  template <typename T>
+  int max_fallback_copy_threads_for_tile(const aligned_base_ptr<T>& ap)
+  {
+    const auto max_bytes = ::cuda::std::max(
+      {ap.head_padding, int{ap.tail_bytes_2nd_last_tile}, int {
+         ap.tail_bytes_last_tile
+       }});
+    if (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
+    {
+      return max_bytes / sizeof(T);
+    }
+    return max_bytes;
+  }
+
+  template <typename... Ts>
+  int max_fallback_copy_threads(const aligned_base_ptr<Ts>&... aligned_ptrs)
+  {
+    return ::cuda::std::max({1, max_fallback_copy_threads_for_tile(aligned_ptrs)...});
+  }
+
   template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>)
@@ -1223,11 +1241,17 @@ struct dispatch_t<RequiresStableAddress,
     }
     // TODO(bgruber): use a structured binding in C++17
     // auto [launcher, kernel, elem_per_thread] = *ret;
-    // TODO(bgruber): compute max copy threads here, since it is uniform for the entire kernel
+
+    const int max_copy_threads = max_fallback_copy_threads(make_aligned_base_ptr(
+      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)),
+      num_items,
+      ActivePolicy::algo_policy::BLOCK_THREADS * ::cuda::std::get<2>(*ret),
+      bulk_copy_alignment,
+      bulk_copy_size_multiple)...);
     return ::cuda::std::get<0>(*ret).doit(
       ::cuda::std::get<1>(*ret),
       num_items,
-      ::cuda::std::get<2>(*ret),
+      ::cuda::std::get<2>(*ret) | (max_copy_threads << 16), // TODO(bgruber): do some proper parameter passing
       op,
       out,
       make_aligned_base_ptr_kernel_arg<THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>>(
