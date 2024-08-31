@@ -1215,7 +1215,7 @@ struct dispatch_t<RequiresStableAddress,
   int max_fallback_copy_threads_for_tile(const aligned_base_ptr<T>& ap)
   {
     const auto max_bytes = ::cuda::std::max(
-      {ap.head_padding, int{ap.tail_bytes_2nd_last_tile}, int {
+      {bulk_copy_alignment - ap.head_padding, int{ap.tail_bytes_2nd_last_tile}, int {
          ap.tail_bytes_last_tile
        }});
     // if (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)
