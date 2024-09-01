@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+# example-begin imports
 import cupy as cp
 import numpy as np
-import pytest
-
-# example-begin imports
 import cuda.parallel.experimental as cudax
 # example-end imports
+
+import pytest
 
 
 def test_device_reduce():
