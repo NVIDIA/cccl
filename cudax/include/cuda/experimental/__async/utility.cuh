@@ -134,12 +134,13 @@ template <size_t _Ny>
 struct __slot
 {
   friend constexpr auto __slot_allocated(__slot<_Ny>);
-  static constexpr size_t __value = _Ny;
 };
 
 template <class _Type, size_t _Ny>
-struct __allocate_slot : __slot<_Ny>
+struct __allocate_slot
 {
+  static constexpr size_t __value = _Ny;
+
   friend constexpr auto __slot_allocated(__slot<_Ny>)
   {
     return static_cast<_Type (*)()>(nullptr);
@@ -149,8 +150,8 @@ struct __allocate_slot : __slot<_Ny>
 template <class _Type, size_t _Id = 0, size_t _Pow2 = 0>
 constexpr size_t __next(long);
 
-// If __slot_allocated(__slot<_Id>) has NOT been defined, then SFINAE will keep this function out of the overload
-// set...
+// If __slot_allocated(__slot<_Id>) has NOT been defined, then SFINAE will keep
+// this function out of the overload set...
 template <class _Type, //
           size_t _Id   = 0,
           size_t _Pow2 = 0,
@@ -173,11 +174,25 @@ constexpr size_t __next(long)
   }
 }
 
+// Prior to Clang 12, we can't use the __slot trick to erase long type names
+// because of a compiler bug. We'll just use the original type name in that case.
+#if defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 120000
+
+template <class _Type>
+using __zip = _Type;
+
+template <class _Id>
+using __unzip = _Id;
+
+#else
+
 template <class _Type, size_t _Val = __async::__next<_Type>(0)>
 using __zip = __slot<_Val>;
 
 template <class _Id>
 using __unzip = decltype(__slot_allocated(_Id())());
+
+#endif
 
 // burn the first slot
 using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
