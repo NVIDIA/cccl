@@ -1,5 +1,7 @@
 #include <thrust/detail/config.h>
 
+#include <cuda/functional>
+
 #if !defined(THRUST_LEGACY_GCC)
 
 #  include <thrust/device_vector.h>
@@ -8,8 +10,6 @@
 #  include <thrust/sort.h>
 #  include <thrust/transform.h>
 #  include <thrust/zip_function.h>
-
-#  include <iostream>
 
 #  include <unittest/unittest.h>
 
@@ -176,4 +176,23 @@ struct TestNestedZipFunction2
   }
 };
 SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
-#endif // _CCCL_STD_VER
+
+#  if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <class T>
+struct ProclaimReturnType
+{
+  void operator()()
+  {
+    auto fun =
+      thrust::make_zip_function(cuda::proclaim_return_type<thrust::tuple<int, int>>([] __device__(int a, int b) {
+        return thrust::make_tuple(a, b);
+      }));
+
+    thrust::make_transform_iterator(
+      thrust::make_zip_iterator(thrust::make_counting_iterator(0), thrust::make_counting_iterator(42)), fun);
+  }
+};
+SimpleUnitTest<ProclaimReturnType, type_list<int, float>> TestProclaimReturnType;
+#  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
+#endif // !THRUST_LEGACY_GCC

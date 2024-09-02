@@ -23,6 +23,9 @@
 #  include <thrust/tuple.h>
 #  include <thrust/type_traits/integer_sequence.h>
 
+#  include <cuda/functional>
+#  include <cuda/std/utility>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup function_objects Function Objects
@@ -52,7 +55,7 @@ _CCCL_HOST_DEVICE decltype(auto) apply_impl(Function&& func, Tuple&& args, index
 template <typename Function, typename Tuple>
 _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
 {
-  constexpr auto tuple_size = thrust::tuple_size<typename std::decay<Tuple>::type>::value;
+  constexpr auto tuple_size = thrust::tuple_size<_CUDA_VSTD::__decay_t<Tuple>>::value;
   return apply_impl(THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<tuple_size>{});
 }
 
@@ -60,14 +63,12 @@ _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Function, typename Tuple, std::size_t... Is>
-_CCCL_HOST_DEVICE auto apply_impl(Function&& func, Tuple&& args, index_sequence<Is...>)
-  THRUST_DECLTYPE_RETURNS(func(thrust::get<Is>(THRUST_FWD(args))...))
+_CCCL_HOST_DEVICE auto apply_impl(Function&& func, Tuple&& args, index_sequence<Is...>) THRUST_DECLTYPE_RETURNS(
+  func(thrust::get<Is>(THRUST_FWD(args))...))
 
-    template <typename Function, typename Tuple>
-    _CCCL_HOST_DEVICE auto apply(Function&& func, Tuple&& args) THRUST_DECLTYPE_RETURNS(apply_impl(
-      THRUST_FWD(func),
-      THRUST_FWD(args),
-      make_index_sequence<thrust::tuple_size<typename std::decay<Tuple>::type>::value>{}))
+  template <typename Function, typename Tuple>
+  _CCCL_HOST_DEVICE auto apply(Function&& func, Tuple&& args) THRUST_DECLTYPE_RETURNS(apply_impl(
+    THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<thrust::tuple_size<_CUDA_VSTD::__decay_t<Tuple>>::value>{}))
 
 #  endif // _CCCL_STD_VER
 
@@ -143,7 +144,7 @@ public:
   zip_function() = default;
 
   _CCCL_HOST_DEVICE zip_function(Function func)
-      : func(std::move(func))
+      : func(_CUDA_VSTD::move(func))
   {}
 
 // Add workaround for decltype(auto) on C++11-only compilers:
@@ -157,17 +158,46 @@ public:
 
 #  else // _CCCL_STD_VER
 
-  // Can't just use THRUST_DECLTYPE_RETURNS here since we need to use
-  // std::declval for the signature components:
+  // Can't just use THRUST_DECLTYPE_RETURNS here since we need to use declval for the signature components:
   template <typename Tuple>
   _CCCL_HOST_DEVICE auto operator()(Tuple&& args) const
-    noexcept(noexcept(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args))))
-      -> decltype(detail::zip_detail::apply(std::declval<Function>(), THRUST_FWD(args)))
+    noexcept(noexcept(detail::zip_detail::apply(_CUDA_VSTD::declval<Function>(), THRUST_FWD(args))))
+      -> decltype(detail::zip_detail::apply(_CUDA_VSTD::declval<Function>(), THRUST_FWD(args)))
   {
     return detail::zip_detail::apply(func, THRUST_FWD(args));
   }
 
 #  endif // _CCCL_STD_VER
+
+  //! Returns a reference to the underlying function.
+  _CCCL_HOST_DEVICE Function& underlying_function() const
+  {
+    return func;
+  }
+
+private:
+  mutable Function func;
+};
+
+//! @brief The invoke machinery we are using for the generic case does not work with `proclaim_return_type` because
+//! that obviously tries to deduce the return type from the device lambda, which we need `proclaim_return_type` for
+template <class _Ret, class _DecayFn>
+class zip_function<::cuda::__detail::__return_type_wrapper<_Ret, _DecayFn>>
+{
+  using Function = ::cuda::__detail::__return_type_wrapper<_Ret, _DecayFn>;
+
+public:
+  zip_function() = default;
+
+  _CCCL_HOST_DEVICE zip_function(Function func)
+      : func(_CUDA_VSTD::move(func))
+  {}
+
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE _Ret operator()(Tuple&& args) const
+  {
+    return func(THRUST_FWD(args));
+  }
 
   //! Returns a reference to the underlying function.
   _CCCL_HOST_DEVICE Function& underlying_function() const
@@ -187,9 +217,9 @@ private:
  *  \see zip_function
  */
 template <typename Function>
-_CCCL_HOST_DEVICE zip_function<typename std::decay<Function>::type> make_zip_function(Function&& fun)
+_CCCL_HOST_DEVICE zip_function<_CUDA_VSTD::__decay_t<Function>> make_zip_function(Function&& fun)
 {
-  using func_t = typename std::decay<Function>::type;
+  using func_t = _CUDA_VSTD::__decay_t<Function>;
   return zip_function<func_t>(THRUST_FWD(fun));
 }
 
