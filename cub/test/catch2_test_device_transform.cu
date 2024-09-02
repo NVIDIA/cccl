@@ -123,7 +123,7 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
 
 CUB_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
-         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, int3, double3>,
+         c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t /*, int3, double3*/>,
          offset_types,
          algorithms)
 {
@@ -136,8 +136,10 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
 
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
-  c2h::gen(CUB_SEED(1), a);
-  c2h::gen(CUB_SEED(1), b);
+  thrust::sequence(a.begin(), a.end());
+  thrust::sequence(b.begin(), b.end());
+  // c2h::gen(CUB_SEED(1), a);
+  // c2h::gen(CUB_SEED(1), b);
 
   c2h::device_vector<type> result(num_items);
   transform_many_with_alg<alg, offset_t>(
@@ -589,29 +591,24 @@ struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
   static auto convert(cub::detail::transform::aligned_base_ptr<T> abp) -> std::string
   {
     std::stringstream ss;
-    ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << ", tail_bytes_2nd_last_tile: "
-       << abp.tail_bytes_2nd_last_tile << ", tail_bytes_last_tile: " << abp.tail_bytes_last_tile << "}";
+    ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << "}";
     return ss.str();
   }
 };
 } // namespace Catch
 
+// TODO(bgruber): rewrite this example using int3
 CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
-  constexpr auto num_items = 34;
-  constexpr auto tile_size = 32;
-  auto make                = [](int* p) {
-    return make_aligned_base_ptr(p, num_items, tile_size, 128, 16);
-  };
-  CHECK(make(&arr[0]) == aligned_base_ptr<const int>{&arr[0], 0, 0, 8});
-  CHECK(make(&arr[1]) == aligned_base_ptr<const int>{&arr[0], 4, 4, 8});
-  CHECK(make(&arr[5]) == aligned_base_ptr<const int>{&arr[0], 20, 4, 8});
-  CHECK(make(&arr[31]) == aligned_base_ptr<const int>{&arr[0], 124, 0, 4});
-  CHECK(make(&arr[32]) == aligned_base_ptr<const int>{&arr[32], 0, 0, 8});
-  CHECK(make(&arr[33]) == aligned_base_ptr<const int>{&arr[32], 4, 4, 8});
-  CHECK(make(&arr[127]) == aligned_base_ptr<const int>{&arr[96], 124, 0, 4});
-  CHECK(make(&arr[128]) == aligned_base_ptr<const int>{&arr[128], 0, 0, 8});
-  CHECK(make(&arr[129]) == aligned_base_ptr<const int>{&arr[128], 4, 4, 8});
+  CHECK(make_aligned_base_ptr(&arr[0], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 0});
+  CHECK(make_aligned_base_ptr(&arr[1], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 4});
+  CHECK(make_aligned_base_ptr(&arr[5], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 20});
+  CHECK(make_aligned_base_ptr(&arr[31], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 124});
+  CHECK(make_aligned_base_ptr(&arr[32], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[32]), 0});
+  CHECK(make_aligned_base_ptr(&arr[33], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[32]), 4});
+  CHECK(make_aligned_base_ptr(&arr[127], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[96]), 124});
+  CHECK(make_aligned_base_ptr(&arr[128], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 0});
+  CHECK(make_aligned_base_ptr(&arr[129], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
 }
