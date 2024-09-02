@@ -42,7 +42,7 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  ifdef _CCCL_CUDA_COMPILER
 
 #    include <thrust/system/cuda/config.h>
 
@@ -106,6 +106,6 @@ auto get_async_universal_host_pinned_allocator(thrust::detail::execution_policy_
 
 THRUST_NAMESPACE_END
 
-#  endif // THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  endif // _CCCL_CUDA_COMPILER
 
 #endif

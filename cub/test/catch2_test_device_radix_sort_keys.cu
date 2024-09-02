@@ -192,8 +192,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   using bits_t = typename cub::Traits<key_t>::UnsignedBits;
 
   constexpr std::size_t num_bits = sizeof(key_t) * CHAR_BIT;
-  const key_t positive_zero      = c2h::bit_cast<key_t>(bits_t(0));
-  const key_t negative_zero      = c2h::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
+  const key_t positive_zero      = ::cuda::std::bit_cast<key_t>(bits_t(0));
+  const key_t negative_zero      = ::cuda::std::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));

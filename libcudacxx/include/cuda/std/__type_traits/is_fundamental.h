@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_fundamental : public integral_constant<bool, _LIBCUDACXX_IS_FUNDAMENTAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public integral_constant<bool, _LIBCUDACXX_IS_FUNDAMENTAL(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -41,7 +41,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_fundamental_v = _LIBCUDACXX_IS_FUNDAMEN
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_fundamental
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental
     : public integral_constant<bool, is_void<_Tp>::value || __is_nullptr_t<_Tp>::value || is_arithmetic<_Tp>::value>
 {};
 

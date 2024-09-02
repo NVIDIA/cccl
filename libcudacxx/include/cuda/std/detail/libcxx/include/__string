@@ -80,7 +80,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // char_traits
 
 template <class _CharT>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits
 {
   typedef _CharT char_type;
   typedef int int_type;
@@ -239,7 +239,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CharT* char_traits<_CharT>::assign(char_ty
 #endif
 
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
 {
   typedef char char_type;
   typedef int int_type;
@@ -381,7 +381,7 @@ char_traits<char>::find(const char_type* __s, size_t __n, const char_type& __a) 
 
 #ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t>
 {
   typedef wchar_t char_type;
   typedef wint_t int_type;
@@ -534,7 +534,7 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
 #ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
 
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char8_t>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t>
 {
   typedef char8_t char_type;
   typedef unsigned int int_type;
@@ -658,7 +658,7 @@ char_traits<char8_t>::find(const char_type* __s, size_t __n, const char_type& __
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>
 {
   typedef char16_t char_type;
   typedef uint_least16_t int_type;
@@ -801,7 +801,7 @@ char_traits<char16_t>::assign(char_type* __s, size_t __n, char_type __a) noexcep
 }
 
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
 {
   typedef char32_t char_type;
   typedef uint_least32_t int_type;

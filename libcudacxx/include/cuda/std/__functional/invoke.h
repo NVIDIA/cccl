@@ -494,11 +494,11 @@ struct __invoke_void_return_wrapper<_Ret, true>
 // is_invocable
 
 template <class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_invocable : integral_constant<bool, __invokable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __invokable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>
@@ -510,12 +510,12 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _F
 // is_nothrow_invocable
 
 template <class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_invocable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
     : integral_constant<bool, __nothrow_invokable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_invocable_r
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
     : integral_constant<bool, __nothrow_invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
@@ -526,7 +526,7 @@ template <class _Ret, class _Fn, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
 
 template <class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS invoke_result : __invoke_of<_Fn, _Args...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result : __invoke_of<_Fn, _Args...>
 {};
 
 template <class _Fn, class... _Args>
@@ -540,6 +540,10 @@ invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args.
 }
 
 #endif // _CCCL_STD_VER > 2011
+
+/// The type of intermediate accumulator (according to P2322R6)
+template <typename Invokable, typename InputT, typename InitT = InputT>
+using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invokable, InitT, InputT>::type>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

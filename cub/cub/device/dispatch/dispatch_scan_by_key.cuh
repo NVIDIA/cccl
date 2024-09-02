@@ -228,10 +228,10 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT = detail::accumulator_t<
+  typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
-    ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>,
-    cub::detail::value_t<ValuesInputIteratorT>>,
+    cub::detail::value_t<ValuesInputIteratorT>,
+    ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
   typename SelectedPolicy =
     DeviceScanByKeyPolicy<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey : SelectedPolicy

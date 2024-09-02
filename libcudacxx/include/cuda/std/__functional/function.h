@@ -26,10 +26,13 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/unary_function.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__memory/allocator_destructor.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/builtin_new_allocator.h>
 #include <cuda/std/__memory/compressed_pair.h>
+#include <cuda/std/__memory/uses_allocator.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -46,27 +49,25 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/__debug>
-#include <cuda/std/detail/libcxx/include/__functional_base>
-#include <cuda/std/detail/libcxx/include/new>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
 #    include <function>
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _CCCL_NO_EXCEPTIONS
 
 _CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_function_call()
 {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _CCCL_NO_EXCEPTIONS
 }
 
 template <class _Fp>
-class _LIBCUDACXX_TEMPLATE_VIS function; // undefined
+class _CCCL_TYPE_VISIBILITY_DEFAULT function; // undefined
 
 namespace __function
 {
@@ -251,7 +252,7 @@ public:
 // __base provides an abstract interface for copyable functors.
 
 template <class _Fp>
-class _LIBCUDACXX_TEMPLATE_VIS __base;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __base;
 
 template <class _Rp, class... _ArgTypes>
 class __base<_Rp(_ArgTypes...)>
@@ -996,7 +997,7 @@ public:
 } // namespace __function
 
 template <class _Rp, class... _ArgTypes>
-class _LIBCUDACXX_TEMPLATE_VIS function<_Rp(_ArgTypes...)>
+class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
     : public __function::__maybe_derive_from_unary_function<_Rp(_ArgTypes...)>
     , public __function::__maybe_derive_from_binary_function<_Rp(_ArgTypes...)>
 {

@@ -13,6 +13,7 @@ CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
 GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
+CONFIGURE_ONLY=false
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -21,7 +22,8 @@ function usage {
     echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
     echo
     echo "Options:"
-    echo "  -v/--verbose: enable shell echo for debugging"
+    echo "  -v/-verbose: enable shell echo for debugging"
+    echo "  -configure: Only run cmake to configure, do not build or test."
     echo "  -cuda: CUDA compiler (Defaults to \$CUDACXX if set, otherwise nvcc)"
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
@@ -32,6 +34,7 @@ function usage {
     echo "  $ PARALLEL_LEVEL=8 $0"
     echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
     echo "  $ $0 -cxx clang++-8"
+    echo "  $ $0 -configure -arch=80"
     echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
     echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1
@@ -44,7 +47,8 @@ function usage {
 args=("$@")
 while [ "${#args[@]}" -ne 0 ]; do
     case "${args[0]}" in
-    -v | --verbose) VERBOSE=1; args=("${args[@]:1}");;
+    -v | --verbose | -verbose) VERBOSE=1; args=("${args[@]:1}");;
+    -configure) CONFIGURE_ONLY=true;   args=("${args[@]:1}");;
     -cxx)  HOST_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
@@ -186,6 +190,16 @@ function configure_preset()
     run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}"
     status=$?
     popd > /dev/null
+
+    if $CONFIGURE_ONLY; then
+        echo "${BUILD_NAME} configuration complete:"
+        echo "  Exit code:       ${status}"
+        echo "  CMake Preset:    ${PRESET}"
+        echo "  CMake Options:   ${CMAKE_OPTIONS}"
+        echo "  Build Directory: ${BUILD_DIR}/${PRESET}"
+        exit $status
+    fi
+
     return $status
 }
 
@@ -195,6 +209,10 @@ function build_preset() {
     local green="1;32"
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+
+    if $CONFIGURE_ONLY; then
+        return 0
+    fi
 
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local sccache_json="${preset_dir}/sccache_stats.json"
@@ -239,6 +257,10 @@ function test_preset()
     local PRESET=$2
     local GPU_REQUIRED=${3:-true}
 
+    if $CONFIGURE_ONLY; then
+        return 0
+    fi
+
     if $GPU_REQUIRED; then
         fail_if_no_gpu
     fi
@@ -265,5 +287,8 @@ function configure_and_build_preset()
     local CMAKE_OPTIONS=$3
 
     configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
-    build_preset "$BUILD_NAME" "$PRESET"
+
+    if ! $CONFIGURE_ONLY; then
+        build_preset "$BUILD_NAME" "$PRESET"
+    fi
 }

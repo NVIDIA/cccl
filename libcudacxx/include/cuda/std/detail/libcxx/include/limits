@@ -123,10 +123,6 @@ _CCCL_PUSH_MACROS
 #  include <cuda/std/detail/libcxx/include/support/win32/limits_msvc_win32.h>
 #endif // _LIBCUDACXX_MSVCRT
 
-#if defined(_CCCL_COMPILER_IBM)
-#  include <cuda/std/detail/libcxx/include/support/ibm/limits.h>
-#endif // _CCCL_COMPILER_IBM
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum float_round_style
@@ -628,11 +624,7 @@ protected:
     return __LDBL_DENORM_MIN__;
   }
 
-#  if (defined(__ppc__) || defined(__ppc64__) || defined(__PPC64__))
-  static constexpr bool is_iec559 = false;
-#  else
-  static constexpr bool is_iec559 = true;
-#  endif
+  static constexpr bool is_iec559  = true;
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo  = false;
 
@@ -643,7 +635,7 @@ protected:
 };
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits : private __libcpp_numeric_limits<__remove_cv_t<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits : private __libcpp_numeric_limits<__remove_cv_t<_Tp>>
 {
   typedef __libcpp_numeric_limits<__remove_cv_t<_Tp>> __base;
   typedef typename __base::type type;
@@ -763,7 +755,7 @@ template <class _Tp>
 constexpr float_round_style numeric_limits<_Tp>::round_style;
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<const _Tp> : private numeric_limits<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits<const _Tp> : private numeric_limits<_Tp>
 {
   typedef numeric_limits<_Tp> __base;
   typedef _Tp type;
@@ -883,7 +875,7 @@ template <class _Tp>
 constexpr float_round_style numeric_limits<const _Tp>::round_style;
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<volatile _Tp> : private numeric_limits<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits<volatile _Tp> : private numeric_limits<_Tp>
 {
   typedef numeric_limits<_Tp> __base;
   typedef _Tp type;
@@ -1003,7 +995,7 @@ template <class _Tp>
 constexpr float_round_style numeric_limits<volatile _Tp>::round_style;
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS numeric_limits<const volatile _Tp> : private numeric_limits<_Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits<const volatile _Tp> : private numeric_limits<_Tp>
 {
   typedef numeric_limits<_Tp> __base;
   typedef _Tp type;

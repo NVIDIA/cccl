@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_move_constructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_constructible
     : public is_nothrow_constructible<_Tp, __add_rvalue_reference_t<_Tp>>
 {};
 

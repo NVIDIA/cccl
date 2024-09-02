@@ -33,7 +33,7 @@
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -126,6 +126,7 @@ struct __fn
   }
 
   // `[range.prim.size]`: `auto(t.size())` is a valid expression.
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__member_size<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -135,6 +136,7 @@ struct __fn
   }
 
   // `[range.prim.size]`: `auto(size(t))` is a valid expression.
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__unqualified_size<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const
@@ -144,6 +146,7 @@ struct __fn
   }
 
   // [range.prim.size]: the `to-unsigned-like` case.
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__difference<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Tp&& __t) const

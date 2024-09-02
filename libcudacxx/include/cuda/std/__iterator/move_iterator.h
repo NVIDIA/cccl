@@ -41,7 +41,7 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -96,7 +96,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Iter>
-class _LIBCUDACXX_TEMPLATE_VIS move_iterator
+class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator
 #if _CCCL_STD_VER > 2014
     : public __move_iter_category_base<_Iter>
 #endif

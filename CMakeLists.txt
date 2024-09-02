@@ -38,11 +38,17 @@ option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." ${CCCL_TOPLEVEL_P
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ${CCCL_TOPLEVEL_PROJECT})
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ${CCCL_TOPLEVEL_PROJECT})
 option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
+option(CCCL_ENABLE_C "Enable CUDA C Core Library." OFF)
 
 option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
 
 if (CCCL_ENABLE_UNSTABLE)
   option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ON)
+endif()
+
+option(CCCL_DISABLE_EXCEPTIONS "Disable use of exceptions within CCCL libraries." OFF)
+if (CCCL_DISABLE_EXCEPTIONS)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCCCL_DISABLE_EXCEPTIONS")
 endif()
 
 include(CTest)
@@ -75,6 +81,10 @@ add_subdirectory(thrust)
 
 if (CCCL_ENABLE_UNSTABLE)
   add_subdirectory(cudax)
+endif()
+
+if (CCCL_ENABLE_C)
+  add_subdirectory(c)
 endif()
 
 if (CCCL_ENABLE_TESTING)

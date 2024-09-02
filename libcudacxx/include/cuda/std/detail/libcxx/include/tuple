@@ -157,6 +157,7 @@ template <class... Types>
 
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/apply_cv.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
@@ -178,7 +179,6 @@ template <class... Types>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__functional_base>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -685,7 +685,7 @@ struct __tuple_constraints
 };
 
 template <class... _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS tuple
+class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 {
   typedef __tuple_impl<__make_tuple_indices_t<sizeof...(_Tp)>, _Tp...> _BaseT;
 
@@ -934,7 +934,7 @@ public:
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS tuple<>
+class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
 public:
   constexpr tuple() noexcept = default;
@@ -1319,7 +1319,7 @@ tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
 }
 
 template <class... _Tp, class _Alloc>
-struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator<tuple<_Tp...>, _Alloc> : true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator<tuple<_Tp...>, _Alloc> : true_type
 {};
 
 template <class _T1, class _T2, bool _IsRef>

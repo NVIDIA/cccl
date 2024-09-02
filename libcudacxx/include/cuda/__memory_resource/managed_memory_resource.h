@@ -31,8 +31,9 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/resource_ref.h>
+#  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
-#  include <cuda/std/__new/bad_alloc.h>
+#  include <cuda/std/detail/libcxx/include/stdexcept>
 
 #  if _CCCL_STD_VER >= 2014
 
@@ -56,14 +57,14 @@ public:
   //! @brief Allocate CUDA unified memory of size at least \p __bytes.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
-  //! @throw cuda::cuda_error of the returned error code
+  //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
   _CCCL_NODISCARD void* allocate(const size_t __bytes, const size_t __alignment = default_cuda_malloc_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD::__throw_bad_alloc();
+      _CUDA_VSTD::__throw_invalid_argument("Invalid alignment passed to managed_memory_resource::allocate.");
     }
 
     void* __ptr{nullptr};
@@ -73,10 +74,10 @@ public:
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const
+  void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
@@ -85,26 +86,26 @@ public:
     (void) __alignment;
   }
 
-  //! @brief Equality comparison with another \c managed_memory_resource
-  //! @param __other The other \c managed_memory_resource
-  //! @return Whether both \c managed_memory_resource were constructed with the same flags
+  //! @brief Equality comparison with another \c managed_memory_resource.
+  //! @param __other The other \c managed_memory_resource.
+  //! @return Whether both \c managed_memory_resource were constructed with the same flags.
   _CCCL_NODISCARD constexpr bool operator==(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
 #    if _CCCL_STD_VER <= 2017
-  //! @brief Inequality comparison with another \c managed_memory_resource
-  //! @param __other The other \c managed_memory_resource
-  //! @return Whether both \c managed_memory_resource were constructed with different flags
+  //! @brief Inequality comparison with another \c managed_memory_resource.
+  //! @param __other The other \c managed_memory_resource.
+  //! @return Whether both \c managed_memory_resource were constructed with different flags.
   _CCCL_NODISCARD constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c managed_memory_resource and another resource
-  //! @param __lhs The \c managed_memory_resource
-  //! @param __rhs The resource to compare to
+  //! @brief Equality comparison between a \c managed_memory_resource and another resource.
+  //! @param __lhs The \c managed_memory_resource.
+  //! @param __rhs The resource to compare to.
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   template <class _Resource>

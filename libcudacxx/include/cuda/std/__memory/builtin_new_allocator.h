@@ -23,8 +23,8 @@
 #endif // no system header
 
 #include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__new_>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/new>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

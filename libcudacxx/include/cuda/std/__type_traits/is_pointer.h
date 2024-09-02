@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_pointer : public integral_constant<bool, _LIBCUDACXX_IS_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public integral_constant<bool, _LIBCUDACXX_IS_POINTER(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -74,7 +74,7 @@ struct __libcpp_remove_objc_qualifiers<_Tp __unsafe_unretained>
 #  endif
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_pointer
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer
     : public __libcpp_is_pointer<typename __libcpp_remove_objc_qualifiers<__remove_cv_t<_Tp>>::type>
 {};
 

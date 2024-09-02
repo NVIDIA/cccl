@@ -32,6 +32,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__memory/voidify.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -46,7 +47,6 @@
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/detail/libcxx/include/new>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -631,12 +631,12 @@ __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Se
     _AllocatorDestroyRangeReverse<_Alloc, _Iter2>(__alloc, __destruct_first, __first2));
   while (__first1 != __last1)
   {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
     allocator_traits<_Alloc>::construct(
       __alloc, _CUDA_VSTD::__to_address(__first2), _CUDA_VSTD::move_if_noexcept(*__first1));
-#else
+#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
     allocator_traits<_Alloc>::construct(__alloc, _CUDA_VSTD::__to_address(__first2), _CUDA_VSTD::move(*__first1));
-#endif
+#endif // _CCCL_NO_EXCEPTIONS
     ++__first1;
     ++__first2;
   }

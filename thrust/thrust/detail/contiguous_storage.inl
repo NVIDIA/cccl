@@ -180,7 +180,7 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::allocate(size_type n)
 } // end contiguous_storage::allocate()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate()
+_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate() noexcept
 {
   if (size() > 0)
   {
@@ -254,13 +254,14 @@ contiguous_storage<T, Alloc>::uninitialized_copy_n(InputIterator first, Size n, 
 } // end contiguous_storage::uninitialized_copy_n()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::destroy(iterator first, iterator last)
+_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::destroy(iterator first, iterator last) noexcept
 {
   destroy_range(m_allocator, first.base(), last - first);
 } // end contiguous_storage::destroy()
 
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch(const contiguous_storage& other)
+_CCCL_HOST_DEVICE void
+contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch(const contiguous_storage& other) noexcept
 {
   integral_constant<bool, allocator_traits<Alloc>::propagate_on_container_copy_assignment::value> c;
 
@@ -269,7 +270,7 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate_on_allocator_mis
 
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::destroy_on_allocator_mismatch(
-  const contiguous_storage& other, iterator first, iterator last)
+  const contiguous_storage& other, iterator first, iterator last) noexcept
 {
   integral_constant<bool, allocator_traits<Alloc>::propagate_on_container_copy_assignment::value> c;
 
@@ -363,8 +364,8 @@ contiguous_storage<T, Alloc>::is_allocator_not_equal_dispatch(false_type /*!is_a
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void
-contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch_dispatch(true_type, const contiguous_storage& other)
+_CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch_dispatch(
+  true_type, const contiguous_storage& other) noexcept
 {
   if (m_allocator != other.m_allocator)
   {
@@ -374,13 +375,13 @@ contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch_dispatch(true_typ
 
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void
-contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch_dispatch(false_type, const contiguous_storage&)
+contiguous_storage<T, Alloc>::deallocate_on_allocator_mismatch_dispatch(false_type, const contiguous_storage&) noexcept
 {} // end contiguous_storage::deallocate_on_allocator_mismatch()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::destroy_on_allocator_mismatch_dispatch(
-  true_type, const contiguous_storage& other, iterator first, iterator last)
+  true_type, const contiguous_storage& other, iterator first, iterator last) noexcept
 {
   if (m_allocator != other.m_allocator)
   {
@@ -390,7 +391,7 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::destroy_on_allocator_mismat
 
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::destroy_on_allocator_mismatch_dispatch(
-  false_type, const contiguous_storage&, iterator, iterator)
+  false_type, const contiguous_storage&, iterator, iterator) noexcept
 {} // end contiguous_storage::destroy_on_allocator_mismatch()
 
 _CCCL_EXEC_CHECK_DISABLE

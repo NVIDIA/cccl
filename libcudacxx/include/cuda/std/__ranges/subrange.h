@@ -50,8 +50,8 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdlib>
 #include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/cstdlib>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
@@ -229,7 +229,7 @@ template <class _Iter,
           enable_if_t<sentinel_for<_Sent, _Iter>, int>,
           enable_if_t<(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>), int>>
 #  endif // _CCCL_STD_VER <= 2017
-class _LIBCUDACXX_TEMPLATE_VIS subrange : public view_interface<subrange<_Iter, _Sent, _Kind>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT subrange : public view_interface<subrange<_Iter, _Sent, _Kind>>
 {
 public:
   // Note: this is an internal implementation detail that is public only for internal usage.

@@ -25,14 +25,14 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstdlib>
-#include <cuda/std/detail/libcxx/include/new>
+#include <cuda/std/cstdlib>
 
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
 #  include <memory>
@@ -47,7 +47,7 @@ class allocator;
 // These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED_IN_CXX17.
 // Specializing allocator<void> is deprecated, but not using it.
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS allocator<void>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<void>
 {
 public:
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef void* pointer;
@@ -62,7 +62,7 @@ public:
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS allocator<const void>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const void>
 {
 public:
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* pointer;
@@ -105,7 +105,7 @@ struct __non_trivial_if<true, _Unique>
 //       allocator<void> trivial in C++20.
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS allocator : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<_Tp>>
 {
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 
@@ -201,7 +201,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -209,7 +209,7 @@ public:
 };
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS allocator<const _Tp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const _Tp>
     : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<const _Tp>>
 {
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
@@ -251,7 +251,7 @@ public:
   }
 #endif // _CCCL_STD_VER >= 2023
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
     if (__libcpp_is_constant_evaluated())
     {
@@ -298,7 +298,7 @@ public:
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }

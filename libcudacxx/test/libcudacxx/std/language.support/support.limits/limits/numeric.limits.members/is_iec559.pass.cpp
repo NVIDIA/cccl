@@ -52,11 +52,7 @@ int main(int, char**)
   test<float, true>();
   test<double, true>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#  if (defined(__ppc__) || defined(__ppc64__) || defined(__PPC64__))
-  test<long double, false>();
-#  else
   test<long double, true>();
-#  endif
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
   return 0;

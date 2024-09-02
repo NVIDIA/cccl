@@ -35,12 +35,12 @@ using __remove_const_t = _LIBCUDACXX_REMOVE_CONST(_Tp);
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_const
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const
 {
   typedef _Tp type;
 };
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_const<const _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const<const _Tp>
 {
   typedef _Tp type;
 };

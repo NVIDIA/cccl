@@ -30,6 +30,7 @@
 #include <cub/util_compiler.cuh>
 
 #include <cstdint>
+#include <cstdlib>
 #include <tuple>
 #include <type_traits>
 
@@ -41,6 +42,7 @@
 _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 #endif // nvcc-11
 
+#include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/utility>
 
@@ -133,8 +135,8 @@ struct bitwise_equal
   bool operator()(const T& a, const T& b) const
   {
     using bits_t  = typename cub::Traits<T>::UnsignedBits;
-    bits_t a_bits = c2h::bit_cast<bits_t>(a);
-    bits_t b_bits = c2h::bit_cast<bits_t>(b);
+    bits_t a_bits = ::cuda::std::bit_cast<bits_t>(a);
+    bits_t b_bits = ::cuda::std::bit_cast<bits_t>(b);
     return a_bits == b_bits;
   }
 };
@@ -250,10 +252,22 @@ struct Catch::StringMaker<cudaError>
 
 #define CUB_TEST_STR(a) #a
 
+namespace detail
+{
+inline std::size_t adjust_seed_count(std::size_t requested)
+{
+  // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
+  // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
+  static const char* override_str = std::getenv("CCCL_SEED_COUNT_OVERRIDE");
+  static int override             = override_str ? std::atoi(override_str) : 0;
+  return override_str ? override : requested;
+}
+} // namespace detail
+
 #define CUB_SEED(N)                                                                                                    \
   c2h::seed_t                                                                                                          \
   {                                                                                                                    \
     GENERATE_COPY(take(                                                                                                \
-      N,                                                                                                               \
+      detail::adjust_seed_count(N),                                                                                    \
       random(std::numeric_limits<unsigned long long int>::min(), std::numeric_limits<unsigned long long int>::max()))) \
   }

@@ -27,6 +27,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/std/__functional/invoke.h>
+
 #include <look_back_helper.cuh>
 
 #if !TUNE_BASE
@@ -85,7 +87,7 @@ template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_t      = cub::detail::InputValue<T>;
-  using accum_t     = cub::detail::accumulator_t<op_t, T, T>;
+  using accum_t     = ::cuda::std::__accumulator_t<op_t, T, T>;
   using input_it_t  = const T*;
   using output_it_t = T*;
   using offset_t    = OffsetT;
