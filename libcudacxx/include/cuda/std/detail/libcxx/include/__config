@@ -21,9 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_ICC_LLVM)
-#  define _LIBCUDACXX_COMPILER_ICC_LLVM
-#elif defined(_CCCL_COMPILER_ICC)
+#if defined(_CCCL_COMPILER_ICC)
 #  define _LIBCUDACXX_COMPILER_ICC
 #elif defined(_CCCL_COMPILER_NVHPC)
 #  define _LIBCUDACXX_COMPILER_NVHPC
@@ -36,8 +34,6 @@
 #  define _LIBCUDACXX_COMPILER_GCC
 #elif defined(_CCCL_COMPILER_MSVC)
 #  define _LIBCUDACXX_COMPILER_MSVC
-#elif defined(_CCCL_COMPILER_IBM)
-#  define _LIBCUDACXX_COMPILER_IBM
 #elif defined(_CCCL_COMPILER_NVRTC)
 #  define _LIBCUDACXX_COMPILER_NVRTC
 #endif
@@ -858,17 +854,6 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
 
-#  elif defined(_CCCL_COMPILER_IBM)
-
-#    define _ATTRIBUTE(x) __attribute__((x))
-
-#    define _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#    define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
-
-#    if defined(_AIX)
-#      define __MULTILOCALE_API
-#    endif
-
 #    define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
 #  elif defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC)
@@ -879,7 +864,7 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
 
-#  endif // _CCCL_COMPILER_[CLANG|GCC|MSVC|IBM|NVRTC]
+#  endif // _CCCL_COMPILER_[CLANG|GCC|MSVC|NVRTC]
 
 #  if defined(_CCCL_CUDA_COMPILER_NVHPC)
 // Forcefully disable visibility controls when used as the standard library with NVC++.
@@ -919,7 +904,7 @@ typedef __char32_t char32_t;
 #      endif // !__has_feature(address_sanitizer)
 #    else
 #      define _LIBCUDACXX_HAS_NO_ASAN
-#    endif // _CCCL_COMPILER[MSVC|IBM|NVHPC|NVRTC]
+#    endif // _CCCL_COMPILER[MSVC|NVHPC|NVRTC]
 #  endif // _LIBCUDACXX_HAS_NO_ASAN
 
 #  ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
@@ -973,13 +958,6 @@ typedef __char32_t char32_t;
 #  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
 #    define _LIBCUDACXX_HAS_NO_WCHAR_H
 #  endif // _LIBCUDACXX_HAS_NO_WCHAR_H
-
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
-#    if !defined(LIBCUDACXX_ENABLE_EXCEPTIONS) || (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
-      || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
-#      define _LIBCUDACXX_NO_EXCEPTIONS
-#    endif
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
 
 // Try to find out if RTTI is disabled.
 // g++ and cl.exe have RTTI on by default and define a macro when it is.
@@ -1110,8 +1088,13 @@ typedef unsigned short char16_t;
 typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#  if __has_feature(cxx_explicit_conversions) || defined(_CCCL_COMPILER_IBM) || defined(_CCCL_COMPILER_GCC) \
-    || defined(_CCCL_COMPILER_CLANG)
+#  if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
+#    define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
+#  else
+#    define _LIBCUDACXX_NOALIAS
+#  endif
+
+#  if __has_feature(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT

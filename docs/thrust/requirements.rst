@@ -60,7 +60,6 @@ Thrust and CUB support the following host architectures:
 
 -  aarch64.
 -  x86-64.
--  ppc64le.
 
 Host Operating Systems
 ~~~~~~~~~~~~~~~~~~~~~~

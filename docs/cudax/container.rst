@@ -20,6 +20,6 @@ annotations are checked by the type system.
    :widths: 25 45 30
    :header-rows: 0
 
-   * - :ref:`<cuda/experimental/buffer> <cudax-containers-uninitialized-buffer>`
+   * - :ref:`<cuda/experimental/buffer.cuh> <cudax-containers-uninitialized-buffer>`
      - Facilities providing uninitialized *heterogeneous* storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0

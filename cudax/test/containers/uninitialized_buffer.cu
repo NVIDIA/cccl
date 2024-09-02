@@ -18,7 +18,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/buffer>
+#include <cuda/experimental/buffer.cuh>
 
 #include "testing.cuh"
 
