@@ -27,6 +27,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/execution_space.h>
+
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
 #if defined(_CCCL_COMPILER_NVHPC)
@@ -70,6 +72,9 @@
 #endif // !exclude_from_explicit_instantiation
 
 #define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
+
+//! Defined here to supress any warnings from the definition
+#define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE
 
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
