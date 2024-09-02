@@ -9,17 +9,6 @@ set_property(TARGET cccl.c PROPERTY CUDA_STANDARD 20)
 
 find_package(CUDAToolkit REQUIRED)
 
-# us libfmt instead of std::format for pre gcc-13 support
-include(FetchContent)
-
-FetchContent_Declare(
-  fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt
-  GIT_TAG        11.0.2)
-FetchContent_MakeAvailable(fmt)
-
-target_link_libraries(cccl.c PRIVATE fmt::fmt)
-
 # TODO Use static versions of cudart, nvrtc, and nvJitLink
 target_link_libraries(cccl.c PRIVATE CUDA::cudart
                                      CUDA::nvrtc
