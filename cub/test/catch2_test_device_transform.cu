@@ -523,6 +523,8 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
   REQUIRE(reference == result);
 }
 
+// TODO(bgruber): I don't have a concrete use case for this test yet. Maybe this is better as a benchmark.
+#if 0
 // This functor was gifted by ahendriksen. It is very expensive to compile.
 template <int N>
 struct heavy_functor
@@ -577,6 +579,7 @@ CUB_TEST("DeviceTransform::Transform heavy functor",
   std::transform(input_h.begin(), input_h.end(), reference_h.begin(), heavy_functor<heaviness>{});
   REQUIRE(reference_h == result);
 }
+#endif
 
 namespace Catch
 {
