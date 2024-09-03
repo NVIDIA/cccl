@@ -254,7 +254,7 @@ try
 
   using thrust::placeholders::_1;
   c2h::device_vector<type> result(num_items);
-  transform_many_with_alg<alg, offset_t>(::cuda::std::tuple{input.begin()}, result.begin(), num_items, _1 * 7);
+  transform_many_with_alg<alg, offset_t>(::cuda::std::make_tuple(input.begin()), result.begin(), num_items, _1 * 7);
 
   // compute reference and verify
   c2h::host_vector<type> input_h = input;

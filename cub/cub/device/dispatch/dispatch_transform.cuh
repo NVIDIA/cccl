@@ -281,7 +281,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
 template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
+#if _CCCL_STD_VER > 2011
   assert(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)));
+#endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
 
@@ -675,7 +677,7 @@ _CCCL_DEVICE void transform_kernel_impl(
         [&](const InTs&... values) {
           return f(values...);
         },
-        ::cuda::std::tuple{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});
+        ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});
     }
   }
 }
@@ -778,11 +780,12 @@ items_per_thread_from_occupancy(int block_dim, int max_block_per_sm, int min_bif
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) -> int
 {
+#if _CCCL_STD_VER > 2011
   int smem_size   = 0;
   auto count_smem = [&](int size, int alignment) {
     smem_size = round_up_to_po2_multiple(smem_size, alignment);
     // max aligned_base_ptr head_padding + max padding after == 16
-    smem_size += size * tile_size + ::cuda::std::max(memcpy_async_alignment, memcpy_async_size_multiple);
+    smem_size += size * tile_size + memcpy_async_alignment;
   };
   // TODO(bgruber): replace by fold over comma in C++17 (left to right evaluation!)
   int dummy[] = {
@@ -790,6 +793,11 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) 
   (void) &dummy; // need to take the address to suppress unused warnings more strongly for nvcc 11.1
   (void) &count_smem;
   return smem_size;
+#else // _CCCL_STD_VER > 2011
+  // we use a simplified calculation with a bit of excess in C++11 since constexpr functions are more limited
+  return sum((sizeof(value_t<RandomAccessIteratorsIn>) * tile_size + memcpy_async_alignment
+              + alignof(value_t<RandomAccessIteratorsIn>))...);
+#endif // _CCCL_STD_VER > 2011
 }
 
 template <typename... RandomAccessIteratorsIn>
