@@ -168,6 +168,66 @@ template <typename InputIterator, typename OutputIterator, typename UnaryFunctio
 OutputIterator transform_inclusive_scan(
   InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, AssociativeOperator binary_op);
 
+/*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
+ *  operations.  \p transform_inclusive_scan is equivalent to performing a
+ *  tranformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p inclusive_scan on the tranformed sequence.  In most
+ *  cases, fusing these two operations together is more efficient, since
+ *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
+ *  <tt>binary_op(unary_op(\*first), init)</tt> is assigned to
+ *  <tt>\*result</tt> and the result of <tt>binary_op(unary_op(\*result),
+ *  unary_op(\*(first + 1)))</tt> is assigned to <tt>\*(result + 1)</tt>,
+ *  and so on. The transform scan operation is permitted to be in-place.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param first The beginning of the input sequence.
+ *  \param last The end of the input sequence.
+ *  \param result The beginning of the output sequence.
+ *  \param unary_op The function used to tranform the input sequence.
+ *  \param init The initial value of the \p inclusive_scan
+ *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \return The end of the output sequence.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ *  Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ *  Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
+ *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
+ * convertable to \c OutputIterator's \c value_type.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a model of
+ * <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
+ * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
+ * first))</tt> shall not overlap otherwise.
+ *
+ *  The following code snippet demonstrates how to use \p transform_inclusive_scan using the
+ *  \p thrust::host execution policy for parallelization:
+ *
+ *  \code
+ *  #include <thrust/transform_scan.h>
+ *  #include <thrust/execution_policy.h>
+ *  ...
+ *
+ *  int data[6] = {1, 0, 2, 2, 1, 3};
+ *
+ *  thrust::negate<int> unary_op;
+ *  thrust::plus<int> binary_op;
+ *
+ *  thrust::transform_inclusive_scan(thrust::host, data, data + 6, data, unary_op, 4, binary_op); // in-place scan
+ *
+ *  // data is now {3, 3, 1, -1, -2, -5}
+ *  \endcode
+ *
+ *  \see \p transform
+ *  \see \p inclusive_scan
+ *
+ */
 template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator,
@@ -179,6 +239,69 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
+  T init,
+  AssociativeOperator binary_op);
+
+/*! \p transform_inclusive_scan fuses the \p transform and \p inclusive_scan
+ *  operations.  \p transform_inclusive_scan is equivalent to performing a
+ *  tranformation defined by \p unary_op into a temporary sequence and then
+ *  performing an \p inclusive_scan on the tranformed sequence.  In most
+ *  cases, fusing these two operations together is more efficient, since
+ *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
+ *  <tt>binary_op(unary_op(\*first), init)</tt> is assigned to
+ *  <tt>\*result</tt> and the result of <tt>binary_op(unary_op(\*result),
+ *  unary_op(\*(first + 1)))</tt> is assigned to <tt>\*(result + 1)</tt>,
+ *  and so on. The transform scan operation is permitted to be in-place.
+ *
+ *  \param first The beginning of the input sequence.
+ *  \param last The end of the input sequence.
+ *  \param result The beginning of the output sequence.
+ *  \param unary_op The function used to tranform the input sequence.
+ *  \param init The initial value of the \p inclusive_scan
+ *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \return The end of the output sequence.
+ *
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ *  Iterator</a> and \c InputIterator's \c value_type is convertible to \c unary_op's input type.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ *  Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
+ *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
+ * convertable to \c OutputIterator's \c value_type.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator is a model of
+ * <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
+ * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
+ * first))</tt> shall not overlap otherwise.
+ *
+ *  The following code snippet demonstrates how to use \p transform_inclusive_scan
+ *
+ *  \code
+ *  #include <thrust/transform_scan.h>
+ *  ...
+ *
+ *  int data[6] = {1, 0, 2, 2, 1, 3};
+ *
+ *  thrust::negate<int> unary_op;
+ *  thrust::plus<int> binary_op;
+ *
+ *  thrust::transform_inclusive_scan(data, data + 6, data, unary_op, 4, binary_op); // in-place scan
+ *
+ *  // data is now {3, 3, 1, -1, -2, -5}
+ *  \endcode
+ *
+ *  \see \p transform
+ *  \see \p inclusive_scan
+ *
+ */
+template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
+OutputIterator transform_inclusive_scan(
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  UnaryFunction unary_op,
   T init,
   AssociativeOperator binary_op);
 
@@ -308,15 +431,6 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  */
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  UnaryFunction unary_op,
-  T init,
-  AssociativeOperator binary_op);
-
-template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
-OutputIterator transform_inclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
