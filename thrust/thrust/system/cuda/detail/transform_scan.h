@@ -79,7 +79,7 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
   InitialValueType init,
   ScanOp scan_op)
 {
-  using result_type = thrust::remove_cvref_t<InitialValueType>; // cuda::std::__accumulator_t?
+  using result_type = ::cuda::std::__accumulator_t<ScanOp, cub::detail::value_t<InputIt>, InitialValueType>;
 
   using size_type              = typename iterator_traits<InputIt>::difference_type;
   size_type num_items          = static_cast<size_type>(thrust::distance(first, last));
