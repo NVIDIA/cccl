@@ -36,11 +36,8 @@ void TestGenerateSimple()
 
   thrust::generate(result.begin(), result.end(), f);
 
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
+  Vector ref(result.size(), value);
+  ASSERT_EQUAL(result, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestGenerateSimple);
 
@@ -122,11 +119,8 @@ void TestGenerateNSimple()
 
   thrust::generate_n(result.begin(), result.size(), f);
 
-  ASSERT_EQUAL(result[0], value);
-  ASSERT_EQUAL(result[1], value);
-  ASSERT_EQUAL(result[2], value);
-  ASSERT_EQUAL(result[3], value);
-  ASSERT_EQUAL(result[4], value);
+  Vector ref(result.size(), value);
+  ASSERT_EQUAL(result, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestGenerateNSimple);
 
@@ -196,12 +190,10 @@ void TestGenerateZipIterator()
                    thrust::make_zip_iterator(thrust::make_tuple(v1.end(), v2.end())),
                    return_value<thrust::tuple<T, T>>(thrust::tuple<T, T>(4, 7)));
 
-  ASSERT_EQUAL(v1[0], 4);
-  ASSERT_EQUAL(v1[1], 4);
-  ASSERT_EQUAL(v1[2], 4);
-  ASSERT_EQUAL(v2[0], 7);
-  ASSERT_EQUAL(v2[1], 7);
-  ASSERT_EQUAL(v2[2], 7);
+  Vector ref1(3, 4);
+  Vector ref2(3, 7);
+  ASSERT_EQUAL(v1, ref1);
+  ASSERT_EQUAL(v2, ref2);
 };
 DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 

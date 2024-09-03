@@ -19,11 +19,7 @@ void TestPartitionPointSimple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector v(4);
-  v[0] = 1;
-  v[1] = 1;
-  v[2] = 1;
-  v[3] = 0;
+  Vector v{1, 1, 1, 0};
 
   Iterator first = v.begin();
 

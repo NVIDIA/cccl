@@ -51,8 +51,7 @@ void TestUniversalVectorDeviceAccess()
 
   auto& in = *in_ptr;
   in.resize(2);
-  in[0] = 4;
-  in[1] = 2;
+  in = {4, 2};
 
   out_vector_t* out_ptr{};
   cudaMallocManaged(&out_ptr, sizeof(*out_ptr));
@@ -78,8 +77,7 @@ void TestConstUniversalVectorDeviceAccess()
   {
     auto& in = *in_ptr;
     in.resize(2);
-    in[0] = 4;
-    in[1] = 2;
+    in = {4, 2};
   }
 
   const auto& const_in = *in_ptr;
