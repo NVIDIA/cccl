@@ -14,8 +14,7 @@
 #include <cuda/std/__cccl/compiler.h>
 
 // Enforce that cccl headers are treated as system headers
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC) \
-  || defined(_CCCL_COMPILER_ICC_LLVM)
+#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC)
 #  define _CCCL_FORCE_SYSTEM_HEADER_GCC
 #elif defined(_CCCL_COMPILER_CLANG)
 #  define _CCCL_FORCE_SYSTEM_HEADER_CLANG
@@ -27,8 +26,7 @@
 #if !defined(_CCCL_NO_SYSTEM_HEADER)                                                     \
   && !(defined(_CCCL_COMPILER_MSVC) && defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)) \
   && !defined(_CCCL_COMPILER_NVRTC) && !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER)
-#  if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC) \
-    || defined(_CCCL_COMPILER_ICC_LLVM)
+#  if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC)
 #    define _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  elif defined(_CCCL_COMPILER_CLANG)
 #    define _CCCL_IMPLICIT_SYSTEM_HEADER_CLANG

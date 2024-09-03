@@ -48,44 +48,21 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17}
 
   nightly:
-  # libcudacxx build fails, CUB tests fail:
-    - {jobs: ['build'], ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['cub']}
-    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11],     project: ['thrust']}
-  # - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',   std: [11]      }
-
-  # libcudacxx build fails, CUB tests fail:
-    - {jobs: ['build'], ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17],     project: ['cub']}
-    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17],     project: ['thrust']}
-  # - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]      }
-
-  # CUB + libcudacxx tests fails:
-    - {jobs: ['build'], ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17],     project: ['libcudacxx', 'cub']}
-    - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17],     project: ['thrust']}
-  # - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',  std: [17]      }
-
-  # libcudacxx tests fail:
-    - {jobs: ['build'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
-    - {jobs: ['build'], ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['libcudacxx']}
-  # H100 runners are currently flakey, only build since those use CPU-only runners:
-    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20]}
-    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17]}
-
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14],     project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['cub', 'thrust']}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11],     project: ['cub', 'thrust']}
-   # - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',   std: [14]     }
-   # - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all'    }
-   # - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]     }
-   # - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20] }
-   # - {jobs: ['test'],  ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang16', std: [17]     }
+    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',    std: [11]}
+    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]}
+    - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',   std: [17]}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',    std: [14]}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',   std: 'all'}
+    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]}
+    # H100 runners are currently flakey, only build since those use CPU-only runners:
+    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',   std: [11, 20]}
+    - {jobs: ['build'], ctk: 'curr', gpu: 'h100', sm: 'gpu', cxx: 'clang16', std: [17]}
 
     # nvrtc:
     - {jobs: ['nvrtc'], ctk: 'curr', gpu: 't4',       sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
-  # Fails on h100:
-  # - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
+    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',  std: [11, 20], project: ['libcudacxx']}
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:

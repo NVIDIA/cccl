@@ -210,7 +210,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   TempRange temp(exec, first, last);
 
   InputIterator stencil_iter = stencil;
-  for (TempIterator iter = temp.begin(); iter != temp.end(); ++iter, ++stencil_iter)
+  for (TempIterator iter = temp.begin(); iter != temp.end(); ++iter, (void) ++stencil_iter)
   {
     if (wrapped_pred(*stencil_iter))
     {
@@ -222,7 +222,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   ForwardIterator middle = first;
   stencil_iter           = stencil;
 
-  for (TempIterator iter = temp.begin(); iter != temp.end(); ++iter, ++stencil_iter)
+  for (TempIterator iter = temp.begin(); iter != temp.end(); ++iter, (void) ++stencil_iter)
   {
     if (!wrapped_pred(*stencil_iter))
     {
@@ -287,7 +287,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   // wrap pred
   thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
-  for (; first != last; ++first, ++stencil)
+  for (; first != last; ++first, (void) ++stencil)
   {
     if (wrapped_pred(*stencil))
     {

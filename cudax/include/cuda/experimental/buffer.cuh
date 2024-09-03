@@ -20,6 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__container/uninitialized_buffer.h>
+#include <cuda/experimental/__container/uninitialized_buffer.cuh>
 
-#endif //_CUDA_BUFFER
+#endif // __CUDAX_BUFFER
