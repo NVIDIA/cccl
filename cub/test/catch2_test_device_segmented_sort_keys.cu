@@ -30,7 +30,6 @@
 #include <catch2_segmented_sort_helper.cuh>
 #include <catch2_test_helper.h>
 
-#define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
 
