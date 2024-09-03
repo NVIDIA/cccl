@@ -112,7 +112,7 @@ public:
   template <class... _Ts>
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Ts... __ts) const noexcept
   {
-    return __sndr_t<_Ts...>{{}, {{static_cast<_Ts&&>(__ts)}...}};
+    return __sndr_t<_Ts...>{_JustTag{}, {{static_cast<_Ts&&>(__ts)}...}};
   }
 };
 
