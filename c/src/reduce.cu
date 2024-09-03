@@ -550,108 +550,108 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       input_it.type == cccl_iterator_kind_t::pointer
         ? std::string{}
         : std::format(
-            "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
-            "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
-            "struct __align__({2}) input_iterator_state_t {{\n;"
-            "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-            "  using value_type = {3};\n"
-            "  using difference_type = {0};\n"
-            "  using pointer = {3}*;\n"
-            "  using reference = {3}&;\n"
-            "  __device__ value_type operator*() const {{ return {4}(this); }}\n"
-            "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
-            "      {5}(this, diff);\n"
-            "      return *this;\n"
-            "  }}\n"
-            "  __device__ value_type operator[](difference_type diff) const {{\n"
-            "      return *(*this + diff);\n"
-            "  }}\n"
-            "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
-            "      input_iterator_state_t result = *this;\n"
-            "      result += diff;\n"
-            "      return result;\n"
-            "  }}\n"
-            "  char data[{1}];\n"
-            "}};\n",
-            offset_t, // 0
-            input_it.size, // 1
-            input_it.alignment, // 2
-            input_it_value_t, // 3
-            input_it.dereference.name, // 4
-            input_it.advance.name); // 5
+          "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
+          "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
+          "struct __align__({2}) input_iterator_state_t {{\n;"
+          "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
+          "  using value_type = {3};\n"
+          "  using difference_type = {0};\n"
+          "  using pointer = {3}*;\n"
+          "  using reference = {3}&;\n"
+          "  __device__ value_type operator*() const {{ return {4}(this); }}\n"
+          "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
+          "      {5}(this, diff);\n"
+          "      return *this;\n"
+          "  }}\n"
+          "  __device__ value_type operator[](difference_type diff) const {{\n"
+          "      return *(*this + diff);\n"
+          "  }}\n"
+          "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
+          "      input_iterator_state_t result = *this;\n"
+          "      result += diff;\n"
+          "      return result;\n"
+          "  }}\n"
+          "  char data[{1}];\n"
+          "}};\n",
+          offset_t, // 0
+          input_it.size, // 1
+          input_it.alignment, // 2
+          input_it_value_t, // 3
+          input_it.dereference.name, // 4
+          input_it.advance.name); // 5
 
     const std::string output_iterator_src =
       output_it.type == cccl_iterator_kind_t::pointer
         ? std::string{}
         : std::format(
-            "extern \"C\" __device__ void {2}(const void *self_ptr, {1} x);\n"
-            "extern \"C\" __device__ void {3}(void *self_ptr, {0} offset);\n"
-            "struct __align__({5}) output_iterator_state_t{{\n"
-            "  char data[{4}];\n"
-            "}};\n"
-            "struct output_iterator_proxy_t {{\n"
-            "  __device__ output_iterator_proxy_t operator=({1} x) {{\n"
-            "    {2}(&state, x);\n"
-            "    return *this;\n"
-            "  }}\n"
-            "  output_iterator_state_t state;\n"
-            "}};\n"
-            "struct output_iterator_t {{\n"
-            "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-            "  using difference_type   = {0};\n"
-            "  using value_type        = void;\n"
-            "  using pointer           = output_iterator_proxy_t*;\n"
-            "  using reference         = output_iterator_proxy_t;\n"
-            "  __device__ output_iterator_proxy_t operator*() const {{ return {{state}}; }}\n"
-            "  __device__ output_iterator_t& operator+=(difference_type diff) {{\n"
-            "      {3}(&state, diff);\n"
-            "      return *this;\n"
-            "  }}\n"
-            "  __device__ output_iterator_proxy_t operator[](difference_type diff) const {{\n"
-            "    output_iterator_t result = *this;\n"
-            "    result += diff;\n"
-            "    return {{ result.state }};\n"
-            "  }}\n"
-            "  __device__ output_iterator_t operator+(difference_type diff) const {{\n"
-            "    output_iterator_t result = *this;\n"
-            "    result += diff;\n"
-            "    return result;\n"
-            "  }}\n"
-            "  output_iterator_state_t state;\n"
-            "}};",
-            offset_t, // 0
-            accum_cpp, // 1
-            output_it.dereference.name, // 2
-            output_it.advance.name, // 3
-            output_it.size, // 4
-            output_it.alignment); // 5
+          "extern \"C\" __device__ void {2}(const void *self_ptr, {1} x);\n"
+          "extern \"C\" __device__ void {3}(void *self_ptr, {0} offset);\n"
+          "struct __align__({5}) output_iterator_state_t{{\n"
+          "  char data[{4}];\n"
+          "}};\n"
+          "struct output_iterator_proxy_t {{\n"
+          "  __device__ output_iterator_proxy_t operator=({1} x) {{\n"
+          "    {2}(&state, x);\n"
+          "    return *this;\n"
+          "  }}\n"
+          "  output_iterator_state_t state;\n"
+          "}};\n"
+          "struct output_iterator_t {{\n"
+          "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
+          "  using difference_type   = {0};\n"
+          "  using value_type        = void;\n"
+          "  using pointer           = output_iterator_proxy_t*;\n"
+          "  using reference         = output_iterator_proxy_t;\n"
+          "  __device__ output_iterator_proxy_t operator*() const {{ return {{state}}; }}\n"
+          "  __device__ output_iterator_t& operator+=(difference_type diff) {{\n"
+          "      {3}(&state, diff);\n"
+          "      return *this;\n"
+          "  }}\n"
+          "  __device__ output_iterator_proxy_t operator[](difference_type diff) const {{\n"
+          "    output_iterator_t result = *this;\n"
+          "    result += diff;\n"
+          "    return {{ result.state }};\n"
+          "  }}\n"
+          "  __device__ output_iterator_t operator+(difference_type diff) const {{\n"
+          "    output_iterator_t result = *this;\n"
+          "    result += diff;\n"
+          "    return result;\n"
+          "  }}\n"
+          "  output_iterator_state_t state;\n"
+          "}};",
+          offset_t, // 0
+          accum_cpp, // 1
+          output_it.dereference.name, // 2
+          output_it.advance.name, // 3
+          output_it.size, // 4
+          output_it.alignment); // 5
 
     const std::string op_src =
       op.type == cccl_op_kind_t::stateless
         ? std::format(
-            "extern \"C\" __device__ {0} {1}({0} lhs, {0} rhs);\n"
-            "struct op_wrapper {{\n"
-            "  __device__ {0} operator()({0} lhs, {0} rhs) const {{\n"
-            "    return {1}(lhs, rhs);\n"
-            "  }}\n"
-            "}};\n",
-            accum_cpp,
-            op.name)
+          "extern \"C\" __device__ {0} {1}({0} lhs, {0} rhs);\n"
+          "struct op_wrapper {{\n"
+          "  __device__ {0} operator()({0} lhs, {0} rhs) const {{\n"
+          "    return {1}(lhs, rhs);\n"
+          "  }}\n"
+          "}};\n",
+          accum_cpp,
+          op.name)
         : std::format(
-            "struct __align__({2}) op_state {{\n"
-            "  char data[{3}];\n"
-            "}};"
-            "extern \"C\" __device__ {0} {1}(op_state *state, {0} lhs, {0} rhs);\n"
-            "struct op_wrapper {{\n"
-            "  op_state state;\n"
-            "  __device__ {0} operator()({0} lhs, {0} rhs) {{\n"
-            "    return {1}(&state, lhs, rhs);\n"
-            "  }}\n"
-            "}};\n",
-            accum_cpp,
-            op.name,
-            op.alignment,
-            op.size);
+          "struct __align__({2}) op_state {{\n"
+          "  char data[{3}];\n"
+          "}};"
+          "extern \"C\" __device__ {0} {1}(op_state *state, {0} lhs, {0} rhs);\n"
+          "struct op_wrapper {{\n"
+          "  op_state state;\n"
+          "  __device__ {0} operator()({0} lhs, {0} rhs) {{\n"
+          "    return {1}(&state, lhs, rhs);\n"
+          "  }}\n"
+          "}};\n",
+          accum_cpp,
+          op.name,
+          op.alignment,
+          op.size);
 
     const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
@@ -811,6 +811,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
+    CUfunction reduction_kernel_function;
+    check(cuKernelGetFunction(&reduction_kernel_function, build.reduction_kernel));
+
     Invoke(
       d_temp_storage,
       *temp_storage_bytes,
@@ -822,7 +825,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
       build.cc,
       (CUfunction) build.single_tile_kernel,
       (CUfunction) build.single_tile_second_kernel,
-      (CUfunction) build.reduction_kernel,
+      reduction_kernel_function,
       cu_device,
       stream);
   }
