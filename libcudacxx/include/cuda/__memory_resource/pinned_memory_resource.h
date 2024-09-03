@@ -106,33 +106,39 @@ public:
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c pinned_memory_resource and another resource.
-  //! @param __lhs The \c pinned_memory_resource.
-  //! @param __rhs The resource to compare to.
+#    if _CCCL_STD_VER >= 2020
+  //! @brief Equality comparison between a \c pinned_memory_resource and another resource
+  //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
+  _LIBCUDACXX_TEMPLATE(class _Resource)
+  _LIBCUDACXX_REQUIRES(__different_resource<pinned_memory_resource, _Resource>)
+  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+  {
+    return resource_ref<>{const_cast<pinned_memory_resource*>(this)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+  }
+#    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-#    if _CCCL_STD_VER <= 2017
-  //! @copydoc pinned_memory_resource::operator<_Resource>==(pinned_memory_resource const&, _Resource const&)
+
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc pinned_memory_resource::operator<_Resource>==(pinned_memory_resource const&, _Resource const&)
+
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
     return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  //! @copydoc pinned_memory_resource::operator<_Resource>==(pinned_memory_resource const&, _Resource const&)
+
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
