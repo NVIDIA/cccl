@@ -230,7 +230,7 @@ _CCCL_DEVICE void transform_kernel_impl(
       {
         // TODO(bgruber): replace by fold over comma in C++17
         int dummy[] = {(arrays[j] = ins[idx], 0)..., 0}; // extra zero to handle empty packs
-        (void) &dummy[0]; // MSVC needs extra strong unused warning supression
+        (void) &dummy[0]; // MSVC needs extra strong unused warning suppression
       }
     }
     // process items_per_thread elements
@@ -450,7 +450,7 @@ _CCCL_DEVICE void transform_kernel_impl(
                   : copy_and_return_smem_dst_fallback(group, tile_size, smem, smem_offset, offset, aligned_ptrs))...};
   cooperative_groups::wait(group);
   (void) smem_ptrs; // suppress unused warning for MSVC
-  (void) &smem_offset; // MSVC needs extra strong unused warning supression
+  (void) &smem_offset; // MSVC needs extra strong unused warning suppression
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
