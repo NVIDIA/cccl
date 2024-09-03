@@ -33,7 +33,7 @@
 #  define THRUST_DEBUG_SYNC_FLAG false
 #endif
 
-#include <thrust/detail/config.h>
+#include <thrust/detail/config.h> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -45,9 +45,9 @@
 
 // We don't directly include <cub/version.cuh> since it doesn't exist in
 // older releases. This header will always pull in version info:
-#include <cub/detail/detect_cuda_runtime.cuh>
-#include <cub/util_debug.cuh>
-#include <cub/util_namespace.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
+#include <cub/util_debug.cuh> // IWYU pragma: export
+#include <cub/util_namespace.cuh> // IWYU pragma: export
 
 /**
  * \def THRUST_RUNTIME_FUNCTION

@@ -42,8 +42,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/detect_cuda_runtime.cuh>
-#include <cub/util_namespace.cuh>
+#include <cub/detail/detect_cuda_runtime.cuh> // IWYU pragma: export
+#include <cub/util_namespace.cuh> // IWYU pragma: export
 
 #include <cuda/std/utility>
 

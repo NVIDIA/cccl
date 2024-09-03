@@ -21,7 +21,7 @@
 #pragma once
 
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
-#include <cuda/__cccl_config>
+#include <cuda/__cccl_config> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -33,14 +33,14 @@
 
 // NOTE: The order of these #includes matters.
 
-#include <thrust/detail/config/compiler.h>
-#include <thrust/detail/config/cpp_compatibility.h>
-#include <thrust/detail/config/cpp_dialect.h>
-#include <thrust/detail/config/deprecated.h>
-#include <thrust/detail/config/simple_defines.h>
+#include <thrust/detail/config/compiler.h> // IWYU pragma: export
+#include <thrust/detail/config/cpp_compatibility.h> // IWYU pragma: export
+#include <thrust/detail/config/cpp_dialect.h> // IWYU pragma: export
+#include <thrust/detail/config/deprecated.h> // IWYU pragma: export
+#include <thrust/detail/config/simple_defines.h> // IWYU pragma: export
 // host_system.h & device_system.h must be #included as early as possible because other config headers depend on it
-#include <thrust/detail/config/host_system.h>
+#include <thrust/detail/config/host_system.h> // IWYU pragma: export
 
-#include <thrust/detail/config/device_system.h>
-#include <thrust/detail/config/global_workarounds.h>
-#include <thrust/detail/config/namespace.h>
+#include <thrust/detail/config/device_system.h> // IWYU pragma: export
+#include <thrust/detail/config/global_workarounds.h> // IWYU pragma: export
+#include <thrust/detail/config/namespace.h> // IWYU pragma: export
