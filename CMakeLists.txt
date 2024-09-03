@@ -55,8 +55,12 @@ include(CTest)
 enable_testing()
 
 if (CCCL_TOPLEVEL_PROJECT)
-  include(cmake/CCCLUtilities.cmake) # include this first
+  include(cmake/AppendOptionIfAvailable.cmake)
+  include(cmake/CCCLUtilities.cmake) # include this before other CCCL helpers
+  include(cmake/CCCLBuildCompilerTargets.cmake)
   include(cmake/CCCLClangdCompileInfo.cmake)
+
+  cccl_build_compiler_targets()
 endif()
 
 if (CCCL_ENABLE_LIBCUDACXX)

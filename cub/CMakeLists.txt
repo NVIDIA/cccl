@@ -3,7 +3,6 @@
 # 3.27.5 is the minimum for MSVC build with RDC=true.
 cmake_minimum_required(VERSION 3.15)
 
-# CXX is only needed for AppendOptionIfAvailable.
 project(CUB LANGUAGES NONE)
 
 # Determine whether CUB is the top-level project or included into
@@ -17,9 +16,7 @@ if (CUB_TOPLEVEL_PROJECT)
   cmake_minimum_required(VERSION 3.21)
 endif()
 
-# This must appear after our Compiler Hacks or else CMake will delete the cache
-# and reconfigure from scratch.
-# This must also appear before the installation rules, as it is required by the
+# This must appear before the installation rules, as it is required by the
 # GNUInstallDirs CMake module.
 enable_language(CXX)
 
@@ -65,7 +62,6 @@ if (NOT (CUB_ENABLE_HEADER_TESTING OR
   return()
 endif()
 
-include(cmake/AppendOptionIfAvailable.cmake)
 include(cmake/CubBuildCompilerTargets.cmake)
 include(cmake/CubBuildTargetList.cmake)
 include(cmake/CubCudaConfig.cmake)
@@ -87,6 +83,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CUB_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
 set(CUB_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 
+cub_build_compiler_targets()
 cub_build_target_list()
 
 if (CUB_ENABLE_HEADER_TESTING)
