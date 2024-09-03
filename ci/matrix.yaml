@@ -58,7 +58,7 @@ workflows:
     - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',   std: [11, 20]}
     - {jobs: ['build'], ctk: 'curr', gpu: 'h100', sm: 'gpu', cxx: 'clang16', std: [17]}
 
-    # nvrtc:
+   # nvrtc:
     - {jobs: ['nvrtc'], ctk: 'curr', gpu: 't4',       sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc12',  std: [20],     project: ['libcudacxx']}
     - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc12',  std: 'all',    project: ['libcudacxx']}
@@ -124,6 +124,7 @@ host_compilers:
       15: { stds: [11, 14, 17, 20] }
       16: { stds: [11, 14, 17, 20] }
       17: { stds: [11, 14, 17, 20] }
+      18: { stds: [11, 14, 17, 20] }
   msvc:
     name: 'MSVC'
     container_tag: 'cl'
