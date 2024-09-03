@@ -47,13 +47,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/device_synchronize.cuh>
+#include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/std/__cuda/ensure_current_device.h>
+#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
