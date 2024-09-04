@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/cpp_dialect.h>
+#include <thrust/detail/config/cpp_dialect.h> // IWYU pragma: export
 
 #include <cuda/std/cstddef>
 

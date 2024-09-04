@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include <thrust/detail/config/config.h>
+#include <thrust/detail/config/config.h> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -38,7 +38,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/version>
+#include <cuda/version> // IWYU pragma: export
 
 //  This is the only Thrust header that is guaranteed to
 //  change with every Thrust release.
