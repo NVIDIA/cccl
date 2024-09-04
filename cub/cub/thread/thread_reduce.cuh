@@ -43,8 +43,6 @@
 #include <cuda/std/type_traits> // __enable_if_t
 #include <cuda/std/utility> // pair
 
-#include "cuda/std/__cccl/dialect.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -80,12 +78,15 @@ namespace internal
 /// - DPX instructions provide Min, Max, and Sum SIMD operations
 /// If the number of instructions is the same, we favor the compiler
 
-template <int LENGTH, typename T, typename ReductionOp, typename PrefixT = T, typename AccumT = T>
+template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE // clang-format off
-_CCCL_CONSTEXPR_CXX14 bool enable_dpx_reduction()
+constexpr bool enable_dpx_reduction()
 {
-  return ((LENGTH >= 9 && ::cuda::std::is_same<ReductionOp, cub::Sum>::value) || LENGTH >= 10)
-            && detail::are_same<T, PrefixT, AccumT>()
+  using T = decltype(::cuda::std::declval<Input>()[0]);
+  // TODO: use constexpr variable in C++14+
+  using LENGTH = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
+  return ((LENGTH{} >= 9 && ::cuda::std::is_same<ReductionOp, cub::Sum>::value) || LENGTH{} >= 10)
+            && detail::are_same<T, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
             && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum>();
 }
@@ -115,125 +116,87 @@ _CCCL_CONSTEXPR_CXX14 bool enable_dpx_reduction()
 // 15     |    7     |  5 // ***
 // 16     |    8     |  6 // ***
 
-// Forward declaration
-template <int LENGTH,
-          typename T,
-          typename ReductionOp,
-          bool ENABLE_DPX = enable_dpx_reduction<LENGTH, T, ReductionOp>(),
-          _CUB_TEMPLATE_REQUIRES(ENABLE_DPX)>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op);
-
-#endif // DOXYGEN_SHOULD_SKIP_THIS
-
-/**
- * @brief Sequential reduction over statically-sized array types
- *
- * @param[in] input
- *   Input array
- *
- * @param[in] reduction_op
- *   Binary reduction operator
- *
- * @param[in] prefix
- *   Prefix to seed reduction with
- */
-template <int LENGTH,
-          typename T,
-          typename ReductionOp,
-          typename PrefixT,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>>
-_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix)
+template <typename AccumT, typename Input, typename ReductionOp>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
-  _CCCL_IF_CONSTEXPR (enable_dpx_reduction<LENGTH, T, ReductionOp, PrefixT, AccumT>())
+  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
+  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  AccumT retval = input[0];
+#  pragma unroll
+  for (int i = 1; i < detail::static_size<Input>(); ++i)
   {
-    return reduction_op(ThreadReduce<LENGTH>(input, reduction_op), prefix);
+    retval = reduction_op(retval, input[i]);
   }
-  else
-  {
-    AccumT retval = prefix;
-#pragma unroll
-    for (int i = 0; i < LENGTH; ++i)
-    {
-      retval = reduction_op(retval, input[i]);
-    }
-    return retval;
-  }
+  return retval;
 }
-
-/**
- * @brief Perform a sequential reduction over @p LENGTH elements of the @p input array.
- *        The aggregate is returned.
- *
- * @tparam LENGTH
- *   LengthT of input array
- *
- * @tparam T
- *   <b>[inferred]</b> The data type to be reduced.
- *
- * @tparam ReductionOp
- *   <b>[inferred]</b> Binary reduction operator type having member
- *   <tt>T operator()(const T &a, const T &b)</tt>
- *
- * @param[in] input
- *   Input array
- *
- * @param[in] reduction_op
- *   Binary reduction operator
- */
-template <int LENGTH,
-          typename T,
-          typename ReductionOp,
-          bool ENABLE_DPX = enable_dpx_reduction<LENGTH, T, ReductionOp>(),
-          _CUB_TEMPLATE_REQUIRES(!ENABLE_DPX)>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
-{
-  _CCCL_IF_CONSTEXPR (LENGTH == 1)
-  {
-    return input[0];
-  }
-  else
-  {
-    T prefix = input[0];
-    return ThreadReduce<LENGTH - 1>(input + 1, reduction_op, prefix);
-  }
-}
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /// Specialization for DPX reduction
-template <int LENGTH, typename T, typename ReductionOp, bool ENABLE_DPX, ::cuda::std::__enable_if_t<ENABLE_DPX>*>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
+template <typename Input, typename ReductionOp>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
+ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::__remove_cvref_t<decltype(input[0])>
 {
-  // clang-format off
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (using DpxReduceOp   = cub_operator_to_dpx_t<ReductionOp, T>;
-     using SimdType      = ::cuda::std::pair<T, T>;
-     auto unsigned_input = reinterpret_cast<unsigned*>(input);
-     auto simd_reduction = ThreadReduce<LENGTH / 2>(unsigned_input, DpxReduceOp{});
-     auto simd_values    = ::cuda::std::bit_cast<SimdType>(simd_reduction);
-     auto ret_value      = reduction_op(simd_values.first, simd_values.second);
-     return (LENGTH % 2 == 0) ? ret_value : reduction_op(ret_value, input[LENGTH - 1]);),
-    // < SM90
-    (return ThreadReduce<LENGTH, T, ReductionOp, false>(input, reduction_op);))
-  // clang-format on
+  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
+  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  using T              = ::cuda::std::__remove_cvref_t<decltype(input[0])>;
+  constexpr int LENGTH = detail::static_size<Input>();
+  T array[LENGTH];
+#  pragma unroll
+  for (int i = 0; i < LENGTH; ++i)
+  {
+    array = input[i];
+  }
+  using DpxReduceOp   = cub_operator_to_dpx_t<ReductionOp, T>;
+  using SimdType      = ::cuda::std::pair<T, T>;
+  auto unsigned_input = reinterpret_cast<unsigned*>(input);
+  auto simd_reduction = ThreadReduceSequential<LENGTH / 2>(unsigned_input, DpxReduceOp{});
+  auto simd_values    = ::cuda::std::bit_cast<SimdType>(simd_reduction);
+  auto ret_value      = reduction_op(simd_values.first, simd_values.second);
+  return (LENGTH % 2 == 0) ? ret_value : reduction_op(ret_value, input[LENGTH - 1]);
+}
+
+// DPX/Sequential dispatch
+template <typename Input,
+          typename ReductionOp,
+          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>,
+          _CUB_TEMPLATE_REQUIRES(enable_dpx_reduction<Input, ReductionOp, AccumT>())>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
+{
+  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
+  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (return ThreadReduceDpx(input, reduction_op);),
+               (return ThreadReduceSequential<AccumT>(input, reduction_op);))
+}
+
+template <typename Input,
+          typename ReductionOp,
+          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>,
+          _CUB_TEMPLATE_REQUIRES(!enable_dpx_reduction<Input, ReductionOp, AccumT>())>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
+{
+  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
+  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  return ThreadReduceSequential<AccumT>(input, reduction_op);
 }
 
 #endif // !DOXYGEN_SHOULD_SKIP_THIS
 
 /**
- * @brief Perform a sequential reduction over the statically-sized @p input array,
- *        seeded with the specified @p prefix. The aggregate is returned.
+ * @brief Reduction over statically-sized array-like types, seeded with the specified @p prefix.
  *
- * @tparam LENGTH
- *   <b>[inferred]</b> LengthT of @p input array
- *
- * @tparam T
- *   <b>[inferred]</b> The data type to be reduced.
+ * @tparam Input
+ *   <b>[inferred]</b> The data type to be reduced having member
+ *   <tt>operator[](int i)</tt> and must be statically-sized (size() method or static array)
  *
  * @tparam ReductionOp
  *   <b>[inferred]</b> Binary reduction operator type having member
  *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @tparam PrefixT
+ *   <b>[inferred]</b> The prefix type
  *
  * @param[in] input
  *   Input array
@@ -243,41 +206,115 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, Reductio
  *
  * @param[in] prefix
  *   Prefix to seed reduction with
+ *
+ * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT></tt>
  */
-template <int LENGTH,
-          typename T,
+template <typename Input,
           typename ReductionOp,
           typename PrefixT,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>>
-_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op, PrefixT prefix)
+          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
-  return ThreadReduce<LENGTH>(static_cast<T*>(input), reduction_op, prefix);
+  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
+  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  static_assert(detail::has_binary_operator<ReductionOp, ValueT>::value,
+                "ReductionOp must have the binary operator: operator(ValueT, ValueT)");
+  constexpr int LENGTH = detail::static_size<Input>();
+  // copy to a temporary array of type AccumT
+  AccumT array[LENGTH + 1];
+  array[0] = prefix;
+#pragma unroll
+  for (int i = 0; i < LENGTH; ++i)
+  {
+    array[i + 1] = input[i];
+  }
+  return ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
 }
 
 /**
- * @brief Serial reduction with the specified operator
- *
- * @tparam LENGTH
- *   <b>[inferred]</b> LengthT of @p input array
+ * @brief Perform a sequential reduction over @p LENGTH elements of the @p input pointer. The aggregate is returned.
  *
  * @tparam T
- *   <b>[inferred]</b> The data type to be reduced.
+ *   <b>[inferred]</b> The data type to be reduced
  *
  * @tparam ReductionOp
  *   <b>[inferred]</b> Binary reduction operator type having member
  *   <tt>T operator()(const T &a, const T &b)</tt>
  *
  * @param[in] input
- *   Input array
+ *   Input pointer
  *
  * @param[in] reduction_op
  *   Binary reduction operator
+ *
+ * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T></tt>
  */
-template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
+template <int LENGTH, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* input, ReductionOp reduction_op)
 {
-  return ThreadReduce<LENGTH>(static_cast<T*>(input), reduction_op);
+  static_assert(LENGTH > 0, "LENGTH must be greater than 0");
+  static_assert(detail::has_binary_operator<ReductionOp, T>::value,
+                "ReductionOp must have the binary operator: operator(V1, V2)");
+  using ArrayT = T[LENGTH];
+  auto& array  = reinterpret_cast<const ArrayT&>(input);
+  return ThreadReduce(array, reduction_op);
 }
+
+/**
+ * @brief Perform a sequential reduction over @p LENGTH elements of the @p input pointer, seeded with the specified @p
+ *        prefix. The aggregate is returned.
+ *
+ * @tparam LENGTH
+ *   Length of input pointer
+ *
+ * @tparam T
+ *   <b>[inferred]</b> The data type to be reduced
+ *
+ * @tparam ReductionOp
+ *   <b>[inferred]</b> Binary reduction operator type having member
+ *   <tt>T operator()(const T &a, const T &b)</tt>
+ *
+ * @tparam PrefixT
+ *   <b>[inferred]</b> The prefix type
+ *
+ * @param[in] input
+ *   Input pointer
+ *
+ * @param[in] reduction_op
+ *   Binary reduction operator
+ *
+ * @param[in] prefix
+ *   Prefix to seed reduction with
+ *
+ * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T, PrefixT></tt>
+ */
+template <int LENGTH,
+          typename T,
+          typename ReductionOp,
+          typename PrefixT,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>,
+          _CUB_TEMPLATE_REQUIRES(LENGTH > 0)>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
+{
+  static_assert(detail::has_binary_operator<ReductionOp, T>::value,
+                "ReductionOp must have the binary operator: operator(V1, V2)");
+  using ArrayT = T[LENGTH];
+  auto& array  = reinterpret_cast<const ArrayT&>(input);
+  return ThreadReduce(array, reduction_op, prefix);
+}
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+
+template <int LENGTH, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(LENGTH == 0)>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
+{
+  return prefix;
+}
+
+#endif // !DOXYGEN_SHOULD_SKIP_THIS
 
 } // namespace internal
 CUB_NAMESPACE_END

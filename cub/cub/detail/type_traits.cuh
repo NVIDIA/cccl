@@ -34,6 +34,8 @@
 
 #include <cub/config.cuh>
 
+#include <cstddef>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -45,7 +47,6 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/__cccl/dialect.h>
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -81,6 +82,78 @@ template <typename...>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool always_false()
 {
   return false;
+}
+
+template <typename T, typename V, typename = void>
+struct has_binary_operator : ::cuda::std::false_type
+{};
+
+template <typename T, typename V>
+struct has_binary_operator<T, V, ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(V{}, V{}))>>
+    : ::cuda::std::true_type
+{};
+
+/***********************************************************************************************************************
+ * Array like type traits
+ **********************************************************************************************************************/
+
+template <typename T, typename = void>
+struct has_subscript : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct has_subscript<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>()[0])>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+using has_subscript_t = typename has_subscript<T>::type;
+
+template <typename T, typename = void>
+struct has_size : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct has_size<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().size())>> : ::cuda::std::true_type
+{};
+
+template <typename T, ::cuda::std::size_t N>
+struct has_size<T[N], void> : ::cuda::std::true_type
+{};
+
+template <typename T>
+using has_size_t = typename has_size<T>::type;
+
+/***********************************************************************************************************************
+ * StaticSize: a type trait that returns the number of elements in an Array-like type
+ **********************************************************************************************************************/
+// StaticSize is useful where size(obj) cannot be used at compile time
+// e.g.
+// using Array = NonTriviallyConstructible[8];
+// std::size(Array{})   // compile error
+// static_size<Array>() // ok
+
+template <typename T, typename = void>
+struct StaticSize
+{
+  static_assert(detail::always_false<T>(), "StaticSize not supported for this type");
+};
+
+template <typename T>
+struct StaticSize<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().size())>>
+{
+  static constexpr auto value = T{}.size();
+};
+
+template <typename T, ::cuda::std::size_t N>
+struct StaticSize<T[N], void>
+{
+  static constexpr auto value = N;
+};
+
+template <typename T>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size()
+{
+  return StaticSize<T>::value;
 }
 
 } // namespace detail
