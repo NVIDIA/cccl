@@ -123,10 +123,8 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
 
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
-  thrust::sequence(a.begin(), a.end());
-  thrust::sequence(b.begin(), b.end());
-  // c2h::gen(CUB_SEED(1), a);
-  // c2h::gen(CUB_SEED(1), b);
+  c2h::gen(CUB_SEED(1), a);
+  c2h::gen(CUB_SEED(1), b);
 
   c2h::device_vector<type> result(num_items);
   transform_many_with_alg<alg, offset_t>(
@@ -199,7 +197,7 @@ CUB_TEST("DeviceTransform::Transform overaligned type",
   c2h::device_vector<type> b(num_items, 4);
 
   c2h::device_vector<type> result(num_items);
-  // we need raw pointers here to halven the conversion sequence from device_reference<int> -> int -> type when calling
+  // we need raw pointers here to halfen the conversion sequence from device_reference<int> -> int -> type when calling
   // plus(...), which is too long to compile
   transform_many(::cuda::std::make_tuple(thrust::raw_pointer_cast(a.data()), thrust::raw_pointer_cast(b.data())),
                  result.begin(),
@@ -305,7 +303,7 @@ CUB_TEST("DeviceTransform::Transform BabelStream nstream",
   REQUIRE(a_h == a);
 }
 
-struct Sum
+struct sum_five
 {
   __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const -> double
   {
@@ -328,14 +326,17 @@ CUB_TEST("DeviceTransform::Transform add five streams", "[device][device_transfo
 
   c2h::device_vector<double> result(num_items);
   transform_many_with_alg<alg, offset_t>(
-    ::cuda::std::make_tuple(a.begin(), b.begin(), c.begin(), d.begin(), e.begin()), result.begin(), num_items, Sum{});
+    ::cuda::std::make_tuple(a.begin(), b.begin(), c.begin(), d.begin(), e.begin()),
+    result.begin(),
+    num_items,
+    sum_five{});
 
   // compute reference and verify
   c2h::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
   REQUIRE(reference == result);
 }
 
-struct GiveMeFive
+struct give_me_five
 {
   __device__ auto operator()() const -> int
   {
@@ -347,7 +348,7 @@ CUB_TEST("DeviceTransform::Transform no streams", "[device][device_transform]")
 {
   constexpr int num_items = 100;
   c2h::device_vector<int> result(num_items);
-  transform_many(::cuda::std::tuple<>{}, result.begin(), num_items, GiveMeFive{});
+  transform_many(::cuda::std::tuple<>{}, result.begin(), num_items, give_me_five{});
 
   // compute reference and verify
   c2h::device_vector<int> reference(num_items, 5);
@@ -517,64 +518,6 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
   thrust::tabulate(reference.begin() + offset, reference.end(), (_1 + offset) * 10);
   REQUIRE(reference == result);
 }
-
-// TODO(bgruber): I don't have a concrete use case for this test yet. Maybe this is better as a benchmark.
-#if 0
-// This functor was gifted by ahendriksen. It is very expensive to compile.
-template <int N>
-struct heavy_functor
-{
-  // we need to use an unsigned type so overflow in arithmetic wraps around
-  _CCCL_HOST_DEVICE std::uint32_t operator()(std::uint32_t data) const
-  {
-    std::uint32_t reg[N];
-    reg[0] = data;
-    for (int i = 1; i < N; ++i)
-    {
-      reg[i] = reg[i - 1] * reg[i - 1] + 1;
-    }
-    for (int i = 0; i < N; ++i)
-    {
-      reg[i] = (reg[i] * reg[i]) % 19;
-    }
-    for (int i = 0; i < N; ++i)
-    {
-      reg[i] = reg[N - i - 1] * reg[i];
-    }
-    std::uint32_t x = 0;
-    for (int i = 0; i < N; ++i)
-    {
-      x += reg[i];
-    }
-    return x;
-  }
-};
-
-CUB_TEST("DeviceTransform::Transform heavy functor",
-         "[device][device_transform]",
-         algorithms,
-         c2h::enum_type_list<int, 32, 64, 128, 256>)
-{
-  using offset_t           = int;
-  constexpr auto alg       = c2h::get<0, TestType>::value;
-  constexpr auto heaviness = c2h::get<1, TestType>::value;
-  FILTER_UNSUPPORTED_ALGS
-  CAPTURE(alg, heaviness);
-
-  constexpr int num_items = 100;
-  c2h::device_vector<std::uint32_t> input(num_items, 4);
-  // c2h::gen(CUB_SEED(1), input, 1, 10);
-  c2h::device_vector<std::uint32_t> result(num_items);
-  transform_many_with_alg<alg, offset_t>(
-    ::cuda::std::make_tuple(input.begin()), result.begin(), num_items, heavy_functor<heaviness>{});
-
-  // compute reference and verify
-  c2h::host_vector<std::uint32_t> input_h = input;
-  c2h::host_vector<std::uint32_t> reference_h(num_items);
-  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), heavy_functor<heaviness>{});
-  REQUIRE(reference_h == result);
-}
-#endif
 
 namespace Catch
 {
