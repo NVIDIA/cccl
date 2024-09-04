@@ -301,8 +301,12 @@ cudaError_t InvokePasses(
     // Init regular kernel configuration
     const auto tile_size = policy.block_size * policy.items_per_thread;
 
+    // TODO Should be checking the return code here, but for some reason I'm getting invalid handle error on V100
     int sm_occupancy = 1;
-    check(cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, reduce_kernel, policy.block_size, 0));
+    if (CUDA_SUCCESS != cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, reduce_kernel, policy.block_size, 0))
+    {
+      sm_occupancy = 6;
+    }
 
     int reduce_device_occupancy = sm_occupancy * sm_count;
 
