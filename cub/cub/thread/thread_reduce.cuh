@@ -140,7 +140,7 @@ ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::__
   }
   using DpxReduceOp   = cub_operator_to_dpx_t<ReductionOp, T>;
   using SimdType      = ::cuda::std::pair<T, T>;
-  auto unsigned_input = reinterpret_cast<unsigned*>(array);
+  auto unsigned_input = reinterpret_cast<const unsigned*>(array);
   auto simd_reduction = ThreadReduceSequential<length / 2>(unsigned_input, DpxReduceOp{});
   auto simd_values    = ::cuda::std::bit_cast<SimdType>(simd_reduction);
   auto ret_value      = reduction_op(simd_values.first, simd_values.second);
@@ -257,8 +257,9 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* inpu
   static_assert(length > 0, "length must be greater than 0");
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
                 "ReductionOp must have the binary call operator: operator(V1, V2)");
-  using ArrayT = const T[length];
-  auto& array  = reinterpret_cast<const ArrayT&>(input);
+  using ArrayT = T[length];
+  auto ptr1    = const_cast<T*>(input); // workaround for MSVC 14.16
+  auto& array  = reinterpret_cast<const ArrayT&>(ptr1);
   return ThreadReduce(array, reduction_op);
 }
 
@@ -305,7 +306,8 @@ ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
                 "ReductionOp must have the binary call operator: operator(V1, V2)");
   using ArrayT = T[Length];
-  auto& array  = reinterpret_cast<const ArrayT&>(input);
+  auto ptr1    = const_cast<T*>(input); // workaround for MSVC 14.16
+  auto& array  = reinterpret_cast<const ArrayT&>(ptr1);
   return ThreadReduce(array, reduction_op, prefix);
 }
 
