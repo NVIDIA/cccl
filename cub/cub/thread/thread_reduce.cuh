@@ -234,6 +234,9 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
+ * @remark The pointer interface adds little value and requires Length to be explicit.
+ *         Prefer using the array-like interface
+ *
  * @brief Perform a sequential reduction over @p length elements of the @p input pointer. The aggregate is returned.
  *
  * @tparam T
