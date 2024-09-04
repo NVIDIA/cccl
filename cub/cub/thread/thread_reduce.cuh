@@ -35,12 +35,8 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/cmath> // ceil_div
-#include <cuda/std/__cccl/attributes.h> // _CCCL_NODISCARD
 #include <cuda/std/bit> // bit_cast
 #include <cuda/std/cstdint> // uint16_t
-#include <cuda/std/limits> // numeric_limits
-#include <cuda/std/type_traits> // __enable_if_t
 #include <cuda/std/utility> // pair
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -52,7 +48,7 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh> // are_same()
-#include <cub/thread/thread_operators.cuh> // DpxMin
+#include <cub/thread/thread_operators.cuh> // cub_operator_to_dpx_t
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
@@ -84,8 +80,8 @@ constexpr bool enable_dpx_reduction()
 {
   using T = decltype(::cuda::std::declval<Input>()[0]);
   // TODO: use constexpr variable in C++14+
-  using LENGTH = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
-  return ((LENGTH{} >= 9 && ::cuda::std::is_same<ReductionOp, cub::Sum>::value) || LENGTH{} >= 10)
+  using Lenght = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
+  return ((Lenght{} >= 9 && ::cuda::std::is_same<ReductionOp, cub::Sum>::value) || Lenght{} >= 10)
             && detail::are_same<T, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
             && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum>();
@@ -99,7 +95,7 @@ constexpr bool enable_dpx_reduction()
 //   finally, the last two comparision operations are vectorized in a 3-way reduction
 //           ceil((L/2 - 3) / 2) + 3
 //
-// LENGTH | Standard |  DPX
+// length | Standard |  DPX
 //  2     |    1     |  NA
 //  3     |    1     |  NA
 //  4     |    2     |  3
@@ -120,8 +116,6 @@ template <typename AccumT, typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
-  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
-  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
   AccumT retval = input[0];
 #  pragma unroll
   for (int i = 1; i < detail::static_size<Input>(); ++i)
@@ -136,23 +130,21 @@ template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
 ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::__remove_cvref_t<decltype(input[0])>
 {
-  static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
-  static_assert(detail::has_size<Input>::value, "Input must have the size() method");
   using T              = ::cuda::std::__remove_cvref_t<decltype(input[0])>;
-  constexpr int LENGTH = detail::static_size<Input>();
-  T array[LENGTH];
+  constexpr int length = detail::static_size<Input>();
+  T array[length];
 #  pragma unroll
-  for (int i = 0; i < LENGTH; ++i)
+  for (int i = 0; i < length; ++i)
   {
-    array = input[i];
+    array[i] = input[i];
   }
   using DpxReduceOp   = cub_operator_to_dpx_t<ReductionOp, T>;
   using SimdType      = ::cuda::std::pair<T, T>;
-  auto unsigned_input = reinterpret_cast<unsigned*>(input);
-  auto simd_reduction = ThreadReduceSequential<LENGTH / 2>(unsigned_input, DpxReduceOp{});
+  auto unsigned_input = reinterpret_cast<unsigned*>(array);
+  auto simd_reduction = ThreadReduceSequential<length / 2>(unsigned_input, DpxReduceOp{});
   auto simd_values    = ::cuda::std::bit_cast<SimdType>(simd_reduction);
   auto ret_value      = reduction_op(simd_values.first, simd_values.second);
-  return (LENGTH % 2 == 0) ? ret_value : reduction_op(ret_value, input[LENGTH - 1]);
+  return (length % 2 == 0) ? ret_value : reduction_op(ret_value, input[length - 1]);
 }
 
 // DPX/Sequential dispatch
@@ -165,6 +157,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 {
   static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
   static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  static_assert(detail::has_binary_call_operator<ReductionOp, ValueT>::value,
+                "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   NV_IF_TARGET(NV_PROVIDES_SM_90,
                (return ThreadReduceDpx(input, reduction_op);),
                (return ThreadReduceSequential<AccumT>(input, reduction_op);))
@@ -179,6 +173,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 {
   static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
   static_assert(detail::has_size<Input>::value, "Input must have the size() method");
+  static_assert(detail::has_binary_call_operator<ReductionOp, ValueT>::value,
+                "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   return ThreadReduceSequential<AccumT>(input, reduction_op);
 }
 
@@ -219,14 +215,14 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
   static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
   static_assert(detail::has_size<Input>::value, "Input must have the size() method");
-  static_assert(detail::has_binary_operator<ReductionOp, ValueT>::value,
-                "ReductionOp must have the binary operator: operator(ValueT, ValueT)");
-  constexpr int LENGTH = detail::static_size<Input>();
+  static_assert(detail::has_binary_call_operator<ReductionOp, ValueT>::value,
+                "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
+  constexpr int length = detail::static_size<Input>();
   // copy to a temporary array of type AccumT
-  AccumT array[LENGTH + 1];
+  AccumT array[length + 1];
   array[0] = prefix;
 #pragma unroll
-  for (int i = 0; i < LENGTH; ++i)
+  for (int i = 0; i < length; ++i)
   {
     array[i + 1] = input[i];
   }
@@ -234,7 +230,7 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 }
 
 /**
- * @brief Perform a sequential reduction over @p LENGTH elements of the @p input pointer. The aggregate is returned.
+ * @brief Perform a sequential reduction over @p length elements of the @p input pointer. The aggregate is returned.
  *
  * @tparam T
  *   <b>[inferred]</b> The data type to be reduced
@@ -251,22 +247,22 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
  *
  * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T></tt>
  */
-template <int LENGTH, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
+template <int length, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* input, ReductionOp reduction_op)
 {
-  static_assert(LENGTH > 0, "LENGTH must be greater than 0");
-  static_assert(detail::has_binary_operator<ReductionOp, T>::value,
-                "ReductionOp must have the binary operator: operator(V1, V2)");
-  using ArrayT = T[LENGTH];
+  static_assert(length > 0, "length must be greater than 0");
+  static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
+                "ReductionOp must have the binary call operator: operator(V1, V2)");
+  using ArrayT = T[length];
   auto& array  = reinterpret_cast<const ArrayT&>(input);
   return ThreadReduce(array, reduction_op);
 }
 
 /**
- * @brief Perform a sequential reduction over @p LENGTH elements of the @p input pointer, seeded with the specified @p
+ * @brief Perform a sequential reduction over @p length elements of the @p input pointer, seeded with the specified @p
  *        prefix. The aggregate is returned.
  *
- * @tparam LENGTH
+ * @tparam length
  *   Length of input pointer
  *
  * @tparam T
@@ -290,25 +286,25 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* inpu
  *
  * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T, PrefixT></tt>
  */
-template <int LENGTH,
+template <int length,
           typename T,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>,
-          _CUB_TEMPLATE_REQUIRES(LENGTH > 0)>
+          _CUB_TEMPLATE_REQUIRES(length > 0)>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
 {
-  static_assert(detail::has_binary_operator<ReductionOp, T>::value,
-                "ReductionOp must have the binary operator: operator(V1, V2)");
-  using ArrayT = T[LENGTH];
+  static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
+                "ReductionOp must have the binary call operator: operator(V1, V2)");
+  using ArrayT = T[length];
   auto& array  = reinterpret_cast<const ArrayT&>(input);
   return ThreadReduce(array, reduction_op, prefix);
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
-template <int LENGTH, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(LENGTH == 0)>
+template <int length, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(length == 0)>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
 {
   return prefix;

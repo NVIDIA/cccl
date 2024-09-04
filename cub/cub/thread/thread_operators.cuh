@@ -424,7 +424,7 @@ struct DpxMin
 };
 
 template <>
-struct DpxMin<int16_t>
+struct DpxMin<::cuda::std::int16_t>
 {
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
   {
@@ -433,7 +433,7 @@ struct DpxMin<int16_t>
 };
 
 template <>
-struct DpxMin<uint16_t>
+struct DpxMin<::cuda::std::uint16_t>
 {
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
   {
@@ -450,7 +450,7 @@ struct DpxMax
 };
 
 template <>
-struct DpxMax<int16_t>
+struct DpxMax<::cuda::std::int16_t>
 {
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
   {
@@ -459,7 +459,7 @@ struct DpxMax<int16_t>
 };
 
 template <>
-struct DpxMax<uint16_t>
+struct DpxMax<::cuda::std::uint16_t>
 {
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
   {
@@ -476,7 +476,7 @@ struct DpxSum
 };
 
 template <>
-struct DpxSum<int16_t>
+struct DpxSum<::cuda::std::int16_t>
 {
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
   {
@@ -485,7 +485,7 @@ struct DpxSum<int16_t>
 };
 
 template <>
-struct DpxSum<uint16_t>
+struct DpxSum<::cuda::std::uint16_t>
 {
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
   {
@@ -515,6 +515,12 @@ struct CubOperatorToDpx<cub::Max, T>
 
 template <typename T>
 struct CubOperatorToDpx<cub::Sum, T>
+{
+  using type = DpxSum<T>;
+};
+
+template <typename T>
+struct CubOperatorToDpx<std::plus<T>, T>
 {
   using type = DpxSum<T>;
 };

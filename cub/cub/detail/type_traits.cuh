@@ -85,11 +85,14 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool always_false(
 }
 
 template <typename T, typename V, typename = void>
-struct has_binary_operator : ::cuda::std::false_type
+struct has_binary_call_operator : ::cuda::std::false_type
 {};
 
 template <typename T, typename V>
-struct has_binary_operator<T, V, ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(V{}, V{}))>>
+struct has_binary_call_operator<
+  T,
+  V,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(::cuda::std::declval<V>(), ::cuda::std::declval<V>()))>>
     : ::cuda::std::true_type
 {};
 
@@ -112,6 +115,7 @@ template <typename T, typename = void>
 struct has_size : ::cuda::std::false_type
 {};
 
+// TODO: use ::cuda::std::size(::cuda::std::declval<T>()) when std::size will be available in libcu++
 template <typename T>
 struct has_size<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().size())>> : ::cuda::std::true_type
 {};
@@ -126,7 +130,7 @@ using has_size_t = typename has_size<T>::type;
 /***********************************************************************************************************************
  * StaticSize: a type trait that returns the number of elements in an Array-like type
  **********************************************************************************************************************/
-// StaticSize is useful where size(obj) cannot be used at compile time
+// StaticSize is useful where size(obj) cannot be checked at compile time
 // e.g.
 // using Array = NonTriviallyConstructible[8];
 // std::size(Array{})   // compile error
