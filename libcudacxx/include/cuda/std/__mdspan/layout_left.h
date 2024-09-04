@@ -114,8 +114,8 @@ private:
 public:
   //--------------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping() noexcept               = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr mapping(mapping const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
+  _CCCL_HIDE_FROM_ABI constexpr mapping(mapping const&) noexcept = default;
 
   _CCCL_HOST_DEVICE constexpr mapping(extents_type const& __exts) noexcept
       : __extents(__exts)
@@ -125,7 +125,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
                                                                                                    // to comma
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     mapping<_OtherExtents> const& __other) noexcept // NOLINT(google-explicit-constructor)
       : __extents(__other.extents())
   {
@@ -140,7 +140,7 @@ public:
                          _LIBCUDACXX_AND(extents_type::rank() <= 1))
   __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
                                                                                                    // to comma
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     layout_right::mapping<_OtherExtents> const& __other) noexcept // NOLINT(google-explicit-constructor)
       : __extents(__other.extents())
   {
@@ -153,7 +153,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherExtents)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
-  __MDSPAN_INLINE_FUNCTION constexpr mapping(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     layout_stride::mapping<_OtherExtents> const& __other) // NOLINT(google-explicit-constructor)
       : __extents(__other.extents())
   {
@@ -168,17 +168,14 @@ public:
                  }))
   }
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED __MDSPAN_CONSTEXPR_14_DEFAULTED mapping&
-  operator=(mapping const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED mapping& operator=(mapping const&) noexcept = default;
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr const extents_type& extents() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
   {
     return __extents;
   }
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr index_type required_span_size() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
   {
     index_type __value = 1;
     for (rank_type __r = 0; __r < extents_type::rank(); __r++)
@@ -200,36 +197,35 @@ public:
     return __compute_offset(__rank_count<0, extents_type::rank()>(), static_cast<index_type>(__idxs)...);
   }
 
-  __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_unique() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_exhaustive() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION static constexpr bool is_always_strided() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
   {
     return true;
   }
 
-  __MDSPAN_INLINE_FUNCTION constexpr bool is_unique() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION constexpr bool is_exhaustive() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept
   {
     return true;
   }
-  __MDSPAN_INLINE_FUNCTION constexpr bool is_strided() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept
   {
     return true;
   }
 
   _LIBCUDACXX_TEMPLATE(class _Ext = _Extents)
   _LIBCUDACXX_REQUIRES((_Ext::rank() > 0))
-  __MDSPAN_INLINE_FUNCTION
-  constexpr index_type stride(rank_type __i) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __i) const noexcept
   {
     index_type __value = 1;
     for (rank_type __r = 0; __r < __i; __r++)
@@ -240,7 +236,7 @@ public:
   }
 
   template <class _OtherExtents>
-  __MDSPAN_INLINE_FUNCTION friend constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
   {
     return __lhs.extents() == __rhs.extents();
@@ -249,7 +245,7 @@ public:
   // In C++ 20 the not equal exists if equal is found
 #  if !(__MDSPAN_HAS_CXX_20)
   template <class _OtherExtents>
-  __MDSPAN_INLINE_FUNCTION friend constexpr bool
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
   {
     return __lhs.extents() != __rhs.extents();

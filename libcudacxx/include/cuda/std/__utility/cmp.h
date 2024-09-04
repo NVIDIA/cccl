@@ -57,7 +57,7 @@ concept __is_safe_integral_cmp =
                    >::value;
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
   if constexpr (is_signed_v<_Tp> == is_signed_v<_Up>)
   {
@@ -74,13 +74,13 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_equal(_Tp __t, _Up __u) noexcep
 }
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_equal(__t, __u);
 }
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
   if constexpr (is_signed_v<_Tp> == is_signed_v<_Up>)
   {
@@ -97,25 +97,25 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 }
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less(__u, __t);
 }
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_greater(__t, __u);
 }
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_less(__t, __u);
 }
 
 template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool in_range(_Up __u) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
       && _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());

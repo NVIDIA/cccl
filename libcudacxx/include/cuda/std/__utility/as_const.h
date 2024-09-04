@@ -26,7 +26,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
 {
   return __t;
 }

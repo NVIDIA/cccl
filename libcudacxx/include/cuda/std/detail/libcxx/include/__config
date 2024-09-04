@@ -866,15 +866,6 @@ typedef __char32_t char32_t;
 
 #  endif // _CCCL_COMPILER_[CLANG|GCC|MSVC|NVRTC]
 
-#  if defined(_CCCL_CUDA_COMPILER_NVHPC)
-// Forcefully disable visibility controls when used as the standard library with NVC++.
-// TODO: reevaluate.
-#    define _LIBCUDACXX_HIDE_FROM_ABI
-#    ifndef _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
-#      define _LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
-#    endif // !_LIBCUDACXX_DISABLE_EXTERN_TEMPLATE
-#  endif // _CCCL_CUDA_COMPILER_NVHPC
-
 #  ifndef _LIBCUDACXX_FREESTANDING
 #    define _LIBCUDACXX_FREESTANDING
 #  endif // !_LIBCUDACXX_FREESTANDING
@@ -974,45 +965,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_NODEBUG_TYPE
 #    endif
 #  endif // !_LIBCUDACXX_NODEBUG_TYPE
-
-#  if __has_attribute(internal_linkage)
-#    define _LIBCUDACXX_INTERNAL_LINKAGE __attribute__((internal_linkage))
-#  else
-#    define _LIBCUDACXX_INTERNAL_LINKAGE _CCCL_ALWAYS_INLINE
-#  endif
-
-#  if __has_attribute(exclude_from_explicit_instantiation)
-#    define _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((__exclude_from_explicit_instantiation__))
-#  else
-// Try to approximate the effect of exclude_from_explicit_instantiation
-// (which is that entities are not assumed to be provided by explicit
-// template instantiations in the dylib) by always inlining those entities.
-#    define _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION _CCCL_ALWAYS_INLINE
-#  endif
-
-#  ifndef _LIBCUDACXX_HIDE_FROM_ABI_PER_TU
-#    ifndef _LIBCUDACXX_HIDE_FROM_ABI_PER_TU_BY_DEFAULT
-#      define _LIBCUDACXX_HIDE_FROM_ABI_PER_TU 0
-#    else
-#      define _LIBCUDACXX_HIDE_FROM_ABI_PER_TU 1
-#    endif
-#  endif
-
-#  ifndef _LIBCUDACXX_HIDE_FROM_ABI
-#    if _LIBCUDACXX_HIDE_FROM_ABI_PER_TU
-#      define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _LIBCUDACXX_INTERNAL_LINKAGE
-#    else
-#      define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#    endif
-#  endif
-
-// Just so we can migrate to the new macros gradually.
-
-#  ifdef __cuda_std__
-#    define _LIBCUDACXX_INLINE_VISIBILITY _CCCL_HOST_DEVICE
-#  else
-#    define _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
-#  endif // __cuda_std__
 
 #  define _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X, _LIBCUDACXX_Y) _LIBCUDACXX_X##_LIBCUDACXX_Y
 #  define _LIBCUDACXX_CONCAT(_LIBCUDACXX_X, _LIBCUDACXX_Y)  _LIBCUDACXX_CONCAT1(_LIBCUDACXX_X, _LIBCUDACXX_Y)
@@ -1200,7 +1152,7 @@ typedef unsigned int char32_t;
 #  endif
 
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
-extern "C" _LIBCUDACXX_INLINE_VISIBILITY void
+extern "C" _LIBCUDACXX_HIDE_FROM_ABI void
 __sanitizer_annotate_contiguous_container(const void*, const void*, const void*, const void*);
 #  endif
 
@@ -1429,16 +1381,16 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                 \
       using __base = __baseclass<__VA_ARGS__>;                                                           \
       template <class... _Args, __enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \
-      _LIBCUDACXX_INLINE_VISIBILITY constexpr __class(_Args&&... __args) noexcept(                       \
+      _LIBCUDACXX_HIDE_FROM_ABI constexpr __class(_Args&&... __args) noexcept(                           \
         _CCCL_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
           : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                \
       {}                                                                                                 \
-      constexpr __class() noexcept = default;
+      _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
       using __base = __baseclass<__VA_ARGS__>;                           \
       using __base::__base;                                              \
-      constexpr __class() noexcept = default;
+      _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES

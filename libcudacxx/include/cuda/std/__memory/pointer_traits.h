@@ -143,10 +143,10 @@ struct __has_rebind
 {
 private:
   template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Xp::template rebind<_Up>* = 0);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Xp::template rebind<_Up>* = 0);
   _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
@@ -240,7 +240,7 @@ private:
   {};
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
   {
     return pointer::pointer_to(__r);
@@ -262,7 +262,7 @@ private:
   {};
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
   {
     return _CUDA_VSTD::addressof(__r);
@@ -281,7 +281,7 @@ template <class _Pointer, class = void>
 struct __to_address_helper;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* __to_address(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __to_address(_Tp* __p) noexcept
 {
   static_assert(!is_function<_Tp>::value, "_Tp is a function type");
   return __p;
@@ -312,8 +312,7 @@ struct _IsFancyPointer
 
 // enable_if is needed here to avoid instantiating checks for fancy pointers on raw pointers
 template <class _Pointer, class = __enable_if_t<_And<is_class<_Pointer>, _IsFancyPointer<_Pointer>>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __decay_t<
-  decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) noexcept
 {
   return __to_address_helper<_Pointer>::__call(__p);
@@ -322,8 +321,7 @@ __to_address(const _Pointer& __p) noexcept
 template <class _Pointer, class>
 struct __to_address_helper
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr static decltype(_CUDA_VSTD::__to_address(
-    declval<const _Pointer&>().operator->()))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
   __call(const _Pointer& __p) noexcept
   {
     return _CUDA_VSTD::__to_address(__p.operator->());
@@ -333,8 +331,7 @@ struct __to_address_helper
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))>
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr static decltype(pointer_traits<_Pointer>::to_address(
-    declval<const _Pointer&>()))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
   __call(const _Pointer& __p) noexcept
   {
     return pointer_traits<_Pointer>::to_address(__p);
@@ -343,13 +340,13 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto to_address(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
 {
   return _CUDA_VSTD::__to_address(__p);
 }
 
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);

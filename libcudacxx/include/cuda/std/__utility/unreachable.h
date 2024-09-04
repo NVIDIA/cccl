@@ -24,14 +24,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_INLINE_VISIBILITY inline void __libcpp_unreachable()
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_unreachable()
 {
   _LIBCUDACXX_UNREACHABLE();
 }
 
 #if _CCCL_STD_VER > 2020
 
-[[noreturn]] _LIBCUDACXX_INLINE_VISIBILITY inline void unreachable()
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
 {
   _LIBCUDACXX_UNREACHABLE();
 }

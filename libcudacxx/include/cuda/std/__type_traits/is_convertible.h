@@ -80,7 +80,7 @@ namespace __is_convertible_imp
 
 _CCCL_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY void __test_convert(_Tp);
+_LIBCUDACXX_HIDE_FROM_ABI void __test_convert(_Tp);
 _CCCL_NV_DIAG_DEFAULT(3013) // a volatile function parameter is deprecated
 
 template <class _From, class _To, class = void>
