@@ -197,14 +197,14 @@ OutputIterator transform_inclusive_scan(
  *  Iterator</a>.
  *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">
  *  Unary Function</a> and accepts inputs of \c InputIterator's \c value_type.  \c UnaryFunction's result_type is
- * convertable to \c OutputIterator's \c value_type.
+ *  convertable to \c OutputIterator's \c value_type.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *  \tparam AssociativeOperator is a model of
- * <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
- * AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  <ahref="https://en.cppreference.com/w/cpp/utility/functional/binary_function"> Binary Function</a> and \c
+ *  AssociativeOperator's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
  *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> and the range <tt>[result, result + (last -
- * first))</tt> shall not overlap otherwise.
+ *  first))</tt> shall not overlap otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_inclusive_scan using the
  *  \p thrust::host execution policy for parallelization:
