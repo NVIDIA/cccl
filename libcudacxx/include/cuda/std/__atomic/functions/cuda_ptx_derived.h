@@ -249,7 +249,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(_Type* __ptr, _Type& __d
   __dst = __cuda_atomic_fetch_update(
     __ptr,
     [__op](_Type __old) {
-      return __old > __op ? __old : __op;
+      return __op < __old ? __old : __op;
     },
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
