@@ -18,7 +18,9 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/buffer>
+#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/stream.cuh>
 
 #include "testing.cuh"
 
@@ -156,5 +158,44 @@ TEMPLATE_TEST_CASE(
       const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
+  }
+}
+
+__global__ void kernel(_CUDA_VSTD::span<int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
+  data[0] = 42;
+}
+
+__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
+}
+
+TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
+{
+  SECTION("non-const")
+  {
+    const int grid_size = 4;
+    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cuda::mr::device_memory_resource{}, 1024};
+    auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+
+    cudax::stream stream;
+
+    cudax::launch(stream, dimensions, kernel, buffer);
+  }
+
+  SECTION("const")
+  {
+    const int grid_size = 4;
+    const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{
+      cuda::mr::device_memory_resource{}, 1024};
+    auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+
+    cudax::stream stream;
+
+    cudax::launch(stream, dimensions, const_kernel, buffer);
   }
 }

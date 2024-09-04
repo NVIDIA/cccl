@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
     InputKeyType temp_key    = *keys_first;
     TemporaryType temp_value = *values_first;
 
-    for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, ++values_first)
+    for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, (void) ++values_first)
     {
       InputKeyType key     = *keys_first;
       InputValueType value = *values_first;

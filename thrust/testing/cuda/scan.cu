@@ -12,6 +12,13 @@ __global__ void inclusive_scan_kernel(ExecutionPolicy exec, Iterator1 first, Ite
   thrust::inclusive_scan(exec, first, last, result);
 }
 
+template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename T, typename Pred>
+__global__ void
+inclusive_scan_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Iterator2 result, T init, Pred pred)
+{
+  thrust::inclusive_scan(exec, first, last, result, init, pred);
+}
+
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
 __global__ void exclusive_scan_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Iterator2 result)
 {
@@ -36,6 +43,16 @@ void TestScanDevice(ExecutionPolicy exec, const size_t n)
   thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin());
 
   inclusive_scan_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin());
+  {
+    cudaError_t const err = cudaDeviceSynchronize();
+    ASSERT_EQUAL(cudaSuccess, err);
+  }
+
+  ASSERT_EQUAL(d_output, h_output);
+
+  thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11, thrust::plus<T>{});
+
+  inclusive_scan_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin(), (T) 11, thrust::plus<T>{});
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -182,6 +199,20 @@ void TestScanCudaStreams()
   result[2] = 2;
   result[3] = 6;
   result[4] = 1;
+  ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
+  ASSERT_EQUAL(input, input_copy);
+  ASSERT_EQUAL(output, result);
+
+  // inclusive scan with init and op
+  iter =
+    thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, thrust::plus<T>());
+  cudaStreamSynchronize(s);
+
+  result[0] = 4;
+  result[1] = 7;
+  result[2] = 5;
+  result[3] = 9;
+  result[4] = 4;
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);

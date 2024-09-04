@@ -354,12 +354,12 @@ deps = [
 ]
 
 doxygen_input = [
-    "../../cudax/include/cuda/experimental/__container/*.h",
+    "../../cudax/include/cuda/experimental/__container/*.cuh",
     "../../cudax/include/cuda/experimental/__device/*.cuh",
     "../../cudax/include/cuda/experimental/__event/*.cuh",
     "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
-    "../../cudax/include/cuda/experimental/__memory_resource/*.h",
+    "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
     "../../cudax/include/cuda/experimental/__stream/*.cuh",
 ]
 

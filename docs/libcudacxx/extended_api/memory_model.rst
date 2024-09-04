@@ -61,33 +61,39 @@ An atomic operation is atomic at the scope it specifies if:
    - it specifies a scope other than ``thread_scope_system``, **or**
    - the scope is ``thread_scope_system`` and:
 
-      -  it affects an object in `unified
+      -  it affects an object in `system allocated memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__ and `pageableMemoryAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg49e2f8c2c0bd6fe264f2fc970912e5cddc80992427a92713e699953a6d249d6f>`__ is ``1`` [0],  **or**
+      -  it affects an object in `managed
          memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__
          and
          `concurrentManagedAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_116f9619ccc85e93bc456b8c69c80e78b>`__
          is ``1``, **or**
-      -  it affects an object in CPU memory and
+      -  it affects an object in `mapped
+         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ and
          `hostNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`__
          is ``1``, **or**
       -  it is a load or store that affects a naturally-aligned object of
          sizes ``1``, ``2``, ``4``, ``8``, or ``16`` bytes on `mapped
-         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__,
+         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ [1],
          **or**
-      -  it affects an object in GPU memory and only GPU threads access it.
+      -  it affects an object in GPU memory, only GPU threads access it, and
+          - `p2pNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg2f597e2acceab33f60bd61c41fea0c1b8513982962e4439fa60f2a24348be587>`__ between each accessing GPU and the GPU where the object resides is ``1``, or
+          - only GPU threads from a single GPU concurrently access it.
 
 .. note::
-   If `hostNativeAtomicSupported` is `0`, atomic load or store operations at system scope that affect a
-   naturally-aligned 16-byte wide object in
-   `unified memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__ or
-   `mapped memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ require system
-   support. NVIDIA is not aware of any system that lacks this support and there is no CUDA API query available to
-   detect such systems.
+   - [0] If `PageableMemoryAccessUsesHostPagetables <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg49e2f8c2c0bd6fe264f2fc970912e5cdc228cf8983c97d0e035da72a71494eaa>`__ is ``0`` then atomic operations to memory mapped file or ``hugetlbfs`` allocations are not atomic.
+   - [1] If `hostNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`__ is ``0``, atomic load or store operations at system scope that affect a
+     naturally-aligned 16-byte wide object in
+     `unified memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__ or
+     `mapped memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ require system
+     support. NVIDIA is not aware of any system that lacks this support and there is no CUDA API query available to
+     detect such systems.
 
 Refer to the `CUDA programming guide <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html>`__
 for more information on
-`unified memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__,
+`system allocated memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__,
+`managed memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__,
 `mapped memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__,
-CPU memory, and GPU peer memory.
+CPU memory, and GPU memory.
 
 Data Races
 ----------
