@@ -38,13 +38,7 @@ struct policy_hub_for_alg
     static constexpr int min_bif         = 64 * 1024;
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::fallback_for,
-                       dummy,
-                       ::cuda::std::_If<Alg == Algorithm::prefetch,
-                                        cub::detail::transform::prefetch_policy_t<256>,
-                                        ::cuda::std::_If<Alg == Algorithm::unrolled_staged,
-                                                         cub::detail::transform::unrolled_policy_t<256, 4>,
-                                                         cub::detail::transform::async_copy_policy_t<256>>>>;
+      ::cuda::std::_If<Alg == Algorithm::fallback_for, dummy, cub::detail::transform::async_copy_policy_t<256>>;
   };
 };
 
@@ -87,10 +81,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(transform_many_with_alg_entry_point,
 
 using algorithms =
   c2h::enum_type_list<Algorithm,
-                      Algorithm::fallback_for,
-                      Algorithm::prefetch,
-                      Algorithm::unrolled_staged,
-                      Algorithm::memcpy_async
+                      Algorithm::fallback_for
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                       ,
                       Algorithm::ublkcp
@@ -114,10 +105,6 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);                   \
   _CCCL_DIAG_PUSH                                                         \
   _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */ \
-  if (alg == Algorithm::memcpy_async && ptx_version < 800)                \
-  {                                                                       \
-    return;                                                               \
-  }                                                                       \
   FILTER_UBLKCP                                                           \
   _CCCL_DIAG_POP
 
@@ -212,7 +199,12 @@ CUB_TEST("DeviceTransform::Transform overaligned type",
   c2h::device_vector<type> b(num_items, 4);
 
   c2h::device_vector<type> result(num_items);
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
+  // we need raw pointers here to halven the conversion sequence from device_reference<int> -> int -> type when calling
+  // plus(...), which is too long to compile
+  transform_many(::cuda::std::make_tuple(thrust::raw_pointer_cast(a.data()), thrust::raw_pointer_cast(b.data())),
+                 result.begin(),
+                 num_items,
+                 ::cuda::std::plus<type>{});
 
   REQUIRE(result == c2h::device_vector<type>(num_items, 7));
 }
@@ -496,7 +488,8 @@ CUB_TEST("DeviceTransform::Transform not trivially relocatable", "[device][devic
   constexpr int num_items = 100;
   c2h::device_vector<non_trivial> input(num_items, non_trivial{42});
   c2h::device_vector<non_trivial> result(num_items);
-  transform_many(::cuda::std::make_tuple(input.begin()), result.begin(), num_items, ::cuda::std::negate<>{});
+  transform_many(
+    ::cuda::std::make_tuple(thrust::raw_pointer_cast(input.data())), result.begin(), num_items, ::cuda::std::negate<>{});
 
   const auto reference = c2h::device_vector<non_trivial>(num_items, non_trivial{-42});
   REQUIRE((reference == result));

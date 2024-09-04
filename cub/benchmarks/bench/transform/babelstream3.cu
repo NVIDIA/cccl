@@ -2,24 +2,19 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:24:1
-// %RANGE% TUNE_ALGORITHM alg 0:4:1
+// %RANGE% TUNE_ALGORITHM alg 0:1:1
 
 // keep checks at the top so compilation of discarded variants fails really fast
 #if !TUNE_BASE
-#  if TUNE_ALGORITHM == 4 && (__CUDA_ARCH_LIST__) < 900
+#  if TUNE_ALGORITHM == 1 && (__CUDA_ARCH_LIST__) < 900
 #    error "Cannot compile algorithm 4 (ublkcp) below sm90"
 #  endif
 
-#  if TUNE_ALGORITHM != 2 && TUNE_ITEMS_PER_THREAD != 1
-#    error "Skip ITEMS_PER_THREAD tuning for algorithms other than 2"
-#  endif
-
-#  if TUNE_ALGORITHM == 4 && !defined(_CUB_HAS_TRANSFORM_UBLKCP)
+#  if TUNE_ALGORITHM == 1 && !defined(_CUB_HAS_TRANSFORM_UBLKCP)
 #    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
 #  endif
-
 #endif
+
 #include "babelstream.h"
 
 #if !TUNE_BASE

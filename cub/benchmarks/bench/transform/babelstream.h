@@ -18,16 +18,18 @@ struct policy_hub_t
 {
   struct max_policy : cub::ChainedPolicy<350, max_policy, max_policy>
   {
-    static constexpr int min_bif    = cub::detail::transform::arch_to_min_bif(__CUDA_ARCH_LIST__);
+    // needed for the launch bounds to compile
+    struct dummy
+    {
+      static constexpr int BLOCK_THREADS = 256;
+    };
+
+    static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
-    using algo_policy               = ::cuda::std::_If<
-                    algorithm == cub::detail::transform::Algorithm::fallback_for,
-                    void,
-                    ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
-                                     cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
-                                     ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::unrolled_staged,
-                                                      cub::detail::transform::unrolled_policy_t<TUNE_THREADS, TUNE_ITEMS_PER_THREAD>,
-                                                      cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>>>;
+    using algo_policy =
+      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::fallback_for,
+                       dummy,
+                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
   };
 };
 #endif
