@@ -245,6 +245,7 @@ _CCCL_DEVICE void bulk_copy_tile(
   Offset global_offset,
   const aligned_base_ptr<T>& aligned_ptr)
 {
+#  if CUB_PTX_ARCH >= 900
   _CCCL_IF_CONSTEXPR (alignof(T) > bulk_copy_alignment)
   {
     if (smem_offset > 0)
@@ -260,9 +261,9 @@ _CCCL_DEVICE void bulk_copy_tile(
   // TODO(bgruber): we could precompute bytes_to_copy on the host
   const int bytes_to_copy = round_up_to_po2_multiple(
     aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
-#  if CUB_PTX_ARCH >= 900
+
   ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
-#  endif // CUB_PTX_ARCH >= 900
+
   total_bytes_bulk_copied += bytes_to_copy;
 
   smem_offset += static_cast<int>(sizeof(T)) * tile_stride; // always divisible by bulk_copy_alignment and alignof(T)
@@ -271,6 +272,7 @@ _CCCL_DEVICE void bulk_copy_tile(
     smem_offset += bulk_copy_alignment; // Don't merge into the other alignment check at the beginning for better
                                         // codegen. bgruber measured it!
   }
+#  endif // CUB_PTX_ARCH >= 900
 }
 
 template <typename Offset, typename T>
@@ -338,7 +340,6 @@ _CCCL_DEVICE void transform_kernel_impl(
 {
 #  if CUB_PTX_ARCH >= 900
   __shared__ uint64_t bar;
-#  endif // CUB_PTX_ARCH >= 900
   extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
 
   namespace ptx = ::cuda::ptx;
@@ -351,7 +352,6 @@ _CCCL_DEVICE void transform_kernel_impl(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
   {
-#  if CUB_PTX_ARCH >= 900
     // use one thread to setup the entire bulk copy
     if (select_one())
     {
@@ -378,21 +378,20 @@ _CCCL_DEVICE void transform_kernel_impl(
     __syncthreads();
     while (!ptx::mbarrier_try_wait_parity(&bar, 0))
       ;
-#  endif // CUB_PTX_ARCH >= 900
   }
   else
   {
     // use all threads to schedule an async_memcpy
     int smem_offset = 0;
 
-#  if _CCCL_STD_VER >= 2017
+#    if _CCCL_STD_VER >= 2017
     // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
     (..., bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs));
-#  else // _CCCL_STD_VER >= 2017
+#    else // _CCCL_STD_VER >= 2017
     // Order of evaluation is also left-to-right
     int dummy[] = {(bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs), 0)..., 0};
     (void) dummy;
-#  endif // _CCCL_STD_VER >= 2017
+#    endif // _CCCL_STD_VER >= 2017
 
     cooperative_groups::wait(cooperative_groups::this_thread_block());
   }
@@ -402,23 +401,23 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
   // TODO(bgruber): use a polymorphic lambda in C++14
-#  define UBLKCP_AGENT(full_tile)                                                                                 \
-    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
-                             benchmark) */                                                                        \
-      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
-    {                                                                                                             \
-      const int idx = j * block_dim + threadIdx.x;                                                                \
-      if (full_tile || idx < tile_size)                                                                           \
-      {                                                                                                           \
-        int smem_offset = 0;                                                                                      \
-        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
-        out[idx] = poor_apply(                                                                                    \
-          [&](const InTs&... values) {                                                                            \
-            return f(values...);                                                                                  \
-          },                                                                                                      \
-          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
-      }                                                                                                           \
-    }
+#    define UBLKCP_AGENT(full_tile)                                                                                 \
+      _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
+                               benchmark) */                                                                        \
+        for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
+      {                                                                                                             \
+        const int idx = j * block_dim + threadIdx.x;                                                                \
+        if (full_tile || idx < tile_size)                                                                           \
+        {                                                                                                           \
+          int smem_offset = 0;                                                                                      \
+          /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
+          out[idx] = poor_apply(                                                                                    \
+            [&](const InTs&... values) {                                                                            \
+              return f(values...);                                                                                  \
+            },                                                                                                      \
+            ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
+        }                                                                                                           \
+      }
 
   if (tile_stride == tile_size)
   {
@@ -429,7 +428,8 @@ _CCCL_DEVICE void transform_kernel_impl(
     UBLKCP_AGENT(false);
   }
 
-#  undef UBLKCP_AGENT
+#    undef UBLKCP_AGENT
+#  endif // CUB_PTX_ARCH >= 900
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -461,18 +461,20 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 // TODO(bgruber): make a variable template in C++14
 template <Algorithm Alg>
 using needs_aligned_ptr_t =
-  ::cuda::std::bool_constant<sizeof(Alg) == 0 // need a dependent false here
+  ::cuda::std::bool_constant<false
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                              || Alg == Algorithm::ublkcp
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
                              >;
 
+#ifdef _CUB_HAS_TRANSFORM_UBLKCP
 template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
   ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<value_t<It>>&&
 {
   return ::cuda::std::move(arg.aligned_ptr);
 }
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
 
 template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto

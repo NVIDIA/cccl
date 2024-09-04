@@ -180,14 +180,16 @@ struct alignas(Alignment) overaligned_addable_t
   }
 };
 
-// test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
-CUB_TEST("DeviceTransform::Transform overaligned type",
-         "[device][device_transform]",
-         c2h::type_list<overaligned_addable_t<32>,
+using overaligned_types =
+  c2h::type_list<overaligned_addable_t<32>
 #ifndef _CCCL_COMPILER_MSVC // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
-                        overaligned_addable_t<256>
+                 ,
+                 overaligned_addable_t<256>
 #endif // _CCCL_COMPILER_MSVC
-                        >)
+                 >;
+
+// test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
+CUB_TEST("DeviceTransform::Transform overaligned type", "[device][device_transform]", overaligned_types)
 {
   using type = c2h::get<0, TestType>;
   CAPTURE(c2h::demangle(typeid(type).name()));
@@ -229,6 +231,14 @@ CUB_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
   REQUIRE(result == reference_h);
 }
 
+struct times_seven
+{
+  _CCCL_HOST_DEVICE auto operator()(unsigned char v) const -> char
+  {
+    return static_cast<unsigned char>(v * 7);
+  }
+};
+
 CUB_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
 try
 {
@@ -242,14 +252,14 @@ try
   c2h::device_vector<type> input(num_items);
   c2h::gen(CUB_SEED(1), input);
 
-  using thrust::placeholders::_1;
   c2h::device_vector<type> result(num_items);
-  transform_many_with_alg<alg, offset_t>(::cuda::std::make_tuple(input.begin()), result.begin(), num_items, _1 * 7);
+  transform_many_with_alg<alg, offset_t>(
+    ::cuda::std::make_tuple(input.begin()), result.begin(), num_items, times_seven{});
 
   // compute reference and verify
   c2h::host_vector<type> input_h = input;
   c2h::host_vector<type> reference_h(num_items);
-  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), _1 * 7);
+  std::transform(input_h.begin(), input_h.end(), reference_h.begin(), times_seven{});
   REQUIRE((reference_h == result));
 }
 catch (const std::bad_alloc&)
