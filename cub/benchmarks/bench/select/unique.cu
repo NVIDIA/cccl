@@ -106,7 +106,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace
   flag_it_t d_flags              = nullptr;
   num_selected_it_t d_num_unique = thrust::raw_pointer_cast(num_unique_out.data());
 
-  // Get tmeporary storage requirements
+  // Get temporary storage requirements
   std::size_t temp_size{};
   dispatch_t::Dispatch(
     nullptr, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, 0);
