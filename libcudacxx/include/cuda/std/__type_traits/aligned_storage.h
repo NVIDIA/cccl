@@ -74,11 +74,14 @@ struct __find_pod
     : public __type_front<__type_find_if<__type_push_back<_TL, __fallback_overaligned<_Align>>, __has_align<_Align>>>
 {};
 
+constexpr size_t __select_align_fn_2_(size_t __len, size_t __min, size_t __max)
+{
+  return __len < __max ? __min : __max;
+}
+
 constexpr size_t __select_align_fn_(size_t __len, size_t __a1, size_t __a2)
 {
-  size_t __min = __a2 < __a1 ? __a2 : __a1;
-  size_t __max = __a1 < __a2 ? __a2 : __a1;
-  return __len < __max ? __min : __max;
+  return __select_align_fn_2_(__len, __a2 < __a1 ? __a2 : __a1, __a1 < __a2 ? __a2 : __a1);
 }
 
 template <size_t _Len>
