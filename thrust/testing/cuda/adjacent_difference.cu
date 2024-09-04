@@ -90,11 +90,6 @@ void TestAdjacentDifferenceCudaStreams()
   ASSERT_EQUAL(output, ref);
 
   cudaStreamDestroy(s);
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 3);
-  ASSERT_EQUAL(output[2], 2);
-
-  cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestAdjacentDifferenceCudaStreams);
 

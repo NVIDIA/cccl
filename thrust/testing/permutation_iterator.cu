@@ -160,11 +160,6 @@ void TestPermutationIteratorHostDeviceGather()
   thrust::sequence(h_source.begin(), h_source.end(), 1);
   thrust::sequence(d_source.begin(), d_source.end(), 1);
 
-  // h_indices[0] = d_indices[0] = 3;
-  // h_indices[1] = d_indices[1] = 0;
-  // h_indices[2] = d_indices[2] = 5;
-  // h_indices[3] = d_indices[3] = 7;
-
   thrust::permutation_iterator<HostIterator, HostIterator> p_h_source(h_source.begin(), h_indices.begin());
   thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_source(d_source.begin(), d_indices.begin());
 
