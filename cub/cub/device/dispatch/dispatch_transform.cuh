@@ -147,17 +147,14 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorIn... ins)
 {
   constexpr int block_dim = PrefetchPolicy::BLOCK_THREADS;
-  {
-    const int tile_stride = block_dim * num_elem_per_thread;
-    const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_stride   = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
 
-    // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
-    assert(offset < num_items);
-    num_items -= offset;
-    int dummy[] = {(ins += offset, 0)..., 0};
-    (void) &dummy;
-    out += offset;
-  }
+  // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
+  int dummy[] = {(ins += offset, 0)..., 0};
+  (void) &dummy;
+  out += offset;
 
   for (int j = 0; j < num_elem_per_thread; ++j)
   {
@@ -168,18 +165,28 @@ _CCCL_DEVICE void transform_kernel_impl(
     (void) &idx; // nvcc 11.1 needs extra strong unused warning suppression
   }
 
-  // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
-  // TODO(bgruber): A6000 disagrees
-#pragma unroll 1
-  for (int j = 0; j < num_elem_per_thread; ++j)
-  {
-    const int idx = j * block_dim + threadIdx.x;
-    if (idx < num_items)
-    {
-      // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
-      out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);
-    }
+#define PREFETCH_AGENT(full_tile)                                                                                  \
+  /* ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost */                      \
+  /* TODO(bgruber): A6000 disagrees */                                                                             \
+  _Pragma("unroll 1") for (int j = 0; j < num_elem_per_thread; ++j)                                                \
+  {                                                                                                                \
+    const int idx = j * block_dim + threadIdx.x;                                                                   \
+    if (full_tile || idx < tile_size)                                                                              \
+    {                                                                                                              \
+      /* we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test) */ \
+      out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);                                          \
+    }                                                                                                              \
   }
+
+  if (tile_stride == tile_size)
+  {
+    PREFETCH_AGENT(true);
+  }
+  else
+  {
+    PREFETCH_AGENT(false);
+  }
+#undef PREFETCH_AGENT
 }
 
 template <int BlockThreads, int ItemsPerThread>
@@ -207,43 +214,49 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim        = UnrolledPolicy::BLOCK_THREADS;
   constexpr int items_per_thread = UnrolledPolicy::ITEMS_PER_THREAD;
 
-  {
-    constexpr int tile_stride = block_dim * items_per_thread;
-    const Offset offset       = static_cast<Offset>(blockIdx.x) * tile_stride;
+  constexpr int tile_stride = block_dim * items_per_thread;
+  const Offset offset       = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
 
-    // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
-    num_items -= offset;
-    int dummy[] = {(ins += offset, 0)..., 0};
-    (void) dummy;
-    out += offset;
-  }
+  // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
+  int dummy[] = {(ins += offset, 0)..., 0}; // TODO(bgruber): use a fold over comma in C++17
+  (void) dummy;
+  out += offset;
 
   // TODO(bgruber): we could use load vectorization here
-
-  [&](cuda::std::array<value_t<RandomAccessIteratorIn>, items_per_thread>&&... arrays) {
-  // load items_per_thread elements
-#pragma unroll
-    for (int j = 0; j < items_per_thread; ++j)
-    {
-      const int idx = j * block_dim + threadIdx.x;
-      if (idx < num_items)
-      {
-        // TODO(bgruber): replace by fold over comma in C++17
-        int dummy[] = {(arrays[j] = ins[idx], 0)..., 0}; // extra zero to handle empty packs
-        (void) &dummy[0]; // MSVC needs extra strong unused warning suppression
-      }
-    }
-    // process items_per_thread elements
-#pragma unroll
-    for (int j = 0; j < items_per_thread; ++j)
-    {
-      const int idx = j * block_dim + threadIdx.x;
-      if (idx < num_items)
-      {
-        out[idx] = f(arrays[j]...);
-      }
-    }
+#define UNROLLED_AGENT(full_tile)                                                               \
+  [&](cuda::std::array<value_t<RandomAccessIteratorIn>, items_per_thread>&&... arrays) {        \
+    /* load items_per_thread elements */                                                        \
+    _Pragma("unroll") for (int j = 0; j < items_per_thread; ++j)                                \
+    {                                                                                           \
+      const int idx = j * block_dim + threadIdx.x;                                              \
+      if (full_tile || idx < tile_size)                                                         \
+      {                                                                                         \
+        /* TODO(bgruber): replace by fold over comma in C++17 */                                \
+        int dummy[] = {(arrays[j] = ins[idx], 0)..., 0}; /* extra zero to handle empty packs */ \
+        (void) &dummy[0]; /* MSVC needs extra strong unused warning suppression */              \
+      }                                                                                         \
+    }                                                                                           \
+    /* process items_per_thread elements */                                                     \
+    _Pragma("unroll") for (int j = 0; j < items_per_thread; ++j)                                \
+    {                                                                                           \
+      const int idx = j * block_dim + threadIdx.x;                                              \
+      if (full_tile || idx < tile_size)                                                         \
+      {                                                                                         \
+        out[idx] = f(arrays[j]...);                                                             \
+      }                                                                                         \
+    }                                                                                           \
   }(cuda::std::array<value_t<RandomAccessIteratorIn>, items_per_thread>{}...);
+
+  if (tile_stride == tile_size)
+  {
+    UNROLLED_AGENT(true);
+  }
+  else
+  {
+    UNROLLED_AGENT(false);
+  }
+#undef UNROLLED_AGENT
 }
 
 // used for both, memcpy_async and ublkcp kernels
@@ -437,19 +450,18 @@ _CCCL_DEVICE void transform_kernel_impl(
                                  // from the same kernel entry point (albeit one is always discarded). However, SMEM is
                                  // 16-byte aligned by default.
 
-  constexpr int block_dim  = MemcpyAsyncPolicy::BLOCK_THREADS;
-  const Offset tile_stride = block_dim * num_elem_per_thread;
-  const Offset offset      = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size      = static_cast<int>(::cuda::std::min(num_items - offset, tile_stride));
+  constexpr int block_dim = MemcpyAsyncPolicy::BLOCK_THREADS;
+  const int tile_stride   = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
 
   auto group      = cooperative_groups::this_thread_block();
   int smem_offset = 0;
-  // TODO(bgruber): is we used SMEM offsets instead of pointers, we only need half the registers
+  // TODO(bgruber): if we used SMEM offsets instead of pointers, we only need half the registers
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  // TODO(bgruber): only one must be invoked
-  const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
+  const auto smem_ptrs    = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst(group, tile_size, smem, smem_offset, offset, aligned_ptrs)
-                  : copy_and_return_smem_dst_fallback(group, tile_size, smem, smem_offset, offset, aligned_ptrs))...};
+                     : copy_and_return_smem_dst_fallback(group, tile_size, smem, smem_offset, offset, aligned_ptrs))...};
   cooperative_groups::wait(group);
   (void) smem_ptrs; // suppress unused warning for MSVC
   (void) &smem_offset; // MSVC needs extra strong unused warning suppression
@@ -457,19 +469,32 @@ _CCCL_DEVICE void transform_kernel_impl(
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
-#pragma unroll 1
-  for (int i = 0; i < num_elem_per_thread; ++i)
-  {
-    const int idx = i * block_dim + threadIdx.x;
-    if (idx < tile_size)
-    {
-      out[idx] = poor_apply(
-        [&](const InTs* __restrict__... smem_base_ptrs) {
-          return f(smem_base_ptrs[idx]...);
-        },
-        smem_ptrs);
-    }
+  // TODO(bgruber): use a polymorphic lambda in C++14
+#define MEMCPY_ASYNC_AGENT(full_tile)                                                                           \
+  _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
+                           benchmark) */                                                                        \
+    for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
+  {                                                                                                             \
+    const int idx = j * block_dim + threadIdx.x;                                                                \
+    if (full_tile || idx < tile_size)                                                                           \
+    {                                                                                                           \
+      out[idx] = poor_apply(                                                                                    \
+        [&](const InTs* __restrict__... smem_base_ptrs) {                                                       \
+          return f(smem_base_ptrs[idx]...);                                                                     \
+        },                                                                                                      \
+        smem_ptrs);                                                                                             \
+    }                                                                                                           \
   }
+
+  if (tile_stride == tile_size)
+  {
+    MEMCPY_ASYNC_AGENT(true);
+  }
+  else
+  {
+    MEMCPY_ASYNC_AGENT(false);
+  }
+#undef MEMCPY_ASYNC_AGENT
 }
 
 constexpr int bulk_copy_alignment     = 128;
@@ -607,6 +632,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   constexpr int block_dim = BulkCopyPolicy::BLOCK_THREADS;
   const int tile_stride   = block_dim * num_elem_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
 
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
@@ -643,8 +669,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   else
   {
     // use all threads to schedule an async_memcpy
-    const int tile_size = ::cuda::std::min(num_items - offset, Offset{tile_stride});
-    int smem_offset     = 0;
+    int smem_offset = 0;
 
 #  if _CCCL_STD_VER >= 2017
     // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
@@ -658,28 +683,39 @@ _CCCL_DEVICE void transform_kernel_impl(
     cooperative_groups::wait(cooperative_groups::this_thread_block());
   }
 
+  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+  out += offset;
+
+  // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
+  // TODO(bgruber): use a polymorphic lambda in C++14
+#  define UBLKCP_AGENT(full_tile)                                                                                 \
+    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
+                             benchmark) */                                                                        \
+      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
+    {                                                                                                             \
+      const int idx = j * block_dim + threadIdx.x;                                                                \
+      if (full_tile || idx < tile_size)                                                                           \
+      {                                                                                                           \
+        int smem_offset = 0;                                                                                      \
+        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
+        out[idx] = poor_apply(                                                                                    \
+          [&](const InTs&... values) {                                                                            \
+            return f(values...);                                                                                  \
+          },                                                                                                      \
+          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
+      }                                                                                                           \
+    }
+
+  if (tile_stride == tile_size)
   {
-    // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
-    num_items -= offset;
-    out += offset;
+    UBLKCP_AGENT(true);
+  }
+  else
+  {
+    UBLKCP_AGENT(false);
   }
 
-  // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-#  pragma unroll 1
-  for (int j = 0; j < num_elem_per_thread; ++j)
-  {
-    const int idx = j * block_dim + threadIdx.x;
-    if (idx < num_items)
-    {
-      int smem_offset = 0;
-      // need to expand into a tuple for guaranteed order of evaluation
-      out[idx] = poor_apply(
-        [&](const InTs&... values) {
-          return f(values...);
-        },
-        ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});
-    }
-  }
+#  undef UBLKCP_AGENT
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
