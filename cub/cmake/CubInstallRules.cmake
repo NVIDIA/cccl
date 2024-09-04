@@ -11,8 +11,8 @@ install(DIRECTORY "${CUB_SOURCE_DIR}/cub"
     PATTERN "*.hpp"
 )
 
-install(DIRECTORY "${CUB_SOURCE_DIR}/cub/cmake/"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cub"
+install(DIRECTORY "${CCCL_SOURCE_DIR}/lib/cmake/cub"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/"
   REGEX .*header-search.cmake.* EXCLUDE
 )
 # Need to configure a file to store the infix specified in
@@ -35,7 +35,7 @@ string(REGEX REPLACE "/" ";" from_install_prefix "${install_location}")
 list(TRANSFORM from_install_prefix REPLACE ".+" "../")
 list(JOIN from_install_prefix "" from_install_prefix)
 
-configure_file("${CUB_SOURCE_DIR}/cub/cmake/cub-header-search.cmake.in"
+configure_file("${CCCL_SOURCE_DIR}/lib/cmake/cub/cub-header-search.cmake.in"
   "${CUB_BINARY_DIR}/cub/cmake/cub-header-search.cmake"
   @ONLY)
 install(FILES "${CUB_BINARY_DIR}/cub/cmake/cub-header-search.cmake"

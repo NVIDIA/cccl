@@ -16,7 +16,7 @@ function(_thrust_find_thrust_multiconfig)
 
   find_package(Thrust REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${Thrust_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
     COMPONENTS ${req_systems}
   )
 endfunction()
@@ -24,7 +24,7 @@ endfunction()
 function(_thrust_find_thrust_singleconfig)
   find_package(Thrust REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${Thrust_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )
   # Create target now to prepare system found flags:
   thrust_create_target(thrust FROM_OPTIONS ${THRUST_TARGET_FLAGS})

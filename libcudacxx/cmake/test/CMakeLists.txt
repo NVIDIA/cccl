@@ -41,7 +41,7 @@ endfunction()
 libcudacxx_add_compile_test(test_name
   test_export
   source_tree
-  -D "libcudacxx_DIR=${libcudacxx_SOURCE_DIR}/lib/cmake/libcudacxx/"
+  -D "libcudacxx_DIR=${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/"
   -D TEST_TYPE=SOURCE_TREE
 )
 

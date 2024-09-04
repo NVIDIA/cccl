@@ -20,7 +20,7 @@ install(DIRECTORY "${libcudacxx_SOURCE_DIR}/include/nv"
 )
 
 # Libcudacxx cmake package
-install(DIRECTORY "${libcudacxx_SOURCE_DIR}/lib/cmake/libcudacxx"
+install(DIRECTORY "${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
   REGEX .*header-search.cmake.* EXCLUDE
 )
@@ -46,7 +46,7 @@ string(REGEX REPLACE "/" ";" from_install_prefix "${install_location}")
 list(TRANSFORM from_install_prefix REPLACE ".+" "../")
 list(JOIN from_install_prefix "" from_install_prefix)
 
-configure_file("${libcudacxx_SOURCE_DIR}/lib/cmake/libcudacxx/libcudacxx-header-search.cmake.in"
+configure_file("${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/libcudacxx-header-search.cmake.in"
   "${libcudacxx_BINARY_DIR}/lib/cmake/libcudacxx/libcudacxx-header-search.cmake"
   @ONLY
 )

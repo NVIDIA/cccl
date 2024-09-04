@@ -102,12 +102,20 @@ set(THRUST_DEVICE_SYSTEM_OPTIONS
 )
 
 # Workaround cmake issue #20670 https://gitlab.kitware.com/cmake/cmake/-/issues/20670
+# Legacy all-caps THRUST variables:
 set(THRUST_VERSION ${${CMAKE_FIND_PACKAGE_NAME}_VERSION} CACHE INTERNAL "" FORCE)
 set(THRUST_VERSION_MAJOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR} CACHE INTERNAL "" FORCE)
 set(THRUST_VERSION_MINOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR} CACHE INTERNAL "" FORCE)
 set(THRUST_VERSION_PATCH ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH} CACHE INTERNAL "" FORCE)
 set(THRUST_VERSION_TWEAK ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK} CACHE INTERNAL "" FORCE)
 set(THRUST_VERSION_COUNT ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT} CACHE INTERNAL "" FORCE)
+# "Thrust" (ie. CMAKE_FIND_PACKAGE_NAME) variables. Promote to cache vars:
+set(${CMAKE_FIND_PACKAGE_NAME}_VERSION ${${CMAKE_FIND_PACKAGE_NAME}_VERSION} CACHE INTERNAL "" FORCE)
+set(${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR} CACHE INTERNAL "" FORCE)
+set(${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR} CACHE INTERNAL "" FORCE)
+set(${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH} CACHE INTERNAL "" FORCE)
+set(${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK} CACHE INTERNAL "" FORCE)
+set(${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT} CACHE INTERNAL "" FORCE)
 
 function(thrust_create_target target_name)
   thrust_debug("Assembling target ${target_name}. Options: ${ARGN}" internal)
@@ -550,10 +558,7 @@ macro(_thrust_find_CUDA required)
       ${_THRUST_QUIET_FLAG}
       ${required}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS
-        "${_THRUST_INCLUDE_DIR}/dependencies/cub" # Source layout (GitHub)
-        "${_THRUST_INCLUDE_DIR}/../cub/cub/cmake" # Source layout (Perforce)
-        "${_THRUST_CMAKE_DIR}/.."                 # Install layout
+      HINTS "${_THRUST_CMAKE_DIR}/../cub/"
     )
 
     if (TARGET CUB::CUB)
@@ -715,9 +720,7 @@ if (NOT TARGET Thrust::libcudacxx)
   find_package(libcudacxx ${thrust_libcudacxx_version} CONFIG
     ${_THRUST_QUIET_FLAG}
     NO_DEFAULT_PATH # Only check the explicit HINTS below:
-    HINTS
-      "${_THRUST_INCLUDE_DIR}/../libcudacxx" # Source layout
-      "${_THRUST_CMAKE_DIR}/.."              # Install layout
+    HINTS "${_THRUST_CMAKE_DIR}/../libcudacxx/"              # Install layout
   )
 
   # A second required search allows externally packaged to be used and fails if

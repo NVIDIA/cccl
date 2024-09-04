@@ -11,8 +11,8 @@ install(DIRECTORY "${Thrust_SOURCE_DIR}/thrust"
     PATTERN "*.inl"
 )
 
-install(DIRECTORY "${Thrust_SOURCE_DIR}/thrust/cmake/"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/thrust"
+install(DIRECTORY "${CCCL_SOURCE_DIR}/lib/cmake/thrust"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/"
   REGEX .*header-search.cmake.* EXCLUDE
 )
 
@@ -36,7 +36,7 @@ string(REGEX REPLACE "/" ";" from_install_prefix "${install_location}")
 list(TRANSFORM from_install_prefix REPLACE ".+" "../")
 list(JOIN from_install_prefix "" from_install_prefix)
 
-configure_file("${Thrust_SOURCE_DIR}/thrust/cmake/thrust-header-search.cmake.in"
+configure_file("${CCCL_SOURCE_DIR}/lib/cmake/thrust/thrust-header-search.cmake.in"
   "${Thrust_BINARY_DIR}/thrust/cmake/thrust-header-search.cmake"
   @ONLY)
 install(FILES "${Thrust_BINARY_DIR}/thrust/cmake/thrust-header-search.cmake"

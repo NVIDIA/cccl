@@ -112,8 +112,16 @@ function(_cn_add_target_to_target_list target_name dialect prefix)
 
   cudax_set_target_properties(${target_name} ${dialect} ${prefix})
 
+  # Bring in thrust as a dev dependency, only used in tests:
+  find_package(Thrust ${cudax_VERSION} EXACT CONFIG
+    NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+  )
+  thrust_create_target(cudax::Thrust)
+
   target_link_libraries(${target_name} INTERFACE
     cudax::cudax
+    cudax::Thrust
     cudax.compiler_interface_cpp${dialect}
   )
 
@@ -141,7 +149,7 @@ function(cudax_build_target_list)
   # Set up the cudax::cudax target while testing out our find_package scripts.
   find_package(cudax REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${cudax_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
   )
 
   # Build cudax_TARGETS

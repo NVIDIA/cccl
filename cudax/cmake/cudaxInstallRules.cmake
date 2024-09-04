@@ -8,6 +8,6 @@ install(DIRECTORY "${cudax_SOURCE_DIR}/include/cuda"
 )
 
 # CMake package
-install(DIRECTORY "${cudax_SOURCE_DIR}/lib/cmake/cudax"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
+install(DIRECTORY "${CCCL_SOURCE_DIR}/lib/cmake/cudax"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/"
 )
