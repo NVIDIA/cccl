@@ -32,6 +32,13 @@
 namespace cuda::experimental
 {
 
+namespace detail
+{
+// 0 is a valid stream in CUDA, so we need some other invalid stream representation
+// Can't make it constexpr, because cudaStream_t is a pointer type
+static const ::cudaStream_t __invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
+} // namespace detail
+
 //! @brief A non-owning wrapper for cudaStream_t.
 struct stream_ref : ::cuda::stream_ref
 {
@@ -83,7 +90,7 @@ struct stream_ref : ::cuda::stream_ref
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
-    assert(__stream != detail::invalid_stream);
+    assert(__stream != detail::__invalid_stream);
     event __tmp(__other);
     wait(__tmp);
   }
