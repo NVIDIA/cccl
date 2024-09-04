@@ -43,12 +43,12 @@ public:
 
   template <class _Fn,
             class = _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::__decay_t<_Fn>, _DecayFn>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit __return_type_wrapper(_Fn&& __fn) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __return_type_wrapper(_Fn&& __fn) noexcept
       : __fn_(_CUDA_VSTD::forward<_Fn>(__fn))
   {}
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) & noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) & noexcept
   {
 #if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn&, _As...>::type>::value,
@@ -59,7 +59,7 @@ public:
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) && noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) && noexcept
   {
 #if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn, _As...>::type>::value,
@@ -70,7 +70,7 @@ public:
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const& noexcept
   {
 #if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn&, _As...>::type>::value,
@@ -81,7 +81,7 @@ public:
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const&& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const&& noexcept
   {
 #if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn, _As...>::type>::value,
@@ -95,7 +95,7 @@ public:
 } // namespace __detail
 
 template <class _Ret, class _Fn>
-inline _LIBCUDACXX_INLINE_VISIBILITY __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>
+_LIBCUDACXX_HIDE_FROM_ABI __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>
 proclaim_return_type(_Fn&& __fn) noexcept
 {
   return __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__fn));

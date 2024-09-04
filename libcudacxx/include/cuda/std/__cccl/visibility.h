@@ -27,6 +27,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/execution_space.h>
+
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
 #if defined(_CCCL_COMPILER_NVHPC)
@@ -61,6 +63,22 @@
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_MSVC vvv
 #  define _CCCL_ALWAYS_INLINE __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER_MSVC
+
+#if __has_attribute(exclude_from_explicit_instantiation)
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
+#else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
+// NVCC complains mightily about being unable to inline functions if we use _CCCL_ALWAYS_INLINE here
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#endif // !exclude_from_explicit_instantiation
+
+#if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
+#  define _CCCL_HIDE_FROM_ABI inline
+#else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
+#  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
+#endif // !_CCCL_COMPILER_ICC
+
+//! Defined here to supress any warnings from the definition
+#define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE
 
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN

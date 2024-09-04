@@ -22,7 +22,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Predicate>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _InputIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _InputIterator
 find_if_not(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
