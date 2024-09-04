@@ -34,7 +34,7 @@ _LIBCUDACXX_REQUIRES(indirectly_readable<_It> _LIBCUDACXX_AND indirectly_regular
 struct projected
 {
   using value_type = remove_cvref_t<indirect_result_t<_Proj&, _It>>;
-  _LIBCUDACXX_INLINE_VISIBILITY indirect_result_t<_Proj&, _It> operator*() const; // not defined
+  _LIBCUDACXX_HIDE_FROM_ABI indirect_result_t<_Proj&, _It> operator*() const; // not defined
 };
 
 #  if _CCCL_STD_VER > 2017

@@ -54,7 +54,7 @@ _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _LIBCUDACXX_TEMPLATE(class _Op, class _Yp)
 _LIBCUDACXX_REQUIRES(is_convertible_v<_Op*, view_interface<_Yp>*>)
-_LIBCUDACXX_INLINE_VISIBILITY void __is_derived_from_view_interface(const _Op*, const view_interface<_Yp>*);
+_LIBCUDACXX_HIDE_FROM_ABI void __is_derived_from_view_interface(const _Op*, const view_interface<_Yp>*);
 
 #  if _CCCL_STD_VER >= 2020
 

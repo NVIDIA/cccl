@@ -25,25 +25,25 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-_LIBCUDACXX_INLINE_VISIBILITY inline constexpr bool is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_constant_evaluated() noexcept
 {
   return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
 }
 
-inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_is_constant_evaluated() noexcept
 {
   return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
 }
-inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_default_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_default_is_constant_evaluated() noexcept
 {
   return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
 }
 #else // ^^^ _LIBCUDACXX_IS_CONSTANT_EVALUATED ^^^ / vvv !_LIBCUDACXX_IS_CONSTANT_EVALUATED vvv
-inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_is_constant_evaluated() noexcept
 {
   return false;
 }
-inline constexpr _LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_default_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_default_is_constant_evaluated() noexcept
 {
   return true;
 }
