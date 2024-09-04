@@ -39,8 +39,6 @@
 
 #include <cub/config.cuh>
 
-#include <cub/detail/type_traits.cuh> // always_false
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -49,6 +47,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh> // always_false
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 

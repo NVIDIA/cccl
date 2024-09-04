@@ -145,7 +145,7 @@ doxygen_predefined = [
     "_CCCL_DEVICE",
     "_CCCL_HOST_DEVICE",
     "_CCCL_FORCEINLINE",
-    "_CUB_TEMPLATE_REQUIRES",
+    "_CUB_TEMPLATE_REQUIRES(x)",
     "_CCCL_STD_VER",
     "_CCCL_NODISCARD",
     "_CCCL_VISIBILITY_HIDDEN",

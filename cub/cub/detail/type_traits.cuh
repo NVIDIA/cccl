@@ -34,8 +34,6 @@
 
 #include <cub/config.cuh>
 
-#include <cstddef>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -143,8 +141,10 @@ struct StaticSize
 };
 
 template <typename T>
-struct StaticSize<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().size())>>
+struct StaticSize<T,
+                  ::cuda::std::void_t<decltype(::cuda::std::integral_constant<int, ::cuda::std::declval<T>().size()>{})>>
 {
+  static_assert(::cuda::std::is_trivially_constructible<T>::value, "T must be trivially constructible");
   static constexpr auto value = T{}.size();
 };
 

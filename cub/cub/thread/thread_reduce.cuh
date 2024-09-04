@@ -28,16 +28,12 @@
 
 /**
  * @file
- * Thread utilities for sequential reduction over statically-sized array types
+ * Thread reduction over statically-sized array-like types
  */
 
 #pragma once
 
 #include <cub/config.cuh>
-
-#include <cuda/std/bit> // bit_cast
-#include <cuda/std/cstdint> // uint16_t
-#include <cuda/std/utility> // pair
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -51,6 +47,10 @@
 #include <cub/thread/thread_operators.cuh> // cub_operator_to_dpx_t
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/std/bit> // bit_cast
+#include <cuda/std/cstdint> // uint16_t
+#include <cuda/std/utility> // pair
 
 CUB_NAMESPACE_BEGIN
 
@@ -208,7 +208,9 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 template <typename Input,
           typename ReductionOp,
           typename PrefixT,
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
           typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+#endif // !DOXYGEN_SHOULD_SKIP_THIS
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
@@ -228,6 +230,8 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   }
   return ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
 }
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 /**
  * @brief Perform a sequential reduction over @p length elements of the @p input pointer. The aggregate is returned.
@@ -253,13 +257,14 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* inpu
   static_assert(length > 0, "length must be greater than 0");
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
                 "ReductionOp must have the binary call operator: operator(V1, V2)");
-  using ArrayT = T[length];
+  using ArrayT = const T[length];
   auto& array  = reinterpret_cast<const ArrayT&>(input);
   return ThreadReduce(array, reduction_op);
 }
 
 /**
- * @deprecated [Since 2.7.0]
+ * @remark The pointer interface adds little value and requires Length to be explicit.
+ *         Prefer using the array-like interface
  *
  * @brief Perform a sequential reduction over @p length elements of the @p input pointer, seeded with the specified @p
  *        prefix. The aggregate is returned.
@@ -303,8 +308,6 @@ ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
   auto& array  = reinterpret_cast<const ArrayT&>(input);
   return ThreadReduce(array, reduction_op, prefix);
 }
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 template <int Length, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(Length == 0)>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
