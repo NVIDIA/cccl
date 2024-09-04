@@ -31,13 +31,6 @@
 namespace cuda::experimental
 {
 
-namespace detail
-{
-// 0 is a valid stream in CUDA, so we need some other invalid stream representation
-// Can't make it constexpr, because cudaStream_t is a pointer type
-static const ::cudaStream_t invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
-} // namespace detail
-
 //! @brief An owning wrapper for cudaStream_t.
 struct stream : stream_ref
 {
@@ -50,7 +43,7 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
-      : stream_ref(detail::invalid_stream)
+      : stream_ref(detail::__invalid_stream)
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
@@ -67,9 +60,9 @@ struct stream : stream_ref
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
   //! @post `stream()` returns an invalid stream handle
-  // Can't be constexpr because invalid_stream isn't
+  // Can't be constexpr because __invalid_stream isn't
   explicit stream(uninit_t) noexcept
-      : stream_ref(detail::invalid_stream)
+      : stream_ref(detail::__invalid_stream)
   {}
 
   //! @brief Move-construct a new `stream` object
@@ -78,7 +71,7 @@ struct stream : stream_ref
   //!
   //! @post `__other` is in moved-from state.
   stream(stream&& __other) noexcept
-      : stream(_CUDA_VSTD::exchange(__other.__stream, detail::invalid_stream))
+      : stream(_CUDA_VSTD::exchange(__other.__stream, detail::__invalid_stream))
   {}
 
   stream(const stream&) = delete;
@@ -88,7 +81,7 @@ struct stream : stream_ref
   //! @note If the stream fails to be destroyed, the error is silently ignored.
   ~stream()
   {
-    if (__stream != detail::invalid_stream)
+    if (__stream != detail::__invalid_stream)
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
@@ -135,7 +128,7 @@ struct stream : stream_ref
   //! @post The stream object is in a moved-from state.
   _CCCL_NODISCARD ::cudaStream_t release()
   {
-    return _CUDA_VSTD::exchange(__stream, detail::invalid_stream);
+    return _CUDA_VSTD::exchange(__stream, detail::__invalid_stream);
   }
 
 private:
