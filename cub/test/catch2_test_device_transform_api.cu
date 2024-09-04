@@ -20,11 +20,11 @@ void test_transform_api()
     return (a + b) * c;
   };
 
-  thrust::device_vector<int> result(num_items);
+  auto result = thrust::device_vector<int>(num_items);
   cub::DeviceTransform::Transform(
     ::cuda::std::make_tuple(input1.begin(), input2.begin(), input3), result.begin(), num_items, op);
 
-  thrust::host_vector<float> expected{520, 111, 397, 618};
+  const auto expected = thrust::host_vector<float>{520, 111, 397, 618};
   // example-end transform-many
   CHECK(result == expected);
 }
@@ -40,19 +40,21 @@ void test_transform_stable_api()
   // example-begin transform-many-stable
   constexpr auto num_items = 4;
   auto input1              = thrust::device_vector<int>{0, -2, 5, 3};
-  auto input2              = thrust::device_vector<float>{5.2f, 3.1f, -1.1f, 3.0f};
-  auto input3              = thrust::counting_iterator<int>{100};
-  auto op =
-    [input1_ptr = thrust::raw_pointer_cast(input1.data()), in2_it = input2.begin()] __device__(const int& a, int c) {
-      const auto i = &a - input1_ptr; // we depend on the address of a
-      return (a + in2_it[i]) * c;
-    };
+  auto input2              = thrust::device_vector<int>{52, 31, -11, 30};
 
-  thrust::device_vector<int> result(num_items);
+  auto* input1_ptr = thrust::raw_pointer_cast(input1.data());
+  auto* input2_ptr = thrust::raw_pointer_cast(input2.data());
+
+  auto op = [input1_ptr, input2_ptr] __device__(const int& a) -> int {
+    const auto i = &a - input1_ptr; // we depend on the address of a
+    return a + input2_ptr[i];
+  };
+
+  auto result = thrust::device_vector<int>(num_items);
   cub::DeviceTransform::TransformStableArgumentAddresses(
-    ::cuda::std::make_tuple(input1.begin(), input3), result.begin(), num_items, op);
+    ::cuda::std::make_tuple(input1_ptr), result.begin(), num_items, op);
 
-  thrust::host_vector<float> expected{520, 111, 397, 618};
+  const auto expected = thrust::host_vector<float>{52, 29, -6, 33};
   // example-end transform-many-stable
   CHECK(result == expected);
 }
