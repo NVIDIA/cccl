@@ -259,6 +259,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* inpu
 }
 
 /**
+ * @deprecated [Since 2.7.0]
+ *
  * @brief Perform a sequential reduction over @p length elements of the @p input pointer, seeded with the specified @p
  *        prefix. The aggregate is returned.
  *
@@ -286,25 +288,25 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* inpu
  *
  * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T, PrefixT></tt>
  */
-template <int length,
+template <int Length,
           typename T,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>,
-          _CUB_TEMPLATE_REQUIRES(length > 0)>
+          _CUB_TEMPLATE_REQUIRES(Length > 0)>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
 {
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
                 "ReductionOp must have the binary call operator: operator(V1, V2)");
-  using ArrayT = T[length];
+  using ArrayT = T[Length];
   auto& array  = reinterpret_cast<const ArrayT&>(input);
   return ThreadReduce(array, reduction_op, prefix);
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
-template <int length, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(length == 0)>
+template <int Length, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(Length == 0)>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
 {
   return prefix;
