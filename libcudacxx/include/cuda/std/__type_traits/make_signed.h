@@ -41,8 +41,9 @@ typedef __type_list<signed char,
                     signed short,
                     signed int,
                     signed long,
-                    signed long long,
+                    signed long long
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
+                    ,
                     __int128_t
 #  endif
                     >

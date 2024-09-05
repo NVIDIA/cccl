@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/visibility.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -50,12 +51,63 @@ using __type = typename _Tp::type;
 template <class _Fn, class... _Ts>
 using __type_call = typename _Fn::template __apply<_Ts...>;
 
+//! @brief Evaluate a unary meta-callable with the given argument
+template <class _Fn, class _Ty>
+using __type_call1 = typename _Fn::template __apply<_Ty>;
+
+//! @brief Evaluate a binary meta-callable with the given arguments
+template <class _Fn, class _Ty, class _Uy>
+using __type_call2 = typename _Fn::template __apply<_Ty, _Uy>;
+
 //! @brief Turns a class or alias template into a meta-callable
 template <template <class...> class _Fn>
 struct __type_quote
 {
   template <class... _Ts>
   using __apply = _Fn<_Ts...>;
+};
+
+//! @brief Turns a unary class or alias template into a meta-callable
+template <template <class> class _Fn>
+struct __type_quote1
+{
+  template <class _Ty>
+  using __apply = _Fn<_Ty>;
+};
+
+//! @brief Turns a unary class or alias template into a meta-callable
+template <template <class, class> class _Fn>
+struct __type_quote2
+{
+  template <class _Ty, class _Uy>
+  using __apply = _Fn<_Ty, _Uy>;
+};
+
+//! @brief Turns a trait class template \c F into a meta-callable \c C such that
+//! \c C::__apply<Ts...> is equivalent to \c F<Ts...>::type.
+template <template <class...> class _Fn>
+struct __type_quote_trait
+{
+  template <class... _Ts>
+  using __apply = __type<_Fn<_Ts...>>;
+};
+
+//! @brief Turns a unary trait class template \c F into a meta-callable \c C such that
+//! \c C::__apply<T> is equivalent to \c F<T>::type.
+template <template <class> class _Fn>
+struct __type_quote_trait1
+{
+  template <class _Ty>
+  using __apply = __type<_Fn<_Ty>>;
+};
+
+//! @brief Turns a binary trait class template \c F into a meta-callable \c C such that
+//! `C::__apply<T, U>` is equivalent to `F<T, U>::type`.
+template <template <class, class> class _Fn>
+struct __type_quote_trait2
+{
+  template <class _Ty, class _Uy>
+  using __apply = __type<_Fn<_Ty, _Uy>>;
 };
 
 //! @brief A meta-callable that composes two meta-callables
@@ -102,13 +154,17 @@ template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
 #  endif
 
+//! @brief Return the size of a type list.
+template <class _List>
+using __type_list_size = _CUDA_VSTD::integral_constant<size_t, _List::__size>;
+
 //! @brief Given a type list and a list of types, append the types to the list.
 template <class _List, class... _Ts>
 using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 
 //! @brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
-using __type_push_front = __type_call<__type_list<__type_quote<__type_list>, _Ts...>, _List>;
+using __type_push_front = __type_call<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
 
 namespace detail
 {
@@ -194,7 +250,7 @@ template <size_t>
 using __void_ptr = void*;
 
 template <class _Ty>
-using __type_ptr = _CUDA_VSTD::type_identity<_Ty>*;
+using __type_ptr = _CUDA_VSTD::__type_identity<_Ty>*;
 
 template <size_t _Ip, class _Ty = _CUDA_VSTD::make_index_sequence<_Ip>>
 struct __type_index_fn;
@@ -282,6 +338,12 @@ struct __type_concat_fn
 template <class... _Lists>
 using __type_concat = __type_call<detail::__type_concat_fn, _Lists...>;
 
+//! @brief Given a list of type lists, concatenate all the lists into one.
+//!
+//! When passed an empty type list, \c __type_flatten returns an empty type list.
+template <class _ListOfLists>
+using __type_flatten = __type_call<_ListOfLists, __type_quote<__type_concat>>;
+
 namespace detail
 {
 template <bool _IsEmpty>
@@ -324,7 +386,7 @@ template <class _Fn>
 struct __type_transform_fn
 {
   template <class... _Ts>
-  using __apply = __type_list<__type_call<_Fn, _Ts>...>;
+  using __apply = __type_list<__type_call1<_Fn, _Ts>...>;
 };
 } // namespace detail
 
@@ -343,7 +405,7 @@ struct __type_maybe_fold_right_fn
 {
   template <class _Fn, class _State, class _Head, class... _Tail>
   using __apply =
-    __type_call<__type_maybe_fold_right_fn<sizeof...(_Tail) == 0>, _Fn, __type_call<_Fn, _State, _Head>, _Tail...>;
+    __type_call<__type_maybe_fold_right_fn<sizeof...(_Tail) == 0>, _Fn, __type_call2<_Fn, _State, _Head>, _Tail...>;
 };
 
 template <>
@@ -365,7 +427,7 @@ struct __type_maybe_fold_left_fn
 {
   template <class _Fn, class _State, class _Head, class... _Tail>
   using __apply =
-    __type_call<_Fn, __type_call<__type_maybe_fold_left_fn<sizeof...(_Tail) == 0>, _Fn, _State, _Tail...>, _Head>;
+    __type_call2<_Fn, __type_call<__type_maybe_fold_left_fn<sizeof...(_Tail) == 0>, _Fn, _State, _Tail...>, _Head>;
 };
 
 template <>
@@ -393,6 +455,52 @@ using __type_fold_right = __type_call<_List, detail::__type_fold_right_fn<_Init,
 //! initial state.
 template <class _List, class _Init, class _Fn>
 using __type_fold_left = __type_call<_List, detail::__type_fold_left_fn<_Init, _Fn>>;
+
+namespace detail
+{
+template <class _Ty>
+struct __type_remove_fn
+{
+  template <class _Uy>
+  using __apply = _CUDA_VSTD::_If<_CCCL_TRAIT(_CUDA_VSTD::is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
+};
+} // namespace detail
+
+//! @brief Remove all occurances of a type from a type list
+template <class _List, class _Ty>
+using __type_remove = __type_flatten<__type_transform<_List, detail::__type_remove_fn<_Ty>>>;
+
+namespace detail
+{
+// _State is the list of type lists being built by the __type_fold_left
+template <class _State, class _List>
+struct __type_cartesian_product_fn
+{
+  template <class _Ty>
+  struct __lambda0
+  {
+    template <class _List2>
+    using __lambda1 = __type_list<__type_push_front<_List2, _Ty>>;
+
+    using type = __type_flatten<__type_transform<_State, __type_quote1<__lambda1>>>;
+  };
+
+  using type = __type_flatten<__type_transform<_List, __type_quote_trait1<__lambda0>>>;
+};
+} // namespace detail
+/// \endcond
+
+//! @brief Given a list of lists \c _Lists, return a new list of lists that is
+//! the cartesian product.
+//!
+//! \par Complexity
+//! `O(N * M)`, where `N` is the size of the outer list, and
+//! `M` is the size of the inner lists.
+template <class... _Lists>
+using __type_cartesian_product =
+  __type_fold_left<__type_list<_Lists...>,
+                   __type_list<__type_list<>>,
+                   __type_quote_trait2<detail::__type_cartesian_product_fn>>;
 
 // A unary meta-callable for converting a type to its size in bytes
 struct __type_sizeof
@@ -485,6 +593,36 @@ struct __type_greater_equal
   template <class _Ty, class _Uy>
   using __apply = _CUDA_VSTD::bool_constant<(_Ty::value >= _Uy::value)>;
 };
+
+//! @brief A pair of types
+template <class _First, class _Second>
+struct __type_pair
+{
+  using __first  = _First;
+  using __second = _Second;
+};
+
+//! @brief Retreive the first of a pair of types
+//! @pre \c _Pair is a specialization of \c __type_pair
+template <class _Pair>
+using __type_pair_first = typename _Pair::__first;
+
+//! @brief Retreive the second of a pair of types
+//! @pre \c _Pair is a specialization of \c __type_pair
+template <class _Pair>
+using __type_pair_second = typename _Pair::__second;
+
+namespace detail
+{
+template <size_t _Start, size_t _Stride, size_t... _Is>
+_CUDA_VSTD::index_sequence<(_Start + (_Is * _Stride))...> __type_iota_fn(_CUDA_VSTD::index_sequence<_Is...>*);
+} // namespace detail
+
+//! @brief Return an \c index_sequence of size \c _Size starting at \c _Start
+//! and incrementing by \c _Stride.
+template <size_t _Start, size_t _Size, size_t _Stride = 1>
+using __type_iota =
+  decltype(detail::__type_iota_fn<_Start, _Stride>(static_cast<_CUDA_VSTD::make_index_sequence<_Size>*>(nullptr)));
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
