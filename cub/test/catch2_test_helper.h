@@ -41,6 +41,7 @@
 _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 #endif // nvcc-11
 
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/utility>

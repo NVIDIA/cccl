@@ -360,8 +360,10 @@ using __type_back _LIBCUDACXX_NODEBUG_TYPE = __type_at_c<_List::__size - 1, _Lis
 namespace __detail
 {
 template <size_t _Count>
-struct __type_maybe_concat_fn
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
+  using __next_t = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
+
   template <class... _Ts,
             class... _As,
             class... _Bs,
@@ -383,38 +385,38 @@ struct __type_maybe_concat_fn
     __type_list_ptr<_Gs...>, // 7
     __type_list_ptr<_Hs...>, // 8
     _Tail*... __tail) // rest
-    -> decltype(__type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>::__fn(
-      __type_list_ptr<_Ts..., _As..., _Bs..., _Cs..., _Ds..., _Es..., _Fs..., _Gs..., _Hs...>(),
+    -> decltype(__next_t::__fn(
+      __type_list_ptr<_Ts..., _As..., _Bs..., _Cs..., _Ds..., _Es..., _Fs..., _Gs..., _Hs...>{nullptr},
       __tail...,
-      __type_list_ptr<>(),
-      __type_list_ptr<>(),
-      __type_list_ptr<>(),
-      __type_list_ptr<>(),
-      __type_list_ptr<>(),
-      __type_list_ptr<>(),
-      __type_list_ptr<>()));
+      __type_list_ptr<>{nullptr},
+      __type_list_ptr<>{nullptr},
+      __type_list_ptr<>{nullptr},
+      __type_list_ptr<>{nullptr},
+      __type_list_ptr<>{nullptr},
+      __type_list_ptr<>{nullptr},
+      __type_list_ptr<>{nullptr}));
 };
 
 template <>
-struct __type_maybe_concat_fn<0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<0>
 {
   template <class... _Ts>
   static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
 };
 
-struct __type_concat_fn
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
 {
   template <class... _Lists>
   using __call = decltype(__type_maybe_concat_fn<sizeof...(_Lists)>::__fn(
-    __type_list_ptr<>(),
+    __type_list_ptr<>{nullptr},
     static_cast<_Lists*>(nullptr)...,
-    __type_list_ptr<>(),
-    __type_list_ptr<>(),
-    __type_list_ptr<>(),
-    __type_list_ptr<>(),
-    __type_list_ptr<>(),
-    __type_list_ptr<>(),
-    __type_list_ptr<>()));
+    __type_list_ptr<>{nullptr},
+    __type_list_ptr<>{nullptr},
+    __type_list_ptr<>{nullptr},
+    __type_list_ptr<>{nullptr},
+    __type_list_ptr<>{nullptr},
+    __type_list_ptr<>{nullptr},
+    __type_list_ptr<>{nullptr}));
 };
 } // namespace __detail
 
