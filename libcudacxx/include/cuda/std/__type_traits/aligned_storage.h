@@ -66,7 +66,7 @@ template <size_t _Align>
 struct __has_align
 {
   template <class _Ty>
-  using __apply = _CUDA_VSTD::bool_constant<_Align == _Ty::value>;
+  using __call = bool_constant<_Align == _Ty::value>;
 };
 
 template <class _TL, size_t _Align>
@@ -88,12 +88,11 @@ template <size_t _Len>
 struct __select_align_fn
 {
   template <class _State, class _Ty>
-  using __apply = _CUDA_VSTD::integral_constant<size_t, __select_align_fn_(_Len, _State::value, _Ty::value)>;
+  using __call = integral_constant<size_t, __select_align_fn_(_Len, _State::value, _Ty::value)>;
 };
 
 template <class _TL, size_t _Len>
-struct __find_max_align
-    : public __type_fold_left<_TL, _CUDA_VSTD::integral_constant<size_t, 0>, __select_align_fn<_Len>>
+struct __find_max_align : public __type_fold_left<_TL, integral_constant<size_t, 0>, __select_align_fn<_Len>>
 {};
 
 template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::value>

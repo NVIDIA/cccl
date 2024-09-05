@@ -12,8 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__type_traits/integral_constant.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/apply_cv.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/nat.h>
@@ -59,7 +58,7 @@ struct __make_signed_impl<_Tp, true>
   struct __size_greater_equal_fn
   {
     template <class _Up>
-    using __apply = _CUDA_VSTD::bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
+    using __call = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
   };
 
   using type = __type_front<__type_find_if<__signed_types, __size_greater_equal_fn>>;

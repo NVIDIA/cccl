@@ -71,7 +71,7 @@ template <class... TypeLists>
 using cartesian_product = ::cuda::std::__type_cartesian_product<TypeLists...>;
 
 template <typename T, T... Ts>
-using enum_type_list = c2h::type_list<std::integral_constant<T, Ts>...>;
+using enum_type_list = ::cuda::std::__type_value_list<T, Ts...>;
 
 template <typename T0, typename T1>
 using pair = ::cuda::std::__type_pair<T0, T1>;
@@ -82,8 +82,8 @@ using first = ::cuda::std::__type_pair_first<P>;
 template <typename P>
 using second = ::cuda::std::__type_pair_second<P>;
 
-template <std::size_t start, std::size_t size, std::size_t stride = 1>
-using iota = ::cuda::std::__type_iota<start, size, stride>;
+template <std::size_t Start, std::size_t Size, std::size_t Stride = 1>
+using iota = ::cuda::std::__type_iota<std::size_t, Start, Size, Stride>;
 
 template <typename TypeList, typename T>
 using remove = ::cuda::std::__type_remove<TypeList, T>;

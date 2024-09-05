@@ -60,7 +60,7 @@ struct __make_unsigned_impl<_Tp, true>
   struct __size_greater_equal_fn
   {
     template <class _Up>
-    using __apply = _CUDA_VSTD::bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
+    using __call = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
   };
 
   using type = __type_front<__type_find_if<__unsigned_types, __size_greater_equal_fn>>;

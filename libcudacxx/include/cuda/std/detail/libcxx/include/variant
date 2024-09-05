@@ -248,6 +248,7 @@ C++20
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -359,7 +360,7 @@ template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "Index out of bounds in _CUDA_VSTD::variant_alternative<>");
-  using type = __type_pack_element<_Ip, _Types...>;
+  using type = __type_index_c<_Ip, _Types...>;
 };
 
 _LIBCUDACXX_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
@@ -2115,7 +2116,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
   {
     if (__index == _CurrentIndex)
     {
-      using __value_type = remove_const_t<__type_pack_element<_CurrentIndex, _Types...>>;
+      using __value_type = remove_const_t<__type_index_c<_CurrentIndex, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value);
     }
     __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __v);
@@ -2125,7 +2126,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
   {
     if (__index == 0)
     {
-      using __value_type = remove_const_t<__type_pack_element<0, _Types...>>;
+      using __value_type = remove_const_t<__type_index_c<0, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
     }
     // We already checked that every variant has a value, so we should never reach this line
