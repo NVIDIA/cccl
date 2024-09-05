@@ -5,12 +5,12 @@
 
 // keep checks at the top so compilation of discarded variants fails really fast
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#if !TUNE_BASE && TUNE_ALGORITHM == 1
+#if !TUNE_BASE && TUNE_ALGORITHM == 2
 #  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 #    error "When tuning, this benchmark does not support being compiled for multiple architectures"
 #  endif
 #  if (__CUDA_ARCH_LIST__) < 900
-#    error "Cannot compile algorithm 4 (ublkcp) below sm90"
+#    error "Cannot compile algorithm 2 (ublkcp) below sm90"
 #  endif
 #  ifndef _CUB_HAS_TRANSFORM_UBLKCP
 #    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
