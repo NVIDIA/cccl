@@ -291,7 +291,7 @@ CUB_TEST("DeviceTransform::Transform BabelStream nstream",
   FILTER_UNSUPPORTED_ALGS
   CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg);
 
-  const int num_items = GENERATE(0, 1, 100, 1000 /*, 1000000*/); // TODO(bgruber): select good sizes
+  const int num_items = GENERATE(0, 1, 100, 1000, 10000);
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
   c2h::device_vector<type> c(num_items);

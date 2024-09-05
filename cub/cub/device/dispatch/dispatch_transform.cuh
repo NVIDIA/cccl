@@ -189,8 +189,8 @@ struct aligned_base_ptr
 {
   using value_type = T;
 
-  const char* ptr; // aligned pointer before the original pointer (16-byte or 128-byte, or higher if alignof(T) is
-                   // larger). May not be aligned to alignof(T). E.g.: array of int3 starting at address 4, ptr == 0
+  const char* ptr; // aligned pointer before the original pointer (16-byte or 128-byte). May not be aligned to
+                   // alignof(T). E.g.: array of int3 starting at address 4, ptr == 0
   int head_padding; // byte offset between ptr and the original pointer. Value inside [0;15] or [0;127].
 
   _CCCL_HOST_DEVICE const T* ptr_to_elements() const
@@ -214,7 +214,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 constexpr int bulk_copy_alignment     = 128;
 constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_DEVICE _CCCL_FORCEINLINE bool select_one()
+_CCCL_DEVICE _CCCL_FORCEINLINE bool elect_one()
 {
 #if CUB_PTX_ARCH >= 900
   const ::cuda::std::uint32_t membermask = ~0;
@@ -245,14 +245,9 @@ _CCCL_DEVICE void bulk_copy_tile(
   Offset global_offset,
   const aligned_base_ptr<T>& aligned_ptr)
 {
+  static_assert(alignof(T) <= bulk_copy_alignment, "");
+
 #  if CUB_PTX_ARCH >= 900
-  _CCCL_IF_CONSTEXPR (alignof(T) > bulk_copy_alignment)
-  {
-    if (smem_offset > 0)
-    {
-      smem_offset += int{alignof(T)};
-    }
-  }
   const char* src = aligned_ptr.ptr + global_offset * sizeof(T);
   char* dst       = smem + smem_offset;
   assert(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0);
@@ -263,15 +258,10 @@ _CCCL_DEVICE void bulk_copy_tile(
     aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
 
   ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
-
   total_bytes_bulk_copied += bytes_to_copy;
 
-  smem_offset += static_cast<int>(sizeof(T)) * tile_stride; // always divisible by bulk_copy_alignment and alignof(T)
-  _CCCL_IF_CONSTEXPR (alignof(T) <= bulk_copy_alignment)
-  {
-    smem_offset += bulk_copy_alignment; // Don't merge into the other alignment check at the beginning for better
-                                        // codegen. bgruber measured it!
-  }
+  // add bulk_copy_alignment to make space for the next tile's head padding
+  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
 #  endif // CUB_PTX_ARCH >= 900
 }
 
@@ -284,13 +274,6 @@ _CCCL_DEVICE void bulk_copy_tile_fallback(
   Offset global_offset,
   const aligned_base_ptr<T>& aligned_ptr)
 {
-  _CCCL_IF_CONSTEXPR (alignof(T) > bulk_copy_alignment)
-  {
-    if (smem_offset > 0)
-    {
-      smem_offset += int{alignof(T)};
-    }
-  }
   const T* src = aligned_ptr.ptr_to_elements() + global_offset;
   T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
   assert(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0);
@@ -299,12 +282,8 @@ _CCCL_DEVICE void bulk_copy_tile_fallback(
   const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
   cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
 
-  smem_offset += static_cast<int>(sizeof(T)) * tile_stride; // always divisible by bulk_copy_alignment and alignof(T)
-  _CCCL_IF_CONSTEXPR (alignof(T) <= bulk_copy_alignment)
-  {
-    smem_offset += bulk_copy_alignment; // Don't merge into the other alignment check at the beginning for better
-                                        // codegen. bgruber measured it!
-  }
+  // add bulk_copy_alignment to make space for the next tile's head padding
+  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
 }
 
 // TODO(bgruber): inline this as lambda in C++14
@@ -312,20 +291,8 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE const T&
 fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx, const aligned_base_ptr<T>& aligned_ptr)
 {
-  _CCCL_IF_CONSTEXPR (alignof(T) > bulk_copy_alignment)
-  {
-    if (smem_offset > 0)
-    {
-      smem_offset += int{alignof(T)};
-    }
-  }
   const T* smem_operand_tile_base = reinterpret_cast<const T*>(smem + smem_offset + aligned_ptr.head_padding);
-  smem_offset += int{sizeof(T)} * tile_stride;
-  _CCCL_IF_CONSTEXPR (alignof(T) <= bulk_copy_alignment)
-  {
-    smem_offset += bulk_copy_alignment; // Don't merge into the other alignment check at the beginning for better
-                                        // codegen. bgruber measured it!
-  }
+  smem_offset += int{sizeof(T)} * tile_stride + bulk_copy_alignment;
   return smem_operand_tile_base[smem_idx];
 }
 
@@ -353,7 +320,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   if (inner_blocks)
   {
     // use one thread to setup the entire bulk copy
-    if (select_one())
+    if (elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
       ptx::fence_proxy_async(ptx::space_shared);
@@ -520,10 +487,10 @@ constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> int
 {
-  // max(128, alignof(value_type)) bytes of padding for each input tile (before + after)
+  // 128 bytes of padding for each input tile (before + after)
   // TODO(bgruber): use a fold expression in C++17
   return tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + sum(::cuda::std::max(bulk_copy_alignment, int{alignof(value_t<RandomAccessIteratorsIn>)})...);
+       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
@@ -569,10 +536,17 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
         async_policy::BLOCK_THREADS * async_policy::MIN_ITEMS_PER_THREAD)
       > 48 * 1024;
+    static constexpr bool any_type_is_overalinged =
+#  if _CCCL_STD_VER >= 2017
+      ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
+#  else
+      sum((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment)...) > 0;
+#  endif
 
-    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem;
-    static constexpr auto algorithm    = use_fallback ? Algorithm::fallback_for : Algorithm::ublkcp;
-    using algo_policy                  = ::cuda::std::_If<use_fallback, dummy_fallback_for_policy, async_policy>;
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
+    static constexpr auto algorithm = use_fallback ? Algorithm::fallback_for : Algorithm::ublkcp;
+    using algo_policy               = ::cuda::std::_If<use_fallback, dummy_fallback_for_policy, async_policy>;
   };
 
   using max_policy = policy900;
