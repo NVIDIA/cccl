@@ -53,7 +53,7 @@
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/utility> // pair
 
-//#include <functional> // std::plus
+// #include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 

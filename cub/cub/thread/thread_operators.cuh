@@ -55,7 +55,7 @@
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
-//#include <functional> // std::plus
+// #include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 
@@ -520,11 +520,11 @@ struct CubOperatorToDpx<cub::Sum, T>
   using type = DpxSum<T>;
 };
 
-//template <typename T>
-//struct CubOperatorToDpx<std::plus<T>, T>
+// template <typename T>
+// struct CubOperatorToDpx<std::plus<T>, T>
 //{
-//  using type = DpxSum<T>;
-//};
+//   using type = DpxSum<T>;
+// };
 
 template <typename ReduceOp, typename T>
 using cub_operator_to_dpx_t = CubOperatorToDpx<ReduceOp, T>;
