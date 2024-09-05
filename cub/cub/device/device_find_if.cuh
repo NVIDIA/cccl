@@ -34,6 +34,8 @@
 
 #include <cub/config.cuh>
 
+#include "cub/util_type.cuh"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -112,14 +114,10 @@ struct DeviceFind
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    int block_threads = 128;
-    // first cub API call
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = sizeof(int);
-      return;
-    }
-    int* int_temp_storage = static_cast<int*>(d_temp_storage);
+    int block_threads    = 128;
+    int items_per_thread = 2;
+    int tile_size        = block_threads * items_per_thread;
+    int num_tiles        = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
 
     // Get device ordinal
     int device_ordinal;
@@ -148,13 +146,34 @@ struct DeviceFind
     int findif_device_occupancy = find_if_sm_occupancy * sm_count;
 
     // Even-share work distribution
-    int max_blocks = findif_device_occupancy;
+    int max_blocks = findif_device_occupancy; // no * CUB_SUBSCRIPTION_FACTOR(0) because max_blocks gets too big
+
+    int findif_grid_size = CUB_MIN(num_tiles, max_blocks);
+
+    // Temporary storage allocation requirements
+    void* allocations[1]       = {};
+    size_t allocation_sizes[1] = {sizeof(int)};
+
+    // Alias the temporary allocations from the single storage blob (or
+    // compute the necessary size of the blob)
+    error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    if (cudaSuccess != error)
+    {
+      return;
+    }
+
+    int* int_temp_storage = static_cast<int*>(allocations[0]); // this shouldn't be just int
+
+    if (d_temp_storage == nullptr)
+    {
+      return;
+    }
 
     // use d_temp_storage as the intermediate device result
     // to read and write from. Then store the final result in the output iterator.
     cuda_mem_set_async_dtemp_storage<<<1, 1>>>(int_temp_storage, num_items);
 
-    find_if<<<max_blocks, block_threads, 0, stream>>>(d_in, d_in + num_items, op, int_temp_storage);
+    find_if<<<findif_grid_size, block_threads, 0, stream>>>(d_in, d_in + num_items, op, int_temp_storage);
 
     write_final_result_in_output_iterator_already<int><<<1, 1>>>(int_temp_storage, d_out);
 
