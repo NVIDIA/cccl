@@ -44,6 +44,7 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/util_deprecated.cuh>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
