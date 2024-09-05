@@ -59,7 +59,7 @@ public:
   }
 
 private:
-  void sync_host_to_device(stream_ref __str, detail::__param_kind __p) const
+  void sync_host_to_device(::cuda::stream_ref __str, detail::__param_kind __p) const
   {
     if (__dirty_)
     {
@@ -78,7 +78,7 @@ private:
     }
   }
 
-  void sync_device_to_host(stream_ref __str, detail::__param_kind __p) const
+  void sync_device_to_host(::cuda::stream_ref __str, detail::__param_kind __p) const
   {
     if (__p != detail::__param_kind::_in)
     {
@@ -94,7 +94,7 @@ private:
     using __cv_vector = ::cuda::std::__maybe_const<_Kind == detail::__param_kind::_in, vector>;
 
   public:
-    explicit __action(stream_ref __str, __cv_vector& __v) noexcept
+    explicit __action(::cuda::stream_ref __str, __cv_vector& __v) noexcept
         : __str_(__str)
         , __v_(__v)
     {
@@ -116,25 +116,25 @@ private:
     }
 
   private:
-    stream_ref __str_;
+    ::cuda::stream_ref __str_;
     __cv_vector& __v_;
   };
 
   _CCCL_NODISCARD_FRIEND __action<detail::__param_kind::_inout>
-  __cudax_launch_transform(stream_ref __str, vector& __v) noexcept
+  __cudax_launch_transform(::cuda::stream_ref __str, vector& __v) noexcept
   {
     return __action<detail::__param_kind::_inout>{__str, __v};
   }
 
   _CCCL_NODISCARD_FRIEND __action<detail::__param_kind::_in>
-  __cudax_launch_transform(stream_ref __str, const vector& __v) noexcept
+  __cudax_launch_transform(::cuda::stream_ref __str, const vector& __v) noexcept
   {
     return __action<detail::__param_kind::_in>{__str, __v};
   }
 
   template <detail::__param_kind _Kind>
   _CCCL_NODISCARD_FRIEND __action<_Kind>
-  __cudax_launch_transform(stream_ref __str, detail::__box<vector, _Kind> __b) noexcept
+  __cudax_launch_transform(::cuda::stream_ref __str, detail::__box<vector, _Kind> __b) noexcept
   {
     return __action<_Kind>{__str, __b.__val};
   }
