@@ -203,6 +203,10 @@ template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
 #  endif
 
+//! \brief A pointer to a type list, often used as a function argument.
+template <class... _Ts>
+using __type_list_ptr = __type_list<_Ts...>*;
+
 //! \brief Return the size of a type list.
 template <class _List>
 using __type_list_size _LIBCUDACXX_NODEBUG_TYPE = integral_constant<size_t, _List::__size>;
@@ -272,7 +276,10 @@ using __type_index_c _LIBCUDACXX_NODEBUG_TYPE = _Ts...[_Ip];
 template <class _Ip, class... _Ts>
 using __type_index _LIBCUDACXX_NODEBUG_TYPE = _Ts...[_Ip::value];
 
-#  elif __has_builtin(__type_pack_element)
+// Versions of nvcc prior to 12.0 have trouble with pack expansion into
+// __type_pack_element in an alias template, so we use the fall-back
+// implementation instead.
+#  elif __has_builtin(__type_pack_element) && (!defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_CUDACC_VER_MAJOR > 11)
 
 namespace __detail
 {
@@ -352,33 +359,62 @@ using __type_back _LIBCUDACXX_NODEBUG_TYPE = __type_at_c<_List::__size - 1, _Lis
 
 namespace __detail
 {
-template <bool _Empty>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
+template <size_t _Count>
+struct __type_maybe_concat_fn
 {
-  template <class... _Ts, class... _As, class... _Bs, class... _Cs, class... _Ds, class... _Tail>
-  static auto
-  __fn(__type_list<_Ts...>*,
-       __type_list<_As...>*,
-       __type_list<_Bs...>* = nullptr,
-       __type_list<_Cs...>* = nullptr,
-       __type_list<_Ds...>* = nullptr,
-       _Tail*... __tail)
-    -> decltype(__type_maybe_concat_fn<(sizeof...(_Tail) == 0)>::__fn(
-      static_cast<__type_list<_Ts..., _As..., _Bs..., _Cs..., _Ds...>*>(nullptr), __tail...));
+  template <class... _Ts,
+            class... _As,
+            class... _Bs,
+            class... _Cs,
+            class... _Ds,
+            class... _Es,
+            class... _Fs,
+            class... _Gs,
+            class... _Hs,
+            class... _Tail>
+  static auto __fn(
+    __type_list_ptr<_Ts...>, // state
+    __type_list_ptr<_As...>, // 1
+    __type_list_ptr<_Bs...>, // 2
+    __type_list_ptr<_Cs...>, // 3
+    __type_list_ptr<_Ds...>, // 4
+    __type_list_ptr<_Es...>, // 5
+    __type_list_ptr<_Fs...>, // 6
+    __type_list_ptr<_Gs...>, // 7
+    __type_list_ptr<_Hs...>, // 8
+    _Tail*... __tail) // rest
+    -> decltype(__type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>::__fn(
+      __type_list_ptr<_Ts..., _As..., _Bs..., _Cs..., _Ds..., _Es..., _Fs..., _Gs..., _Hs...>(),
+      __tail...,
+      __type_list_ptr<>(),
+      __type_list_ptr<>(),
+      __type_list_ptr<>(),
+      __type_list_ptr<>(),
+      __type_list_ptr<>(),
+      __type_list_ptr<>(),
+      __type_list_ptr<>()));
 };
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<true>
+struct __type_maybe_concat_fn<0>
 {
-  template <class... _As>
-  static auto __fn(__type_list<_As...>*) -> __type_list<_As...>;
+  template <class... _Ts>
+  static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
 };
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
+struct __type_concat_fn
 {
   template <class... _Lists>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    decltype(__type_maybe_concat_fn<(sizeof...(_Lists) == 0)>::__fn({}, static_cast<_Lists*>(nullptr)...));
+  using __call = decltype(__type_maybe_concat_fn<sizeof...(_Lists)>::__fn(
+    __type_list_ptr<>(),
+    static_cast<_Lists*>(nullptr)...,
+    __type_list_ptr<>(),
+    __type_list_ptr<>(),
+    __type_list_ptr<>(),
+    __type_list_ptr<>(),
+    __type_list_ptr<>(),
+    __type_list_ptr<>(),
+    __type_list_ptr<>()));
 };
 } // namespace __detail
 
