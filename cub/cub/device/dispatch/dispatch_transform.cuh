@@ -545,16 +545,18 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   // TODO(bgruber): consider a separate kernel for just filling
 
+  struct dummy_fallback_for_policy
+  {
+    // only used to allow transform_kernel to instantiate, not used anywhere else
+    static constexpr int BLOCK_THREADS = 256;
+  };
+
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = Algorithm::fallback_for;
-    struct algo_policy
-    {
-      // only used to allow transform_kernel to instantiate, not used anywhere else
-      static constexpr int BLOCK_THREADS = 256;
-    };
+    using algo_policy               = dummy_fallback_for_policy;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -570,7 +572,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
     static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem;
     static constexpr auto algorithm    = use_fallback ? Algorithm::fallback_for : Algorithm::ublkcp;
-    using algo_policy                  = ::cuda::std::_If<use_fallback, void, async_policy>;
+    using algo_policy                  = ::cuda::std::_If<use_fallback, dummy_fallback_for_policy, async_policy>;
   };
 
   using max_policy = policy900;
