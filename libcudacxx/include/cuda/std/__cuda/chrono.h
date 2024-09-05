@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 namespace chrono
 {
 
-inline _LIBCUDACXX_INLINE_VISIBILITY system_clock::time_point system_clock::now() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI system_clock::time_point system_clock::now() noexcept
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE,
@@ -49,12 +49,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY system_clock::time_point system_clock::now(
         .count())));));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY time_t system_clock::to_time_t(const system_clock::time_point& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI time_t system_clock::to_time_t(const system_clock::time_point& __t) noexcept
 {
   return time_t(duration_cast<seconds>(__t.time_since_epoch()).count());
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY system_clock::time_point system_clock::from_time_t(time_t __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI system_clock::time_point system_clock::from_time_t(time_t __t) noexcept
 {
   return time_point(seconds(__t));
   ;

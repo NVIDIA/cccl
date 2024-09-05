@@ -39,13 +39,13 @@ private:
   type __f_;
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __mem_fn(type __f) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mem_fn(type __f) noexcept
       : __f_(__f)
   {}
 
   // invoke
   template <class... _ArgTypes>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const
   {
     return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__args)...);
@@ -53,7 +53,7 @@ public:
 };
 
 template <class _Rp, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::*__pm) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::*__pm) noexcept
 {
   return __mem_fn<_Rp _Tp::*>(__pm);
 }
