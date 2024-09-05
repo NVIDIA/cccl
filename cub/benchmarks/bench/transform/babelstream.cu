@@ -5,7 +5,7 @@
 // benchmark. Its main use is to detect regressions.
 
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ALGORITHM alg 0:1:1
+// %RANGE% TUNE_ALGORITHM alg 0:2:1
 
 #include "common.h"
 
