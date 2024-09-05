@@ -19,12 +19,12 @@
 #include <iostream>
 #include <memory>
 
+#include "util/context.h"
+#include "util/errors.h"
+#include "util/types.h"
 #include <cccl/reduce.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
-
-#include "util/types.cuh"
-#include "util/errors.cuh"
 
 struct op_wrapper;
 struct device_reduce_policy;
@@ -51,7 +51,7 @@ struct reduce_tuning_t
 };
 
 template <int N>
-reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
+inline reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
 {
   for (const reduce_tuning_t& tuning : tunings)
   {
@@ -64,7 +64,7 @@ reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
+inline runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -77,14 +77,14 @@ runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_t
   return {block_size, items_per_thread, vector_load_length};
 }
 
-cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
+inline cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
   return init.type;
 }
 
-cudaError_t InvokeSingleTile(
+inline cudaError_t InvokeSingleTile(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -127,7 +127,7 @@ cudaError_t InvokeSingleTile(
   return error;
 }
 
-cudaError_t InvokePasses(
+inline cudaError_t InvokePasses(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -235,7 +235,7 @@ cudaError_t InvokePasses(
   return error;
 }
 
-cudaError_t Invoke(
+inline cudaError_t Invoke(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -278,6 +278,9 @@ cudaError_t Invoke(
       stream);
   }
 }
+
+struct input_iterator_state_t;
+struct output_iterator_t;
 
 std::string get_input_iterator_name()
 {
@@ -358,24 +361,6 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
     reduction_op_t,
     accum_t,
     transform_op_t);
-}
-
-bool try_push_context()
-{
-  CUcontext context = nullptr;
-
-  check(cuCtxGetCurrent(&context));
-
-  if (context == nullptr)
-  {
-    const int default_device = 0;
-    check(cuDevicePrimaryCtxRetain(&context, default_device));
-    check(cuCtxPushCurrent(context));
-
-    return true;
-  }
-
-  return false;
 }
 
 extern "C" CCCL_C_API CUresult cccl_device_reduce_build(

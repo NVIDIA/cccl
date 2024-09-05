@@ -82,7 +82,16 @@ static std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
   const char* options[] = {"--std=c++17", "-rdc=true", "-dlto"};
-  REQUIRE(NVRTC_SUCCESS == nvrtcCompileProgram(prog, 3, options));
+
+  if (nvrtcCompileProgram(prog, 3, options) != NVRTC_SUCCESS)
+  {
+    size_t log_size{};
+    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
+    std::unique_ptr<char[]> log{new char[log_size]};
+    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.get()));
+    printf("%s\r\n", log.get());
+    REQUIRE(false);
+  }
 
   std::size_t ltoir_size{};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIRSize(prog, &ltoir_size));
@@ -147,7 +156,7 @@ cccl_type_info get_type_info()
   return info;
 }
 
-static std::string get_op(cccl_type_enum t)
+static std::string get_reduce_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -169,20 +178,45 @@ static std::string get_op(cccl_type_enum t)
   return "";
 }
 
+static std::string get_for_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::INT8:
+      return "extern \"C\" __device__ void op(char* a) { *a = *a >> 1; }";
+    case cccl_type_enum::INT32:
+      return "extern \"C\" __device__ void op(int* a) { *a = *a >> 1; }";
+    case cccl_type_enum::UINT32:
+      return "extern \"C\" __device__ void op(unsigned int* a) { *a = *a >> 1; }";
+    case cccl_type_enum::INT64:
+      return "extern \"C\" __device__ void op(long long* a) { *a = *a >> 1; }";
+    case cccl_type_enum::UINT64:
+      return "extern \"C\" __device__ void op(unsigned long long* a) { "
+             " *a = *a >> 1; "
+             "}";
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
+
 template <class T>
 struct pointer_t
 {
   T* ptr{};
+  size_t size{};
 
   pointer_t(int num_items)
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, num_items * sizeof(T)));
+    size = num_items;
   }
 
   pointer_t(const std::vector<T>& vec)
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, vec.size() * sizeof(T)));
     REQUIRE(cudaSuccess == cudaMemcpy(ptr, vec.data(), vec.size() * sizeof(T), cudaMemcpyHostToDevice));
+    size = vec.size();
   }
 
   ~pointer_t()
@@ -210,6 +244,13 @@ struct pointer_t
     it.state      = ptr;
     it.value_type = get_type_info<T>();
     return it;
+  }
+
+  operator std::vector<T>() const
+  {
+    std::vector<T> vec(size);
+    REQUIRE(cudaSuccess == cudaMemcpy(vec.data(), ptr, sizeof(T) * size, cudaMemcpyDeviceToHost));
+    return vec;
   }
 };
 

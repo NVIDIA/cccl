@@ -8,13 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <nvJitLink.h>
-#include <nvrtc.h>
-
-#include "types.cuh"
-#include "errors.cuh"
+#include "types.h"
 
 #include <cuda/std/cstdint>
+
+#include "errors.h"
+#include <nvJitLink.h>
+#include <nvrtc.h>
 
 char const* cccl_type_enum_to_string(cccl_type_enum type)
 {

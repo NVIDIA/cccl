@@ -46,3 +46,5 @@ extern "C" CCCL_C_API CUresult cccl_device_for(
   CUstream stream) noexcept;
 
 extern "C" CCCL_C_API CUresult cccl_device_for_cleanup(cccl_device_for_build_result_t* bld_ptr);
+
+#endif // CCCL_C_EXPERIMENTAL

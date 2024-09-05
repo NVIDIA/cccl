@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <stdexcept>
+#include "errors.h"
 
-#include "errors.cuh"
+#include <stdexcept>
 
 void check(nvrtcResult result)
 {
