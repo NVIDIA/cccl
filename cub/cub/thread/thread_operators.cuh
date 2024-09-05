@@ -51,9 +51,11 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/type_traits> // cuda::std::common_type
+#include <cuda/std/utility> // cuda::std::forward
+
+#include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 

@@ -50,7 +50,10 @@
 
 #include <cuda/std/bit> // bit_cast
 #include <cuda/std/cstdint> // uint16_t
+#include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/utility> // pair
+
+#include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 
@@ -81,10 +84,10 @@ constexpr bool enable_dpx_reduction()
   using T = decltype(::cuda::std::declval<Input>()[0]);
   // TODO: use constexpr variable in C++14+
   using Lenght = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
-  return ((Lenght{} >= 9 && ::cuda::std::is_same<ReductionOp, cub::Sum>::value) || Lenght{} >= 10)
+  return ((Lenght{} >= 9 && detail::are_same<ReductionOp, cub::Sum, std::plus<T>>()) || Lenght{} >= 10)
             && detail::are_same<T, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
-            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum>();
+            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum, std::plus<T>>();
 }
 // clang-format on
 
@@ -155,6 +158,7 @@ template <typename Input,
           _CUB_TEMPLATE_REQUIRES(enable_dpx_reduction<Input, ReductionOp, AccumT>())>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
+  static_assert(sizeof(Input) != sizeof(Input), "a");
   static_assert(detail::has_subscript<Input>::value, "Input must support the subscript operator[]");
   static_assert(detail::has_size<Input>::value, "Input must have the size() method");
   static_assert(detail::has_binary_call_operator<ReductionOp, ValueT>::value,
@@ -254,16 +258,15 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
  *
  * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T></tt>
  */
-template <int length, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
+template <int Length, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* input, ReductionOp reduction_op)
 {
-  static_assert(length > 0, "length must be greater than 0");
+  static_assert(Length > 0, "Length must be greater than 0");
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
                 "ReductionOp must have the binary call operator: operator(V1, V2)");
-  using ArrayT = T[length];
-  auto ptr1    = const_cast<T*>(input); // workaround for MSVC 14.16
-  auto& array  = reinterpret_cast<const ArrayT&>(ptr1);
-  return ThreadReduce(array, reduction_op);
+  using ArrayT = T[Length];
+  auto array   = reinterpret_cast<const T(*)[Length]>(input);
+  return ThreadReduce(*array, reduction_op);
 }
 
 /**
@@ -308,10 +311,8 @@ ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
 {
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
                 "ReductionOp must have the binary call operator: operator(V1, V2)");
-  using ArrayT = T[Length];
-  auto ptr1    = const_cast<T*>(input); // workaround for MSVC 14.16
-  auto& array  = reinterpret_cast<const ArrayT&>(ptr1);
-  return ThreadReduce(array, reduction_op, prefix);
+  auto array = reinterpret_cast<const T(*)[Length]>(input);
+  return ThreadReduce(*array, reduction_op, prefix);
 }
 
 template <int Length, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(Length == 0)>
