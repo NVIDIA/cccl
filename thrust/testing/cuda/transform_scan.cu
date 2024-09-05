@@ -127,7 +127,7 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   }
 
   iter = iter_vec[0];
-  ref  = {2, -1, 1, -3, 2};
+  ref  = {3, 2, -1, 1, -3};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(ref, output);

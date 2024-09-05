@@ -79,7 +79,9 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op)
 {
-  using ValueType = thrust::remove_cvref_t<InitialValueType>; // cuda::std::__accumulator_t?
+  using InputType  = typename thrust::iterator_value<InputIterator>::type;
+  using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
+  using ValueType  = thrust::remove_cvref_t<ResultType>;
 
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);

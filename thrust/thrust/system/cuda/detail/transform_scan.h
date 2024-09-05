@@ -79,11 +79,13 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
   InitialValueType init,
   ScanOp scan_op)
 {
-  using result_type = ::cuda::std::__accumulator_t<ScanOp, cub::detail::value_t<InputIt>, InitialValueType>;
+  using input_type  = typename thrust::iterator_value<InputIt>::type;
+  using result_type = thrust::detail::invoke_result_t<TransformOp, input_type>;
+  using value_type  = thrust::remove_cvref_t<result_type>;
 
   using size_type              = typename iterator_traits<InputIt>::difference_type;
   size_type num_items          = static_cast<size_type>(thrust::distance(first, last));
-  using transformed_iterator_t = transform_input_iterator_t<result_type, InputIt, TransformOp>;
+  using transformed_iterator_t = transform_input_iterator_t<value_type, InputIt, TransformOp>;
 
   return cuda_cub::inclusive_scan_n(
     policy, transformed_iterator_t(first, transform_op), num_items, result, init, scan_op);

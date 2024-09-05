@@ -174,8 +174,8 @@ OutputIterator transform_inclusive_scan(
  *  performing an \p inclusive_scan on the tranformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
  *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
- *  <tt>binary_op(unary_op(\*first), init)</tt> is assigned to
- *  <tt>\*result</tt> and the result of <tt>binary_op(unary_op(\*result),
+ *  if <tt>binary_op(init, unary_op(\*first))</tt> is <tt>accum</tt>, it is assigned to
+ *  <tt>\*result</tt> and the result of <tt>binary_op(accum,
  *  unary_op(\*(first + 1)))</tt> is assigned to <tt>\*(result + 1)</tt>,
  *  and so on. The transform scan operation is permitted to be in-place.
  *
@@ -186,7 +186,7 @@ OutputIterator transform_inclusive_scan(
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
- *  \param init The initial value of the \p inclusive_scan
+ *  \param init The initial value of the \p transform_inclusive_scan
  *  \param binary_op The associatve operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
@@ -239,6 +239,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   InputIterator first,
   InputIterator last,
   OutputIterator result,
+  UnaryFunction unary_op,
   T init,
   AssociativeOperator binary_op);
 
@@ -247,9 +248,9 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  tranformation defined by \p unary_op into a temporary sequence and then
  *  performing an \p inclusive_scan on the tranformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
- *  fewer memory reads and writes are required. In \p transform_inclusive_scan,
- *  <tt>binary_op(unary_op(\*first), init)</tt> is assigned to
- *  <tt>\*result</tt> and the result of <tt>binary_op(unary_op(\*result),
+ *  fewer memory reads and writes are required.In \p transform_inclusive_scan,
+ *  if <tt>binary_op(init, unary_op(\*first))</tt> is <tt>accum</tt>, it is assigned to
+ *  <tt>\*result</tt> and the result of <tt>binary_op(accum,
  *  unary_op(\*(first + 1)))</tt> is assigned to <tt>\*(result + 1)</tt>,
  *  and so on. The transform scan operation is permitted to be in-place.
  *
@@ -257,7 +258,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
- *  \param init The initial value of the \p inclusive_scan
+ *  \param init The initial value of the \p transform_inclusive_scan
  *  \param binary_op The associatve operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
