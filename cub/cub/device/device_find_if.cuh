@@ -56,9 +56,7 @@ CUB_NAMESPACE_BEGIN
 template <typename IterBegin, typename IterEnd, typename Pred>
 __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result)
 {
-  extern __shared__ int sresult[];
-  sresult[0] = INT_MAX;
-  __syncthreads();
+  __shared__ int sresult;
 
   auto global_index = threadIdx.x + blockIdx.x * blockDim.x;
   int total_threads = gridDim.x * blockDim.x;
@@ -70,14 +68,13 @@ __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result)
     // the rest threads of the block through shared memory
     if (threadIdx.x == 0)
     {
-      sresult[0] = atomicAdd(result, 0);
+      sresult = atomicAdd(result, 0);
     }
     __syncthreads();
 
-    if (sresult[0] < index)
-    { // @georgii early exit!!!
-      // printf("early exit!!!");
-      return; // this returns the whole block
+    if (sresult < index)
+    {
+      return; // early exit
     }
 
     if (pred(*(begin + index)))
