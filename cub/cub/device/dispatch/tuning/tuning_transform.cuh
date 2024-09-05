@@ -65,6 +65,7 @@ enum class Algorithm
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
   // is always superior to that fallback, so it was removed.
   prefetch,
+  memcpy_async,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
@@ -99,22 +100,27 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Inte
   return (x + mult - 1) & ~(mult - 1);
 }
 
-_CCCL_HOST_DEVICE constexpr int sum()
-{
-  return 0;
-}
-
-// TODO(bgruber): remove with C++17
-template <typename... Ts>
-_CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
-{
-  return head + sum(tail...);
-}
-
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
   return (int{sizeof(it_value_t<Its>)} + ... + 0);
+}
+
+constexpr int memcpy_async_alignment     = 16;
+constexpr int memcpy_async_size_multiple = 16;
+
+template <typename... RandomAccessIteratorsIn>
+_CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(int tile_size) -> int
+{
+  int smem_size                    = 0;
+  [[maybe_unused]] auto count_smem = [&](int size, int alignment) {
+    smem_size = round_up_to_po2_multiple(smem_size, alignment);
+    // max aligned_base_ptr head_padding + max padding after == 16
+    smem_size += size * tile_size + memcpy_async_alignment;
+  };
+  // left to right evaluation!
+  (..., count_smem(sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)));
+  return smem_size;
 }
 
 constexpr int bulk_copy_size_multiple = 16;
@@ -175,6 +181,7 @@ struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(Static
     return StaticPolicyT::algo_policy::block_threads;
   }
 
+  template <typename = void>
   _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadNoInput()
   {
     return StaticPolicyT::algo_policy::items_per_thread_no_input;
@@ -224,6 +231,25 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     using algo_policy               = prefetch_policy_t<256>;
   };
 
+  // TODO(bgruber): should we add a tuning for 750? They should have items_per_thread_from_occupancy(256, 4, ...)
+
+  // A100
+  struct policy800 : ChainedPolicy<800, policy800, policy300>
+  {
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
+    using async_policy           = async_copy_policy_t<256, memcpy_async_alignment>;
+    static constexpr bool exhaust_smem =
+      memcpy_async_smem_for_tile_size<RandomAccessIteratorsIn...>(
+        async_policy::block_threads * async_policy::min_items_per_thread)
+      > int{max_smem_per_block};
+    static constexpr bool any_type_is_overalinged =
+      ((alignof(it_value_t<RandomAccessIteratorsIn>) > memcpy_async_alignment) || ...);
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+  };
+
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   template <int BlockSize, int PtxVersion>
   struct bulkcopy_policy
@@ -249,7 +275,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   struct policy900
       : bulkcopy_policy<256, 900>
-      , ChainedPolicy<900, policy900, policy300>
+      , ChainedPolicy<900, policy900, policy800>
   {};
 
   struct policy1000
@@ -265,7 +291,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                       policy1000
 #else // _CUB_HAS_TRANSFORM_UBLKCP
-                      policy300
+                      policy800
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
                       >
   {
