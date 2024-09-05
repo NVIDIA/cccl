@@ -53,7 +53,7 @@
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/utility> // pair
 
-#include <functional> // std::plus
+//#include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 
@@ -84,10 +84,10 @@ constexpr bool enable_dpx_reduction()
   using T = decltype(::cuda::std::declval<Input>()[0]);
   // TODO: use constexpr variable in C++14+
   using Lenght = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
-  return ((Lenght{} >= 9 && detail::are_same<ReductionOp, cub::Sum, std::plus<T>>()) || Lenght{} >= 10)
+  return ((Lenght{} >= 9 && detail::are_same<ReductionOp, cub::Sum/*, std::plus<T>*/>()) || Lenght{} >= 10)
             && detail::are_same<T, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
-            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum, std::plus<T>>();
+            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum/*, std::plus<T>*/>();
 }
 // clang-format on
 
