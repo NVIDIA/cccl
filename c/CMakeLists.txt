@@ -4,7 +4,7 @@ project(cccl.c LANGUAGES CUDA CXX)
 
 add_library(cccl.c SHARED
     src/reduce.cu src/for.cu
-    src/util/errors.cpp src/util/types.cpp src/util/context.cpp)
+    src/util/errors.cpp src/util/types.cpp src/util/context.cpp src/util/small_storage.cpp)
 
 set_property(TARGET cccl.c PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET cccl.c PROPERTY CXX_STANDARD 20)

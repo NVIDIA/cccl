@@ -1,3 +1,4 @@
+#include <cstring>
 #include <memory>
 
 // copy_or_allocate_into_aligned_storage is a helper that will allocate space to hold an object and some aligned data

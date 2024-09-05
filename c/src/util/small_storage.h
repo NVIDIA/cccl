@@ -10,10 +10,6 @@
 
 #pragma once
 
-// small_aligned_storage<T> manages objects that 'may' hold more data than initially sized for.
-// it implements in C++ a managed variable length member located at the end of T.
-// This allows packing together unrelated data as sometimes used for kernel parameters.
-// This is maybe a dumb idea.
 void* copy_or_allocate_into_aligned_storage(
   void* space, // Pointer to buffer in which to copy memory
   size_t space_size, // Space available in this buffer (number of bytes available after offset)
@@ -23,11 +19,11 @@ void* copy_or_allocate_into_aligned_storage(
   size_t src_size // Source's size
 );
 
-template <typename T>
+template <typename T, size_t Extra>
 struct small_aligned_storage_stack
 {
   T stored_obj;
-  char space[8];
+  char space[Extra];
 };
 
 template <typename T>
@@ -36,16 +32,30 @@ struct small_aligned_storage_allocated
   T* stored_obj;
 };
 
-template <typename T>
+// small_aligned_storage<T> manages objects that 'may' hold more data than initially sized for.
+// it implements in C++ a managed variable length member located at the end of T.
+// This allows packing together unrelated data as sometimes used for kernel parameters.
+// This is maybe a dumb idea.
+template <typename T, size_t Extra = 8>
 struct small_aligned_storage
 {
   union
   {
     small_aligned_storage_allocated<T> allocated;
-    small_aligned_storage_stack<T> local;
+    small_aligned_storage_stack<T, Extra> local;
   };
 
-  bool is_allocated;
+  bool is_allocated = false;
+
+  constexpr inline small_aligned_storage(T t)
+  {
+    local.stored_obj = t;
+  }
+
+  const small_aligned_storage& operator=(const small_aligned_storage&) = delete;
+  const small_aligned_storage& operator=(small_aligned_storage&&)      = delete;
+  small_aligned_storage(const small_aligned_storage&)                  = delete;
+  small_aligned_storage(small_aligned_storage&&)                       = delete;
 
   inline small_aligned_storage(T t, void* source, size_t alignment, size_t size)
   {
@@ -54,20 +64,25 @@ struct small_aligned_storage
 
     if (allocated_space)
     {
-      is_allocated = true;
-      allocated    = (small_aligned_storage_allocated<T>*) allocated_space;
+      is_allocated          = true;
+      allocated             = small_aligned_storage_allocated<T>{(T*) allocated_space};
+      *allocated.stored_obj = t;
+    }
+    else
+    {
+      local.stored_obj = t;
     }
   }
 
-  ~small_aligned_storage()
+  inline ~small_aligned_storage()
   {
     if (is_allocated)
     {
-      free(allocated);
+      free(allocated.stored_obj);
     }
   }
 
-  T* get()
+  inline T* get()
   {
     if (is_allocated)
     {
@@ -76,7 +91,7 @@ struct small_aligned_storage
     return &local.stored_obj;
   }
 
-  void* get_space()
+  inline void* get_space()
   {
     if (is_allocated)
     {

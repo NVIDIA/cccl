@@ -23,6 +23,7 @@
 #include "cccl/types.h"
 #include "util/context.h"
 #include "util/errors.h"
+#include "util/small_storage.h"
 #include "util/types.h"
 #include <cccl/for.h>
 #include <nvJitLink.h>
@@ -49,13 +50,10 @@ struct reduce_tuning_t
   int vector_load_length;
 };
 
-extern "C" {
 struct for_each_kernel_params
 {
   void* data;
-  char state[16];
 };
-}
 
 inline cudaError_t
 Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction static_kernel, CUstream stream)
@@ -67,36 +65,12 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction 
     return error;
   }
 
-  std::unique_ptr<for_each_kernel_params> for_each_params_scope_cleanup;
-  for_each_kernel_params for_each_params_local;
-  for_each_kernel_params* for_each_params_ptr = &for_each_params_local;
+  small_aligned_storage<for_each_kernel_params> op_params =
+    (op.type == cccl_op_kind_t::stateful)
+      ? small_aligned_storage<for_each_kernel_params>({d_in.state}, op.state, op.size, op.alignment)
+      : small_aligned_storage<for_each_kernel_params>({d_in.state});
 
-  if (op.type == cccl_op_kind_t::stateful)
-  {
-    size_t local_param_space      = sizeof(for_each_kernel_params::state);
-    void* for_each_user_op_buffer = for_each_params_ptr->state;
-    void* for_each_aligned_user_op_buffer =
-      std::align(op.alignment, op.size, for_each_user_op_buffer, local_param_space);
-
-    if (!for_each_aligned_user_op_buffer)
-    {
-      // Allocate enough space for user state, this may overallocate by at most
-      // alignment-sizeof(void*)
-      size_t allocated_param_space = sizeof(void*) + op.alignment + op.size;
-      // TODO: Should we use alloca instead?
-      for_each_params_ptr = (for_each_kernel_params*) malloc(allocated_param_space);
-      // Attach allocated pointer to lifetime of the unique pointer above.
-      for_each_params_scope_cleanup.reset(for_each_params_ptr);
-      for_each_user_op_buffer = for_each_params_ptr->state;
-      for_each_aligned_user_op_buffer =
-        std::align(op.alignment, op.size, for_each_user_op_buffer, allocated_param_space);
-    }
-
-    memcpy(for_each_aligned_user_op_buffer, op.state, op.size);
-  }
-  for_each_params_ptr->data = d_in.state;
-
-  void* args[] = {&num_items, for_each_params_ptr};
+  void* args[] = {&num_items, op_params.get()};
 
   int thread_count = 256;
   int block_count  = (num_items + 511) / 512;
@@ -106,13 +80,6 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction 
   error = CubDebug(cudaPeekAtLastError());
 
   return error;
-}
-
-inline std::string get_input_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<input_iterator_state_t>(&iterator_t));
-  return iterator_t;
 }
 
 inline std::string get_device_for_kernel_name(std::string diff_type)
