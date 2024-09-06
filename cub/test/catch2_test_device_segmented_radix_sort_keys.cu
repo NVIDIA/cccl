@@ -520,8 +520,7 @@ try
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
   auto offsets =
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
-  auto offsets_plus_1 =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{1}), segment_iterator_t{num_items});
+  auto offsets_plus_1 = offsets + 1;
 
   if (is_descending)
   {
