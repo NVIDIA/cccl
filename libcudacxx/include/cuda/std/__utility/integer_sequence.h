@@ -39,7 +39,19 @@ struct __integer_sequence
   using __to_tuple_indices = __tuple_indices<(_Values + _Sp)...>;
 };
 
-#ifndef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#if defined(_LIBCUDACXX_HAS_MAKE_INTEGER_SEQ)
+
+template <size_t _Ep, size_t _Sp>
+using __make_indices_imp =
+  typename __make_integer_seq<__integer_sequence, size_t, _Ep - _Sp>::template __to_tuple_indices<_Sp>;
+
+#elif __has_builtin(__integer_pack) // ^^^ _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ ^^^ / vvv __has_builtin(__integer_pack) vvv
+
+template <size_t _Ep, size_t _Sp>
+using __make_indices_imp =
+  typename __integer_sequence<size_t, __integer_pack(_Ep - _Sp)...>::template __to_tuple_indices<_Sp>;
+
+#else // ^^^ __has_builtin(__integer_pack) ^^^ / vvv !__has_builtin(__integer_pack) vvv
 
 namespace __detail
 {
@@ -170,13 +182,6 @@ struct __parity<7>
 
 } // namespace __detail
 
-#endif // !_LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
-
-#ifdef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
-template <size_t _Ep, size_t _Sp>
-using __make_indices_imp =
-  typename __make_integer_seq<__integer_sequence, size_t, _Ep - _Sp>::template __to_tuple_indices<_Sp>;
-#else
 template <size_t _Ep, size_t _Sp>
 using __make_indices_imp = typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
 
@@ -201,7 +206,12 @@ using index_sequence = integer_sequence<size_t, _Ip...>;
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = __make_integer_seq<integer_sequence, _Tp, _Ep>;
 
-#else // _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#elif __has_builtin(__integer_pack) // ^^^ _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ ^^^ / vvv __has_builtin(__integer_pack) vvv
+
+template <class _Tp, _Tp _Ep>
+using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = integer_sequence<_Tp, __integer_pack(_Ep)...>;
+
+#else // ^^^ __has_builtin(__integer_pack) ^^^ / vvv !__has_builtin(__integer_pack) vvv
 
 template <typename _Tp, _Tp _Np>
 using __make_integer_sequence_unchecked _LIBCUDACXX_NODEBUG_TYPE =
