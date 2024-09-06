@@ -42,6 +42,8 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <cassert>
+
 #include <cooperative_groups.h>
 #include <cooperative_groups/memcpy_async.h>
 
@@ -137,7 +139,7 @@ template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
 #if _CCCL_STD_VER > 2011
-  assert(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)));
+  _LIBCUDACXX_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
 #endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
@@ -145,7 +147,9 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Inte
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
-  assert(::cuda::std::has_single_bit(alignment));
+#if _CCCL_STD_VER > 2011
+  _LIBCUDACXX_ASSERT(::cuda::std::has_single_bit(alignment), "");
+#endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
@@ -214,23 +218,20 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 constexpr int bulk_copy_alignment     = 128;
 constexpr int bulk_copy_size_multiple = 16;
 
-_CCCL_DEVICE _CCCL_FORCEINLINE bool elect_one()
+_CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
 {
-#if CUB_PTX_ARCH >= 900
-  const ::cuda::std::uint32_t membermask = ~0;
-  ::cuda::std::uint32_t is_elected;
-  asm volatile(
-    "{\n\t .reg .pred P_OUT; \n\t"
-    "elect.sync _|P_OUT, %1;\n\t"
-    "selp.b32 %0, 1, 0, P_OUT; \n"
-    "}"
-    : "=r"(is_elected)
-    : "r"(membermask)
-    :);
-  return threadIdx.x < 32 && static_cast<bool>(is_elected);
-#else // CUB_PTX_ARCH >= 900
-  return false;
-#endif // CUB_PTX_ARCH >= 900
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (const ::cuda::std::uint32_t membermask = ~0; ::cuda::std::uint32_t is_elected; asm volatile(
+       "{\n\t .reg .pred P_OUT; \n\t"
+       "elect.sync _|P_OUT, %1;\n\t"
+       "selp.b32 %0, 1, 0, P_OUT; \n"
+       "}"
+       : "=r"(is_elected)
+       : "r"(membermask)
+       :);
+     return threadIdx.x < 32 && static_cast<bool>(is_elected);),
+    (return false;));
 }
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -247,22 +248,21 @@ _CCCL_DEVICE void bulk_copy_tile(
 {
   static_assert(alignof(T) <= bulk_copy_alignment, "");
 
-#  if CUB_PTX_ARCH >= 900
-  const char* src = aligned_ptr.ptr + global_offset * sizeof(T);
-  char* dst       = smem + smem_offset;
-  assert(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0);
-  assert(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0);
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (const char* src = aligned_ptr.ptr + global_offset * sizeof(T); char* dst = smem + smem_offset;
+     _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
+     _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
 
-  // TODO(bgruber): we could precompute bytes_to_copy on the host
-  const int bytes_to_copy = round_up_to_po2_multiple(
-    aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
+     // TODO(bgruber): we could precompute bytes_to_copy on the host
+     const int bytes_to_copy = round_up_to_po2_multiple(
+       aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
 
-  ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
-  total_bytes_bulk_copied += bytes_to_copy;
+     ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
+     total_bytes_bulk_copied += bytes_to_copy;
 
-  // add bulk_copy_alignment to make space for the next tile's head padding
-  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
-#  endif // CUB_PTX_ARCH >= 900
+     // add bulk_copy_alignment to make space for the next tile's head padding
+     smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;));
 }
 
 template <typename Offset, typename T>
@@ -276,8 +276,8 @@ _CCCL_DEVICE void bulk_copy_tile_fallback(
 {
   const T* src = aligned_ptr.ptr_to_elements() + global_offset;
   T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
-  assert(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0);
-  assert(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0);
+  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
+  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
   const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
   cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);
@@ -305,98 +305,91 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-#  if CUB_PTX_ARCH >= 900
-  __shared__ uint64_t bar;
-  extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+      __shared__ uint64_t bar; extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
 
-  namespace ptx = ::cuda::ptx;
+      namespace ptx = ::cuda::ptx;
 
-  constexpr int block_dim = BulkCopyPolicy::BLOCK_THREADS;
-  const int tile_stride   = block_dim * num_elem_per_thread;
-  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+      constexpr int block_dim = BulkCopyPolicy::BLOCK_THREADS;
+      const int tile_stride   = block_dim * num_elem_per_thread;
+      const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
+      const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
 
-  const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  if (inner_blocks)
-  {
-    // use one thread to setup the entire bulk copy
-    if (elect_one())
-    {
-      ptx::mbarrier_init(&bar, 1);
-      ptx::fence_proxy_async(ptx::space_shared);
+      const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
+      if (inner_blocks) {
+        // use one thread to setup the entire bulk copy
+        if (elect_one())
+        {
+          ptx::mbarrier_init(&bar, 1);
+          ptx::fence_proxy_async(ptx::space_shared);
 
-      int smem_offset                    = 0;
-      ::cuda::std::uint32_t total_copied = 0;
+          int smem_offset                    = 0;
+          ::cuda::std::uint32_t total_copied = 0;
 
-#    if _CCCL_STD_VER >= 2017
-      // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-      (..., bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
-#    else // _CCCL_STD_VER >= 2017
-      // Order of evaluation is also left-to-right
-      int dummy[] = {(bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)...,
-                     0};
-      (void) dummy;
-#    endif // _CCCL_STD_VER >= 2017
+#  if _CCCL_STD_VER >= 2017
+          // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
+          (..., bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
+#  else // _CCCL_STD_VER >= 2017
+        // Order of evaluation is also left-to-right
+          int dummy[] = {
+            (bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
+          (void) dummy;
+#  endif // _CCCL_STD_VER >= 2017
 
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
-    }
+          // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+          ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+        }
 
-    // all threads wait for bulk copy
-    __syncthreads();
-    while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-      ;
-  }
-  else
-  {
-    // use all threads to schedule an async_memcpy
-    int smem_offset = 0;
+        // all threads wait for bulk copy
+        __syncthreads();
+        while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+          ;
+      } else {
+        // use all threads to schedule an async_memcpy
+        int smem_offset = 0;
 
-#    if _CCCL_STD_VER >= 2017
-    // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-    (..., bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs));
-#    else // _CCCL_STD_VER >= 2017
-    // Order of evaluation is also left-to-right
-    int dummy[] = {(bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs), 0)..., 0};
-    (void) dummy;
-#    endif // _CCCL_STD_VER >= 2017
+#  if _CCCL_STD_VER >= 2017
+        // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
+        (..., bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs));
+#  else // _CCCL_STD_VER >= 2017
+        // Order of evaluation is also left-to-right
+        int dummy[] = {(bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs), 0)...,
+                       0};
+        (void) dummy;
+#  endif // _CCCL_STD_VER >= 2017
 
-    cooperative_groups::wait(cooperative_groups::this_thread_block());
-  }
+        cooperative_groups::wait(cooperative_groups::this_thread_block());
+      }
 
-  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
-  out += offset;
+      // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+      out += offset;
 
   // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
   // TODO(bgruber): use a polymorphic lambda in C++14
-#    define UBLKCP_AGENT(full_tile)                                                                                 \
-      _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
-                               benchmark) */                                                                        \
-        for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
-      {                                                                                                             \
-        const int idx = j * block_dim + threadIdx.x;                                                                \
-        if (full_tile || idx < tile_size)                                                                           \
-        {                                                                                                           \
-          int smem_offset = 0;                                                                                      \
-          /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
-          out[idx] = poor_apply(                                                                                    \
-            [&](const InTs&... values) {                                                                            \
-              return f(values...);                                                                                  \
-            },                                                                                                      \
-            ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
-        }                                                                                                           \
-      }
+#  define UBLKCP_AGENT(full_tile)                                                                                 \
+    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
+                             benchmark) */                                                                        \
+      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
+    {                                                                                                             \
+      const int idx = j * block_dim + threadIdx.x;                                                                \
+      if (full_tile || idx < tile_size)                                                                           \
+      {                                                                                                           \
+        int smem_offset = 0;                                                                                      \
+        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
+        out[idx] = poor_apply(                                                                                    \
+          [&](const InTs&... values) {                                                                            \
+            return f(values...);                                                                                  \
+          },                                                                                                      \
+          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
+      }                                                                                                           \
+    }
 
-  if (tile_stride == tile_size)
-  {
-    UBLKCP_AGENT(true);
-  }
-  else
-  {
-    UBLKCP_AGENT(false);
-  }
+      if (tile_stride == tile_size) { UBLKCP_AGENT(true); } else { UBLKCP_AGENT(false); }
 
-#    undef UBLKCP_AGENT
-#  endif // CUB_PTX_ARCH >= 900
+#  undef UBLKCP_AGENT
+      ));
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -604,6 +597,7 @@ struct PoorExpected
   }
 };
 
+// TODO(bgruber): this is very similar to thrust::cuda_cub::core::get_max_shared_memory_per_block. We should unify this.
 _CCCL_HOST_DEVICE inline PoorExpected<int> get_max_shared_memory()
 {
   //  gevtushenko promised me that I can assume that the stream passed to the CUB API entry point (where the kernels
@@ -624,6 +618,13 @@ _CCCL_HOST_DEVICE inline PoorExpected<int> get_max_shared_memory()
 
   return max_smem;
 }
+
+struct elem_counts
+{
+  int elem_per_thread;
+  int tile_size;
+  int smem_size;
+};
 
 template <bool RequiresStableAddress,
           typename Offset,
@@ -656,7 +657,7 @@ struct dispatch_t<RequiresStableAddress,
   TransformOp op;
   cudaStream_t stream;
 
-#define KERNEL_PTR                                  \
+#define CUB_DETAIL_TRANSFORM_KERNEL_PTR             \
   &transform_kernel<typename PolicyHub::max_policy, \
                     Offset,                         \
                     TransformOp,                    \
@@ -665,20 +666,14 @@ struct dispatch_t<RequiresStableAddress,
 
   static constexpr int loaded_bytes_per_iter = loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
 
-  struct elem_counts
-  {
-    int elem_per_thread;
-    int tile_size;
-    int smem_size;
-  };
-
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel()
     -> PoorExpected<
-      ::cuda::std::tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(KERNEL_PTR), int>>
+      ::cuda::std::
+        tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::BLOCK_THREADS;
@@ -704,8 +699,10 @@ struct dispatch_t<RequiresStableAddress,
         const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
         if (smem_size > *max_smem)
         {
+#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           // assert should be prevented by smem check in policy
           assert(last_counts.elem_per_thread > 0 && "MIN_ITEMS_PER_THREAD exceeds available shared memory");
+#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           return last_counts;
         }
 
@@ -715,7 +712,8 @@ struct dispatch_t<RequiresStableAddress,
         }
 
         int max_occupancy = 0;
-        const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, KERNEL_PTR, block_dim, smem_size));
+        const auto error =
+          CubDebug(MaxSmOccupancy(max_occupancy, CUB_DETAIL_TRANSFORM_KERNEL_PTR, block_dim, smem_size));
         if (error != cudaSuccess)
         {
           return error;
@@ -731,26 +729,32 @@ struct dispatch_t<RequiresStableAddress,
       }
       return last_counts;
     };
-    // this static variable exists for each template instantiation of the surrounding function and class, on which the
-    // chosen element count solely depends (assuming max SMEM is constant during a program execution)
-    // TODO(bgruber): we cannot cache the determined element count in device code
-#  ifndef __CUDA_ARCH__
-    static
-#  endif // __CUDA_ARCH__
-      auto config = determine_element_counts();
+    PoorExpected<elem_counts> config = [&]() {
+      NV_IF_TARGET(
+        NV_IS_HOST,
+        (
+          // this static variable exists for each template instantiation of the surrounding function and class, on which
+          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
+          static auto cached_config = determine_element_counts(); return cached_config;),
+        (
+          // we cannot cache the determined element count in device code
+          return determine_element_counts();));
+    }();
     if (!config)
     {
       return config.error;
     }
+#  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
     assert(config->elem_per_thread > 0);
     assert(config->tile_size > 0);
     assert(config->tile_size % bulk_copy_alignment == 0);
     assert((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0)); // logical xor
+#  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
     return ::cuda::std::make_tuple(
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, config->smem_size, stream),
-      KERNEL_PTR,
+      CUB_DETAIL_TRANSFORM_KERNEL_PTR,
       config->elem_per_thread);
   }
 
@@ -829,7 +833,7 @@ struct dispatch_t<RequiresStableAddress,
     return CubDebug(PolicyHub::max_policy::Invoke(ptx_version, dispatch));
   }
 
-#undef KERNEL_PTR
+#undef CUB_DETAIL_TRANSFORM_KERNEL_PTR
 };
 } // namespace transform
 } // namespace detail
