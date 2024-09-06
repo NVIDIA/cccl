@@ -140,7 +140,7 @@ namespace detail
 {
 // The maximum amount of static shared memory available per thread block
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
-static constexpr std::size_t max_smem_per_block = 48 * 1024;
+static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 } // namespace detail
 
 template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
