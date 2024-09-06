@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_REF_H
-#define __CUDAX_ASYNC_DETAIL_RCVR_REF_H
+#ifndef __CUDAX_ASYNC_DETAIL_RCVR_REF
+#define __CUDAX_ASYNC_DETAIL_RCVR_REF
 
 #include <cuda/std/detail/__config>
 

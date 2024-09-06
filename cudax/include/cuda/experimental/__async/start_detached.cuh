@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_START_DETACHED_H
-#define __CUDAX_ASYNC_DETAIL_START_DETACHED_H
+#ifndef __CUDAX_ASYNC_DETAIL_START_DETACHED
+#define __CUDAX_ASYNC_DETAIL_START_DETACHED
 
 #include <cuda/std/detail/__config>
 
@@ -32,10 +32,10 @@ namespace cuda::experimental::__async
 {
 struct start_detached_t
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
   struct __opstate_base_t : __immovable
   {};
 

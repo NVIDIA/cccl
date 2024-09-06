@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_EXCEPTION_H
-#define __CUDAX_ASYNC_DETAIL_EXCEPTION_H
+#ifndef __CUDAX_ASYNC_DETAIL_EXCEPTION
+#define __CUDAX_ASYNC_DETAIL_EXCEPTION
 
 #include <cuda/std/detail/__config>
 

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THEN_H
-#define __CUDAX_ASYNC_DETAIL_THEN_H
+#ifndef __CUDAX_ASYNC_DETAIL_THEN
+#define __CUDAX_ASYNC_DETAIL_THEN
 
 #include <cuda/std/detail/__config>
 
@@ -92,10 +92,10 @@ using __completion = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_calla
 template <__disposition_t _Disposition>
 struct __upon_t
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
   using _UponTag = decltype(__detail::__upon_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 

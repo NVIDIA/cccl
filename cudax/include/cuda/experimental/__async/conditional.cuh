@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL_H
-#define __CUDAX_ASYNC_DETAIL_CONDITIONAL_H
+#ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL
+#define __CUDAX_ASYNC_DETAIL_CONDITIONAL
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
 #include <cuda/experimental/__async/config.cuh>
@@ -19,6 +19,18 @@
 #include <cuda/experimental/__async/variant.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
+
+//! \file conditional.cuh
+//! This file defines the \c conditional sender. \c conditional is a sender that
+//! selects between two continuations based on the result of a predecessor. It
+//! accepts a predecessor, a predicate, and two continuations. It passes the
+//! result of the predecessor to the predicate. If the predicate returns \c true,
+//! the result is passed to the first continuation; otherwise, it is passed to
+//! the second continuation.
+//!
+//! By "continuation", we mean a so-called sender adaptor closure: a unary function
+//! that takes a sender and returns a new sender. The expression `then(f)` is an
+//! example of a continuation.
 
 namespace cuda::experimental::__async
 {
@@ -218,8 +230,7 @@ _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __cond_t::__closure<_Pred, _Then, _E
     {}, static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_), static_cast<_Sndr&&>(__sndr)};
 }
 
-using conditional_t = __cond_t;
-_CCCL_GLOBAL_CONSTANT conditional_t conditional{};
+_CCCL_GLOBAL_CONSTANT __cond_t conditional{};
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/epilogue.cuh>

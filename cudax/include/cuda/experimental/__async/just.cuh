@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_JUST_H
-#define __CUDAX_ASYNC_DETAIL_JUST_H
+#ifndef __CUDAX_ASYNC_DETAIL_JUST
+#define __CUDAX_ASYNC_DETAIL_JUST
 
 #include <cuda/std/detail/__config>
 
@@ -52,10 +52,10 @@ extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct __just
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
 
   using _JustTag = decltype(__detail::__just_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_LAZY_H
-#define __CUDAX_ASYNC_DETAIL_LAZY_H
+#ifndef __CUDAX_ASYNC_DETAIL_LAZY
+#define __CUDAX_ASYNC_DETAIL_LAZY
 
 #include <cuda/std/detail/__config>
 

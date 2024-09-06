@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_JUST_FROM_H
-#define __CUDAX_ASYNC_DETAIL_JUST_FROM_H
+#ifndef __CUDAX_ASYNC_DETAIL_JUST_FROM
+#define __CUDAX_ASYNC_DETAIL_JUST_FROM
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
 #include <cuda/experimental/__async/config.cuh>
@@ -56,17 +58,17 @@ struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 template <__disposition_t _Disposition>
 struct __just_from
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
 
   using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  using __diag_t = __mif<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
-                         _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
-                         _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
+  using __diag_t = _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
+                                   _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
+                                   _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
   template <class... _Ts>
   using __error_t =
@@ -76,7 +78,8 @@ private:
   {
     template <class... _Ts>
     auto operator()(_Ts&&... __ts) const noexcept
-      -> __mif<__is_valid_signature<_SetTag(_Ts...)>, completion_signatures<_SetTag(_Ts...)>, __error_t<_Ts...>>;
+      -> _CUDA_VSTD::
+        _If<__is_valid_signature<_SetTag(_Ts...)>, completion_signatures<_SetTag(_Ts...)>, __error_t<_Ts...>>;
   };
 
   template <class _Rcvr = receiver_archetype>

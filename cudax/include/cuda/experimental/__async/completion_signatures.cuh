@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_COMPLETION_SIGNATURES_H
-#define __CUDAX_ASYNC_DETAIL_COMPLETION_SIGNATURES_H
+#ifndef __CUDAX_ASYNC_DETAIL_COMPLETION_SIGNATURES
+#define __CUDAX_ASYNC_DETAIL_COMPLETION_SIGNATURES
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/exception.cuh>
@@ -272,7 +274,7 @@ _CCCL_INLINE_VAR constexpr bool sends_stopped = //
 using __eptr_completion = completion_signatures<set_error_t(::std::exception_ptr)>;
 
 template <bool _NoExcept>
-using __eptr_completion_if = __mif<_NoExcept, completion_signatures<>, __eptr_completion>;
+using __eptr_completion_if = _CUDA_VSTD::_If<_NoExcept, completion_signatures<>, __eptr_completion>;
 
 template <class>
 _CCCL_INLINE_VAR constexpr bool __is_completion_signatures = false;
@@ -325,7 +327,7 @@ auto completions_of(_Sndr&&,
 
 template <bool _PotentiallyThrowing>
 auto eptr_completion_if()
-  -> __mif<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
+  -> _CUDA_VSTD::_If<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
 } // namespace meta
 } // namespace cuda::experimental::__async
 

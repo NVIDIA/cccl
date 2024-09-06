@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_SYNC_WAIT_H
-#define __CUDAX_ASYNC_DETAIL_SYNC_WAIT_H
+#ifndef __CUDAX_ASYNC_DETAIL_SYNC_WAIT
+#define __CUDAX_ASYNC_DETAIL_SYNC_WAIT
 
 #include <cuda/std/detail/__config>
 
@@ -44,10 +44,10 @@ namespace cuda::experimental::__async
 /// sender.
 struct sync_wait_t
 {
-#  ifndef __CUDACC__
+#  if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#  endif
+#  endif // _CCCL_CUDA_COMPILER_NVCC
   struct __env_t
   {
     run_loop* __loop_;

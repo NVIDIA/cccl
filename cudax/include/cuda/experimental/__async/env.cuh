@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_ENV_H
-#define __CUDAX_ASYNC_DETAIL_ENV_H
+#ifndef __CUDAX_ASYNC_DETAIL_ENV
+#define __CUDAX_ASYNC_DETAIL_ENV
 
 #include <cuda/std/detail/__config>
 

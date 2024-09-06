@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_LET_VALUE_H
-#define __CUDAX_ASYNC_DETAIL_LET_VALUE_H
+#ifndef __CUDAX_ASYNC_DETAIL_LET_VALUE
+#define __CUDAX_ASYNC_DETAIL_LET_VALUE
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
@@ -56,10 +58,10 @@ extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct __let
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
   using _LetTag = decltype(__detail::__let_tag<_Disposition>());
   using _SetTag = decltype(__detail::__set_tag<_Disposition>());
 
@@ -101,7 +103,7 @@ private:
 
     template <class _Ty>
     using __ensure_sender = //
-      __mif<__is_sender<_Ty> || __is_error<_Ty>, _Ty, __error_non_sender_return>;
+      _CUDA_VSTD::_If<__is_sender<_Ty> || __is_error<_Ty>, _Ty, __error_non_sender_return>;
 
     template <class... _As>
     using __error_not_callable_with = //
@@ -156,8 +158,9 @@ private:
     // Don't try to compute the type of the variant of operation states
     // if the computation of the completion signatures failed.
     using __deferred_opstate_fn = __mbind_back<__mtry_quote<__opstate2_t>, _CvSndr, _Fn, _Rcvr>;
-    using __opstate_variant_fn  = __mif<__is_error<completion_signatures>, __malways<__empty>, __deferred_opstate_fn>;
-    using __opstate_variant_t   = __mtry_invoke<__opstate_variant_fn>;
+    using __opstate_variant_fn =
+      _CUDA_VSTD::_If<__is_error<completion_signatures>, __malways<__empty>, __deferred_opstate_fn>;
+    using __opstate_variant_t = __mtry_invoke<__opstate_variant_fn>;
 
     _Rcvr __rcvr_;
     _Fn __fn_;

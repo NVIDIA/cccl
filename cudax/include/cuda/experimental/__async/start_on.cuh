@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_START_ON_H
-#define __CUDAX_ASYNC_DETAIL_START_ON_H
+#ifndef __CUDAX_ASYNC_DETAIL_START_ON
+#define __CUDAX_ASYNC_DETAIL_START_ON
 
 #include <cuda/std/detail/__config>
 
@@ -46,10 +46,10 @@ struct __sch_env_t
 
 _CCCL_GLOBAL_CONSTANT struct start_on_t
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
 
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct __opstate_t

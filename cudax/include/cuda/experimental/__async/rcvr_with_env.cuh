@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV_H
-#define __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV_H
+#ifndef __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
+#define __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
 
 #include <cuda/std/detail/__config>
 

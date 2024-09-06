@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_BASIC_SENDER_H
-#define __CUDAX_ASYNC_DETAIL_BASIC_SENDER_H
+#ifndef __CUDAX_ASYNC_DETAIL_BASIC_SENDER
+#define __CUDAX_ASYNC_DETAIL_BASIC_SENDER
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
 #include <cuda/experimental/__async/config.cuh>
@@ -77,28 +79,28 @@ struct basic_receiver
 {
   using receiver_concept = __async::receiver_t;
   using __rcvr_t         = typename _Data::receiver_tag;
-  __state<_Data, _Rcvr>& state_;
+  __state<_Data, _Rcvr>& __state_;
 
   template <class... _Args>
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_Args&&... __args) noexcept
   {
-    __rcvr_t::set_value(state_.__data_, state_.__receiver_, (_Args&&) __args...);
+    __rcvr_t::set_value(__state_.__data_, __state_.__receiver_, (_Args&&) __args...);
   }
 
   template <class _Error>
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
   {
-    __rcvr_t::set_error(state_.__data_, state_.__receiver_, (_Error&&) __error);
+    __rcvr_t::set_error(__state_.__data_, __state_.__receiver_, (_Error&&) __error);
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_stopped() noexcept
   {
-    __rcvr_t::set_stopped(state_.__data_, state_.__receiver_);
+    __rcvr_t::set_stopped(__state_.__data_, __state_.__receiver_);
   }
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE decltype(auto) get_env() const noexcept
   {
-    return __rcvr_t::get_env(state_.__data_, state_.__receiver_);
+    return __rcvr_t::get_env(__state_.__data_, __state_.__receiver_);
   }
 };
 
@@ -155,22 +157,24 @@ void set_current_exception_if([[maybe_unused]] _Rcvr& __rcvr) noexcept
 // A generic type that holds the data for an async operation, and
 // that provides a `start` method for enqueuing the work.
 template <class _Sndr, class _Data, class _Rcvr>
-struct basic_opstate
+struct __basic_opstate
 {
   using __rcvr_t        = basic_receiver<_Data, _Rcvr>;
   using __completions_t = completion_signatures_of_t<_Sndr, __rcvr_t>;
   using __traits_t      = __mk_completions<__has_stopped<__completions_t>, _Data, _Rcvr>;
 
-  using completion_signatures =
+  using completion_signatures = //
     transform_completion_signatures<__completions_t,
-                                    __async::completion_signatures<>, // TODO
+                                    // TODO: add set_error_t(exception_ptr) if constructing
+                                    // the state or connecting the sender is potentially throwing.
+                                    __async::completion_signatures<>,
                                     __traits_t::template __set_value_t,
                                     __traits_t::template __set_error_t,
                                     typename __traits_t::__set_stopped_t>;
 
-  _CCCL_HOST_DEVICE basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
-      : state_{static_cast<_Data&&>(__data), static_cast<_Rcvr&&>(__rcvr)}
-      , __op_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{state_}))
+  _CCCL_HOST_DEVICE __basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
+      : __state_{static_cast<_Data&&>(__data), static_cast<_Rcvr&&>(__rcvr)}
+      , __op_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{__state_}))
   {}
 
   _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void start() noexcept
@@ -178,17 +182,19 @@ struct basic_opstate
     __async::start(__op_);
   }
 
-  __state<_Data, _Rcvr> state_;
+  __state<_Data, _Rcvr> __state_;
   __async::connect_result_t<_Sndr, __rcvr_t> __op_;
 };
 
 template <class _Sndr, class _Rcvr>
 _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
 {
-  auto [tag, __data, __child] = static_cast<_Sndr&&>(__sndr);
-  using data_t                = decltype(__data);
-  using child_t               = decltype(__child);
-  return basic_opstate(static_cast<child_t&&>(__child), static_cast<data_t&&>(__data), static_cast<_Rcvr&&>(__rcvr));
+  auto [__tag, __data, __child] = static_cast<_Sndr&&>(__sndr);
+  using __data_t                = decltype(__data);
+  using __child_t               = decltype(__child);
+  (void) __tag;
+  return __basic_opstate(
+    static_cast<__child_t&&>(__child), static_cast<__data_t&&>(__data), static_cast<_Rcvr&&>(__rcvr));
 }
 
 template <class _Data, class... _Sndrs>
@@ -200,7 +206,7 @@ __get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decl
 
 template <class _Data, class... _Sndrs>
 _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
-__get_attrs(long, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decltype(__async::get_env(__sndrs...))
+__get_attrs(long, const _Data&, const _Sndrs&... __sndrs) noexcept -> decltype(__async::get_env(__sndrs...))
 {
   return __async::get_env(__sndrs...);
 }

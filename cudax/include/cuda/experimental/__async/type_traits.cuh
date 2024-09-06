@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_TYPE_TRAITS_H
-#define __CUDAX_ASYNC_DETAIL_TYPE_TRAITS_H
+#ifndef __CUDAX_ASYNC_DETAIL_TYPE_TRAITS
+#define __CUDAX_ASYNC_DETAIL_TYPE_TRAITS
 
 #include <cuda/std/detail/__config>
 

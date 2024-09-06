@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_WRITE_ENV_H
-#define __CUDAX_ASYNC_DETAIL_WRITE_ENV_H
+#ifndef __CUDAX_ASYNC_DETAIL_WRITE_ENV
+#define __CUDAX_ASYNC_DETAIL_WRITE_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
@@ -35,10 +37,10 @@ namespace cuda::experimental::__async
 {
 struct write_env_t
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
   template <class _Rcvr, class _Sndr, class _Env>
   struct __opstate_t
   {

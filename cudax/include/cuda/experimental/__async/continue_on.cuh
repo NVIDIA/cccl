@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONTINUE_ON_H
-#define __CUDAX_ASYNC_DETAIL_CONTINUE_ON_H
+#ifndef __CUDAX_ASYNC_DETAIL_CONTINUE_ON
+#define __CUDAX_ASYNC_DETAIL_CONTINUE_ON
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
@@ -36,10 +38,10 @@ namespace cuda::experimental::__async
 {
 struct continue_on_t
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
   template <class... _As>
   using __set_value_tuple_t = __tuple<set_value_t, __decay_t<_As>...>;
 
@@ -52,15 +54,15 @@ private:
 
   template <class... _Ts>
   using __set_value_completion =
-    __mif<__nothrow_decay_copyable<_Ts...>,
-          completion_signatures<set_value_t(__decay_t<_Ts>...)>,
-          completion_signatures<set_value_t(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>>;
+    _CUDA_VSTD::_If<__nothrow_decay_copyable<_Ts...>,
+                    completion_signatures<set_value_t(__decay_t<_Ts>...)>,
+                    completion_signatures<set_value_t(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>>;
 
   template <class _Error>
   using __set_error_completion =
-    __mif<__nothrow_decay_copyable<_Error>,
-          completion_signatures<set_error_t(__decay_t<_Error>)>,
-          completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
+    _CUDA_VSTD::_If<__nothrow_decay_copyable<_Error>,
+                    completion_signatures<set_error_t(__decay_t<_Error>)>,
+                    completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
 
   template <class _Rcvr, class _Result>
   struct __rcvr_t

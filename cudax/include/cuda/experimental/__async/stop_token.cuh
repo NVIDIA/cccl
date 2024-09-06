@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_STOP_TOKEN_H
-#define __CUDAX_ASYNC_DETAIL_STOP_TOKEN_H
+#ifndef __CUDAX_ASYNC_DETAIL_STOP_TOKEN
+#define __CUDAX_ASYNC_DETAIL_STOP_TOKEN
 
 #include <cuda/std/detail/__config>
 

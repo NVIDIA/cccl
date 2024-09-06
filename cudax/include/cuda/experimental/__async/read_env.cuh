@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_READ_ENV_H
-#define __CUDAX_ASYNC_DETAIL_READ_ENV_H
+#ifndef __CUDAX_ASYNC_DETAIL_READ_ENV
+#define __CUDAX_ASYNC_DETAIL_READ_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
 #include <cuda/experimental/__async/config.cuh>
@@ -37,10 +39,10 @@ struct THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY;
 
 struct read_env_t
 {
-#ifndef __CUDACC__
+#if !defined(_CCCL_CUDA_COMPILER_NVCC)
 
 private:
-#endif
+#endif // _CCCL_CUDA_COMPILER_NVCC
   template <class _Query, class _Env>
   using __error_env_lacks_query = //
     _ERROR<_WHERE(_IN_ALGORITHM, read_env_t),
@@ -51,10 +53,10 @@ private:
   struct __completions_fn
   {
     template <class _Query, class _Env>
-    using __f =
-      __mif<__nothrow_callable<_Query, _Env>,
-            completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>,
-            completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>>;
+    using __f = _CUDA_VSTD::_If<
+      __nothrow_callable<_Query, _Env>,
+      completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>,
+      completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>>;
   };
 
   template <class _Rcvr, class _Query>
@@ -63,7 +65,8 @@ private:
     using operation_state_concept = operation_state_t;
     using completion_signatures   = //
       __minvoke<
-        __mif<__callable<_Query, env_of_t<_Rcvr>>, __completions_fn, __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
+        _CUDA_VSTD::
+          _If<__callable<_Query, env_of_t<_Rcvr>>, __completions_fn, __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
         _Query,
         env_of_t<_Rcvr>>;
 

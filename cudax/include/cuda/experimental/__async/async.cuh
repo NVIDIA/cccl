@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_ASYNC_H
-#define __CUDAX_ASYNC_DETAIL_ASYNC_H
+#ifndef __CUDAX_ASYNC_DETAIL_ASYNC
+#define __CUDAX_ASYNC_DETAIL_ASYNC
 
 #include <cuda/std/detail/__config>
 
@@ -45,4 +45,4 @@
 #include <cuda/experimental/__async/when_all.cuh>
 #include <cuda/experimental/__async/write_env.cuh>
 
-#endif
+#endif // __CUDAX_ASYNC_DETAIL_ASYNC
