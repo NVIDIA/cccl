@@ -279,7 +279,7 @@ using __type_index _LIBCUDACXX_NODEBUG_TYPE = _Ts...[_Ip::value];
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back
 // implementation instead.
-#  elif __has_builtin(__type_pack_element) && (!defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_CUDACC_VER_MAJOR > 11)
+#  elif __has_builtin(__type_pack_element) && !defined(_CCCL_CUDACC_BELOW_12_0)
 
 namespace __detail
 {
