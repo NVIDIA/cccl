@@ -136,13 +136,21 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 #    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING     CUB_PREFER_CONFLICT_OVER_PADDING(0)
 #  endif
 
+namespace detail
+{
+// The maximum amount of static shared memory available per thread block
+// Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
+static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
+} // namespace detail
+
 template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
 struct RegBoundScaling
 {
   enum
   {
     ITEMS_PER_THREAD = CUB_MAX(1, NOMINAL_4B_ITEMS_PER_THREAD * 4 / CUB_MAX(4, sizeof(T))),
-    BLOCK_THREADS = CUB_MIN(NOMINAL_4B_BLOCK_THREADS, (((1024 * 48) / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
+    BLOCK_THREADS    = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
+                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
   };
 };
 
@@ -153,7 +161,8 @@ struct MemBoundScaling
   {
     ITEMS_PER_THREAD =
       CUB_MAX(1, CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(T), NOMINAL_4B_ITEMS_PER_THREAD * 2)),
-    BLOCK_THREADS = CUB_MIN(NOMINAL_4B_BLOCK_THREADS, (((1024 * 48) / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
+    BLOCK_THREADS = CUB_MIN(NOMINAL_4B_BLOCK_THREADS,
+                            ((cub::detail::max_smem_per_block / (sizeof(T) * ITEMS_PER_THREAD)) + 31) / 32 * 32),
   };
 };
 
