@@ -63,25 +63,25 @@ namespace __detail
 // \brief A helper for determining the arity of a template.
 // (This is unused for now, I just want to see if this passes CI.)
 template <template <class> class _Fn>
-constexpr int __template_arity_aux()
+_CCCL_HOST_DEVICE constexpr int __template_arity_aux()
 {
   return 1;
 }
 
 template <template <class, class> class _Fn>
-constexpr int __template_arity_aux()
+_CCCL_HOST_DEVICE constexpr int __template_arity_aux()
 {
   return 2;
 }
 
 template <template <class...> class _Fn, int _Arity = __template_arity_aux<_Fn>()>
-constexpr int __template_arity(int)
+_CCCL_HOST_DEVICE constexpr int __template_arity(int)
 {
   return _Arity;
 }
 
 template <template <class...> class _Fn>
-constexpr int __template_arity(long)
+_CCCL_HOST_DEVICE constexpr int __template_arity(long)
 {
   return -1;
 }
@@ -316,7 +316,7 @@ template <size_t _Ip, size_t... _Is>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn<_Ip, index_sequence<_Is...>>
 {
   template <class _Up>
-  static _Up __call_(__void_ptr<_Is>..., _Up*, ...);
+  _CCCL_HOST_DEVICE static _Up __call_(__void_ptr<_Is>..., _Up*, ...);
 
   template <class... _Ts>
   using __call _LIBCUDACXX_NODEBUG_TYPE = __type<decltype(__type_index_fn::__call_(__type_ptr<_Ts>()...))>;
@@ -374,7 +374,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
             class... _Gs,
             class... _Hs,
             class... _Tail>
-  static auto __fn(
+  _CCCL_HOST_DEVICE static auto __fn(
     __type_list_ptr<_Ts...>, // state
     __type_list_ptr<_As...>, // 1
     __type_list_ptr<_Bs...>, // 2
@@ -401,7 +401,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<0>
 {
   template <class... _Ts>
-  static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
+  _CCCL_HOST_DEVICE static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
 };
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
@@ -710,7 +710,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_value_list : __type_list<integral_co
 namespace __detail
 {
 template <class _Ty, _Ty _Start, _Ty _Stride, _Ty... _Is>
-auto __type_iota_fn(integer_sequence<_Ty, _Is...>*) -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
+_CCCL_HOST_DEVICE auto
+__type_iota_fn(integer_sequence<_Ty, _Is...>*) -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
 } // namespace __detail
 
 //! \brief Return an \c __type_value_list of size \c _Size starting at \c _Start
