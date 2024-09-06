@@ -480,9 +480,9 @@ constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> int
 {
-  // 128 bytes of padding for each input tile (before + after)
-  // TODO(bgruber): use a fold expression in C++17
-  return tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
+  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_alignment) /* bar */
+       // 128 bytes of padding for each input tile (handles before + after)
+       + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
