@@ -36,7 +36,7 @@ static void nstream(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // the data that is computed for each iteration and results in an unstable workload. Therefore, we added an axis to
   // choose a different output array. Pass `-a OverwriteInput=0` to the benchmark to disable overwriting the input.
   thrust::device_vector<T> d;
-  if (overwrite)
+  if (!overwrite)
   {
     d.resize(n);
   }
