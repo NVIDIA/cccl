@@ -238,12 +238,12 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   AgentHistogramT agent(
     temp_storage,
     d_samples,
-    num_output_bins_wrapper.__elems_,
-    num_privatized_bins_wrapper.__elems_,
-    d_output_histograms_wrapper.__elems_,
-    d_privatized_histograms_wrapper.__elems_,
-    output_decode_op_wrapper.__elems_,
-    privatized_decode_op_wrapper.__elems_);
+    num_output_bins_wrapper.data(),
+    num_privatized_bins_wrapper.data(),
+    d_output_histograms_wrapper.data(),
+    d_privatized_histograms_wrapper.data(),
+    output_decode_op_wrapper.data(),
+    privatized_decode_op_wrapper.data());
 
   // Initialize counters
   agent.InitBinCounters();
