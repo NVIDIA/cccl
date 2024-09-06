@@ -156,7 +156,7 @@ template <class _Fn1, class _Fn2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_compose
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn1, __type_call<_Fn2, _Ts...>>;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_Fn1, __type_call<_Fn2, _Ts...>>;
 };
 
 //! \brief A meta-callable that binds the front arguments to a meta-callable
@@ -218,7 +218,7 @@ using __type_push_back _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __type_quot
 //! \brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
 using __type_push_front _LIBCUDACXX_NODEBUG_TYPE =
-  __type_call<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
+  __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
 
 namespace __detail
 {
@@ -309,18 +309,21 @@ using __void_ptr _LIBCUDACXX_NODEBUG_TYPE = void*;
 template <class _Ty>
 using __type_ptr _LIBCUDACXX_NODEBUG_TYPE = __type_identity<_Ty>*;
 
-template <size_t _Ip, class _Ty = make_index_sequence<_Ip>>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn;
+template <class _Is>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn_;
 
-template <size_t _Ip, size_t... _Is>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn<_Ip, index_sequence<_Is...>>
+template <size_t... _Is>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn_<index_sequence<_Is...>>
 {
   template <class _Up>
   _CCCL_HOST_DEVICE static _Up __call_(__void_ptr<_Is>..., _Up*, ...);
 
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<decltype(__type_index_fn::__call_(__type_ptr<_Ts>()...))>;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<decltype(__type_index_fn::__call_(__type_ptr<_Ts>{nullptr}...))>;
 };
+
+template <size_t _Ip>
+using __type_index_fn _LIBCUDACXX_NODEBUG_TYPE = __type_index_fn_<make_index_sequence<_Ip>>;
 } // namespace __detail
 
 template <size_t _Ip, class... _Ts>
@@ -343,11 +346,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_at_fn
 
 //! \brief Given a type list and an index, return the type at that index.
 template <size_t _Ip, class _List>
-using __type_at_c _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __detail::__type_at_fn<_Ip>>;
+using __type_at_c _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_at_fn<_Ip>>;
 
 //! \brief Given a type list and an index, return the type at that index.
 template <class _Ip, class _List>
-using __type_at _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __detail::__type_at_fn<_Ip::value>>;
+using __type_at _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_at_fn<_Ip::value>>;
 
 //! \brief Given a type list return the type at the front of the list.
 template <class _List>
@@ -430,7 +433,7 @@ using __type_concat _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_conc
 //!
 //! When passed an empty type list, \c __type_flatten returns an empty type list.
 template <class _ListOfLists>
-using __type_flatten _LIBCUDACXX_NODEBUG_TYPE = __type_call<_ListOfLists, __type_quote<__type_concat>>;
+using __type_flatten _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
 
 namespace __detail
 {
@@ -439,7 +442,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_find_if_fn // Type list is not
 {
   template <class _Fn, class _Head, class... _Tail>
   using __call _LIBCUDACXX_NODEBUG_TYPE =
-    _If<__type_call<_Fn, _Head>::value,
+    _If<__type_call1<_Fn, _Head>::value,
         __type_list<_Head, _Tail...>,
         __type_call<__type_maybe_find_if_fn<sizeof...(_Tail) == 0>, _Fn, _Tail...>>;
 };
@@ -466,7 +469,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_fn
 //! If no type in the list satisfies the predicate, \c __type_find_if
 //! returns an empty type list.
 template <class _List, class _Fn>
-using __type_find_if _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __detail::__type_find_if_fn<_Fn>>;
+using __type_find_if _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
 
 namespace __detail
 {
@@ -481,7 +484,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_transform_fn
 //! \brief Given a type list and a unary meta-callable, apply the meta-callable
 //! to each type in the list. It returns a new type list containing the results.
 template <class _List, class _Fn>
-using __type_transform _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __detail::__type_transform_fn<_Fn>>;
+using __type_transform _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_transform_fn<_Fn>>;
 
 //
 // Implementation for folding a type list either left or right
@@ -539,12 +542,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn
 //! \brief Fold a type list from the right with a binary meta-callable and an
 //! initial state.
 template <class _List, class _Init, class _Fn>
-using __type_fold_right _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __detail::__type_fold_right_fn<_Init, _Fn>>;
+using __type_fold_right _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_fold_right_fn<_Init, _Fn>>;
 
 //! \brief Fold a type list from the left with a binary meta-callable and an
 //! initial state.
 template <class _List, class _Init, class _Fn>
-using __type_fold_left _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __detail::__type_fold_left_fn<_Init, _Fn>>;
+using __type_fold_left _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_fold_left_fn<_Init, _Fn>>;
 
 namespace __detail
 {
