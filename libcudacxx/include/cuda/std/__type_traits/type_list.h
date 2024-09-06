@@ -43,6 +43,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
+template <class... _Ts>
+struct __type_list;
+
 template <class _Tp>
 using __type _LIBCUDACXX_NODEBUG_TYPE = typename _Tp::type;
 
@@ -57,6 +60,28 @@ using __type_call1 _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ty>
 //! \brief Evaluate a binary meta-callable with the given arguments
 template <class _Fn, class _Ty, class _Uy>
 using __type_call2 _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ty, _Uy>;
+
+namespace __detail
+{
+template <bool _DependentValue>
+struct __type_call_indirect_fn
+{
+  template <template <class...> class _Fn, class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ts...>;
+};
+
+template <size_t>
+_CCCL_GLOBAL_CONSTANT bool __dependent_value = true;
+} // namespace __detail
+
+//! \brief Evaluate a meta-callable with the given arguments, with an indirection
+//! to avoid the dreaded "pack expansion argument for non-pack parameter" error.
+template <class _Fn, class... _Ts>
+using __type_call_indirect _LIBCUDACXX_NODEBUG_TYPE = //
+  typename __detail::__type_call_indirect_fn< //
+    __detail::__dependent_value<sizeof(__type_list<_Fn, _Ts...>*)>>::template __call< //
+    _Fn::template __call,
+    _Ts...>;
 
 namespace __detail
 {
@@ -301,36 +326,92 @@ using __type_index _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_index
 
 #  else // ^^^ __has_builtin(__type_pack_element) ^^^ / vvv !__has_builtin(__type_pack_element) vvv
 
+// Fallback implementation for __type_index uses multiple inheritance. See:
+// https://ldionne.com/2015/11/29/efficient-parameter-pack-indexing/
+
 namespace __detail
 {
-template <size_t>
-using __void_ptr _LIBCUDACXX_NODEBUG_TYPE = void*;
+template <class... _Ts>
+struct __inherit_flat : _Ts...
+{};
 
-template <class _Ty>
-using __type_ptr _LIBCUDACXX_NODEBUG_TYPE = __type_identity<_Ty>*;
+template <size_t _Ip, class _Ty>
+struct __type_index_leaf
+{
+  using type = _Ty;
+};
+
+template <size_t _Ip, class _Ty>
+_CCCL_HOST_DEVICE __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>*);
 
 template <class _Is>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn_;
+struct __type_index_large_size_fn;
 
 template <size_t... _Is>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn_<index_sequence<_Is...>>
+struct __type_index_large_size_fn<index_sequence<_Is...>>
 {
-  template <class _Up>
-  _CCCL_HOST_DEVICE static _Up __call_(__void_ptr<_Is>..., _Up*, ...);
-
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<decltype(__type_index_fn_::__call_(__type_ptr<_Ts>{nullptr}...))>;
+  template <class _Ip, class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = //
+    __type<decltype(__detail::__type_index_get<_Ip::value>(
+      static_cast<__inherit_flat<__type_index_leaf<_Is, _Ts>...>*>(nullptr)))>;
 };
 
 template <size_t _Ip>
-using __type_index_fn _LIBCUDACXX_NODEBUG_TYPE = __type_index_fn_<make_index_sequence<_Ip>>;
+struct __type_index_small_size_fn;
+
+#    define _LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(_Ny, ...) \
+      template <>                                          \
+      struct __type_index_small_size_fn<_Ny>               \
+      {                                                    \
+        template <__VA_ARGS__ class _Ty, class...>         \
+        using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;       \
+      }
+
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(0, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(1, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(2, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(3, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(4, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(5, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(6, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(7, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(8, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(9, class, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(10, class, class, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(11, class, class, class, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
+  12, class, class, class, class, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
+  13, class, class, class, class, class, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
+  14, class, class, class, class, class, class, class, class, class, class, class, class, class, class, );
+_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
+  15, class, class, class, class, class, class, class, class, class, class, class, class, class, class, class, );
+
+#    undef _LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN
+
+template <bool _IsSmall>
+struct __type_index_select_fn // Default for larger indices
+{
+  template <class _Ip, class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE =
+    __type_call<__type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>, _Ip, _Ts...>;
+};
+
+template <>
+struct __type_index_select_fn<true> // Fast implementation for smaller indices
+{
+  template <class _Ip, class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call_indirect<__type_index_small_size_fn<_Ip::value>, _Ts...>;
+};
 } // namespace __detail
 
-template <size_t _Ip, class... _Ts>
-using __type_index_c _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
-
 template <class _Ip, class... _Ts>
-using __type_index _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_index_fn<_Ip::value>, _Ts...>;
+using __type_index _LIBCUDACXX_NODEBUG_TYPE =
+  __type_call<__detail::__type_index_select_fn<(_Ip::value < 16)>, _Ip, _Ts...>;
+
+template <size_t _Ip, class... _Ts>
+using __type_index_c _LIBCUDACXX_NODEBUG_TYPE = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
 
 #  endif // !__has_builtin(__type_pack_element)
 
