@@ -44,6 +44,9 @@
 
 #  if _CCCL_STD_VER >= 2014
 
+//! @file
+//! The \c async_memory_pool class provides an asyncronous memory resource that allocates stream-ordered memory on
+//! device
 namespace cuda::experimental::mr
 {
 
