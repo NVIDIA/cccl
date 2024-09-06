@@ -334,6 +334,26 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
+  // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
+  // TODO(bgruber): use a polymorphic lambda in C++14
+#  define UBLKCP_AGENT(full_tile)                                                                                 \
+    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
+                             benchmark) */                                                                        \
+      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
+    {                                                                                                             \
+      const int idx = j * block_dim + threadIdx.x;                                                                \
+      if (full_tile || idx < tile_size)                                                                           \
+      {                                                                                                           \
+        int smem_offset = 0;                                                                                      \
+        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
+        out[idx] = poor_apply(                                                                                    \
+          [&](const InTs&... values) {                                                                            \
+            return f(values...);                                                                                  \
+          },                                                                                                      \
+          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
+      }                                                                                                           \
+    }
+
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
     (
@@ -357,15 +377,11 @@ _CCCL_DEVICE void transform_kernel_impl(
           int smem_offset                    = 0;
           ::cuda::std::uint32_t total_copied = 0;
 
-#  if _CCCL_STD_VER >= 2017
-          // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-          (..., bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs));
-#  else // _CCCL_STD_VER >= 2017
-        // Order of evaluation is also left-to-right
+          // TODO(bgruber): use a fold over comma in C++17
+          // Order of evaluation is left-to-right
           int dummy[] = {
             (bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
           (void) dummy;
-#  endif // _CCCL_STD_VER >= 2017
 
           // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
           ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
@@ -379,15 +395,11 @@ _CCCL_DEVICE void transform_kernel_impl(
         // use all threads to schedule an async_memcpy
         int smem_offset = 0;
 
-#  if _CCCL_STD_VER >= 2017
-        // Order of evaluation is always left-to-right here. So smem_offset is updated in the right order.
-        (..., bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs));
-#  else // _CCCL_STD_VER >= 2017
-        // Order of evaluation is also left-to-right
+        // TODO(bgruber): use a fold over comma in C++17
+        // Order of evaluation is left-to-right
         int dummy[] = {(bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs), 0)...,
                        0};
         (void) dummy;
-#  endif // _CCCL_STD_VER >= 2017
 
         cooperative_groups::wait(cooperative_groups::this_thread_block());
       }
@@ -395,30 +407,8 @@ _CCCL_DEVICE void transform_kernel_impl(
       // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
       out += offset;
 
-  // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
-  // TODO(bgruber): use a polymorphic lambda in C++14
-#  define UBLKCP_AGENT(full_tile)                                                                                 \
-    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
-                             benchmark) */                                                                        \
-      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
-    {                                                                                                             \
-      const int idx = j * block_dim + threadIdx.x;                                                                \
-      if (full_tile || idx < tile_size)                                                                           \
-      {                                                                                                           \
-        int smem_offset = 0;                                                                                      \
-        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
-        out[idx] = poor_apply(                                                                                    \
-          [&](const InTs&... values) {                                                                            \
-            return f(values...);                                                                                  \
-          },                                                                                                      \
-          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
-      }                                                                                                           \
-    }
-
-      if (tile_stride == tile_size) { UBLKCP_AGENT(true); } else { UBLKCP_AGENT(false); }
-
+      if (tile_stride == tile_size) { UBLKCP_AGENT(true); } else { UBLKCP_AGENT(false); }));
 #  undef UBLKCP_AGENT
-      ));
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
