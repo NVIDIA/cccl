@@ -94,7 +94,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   }
   if (d_keys.Current() != d_keys_out)
   {
-    d_keys_out = d_keys.Current();
+    d_keys_out   = d_keys.Current();
     d_values_out = d_values.Current();
   }
   return cudaSuccess;
@@ -354,7 +354,8 @@ try
   constexpr int num_value_seeds    = 1;
   const bool is_descending         = GENERATE(false, true);
   const bool is_overwrite          = GENERATE(false, true);
-  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = ::cuda::ceil_div(num_items, Step);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
 

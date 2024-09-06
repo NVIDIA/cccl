@@ -76,7 +76,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   }
   if (d_keys.Current() != d_keys_out)
   {
-    d_keys_out = d_keys.Current();
+    d_keys_out   = d_keys.Current();
     d_values_out = d_values.Current();
   }
   return cudaSuccess;
