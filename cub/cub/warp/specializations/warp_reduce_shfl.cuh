@@ -127,7 +127,7 @@ struct WarpReduceShfl
   {
     enum
     {
-      /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
+      /// Whether the data type is a small (32b or less) integer for which we can use a single SHFL instruction per
       /// exchange
       IS_SMALL_UNSIGNED = (Traits<S>::CATEGORY == UNSIGNED_INTEGER) && (sizeof(S) <= sizeof(unsigned int))
     };
