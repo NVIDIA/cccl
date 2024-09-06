@@ -31,9 +31,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 struct dangling
 {
-  dangling() = default;
+  _CCCL_HIDE_FROM_ABI dangling() = default;
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr dangling(_Args&&...) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr dangling(_Args&&...) noexcept
   {}
 };
 

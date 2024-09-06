@@ -53,7 +53,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct __always_false
 {
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator()(_Args&&...) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Args&&...) const noexcept
   {
     return false;
   }
@@ -65,12 +65,12 @@ struct __simple_rollback
   _ForwardIterator& __first_;
   _ForwardIterator& __current_;
 
-  _LIBCUDACXX_INLINE_VISIBILITY __simple_rollback(_ForwardIterator& __first, _ForwardIterator& __current)
+  _LIBCUDACXX_HIDE_FROM_ABI __simple_rollback(_ForwardIterator& __first, _ForwardIterator& __current)
       : __first_(__first)
       , __current_(__current)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY void operator()() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI void operator()() const noexcept
   {
     _CUDA_VSTD::__destroy(__first_, __current_);
   }
@@ -79,8 +79,7 @@ struct __simple_rollback
 // uninitialized_copy
 
 template <class _ValueType, class _InputIterator, class _Sentinel1, class _ForwardIterator, class _EndPredicate>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _ForwardIterator>
-__uninitialized_copy(
+_LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _ForwardIterator> __uninitialized_copy(
   _InputIterator __ifirst, _Sentinel1 __ilast, _ForwardIterator __ofirst, _EndPredicate __stop_copying)
 {
   _ForwardIterator __idx = __ofirst;
@@ -95,7 +94,7 @@ __uninitialized_copy(
 }
 
 template <class _InputIterator, class _ForwardIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
 uninitialized_copy(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIterator __ofirst)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type _ValueType;
@@ -107,7 +106,7 @@ uninitialized_copy(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIter
 // uninitialized_copy_n
 
 template <class _ValueType, class _InputIterator, class _Size, class _ForwardIterator, class _EndPredicate>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _ForwardIterator>
+_LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _ForwardIterator>
 __uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst, _EndPredicate __stop_copying)
 {
   _ForwardIterator __idx = __ofirst;
@@ -122,7 +121,7 @@ __uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __of
 }
 
 template <class _InputIterator, class _Size, class _ForwardIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
 uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type _ValueType;
@@ -134,7 +133,7 @@ uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 // uninitialized_fill
 
 template <class _ValueType, class _ForwardIterator, class _Sentinel, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
 __uninitialized_fill(_ForwardIterator __first, _Sentinel __last, const _Tp& __x)
 {
   _ForwardIterator __idx = __first;
@@ -149,8 +148,7 @@ __uninitialized_fill(_ForwardIterator __first, _Sentinel __last, const _Tp& __x)
 }
 
 template <class _ForwardIterator, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void
-uninitialized_fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __x)
+_LIBCUDACXX_HIDE_FROM_ABI void uninitialized_fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __x)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type _ValueType;
   (void) _CUDA_VSTD::__uninitialized_fill<_ValueType>(__first, __last, __x);
@@ -159,8 +157,7 @@ uninitialized_fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp&
 // uninitialized_fill_n
 
 template <class _ValueType, class _ForwardIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-__uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator __uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
 {
   _ForwardIterator __idx = __first;
   auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
@@ -174,8 +171,7 @@ __uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
 }
 
 template <class _ForwardIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type _ValueType;
   return _CUDA_VSTD::__uninitialized_fill_n<_ValueType>(__first, __n, __x);
@@ -184,8 +180,7 @@ uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
 // uninitialized_default_construct
 
 template <class _ValueType, class _ForwardIterator, class _Sentinel>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-__uninitialized_default_construct(_ForwardIterator __first, _Sentinel __last)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator __uninitialized_default_construct(_ForwardIterator __first, _Sentinel __last)
 {
   auto __idx   = __first;
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
@@ -199,8 +194,7 @@ __uninitialized_default_construct(_ForwardIterator __first, _Sentinel __last)
 }
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void
-uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI void uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator __last)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   (void) _CUDA_VSTD::__uninitialized_default_construct<_ValueType>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
@@ -209,8 +203,7 @@ uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator __las
 // uninitialized_default_construct_n
 
 template <class _ValueType, class _ForwardIterator, class _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-__uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator __uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
 {
   auto __idx   = __first;
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
@@ -224,8 +217,7 @@ __uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
 }
 
 template <class _ForwardIterator, class _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   return _CUDA_VSTD::__uninitialized_default_construct_n<_ValueType>(_CUDA_VSTD::move(__first), __n);
@@ -234,8 +226,7 @@ uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
 // uninitialized_value_construct
 
 template <class _ValueType, class _ForwardIterator, class _Sentinel>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-__uninitialized_value_construct(_ForwardIterator __first, _Sentinel __last)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator __uninitialized_value_construct(_ForwardIterator __first, _Sentinel __last)
 {
   auto __idx   = __first;
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
@@ -249,8 +240,7 @@ __uninitialized_value_construct(_ForwardIterator __first, _Sentinel __last)
 }
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void
-uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI void uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __last)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   (void) _CUDA_VSTD::__uninitialized_value_construct<_ValueType>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
@@ -259,8 +249,7 @@ uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __last)
 // uninitialized_value_construct_n
 
 template <class _ValueType, class _ForwardIterator, class _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-__uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator __uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
 {
   auto __idx   = __first;
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
@@ -274,8 +263,7 @@ __uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
 }
 
 template <class _ForwardIterator, class _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
-uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
   return _CUDA_VSTD::__uninitialized_value_construct_n<_ValueType>(_CUDA_VSTD::move(__first), __n);
@@ -289,8 +277,8 @@ template <class _ValueType,
           class _Sentinel1,
           class _ForwardIterator,
           class _EndPredicate>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _ForwardIterator>
-__uninitialized_move(_InputIterator __ifirst, _Sentinel1 __ilast, _ForwardIterator __ofirst, _EndPredicate __stop_moving)
+_LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _ForwardIterator> __uninitialized_move(
+  _InputIterator __ifirst, _Sentinel1 __ilast, _ForwardIterator __ofirst, _EndPredicate __stop_moving)
 {
   auto __idx   = __ofirst;
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
@@ -304,7 +292,7 @@ __uninitialized_move(_InputIterator __ifirst, _Sentinel1 __ilast, _ForwardIterat
 }
 
 template <class _InputIterator, class _ForwardIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
 uninitialized_move(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIterator __ofirst)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
@@ -316,7 +304,7 @@ uninitialized_move(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIter
 // uninitialized_move_n
 
 template <class _ValueType, class _IterOps, class _InputIterator, class _Size, class _ForwardIterator, class _EndPredicate>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _ForwardIterator>
+_LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _ForwardIterator>
 __uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst, _EndPredicate __stop_moving)
 {
   auto __idx   = __ofirst;
@@ -331,7 +319,7 @@ __uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __of
 }
 
 template <class _InputIterator, class _Size, class _ForwardIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _ForwardIterator>
+_LIBCUDACXX_HIDE_FROM_ABI pair<_InputIterator, _ForwardIterator>
 uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
@@ -347,7 +335,7 @@ uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 // This function assumes that destructors do not throw, and that the allocator is bound to
 // the correct type.
 template <class _Alloc, class _BidirIter, __enable_if_t<__is_cpp17_bidirectional_iterator<_BidirIter>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _BidirIter __last) noexcept
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
@@ -391,7 +379,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
 //
 // This function assumes that the allocator is bound to the correct type.
 template <class _Alloc, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
 {
   static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
@@ -432,7 +420,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
 //
 // This function assumes that the allocator is bound to the correct type.
 template <class _Alloc, class _Tp, class _Arg>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg const& __arg)
 {
   static_assert(_CCCL_TRAIT(is_same, typename allocator_traits<_Alloc>::value_type, _Tp),
@@ -474,7 +462,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg cons
 // initialization using allocator_traits destruction. If the elements in the range are C-style
 // arrays, they are initialized element-wise using allocator construction, and recursively so.
 template <class _Alloc, class _BidirIter, class _Tp, class _Size = typename iterator_traits<_BidirIter>::difference_type>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __uninitialized_allocator_fill_n_multidimensional(_Alloc& __alloc, _BidirIter __it, _Size __n, _Tp const& __value)
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
@@ -495,7 +483,7 @@ __uninitialized_allocator_fill_n_multidimensional(_Alloc& __alloc, _BidirIter __
 // Same as __uninitialized_allocator_fill_n_multidimensional, but doesn't pass any initialization argument
 // to the allocator's construct method, which results in value initialization.
 template <class _Alloc, class _BidirIter, class _Size = typename iterator_traits<_BidirIter>::difference_type>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __uninitialized_allocator_value_construct_n_multidimensional(_Alloc& __alloc, _BidirIter __it, _Size __n)
 {
   using _ValueType = typename iterator_traits<_BidirIter>::value_type;
@@ -515,8 +503,7 @@ __uninitialized_allocator_value_construct_n_multidimensional(_Alloc& __alloc, _B
 
 // Destroy all elements in [__first, __last) from left to right using allocator destruction.
 template <class _Alloc, class _Iter, class _Sent>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
-__allocator_destroy(_Alloc& __alloc, _Iter __first, _Sent __last)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __allocator_destroy(_Alloc& __alloc, _Iter __first, _Sent __last)
 {
   for (; __first != __last; ++__first)
   {
@@ -528,14 +515,14 @@ template <class _Alloc, class _Iter>
 class _AllocatorDestroyRangeReverse
 {
 public:
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   _AllocatorDestroyRangeReverse(_Alloc& __alloc, _Iter& __first, _Iter& __last)
       : __alloc_(__alloc)
       , __first_(__first)
       , __last_(__last)
   {}
 
-  inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void operator()() const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void operator()() const
   {
     _CUDA_VSTD::__allocator_destroy(
       __alloc_, _CUDA_VSTD::reverse_iterator<_Iter>(__last_), _CUDA_VSTD::reverse_iterator<_Iter>(__first_));
@@ -552,7 +539,7 @@ private:
 // The caller has to ensure that __first2 can hold at least N uninitialized elements. If an exception is thrown the
 // already copied elements are destroyed in reverse order of their construction.
 template <class _Alloc, class _Iter1, class _Sent1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Iter2
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_copy_impl(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1, _Iter2 __first2)
 {
   auto __destruct_first = __first2;
@@ -586,7 +573,7 @@ template <
     _CCCL_TRAIT(is_trivially_copy_constructible, _RawTypeIn) && _CCCL_TRAIT(is_trivially_copy_assignable, _RawTypeIn)
     && _CCCL_TRAIT(is_same, __remove_const_t<_In>, __remove_const_t<_Out>)
     && __allocator_has_trivial_copy_construct<_Alloc, _RawTypeIn>::value>* = nullptr>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Out*
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
   if (__libcpp_is_constant_evaluated())
@@ -606,7 +593,7 @@ __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* 
 }
 
 template <class _Alloc, class _Iter1, class _Sent1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Iter2
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_copy(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1, _Iter2 __first2)
 {
   auto __unwrapped_range = _CUDA_VSTD::__unwrap_range(__first1, __last1);
@@ -621,7 +608,7 @@ __uninitialized_allocator_copy(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1,
 // Otherwise try to copy all elements. If an exception is thrown the already copied
 // elements are destroyed in reverse order of their construction.
 template <class _Alloc, class _Iter1, class _Sent1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Iter2
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1, _Iter2 __first2)
 {
   static_assert(__is_cpp17_move_insertable<_Alloc>::value,
@@ -660,7 +647,7 @@ template <class _Alloc,
           class       = __enable_if_t<_CCCL_TRAIT(is_trivially_move_constructible, _Type)
                                       && _CCCL_TRAIT(is_trivially_move_assignable, _Type)
                                       && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Iter2
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
   if (__libcpp_is_constant_evaluated())

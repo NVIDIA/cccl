@@ -31,47 +31,44 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&
 get(const tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&&
-get(tuple<_Tp...>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&&
 get(const tuple<_Tp...>&&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&
-get(pair<_T1, _T2>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
 get(const pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&&
-get(pair<_T1, _T2>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(const pair<_T1, _T2>&&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp& get(array<_Tp, _Size>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp& get(array<_Tp, _Size>&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp& get(const array<_Tp, _Size>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp& get(const array<_Tp, _Size>&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
@@ -89,8 +86,7 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int> = 0>
 #  endif // _CCCL_STD_VER <= 2017
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange);
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange);
 
 #  if _CCCL_STD_VER >= 2020
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
@@ -103,7 +99,7 @@ template <
   subrange_kind _Kind,
   enable_if_t<_Index<2, int> = 0>
 #  endif // _CCCL_STD_VER <= 2017
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange);
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange);
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -46,14 +46,14 @@ namespace __is_base_of_imp
 template <class _Tp>
 struct _Dst
 {
-  _LIBCUDACXX_INLINE_VISIBILITY _Dst(const volatile _Tp&);
+  _LIBCUDACXX_HIDE_FROM_ABI _Dst(const volatile _Tp&);
 };
 template <class _Tp>
 struct _Src
 {
-  _LIBCUDACXX_INLINE_VISIBILITY operator const volatile _Tp&();
+  _LIBCUDACXX_HIDE_FROM_ABI operator const volatile _Tp&();
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY operator const _Dst<_Up>&();
+  _LIBCUDACXX_HIDE_FROM_ABI operator const _Dst<_Up>&();
 };
 template <size_t>
 struct __one

@@ -33,6 +33,7 @@ AttributeMacros: [
                   '_CCCL_DEVICE',
                   '_CCCL_FALLTHROUGH',
                   '_CCCL_FORCEINLINE',
+                  '_CCCL_HIDE_FROM_ABI',
                   '_CCCL_HOST_DEVICE',
                   '_CCCL_HOST',
                   '_CCCL_NO_UNIQUE_ADDRESS',
@@ -52,10 +53,7 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED_IN_CXX17',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
-                  '_LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
-                  '_LIBCUDACXX_INLINE_VISIBILITY',
-                  '_LIBCUDACXX_INTERNAL_LINKAGE',
                  ]
 BinPackArguments: false
 BinPackParameters: false
@@ -92,6 +90,9 @@ IfMacros: [
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
+  - Regex:           '^<cuda/experimental/__async/prologue.cuh>'
+    Priority:            0x7FFFFFFF
+    SortPriority:        0x7FFFFFFF
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0

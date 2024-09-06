@@ -30,34 +30,34 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_ctz2(uint64_t __x, int __c) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz2(uint64_t __x, int __c) noexcept
 {
   return __c + !(__x & 0x1);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_ctz4(uint64_t __x, int __c) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz4(uint64_t __x, int __c) noexcept
 {
   return __binary_ctz2(__x >> 2 * !(__x & 0x3), __c + 2 * !(__x & 0x3));
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_ctz8(uint64_t __x, int __c) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz8(uint64_t __x, int __c) noexcept
 {
   return __binary_ctz4(__x >> 4 * !(__x & 0x0F), __c + 4 * !(__x & 0x0F));
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_ctz16(uint64_t __x, int __c) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz16(uint64_t __x, int __c) noexcept
 {
   return __binary_ctz8(__x >> 8 * !(__x & 0x00FF), __c + 8 * !(__x & 0x00FF));
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_ctz32(uint64_t __x, int __c) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz32(uint64_t __x, int __c) noexcept
 {
   return __binary_ctz16(__x >> 16 * !(__x & 0x0000FFFF), __c + 16 * !(__x & 0x0000FFFF));
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __binary_ctz64(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz64(uint64_t __x) noexcept
 {
   return __binary_ctz32(__x >> 32 * !(__x & 0x00000000FFFFFFFF), 32 * !(__x & 0x00000000FFFFFFFF));
 }
 
 #if !defined(_CCCL_COMPILER_MSVC)
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_ctz(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint32_t __x) noexcept
 {
 #  if defined(__CUDA_ARCH__)
   return __binary_ctz32(static_cast<uint64_t>(__x), 0); // no device constexpr builtins
@@ -66,7 +66,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_ctz(uint32_t __x)
 #  endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_ctz(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
 {
 #  if defined(__CUDA_ARCH__)
   return __binary_ctz64(__x); // no device constexpr builtins
@@ -75,7 +75,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_ctz(uint64_t __x)
 #  endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_ctz(uint32_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
   if (!__libcpp_default_is_constant_evaluated())
@@ -87,7 +87,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x) no
   return __constexpr_ctz(__x);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_ctz(uint64_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
   if (!__libcpp_default_is_constant_evaluated())
@@ -102,7 +102,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x) no
 #else // defined(_CCCL_COMPILER_MSVC)
 
 // Precondition:  __x != 0
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_ctz(uint32_t __x)
 {
 #  if !defined(__CUDA_ARCH__)
   if (!__libcpp_default_is_constant_evaluated())
@@ -119,7 +119,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint32_t __x)
   return __binary_ctz32(static_cast<uint64_t>(__x), 0);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_ctz(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_ctz(uint64_t __x)
 {
 #  if !defined(__CUDA_ARCH__)
   if (!__libcpp_default_is_constant_evaluated())

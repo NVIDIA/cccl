@@ -39,7 +39,7 @@ template <class _To,
           __enable_if_t<(sizeof(_To) == sizeof(_From)), int>            = 0,
           __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To), int>   = 0,
           __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_LIBCUDACXX_BIT_CAST)
   return _LIBCUDACXX_BIT_CAST(_To, __from);
