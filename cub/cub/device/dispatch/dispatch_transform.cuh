@@ -328,7 +328,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
   __shared__ uint64_t bar;
-  extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
+  extern __shared__ char __align__(bulk_copy_alignment) smem[];
 
   namespace ptx = ::cuda::ptx;
 
