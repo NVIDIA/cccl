@@ -90,6 +90,9 @@ IfMacros: [
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
+  - Regex:           '^<cuda/experimental/__async/prologue.cuh>'
+    Priority:            0x7FFFFFFF
+    SortPriority:        0x7FFFFFFF
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0

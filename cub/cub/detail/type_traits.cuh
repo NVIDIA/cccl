@@ -50,6 +50,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
 
+#define _CUB_TEMPLATE_REQUIRES(...) ::cuda::std::__enable_if_t<(__VA_ARGS__)>* = nullptr
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -61,6 +63,102 @@ using invoke_result_t =
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;
 #endif
+
+template <typename T, typename... TArgs>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool are_same()
+{
+  return ::cuda::std::conjunction<::cuda::std::is_same<T, TArgs>...>::value;
+}
+
+template <typename T, typename... TArgs>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_one_of()
+{
+  return ::cuda::std::disjunction<::cuda::std::is_same<T, TArgs>...>::value;
+}
+
+template <typename...>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool always_false()
+{
+  return false;
+}
+
+template <typename T, typename V, typename = void>
+struct has_binary_call_operator : ::cuda::std::false_type
+{};
+
+template <typename T, typename V>
+struct has_binary_call_operator<
+  T,
+  V,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(::cuda::std::declval<V>(), ::cuda::std::declval<V>()))>>
+    : ::cuda::std::true_type
+{};
+
+/***********************************************************************************************************************
+ * Array like type traits
+ **********************************************************************************************************************/
+
+template <typename T, typename = void>
+struct has_subscript : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct has_subscript<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>()[0])>> : ::cuda::std::true_type
+{};
+
+template <typename T>
+using has_subscript_t = typename has_subscript<T>::type;
+
+template <typename T, typename = void>
+struct has_size : ::cuda::std::false_type
+{};
+
+// TODO: use ::cuda::std::size(::cuda::std::declval<T>()) when std::size will be available in libcu++
+template <typename T>
+struct has_size<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().size())>> : ::cuda::std::true_type
+{};
+
+template <typename T, ::cuda::std::size_t N>
+struct has_size<T[N], void> : ::cuda::std::true_type
+{};
+
+template <typename T>
+using has_size_t = typename has_size<T>::type;
+
+/***********************************************************************************************************************
+ * StaticSize: a type trait that returns the number of elements in an Array-like type
+ **********************************************************************************************************************/
+// StaticSize is useful where size(obj) cannot be checked at compile time
+// e.g.
+// using Array = NonTriviallyConstructible[8];
+// std::size(Array{})   // compile error
+// static_size<Array>() // ok
+
+template <typename T, typename = void>
+struct StaticSize
+{
+  static_assert(detail::always_false<T>(), "StaticSize not supported for this type");
+};
+
+template <typename T>
+struct StaticSize<T,
+                  ::cuda::std::void_t<decltype(::cuda::std::integral_constant<int, ::cuda::std::declval<T>().size()>{})>>
+{
+  static_assert(::cuda::std::is_trivially_constructible<T>::value, "T must be trivially constructible");
+  static constexpr auto value = T{}.size();
+};
+
+template <typename T, ::cuda::std::size_t N>
+struct StaticSize<T[N], void>
+{
+  static constexpr auto value = N;
+};
+
+template <typename T>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size()
+{
+  return StaticSize<T>::value;
+}
 
 } // namespace detail
 CUB_NAMESPACE_END
