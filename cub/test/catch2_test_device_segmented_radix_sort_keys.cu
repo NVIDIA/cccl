@@ -505,7 +505,7 @@ try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t Step       = 500;
+  constexpr std::size_t step       = 500;
   using segment_iterator_t         = segment_iterator<offset_t, Step>;
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
