@@ -3055,7 +3055,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
       int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
       int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
       int num_bits           = end_bit - begin_bit;
-      int num_passes         = CUB_MAX(DivideAndRoundUp(num_bits, radix_bits), 1);
+      int num_passes         = CUB_MAX(::cuda::ceil_div(num_bits, radix_bits), 1);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
       int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
