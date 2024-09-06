@@ -287,22 +287,22 @@ struct AgentHistogram
   SampleT* d_native_samples;
 
   /// The number of output bins for each channel
-  int (&num_output_bins)[NUM_ACTIVE_CHANNELS];
+  int* num_output_bins;
 
   /// The number of privatized bins for each channel
-  int (&num_privatized_bins)[NUM_ACTIVE_CHANNELS];
+  int* num_privatized_bins;
 
-  /// Reference to gmem privatized histograms for each channel
+  /// Copy of gmem privatized histograms for each channel
   CounterT* d_privatized_histograms[NUM_ACTIVE_CHANNELS];
 
   /// Reference to final output histograms (gmem)
-  CounterT* (&d_output_histograms)[NUM_ACTIVE_CHANNELS];
+  CounterT** d_output_histograms;
 
   /// The transform operator for determining output bin-ids from privatized counter indices, one for each channel
-  OutputDecodeOpT (&output_decode_op)[NUM_ACTIVE_CHANNELS];
+  OutputDecodeOpT* output_decode_op;
 
   /// The transform operator for determining privatized counter indices from samples, one for each channel
-  PrivatizedDecodeOpT (&privatized_decode_op)[NUM_ACTIVE_CHANNELS];
+  PrivatizedDecodeOpT* privatized_decode_op;
 
   /// Whether to prefer privatized smem counters vs privatized global counters
   bool prefer_smem;
@@ -810,12 +810,12 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
     TempStorage& temp_storage,
     SampleIteratorT d_samples,
-    int (&num_output_bins)[NUM_ACTIVE_CHANNELS],
-    int (&num_privatized_bins)[NUM_ACTIVE_CHANNELS],
-    CounterT* (&d_output_histograms)[NUM_ACTIVE_CHANNELS],
-    CounterT* (&d_privatized_histograms)[NUM_ACTIVE_CHANNELS],
-    OutputDecodeOpT (&output_decode_op)[NUM_ACTIVE_CHANNELS],
-    PrivatizedDecodeOpT (&privatized_decode_op)[NUM_ACTIVE_CHANNELS])
+    int* num_output_bins,
+    int* num_privatized_bins,
+    CounterT** d_output_histograms,
+    CounterT** d_privatized_histograms,
+    OutputDecodeOpT* output_decode_op,
+    PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
