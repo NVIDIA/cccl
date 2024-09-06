@@ -247,23 +247,22 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
 constexpr int bulk_copy_alignment     = 128;
 constexpr int bulk_copy_size_multiple = 16;
 
+#ifdef _CUB_HAS_TRANSFORM_UBLKCP
 _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
 {
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (const ::cuda::std::uint32_t membermask = ~0; ::cuda::std::uint32_t is_elected; asm volatile(
-       "{\n\t .reg .pred P_OUT; \n\t"
-       "elect.sync _|P_OUT, %1;\n\t"
-       "selp.b32 %0, 1, 0, P_OUT; \n"
-       "}"
-       : "=r"(is_elected)
-       : "r"(membermask)
-       :);
-     return threadIdx.x < 32 && static_cast<bool>(is_elected);),
-    (return false;));
+  const ::cuda::std::uint32_t membermask = ~0;
+  ::cuda::std::uint32_t is_elected;
+  asm volatile(
+    "{\n\t .reg .pred P_OUT; \n\t"
+    "elect.sync _|P_OUT, %1;\n\t"
+    "selp.b32 %0, 1, 0, P_OUT; \n"
+    "}"
+    : "=r"(is_elected)
+    : "r"(membermask)
+    :);
+  return threadIdx.x < 32 && static_cast<bool>(is_elected);
 }
 
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
 // TODO(bgruber): inline this as lambda in C++14
 template <typename Offset, typename T>
 _CCCL_DEVICE void bulk_copy_tile(
@@ -277,21 +276,20 @@ _CCCL_DEVICE void bulk_copy_tile(
 {
   static_assert(alignof(T) <= bulk_copy_alignment, "");
 
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (const char* src = aligned_ptr.ptr + global_offset * sizeof(T); char* dst = smem + smem_offset;
-     _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
-     _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+  const char* src = aligned_ptr.ptr + global_offset * sizeof(T);
+  char* dst       = smem + smem_offset;
+  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
+  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
 
-     // TODO(bgruber): we could precompute bytes_to_copy on the host
-     const int bytes_to_copy = round_up_to_po2_multiple(
-       aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
+  // TODO(bgruber): we could precompute bytes_to_copy on the host
+  const int bytes_to_copy = round_up_to_po2_multiple(
+    aligned_ptr.head_padding + static_cast<int>(sizeof(T)) * tile_stride, bulk_copy_size_multiple);
 
-     ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
-     total_bytes_bulk_copied += bytes_to_copy;
+  ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
+  total_bytes_bulk_copied += bytes_to_copy;
 
-     // add bulk_copy_alignment to make space for the next tile's head padding
-     smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;));
+  // add bulk_copy_alignment to make space for the next tile's head padding
+  smem_offset += static_cast<int>(sizeof(T)) * tile_stride + bulk_copy_alignment;
 }
 
 template <typename Offset, typename T>
@@ -326,14 +324,62 @@ fetch_operand(int tile_stride, const char* smem, int& smem_offset, int smem_idx,
 }
 
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
-  Offset num_items,
-  int num_elem_per_thread,
-  F f,
-  RandomAccessIteratorOut out,
-  aligned_base_ptr<InTs>... aligned_ptrs)
+_CCCL_DEVICE void transform_kernel_ublkcp(
+  Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
 {
+  __shared__ uint64_t bar;
+  extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
+
+  namespace ptx = ::cuda::ptx;
+
+  constexpr int block_dim = BulkCopyPolicy::block_threads;
+  const int tile_stride   = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
+
+  const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
+  if (inner_blocks)
+  {
+    // use one thread to setup the entire bulk copy
+    if (elect_one())
+    {
+      ptx::mbarrier_init(&bar, 1);
+      ptx::fence_proxy_async(ptx::space_shared);
+
+      int smem_offset                    = 0;
+      ::cuda::std::uint32_t total_copied = 0;
+
+      // TODO(bgruber): use a fold over comma in C++17
+      // Order of evaluation is left-to-right
+      int dummy[] = {(bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)...,
+                     0};
+      (void) dummy;
+
+      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+    }
+
+    // all threads wait for bulk copy
+    __syncthreads();
+    while (!ptx::mbarrier_try_wait_parity(&bar, 0))
+      ;
+  }
+  else
+  {
+    // use all threads to schedule an async_memcpy
+    int smem_offset = 0;
+
+    // TODO(bgruber): use a fold over comma in C++17
+    // Order of evaluation is left-to-right
+    int dummy[] = {(bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs), 0)..., 0};
+    (void) dummy;
+
+    cooperative_groups::wait(cooperative_groups::this_thread_block());
+  }
+
+  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+  out += offset;
+
   // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
   // TODO(bgruber): use a polymorphic lambda in C++14
 #  define UBLKCP_AGENT(full_tile)                                                                                 \
@@ -353,62 +399,29 @@ _CCCL_DEVICE void transform_kernel_impl(
           ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
       }                                                                                                           \
     }
-
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      __shared__ uint64_t bar; extern __shared__ char __attribute((aligned(bulk_copy_alignment))) smem[];
-
-      namespace ptx = ::cuda::ptx;
-
-      constexpr int block_dim = BulkCopyPolicy::block_threads;
-      const int tile_stride   = block_dim * num_elem_per_thread;
-      const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
-      const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
-
-      const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-      if (inner_blocks) {
-        // use one thread to setup the entire bulk copy
-        if (elect_one())
-        {
-          ptx::mbarrier_init(&bar, 1);
-          ptx::fence_proxy_async(ptx::space_shared);
-
-          int smem_offset                    = 0;
-          ::cuda::std::uint32_t total_copied = 0;
-
-          // TODO(bgruber): use a fold over comma in C++17
-          // Order of evaluation is left-to-right
-          int dummy[] = {
-            (bulk_copy_tile(bar, tile_stride, smem, smem_offset, total_copied, offset, aligned_ptrs), 0)..., 0};
-          (void) dummy;
-
-          // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-          ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
-        }
-
-        // all threads wait for bulk copy
-        __syncthreads();
-        while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-          ;
-      } else {
-        // use all threads to schedule an async_memcpy
-        int smem_offset = 0;
-
-        // TODO(bgruber): use a fold over comma in C++17
-        // Order of evaluation is left-to-right
-        int dummy[] = {(bulk_copy_tile_fallback(tile_size, tile_stride, smem, smem_offset, offset, aligned_ptrs), 0)...,
-                       0};
-        (void) dummy;
-
-        cooperative_groups::wait(cooperative_groups::this_thread_block());
-      }
-
-      // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
-      out += offset;
-
-      if (tile_stride == tile_size) { UBLKCP_AGENT(true); } else { UBLKCP_AGENT(false); }));
+  if (tile_stride == tile_size)
+  {
+    UBLKCP_AGENT(true);
+  }
+  else
+  {
+    UBLKCP_AGENT(false);
+  }
 #  undef UBLKCP_AGENT
+}
+
+template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
+_CCCL_DEVICE void transform_kernel_impl(
+  ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>,
+  Offset num_items,
+  int num_elem_per_thread,
+  F f,
+  RandomAccessIteratorOut out,
+  aligned_base_ptr<InTs>... aligned_ptrs)
+{
+  // only call the real kernel for sm90 and later
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (transform_kernel_ublkcp<BulkCopyPolicy>(num_items, num_elem_per_thread, f, out, aligned_ptrs...);));
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
