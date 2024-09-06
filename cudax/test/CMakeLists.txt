@@ -69,6 +69,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     device/arch_traits.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
 
   cudax_add_catch2_test(test_target event_tests ${cn_target}
     event/event_smoke.cu
@@ -92,4 +93,15 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
     memory_resource/any_resource.cu
   )
+
+  cudax_add_catch2_test(test_target async_tests ${cn_target}
+    async/test_conditional.cu
+    async/test_continue_on.cu
+    async/test_just.cu
+    async/test_sequence.cu
+    async/test_when_all.cu
+  )
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
+
 endforeach()
