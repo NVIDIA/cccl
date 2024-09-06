@@ -57,13 +57,13 @@ private:
   iterator_type __i_;
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter() noexcept
       : __i_()
   {
     _CUDA_VSTD::__debug_db_insert_i(this);
   }
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   __wrap_iter(const __wrap_iter<_Up>& __u,
               typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
       : __i_(__u.base())
@@ -76,7 +76,7 @@ public:
 #endif
   }
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter(const __wrap_iter& __x)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter(const __wrap_iter& __x)
       : __i_(__x.base())
   {
     if (!__libcpp_is_constant_evaluated())
@@ -84,7 +84,7 @@ public:
       __get_db()->__iterator_copy(this, _CUDA_VSTD::addressof(__x));
     }
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator=(const __wrap_iter& __x)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator=(const __wrap_iter& __x)
   {
     if (this != _CUDA_VSTD::addressof(__x))
     {
@@ -96,7 +96,7 @@ public:
     }
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__wrap_iter()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~__wrap_iter()
   {
     if (!__libcpp_is_constant_evaluated())
     {
@@ -104,82 +104,82 @@ public:
     }
   }
 #endif
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__dereferenceable(this),
                              "Attempted to dereference a non-dereferenceable iterator");
     return *__i_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__dereferenceable(this),
                              "Attempted to dereference a non-dereferenceable iterator");
     return _CUDA_VSTD::__to_address(__i_);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator++() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator++() noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__dereferenceable(this),
                              "Attempted to increment a non-incrementable iterator");
     ++__i_;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator++(int) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator++(int) noexcept
   {
     __wrap_iter __tmp(*this);
     ++(*this);
     return __tmp;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator--() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator--() noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__decrementable(this),
                              "Attempted to decrement a non-decrementable iterator");
     --__i_;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator--(int) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator--(int) noexcept
   {
     __wrap_iter __tmp(*this);
     --(*this);
     return __tmp;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator+(difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator+(difference_type __n) const noexcept
   {
     __wrap_iter __w(*this);
     __w += __n;
     return __w;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator+=(difference_type __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator+=(difference_type __n) noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__addable(this, __n),
                              "Attempted to add/subtract an iterator outside its valid range");
     __i_ += __n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator-(difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter operator-(difference_type __n) const noexcept
   {
     return *this + (-__n);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator-=(difference_type __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator-=(difference_type __n) noexcept
   {
     *this += -__n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__subscriptable(this, __n),
                              "Attempted to subscript an iterator outside its valid range");
     return __i_[__n];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 iterator_type base() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 iterator_type base() const noexcept
   {
     return __i_;
   }
 
 // private:
 #if _LIBCUDACXX_DEBUG_LEVEL >= 2
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(const void* __p, iterator_type __x)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(const void* __p, iterator_type __x)
       : __i_(__x)
   {
     if (!__libcpp_is_constant_evaluated())
@@ -188,7 +188,7 @@ public:
     }
   }
 #else
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(iterator_type __x) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(iterator_type __x) noexcept
       : __i_(__x)
   {}
 #endif
@@ -204,21 +204,21 @@ public:
 };
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return __x.base() == __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return __x.base() == __y.base();
 }
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   _LIBCUDACXX_DEBUG_ASSERT(
@@ -228,7 +228,7 @@ operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexce
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__less_than_comparable(&__x, &__y),
@@ -237,63 +237,63 @@ operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexce
 }
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return !(__x == __y);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return !(__x == __y);
 }
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return __y < __x;
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return __y < __x;
 }
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return !(__x < __y);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return !(__x < __y);
 }
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return !(__y < __x);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return !(__y < __x);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept -> decltype(__x.base() - __y.base())
 {
   _LIBCUDACXX_DEBUG_ASSERT(
@@ -303,7 +303,7 @@ operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexce
 }
 
 template <class _Iter1>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter<_Iter1>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter<_Iter1>
 operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1> __x) noexcept
 {
   __x += __n;
@@ -323,7 +323,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
   typedef typename pointer_traits<_It>::element_type element_type;
   typedef typename pointer_traits<_It>::difference_type difference_type;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr static element_type* to_address(pointer __w) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr static element_type* to_address(pointer __w) noexcept
   {
     return _CUDA_VSTD::__to_address(__w.base());
   }

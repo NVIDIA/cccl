@@ -33,6 +33,7 @@ AttributeMacros: [
                   '_CCCL_DEVICE',
                   '_CCCL_FALLTHROUGH',
                   '_CCCL_FORCEINLINE',
+                  '_CCCL_HIDE_FROM_ABI',
                   '_CCCL_HOST_DEVICE',
                   '_CCCL_HOST',
                   '_CCCL_NO_UNIQUE_ADDRESS',
@@ -52,10 +53,7 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED_IN_CXX17',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
-                  '_LIBCUDACXX_EXCLUDE_FROM_EXPLICIT_INSTANTIATION',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
-                  '_LIBCUDACXX_INLINE_VISIBILITY',
-                  '_LIBCUDACXX_INTERNAL_LINKAGE',
                  ]
 BinPackArguments: false
 BinPackParameters: false

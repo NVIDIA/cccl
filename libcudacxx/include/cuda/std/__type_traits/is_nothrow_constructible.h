@@ -52,7 +52,7 @@ struct __libcpp_is_nothrow_constructible</*is constructible*/ true, /*is referen
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY void __implicit_conversion_to(_Tp) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void __implicit_conversion_to(_Tp) noexcept
 {}
 
 template <class _Tp, class _Arg>

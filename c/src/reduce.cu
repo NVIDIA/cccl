@@ -237,7 +237,7 @@ cudaError_t InvokeSingleTile(
   cccl_op_t op,
   cccl_value_t init,
   int cc,
-  CUfunction single_tile_kernel,
+  CUkernel single_tile_kernel,
   CUstream stream)
 {
   const runtime_tuning_policy policy = get_policy(cc, d_in.value_type, d_in.value_type);
@@ -258,7 +258,7 @@ cudaError_t InvokeSingleTile(
     void* out_ptr  = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
     void* args[]   = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
 
-    check(cuLaunchKernel(single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, args, 0));
+    check(cuLaunchKernel((CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, args, 0));
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -280,8 +280,8 @@ cudaError_t InvokePasses(
   cccl_op_t op,
   cccl_value_t init,
   int cc,
-  CUfunction reduce_kernel,
-  CUfunction single_tile_kernel,
+  CUkernel reduce_kernel,
+  CUkernel single_tile_kernel,
   CUdevice device,
   CUstream stream)
 {
@@ -301,8 +301,13 @@ cudaError_t InvokePasses(
     // Init regular kernel configuration
     const auto tile_size = policy.block_size * policy.items_per_thread;
 
+    // Older drivers have issues handling CUkernel in the occupancy queries, get the CUfunction instead.
+    // Assumes that the current device is properly set, it needs to be set for the occupancy queries anyway
+    CUfunction reduce_kernel_fn;
+    check(cuKernelGetFunction(&reduce_kernel_fn, reduce_kernel));
+
     int sm_occupancy = 1;
-    check(cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, reduce_kernel, policy.block_size, 0));
+    check(cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, reduce_kernel_fn, policy.block_size, 0));
 
     int reduce_device_occupancy = sm_occupancy * sm_count;
 
@@ -345,7 +350,8 @@ cudaError_t InvokePasses(
     TransformOpT transform_op{};
     void* reduce_args[] = {in_ptr, &allocations[0], &num_items, &even_share, op_state, &transform_op};
 
-    check(cuLaunchKernel(reduce_kernel, reduce_grid_size, 1, 1, policy.block_size, 1, 1, 0, stream, reduce_args, 0));
+    check(cuLaunchKernel(
+      (CUfunction) reduce_kernel, reduce_grid_size, 1, 1, policy.block_size, 1, 1, 0, stream, reduce_args, 0));
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -359,7 +365,8 @@ cudaError_t InvokePasses(
 
     void* single_tile_kernel_args[] = {&allocations[0], out_ptr, &reduce_grid_size, op_state, init.state, &transform_op};
 
-    check(cuLaunchKernel(single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, single_tile_kernel_args, 0));
+    check(cuLaunchKernel(
+      (CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, single_tile_kernel_args, 0));
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -381,9 +388,9 @@ cudaError_t Invoke(
   cccl_op_t op,
   cccl_value_t init,
   int cc,
-  CUfunction single_tile_kernel,
-  CUfunction single_tile_second_kernel,
-  CUfunction reduce_kernel,
+  CUkernel single_tile_kernel,
+  CUkernel single_tile_second_kernel,
+  CUkernel reduce_kernel,
   CUdevice device,
   CUstream stream)
 {
@@ -816,9 +823,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
       op,
       init,
       build.cc,
-      (CUfunction) build.single_tile_kernel,
-      (CUfunction) build.single_tile_second_kernel,
-      (CUfunction) build.reduction_kernel,
+      build.single_tile_kernel,
+      build.single_tile_second_kernel,
+      build.reduction_kernel,
       cu_device,
       stream);
   }

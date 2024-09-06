@@ -29,14 +29,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr auto
-size(const _Cont& __c) noexcept(noexcept(__c.size())) -> decltype(__c.size())
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto size(const _Cont& __c) noexcept(noexcept(__c.size())) -> decltype(__c.size())
 {
   return __c.size();
 }
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr size_t size(const _Tp (&)[_Sz]) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size(const _Tp (&)[_Sz]) noexcept
 {
   return _Sz;
 }
@@ -44,7 +43,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr size_t size(const _Tp (&)[_Sz]) noexcept
 
 #if _CCCL_STD_VER > 2017
 template <class _Cont>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr auto ssize(const _Cont& __c) noexcept(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto ssize(const _Cont& __c) noexcept(
   noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>>(__c.size())))
   -> common_type_t<ptrdiff_t, make_signed_t<decltype(__c.size())>>
 {
@@ -56,7 +55,7 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr auto ssize(const _Cont& __c) noexcept(
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsign-conversion")
 template <class _Tp, ptrdiff_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept
 {
   return _Sz;
 }

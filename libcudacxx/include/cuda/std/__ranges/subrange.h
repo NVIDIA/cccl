@@ -239,7 +239,7 @@ private:
   struct _Empty
   {
     template <class _Tp>
-    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Empty(_Tp) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr _Empty(_Tp) noexcept
     {}
   };
   using _Size                            = conditional_t<_StoreSize, make_unsigned_t<iter_difference_t<_Iter>>, _Empty>;
@@ -254,14 +254,13 @@ public:
   = default;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
   template <class _It = _Iter, enable_if_t<default_initializable<_It>, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
       : view_interface<subrange<_Iter, _Sent, _Kind>>(){};
 #  endif // _CCCL_STD_VER <= 2017
 
   _LIBCUDACXX_TEMPLATE(class _It)
   _LIBCUDACXX_REQUIRES(__subrange_from_iter_sent<_Iter, _It, _StoreSize>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_It __iter, _Sent __sent)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_It __iter, _Sent __sent)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
       , __begin_(_CUDA_VSTD::move(__iter))
       , __end_(_CUDA_VSTD::move(__sent))
@@ -269,8 +268,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It)
   _LIBCUDACXX_REQUIRES(__subrange_from_iter_sent_size<_Iter, _Kind, _It>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(
-    _It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
       , __begin_(_CUDA_VSTD::move(__iter))
       , __end_(_CUDA_VSTD::move(__sent))
@@ -285,27 +283,26 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_Range&& __range)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_Range&& __range)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range)
       : subrange(__range, _CUDA_VRANGES::size(__range))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
-  _LIBCUDACXX_HIDE_FROM_ABI
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
 #  if (!defined(_CCCL_COMPILER_GCC) || _GNUC_VER >= 900)
   _LIBCUDACXX_TEMPLATE(class _Pair)
   _LIBCUDACXX_REQUIRES(__pair_like<_Pair> _LIBCUDACXX_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr operator _Pair() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
   }
@@ -313,32 +310,31 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(copyable<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin() const
   {
     return __begin_;
   }
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES((!copyable<_It>) )
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _It begin()
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin()
   {
     return _CUDA_VSTD::move(__begin_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Sent end() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent end() const
   {
     return __end_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return __begin_ == __end_;
   }
 
   _LIBCUDACXX_TEMPLATE(subrange_kind _Kind_ = _Kind)
   _LIBCUDACXX_REQUIRES((_Kind_ == subrange_kind::sized))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr make_unsigned_t<iter_difference_t<_Iter>>
-  size() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr make_unsigned_t<iter_difference_t<_Iter>> size() const
   {
     if constexpr (_StoreSize)
     {
@@ -355,16 +351,14 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(forward_iterator<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
-  next(iter_difference_t<_Iter> __n = 1) const&
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
   {
     auto __tmp = *this;
     __tmp.advance(__n);
     return __tmp;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
-  next(iter_difference_t<_Iter> __n = 1) &&
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
   {
     advance(__n);
     return _CUDA_VSTD::move(*this);
@@ -372,15 +366,14 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(bidirectional_iterator<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange
-  prev(iter_difference_t<_Iter> __n = 1) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
   {
     auto __tmp = *this;
     __tmp.advance(-__n);
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange& advance(iter_difference_t<_Iter> __n)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange& advance(iter_difference_t<_Iter> __n)
   {
     if constexpr (bidirectional_iterator<_Iter>)
     {
@@ -441,8 +434,7 @@ template <size_t _Index,
           subrange_kind _Kind,
           enable_if_t<((_Index == 0) && copyable<_Iter>) || (_Index == 1), int>>
 #  endif // _CCCL_STD_VER <= 2017
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
 {
   if constexpr (_Index == 0)
   {
@@ -466,7 +458,7 @@ template <
   subrange_kind _Kind,
   enable_if_t<_Index<2, int>>
 #  endif // _CCCL_STD_VER <= 2017
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
 {
   if constexpr (_Index == 0)
   {

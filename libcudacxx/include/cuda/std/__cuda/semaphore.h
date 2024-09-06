@@ -29,10 +29,10 @@ class counting_semaphore : public _CUDA_VSTD::__semaphore_base<__least_max_value
   static_assert(__least_max_value <= _CUDA_VSTD::__semaphore_base<__least_max_value, _Sco>::max(), "");
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr counting_semaphore(ptrdiff_t __count = 0)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_semaphore(ptrdiff_t __count = 0)
       : _CUDA_VSTD::__semaphore_base<__least_max_value, _Sco>(__count)
   {}
-  ~counting_semaphore() = default;
+  _CCCL_HIDE_FROM_ABI ~counting_semaphore() = default;
 
   counting_semaphore(const counting_semaphore&)            = delete;
   counting_semaphore& operator=(const counting_semaphore&) = delete;

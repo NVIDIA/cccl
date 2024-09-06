@@ -31,8 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>
 next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {
   _LIBCUDACXX_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
@@ -54,7 +53,7 @@ struct __fn
 {
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ip operator()(_Ip __x) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
   {
     ++__x;
     return __x;
@@ -62,8 +61,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ip
-  operator()(_Ip __x, iter_difference_t<_Ip> __n) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
     _CUDA_VRANGES::advance(__x, __n);
     return __x;
@@ -71,7 +69,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
   {
     _CUDA_VRANGES::advance(__x, __bound_sentinel);
     return __x;
@@ -79,8 +77,7 @@ struct __fn
 
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Ip
-  operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
     _CUDA_VRANGES::advance(__x, __n, __bound_sentinel);
     return __x;

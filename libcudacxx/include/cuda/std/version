@@ -11,7 +11,7 @@
 #ifndef _CUDA_STD_VERSION
 #define _CUDA_STD_VERSION
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/detail/__config> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

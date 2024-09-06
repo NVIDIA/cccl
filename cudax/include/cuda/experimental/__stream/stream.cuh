@@ -23,21 +23,13 @@
 #endif // no system header
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/__device/device_ref.cuh>
-#include <cuda/experimental/__event/timed_event.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 namespace cuda::experimental
 {
-
-namespace detail
-{
-// 0 is a valid stream in CUDA, so we need some other invalid stream representation
-// Can't make it constexpr, because cudaStream_t is a pointer type
-static const ::cudaStream_t invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
-} // namespace detail
 
 //! @brief An owning wrapper for cudaStream_t.
 struct stream : stream_ref
@@ -51,6 +43,7 @@ struct stream : stream_ref
   //!
   //! @throws cuda_error if stream creation fails
   explicit stream(device_ref __dev, int __priority = default_priority)
+      : stream_ref(detail::__invalid_stream)
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(
@@ -67,9 +60,9 @@ struct stream : stream_ref
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
   //! @post `stream()` returns an invalid stream handle
-  // Can't be constexpr because invalid_stream isn't
+  // Can't be constexpr because __invalid_stream isn't
   explicit stream(uninit_t) noexcept
-      : stream_ref(detail::invalid_stream)
+      : stream_ref(detail::__invalid_stream)
   {}
 
   //! @brief Move-construct a new `stream` object
@@ -78,7 +71,7 @@ struct stream : stream_ref
   //!
   //! @post `__other` is in moved-from state.
   stream(stream&& __other) noexcept
-      : stream(_CUDA_VSTD::exchange(__other.__stream, detail::invalid_stream))
+      : stream(_CUDA_VSTD::exchange(__other.__stream, detail::__invalid_stream))
   {}
 
   stream(const stream&) = delete;
@@ -88,7 +81,7 @@ struct stream : stream_ref
   //! @note If the stream fails to be destroyed, the error is silently ignored.
   ~stream()
   {
-    if (__stream != detail::invalid_stream)
+    if (__stream != detail::__invalid_stream)
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
@@ -109,70 +102,6 @@ struct stream : stream_ref
   }
 
   stream& operator=(const stream&) = delete;
-
-  // Ideally records and waits below would be in stream_ref, but we can't have it depend on cudax yet
-
-  //! @brief Create a new event and record it into this stream
-  //!
-  //! @return A new event that was recorded into this stream
-  //!
-  //! @throws cuda_error if event creation or record failed
-  _CCCL_NODISCARD event record_event(event::flags __flags = event::flags::none) const
-  {
-    return event(*this, __flags);
-  }
-
-  //! @brief Create a new timed event and record it into this stream
-  //!
-  //! @return A new timed event that was recorded into this stream
-  //!
-  //! @throws cuda_error if event creation or record failed
-  _CCCL_NODISCARD timed_event record_timed_event(event::flags __flags = event::flags::none) const
-  {
-    return timed_event(*this, __flags);
-  }
-
-  using stream_ref::wait;
-
-  //! @brief Make all future work submitted into this stream depend on completion of the specified event
-  //!
-  //! @param __ev Event that this stream should wait for
-  //!
-  //! @throws cuda_error if inserting the dependency fails
-  void wait(event_ref __ev) const
-  {
-    assert(__ev.get() != nullptr);
-    // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
-    detail::driver::streamWaitEvent(get(), __ev.get());
-  }
-
-  //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
-  //! stream
-  //!
-  //! @param __other Stream that this stream should wait for
-  //!
-  //! @throws cuda_error if inserting the dependency fails
-  void wait(stream_ref __other) const
-  {
-    // TODO consider an optimization to not create an event every time and instead have one persistent event or one
-    // per stream
-    assert(__stream != detail::invalid_stream);
-    event __tmp(__other);
-    wait(__tmp);
-  }
-
-  //! @brief Get device under which this stream was created.
-  //!
-  //! @throws cuda_error if device check fails
-  device_ref device() const
-  {
-    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
-    // lower to CUDART for this instead
-    __ensure_current_device __dev_setter(*this);
-    int result;
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &result);
-    return result;
-  }
 
   //! @brief Construct an `stream` object from a native `cudaStream_t` handle.
   //!
@@ -199,7 +128,7 @@ struct stream : stream_ref
   //! @post The stream object is in a moved-from state.
   _CCCL_NODISCARD ::cudaStream_t release()
   {
-    return _CUDA_VSTD::exchange(__stream, detail::invalid_stream);
+    return _CUDA_VSTD::exchange(__stream, detail::__invalid_stream);
   }
 
 private:

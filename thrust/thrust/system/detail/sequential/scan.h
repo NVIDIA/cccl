@@ -68,7 +68,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 
     *result = *first;
 
-    for (++first, ++result; first != last; ++first, ++result)
+    for (++first, ++result; first != last; ++first, (void) ++result)
     {
       *result = sum = wrapped_binary_op(sum, *first);
     }
@@ -144,7 +144,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
     *result = sum;
     sum     = binary_op(sum, tmp);
 
-    for (++first, ++result; first != last; ++first, ++result)
+    for (++first, ++result; first != last; ++first, (void) ++result)
     {
       tmp     = *first;
       *result = sum;

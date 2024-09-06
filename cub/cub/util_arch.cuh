@@ -43,7 +43,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_cpp_dialect.cuh>
+#include <cub/util_cpp_dialect.cuh> // IWYU pragma: export
 #include <cub/util_macro.cuh>
 #include <cub/util_namespace.cuh>
 
