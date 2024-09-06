@@ -27,18 +27,14 @@ using cub::detail::transform::Algorithm;
 template <Algorithm Alg>
 struct policy_hub_for_alg
 {
-  // needed for the launch bounds to compile
-  struct dummy
-  {
-    static constexpr int BLOCK_THREADS = 256;
-  };
-
   struct max_policy : cub::ChainedPolicy<300, max_policy, max_policy>
   {
     static constexpr int min_bif         = 64 * 1024;
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::fallback_for, dummy, cub::detail::transform::async_copy_policy_t<256>>;
+      ::cuda::std::_If<Alg == Algorithm::fallback_for,
+                       cub::detail::transform::fallback_for_policy,
+                       cub::detail::transform::async_copy_policy_t<256>>;
   };
 };
 

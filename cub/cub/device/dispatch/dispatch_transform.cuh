@@ -20,9 +20,11 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 // see also: https://godbolt.org/z/1x8b4hn3G
 #endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_VER < 1105000
 
+#include <cub/agent/agent_for.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/device/device_for.cuh>
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -92,25 +94,52 @@ enum class Algorithm
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 };
 
-// TODO(bgruber): only needed so we can instantiate the kernel generically for any policy. Remove when fallback_for is
-// dropped.
-template <typename, typename Offset, typename F, typename RandomAccessIteratorOut, typename... RandomAccessIteratorIn>
+// this kernel replicates the behavior of cub::DeviceFor::Bulk
+template <typename ForPolicy,
+          typename Offset,
+          typename F,
+          typename RandomAccessIteratorOut,
+          typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_impl(
   ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>,
-  Offset,
-  int,
-  F,
-  RandomAccessIteratorOut,
-  RandomAccessIteratorIn...)
-{}
+  Offset num_items,
+  int /* items_per_thread */,
+  F transform_op,
+  RandomAccessIteratorOut out,
+  RandomAccessIteratorsIn... ins)
+{
+  auto op = [&](Offset i) {
+    out[i] = transform_op(ins[i]...);
+  };
+  using OpT = decltype(op);
+
+  // TODO(bgruber): verbatim copy from for_each's static_kernel below:
+  using agent_t = for_each::agent_block_striped_t<ForPolicy, Offset, OpT>;
+
+  constexpr auto block_threads  = ForPolicy::block_threads;
+  constexpr auto items_per_tile = ForPolicy::items_per_thread * block_threads;
+
+  const auto tile_base     = static_cast<Offset>(blockIdx.x) * items_per_tile;
+  const auto num_remaining = num_items - tile_base;
+  const auto items_in_tile = static_cast<Offset>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
+
+  if (items_in_tile == items_per_tile)
+  {
+    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
+  }
+  else
+  {
+    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
+  }
+}
 
 template <int BlockThreads>
 struct async_copy_policy_t
 {
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int block_threads = BlockThreads;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int MIN_ITEMS_PER_THREAD = 1;
-  static constexpr int MAX_ITEMS_PER_THREAD = 32;
+  static constexpr int min_items_per_thread = 1;
+  static constexpr int max_items_per_thread = 32;
 };
 
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
@@ -312,7 +341,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 
       namespace ptx = ::cuda::ptx;
 
-      constexpr int block_dim = BulkCopyPolicy::BLOCK_THREADS;
+      constexpr int block_dim = BulkCopyPolicy::block_threads;
       const int tile_stride   = block_dim * num_elem_per_thread;
       const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
       const int tile_size     = ::cuda::std::min(num_items - offset, Offset{tile_stride});
@@ -451,7 +480,7 @@ template <typename MaxPolicy,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteartorsIn>
-__launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::BLOCK_THREADS)
+__launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
     Offset num_items,
     int num_elem_per_thread,
@@ -486,6 +515,8 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> 
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
+using fallback_for_policy = for_each::policy_hub_t::policy_350_t::for_policy_t;
+
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
 struct policy_hub
 {
@@ -505,18 +536,12 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   // TODO(bgruber): consider a separate kernel for just filling
 
-  struct dummy_fallback_for_policy
-  {
-    // only used to allow transform_kernel to instantiate, not used anywhere else
-    static constexpr int BLOCK_THREADS = 256;
-  };
-
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = Algorithm::fallback_for;
-    using algo_policy               = dummy_fallback_for_policy;
+    using algo_policy               = fallback_for_policy;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -527,7 +552,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     using async_policy           = async_copy_policy_t<256>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::BLOCK_THREADS * async_policy::MIN_ITEMS_PER_THREAD)
+        async_policy::block_threads * async_policy::min_items_per_thread)
       > 48 * 1024;
     static constexpr bool any_type_is_overalinged =
 #  if _CCCL_STD_VER >= 2017
@@ -539,7 +564,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
     static constexpr auto algorithm = use_fallback ? Algorithm::fallback_for : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, dummy_fallback_for_policy, async_policy>;
+    using algo_policy               = ::cuda::std::_If<use_fallback, fallback_for_policy, async_policy>;
   };
 
   using max_policy = policy900;
@@ -676,9 +701,9 @@ struct dispatch_t<RequiresStableAddress,
         tuple<THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron, decltype(CUB_DETAIL_TRANSFORM_KERNEL_PTR), int>>
   {
     using policy_t          = typename ActivePolicy::algo_policy;
-    constexpr int block_dim = policy_t::BLOCK_THREADS;
+    constexpr int block_dim = policy_t::block_threads;
     static_assert(block_dim % bulk_copy_alignment == 0,
-                  "BLOCK_THREADS needs to be a multiple of bulk_copy_alignment (128)"); // then tile_size is a multiple
+                  "block_threads needs to be a multiple of bulk_copy_alignment (128)"); // then tile_size is a multiple
                                                                                         // of 128-byte
 
     auto determine_element_counts = [&]() -> PoorExpected<elem_counts> {
@@ -690,9 +715,9 @@ struct dispatch_t<RequiresStableAddress,
 
       elem_counts last_counts{};
       // Increase the number of output elements per thread until we reach the required bytes in flight.
-      static_assert(policy_t::MIN_ITEMS_PER_THREAD <= policy_t::MAX_ITEMS_PER_THREAD, ""); // ensures the loop below
+      static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread, ""); // ensures the loop below
       // runs at least once
-      for (int elem_per_thread = +policy_t::MIN_ITEMS_PER_THREAD; elem_per_thread < +policy_t::MAX_ITEMS_PER_THREAD;
+      for (int elem_per_thread = +policy_t::min_items_per_thread; elem_per_thread < +policy_t::max_items_per_thread;
            ++elem_per_thread)
       {
         const int tile_size = block_dim * elem_per_thread;
@@ -701,7 +726,7 @@ struct dispatch_t<RequiresStableAddress,
         {
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           // assert should be prevented by smem check in policy
-          assert(last_counts.elem_per_thread > 0 && "MIN_ITEMS_PER_THREAD exceeds available shared memory");
+          assert(last_counts.elem_per_thread > 0 && "min_items_per_thread exceeds available shared memory");
 #  endif // CUB_DETAIL_DEBUG_ENABLE_HOST_ASSERTIONS
           return last_counts;
         }
@@ -777,29 +802,27 @@ struct dispatch_t<RequiresStableAddress,
       op,
       out,
       make_aligned_base_ptr_kernel_arg(
-        THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_alignment)...);
+        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_alignment)...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <std::size_t... Is>
-  struct non_contiguous_fallback_op_t
-  {
-    ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
-    RandomAccessIteratorOut out;
-    mutable TransformOp op; // too many users forgot to mark their operator()'s const ...
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(Offset i) const
-    {
-      out[i] = op(::cuda::std::get<Is>(in)[i]...);
-    }
-  };
-
-  template <typename, std::size_t... Is>
+  template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>)
   {
-    using op_t = non_contiguous_fallback_op_t<Is...>;
-    return for_each::dispatch_t<Offset, op_t>::dispatch(num_items, op_t{in, out, op}, stream);
+    constexpr int block_threads    = ActivePolicy::algo_policy::block_threads;
+    constexpr int items_per_thread = ActivePolicy::algo_policy::items_per_thread;
+    constexpr int tile_size        = block_threads * items_per_thread;
+    const auto grid_dim            = static_cast<unsigned>(::cuda::ceil_div(num_items, Offset{tile_size}));
+    return CubDebug(
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_threads, 0, stream)
+        .doit(
+          CUB_DETAIL_TRANSFORM_KERNEL_PTR,
+          num_items,
+          items_per_thread,
+          op,
+          out,
+          make_iterator_kernel_arg(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
   }
 
   template <typename ActivePolicy>
