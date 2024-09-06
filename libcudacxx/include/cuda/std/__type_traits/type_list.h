@@ -319,7 +319,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn_<index_sequence<_Is...>>
   _CCCL_HOST_DEVICE static _Up __call_(__void_ptr<_Is>..., _Up*, ...);
 
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<decltype(__type_index_fn::__call_(__type_ptr<_Ts>{nullptr}...))>;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<decltype(__type_index_fn_::__call_(__type_ptr<_Ts>{nullptr}...))>;
 };
 
 template <size_t _Ip>
