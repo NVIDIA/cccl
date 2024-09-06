@@ -24,11 +24,14 @@
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
+#include <cuda/std/__new/launder.h>
 #include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/span>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/memory_resource.cuh>
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
 
 #if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
   && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
@@ -93,7 +96,28 @@ private:
     constexpr size_t __alignment = alignof(_Tp);
     size_t __space               = __get_allocation_size(__count_);
     void* __ptr                  = __buf_;
-    return reinterpret_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space));
+    return _CUDA_VSTD::launder(
+      reinterpret_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
+  }
+
+  //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
+  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<_Tp>
+  __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
+  {
+    static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
+                  "The buffer must be device accessible to be passed to `launch`");
+    return {__self.__get_data(), __self.size()};
+  }
+
+  //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
+  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<const _Tp>
+  __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
+  {
+    static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
+                  "The buffer must be device accessible to be passed to `launch`");
+    return {__self.__get_data(), __self.size()};
   }
 
 public:
@@ -186,16 +210,28 @@ public:
     return __count_;
   }
 
-  //! @brief Returns an \c async_resource_ref of the resource used to allocate the buffer
-  _CCCL_NODISCARD _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
+  //! @rst
+  //! Returns an :ref:`asnyc_resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used
+  //! to allocate the buffer
+  //! @endrst
+  _CCCL_NODISCARD _CUDA_VMR::async_resource_ref<_Properties...> resource() const noexcept
   {
-    return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_async_buffer*>(this)->__mr_};
+    return _CUDA_VMR::async_resource_ref<_Properties...>{const_cast<uninitialized_async_buffer*>(this)->__mr_};
   }
 
-  //! @brief Returns the stream used to allocate
+  //! @brief Returns the stored stream
   _CCCL_NODISCARD constexpr ::cuda::stream_ref get_stream() const noexcept
   {
     return __stream_;
+  }
+
+  //! @brief Replaces the stored stream
+  //! @param __stream the new stream
+  //! @note Synchronizes with the old stream
+  _CCCL_NODISCARD constexpr void get_stream(::cuda::stream_ref __stream)
+  {
+    __stream_.wait();
+    __stream_ = __stream;
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_async_buffer
