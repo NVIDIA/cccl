@@ -32,7 +32,7 @@ template <class _Tp,
           class _Up,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up), int> = 0,
-          class _Common                                                             = __common_type_t<_Tp, _Up>>
+          class _Common = _CUDA_VSTD::__common_type_t<_Tp, _Up>>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   _LIBCUDACXX_DEBUG_ASSERT(__a >= _Tp(0), "cuda::ceil_div: a must be non negative");

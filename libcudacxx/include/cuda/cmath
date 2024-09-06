@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/ceil_div.h>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/cmath>
 
 #endif // _CUDA_CMATH
