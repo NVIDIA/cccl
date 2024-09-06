@@ -71,7 +71,8 @@ struct __type_call_indirect_fn
 };
 
 template <size_t>
-_CCCL_GLOBAL_CONSTANT bool __dependent_value = true;
+struct __dependent_value : true_type
+{};
 } // namespace __detail
 
 //! \brief Evaluate a meta-callable with the given arguments, with an indirection
@@ -79,7 +80,7 @@ _CCCL_GLOBAL_CONSTANT bool __dependent_value = true;
 template <class _Fn, class... _Ts>
 using __type_call_indirect _LIBCUDACXX_NODEBUG_TYPE = //
   typename __detail::__type_call_indirect_fn< //
-    __detail::__dependent_value<sizeof(__type_list<_Fn, _Ts...>*)>>::template __call< //
+    __detail::__dependent_value<sizeof(__type_list<_Fn, _Ts...>*)>::value>::template __call< //
     _Fn::template __call,
     _Ts...>;
 
