@@ -45,9 +45,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   const KeyT* d_keys_in,
-  KeyT* d_keys_out,
+  KeyT*& d_keys_out,
   const ValueT* d_values_in,
-  ValueT* d_values_out,
+  ValueT*& d_values_out,
   NumItemsT num_items,
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
@@ -58,8 +58,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
   cub::DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-  return cub::DispatchSegmentedSort<IS_DESCENDING, KeyT, ValueT, NumItemsT, BeginOffsetIteratorT, EndOffsetIteratorT>::
-    Dispatch(
+  auto status = cub::
+    DispatchSegmentedSort<IS_DESCENDING, KeyT, ValueT, NumItemsT, BeginOffsetIteratorT, EndOffsetIteratorT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -70,6 +70,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
       d_end_offsets,
       is_overwrite,
       stream);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
+  if (d_keys.Current() != d_keys_out)
+  {
+    d_keys_out = d_keys.Current();
+    d_values_out = d_values.Current();
+  }
+  return cudaSuccess;
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1
@@ -258,7 +268,8 @@ try
   constexpr int num_value_seeds    = 1;
   const bool is_descending         = GENERATE(false, true);
   const bool is_overwrite          = GENERATE(false, true);
-  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = ::cuda::ceil_div(num_items, Step);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
 
@@ -272,8 +283,7 @@ try
   c2h::device_vector<value_t> out_values(num_items);
   auto offsets =
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
-  auto offsets_plus_1 =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{1}), segment_iterator_t{num_items});
+  auto offsets_plus_1 = offsets + 1;
 
   if (is_descending)
   {
@@ -323,7 +333,8 @@ try
   constexpr int num_key_seeds      = 1;
   constexpr int num_value_seeds    = 1;
   const bool is_descending         = GENERATE(false, true);
-  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
 
@@ -338,6 +349,10 @@ try
   offsets[1] = static_cast<offset_t>(num_items);
   offsets[2] = static_cast<offset_t>(num_items);
 
+  auto refs = segmented_radix_sort_reference(
+    in_keys, in_values, is_descending, num_segments, offsets.cbegin(), offsets.cbegin() + 1);
+  auto& ref_keys   = refs.first;
+  auto& ref_values = refs.second;
   if (is_descending)
   {
     dispatch_segmented_sort_pairs_descending(
@@ -363,10 +378,6 @@ try
       offsets.cbegin() + 1);
   }
   // compute the reference only if the routine is able to terminate correctly
-  auto refs = segmented_radix_sort_reference(
-    in_keys, in_values, is_descending, num_segments, offsets.cbegin(), offsets.cbegin() + 1);
-  auto& ref_keys   = refs.first;
-  auto& ref_values = refs.second;
   REQUIRE(ref_keys == out_keys);
   REQUIRE(ref_values == out_values);
 }

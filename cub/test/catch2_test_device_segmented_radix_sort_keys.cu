@@ -45,6 +45,7 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <driver_types.h>
 
 // TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
@@ -54,7 +55,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   const KeyT* d_keys_in,
-  KeyT* d_keys_out,
+  KeyT*& d_keys_out,
   NumItemsT num_items,
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
@@ -66,7 +67,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
 {
   cub::DoubleBuffer<cub::NullType> d_values;
   cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-  return cub::DispatchSegmentedRadixSort<
+  auto status = cub::DispatchSegmentedRadixSort<
     IS_DESCENDING,
     KeyT,
     cub::NullType,
@@ -84,6 +85,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
                          end_bit,
                          is_overwrite,
                          stream);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
+  if (d_keys.Current() != d_keys_out)
+  {
+    d_keys_out = d_keys.Current();
+  }
+  return cudaSuccess;
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -506,13 +516,14 @@ try
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using offset_t                   = c2h::get<0, TestType>;
   constexpr std::size_t step       = 500;
-  using segment_iterator_t         = segment_iterator<offset_t, Step>;
+  using segment_iterator_t         = segment_iterator<offset_t, step>;
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   const bool is_descending         = GENERATE(false, true);
   const bool is_overwrite          = GENERATE(false, true);
-  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
-  const std::size_t num_segments = ::cuda::ceil_div(num_items, Step);
+  const std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_segments = ::cuda::ceil_div(num_items, step);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
 
   c2h::device_vector<key_t> in_keys(num_items);
@@ -567,7 +578,8 @@ try
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   const bool is_descending         = GENERATE(false, true);
-  const std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
 
@@ -579,6 +591,7 @@ try
   offsets[1] = static_cast<offset_t>(num_items);
   offsets[2] = static_cast<offset_t>(num_items);
 
+  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, offsets);
   if (is_descending)
   {
     sort_keys_descending(
@@ -603,7 +616,6 @@ try
       begin_bit<key_t>(),
       end_bit<key_t>());
   }
-  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, offsets);
   REQUIRE((ref_keys == out_keys) == true);
 }
 catch (std::bad_alloc& e)

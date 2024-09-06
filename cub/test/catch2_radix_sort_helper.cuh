@@ -27,6 +27,7 @@
 
 #pragma once
 
+//#define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_macro.cuh>
@@ -60,6 +61,8 @@ template <typename OffsetT, OffsetT Step>
 struct segment_iterator
 {
   OffsetT last = 0;
+
+  segment_iterator(OffsetT last1) : last{last1} {}
 
   __host__ __device__ OffsetT operator()(OffsetT x) const
   {
