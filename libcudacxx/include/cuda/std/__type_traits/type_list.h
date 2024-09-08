@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -63,68 +64,23 @@ using __type_call2 _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ty,
 
 namespace __detail
 {
-template <bool _DependentValue>
+template <size_t _DependentValue>
 struct __type_call_indirect_fn
 {
   template <template <class...> class _Fn, class... _Ts>
   using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ts...>;
 };
-
-template <size_t>
-struct __dependent_value : true_type
-{};
 } // namespace __detail
 
 //! \brief Evaluate a meta-callable with the given arguments, with an indirection
 //! to avoid the dreaded "pack expansion argument for non-pack parameter" error.
 template <class _Fn, class... _Ts>
 using __type_call_indirect _LIBCUDACXX_NODEBUG_TYPE = //
-  typename __detail::__type_call_indirect_fn< //
-    __detail::__dependent_value<sizeof(__type_list<_Fn, _Ts...>*)>::value>::template __call< //
-    _Fn::template __call,
-    _Ts...>;
-
-namespace __detail
-{
-// \brief A helper for determining the arity of a template.
-// (This is unused for now, I just want to see if this passes CI.)
-template <template <class> class _Fn>
-_CCCL_HOST_DEVICE constexpr int __template_arity_aux()
-{
-  return 1;
-}
-
-template <template <class, class> class _Fn>
-_CCCL_HOST_DEVICE constexpr int __template_arity_aux()
-{
-  return 2;
-}
-
-template <template <class...> class _Fn, int _Arity = __template_arity_aux<_Fn>()>
-_CCCL_HOST_DEVICE constexpr int __template_arity(int)
-{
-  return _Arity;
-}
-
-template <template <class...> class _Fn>
-_CCCL_HOST_DEVICE constexpr int __template_arity(long)
-{
-  return -1;
-}
-
-template <class...>
-struct _Tn;
-template <class>
-struct _T1;
-template <class, class>
-struct _T2;
-static_assert(__template_arity<_Tn>(0) == -1, "");
-static_assert(__template_arity<_T1>(0) == 1, "");
-static_assert(__template_arity<_T2>(0) == 2, "");
-} // namespace __detail
+  typename __detail::__type_call_indirect_fn<sizeof(
+    __type_list<_Fn, _Ts...>*)>::template __call<_Fn::template __call, _Ts...>;
 
 //! \brief Turns a class or alias template into a meta-callable
-template <template <class...> class _Fn /*, int _Arity = __detail::__template_arity<_Fn>(0)*/>
+template <template <class...> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote
 {
   template <class... _Ts>
@@ -360,36 +316,19 @@ struct __type_index_large_size_fn<index_sequence<_Is...>>
 template <size_t _Ip>
 struct __type_index_small_size_fn;
 
-#    define _LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(_Ny, ...) \
-      template <>                                          \
-      struct __type_index_small_size_fn<_Ny>               \
-      {                                                    \
-        template <__VA_ARGS__ class _Ty, class...>         \
-        using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;       \
-      }
+#    define _M0(X) class,
+#    define _M1(_N)                                             \
+      template <>                                               \
+      struct __type_index_small_size_fn<_N>                     \
+      {                                                         \
+        template <_CCCL_PP_REPEAT(_N, _M0) class _Ty, class...> \
+        using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;            \
+      };
 
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(0, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(1, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(2, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(3, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(4, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(5, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(6, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(7, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(8, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(9, class, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(10, class, class, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(11, class, class, class, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
-  12, class, class, class, class, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
-  13, class, class, class, class, class, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
-  14, class, class, class, class, class, class, class, class, class, class, class, class, class, class, );
-_LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN(
-  15, class, class, class, class, class, class, class, class, class, class, class, class, class, class, class, );
+_CCCL_PP_REPEAT16(_M1)
 
-#    undef _LIBCUDACXX_TYPE_INDEX_SMALL_SIZE_FN
+#    undef _M0
+#    undef _M1
 
 template <bool _IsSmall>
 struct __type_index_select_fn // Default for larger indices
