@@ -261,6 +261,11 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
     endif()
 
+    # enable lambdas for all API examples
+    if ("${test_target}" MATCHES "test.[A-Za-z0-9_]+_api")
+      target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+    endif()
+
     target_link_libraries(${test_target} PRIVATE
       ${cub_target}
       ${config_c2h_target}
