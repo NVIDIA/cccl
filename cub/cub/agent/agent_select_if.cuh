@@ -164,10 +164,15 @@ struct partition_distinct_output_t
  * selection)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Signed integer type for offsets within a partition
  *
- * @tparam ScanTileStateT
- *   The tile state class used in the decoupled look-back
+ * @tparam StreamingContextT
+ *   Type providing the context information for the current partition, with the following member functions:
+ *    input_offset() -> base offset for the input (and flags) iterator
+ *    num_previously_selected() -> base offset for the output iterator for selected items
+ *    num_previously_rejected() -> base offset for the output iterator for rejected items (partition only)
+ *    num_total_items() -> total number of items across all partitions (partition only)
+ *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
  * @tparam KEEP_REJECTS
  *   Whether or not we push rejected items to the back of the output
@@ -179,6 +184,7 @@ template <typename AgentSelectIfPolicyT,
           typename SelectOpT,
           typename EqualityOpT,
           typename OffsetT,
+          typename StreamingContextT,
           bool KEEP_REJECTS,
           bool MayAlias>
 struct AgentSelectIf
@@ -304,11 +310,12 @@ struct AgentSelectIf
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
   WrappedInputIteratorT d_in; ///< Input items
-  OutputIteratorWrapperT d_selected_out; ///< Unique output items
+  OutputIteratorWrapperT d_selected_out; ///< Output iterator for the selected items
   WrappedFlagsInputIteratorT d_flags_in; ///< Input selection flags (if applicable)
   InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
   SelectOpT select_op; ///< Selection operator
   OffsetT num_items; ///< Total number of input items
+  StreamingContextT streaming_context; ///< Context for the current partition
 
   //---------------------------------------------------------------------
   // Constructor
@@ -343,7 +350,8 @@ struct AgentSelectIf
     OutputIteratorWrapperT d_selected_out,
     SelectOpT select_op,
     EqualityOpT equality_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    StreamingContextT streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_selected_out(d_selected_out)
@@ -351,6 +359,7 @@ struct AgentSelectIf
       , inequality_op(equality_op)
       , select_op(select_op)
       , num_items(num_items)
+      , streaming_context(streaming_context)
   {}
 
   //---------------------------------------------------------------------
@@ -395,6 +404,7 @@ struct AgentSelectIf
     CTA_SYNC();
 
     FlagT flags[ITEMS_PER_THREAD];
+    auto d_base_flags = d_flags_in + streaming_context.input_offset();
     if (IS_LAST_TILE)
     {
       // Initialize the out-of-bounds flags
@@ -404,11 +414,11 @@ struct AgentSelectIf
         selection_flags[ITEM] = true;
       }
       // Guarded loads
-      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items);
+      BlockLoadFlags(temp_storage.load_flags).Load(d_base_flags + tile_offset, flags, num_tile_items);
     }
     else
     {
-      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
+      BlockLoadFlags(temp_storage.load_flags).Load(d_base_flags + tile_offset, flags);
     }
 
 #pragma unroll
@@ -513,6 +523,9 @@ struct AgentSelectIf
     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
     OffsetT num_selections)
   {
+    // Get the output iterator with a given base offset
+    auto d_base_selected_out = d_selected_out + streaming_context.num_previously_selected();
+
 // Scatter flagged items
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -521,7 +534,7 @@ struct AgentSelectIf
       {
         if ((!IS_LAST_TILE) || selection_indices[ITEM] < num_selections)
         {
-          d_selected_out[selection_indices[ITEM]] = items[ITEM];
+          d_base_selected_out[selection_indices[ITEM]] = items[ITEM];
         }
       }
     }
@@ -568,9 +581,11 @@ struct AgentSelectIf
 
     CTA_SYNC();
 
+    // Get the output iterator with a given base offset
+    auto d_base_selected_out = d_selected_out + streaming_context.num_previously_selected();
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
-      d_selected_out[num_selections_prefix + item] = temp_storage.raw_exchange.Alias()[item];
+      d_base_selected_out[num_selections_prefix + item] = temp_storage.raw_exchange.Alias()[item];
     }
   }
 
@@ -683,8 +698,11 @@ struct AgentSelectIf
     int tile_num_rejections,
     OffsetT num_selections_prefix,
     OffsetT num_rejected_prefix,
-    detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_it_wrapper)
+    detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_wrapper)
   {
+    auto selected_out_it = partitioned_out_wrapper.selected_it + streaming_context.num_previously_selected();
+    auto rejected_out_it = partitioned_out_wrapper.rejected_it + streaming_context.num_previously_rejected();
+
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
@@ -700,11 +718,11 @@ struct AgentSelectIf
       {
         if (item_idx >= tile_num_rejections)
         {
-          partitioned_out_it_wrapper.selected_it[scatter_offset] = item;
+          selected_out_it[scatter_offset] = item;
         }
         else
         {
-          partitioned_out_it_wrapper.rejected_it[scatter_offset] = item;
+          rejected_out_it[scatter_offset] = item;
         }
       }
     }
@@ -723,16 +741,19 @@ struct AgentSelectIf
     OffsetT num_rejected_prefix,
     PartitionedOutputItT partitioned_out_it)
   {
+    using total_offset_t           = typename StreamingContextT::total_num_items_t;
+    auto const selected_base_begin = streaming_context.num_previously_selected();
+    auto const rejected_base_end   = streaming_context.num_total_items() - streaming_context.num_previously_rejected();
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
       int rejection_idx = item_idx;
       int selection_idx = item_idx - tile_num_rejections;
-      OffsetT scatter_offset =
+      total_offset_t scatter_offset =
         (item_idx < tile_num_rejections)
-          ? num_items - num_rejected_prefix - rejection_idx - 1
-          : num_selections_prefix + selection_idx;
+          ? rejected_base_end - static_cast<total_offset_t>(num_rejected_prefix - rejection_idx - 1)
+          : selected_base_begin + num_selections_prefix + selection_idx;
 
       InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
@@ -771,13 +792,14 @@ struct AgentSelectIf
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
+    auto d_base_in = d_in + streaming_context.input_offset();
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items, num_tile_items);
     }
     else
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
+      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items);
     }
 
     // Initialize selection_flags
@@ -850,13 +872,14 @@ struct AgentSelectIf
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
+    auto d_base_in = d_in + streaming_context.input_offset();
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items, num_tile_items);
     }
     else
     {
-      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
+      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items);
     }
 
     // Initialize selection_flags
@@ -960,7 +983,7 @@ struct AgentSelectIf
     auto tile_state_wrapper = MemoryOrderedTileStateT{tile_state};
 
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx        = blockIdx.x;
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
 
     if (tile_idx < num_tiles - 1)
@@ -976,8 +999,8 @@ struct AgentSelectIf
 
       if (threadIdx.x == 0)
       {
-        // Output the total number of items selection_flags
-        *d_num_selected_out = num_selections;
+        // Update the number of selected items with this partition's selections
+        streaming_context.update_num_selected(d_num_selected_out, num_selections);
       }
     }
   }
