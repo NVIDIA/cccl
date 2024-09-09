@@ -171,8 +171,12 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   }                                                                                                  \
   DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4146) // warning C4146: unary minus operator applied to unsigned type, result still unsigned
+
 // Create the unit tests
 DECLARE_UNARY_ARITHMETIC_FUNCTIONAL_UNITTEST(negate, Negate);
+_CCCL_DIAG_POP
 DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_not, LogicalNot);
 
 // Ad-hoc testing for other functionals

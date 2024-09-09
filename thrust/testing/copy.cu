@@ -522,7 +522,7 @@ void TestCopyIfNonTrivial()
 
     // Fill buffer with 0s to prevent warnings about uninitialized reads while
     // ensure that the 'magic number' mechanism works as intended:
-    std::fill(buffer.begin(), buffer.end(), 0);
+    std::fill(buffer.begin(), buffer.end(), static_cast<unsigned char>(0));
 
     object_with_non_trivial_ctor initialized;
     object_with_non_trivial_ctor* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());
