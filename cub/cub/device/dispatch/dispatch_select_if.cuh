@@ -66,6 +66,14 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
+namespace select
+{
+// Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
+using per_partition_offset_t = ::cuda::std::int32_t;
+
+// Offset type large enough to represent any index within the input and output iterators
+using num_total_items_t = ::cuda::std::int64_t;
+
 template <typename TotalNumItemsT>
 class streaming_select_context_t
 {
@@ -184,6 +192,7 @@ struct agent_select_if_wrapper_t
                         MayAlias>::AgentSelectIf;
   };
 };
+} // namespace select
 } // namespace detail
 
 /******************************************************************************
@@ -283,7 +292,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(
   cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
+    detail::select::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -306,7 +315,7 @@ __launch_bounds__(int(
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
+    detail::select::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -379,7 +388,7 @@ template <typename InputIteratorT,
           bool MayAlias           = false,
           typename SelectedPolicy = detail::device_select_policy_hub<cub::detail::value_t<InputIteratorT>,
                                                                      cub::detail::value_t<FlagsInputIteratorT>,
-                                                                     OffsetT,
+                                                                     detail::select::per_partition_offset_t,
                                                                      MayAlias,
                                                                      KEEP_REJECTS>>
 struct DispatchSelectIf : SelectedPolicy
@@ -389,14 +398,15 @@ struct DispatchSelectIf : SelectedPolicy
    ******************************************************************************/
 
   // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
-  using PerPartitionOffsetT = ::cuda::std::int32_t;
+  using per_partition_offset_t = detail::select::per_partition_offset_t;
 
   // Offset type large enough to represent any index within the input and output iterators
-  using NumTotalItemsT = ::cuda::std::int64_t;
+  using num_total_items_t = detail::select::num_total_items_t;
 
-  using streaming_context_t = detail::streaming_select_context_t<NumTotalItemsT>;
+  // Type used to provide streaming information about each partition's context
+  using streaming_context_t = detail::select::streaming_select_context_t<num_total_items_t>;
 
-  using ScanTileStateT = ScanTileState<PerPartitionOffsetT>;
+  using ScanTileStateT = ScanTileState<per_partition_offset_t>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -508,13 +518,13 @@ struct DispatchSelectIf : SelectedPolicy
 
     using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      detail::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
+      detail::select::agent_select_if_wrapper_t<KEEP_REJECTS, MayAlias>::template agent_t,
       InputIteratorT,
       FlagsInputIteratorT,
       SelectedOutputIteratorT,
       SelectOpT,
       EqualityOpT,
-      PerPartitionOffsetT,
+      per_partition_offset_t,
       streaming_context_t>;
 
     // Return for empty problem (also needed to avoid division by zero)
@@ -537,8 +547,8 @@ struct DispatchSelectIf : SelectedPolicy
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
     auto const max_partition_size =
-      num_items > static_cast<OffsetT>(cuda::std::numeric_limits<PerPartitionOffsetT>::max())
-        ? static_cast<OffsetT>(cuda::std::numeric_limits<PerPartitionOffsetT>::max())
+      num_items > static_cast<OffsetT>(cuda::std::numeric_limits<per_partition_offset_t>::max())
+        ? static_cast<OffsetT>(cuda::std::numeric_limits<per_partition_offset_t>::max())
         : num_items;
 
     // The number of partitions required to "iterate" over the total input
@@ -563,7 +573,7 @@ struct DispatchSelectIf : SelectedPolicy
 
       // Specify temporary storage allocation requirements
       ::cuda::std::size_t streaming_selection_storage_bytes =
-        (num_partitions > 1) ? 2 * sizeof(NumTotalItemsT) : ::cuda::std::size_t{0};
+        (num_partitions > 1) ? 2 * sizeof(num_total_items_t) : ::cuda::std::size_t{0};
       ::cuda::std::size_t allocation_sizes[3] = {0ULL, vsmem_size, streaming_selection_storage_bytes};
 
       // Bytes needed for tile status descriptors
@@ -591,7 +601,7 @@ struct DispatchSelectIf : SelectedPolicy
       // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
       // and the total number (across all partitions) of items
       streaming_context_t streaming_context{
-        reinterpret_cast<NumTotalItemsT*>(allocations[2]), num_items, (num_partitions <= 1)};
+        reinterpret_cast<num_total_items_t*>(allocations[2]), num_items, (num_partitions <= 1)};
 
       // Iterate over the partitions until all input is processed
       for (OffsetT partition_idx = 0; partition_idx < num_partitions; partition_idx++)
@@ -670,7 +680,7 @@ struct DispatchSelectIf : SelectedPolicy
                 tile_status,
                 select_op,
                 equality_op,
-                static_cast<PerPartitionOffsetT>(current_num_items),
+                static_cast<per_partition_offset_t>(current_num_items),
                 current_num_tiles,
                 streaming_context,
                 cub::detail::vsmem_t{allocations[1]});
@@ -713,7 +723,7 @@ struct DispatchSelectIf : SelectedPolicy
         ScanTileStateT,
         SelectOpT,
         EqualityOpT,
-        PerPartitionOffsetT,
+        per_partition_offset_t,
         streaming_context_t,
         KEEP_REJECTS,
         MayAlias>);
