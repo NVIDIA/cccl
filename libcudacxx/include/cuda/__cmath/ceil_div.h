@@ -35,6 +35,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
+//! @param __a The dividend
+//! @param __b The divisor
+//! @pre \p __a must be non-negative
 template <class _Tp,
           class _Up,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
@@ -58,6 +62,10 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(con
   _LIBCUDACXX_UNREACHABLE();
 }
 
+//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
+//! @param __a The dividend
+//! @param __b The divisor
+//! @pre \p __a must be non-negative
 template <class _Tp,
           class _Up,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
