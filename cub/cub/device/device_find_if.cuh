@@ -34,7 +34,7 @@
 
 #include <cub/config.cuh>
 
-#include "cub/util_type.cuh"
+#include "device_launch_parameters.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -54,15 +54,13 @@
 CUB_NAMESPACE_BEGIN
 
 template <typename IterBegin, typename IterEnd, typename Pred>
-__global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result)
+__global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, std::size_t num_items)
 {
+  int elements_per_thread = 2;
+  auto tile_size          = blockDim.x * elements_per_thread;
   __shared__ int sresult;
 
-  auto global_index = threadIdx.x + blockIdx.x * blockDim.x;
-  int total_threads = gridDim.x * blockDim.x;
-
-  // traverse the sequence
-  for (auto index = global_index; begin + index < end; index += total_threads)
+  for (int tile_offset = blockIdx.x * tile_size; tile_offset < num_items; tile_offset += tile_size * gridDim.x)
   {
     // Only one thread reads atomically and propagates it to the
     // the rest threads of the block through shared memory
@@ -72,17 +70,24 @@ __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result)
     }
     __syncthreads();
 
-    if (sresult < index)
+    for (int i = 0; i < elements_per_thread; ++i)
     {
-      return; // early exit
-    }
+      auto index = tile_offset + threadIdx.x + i * blockDim.x;
 
-    if (pred(*(begin + index)))
-    {
-      atomicMin(result,
-                index); // @georgii atomic min per your request makes sense
-      // printf("%d\n", *result);
-      return;
+      if (index < num_items)
+      {
+        // early exit
+        if (sresult < index)
+        {
+          return;
+        }
+
+        if (pred(*(begin + index)))
+        {
+          atomicMin(result, index);
+          return;
+        }
+      }
     }
   }
 }
@@ -170,7 +175,7 @@ struct DeviceFind
     // to read and write from. Then store the final result in the output iterator.
     cuda_mem_set_async_dtemp_storage<<<1, 1>>>(int_temp_storage, num_items);
 
-    find_if<<<findif_grid_size, block_threads, 0, stream>>>(d_in, d_in + num_items, op, int_temp_storage);
+    find_if<<<findif_grid_size, block_threads, 0, stream>>>(d_in, d_in + num_items, op, int_temp_storage, num_items);
 
     write_final_result_in_output_iterator_already<int><<<1, 1>>>(int_temp_storage, d_out);
 
