@@ -325,7 +325,7 @@ struct __type_index_small_size_fn;
         using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;            \
       };
 
-_CCCL_PP_REPEAT16(_M1)
+_CCCL_PP_REPEAT_REVERSE(16, _M1)
 
 #    undef _M0
 #    undef _M1
@@ -507,68 +507,95 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_transform_fn
 template <class _List, class _Fn>
 using __type_transform _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_transform_fn<_Fn>>;
 
-//
-// Implementation for folding a type list either left or right
-//
 namespace __detail
 {
-template <bool>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_fold_right_fn
-{
-  template <class _Fn, class _State, class _Head, class... _Tail>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    __type_call<__type_maybe_fold_right_fn<sizeof...(_Tail) == 0>, _Fn, __type_call2<_Fn, _State, _Head>, _Tail...>;
-};
+template <size_t _Np>
+struct __type_fold_right_fn;
 
-template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_fold_right_fn<true> // empty pack
-{
-  template <class _Fn, class _State, class...>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _State;
-};
+template <size_t _Np>
+struct __type_fold_left_fn;
 
-template <class _Init, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_fn
-{
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    __type_call<__type_maybe_fold_right_fn<sizeof...(_Ts) == 0>, _Fn, _Init, _Ts...>;
-};
+#  define _M0(_N) , class _CCCL_PP_CAT(_, _N)
+#  define _M1(_N) typename _Fn::template __call <
+#  define _M2(_N) , _CCCL_PP_CAT(_, _N)
+#  define _M3(_N) _M2(_N) >
+#  define _M4(_N) _M2(_CCCL_PP_DEC(_N)) >
 
-template <bool>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_fold_left_fn
-{
-  template <class _Fn, class _State, class _Head, class... _Tail>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    __type_call2<_Fn, __type_call<__type_maybe_fold_left_fn<sizeof...(_Tail) == 0>, _Fn, _State, _Tail...>, _Head>;
-};
+#  define _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT(_N)                                 \
+    template <>                                                                \
+    struct __type_fold_right_fn<_N>                                            \
+    {                                                                          \
+      template <class _Fn, class _State _CCCL_PP_REPEAT(_N, _M0)>              \
+      using __call = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M3); \
+    };
 
-template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_fold_left_fn<true> // empty pack
+_CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT)
+
+template <size_t _Np>
+struct __type_fold_right_fn
 {
-  template <class _Fn, class _State, class...>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _State;
+  template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
+  using __call =
+    __type_call_indirect<__type_fold_right_fn<_Np - 16>,
+                         _Fn,
+                         __type_call<__type_fold_right_fn<16>, _Fn, _State _CCCL_PP_REPEAT(16, _M2)>,
+                         _Rest...>;
 };
 
 template <class _Init, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn
+struct __type_fold_right_select_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    __type_call<__type_maybe_fold_left_fn<sizeof...(_Ts) == 0>, _Fn, _Init, _Ts...>;
+  using __call = __type_call_indirect<__type_fold_right_fn<sizeof...(_Ts)>, _Fn, _Init, _Ts...>;
 };
 
+#  define _LIBCUDACXX_TYPE_FOLD_LEFT(_N)                                                         \
+    template <>                                                                                  \
+    struct __type_fold_left_fn<_N>                                                               \
+    {                                                                                            \
+      template <class _Fn, class _State _CCCL_PP_REPEAT(_N, _M0)>                                \
+      using __call = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M4, _N, _CCCL_PP_DEC); \
+    };
+
+_CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_FOLD_LEFT)
+
+template <size_t _Np>
+struct __type_fold_left_fn
+{
+  template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
+  using __call =
+    __type_call<__type_fold_left_fn<16>,
+                _Fn,
+                __type_call_indirect<__type_fold_left_fn<_Np - 16>, _Fn, _State, _Rest...> //
+                  _CCCL_PP_REPEAT(16, _M2, 0, _CCCL_PP_INC)>;
+};
+
+template <class _Init, class _Fn>
+struct __type_fold_left_select_fn
+{
+  template <class... _Ts>
+  using __call = __type_call_indirect<__type_fold_left_fn<sizeof...(_Ts)>, _Fn, _Init, _Ts...>;
+};
+
+#  undef _LIBCUDACXX_TYPE_FOLD_LEFT
+#  undef _LIBCUDACXX_TYPE_FOLD_RIGHT
+
+#  undef _M4
+#  undef _M3
+#  undef _M2
+#  undef _M1
+#  undef _M0
 } // namespace __detail
 
 //! \brief Fold a type list from the right with a binary meta-callable and an
 //! initial state.
 template <class _List, class _Init, class _Fn>
-using __type_fold_right _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_fold_right_fn<_Init, _Fn>>;
+using __type_fold_right = __type_call1<_List, __detail::__type_fold_right_select_fn<_Init, _Fn>>;
 
 //! \brief Fold a type list from the left with a binary meta-callable and an
 //! initial state.
 template <class _List, class _Init, class _Fn>
-using __type_fold_left _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_fold_left_fn<_Init, _Fn>>;
+using __type_fold_left = __type_call1<_List, __detail::__type_fold_left_select_fn<_Init, _Fn>>;
 
 namespace __detail
 {
