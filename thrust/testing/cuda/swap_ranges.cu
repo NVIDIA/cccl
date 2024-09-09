@@ -25,7 +25,7 @@ void TestSwapRangesDevice(ExecutionPolicy exec)
   ASSERT_EQUAL(cudaSuccess, err);
 
   ASSERT_EQUAL(v1, v1_ref);
-  ASSERT_EQUAL(v2, v1_ref);
+  ASSERT_EQUAL(v2, v2_ref);
 }
 
 void TestSwapRangesDeviceSeq()
@@ -57,7 +57,7 @@ void TestSwapRangesCudaStreams()
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(v1, v1_ref);
-  ASSERT_EQUAL(v2, v1_ref);
+  ASSERT_EQUAL(v2, v2_ref);
 
   cudaStreamDestroy(s);
 }
