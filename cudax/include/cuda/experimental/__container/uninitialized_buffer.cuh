@@ -86,7 +86,7 @@ private:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<_Tp>
-  __cudax_launch_transform(stream_ref, uninitialized_buffer& __self) noexcept
+  __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
   {
     static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
@@ -96,7 +96,7 @@ private:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<const _Tp>
-  __cudax_launch_transform(stream_ref, const uninitialized_buffer& __self) noexcept
+  __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
   {
     static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
