@@ -1056,8 +1056,17 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
 #  endif
 
-#  if __check_builtin(make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
-#    define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#  if !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#    if __check_builtin(make_integer_seq)
+#      define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#    elif defined(_CCCL_COMPILER_MSVC)
+#      if _CCCL_MSVC_VERSION_FULL >= 190023918
+#        define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#      endif
+#    endif
+#    if __check_builtin(integer_pack)
+#      define _LIBCUDACXX_HAS_INTEGER_PACK
+#    endif
 #  endif
 
 #  ifdef _LIBCUDACXX_DEBUG

@@ -74,7 +74,7 @@
 //! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
-#  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
+#  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
 #endif
 
 #define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)                  \
