@@ -436,6 +436,9 @@ struct negate
    */
   using result_type = T;
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
+
   /*! Function call operator. The return value is <tt>-x</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
@@ -443,6 +446,9 @@ struct negate
   {
     return -x;
   }
+
+  _CCCL_DIAG_POP
+
 }; // end negate
 
 THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
