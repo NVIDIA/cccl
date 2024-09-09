@@ -4,7 +4,8 @@
 
 #include <unittest/unittest.h>
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 template <typename T>
 struct return_value
@@ -219,4 +220,4 @@ void TestGenerateTuple()
 };
 DECLARE_UNITTEST(TestGenerateTuple);
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
+_CCCL_DIAG_POP
