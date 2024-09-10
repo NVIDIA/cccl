@@ -177,11 +177,11 @@ struct DevicePartition
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
-    using OffsetT    = int; // Signed integer type for global offsets
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
     using DispatchSelectIfT =
@@ -216,7 +216,7 @@ struct DevicePartition
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -254,10 +254,10 @@ struct DevicePartition
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        explicit LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const
   //!        {
   //!            return (a < compare);
@@ -338,12 +338,12 @@ struct DevicePartition
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
-    using OffsetT      = int; // Signed integer type for global offsets
+    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
 
@@ -378,7 +378,7 @@ struct DevicePartition
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      cudaStream_t stream,
      bool debug_synchronous)
@@ -416,12 +416,12 @@ private:
     SecondOutputIteratorT d_second_part_out,
     UnselectedOutputIteratorT d_unselected_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
     cudaStream_t stream = 0)
   {
-    using OffsetT                      = int;
+    using OffsetT                      = ::cuda::std::int64_t;
     using DispatchThreeWayPartitionIfT = DispatchThreeWayPartitionIf<
       InputIteratorT,
       FirstOutputIteratorT,
@@ -500,10 +500,10 @@ public:
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        explicit LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const
   //!        {
   //!            return a < compare;
@@ -515,10 +515,10 @@ public:
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        explicit GreaterThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const
   //!        {
   //!            return a > compare;
@@ -641,7 +641,7 @@ public:
      SecondOutputIteratorT d_second_part_out,
      UnselectedOutputIteratorT d_unselected_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream = 0)
@@ -677,7 +677,7 @@ public:
      SecondOutputIteratorT d_second_part_out,
      UnselectedOutputIteratorT d_unselected_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
      cudaStream_t stream,
