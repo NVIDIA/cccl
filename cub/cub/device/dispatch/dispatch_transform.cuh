@@ -744,11 +744,36 @@ _CCCL_HOST_DEVICE inline PoorExpected<int> get_max_shared_memory()
   return max_smem;
 }
 
+_CCCL_HOST_DEVICE inline PoorExpected<int> get_sm_count()
+{
+  int device = 0;
+  auto error = CubDebug(cudaGetDevice(&device));
+  if (error != cudaSuccess)
+  {
+    return error;
+  }
+
+  int sm_count = 0;
+  error        = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device));
+  if (error != cudaSuccess)
+  {
+    return error;
+  }
+
+  return sm_count;
+}
+
 struct elem_counts
 {
   int elem_per_thread;
   int tile_size;
   int smem_size;
+};
+
+struct prefetch_config
+{
+  int max_occupancy;
+  int sm_count;
 };
 
 template <bool RequiresStableAddress,
@@ -855,15 +880,11 @@ struct dispatch_t<RequiresStableAddress,
       return last_counts;
     };
     PoorExpected<elem_counts> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (
-          // this static variable exists for each template instantiation of the surrounding function and class, on which
-          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
-          static auto cached_config = determine_element_counts(); return cached_config;),
-        (
-          // we cannot cache the determined element count in device code
-          return determine_element_counts();));
+      NV_IF_TARGET(NV_IS_HOST,
+                   (static auto cached_config = determine_element_counts(); return cached_config;),
+                   (
+                     // we cannot cache the determined element count in device code
+                     return determine_element_counts();));
     }();
     if (!config)
     {
@@ -931,19 +952,49 @@ struct dispatch_t<RequiresStableAddress,
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
-    int max_occupancy       = 0;
-    const auto error        = CubDebug(MaxSmOccupancy(max_occupancy, CUB_DETAIL_TRANSFORM_KERNEL_PTR, block_dim, 0));
-    if (error != cudaSuccess)
+
+    auto determine_config = [&]() -> PoorExpected<prefetch_config> {
+      int max_occupancy = 0;
+      const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, CUB_DETAIL_TRANSFORM_KERNEL_PTR, block_dim, 0));
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+      const auto sm_count = get_sm_count();
+      if (!sm_count)
+      {
+        return sm_count.error;
+      }
+      return prefetch_config{max_occupancy, *sm_count};
+    };
+
+    PoorExpected<prefetch_config> config = [&]() {
+      NV_IF_TARGET(
+        NV_IS_HOST,
+        (
+          // this static variable exists for each template instantiation of the surrounding function and class, on which
+          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
+          static auto cached_config = determine_config(); return cached_config;),
+        (
+          // we cannot cache the determined element count in device code
+          return determine_config();));
+    }();
+    if (!config)
     {
-      return error;
+      return config.error;
     }
 
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? +policy_t::items_per_thread_no_input
-        : ::cuda::ceil_div(ActivePolicy::min_bif, max_occupancy * block_dim * loaded_bytes_per_iter);
-    const int items_per_thread_clamped =
-      ::cuda::std::clamp(items_per_thread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);
+        : ::cuda::ceil_div(ActivePolicy::min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+
+    // Generate at least one block per SM. This improves tiny problem sizes (e.g. 2^16 elements).
+    const int items_per_thread_evenly_spread =
+      static_cast<int>(::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim)));
+
+    const int items_per_thread_clamped = ::cuda::std::clamp(
+      items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);
     const int tile_size = block_dim * items_per_thread_clamped;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
