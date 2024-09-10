@@ -285,6 +285,11 @@ try
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
   auto offsets_plus_1 = offsets + 1;
 
+  // compute the reference only if the routine is able to terminate correctly
+  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, num_segments, offsets, offsets_plus_1);
+  auto& ref_keys   = refs.first;
+  auto& ref_values = refs.second;
+
   if (is_descending)
   {
     dispatch_segmented_sort_pairs_descending(
@@ -311,10 +316,6 @@ try
       offsets_plus_1,
       is_overwrite);
   }
-  // compute the reference only if the routine is able to terminate correctly
-  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, num_segments, offsets, offsets_plus_1);
-  auto& ref_keys   = refs.first;
-  auto& ref_values = refs.second;
   REQUIRE((ref_keys == out_keys) == true);
   REQUIRE(ref_values == out_values);
 }
