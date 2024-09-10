@@ -215,7 +215,7 @@ using __type_push_front = __type_call1<_List, __type_bind_front<__type_quote<__t
 namespace __detail
 {
 // Only the following precise formulation works with nvcc < 12.2
-template <class _Fn, class... _Ts, template <class...> class _C = _Fn::template __call, class = _C<_Ts...>>
+template <class _Fn, class... _Ts, template <class...> class _Fn2 = _Fn::template __call, class = _Fn2<_Ts...>>
 _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
 
 _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(void*) -> false_type;
