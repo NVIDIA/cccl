@@ -77,6 +77,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
  *
  * Effectively performs `(n + d - 1) / d`, but is robust against the case where
  * `(n + d - 1)` would overflow.
+ * deprecated [Since 2.8.0] `cub::DivideAndRoundUp` is deprecated. Use `cuda::ceil_div` instead.
  */
 template <typename NumeratorT, typename DenominatorT>
 CUB_DEPRECATED_BECAUSE("Use cuda::ceil_div instead")
