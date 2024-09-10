@@ -207,14 +207,15 @@ static_assert(!HasType<::cuda::std::__type_defer<Fn2, Incomplete>>::value, "");
 static_assert(::cuda::std::__type_index_c<0, Int<42>, double>::value == 42, "");
 static_assert(::cuda::std::__type_index_c<1, int, Int<42>, double>::value == 42, "");
 static_assert(
-  ::cuda::std::__type_index<::cuda::std::integral_constant<std::size_t, 1>, int, Int<42>, double>::value == 42, "");
+  ::cuda::std::__type_index<::cuda::std::integral_constant<::cuda::std::size_t, 1>, int, Int<42>, double>::value == 42,
+  "");
 static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
-                                           ::cuda::std::integral_constant<std::size_t, 1>,
+                                           ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            int,
                                            Int<42>>::value,
               "");
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
-                                            ::cuda::std::integral_constant<std::size_t, 1>,
+                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             int>::value,
               "");
 static_assert(
@@ -414,16 +415,16 @@ static_assert(
 // __type_at
 static_assert(::cuda::std::__type_at_c<0, ::cuda::std::__type_list<Int<42>, double>>::value == 42, "");
 static_assert(::cuda::std::__type_at_c<1, ::cuda::std::__type_list<int, Int<42>, double>>::value == 42, "");
-static_assert(::cuda::std::__type_at<::cuda::std::integral_constant<std::size_t, 1>,
+static_assert(::cuda::std::__type_at<::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                      ::cuda::std::__type_list<int, Int<42>, double>>::value
                 == 42,
               "");
 static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
-                                           ::cuda::std::integral_constant<std::size_t, 1>,
+                                           ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            ::cuda::std::__type_list<int, Int<42>>>::value,
               "");
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
-                                            ::cuda::std::integral_constant<std::size_t, 1>,
+                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             ::cuda::std::__type_list<int>>::value,
               "");
 
