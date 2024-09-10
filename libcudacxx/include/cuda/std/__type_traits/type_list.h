@@ -103,6 +103,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote2
   using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ty, _Uy>;
 };
 
+//! \brief Turns a class or alias template into a meta-callable
+template <template <class...> class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_indirect
+{
+  template <class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE =
+    typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>;
+};
+
 //! \brief Turns a trait class template \c _Fn into a meta-callable \c
 //! __type_quote_trait such that \c __type_quote_trait<_Fn>::__call<_Ts...> is
 //! equivalent to \c _Fn<_Ts...>::type.
