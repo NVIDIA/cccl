@@ -28,6 +28,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
+#include <cub/util_arch.cuh>
 
 #include "catch2_test_helper.h"
 
@@ -113,7 +114,7 @@ void block_load(InputIteratorT input, OutputIteratorT output, int num_items)
   using input_t                       = cub::detail::value_t<InputIteratorT>;
   using block_load_t                  = cub::BlockLoad<input_t, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>;
   using storage_t                     = typename block_load_t::TempStorage;
-  constexpr bool sufficient_resources = sizeof(storage_t) <= 1024 * 48;
+  constexpr bool sufficient_resources = sizeof(storage_t) <= cub::detail::max_smem_per_block;
 
   kernel<InputIteratorT, OutputIteratorT, ItemsPerThread, ThreadsInBlock, LoadAlgorithm>
     <<<1, ThreadsInBlock>>>(std::integral_constant<bool, sufficient_resources>{}, input, output, num_items);
