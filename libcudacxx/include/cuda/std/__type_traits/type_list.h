@@ -214,54 +214,54 @@ using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 template <class _List, class... _Ts>
 using __type_push_front = __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
 
-namespace __detail
-{
-template <class _First, class _Second>
-using __type_second = _Second;
+// namespace __detail
+// {
+// template <class _First, class _Second>
+// using __type_second = _Second;
 
-template <class _Fn, class... _Ts>
-_CCCL_HOST_DEVICE auto __type_callable_fn(__type_list<_Fn, _Ts...>*) //
-  -> __type_second<__type_call<_Fn, _Ts...>, true_type>;
+// template <class _Fn, class... _Ts>
+// _CCCL_HOST_DEVICE auto __type_callable_fn(__type_list<_Fn, _Ts...>*) //
+//   -> __type_second<__type_call<_Fn, _Ts...>, true_type>;
 
-_CCCL_HOST_DEVICE auto __type_callable_fn(void*) -> false_type;
-} // namespace __detail
+// _CCCL_HOST_DEVICE auto __type_callable_fn(void*) -> false_type;
+// } // namespace __detail
 
-//! \brief Test whether a meta-callable is callable with a given set of
-//! arguments.
-//!
-//! Given a meta-callable and a list of arguments, return \c true_type if
-//! the meta-callable can be called with the arguments, and \c false_type
-//! otherwise.
-template <class _Fn, class... _Ts>
-using __type_callable = decltype(__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
+// //! \brief Test whether a meta-callable is callable with a given set of
+// //! arguments.
+// //!
+// //! Given a meta-callable and a list of arguments, return \c true_type if
+// //! the meta-callable can be called with the arguments, and \c false_type
+// //! otherwise.
+// template <class _Fn, class... _Ts>
+// using __type_callable = decltype(__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
 
-namespace __detail
-{
-template <bool _IsCallable>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn
-{
-  template <class, class...>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_defer_fn;
-};
+// namespace __detail
+// {
+// template <bool _IsCallable>
+// struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn
+// {
+//   template <class, class...>
+//   using __call _LIBCUDACXX_NODEBUG_TYPE = __type_defer_fn;
+// };
 
-template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
-{
-  template <class _Fn, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_identity<__type_call<_Fn, _Ts...>>;
-};
-} // namespace __detail
+// template <>
+// struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
+// {
+//   template <class _Fn, class... _Ts>
+//   using __call _LIBCUDACXX_NODEBUG_TYPE = __type_identity<__type_call<_Fn, _Ts...>>;
+// };
+// } // namespace __detail
 
-//! \brief Defer the evaluation of a meta-callable with a list of arguments.
-//!
-//! Given a meta-callable and a list of arguments, return a trait type \c T
-//! where \c T::type is the result of evaluating the meta-callable with the
-//! arguments, or if the meta-callable is not callable with the arguments, a
-//! class type without a nested \c ::type type alias.
-template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
-    : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
-{};
+// //! \brief Defer the evaluation of a meta-callable with a list of arguments.
+// //!
+// //! Given a meta-callable and a list of arguments, return a trait type \c T
+// //! where \c T::type is the result of evaluating the meta-callable with the
+// //! arguments, or if the meta-callable is not callable with the arguments, a
+// //! class type without a nested \c ::type type alias.
+// template <class _Fn, class... _Ts>
+// struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
+//     : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
+// {};
 
 // Implementation for indexing into a list of types:
 #  if defined(__cpp_pack_indexing)
