@@ -134,6 +134,16 @@ _CCCL_DEVICE void transform_kernel_impl(
   }
 }
 
+template <typename T>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
+{
+#if _CCCL_STD_VER > 2011
+  _LIBCUDACXX_ASSERT(::cuda::std::has_single_bit(alignment), "");
+#endif // _CCCL_STD_VER > 2011
+  return reinterpret_cast<const char*>(
+    reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
+}
+
 template <int BlockThreads>
 struct prefetch_policy_t
 {
@@ -150,14 +160,28 @@ struct prefetch_policy_t
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
-  assert(__isGlobal(addr));
   // TODO(bgruber): prefetch to L1 may be even better
   asm volatile("prefetch.global.L2 [%0];" : : "l"(addr) : "memory");
 }
 
+template <int BlockDim, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
+{
+  constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to be
+                                            // architecture dependent?
+  const int tile_size_bytes = tile_size * sizeof(T);
+  // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
+#pragma unroll 1
+  for (int offset = threadIdx.x * prefetch_byte_stride; offset < tile_size_bytes;
+       offset += BlockDim * prefetch_byte_stride)
+  {
+    prefetch(reinterpret_cast<const char*>(addr) + offset);
+  }
+}
+
 // overload for any iterator that is not a pointer, do nothing
-template <typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
-_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(It)
+template <int, typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
 {}
 
 // this kernel guarantees stable addresses for the parameters of the user provided function
@@ -186,18 +210,16 @@ _CCCL_DEVICE void transform_kernel_impl(
     out += offset;
   }
 
-  for (int j = 0; j < num_elem_per_thread; ++j)
   {
-    const int idx = j * block_dim + threadIdx.x;
     // TODO(bgruber): replace by fold over comma in C++17
-    int dummy[] = {(prefetch(ins + idx), 0)..., 0}; // extra zero to handle empty packs
+    int dummy[] = {(prefetch_tile<block_dim>(ins, tile_size), 0)..., 0}; // extra zero to handle empty packs
     (void) &dummy; // nvcc 11.1 needs extra strong unused warning suppression
   }
 
 #define PREFETCH_AGENT(full_tile)                                                                                  \
   /* ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost */                      \
-  /* TODO(bgruber): A6000 disagrees */                                                                             \
-  _Pragma("unroll 1") for (int j = 0; j < num_elem_per_thread; ++j)                                                \
+  /* bgruber: but A6000 and H100 show small gains without pragma */                                                \
+  /*_Pragma("unroll 1")*/ for (int j = 0; j < num_elem_per_thread; ++j)                                            \
   {                                                                                                                \
     const int idx = j * block_dim + threadIdx.x;                                                                   \
     if (full_tile || idx < tile_size)                                                                              \
@@ -256,16 +278,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Inte
   _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
 #endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
-}
-
-template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
-{
-#if _CCCL_STD_VER > 2011
-  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-#endif // _CCCL_STD_VER > 2011
-  return reinterpret_cast<const char*>(
-    reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
 
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
