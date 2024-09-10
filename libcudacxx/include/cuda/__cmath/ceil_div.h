@@ -37,6 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @param __a The dividend
 //! @param __b The divisor
 //! @pre \p __a must be non-negative
+//! @pre \p __b must be positive
 template <class _Tp,
           class _Up,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
