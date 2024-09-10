@@ -8,13 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
 #include "test_resource.h"
 #include <catch2/catch.hpp>
 #include <testing.cuh>
 
-TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
+TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
   constexpr bool is_big = sizeof(TestResource) > sizeof(cuda::mr::_AnyResourceStorage);
@@ -24,7 +25,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<> mr{TestResource{42, this}};
+      cudax::mr::shared_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -43,30 +44,26 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<> mr{TestResource{42, this}};
+      cudax::mr::shared_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
       auto mr2 = mr;
-      expected.new_count += is_big;
-      ++expected.copy_count;
-      ++expected.object_count;
       CHECK(this->counts == expected);
       CHECK(mr == mr2);
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
 
       auto mr3 = std::move(mr);
-      expected.move_count += !is_big; // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
       CHECK(mr2 == mr3);
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += 2 * is_big;
-    expected.object_count -= 2;
+    expected.delete_count += is_big;
+    --expected.object_count;
     CHECK(this->counts == expected);
   }
 
@@ -78,7 +75,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<> mr{TestResource{42, this}};
+      cudax::mr::shared_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -105,7 +102,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   {
     Counts expected{};
     {
-      cudax::mr::any_resource<> mr{TestResource{42, this}};
+      cudax::mr::shared_resource<> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -124,6 +121,51 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     }
     expected.delete_count += is_big;
     --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("basic sanity test about shared resource handling")
+  {
+    Counts expected{};
+    align(alignof(int) * 4);
+    {
+      bytes(42 * sizeof(int));
+      cudax::uninitialized_buffer<int> buffer{cudax::mr::shared_resource<>{TestResource{42, this}}, 42};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      ++expected.allocate_count;
+      CHECK(this->counts == expected);
+
+      // copying the shared_resource should not copy the stored resource
+      {
+        // accounting for new storage
+        bytes(1337 * sizeof(int));
+        cudax::uninitialized_buffer<int> other_buffer{buffer.resource(), 1337};
+        ++expected.allocate_count;
+        CHECK(this->counts == expected);
+      }
+      // The original resource is still alive, but the second allocation was released
+      bytes(42 * sizeof(int));
+      ++expected.deallocate_count;
+      CHECK(this->counts == expected);
+
+      {
+        // Moving the resource should not do anything
+        cudax::uninitialized_buffer<int> third_buffer = ::cuda::std::move(buffer);
+        CHECK(this->counts == expected);
+      }
+
+      // The original shared_resource has been moved from so everything is gone already
+      expected.delete_count += is_big;
+      --expected.object_count;
+      ++expected.deallocate_count;
+      CHECK(this->counts == expected);
+    }
+    // Nothing changes here as the first shared_resources has been moved from
     CHECK(this->counts == expected);
   }
 
