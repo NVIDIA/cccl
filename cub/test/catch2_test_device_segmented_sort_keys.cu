@@ -234,7 +234,7 @@ try
   constexpr int num_key_seeds      = 1;
   const bool is_descending         = GENERATE(false, true);
   const bool is_overwrite          = GENERATE(false, true);
-  const std::size_t num_items =
+  constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = ::cuda::ceil_div(num_items, Step);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
@@ -246,11 +246,13 @@ try
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
   auto offsets_plus_1 = offsets + 1;
 
+  auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, num_segments, offsets, offsets_plus_1);
+  auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
   if (is_descending)
   {
     dispatch_segmented_sort_descending(
       thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
+      out_keys_ptr,
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
       offsets,
@@ -261,15 +263,17 @@ try
   {
     dispatch_segmented_sort(
       thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
+      out_keys_ptr,
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
       offsets,
       offsets_plus_1,
       is_overwrite);
   }
-  // compute the reference only if the routine is able to terminate correctly
-  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, num_segments, offsets, offsets_plus_1);
+  if (out_keys_ptr != thrust::raw_pointer_cast(out_keys.data()))
+  {
+    std::swap(out_keys, in_keys);
+  }
   REQUIRE((ref_keys == out_keys) == true);
 }
 catch (std::bad_alloc& e)
@@ -285,7 +289,7 @@ try
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   const bool is_descending         = GENERATE(false, true);
-  const std::size_t num_items =
+  constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
@@ -298,12 +302,13 @@ try
   offsets[1] = static_cast<offset_t>(num_items);
   offsets[2] = static_cast<offset_t>(num_items);
 
-  auto ref_keys = segmented_radix_sort_reference(in_keys, is_descending, offsets);
+  auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, offsets);
+  auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
   if (is_descending)
   {
     dispatch_segmented_sort_descending(
       thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
+      out_keys_ptr,
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
       thrust::raw_pointer_cast(offsets.data()),
@@ -313,11 +318,15 @@ try
   {
     dispatch_segmented_sort(
       thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
+      out_keys_ptr,
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
       thrust::raw_pointer_cast(offsets.data()),
       offsets.cbegin() + 1);
+  }
+  if (out_keys_ptr != thrust::raw_pointer_cast(out_keys.data()))
+  {
+    std::swap(out_keys, in_keys);
   }
   REQUIRE((ref_keys == out_keys) == true);
 }
