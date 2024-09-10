@@ -152,6 +152,7 @@ static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type* __ptr, _Type& __ol
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
+  if(__cuda_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {{return;}}
   __cuda_atomic_bind_exchange<__proxy_t, __proxy_tag, _Sco> __bound_swap{__ptr_proxy, __old_proxy, __new_proxy};
   __cuda_atomic_exchange_memory_order_dispatch(__bound_swap, __memorder, _Sco{});
 }
@@ -163,6 +164,7 @@ static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type volatile* __ptr, _T
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __old_proxy = reinterpret_cast<__proxy_t*>(&__old);
   __proxy_t* __new_proxy  = reinterpret_cast<__proxy_t*>(&__new);
+  if(__cuda_exchange_weak_if_local(__ptr_proxy, __new_proxy, __old_proxy)) {{return;}}
   __cuda_atomic_bind_exchange<__proxy_t, __proxy_tag, _Sco> __bound_swap{__ptr_proxy, __old_proxy, __new_proxy};
   __cuda_atomic_exchange_memory_order_dispatch(__bound_swap, __memorder, _Sco{});
 }
