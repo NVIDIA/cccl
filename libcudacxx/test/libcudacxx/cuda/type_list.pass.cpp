@@ -37,14 +37,14 @@ struct Identity
   using type = T;
 };
 
-// template <class T>
-// struct HasType : ::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type>, T>
-// {};
+template <class T>
+struct HasType : ::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type>, T>
+{};
 
-// static_assert(!HasType<Incomplete>::value, "");
-// static_assert(!HasType<Empty>::value, "");
-// static_assert(!HasType<int>::value, "");
-// static_assert(HasType<Identity<int>>::value, "");
+static_assert(!HasType<Incomplete>::value, "");
+static_assert(!HasType<Empty>::value, "");
+static_assert(!HasType<int>::value, "");
+static_assert(HasType<Identity<int>>::value, "");
 
 template <class... Ts>
 struct Types
@@ -192,16 +192,15 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_push_front<::cuda::std::_
                                    ::cuda::std::__type_list<double, int, float>>::value,
               "");
 
-// // __type_callable
-// static_assert(::cuda::std::__type_callable<Fn2, Incomplete, Empty>::value, "");
-// static_assert(!::cuda::std::__type_callable<Fn2, Incomplete>::value, "");
+// __type_callable
+static_assert(::cuda::std::__type_callable<Fn2, Incomplete, Empty>::value, "");
+static_assert(!::cuda::std::__type_callable<Fn2, Incomplete>::value, "");
 
-// // __type_defer
-// using EnsureDeferIsLazy = ::cuda::std::__type_defer<DoNotInstantiate<>, Empty>;
-// static_assert(
-//   ::cuda::std::is_same<::cuda::std::__type_defer<Fn2, Incomplete, Empty>::type, Types<Incomplete, Empty>>::value,
-//   "");
-// static_assert(!HasType<::cuda::std::__type_defer<Fn2, Incomplete>>::value, "");
+// __type_defer
+using EnsureDeferIsLazy = ::cuda::std::__type_defer<DoNotInstantiate<>, Empty>;
+static_assert(
+  ::cuda::std::is_same<::cuda::std::__type_defer<Fn2, Incomplete, Empty>::type, Types<Incomplete, Empty>>::value, "");
+static_assert(!HasType<::cuda::std::__type_defer<Fn2, Incomplete>>::value, "");
 
 // __type_index
 // NOTE: __type_index has a fast path for indices 16 and below.
@@ -209,15 +208,15 @@ static_assert(::cuda::std::__type_index_c<0, Int<42>, double>::value == 42, "");
 static_assert(::cuda::std::__type_index_c<1, int, Int<42>, double>::value == 42, "");
 static_assert(
   ::cuda::std::__type_index<::cuda::std::integral_constant<std::size_t, 1>, int, Int<42>, double>::value == 42, "");
-// static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
-//                                            ::cuda::std::integral_constant<std::size_t, 1>,
-//                                            int,
-//                                            Int<42>>::value,
-//               "");
-// static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
-//                                             ::cuda::std::integral_constant<std::size_t, 1>,
-//                                             int>::value,
-//               "");
+static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
+                                           ::cuda::std::integral_constant<std::size_t, 1>,
+                                           int,
+                                           Int<42>>::value,
+              "");
+static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
+                                            ::cuda::std::integral_constant<std::size_t, 1>,
+                                            int>::value,
+              "");
 static_assert(
   ::cuda::std::__type_index_c<
     14,
@@ -419,27 +418,26 @@ static_assert(::cuda::std::__type_at<::cuda::std::integral_constant<std::size_t,
                                      ::cuda::std::__type_list<int, Int<42>, double>>::value
                 == 42,
               "");
-// static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
-//                                            ::cuda::std::integral_constant<std::size_t, 1>,
-//                                            ::cuda::std::__type_list<int, Int<42>>>::value,
-//               "");
-// static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
-//                                             ::cuda::std::integral_constant<std::size_t, 1>,
-//                                             ::cuda::std::__type_list<int>>::value,
-//               "");
+static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
+                                           ::cuda::std::integral_constant<std::size_t, 1>,
+                                           ::cuda::std::__type_list<int, Int<42>>>::value,
+              "");
+static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
+                                            ::cuda::std::integral_constant<std::size_t, 1>,
+                                            ::cuda::std::__type_list<int>>::value,
+              "");
 
 // __type_front
 static_assert(::cuda::std::__type_front<::cuda::std::__type_list<Int<42>, double>>::value == 42, "");
-// static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_front>,
-//                                             ::cuda::std::__type_list<>>::value,
-//               "");
+static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_front>,
+                                            ::cuda::std::__type_list<>>::value,
+              "");
 
 // __type_back
 static_assert(::cuda::std::__type_back<::cuda::std::__type_list<double, Int<42>>>::value == 42, "");
-// static_assert(
-//   !::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_back>,
-//   ::cuda::std::__type_list<>>::value,
-//   "");
+static_assert(
+  !::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_back>, ::cuda::std::__type_list<>>::value,
+  "");
 
 // __type_concat
 static_assert(::cuda::std::is_same<::cuda::std::__type_concat<>, ::cuda::std::__type_list<>>::value, "");
@@ -560,10 +558,10 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_transform<::cuda::std::__
 static_assert(::cuda::std::is_same<::cuda::std::__type_transform<::cuda::std::__type_list<int, char const>, AddPointer>,
                                    ::cuda::std::__type_list<int*, char const*>>::value,
               "");
-// static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote2<::cuda::std::__type_transform>,
-//                                             ::cuda::std::__type_list<int, char const, int&>,
-//                                             AddPointer>::value,
-//               "");
+static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote2<::cuda::std::__type_transform>,
+                                            ::cuda::std::__type_list<int, char const, int&>,
+                                            AddPointer>::value,
+              "");
 
 template <class A, class B>
 struct Pair
