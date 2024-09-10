@@ -315,7 +315,7 @@ struct AgentSelectIf
   InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
   SelectOpT select_op; ///< Selection operator
   OffsetT num_items; ///< Total number of input items
-  StreamingContextT streaming_context; ///< Context for the current partition
+  const StreamingContextT& streaming_context; ///< Context for the current partition
 
   //---------------------------------------------------------------------
   // Constructor
@@ -351,7 +351,7 @@ struct AgentSelectIf
     SelectOpT select_op,
     EqualityOpT equality_op,
     OffsetT num_items,
-    StreamingContextT streaming_context)
+    const StreamingContextT& streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_selected_out(d_selected_out)
@@ -404,7 +404,6 @@ struct AgentSelectIf
     CTA_SYNC();
 
     FlagT flags[ITEMS_PER_THREAD];
-    auto d_base_flags = d_flags_in + streaming_context.input_offset();
     if (IS_LAST_TILE)
     {
       // Initialize the out-of-bounds flags
@@ -414,11 +413,12 @@ struct AgentSelectIf
         selection_flags[ITEM] = true;
       }
       // Guarded loads
-      BlockLoadFlags(temp_storage.load_flags).Load(d_base_flags + tile_offset, flags, num_tile_items);
+      BlockLoadFlags(temp_storage.load_flags)
+        .Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags, num_tile_items);
     }
     else
     {
-      BlockLoadFlags(temp_storage.load_flags).Load(d_base_flags + tile_offset, flags);
+      BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
 #pragma unroll
@@ -523,9 +523,6 @@ struct AgentSelectIf
     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
     OffsetT num_selections)
   {
-    // Get the output iterator with a given base offset
-    auto d_base_selected_out = d_selected_out + streaming_context.num_previously_selected();
-
 // Scatter flagged items
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -534,7 +531,7 @@ struct AgentSelectIf
       {
         if ((!IS_LAST_TILE) || selection_indices[ITEM] < num_selections)
         {
-          d_base_selected_out[selection_indices[ITEM]] = items[ITEM];
+          *((d_selected_out + streaming_context.num_previously_selected()) + selection_indices[ITEM]) = items[ITEM];
         }
       }
     }
@@ -581,11 +578,10 @@ struct AgentSelectIf
 
     CTA_SYNC();
 
-    // Get the output iterator with a given base offset
-    auto d_base_selected_out = d_selected_out + streaming_context.num_previously_selected();
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
-      d_base_selected_out[num_selections_prefix + item] = temp_storage.raw_exchange.Alias()[item];
+      *((d_selected_out + streaming_context.num_previously_selected()) + (num_selections_prefix + item)) =
+        temp_storage.raw_exchange.Alias()[item];
     }
   }
 
@@ -752,7 +748,7 @@ struct AgentSelectIf
       int selection_idx = item_idx - tile_num_rejections;
       total_offset_t scatter_offset =
         (item_idx < tile_num_rejections)
-          ? rejected_base_end - static_cast<total_offset_t>(num_rejected_prefix - rejection_idx - 1)
+          ? rejected_base_end - static_cast<total_offset_t>(num_rejected_prefix + rejection_idx + 1)
           : selected_base_begin + num_selections_prefix + selection_idx;
 
       InputT item = temp_storage.raw_exchange.Alias()[item_idx];
@@ -792,14 +788,14 @@ struct AgentSelectIf
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
-    auto d_base_in = d_in + streaming_context.input_offset();
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items)
+        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {
-      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items);
+      BlockLoadT(temp_storage.load_items).Load((d_in + streaming_context.input_offset()) + tile_offset, items);
     }
 
     // Initialize selection_flags
@@ -872,14 +868,14 @@ struct AgentSelectIf
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
-    auto d_base_in = d_in + streaming_context.input_offset();
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items)
+        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {
-      BlockLoadT(temp_storage.load_items).Load(d_base_in + tile_offset, items);
+      BlockLoadT(temp_storage.load_items).Load((d_in + streaming_context.input_offset()) + tile_offset, items);
     }
 
     // Initialize selection_flags

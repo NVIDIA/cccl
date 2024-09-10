@@ -75,79 +75,71 @@ using per_partition_offset_t = ::cuda::std::int32_t;
 using num_total_items_t = ::cuda::std::int64_t;
 
 template <typename TotalNumItemsT>
-class streaming_select_context_t
+class streaming_context_t
 {
 private:
-  TotalNumItemsT first_partition = true;
-  TotalNumItemsT last_partition  = false;
+  bool first_partition = true;
+  bool last_partition  = false;
   TotalNumItemsT total_num_items{};
   TotalNumItemsT total_previous_num_items{};
 
   // We use a double-buffer for keeping track of the number of previously selected items
-  // <partition index>: <buffer providing previously selected> -> <buffer to which num. selected is written>
-  // 0: '0'       -> buffer 1
-  // 1: buffer 1  -> buffer 0
-  // 2: buffer 0  -> buffer 1
-  // ...
-  TotalNumItemsT selector              = 0x00U;
-  TotalNumItemsT* d_num_selected_dbuff = nullptr;
+  TotalNumItemsT* d_num_selected_in  = nullptr;
+  TotalNumItemsT* d_num_selected_out = nullptr;
 
 public:
   using total_num_items_t = TotalNumItemsT;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE streaming_select_context_t(
-    TotalNumItemsT* d_num_selected_dbuff, TotalNumItemsT total_num_items, bool is_last_partition)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE streaming_context_t(
+    TotalNumItemsT* d_num_selected_in,
+    TotalNumItemsT* d_num_selected_out,
+    TotalNumItemsT total_num_items,
+    bool is_last_partition)
       : last_partition(is_last_partition)
       , total_num_items(total_num_items)
-      , d_num_selected_dbuff(d_num_selected_dbuff)
+      , d_num_selected_in(d_num_selected_in)
+      , d_num_selected_out(d_num_selected_out)
   {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
   {
+    ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
-    selector ^= 0x01;
     total_previous_num_items += num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
   {
     return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
   {
-    if (threadIdx.x == 0 && blockIdx.x < 2)
-    {
-    }
-    return first_partition ? TotalNumItemsT{0} : d_num_selected_dbuff[selector];
+    return first_partition ? TotalNumItemsT{0} : *d_num_selected_in;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
-    if (threadIdx.x == 0 && blockIdx.x < 2)
-    {
-    }
     return first_partition ? TotalNumItemsT{0} : (total_previous_num_items - num_previously_selected());
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items() const
   {
     return total_num_items;
   };
 
   template <typename NumSelectedIteratorT, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
-  update_num_selected(NumSelectedIteratorT d_num_selected_out, OffsetT num_selections)
+  update_num_selected(NumSelectedIteratorT user_num_selected_out_it, OffsetT num_selections) const
   {
     if (last_partition)
     {
-      *d_num_selected_out = num_previously_selected() + static_cast<TotalNumItemsT>(num_selections);
+      *user_num_selected_out_it = num_previously_selected() + static_cast<TotalNumItemsT>(num_selections);
     }
     else
     {
-      d_num_selected_dbuff[(selector ^ 0x01U)] =
-        num_previously_selected() + static_cast<TotalNumItemsT>(num_selections);
+      *d_num_selected_out = num_previously_selected() + static_cast<TotalNumItemsT>(num_selections);
     }
   };
 };
@@ -404,7 +396,7 @@ struct DispatchSelectIf : SelectedPolicy
   using num_total_items_t = detail::select::num_total_items_t;
 
   // Type used to provide streaming information about each partition's context
-  using streaming_context_t = detail::select::streaming_select_context_t<num_total_items_t>;
+  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t>;
 
   using ScanTileStateT = ScanTileState<per_partition_offset_t>;
 
@@ -600,8 +592,9 @@ struct DispatchSelectIf : SelectedPolicy
 
       // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
       // and the total number (across all partitions) of items
+      num_total_items_t* tmp_num_selected_out = reinterpret_cast<num_total_items_t*>(allocations[2]);
       streaming_context_t streaming_context{
-        reinterpret_cast<num_total_items_t*>(allocations[2]), num_items, (num_partitions <= 1)};
+        tmp_num_selected_out, (tmp_num_selected_out + 1), num_items, (num_partitions <= 1)};
 
       // Iterate over the partitions until all input is processed
       for (OffsetT partition_idx = 0; partition_idx < num_partitions; partition_idx++)
