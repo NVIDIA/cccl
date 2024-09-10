@@ -53,6 +53,7 @@ inline void FormatHeader(std::ostream& out)
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/cuda_ptx_generated_helper.h>
+#include <cuda/std/__atomic/functions/cuda_local.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
