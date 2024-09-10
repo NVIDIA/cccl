@@ -69,16 +69,16 @@ private:
     _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   template <class _Resource>
-  static constexpr bool __different_resource_with =
-    !_CCCL_TRAIT(::cuda::std::is_same, ::cuda::std::remove_cvref_t<_Resource>, shared_resource)
-    && _CUDA_VMR::resource_with<_Resource, _Properties...>;
+  static constexpr bool __different_resource =
+    !_CCCL_TRAIT(::cuda::std::is_same, ::cuda::std::remove_cvref_t<_Resource>, shared_resource);
 
 public:
   //! @brief Constructs a \c shared_resource from a type that satisfies the \c resource concept as well as all
   //! properties.
   //! @param __res The resource to be wrapped within the \c shared_resource.
   _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES(__different_resource_with<_Resource>)
+  _LIBCUDACXX_REQUIRES(
+    __different_resource<_Resource> _LIBCUDACXX_AND(_CUDA_VMR::resource_with<_Resource, _Properties...>))
   shared_resource(_Resource&& __res)
       : __resource_(::std::make_shared<::cuda::experimental::mr::any_resource<_Properties...>>(_CUDA_VSTD::move(__res)))
   {}
