@@ -22,11 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_NVRTC)
-#  include <exception>
-#endif // !_CCCL_COMPILER_NVRTC
-
-#include <cuda/std/cstdlib>
+#include <cuda/std/cstdlib> // ::exit
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
@@ -35,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning n
 
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __cccl_terminate() noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::exit(-1);), (__trap();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (__trap();))
   _CCCL_UNREACHABLE();
 }
 
