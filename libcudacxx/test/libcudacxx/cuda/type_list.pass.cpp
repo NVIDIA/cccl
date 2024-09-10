@@ -199,7 +199,8 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_push_front<::cuda::std::_
 // // __type_defer
 // using EnsureDeferIsLazy = ::cuda::std::__type_defer<DoNotInstantiate<>, Empty>;
 // static_assert(
-//   ::cuda::std::is_same<::cuda::std::__type_defer<Fn2, Incomplete, Empty>::type, Types<Incomplete, Empty>>::value, "");
+//   ::cuda::std::is_same<::cuda::std::__type_defer<Fn2, Incomplete, Empty>::type, Types<Incomplete, Empty>>::value,
+//   "");
 // static_assert(!HasType<::cuda::std::__type_defer<Fn2, Incomplete>>::value, "");
 
 // __type_index
@@ -436,7 +437,8 @@ static_assert(::cuda::std::__type_front<::cuda::std::__type_list<Int<42>, double
 // __type_back
 static_assert(::cuda::std::__type_back<::cuda::std::__type_list<double, Int<42>>>::value == 42, "");
 // static_assert(
-//   !::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_back>, ::cuda::std::__type_list<>>::value,
+//   !::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_back>,
+//   ::cuda::std::__type_list<>>::value,
 //   "");
 
 // __type_concat
