@@ -89,13 +89,13 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_call2<Fn2, Incomplete, Em
 
 // __type_call_indirect
 template <class... Ts, class = ::cuda::std::__type_call_indirect<Fn2, Ts...>>
-constexpr bool test_call_indirect(int)
+_CCCL_HOST_DEVICE constexpr bool test_call_indirect(int)
 {
   return true;
 }
 
 template <class... Ts>
-constexpr bool test_call_indirect(long)
+_CCCL_HOST_DEVICE constexpr bool test_call_indirect(long)
 {
   return false;
 }
@@ -206,14 +206,15 @@ static_assert(!HasType<::cuda::std::__type_defer<Fn2, Incomplete>>::value, "");
 // NOTE: __type_index has a fast path for indices 16 and below.
 static_assert(::cuda::std::__type_index_c<0, Int<42>, double>::value == 42, "");
 static_assert(::cuda::std::__type_index_c<1, int, Int<42>, double>::value == 42, "");
-static_assert(::cuda::std::__type_index<std::integral_constant<std::size_t, 1>, int, Int<42>, double>::value == 42, "");
+static_assert(
+  ::cuda::std::__type_index<::cuda::std::integral_constant<std::size_t, 1>, int, Int<42>, double>::value == 42, "");
 static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
-                                           std::integral_constant<std::size_t, 1>,
+                                           ::cuda::std::integral_constant<std::size_t, 1>,
                                            int,
                                            Int<42>>::value,
               "");
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
-                                            std::integral_constant<std::size_t, 1>,
+                                            ::cuda::std::integral_constant<std::size_t, 1>,
                                             int>::value,
               "");
 static_assert(
@@ -413,16 +414,16 @@ static_assert(
 // __type_at
 static_assert(::cuda::std::__type_at_c<0, ::cuda::std::__type_list<Int<42>, double>>::value == 42, "");
 static_assert(::cuda::std::__type_at_c<1, ::cuda::std::__type_list<int, Int<42>, double>>::value == 42, "");
-static_assert(
-  ::cuda::std::__type_at<std::integral_constant<std::size_t, 1>, ::cuda::std::__type_list<int, Int<42>, double>>::value
-    == 42,
-  "");
+static_assert(::cuda::std::__type_at<::cuda::std::integral_constant<std::size_t, 1>,
+                                     ::cuda::std::__type_list<int, Int<42>, double>>::value
+                == 42,
+              "");
 static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
-                                           std::integral_constant<std::size_t, 1>,
+                                           ::cuda::std::integral_constant<std::size_t, 1>,
                                            ::cuda::std::__type_list<int, Int<42>>>::value,
               "");
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
-                                            std::integral_constant<std::size_t, 1>,
+                                            ::cuda::std::integral_constant<std::size_t, 1>,
                                             ::cuda::std::__type_list<int>>::value,
               "");
 
