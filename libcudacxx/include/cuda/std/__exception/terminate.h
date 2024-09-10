@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning n
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __cccl_terminate() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::exit(-1);), (__trap();))
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 #if 0 // Expose once atomic is universally available
@@ -63,7 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI  terminate_handler get_terminate() noexcept
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void terminate() noexcept
 {
   __cccl_terminate();
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
