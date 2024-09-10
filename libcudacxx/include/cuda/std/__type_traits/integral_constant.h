@@ -28,20 +28,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
   static constexpr const _Tp value = __v;
   typedef _Tp value_type;
   typedef integral_constant type;
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
+  _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
   {
     return value;
   }
 #if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type operator()() const noexcept
+  _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type operator()() const noexcept
   {
     return value;
   }
 #endif
 };
 
+// Before the addition of inline variables, it was necessary to
+// provide a definition for constexpr class static data members.
+#if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
 template <class _Tp, _Tp __v>
 constexpr const _Tp integral_constant<_Tp, __v>::value;
+#endif
 
 typedef integral_constant<bool, true> true_type;
 typedef integral_constant<bool, false> false_type;
