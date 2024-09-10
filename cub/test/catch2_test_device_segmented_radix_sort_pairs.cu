@@ -430,7 +430,7 @@ try
   constexpr int num_key_seeds      = 1;
   constexpr int num_value_seeds    = 1;
   const bool is_descending         = GENERATE(false, true);
-  constexpr std::size_t num_items    = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
+  constexpr std::size_t num_items = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
   constexpr std::size_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
 

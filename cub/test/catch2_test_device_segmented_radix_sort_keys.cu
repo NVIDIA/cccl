@@ -45,7 +45,6 @@
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
-#include <driver_types.h>
 
 // TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
@@ -113,6 +112,7 @@ DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<false>, dispatch_se
 using key_types            = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, bool, char>;
 using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, char>;
 #  define NO_FP_KEY_TYPES
+#  define SINGLE_TEST_CASE_INSTANTIATION
 #elif TEST_KEY_BITS == 16
 // clang-format off
 using key_types = c2h::type_list<
@@ -201,6 +201,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
+#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][radix][sort][device]", single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
@@ -254,6 +256,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][ra
 
   REQUIRE((ref_keys == out_keys) == true);
 }
+
+#endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
          "[keys][segmented][radix][sort][device]",
@@ -323,6 +327,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
 
   REQUIRE((ref_keys == out_keys) == true);
 }
+
+#if defined(SINGLE_TEST_CASE_INSTANTIATION)
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented][radix][sort][device]", single_key_type)
 {
@@ -506,7 +512,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
          "[keys][segmented][radix][sort][device]",
@@ -632,4 +638,5 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
-#endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#  endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
