@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/execution_space.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -48,19 +50,19 @@ template <class... _Ts>
 struct __type_list;
 
 template <class _Tp>
-using __type _LIBCUDACXX_NODEBUG_TYPE = typename _Tp::type;
+using __type = typename _Tp::type;
 
 //! \brief Evaluate a meta-callable with the given arguments
 template <class _Fn, class... _Ts>
-using __type_call _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ts...>;
+using __type_call = typename _Fn::template __call<_Ts...>;
 
 //! \brief Evaluate a unary meta-callable with the given argument
 template <class _Fn, class _Ty>
-using __type_call1 _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ty>;
+using __type_call1 = typename _Fn::template __call<_Ty>;
 
 //! \brief Evaluate a binary meta-callable with the given arguments
 template <class _Fn, class _Ty, class _Uy>
-using __type_call2 _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ty, _Uy>;
+using __type_call2 = typename _Fn::template __call<_Ty, _Uy>;
 
 namespace __detail
 {
@@ -75,7 +77,7 @@ struct __type_call_indirect_fn
 //! \brief Evaluate a meta-callable with the given arguments, with an indirection
 //! to avoid the dreaded "pack expansion argument for non-pack parameter" error.
 template <class _Fn, class... _Ts>
-using __type_call_indirect _LIBCUDACXX_NODEBUG_TYPE = //
+using __type_call_indirect = //
   typename __detail::__type_call_indirect_fn<sizeof(
     __type_list<_Fn, _Ts...>*)>::template __call<_Fn::template __call, _Ts...>;
 
@@ -103,7 +105,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote2
   using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ty, _Uy>;
 };
 
-//! \brief Turns a class or alias template into a meta-callable
+//! \brief Turns a class or alias template into a meta-callable with an
+//! indirection to avoid the dreaded "pack expansion argument for non-pack
+//! parameter" error.
 template <template <class...> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_indirect
 {
@@ -200,30 +204,26 @@ using __type_list_ptr = __type_list<_Ts...>*;
 
 //! \brief Return the size of a type list.
 template <class _List>
-using __type_list_size _LIBCUDACXX_NODEBUG_TYPE = integral_constant<size_t, _List::__size>;
+using __type_list_size = integral_constant<size_t, _List::__size>;
 
 //! \brief Given a type list and a list of types, append the types to the list.
 template <class _List, class... _Ts>
-using __type_push_back _LIBCUDACXX_NODEBUG_TYPE = __type_call<_List, __type_quote<__type_list>, _Ts...>;
+using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 
 //! \brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
-using __type_push_front _LIBCUDACXX_NODEBUG_TYPE =
-  __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
+using __type_push_front = __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
 
 namespace __detail
 {
-template <class _Fn, class _ArgList, class _Enable = void>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_callable
-{
-  using type _LIBCUDACXX_NODEBUG_TYPE = false_type;
-};
+template <class _First, class _Second>
+using __type_second = _Second;
 
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_callable<_Fn, __type_list<_Ts...>, void_t<__type_call<_Fn, _Ts...>>>
-{
-  using type _LIBCUDACXX_NODEBUG_TYPE = true_type;
-};
+_CCCL_HOST_DEVICE auto __type_callable_fn(__type_list<_Fn, _Ts...>*) //
+  -> __type_second<__type_call<_Fn, _Ts...>, true_type>;
+
+_CCCL_HOST_DEVICE auto __type_callable_fn(void*) -> false_type;
 } // namespace __detail
 
 //! \brief Test whether a meta-callable is callable with a given set of
@@ -233,18 +233,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_callable<_Fn, __type_list<_Ts...>, v
 //! the meta-callable can be called with the arguments, and \c false_type
 //! otherwise.
 template <class _Fn, class... _Ts>
-using __type_callable _LIBCUDACXX_NODEBUG_TYPE = __type<__detail::__type_callable<_Fn, __type_list<_Ts...>>>;
+using __type_callable = decltype(__detail::__type_callable_fn(static_cast<__type_list<_Fn, _Ts...>*>(nullptr)));
 
 namespace __detail
 {
-template <class _Fn, class _ArgList, class _Enable = void>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
-{};
-
-template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer<_Fn, __type_list<_Ts...>, void_t<__type_call<_Fn, _Ts...>>>
+template <bool _IsCallable>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn, _Ts...>;
+  template <class, class...>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_defer_fn;
+};
+
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
+{
+  template <class _Fn, class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_identity<__type_call<_Fn, _Ts...>>;
 };
 } // namespace __detail
 
@@ -255,17 +259,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer<_Fn, __type_list<_Ts...>, void
 //! arguments, or if the meta-callable is not callable with the arguments, a
 //! class type without a nested \c ::type type alias.
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer : __detail::__type_defer<_Fn, __type_list<_Ts...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
+    : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
 
 // Implementation for indexing into a list of types:
 #  if defined(__cpp_pack_indexing)
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c _LIBCUDACXX_NODEBUG_TYPE = _Ts...[_Ip];
+using __type_index_c = _Ts...[_Ip];
 
 template <class _Ip, class... _Ts>
-using __type_index _LIBCUDACXX_NODEBUG_TYPE = _Ts...[_Ip::value];
+using __type_index = _Ts...[_Ip::value];
 
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back
@@ -285,10 +290,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn
 } // namespace __detail
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
+using __type_index_c = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
 
 template <class _Ip, class... _Ts>
-using __type_index _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_index_fn<_Ip::value>, _Ts...>;
+using __type_index = __type_call<__detail::__type_index_fn<_Ip::value>, _Ts...>;
 
 #  else // ^^^ __has_builtin(__type_pack_element) ^^^ / vvv !__has_builtin(__type_pack_element) vvv
 
@@ -356,11 +361,10 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 } // namespace __detail
 
 template <class _Ip, class... _Ts>
-using __type_index _LIBCUDACXX_NODEBUG_TYPE =
-  __type_call<__detail::__type_index_select_fn<(_Ip::value < 16)>, _Ip, _Ts...>;
+using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < 16)>, _Ip, _Ts...>;
 
 template <size_t _Ip, class... _Ts>
-using __type_index_c _LIBCUDACXX_NODEBUG_TYPE = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
+using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
 
 #  endif // !__has_builtin(__type_pack_element)
 
@@ -376,19 +380,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_at_fn
 
 //! \brief Given a type list and an index, return the type at that index.
 template <size_t _Ip, class _List>
-using __type_at_c _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_at_fn<_Ip>>;
+using __type_at_c = __type_call1<_List, __detail::__type_at_fn<_Ip>>;
 
 //! \brief Given a type list and an index, return the type at that index.
 template <class _Ip, class _List>
-using __type_at _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_at_fn<_Ip::value>>;
+using __type_at = __type_call1<_List, __detail::__type_at_fn<_Ip::value>>;
 
 //! \brief Given a type list return the type at the front of the list.
 template <class _List>
-using __type_front _LIBCUDACXX_NODEBUG_TYPE = __type_at_c<0, _List>;
+using __type_front = __type_at_c<0, _List>;
 
 //! \brief Given a type list return the type at the back of the list.
 template <class _List>
-using __type_back _LIBCUDACXX_NODEBUG_TYPE = __type_at_c<_List::__size - 1, _List>;
+using __type_back = __type_at_c<_List::__size - 1, _List>;
 
 namespace __detail
 {
@@ -457,13 +461,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
 //!
 //! When passed no type lists, \c __type_concat returns an empty type list.
 template <class... _Lists>
-using __type_concat _LIBCUDACXX_NODEBUG_TYPE = __type_call<__detail::__type_concat_fn, _Lists...>;
+using __type_concat = __type_call<__detail::__type_concat_fn, _Lists...>;
 
 //! \brief Given a list of type lists, concatenate all the lists into one.
 //!
 //! When passed an empty type list, \c __type_flatten returns an empty type list.
 template <class _ListOfLists>
-using __type_flatten _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
+using __type_flatten = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
 
 namespace __detail
 {
@@ -499,7 +503,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_fn
 //! If no type in the list satisfies the predicate, \c __type_find_if
 //! returns an empty type list.
 template <class _List, class _Fn>
-using __type_find_if _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
+using __type_find_if = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
 
 namespace __detail
 {
@@ -514,7 +518,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_transform_fn
 //! \brief Given a type list and a unary meta-callable, apply the meta-callable
 //! to each type in the list. It returns a new type list containing the results.
 template <class _List, class _Fn>
-using __type_transform _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_List, __detail::__type_transform_fn<_Fn>>;
+using __type_transform = __type_call1<_List, __detail::__type_transform_fn<_Fn>>;
 
 namespace __detail
 {
@@ -620,7 +624,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 
 //! \brief Remove all occurances of a type from a type list
 template <class _List, class _Ty>
-using __type_remove _LIBCUDACXX_NODEBUG_TYPE = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
+using __type_remove = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
 
 namespace __detail
 {
@@ -649,7 +653,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_cartesian_product_fn
 //! `O(N * M)`, where `N` is the size of the outer list, and
 //! `M` is the size of the inner lists.
 template <class... _Lists>
-using __type_cartesian_product _LIBCUDACXX_NODEBUG_TYPE =
+using __type_cartesian_product =
   __type_fold_left<__type_list<_Lists...>,
                    __type_list<__type_list<>>,
                    __type_quote_trait2<__detail::__type_cartesian_product_fn>>;
@@ -753,12 +757,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
 //! \brief Retreive the first of a pair of types
 //! \pre \c _Pair is a specialization of \c __type_pair
 template <class _Pair>
-using __type_pair_first _LIBCUDACXX_NODEBUG_TYPE = typename _Pair::__first;
+using __type_pair_first = typename _Pair::__first;
 
 //! \brief Retreive the second of a pair of types
 //! \pre \c _Pair is a specialization of \c __type_pair
 template <class _Pair>
-using __type_pair_second _LIBCUDACXX_NODEBUG_TYPE = typename _Pair::__second;
+using __type_pair_second = typename _Pair::__second;
 
 //! \brief A list of compile-time values, and a meta-callable that accepts a
 //! meta-callable and evaluates it with the values, each value wrapped in an
@@ -779,7 +783,7 @@ __type_iota_fn(integer_sequence<_Ty, _Is...>*) -> __type_value_list<_Ty, _Ty(_St
 //! \brief Return an \c __type_value_list of size \c _Size starting at \c _Start
 //! and incrementing by \c _Stride.
 template <class _Ty, _Ty _Start, _Ty _Size, _Ty _Stride = _Ty(1)>
-using __type_iota _LIBCUDACXX_NODEBUG_TYPE =
+using __type_iota =
   decltype(__detail::__type_iota_fn<_Ty, _Start, _Stride>(static_cast<make_integer_sequence<_Ty, _Size>*>(nullptr)));
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
