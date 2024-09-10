@@ -302,7 +302,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
 
 template <typename _Tp, size_t _Extent>
-class _LIBCUDACXX_TEMPLATE_VIS span
+class _CCCL_TYPE_VISIBILITY_DEFAULT span
 {
 public:
   //  constants and types
@@ -321,17 +321,17 @@ public:
 
   // [span.cons], span constructors, copy, assignment, and destructor
   template <size_t _Sz = _Extent, enable_if_t<_Sz == 0, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
       : __data_{nullptr}
   {}
 
-  span(const span&) noexcept            = default;
-  span& operator=(const span&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _It)
   _LIBCUDACXX_REQUIRES(__span_compatible_iterator<_It, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit span(_It __first, size_type __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, size_type __count)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
     (void) __count;
@@ -341,7 +341,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _It, class _End)
   _LIBCUDACXX_REQUIRES(
     __span_compatible_iterator<_It, element_type> _LIBCUDACXX_AND __span_compatible_sentinel_for<_End, _It>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit span(_It __first, _End __last)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, _End __last)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
     (void) __last;
@@ -350,13 +350,13 @@ public:
                        "invalid range in span's constructor (iterator, sentinel): last - first != extent");
   }
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __ptr, size_type __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __ptr, size_type __count)
       : __data_{__ptr}
   {
     (void) __count;
     _LIBCUDACXX_ASSERT(_Extent == __count, "size mismatch in span's constructor (ptr, len)");
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __f, pointer __l)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __f, pointer __l)
       : __data_{__f}
   {
     (void) __l;
@@ -366,31 +366,31 @@ public:
 
 #  if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_MSVC_2017)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
   {}
 #  else
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
       : __data_{__arr}
   {}
 #  endif // !_CCCL_COMPILER_NVRTC && !_CCCL_COMPILER_MSVC_2017
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(array<_OtherElementType, _Extent>& __arr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const array<_OtherElementType, _Extent>& __arr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const array<_OtherElementType, _Extent>& __arr) noexcept
       : __data_{__arr.data()}
   {}
 
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__span_compatible_range<_Range, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit span(_Range&& __r)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_Range&& __r)
       : __data_{_CUDA_VRANGES::data(__r)}
   {
     _LIBCUDACXX_ASSERT(_CUDA_VRANGES::size(__r) == _Extent, "size mismatch in span's constructor (range)");
@@ -398,7 +398,7 @@ public:
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
   _LIBCUDACXX_TEMPLATE(class _Container)
   _LIBCUDACXX_REQUIRES(__is_span_compatible_container<_Container, _Tp>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(_Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
       : __data_{_CUDA_VSTD::data(__c)}
   {
     _LIBCUDACXX_ASSERT(_Extent == _CUDA::VSTD::size(__c), "size mismatch in span's constructor (other span)");
@@ -406,7 +406,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Container)
   _LIBCUDACXX_REQUIRES(__is_span_compatible_container<_Container, _Tp>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
       : __data_{_CUDA_VSTD::data(__c)}
   {
     _LIBCUDACXX_ASSERT(_Extent == _CUDA::VSTD::size(__c), "size mismatch in span's constructor (other span)");
@@ -416,13 +416,13 @@ public:
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _Extent2 = _Extent)
   _LIBCUDACXX_REQUIRES((_Extent2 != dynamic_extent)
                          _LIBCUDACXX_AND __span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const span<_OtherElementType, _Extent2>& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const span<_OtherElementType, _Extent2>& __other) noexcept
       : __data_{__other.data()}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit span(const span<_OtherElementType, dynamic_extent>& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(const span<_OtherElementType, dynamic_extent>& __other) noexcept
       : __data_{__other.data()}
   {
     _LIBCUDACXX_ASSERT(_Extent == __other.size(), "size mismatch in span's constructor (other span)");
@@ -431,26 +431,26 @@ public:
   //  ~span() noexcept = default;
 
   template <size_t _Count>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, _Count> first() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> first() const noexcept
   {
     static_assert(_Count <= _Extent, "span<T, N>::first<Count>(): Count out of range");
     return span<element_type, _Count>{data(), _Count};
   }
 
   template <size_t _Count>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, _Count> last() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> last() const noexcept
   {
     static_assert(_Count <= _Extent, "span<T, N>::last<Count>(): Count out of range");
     return span<element_type, _Count>{data() + size() - _Count, _Count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
   {
     _LIBCUDACXX_ASSERT(__count <= size(), "span<T, N>::first(count): count out of range");
     return {data(), __count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
   {
     _LIBCUDACXX_ASSERT(__count <= size(), "span<T, N>::last(count): count out of range");
     return {data() + size() - __count, __count};
@@ -460,7 +460,7 @@ public:
   using __subspan_t = span<element_type, _Count != dynamic_extent ? _Count : _Extent - _Offset>;
 
   template <size_t _Offset, size_t _Count = dynamic_extent>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
     static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset,
@@ -468,7 +468,7 @@ public:
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, dynamic_extent>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent>
   subspan(size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
     _LIBCUDACXX_ASSERT(__offset <= size(), "span<T, N>::subspan(offset, count): offset out of range");
@@ -482,66 +482,66 @@ public:
     return {data() + __offset, __count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return _Extent;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size_bytes() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
   {
     return _Extent * sizeof(element_type);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return _Extent == 0;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](size_type __idx) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
   {
     _LIBCUDACXX_ASSERT(__idx < size(), "span<T, N>::operator[](index): index out of range");
     return __data_[__idx];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference front() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
   {
     _LIBCUDACXX_ASSERT(!empty(), "span<T, N>::front() on empty span");
     return __data_[0];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference back() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() const noexcept
   {
     _LIBCUDACXX_ASSERT(!empty(), "span<T, N>::back() on empty span");
     return __data_[size() - 1];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer data() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer data() const noexcept
   {
     return __data_;
   }
 
   // [span.iter], span iterator support
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator begin() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() const noexcept
   {
     return iterator(data());
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator end() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() const noexcept
   {
     return iterator(data() + size());
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator rbegin() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 reverse_iterator rbegin() const noexcept
   {
     return reverse_iterator(end());
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator rend() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 reverse_iterator rend() const noexcept
   {
     return reverse_iterator(begin());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY span<const byte, _Extent * sizeof(element_type)> __as_bytes() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI span<const byte, _Extent * sizeof(element_type)> __as_bytes() const noexcept
   {
     return span<const byte, _Extent * sizeof(element_type)>{reinterpret_cast<const byte*>(data()), size_bytes()};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY span<byte, _Extent * sizeof(element_type)> __as_writable_bytes() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI span<byte, _Extent * sizeof(element_type)> __as_writable_bytes() const noexcept
   {
     return span<byte, _Extent * sizeof(element_type)>{reinterpret_cast<byte*>(data()), size_bytes()};
   }
@@ -551,7 +551,7 @@ private:
 };
 
 template <typename _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS span<_Tp, dynamic_extent>
+class _CCCL_TYPE_VISIBILITY_DEFAULT span<_Tp, dynamic_extent>
 {
 public:
   //  constants and types
@@ -569,17 +569,17 @@ public:
   static constexpr size_type extent = dynamic_extent;
 
   // [span.cons], span constructors, copy, assignment, and destructor
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
       : __data_{nullptr}
       , __size_{0}
   {}
 
-  span(const span&) noexcept            = default;
-  span& operator=(const span&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _It)
   _LIBCUDACXX_REQUIRES(__span_compatible_iterator<_It, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(_It __first, size_type __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_It __first, size_type __count)
       : __data_{_CUDA_VSTD::to_address(__first)}
       , __size_{__count}
   {}
@@ -587,7 +587,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _It, class _End)
   _LIBCUDACXX_REQUIRES(
     __span_compatible_iterator<_It, element_type> _LIBCUDACXX_AND __span_compatible_sentinel_for<_End, _It>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(_It __first, _End __last)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_It __first, _End __last)
       : __data_(_CUDA_VSTD::to_address(__first))
       , __size_(__last - __first)
   {
@@ -595,32 +595,32 @@ public:
   }
 
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __ptr, size_type __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __ptr, size_type __count)
       : __data_{__ptr}
       , __size_{__count}
   {}
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(pointer __f, pointer __l)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __f, pointer __l)
       : __data_{__f}
       , __size_{static_cast<size_t>(__l - __f)}
   {}
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
 
   template <size_t _Sz>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
       , __size_{_Sz}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _Sz)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(array<_OtherElementType, _Sz>& __arr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _Sz)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const array<_OtherElementType, _Sz>& __arr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const array<_OtherElementType, _Sz>& __arr) noexcept
       : __data_{__arr.data()}
       , __size_{_Sz}
   {}
@@ -628,21 +628,21 @@ public:
 #  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _LIBCUDACXX_TEMPLATE(class _Range)
   _LIBCUDACXX_REQUIRES(__span_compatible_range<_Range, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(_Range&& __r)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Range&& __r)
       : __data_(_CUDA_VRANGES::data(__r))
       , __size_{_CUDA_VRANGES::size(__r)}
   {}
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
   _LIBCUDACXX_TEMPLATE(class _Container)
   _LIBCUDACXX_REQUIRES(__is_span_compatible_container<_Container, _Tp>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(_Container& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Container& __c)
       : __data_{_CUDA_VSTD::data(__c)}
       , __size_{(size_type) _CUDA_VSTD::size(__c)}
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Container)
   _LIBCUDACXX_REQUIRES(__is_span_compatible_container<_Container, _Tp>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const _Container& __c)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const _Container& __c)
       : __data_{_CUDA_VSTD::data(__c)}
       , __size_{(size_type) _CUDA_VSTD::size(__c)}
   {}
@@ -650,7 +650,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType, size_t _OtherExtent)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span(const span<_OtherElementType, _OtherExtent>& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const span<_OtherElementType, _OtherExtent>& __other) noexcept
       : __data_{__other.data()}
       , __size_{__other.size()}
   {}
@@ -658,26 +658,26 @@ public:
   //    ~span() noexcept = default;
 
   template <size_t _Count>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, _Count> first() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> first() const noexcept
   {
     _LIBCUDACXX_ASSERT(_Count <= size(), "span<T>::first<Count>(): Count out of range");
     return span<element_type, _Count>{data(), _Count};
   }
 
   template <size_t _Count>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, _Count> last() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> last() const noexcept
   {
     _LIBCUDACXX_ASSERT(_Count <= size(), "span<T>::last<Count>(): Count out of range");
     return span<element_type, _Count>{data() + size() - _Count, _Count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
   {
     _LIBCUDACXX_ASSERT(__count <= size(), "span<T>::first(count): count out of range");
     return {data(), __count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
   {
     _LIBCUDACXX_ASSERT(__count <= size(), "span<T>::last(count): count out of range");
     return {data() + size() - __count, __count};
@@ -687,7 +687,7 @@ public:
   using __subspan_t = span<element_type, _Count>;
 
   template <size_t _Offset, size_t _Count = dynamic_extent>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
     _LIBCUDACXX_ASSERT(_Offset <= size(), "span<T>::subspan<Offset, Count>(): Offset out of range");
     _LIBCUDACXX_ASSERT(_Count == dynamic_extent || _Count <= size() - _Offset,
@@ -695,7 +695,7 @@ public:
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
-  constexpr span<element_type, dynamic_extent> _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr span<element_type, dynamic_extent> _LIBCUDACXX_HIDE_FROM_ABI
   subspan(size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
     _LIBCUDACXX_ASSERT(__offset <= size(), "span<T>::subspan(offset, count): offset out of range");
@@ -709,66 +709,66 @@ public:
     return {data() + __offset, __count};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return __size_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr size_type size_bytes() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
   {
     return __size_ * sizeof(element_type);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](size_type __idx) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
   {
     _LIBCUDACXX_ASSERT(__idx < size(), "span<T>::operator[](index): index out of range");
     return __data_[__idx];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference front() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
   {
     _LIBCUDACXX_ASSERT(!empty(), "span<T>::front() on empty span");
     return __data_[0];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr reference back() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() const noexcept
   {
     _LIBCUDACXX_ASSERT(!empty(), "span<T>::back() on empty span");
     return __data_[size() - 1];
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr pointer data() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer data() const noexcept
   {
     return __data_;
   }
 
   // [span.iter], span iterator support
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator begin() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() const noexcept
   {
     return iterator(data());
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr iterator end() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() const noexcept
   {
     return iterator(data() + size());
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator rbegin() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 reverse_iterator rbegin() const noexcept
   {
     return reverse_iterator(end());
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reverse_iterator rend() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 reverse_iterator rend() const noexcept
   {
     return reverse_iterator(begin());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY span<const byte, dynamic_extent> __as_bytes() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI span<const byte, dynamic_extent> __as_bytes() const noexcept
   {
     return {reinterpret_cast<const byte*>(data()), size_bytes()};
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY span<byte, dynamic_extent> __as_writable_bytes() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI span<byte, dynamic_extent> __as_writable_bytes() const noexcept
   {
     return {reinterpret_cast<byte*>(data()), size_bytes()};
   }
@@ -780,14 +780,14 @@ private:
 
 //  as_bytes & as_writable_bytes
 template <class _Tp, size_t _Extent>
-_LIBCUDACXX_INLINE_VISIBILITY auto as_bytes(span<_Tp, _Extent> __s) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI auto as_bytes(span<_Tp, _Extent> __s) noexcept
 {
   return __s.__as_bytes();
 }
 
 _LIBCUDACXX_TEMPLATE(class _Tp, size_t _Extent)
 _LIBCUDACXX_REQUIRES((!is_const<_Tp>::value))
-_LIBCUDACXX_INLINE_VISIBILITY auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
 {
   return __s.__as_writable_bytes();
 }

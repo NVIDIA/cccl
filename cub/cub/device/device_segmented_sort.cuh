@@ -25,9 +25,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceSegmentedSort provides device-wide, parallel operations for
-//!       computing a batched sort across multiple, non-overlapping sequences of
-//!       data items residing within device-accessible memory.
+//! @file
+//! cub::DeviceSegmentedSort provides device-wide, parallel operations for computing a batched sort across multiple,
+//! non-overlapping sequences of data items residing within device-accessible memory.
 
 #pragma once
 

@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_default_constructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_default_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
 {};
 
@@ -40,7 +40,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v =
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_default_constructible : public is_trivially_constructible<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_default_constructible : public is_trivially_constructible<_Tp>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

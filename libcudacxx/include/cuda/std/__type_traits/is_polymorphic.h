@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic : public integral_constant<bool, _LIBCUDACXX_IS_POLYMORPHIC(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic : public integral_constant<bool, _LIBCUDACXX_IS_POLYMORPHIC(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -47,7 +47,7 @@ template <typename _Tp>
 _CCCL_HOST_DEVICE __two& __is_polymorphic_impl(...);
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic
     : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1>
 {};
 

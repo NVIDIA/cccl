@@ -32,7 +32,7 @@ _CCCL_PUSH_MACROS
 #  ifndef __cuda_std__
 #    include <__external_threading>
 #  else
-#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY inline _LIBCUDACXX_INLINE_VISIBILITY
+#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 #  endif
 #elif !defined(_LIBCUDACXX_HAS_NO_THREADS)
 
@@ -56,9 +56,9 @@ _CCCL_PUSH_MACROS
 #  endif
 
 #  if defined(_LIBCUDACXX_HAS_THREAD_LIBRARY_EXTERNAL) || defined(_LIBCUDACXX_BUILDING_THREAD_LIBRARY_EXTERNAL)
-#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_INLINE_VISIBILITY
+#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 #  else
-#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY inline _LIBCUDACXX_INLINE_VISIBILITY
+#    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 #  endif
 
 #  if defined(__FreeBSD__) && defined(_CCCL_COMPILER_CLANG) && __has_attribute(no_thread_safety_analysis)
@@ -76,13 +76,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_POLLING_COUNT 16
 
-_LIBCUDACXX_INLINE_VISIBILITY inline void __libcpp_thread_yield_processor(){
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield_processor(){
 #  if defined(__aarch64__)
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :::);)
 #  elif defined(__x86_64__)
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :::);)
-#  elif defined(__powerpc__)
-#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("or 27,27,27" :::);)
 #  else
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #  endif
@@ -684,32 +682,32 @@ struct alignas(64) __libcpp_contention_t
 #    endif
 };
 
-_LIBCUDACXX_INLINE_VISIBILITY __libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI __libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
 
 #  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 
 #  if !defined(_LIBCUDACXX_HAS_NO_TREE_BARRIER) && !defined(_LIBCUDACXX_HAS_NO_THREAD_FAVORITE_BARRIER_INDEX)
 
-_LIBCUDACXX_EXPORTED_FROM_ABI extern thread_local ptrdiff_t __libcpp_thread_favorite_barrier_index;
+_CCCL_VISIBILITY_DEFAULT extern thread_local ptrdiff_t __libcpp_thread_favorite_barrier_index;
 
 #  endif
 
 #  ifndef __cuda_std__
 
-class _LIBCUDACXX_TYPE_VIS thread;
-class _LIBCUDACXX_TYPE_VIS __thread_id;
+class _CCCL_TYPE_VISIBILITY_DEFAULT thread;
+class _CCCL_TYPE_VISIBILITY_DEFAULT __thread_id;
 
 namespace this_thread
 {
 
-_LIBCUDACXX_INLINE_VISIBILITY __thread_id get_id() noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI __thread_id get_id() noexcept;
 
 } // namespace this_thread
 
 template <>
 struct hash<__thread_id>;
 
-class _LIBCUDACXX_TEMPLATE_VIS __thread_id
+class _CCCL_TYPE_VISIBILITY_DEFAULT __thread_id
 {
   // FIXME: pthread_t is a pointer on Darwin but a long on Linux.
   // NULL is the no-thread value on Darwin.  Someone needs to check
@@ -717,11 +715,11 @@ class _LIBCUDACXX_TEMPLATE_VIS __thread_id
   __libcpp_thread_id __id_;
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY __thread_id() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI __thread_id() noexcept
       : __id_(0)
   {}
 
-  friend _LIBCUDACXX_INLINE_VISIBILITY bool operator==(__thread_id __x, __thread_id __y) noexcept
+  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(__thread_id __x, __thread_id __y) noexcept
   { // don't pass id==0 to underlying routines
     if (__x.__id_ == 0)
     {
@@ -733,11 +731,11 @@ public:
     }
     return __libcpp_thread_id_equal(__x.__id_, __y.__id_);
   }
-  friend _LIBCUDACXX_INLINE_VISIBILITY bool operator!=(__thread_id __x, __thread_id __y) noexcept
+  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator!=(__thread_id __x, __thread_id __y) noexcept
   {
     return !(__x == __y);
   }
-  friend _LIBCUDACXX_INLINE_VISIBILITY bool operator<(__thread_id __x, __thread_id __y) noexcept
+  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator<(__thread_id __x, __thread_id __y) noexcept
   { // id==0 is always less than any other thread_id
     if (__x.__id_ == 0)
     {
@@ -749,44 +747,44 @@ public:
     }
     return __libcpp_thread_id_less(__x.__id_, __y.__id_);
   }
-  friend _LIBCUDACXX_INLINE_VISIBILITY bool operator<=(__thread_id __x, __thread_id __y) noexcept
+  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator<=(__thread_id __x, __thread_id __y) noexcept
   {
     return !(__y < __x);
   }
-  friend _LIBCUDACXX_INLINE_VISIBILITY bool operator>(__thread_id __x, __thread_id __y) noexcept
+  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator>(__thread_id __x, __thread_id __y) noexcept
   {
     return __y < __x;
   }
-  friend _LIBCUDACXX_INLINE_VISIBILITY bool operator>=(__thread_id __x, __thread_id __y) noexcept
+  friend _LIBCUDACXX_HIDE_FROM_ABI bool operator>=(__thread_id __x, __thread_id __y) noexcept
   {
     return !(__x < __y);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY void __reset()
+  _LIBCUDACXX_HIDE_FROM_ABI void __reset()
   {
     __id_ = 0;
   }
 
 #    ifndef __cuda_std__
   template <class _CharT, class _Traits>
-  friend _LIBCUDACXX_INLINE_VISIBILITY basic_ostream<_CharT, _Traits>&
+  friend _LIBCUDACXX_HIDE_FROM_ABI basic_ostream<_CharT, _Traits>&
   operator<<(basic_ostream<_CharT, _Traits>& __os, __thread_id __id);
 #    endif
 
 private:
-  _LIBCUDACXX_INLINE_VISIBILITY __thread_id(__libcpp_thread_id __id)
+  _LIBCUDACXX_HIDE_FROM_ABI __thread_id(__libcpp_thread_id __id)
       : __id_(__id)
   {}
 
   friend __thread_id this_thread::get_id() noexcept;
-  friend class _LIBCUDACXX_TYPE_VIS thread;
-  friend struct _LIBCUDACXX_TEMPLATE_VIS hash<__thread_id>;
+  friend class _CCCL_TYPE_VISIBILITY_DEFAULT thread;
+  friend struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__thread_id>;
 };
 
 namespace this_thread
 {
 
-inline _LIBCUDACXX_INLINE_VISIBILITY __thread_id get_id() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI __thread_id get_id() noexcept
 {
   return __libcpp_thread_get_current_id();
 }

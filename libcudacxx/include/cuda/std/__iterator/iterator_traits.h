@@ -85,7 +85,7 @@ template <__dereferenceable _Tp>
 using iter_reference_t = decltype(*declval<_Tp&>());
 
 template <class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 #elif _CCCL_STD_VER >= 2017
 
@@ -112,26 +112,26 @@ template <class _Tp>
 using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*_CUDA_VSTD::declval<_Tp&>())>;
 
 template <class, class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #else // ^^^ _CCCL_STD_VER >= 2017 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
 
 #if defined(_CCCL_COMPILER_NVRTC)
 
-struct _LIBCUDACXX_TEMPLATE_VIS input_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
-struct _LIBCUDACXX_TEMPLATE_VIS output_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT output_iterator_tag
 {};
-struct _LIBCUDACXX_TEMPLATE_VIS forward_iterator_tag : public input_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT forward_iterator_tag : public input_iterator_tag
 {};
-struct _LIBCUDACXX_TEMPLATE_VIS bidirectional_iterator_tag : public forward_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT bidirectional_iterator_tag : public forward_iterator_tag
 {};
-struct _LIBCUDACXX_TEMPLATE_VIS random_access_iterator_tag : public bidirectional_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT random_access_iterator_tag : public bidirectional_iterator_tag
 {};
 #  if _CCCL_STD_VER >= 2014
-struct _LIBCUDACXX_TEMPLATE_VIS contiguous_iterator_tag : public random_access_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
@@ -144,14 +144,14 @@ using bidirectional_iterator_tag = ::std::bidirectional_iterator_tag;
 using random_access_iterator_tag = ::std::random_access_iterator_tag;
 
 #  if _CCCL_STD_VER >= 2020
-struct _LIBCUDACXX_TEMPLATE_VIS __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
 {};
 using contiguous_iterator_tag =
   _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
       ::std::contiguous_iterator_tag,
       __contiguous_iterator_tag_backfill>;
 #  elif _CCCL_STD_VER >= 2014
-struct _LIBCUDACXX_TEMPLATE_VIS contiguous_iterator_tag : public random_access_iterator_tag
+struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
@@ -203,9 +203,9 @@ struct __has_iterator_typedefs
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type
   __test(void_t<typename _Up::iterator_category>* = nullptr,
          void_t<typename _Up::difference_type>*   = nullptr,
          void_t<typename _Up::value_type>*        = nullptr,
@@ -221,9 +221,9 @@ struct __has_iterator_category
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Up::iterator_category* = nullptr);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::iterator_category* = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
@@ -234,9 +234,9 @@ struct __has_iterator_concept
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Up::iterator_concept* = nullptr);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::iterator_concept* = nullptr);
 
 public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
@@ -479,7 +479,7 @@ struct __iterator_traits<_Ip>
 };
 
 template <class _Ip>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits : __iterator_traits<_Ip>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
 {
   using __primary_template = iterator_traits;
 };
@@ -761,7 +761,7 @@ struct __iterator_traits<_Ip,
 };
 
 template <class _Ip, class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits : __iterator_traits<_Ip>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
 {
   using __primary_template = iterator_traits;
 };
@@ -799,7 +799,7 @@ struct __iterator_traits<_Iter, true>
 //    the client expects instead of failing at compile time.
 
 template <class _Iter>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits : __iterator_traits<_Iter, __has_iterator_typedefs<_Iter>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter, __has_iterator_typedefs<_Iter>::value>
 {
   using __primary_template = iterator_traits;
 };
@@ -809,7 +809,7 @@ template <class _Tp>
 #if _CCCL_STD_VER >= 2020
   requires is_object_v<_Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits<_Tp*>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
 {
   typedef ptrdiff_t difference_type;
   typedef __remove_cv_t<_Tp> value_type;

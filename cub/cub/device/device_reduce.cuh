@@ -26,9 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceReduce provides device-wide, parallel operations for
-//!       computing a reduction across a sequence of data items residing within
-//!       device-accessible memory.
+//! @file
+//! cub::DeviceReduce provides device-wide, parallel operations for computing a reduction across a sequence of data
+//! items residing within device-accessible memory.
 
 #pragma once
 

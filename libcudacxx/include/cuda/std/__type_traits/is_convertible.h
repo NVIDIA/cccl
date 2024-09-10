@@ -34,7 +34,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS is_convertible : public integral_constant<bool, _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
+    : public integral_constant<bool, _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -79,7 +80,7 @@ namespace __is_convertible_imp
 
 _CCCL_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY void __test_convert(_Tp);
+_LIBCUDACXX_HIDE_FROM_ABI void __test_convert(_Tp);
 _CCCL_NV_DIAG_DEFAULT(3013) // a volatile function parameter is deprecated
 
 template <class _From, class _To, class = void>
@@ -191,7 +192,7 @@ struct __is_convertible_fallback<_T1, _T2, 3, 3> : public true_type
 {};
 
 template <class _T1, class _T2>
-struct _LIBCUDACXX_TEMPLATE_VIS is_convertible : public __is_convertible_fallback<_T1, _T2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible : public __is_convertible_fallback<_T1, _T2>
 {
   static const size_t __complete_check1 = __is_convertible_check<_T1>::__v;
   static const size_t __complete_check2 = __is_convertible_check<_T2>::__v;

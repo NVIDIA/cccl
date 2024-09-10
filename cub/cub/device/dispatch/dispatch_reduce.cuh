@@ -316,7 +316,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT = detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
           typename SelectedPolicy = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>,
           typename TransformOpT   = ::cuda::std::__identity>
 struct DispatchReduce : SelectedPolicy
@@ -797,17 +797,16 @@ struct DispatchReduce : SelectedPolicy
  * @tparam InitT
  *   Initial value type
  */
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename TransformOpT,
-          typename InitT,
-          typename AccumT =
-            detail::accumulator_t<ReductionOpT, //
-                                  InitT,
-                                  cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>>,
-          typename SelectedPolicyT = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename ReductionOpT,
+  typename TransformOpT,
+  typename InitT,
+  typename AccumT = ::cuda::std::
+    __accumulator_t<ReductionOpT, cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>, InitT>,
+  typename SelectedPolicyT = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, SelectedPolicyT, TransformOpT>;
 
@@ -850,7 +849,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT = detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
           typename SelectedPolicy = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
 struct DispatchSegmentedReduce : SelectedPolicy
 {

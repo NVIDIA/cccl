@@ -26,9 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DeviceHistogram provides device-wide parallel operations for
-//!       constructing histogram(s) from a sequence of samples data residing
-//!       within device-accessible memory.
+//! @file
+//! cub::DeviceHistogram provides device-wide parallel operations for constructing histogram(s) from a sequence of
+//! samples data residing within device-accessible memory.
 
 #pragma once
 

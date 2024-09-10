@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __shift_left(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __shift_left(
   _ForwardIterator __first,
   _ForwardIterator __last,
   typename iterator_traits<_ForwardIterator>::difference_type __n,
@@ -42,7 +42,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __sh
 }
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __shift_left(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __shift_left(
   _ForwardIterator __first,
   _ForwardIterator __last,
   typename iterator_traits<_ForwardIterator>::difference_type __n,
@@ -61,7 +61,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __sh
 }
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator shift_left(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator shift_left(
   _ForwardIterator __first, _ForwardIterator __last, typename iterator_traits<_ForwardIterator>::difference_type __n)
 {
   if (__n == 0)

@@ -23,17 +23,17 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, _Tp __v>
-struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
+struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
   static constexpr const _Tp value = __v;
   typedef _Tp value_type;
   typedef integral_constant type;
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr operator value_type() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
   {
     return value;
   }
 #if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type operator()() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type operator()() const noexcept
   {
     return value;
   }

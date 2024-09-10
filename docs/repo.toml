@@ -25,7 +25,7 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative", "cuda_parallel" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
@@ -33,6 +33,7 @@ deps = [
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
     [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
+    [ "cuda_parallel", "_build/docs/cuda_parallel/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -144,7 +145,9 @@ doxygen_predefined = [
     "_CCCL_DEVICE",
     "_CCCL_HOST_DEVICE",
     "_CCCL_FORCEINLINE",
+    "_CUB_TEMPLATE_REQUIRES(x)",
     "_CCCL_STD_VER",
+    "_CCCL_NODISCARD",
     "_CCCL_VISIBILITY_HIDDEN",
     "_CCCL_SUPPRESS_DEPRECATED_PUSH",
     "_CCCL_SUPPRESS_DEPRECATED_POP",
@@ -301,7 +304,30 @@ autodoc.mock_imports = [
 
 enhanced_search_enabled = true
 python_paths = [
-    "${root}/../python/cuda"
+    "${root}/../python/cuda_cooperative"
+]
+
+[repo_docs.projects.cuda_parallel]
+name = "cuda.parallel"
+docs_root = "cuda_parallel"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+autodoc.mock_imports = [
+    "numba",
+    "pynvjitlink",
+    "cuda.nvrtc",
+    "llvmlite"
+]
+
+enhanced_search_enabled = true
+python_paths = [
+    "${root}/../python/cuda_parallel"
 ]
 
 [repo_docs.projects.cudax]
@@ -328,24 +354,40 @@ deps = [
 ]
 
 doxygen_input = [
-    "../../cudax/include/cuda/experimental/__container/*.h",
-    "../../cudax/include/cuda/experimental/__memory_resource/*.h",
+    "../../cudax/include/cuda/experimental/__container/*.cuh",
+    "../../cudax/include/cuda/experimental/__device/*.cuh",
+    "../../cudax/include/cuda/experimental/__event/*.cuh",
+    "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
+    "../../cudax/include/cuda/experimental/__launch/*.cuh",
+    "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
+    "../../cudax/include/cuda/experimental/__stream/*.cuh",
 ]
 
 doxygen_predefined = [
+  "__device__",
+  "__host__",
+  "__global__",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
+  "_CCCL_GLOBAL_CONSTANT=constexpr",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
+  "_CCCL_IF_CONSTEXPR=if constexpr",
   "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
+  "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
   "_CUDA_VSTD=cuda::std",
-  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
+  "_LIBCUDACXX_AND=&&",
   "_LIBCUDACXX_EAT_REST(x)=",
+  "_LIBCUDACXX_GLOBAL_CONSTANT=inline",
+  "_LIBCUDACXX_INLINE_VAR=inline",
+  "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::__enable_if_t<x, int> = 0>",
+  "_LIBCUDACXX_TEMPLATE(x)=template<x, ",
   "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -357,6 +399,6 @@ doxygen_conf_extra = """
   EXTENSION_MAPPING      = cuh=c++ cu=c++
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
-  EXCLUDE_SYMBOLS        = "__*"
+  EXCLUDE_SYMBOLS        = "*detail*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*"
   AUTOLINK_SUPPORT       = YES
 """

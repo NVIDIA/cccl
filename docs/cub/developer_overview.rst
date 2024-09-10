@@ -726,7 +726,7 @@ To satisfy (1), the visibility of ``thrust::cuda_cub::launcher::triple_chevron``
 
 To satisfy (2), instead of annotating kernels as ``__global__`` we annotate them as
 ``CUB_DETAIL_KERNEL_ATTRIBUTES``. Apart from annotating a kernel as global function, the macro also
-contains an attribute to set the visibility to bidden.
+contains an attribute to set the visibility to hidden.
 
 To satisfy (3), CUB symbols are placed inside an inline namespace containing the set of
 GPU architectures for which the TU is being compiled.

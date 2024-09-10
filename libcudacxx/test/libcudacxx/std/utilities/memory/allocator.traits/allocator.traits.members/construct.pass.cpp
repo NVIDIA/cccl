@@ -45,7 +45,7 @@ struct Alloc
     return &storage;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type*, cuda::std::size_t) {}
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type*, cuda::std::size_t) noexcept {}
 
   value_type storage;
 };

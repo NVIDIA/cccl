@@ -95,7 +95,7 @@ struct indirectly_readable_traits<_Tp> : __cond_value_type<typename _Tp::value_t
 {};
 
 template <class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_value_t<I>` denotes
 // `indirectly_readable_traits<RI>::value_type` if `iterator_traits<RI>` names a specialization
@@ -172,7 +172,7 @@ struct indirectly_readable_traits<
 {};
 
 template <class, class>
-struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_value_t<I>` denotes
 // `indirectly_readable_traits<RI>::value_type` if `iterator_traits<RI>` names a specialization

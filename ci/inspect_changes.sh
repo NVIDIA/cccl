@@ -27,6 +27,7 @@ subprojects=(
   thrust
   cudax
   pycuda
+  c
 )
 
 # ...and their dependencies:
@@ -36,7 +37,8 @@ declare -A dependencies=(
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
-  [pycuda]="cccl libcudacxx cub thrust cudax"
+  [pycuda]="cccl libcudacxx cub thrust c"
+  [c]="cccl libcudacxx cub"
 )
 
 declare -A project_names=(
@@ -46,13 +48,14 @@ declare -A project_names=(
   [thrust]="Thrust"
   [cudax]="CUDA Experimental"
   [pycuda]="pycuda"
+  [c]="CUDA C Core Library "
 )
 
 # By default, the project directory is assumed to be the same as the subproject name,
 # but can be overridden here. The `cccl` project is special, and checks for files outside
 # of any subproject directory.
 declare -A project_dirs=(
-  [pycuda]="python/cuda"
+  [pycuda]="python/cuda_cooperative"
 )
 
 # Usage checks:

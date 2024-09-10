@@ -110,7 +110,7 @@ _CCCL_PUSH_MACROS
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  if defined(_CCCL_COMPILER_MSVC_2017)
 template <class = void>
-_LIBCUDACXX_INLINE_VISIBILITY __declspec(noreturn) void __unreachable_fallback()
+_LIBCUDACXX_HIDE_FROM_ABI __declspec(noreturn) void __unreachable_fallback()
 {
   __assume(0);
 }

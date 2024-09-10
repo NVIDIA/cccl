@@ -23,7 +23,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS add_cv
+struct _CCCL_TYPE_VISIBILITY_DEFAULT add_cv
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE const volatile _Tp type;
 };

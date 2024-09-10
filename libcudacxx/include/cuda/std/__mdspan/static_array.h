@@ -134,41 +134,34 @@ public:
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_array_impl() = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_array_impl(__partially_static_array_impl const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_array_impl(__partially_static_array_impl&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_impl()                                              = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_impl(__partially_static_array_impl const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_impl(__partially_static_array_impl&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
   operator=(__partially_static_array_impl const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
-  operator=(__partially_static_array_impl&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__partially_static_array_impl() noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_array_impl&
+  operator=(__partially_static_array_impl&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__partially_static_array_impl() noexcept = default;
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr __partially_static_array_impl(__construct_psa_from_all_exts_values_tag_t,
-                                          __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __partially_static_array_impl(
+    __construct_psa_from_all_exts_values_tag_t, __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
       : __base_n<_Idxs>(__base_n<_Idxs>{{__vals}})...
   {}
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr __partially_static_array_impl(__construct_psa_from_dynamic_exts_values_tag_t,
-                                          __repeated_with_idxs<_IdxsDynamicIdxs, _Tp> const&... __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __partially_static_array_impl(
+    __construct_psa_from_dynamic_exts_values_tag_t,
+    __repeated_with_idxs<_IdxsDynamicIdxs, _Tp> const&... __vals) noexcept
       : __base_n<_IdxsDynamic>(__base_n<_IdxsDynamic>{{__vals}})...
   {}
 
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __partially_static_array_impl(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __partially_static_array_impl(
     array<_Tp, sizeof...(_Idxs)> const& __vals) noexcept
       : __partially_static_array_impl(__construct_psa_from_all_exts_values_tag, _CUDA_VSTD::get<_Idxs>(__vals)...)
   {}
 
   _LIBCUDACXX_TEMPLATE(bool _SizeMatches = (sizeof...(_Idxs) != __size_dynamic))
   _LIBCUDACXX_REQUIRES(_SizeMatches)
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __partially_static_array_impl(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __partially_static_array_impl(
     array<_Tp, __size_dynamic> const& __vals) noexcept
     __partially_static_array_impl(__construct_psa_from_dynamic_exts_values_tag,
                                   _CUDA_VSTD::get<_IdxsDynamicIdxs>(__vals)...)
@@ -181,7 +174,7 @@ public:
             class _UIdxsSeq,
             class _UIdxsDynamicSeq,
             class _UIdxsDynamicIdxsSeq>
-  __MDSPAN_INLINE_FUNCTION constexpr __partially_static_array_impl(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __partially_static_array_impl(
     __partially_static_array_impl<_Up,
                                   _static_u,
                                   _UValsSeq,
@@ -263,7 +256,7 @@ private:
 
 public:
 #    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
-  constexpr __partially_static_array_with_sentinal() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_with_sentinal() = default;
 
   template <class... _Args>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_array_with_sentinal(_Args&&... __args) noexcept(
@@ -291,7 +284,7 @@ private:
 
 public:
 #    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
-  constexpr __partially_static_sizes() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes() = default;
 
   template <class... _Args>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(

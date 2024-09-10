@@ -30,25 +30,25 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element;
 
 template <size_t _Ip, class... _Tp>
 using __tuple_element_t _LIBCUDACXX_NODEBUG_TYPE = typename tuple_element<_Ip, _Tp...>::type;
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const _Tp>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE typename add_const<__tuple_element_t<_Ip, _Tp>>::type type;
 };
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, volatile _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, volatile _Tp>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE typename add_volatile<__tuple_element_t<_Ip, _Tp>>::type type;
 };
 
 template <size_t _Ip, class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE typename add_cv<__tuple_element_t<_Ip, _Tp>>::type type;
 };
@@ -105,7 +105,7 @@ struct __indexer<__tuple_types<_Types...>, __tuple_indices<_Idx...>> : __indexed
 {};
 
 template <size_t _Idx, class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY __indexed<_Idx, _Tp> __at_index(__indexed<_Idx, _Tp> const&);
+_LIBCUDACXX_HIDE_FROM_ABI __indexed<_Idx, _Tp> __at_index(__indexed<_Idx, _Tp> const&);
 
 } // namespace __indexer_detail
 
@@ -115,7 +115,7 @@ using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename decltype(__indexer
 #endif
 
 template <size_t _Ip, class... _Types>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, __tuple_types<_Types...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
   typedef _LIBCUDACXX_NODEBUG_TYPE __type_pack_element<_Ip, _Types...> type;

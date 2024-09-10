@@ -17,14 +17,14 @@ TEST_CASE("Can call get_stream on a cudaStream_t", "[stream]")
 {
   ::cudaStream_t str = nullptr;
   auto ref           = ::cuda::experimental::get_stream(str);
-  CHECK(str == ref);
+  CUDAX_CHECK(str == ref);
 }
 
 TEST_CASE("Can call get_stream on a cudax::stream", "[stream]")
 {
   cudax::stream str;
   auto ref = ::cuda::experimental::get_stream(str);
-  CHECK(str == ref);
+  CUDAX_CHECK(str == ref);
 }
 
 struct something_stream_ordered
@@ -41,7 +41,7 @@ TEST_CASE("Can call get_stream on a type with a get_stream method", "[stream]")
 {
   something_stream_ordered str{};
   auto ref = ::cuda::experimental::get_stream(str);
-  CHECK(str.stream_ == ref);
+  CUDAX_CHECK(str.stream_ == ref);
 }
 
 struct non_const_get_stream

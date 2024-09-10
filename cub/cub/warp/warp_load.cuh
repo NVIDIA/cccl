@@ -25,7 +25,8 @@
  *
  ******************************************************************************/
 
-//! @file Operations for reading linear tiles of data into the CUDA warp.
+//! @file
+//! Operations for reading linear tiles of data into the CUDA warp.
 
 #pragma once
 

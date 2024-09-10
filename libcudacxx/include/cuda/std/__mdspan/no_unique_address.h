@@ -119,29 +119,21 @@ struct __no_unique_address_emulation<_Tp,
     return *static_cast<_Tp*>(this);
   }
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __no_unique_address_emulation() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __no_unique_address_emulation(__no_unique_address_emulation const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __no_unique_address_emulation(__no_unique_address_emulation&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation&
+  _CCCL_HIDE_FROM_ABI constexpr __no_unique_address_emulation() noexcept                                     = default;
+  _CCCL_HIDE_FROM_ABI constexpr __no_unique_address_emulation(__no_unique_address_emulation const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __no_unique_address_emulation(__no_unique_address_emulation&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation&
   operator=(__no_unique_address_emulation const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation&
-  operator=(__no_unique_address_emulation&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__no_unique_address_emulation() noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation&
+  operator=(__no_unique_address_emulation&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__no_unique_address_emulation() noexcept = default;
 
   // Explicitly make this not a reference so that the copy or move
   // constructor still gets called.
-  __MDSPAN_INLINE_FUNCTION
-  explicit constexpr __no_unique_address_emulation(_Tp const& __v) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __no_unique_address_emulation(_Tp const& __v) noexcept
       : _Tp(__v)
   {}
-  __MDSPAN_INLINE_FUNCTION
-  explicit constexpr __no_unique_address_emulation(_Tp&& __v) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __no_unique_address_emulation(_Tp&& __v) noexcept
       : _Tp(_CUDA_VSTD::move(__v))
   {}
 };

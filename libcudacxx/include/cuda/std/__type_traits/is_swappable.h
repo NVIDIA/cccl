@@ -52,8 +52,8 @@ struct __hidden_friend_swap_found
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
-_LIBCUDACXX_INLINE_VISIBILITY auto __swap(...) -> __hidden_friend_swap_found;
+_LIBCUDACXX_HIDE_FROM_ABI auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_LIBCUDACXX_HIDE_FROM_ABI auto __swap(...) -> __hidden_friend_swap_found;
 template <class _Tp>
 struct __has_hidden_friend_swap
     : is_same<decltype(__detect_hidden_friend_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
@@ -70,8 +70,8 @@ void swap(_Tp&, _Tp&) = delete;
 struct __no_adl_swap_found
 {};
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
-_LIBCUDACXX_INLINE_VISIBILITY auto __swap(...) -> __no_adl_swap_found;
+_LIBCUDACXX_HIDE_FROM_ABI auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
+_LIBCUDACXX_HIDE_FROM_ABI auto __swap(...) -> __no_adl_swap_found;
 template <class _Tp>
 struct __has_no_adl_swap
     : is_same<decltype(__detect_adl_swap::__swap(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Tp&>())),
@@ -101,11 +101,11 @@ using __swap_result_t =
                 && _CCCL_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template <class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
 __enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
   swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
@@ -117,10 +117,10 @@ template <class _Tp, class _Up = _Tp, bool _NotVoid = !_CCCL_TRAIT(is_void, _Tp)
 struct __swappable_with
 {
   template <class _LHS, class _RHS>
-  _LIBCUDACXX_INLINE_VISIBILITY static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>()))
+  _LIBCUDACXX_HIDE_FROM_ABI static decltype(swap(_CUDA_VSTD::declval<_LHS>(), _CUDA_VSTD::declval<_RHS>()))
   __test_swap(int);
   template <class, class>
-  _LIBCUDACXX_INLINE_VISIBILITY static __nat __test_swap(long);
+  _LIBCUDACXX_HIDE_FROM_ABI static __nat __test_swap(long);
 
   // Extra parens are needed for the C++03 definition of decltype.
   typedef decltype((__test_swap<_Tp, _Up>(0))) __swap1;
@@ -157,24 +157,24 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 #if _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_swappable_with
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
     : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_swappable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
     : public __conditional_t<__libcpp_is_referenceable<_Tp>::value,
                              is_swappable_with<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<_Tp>>,
                              false_type>
 {};
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable_with
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
     : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_swappable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
     : public __conditional_t<__libcpp_is_referenceable<_Tp>::value,
                              is_nothrow_swappable_with<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<_Tp>>,
                              false_type>

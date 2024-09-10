@@ -37,6 +37,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/reverse_iterator.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
+
 #include <initializer_list>
 #include <vector>
 
@@ -186,7 +188,8 @@ public:
    *  \param first The beginning of the range.
    *  \param last The end of the range.
    */
-  template <typename InputIterator>
+  template <typename InputIterator,
+            ::cuda::std::__enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
   vector_base(InputIterator first, InputIterator last);
 
   /*! This constructor builds a vector_base from a range.
@@ -194,7 +197,8 @@ public:
    *  \param last The end of the range.
    *  \param alloc The allocator to use by this vector_base.
    */
-  template <typename InputIterator>
+  template <typename InputIterator,
+            ::cuda::std::__enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
   vector_base(InputIterator first, InputIterator last, const Alloc& alloc);
 
   /*! The destructor erases the elements.

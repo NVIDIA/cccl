@@ -35,10 +35,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // default searcher
 template <class _ForwardIterator, class _BinaryPredicate = equal_to<>>
-class _LIBCUDACXX_TEMPLATE_VIS default_searcher
+class _CCCL_TYPE_VISIBILITY_DEFAULT default_searcher
 {
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
   default_searcher(_ForwardIterator __f, _ForwardIterator __l, _BinaryPredicate __p = _BinaryPredicate())
       : __first_(__f)
       , __last_(__l)
@@ -46,7 +46,7 @@ public:
   {}
 
   template <typename _ForwardIterator2>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 pair<_ForwardIterator2, _ForwardIterator2>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pair<_ForwardIterator2, _ForwardIterator2>
   operator()(_ForwardIterator2 __f, _ForwardIterator2 __l) const
   {
     return _CUDA_VSTD::__search(

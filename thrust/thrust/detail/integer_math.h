@@ -27,6 +27,8 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 
+#include <cuda/std/type_traits>
+
 #include <limits>
 
 #include <nv/target>
@@ -58,6 +60,18 @@ template <typename Integer>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_power_of_2(Integer x)
 {
   return 0 == (x & (x - 1));
+}
+
+template <typename T>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_signed<T>::value, bool>::type is_negative(T x)
+{
+  return x < 0;
+}
+
+template <typename T>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename std::enable_if<std::is_unsigned<T>::value, bool>::type is_negative(T)
+{
+  return false;
 }
 
 template <typename Integer>

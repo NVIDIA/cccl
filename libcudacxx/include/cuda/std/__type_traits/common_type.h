@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class... _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type;
 
 template <class... _Tp>
 using __common_type_t = typename common_type<_Tp...>::type;
@@ -87,13 +87,13 @@ struct __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>, void_t<__comm
 // bullet 1 - sizeof...(Tp) == 0
 
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<>
 {};
 
 // bullet 2 - sizeof...(Tp) == 1
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp> : public common_type<_Tp, _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp> : public common_type<_Tp, _Tp>
 {};
 
 // bullet 3 - sizeof...(Tp) == 2
@@ -108,13 +108,13 @@ struct __common_type2<_Tp, _Up, _Tp, _Up> : __common_type2_imp<_Tp, _Up>
 {};
 
 template <class _Tp, class _Up>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up> : __common_type2<_Tp, _Up>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up> : __common_type2<_Tp, _Up>
 {};
 
 // bullet 4 - sizeof...(Tp) > 2
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up, _Vp, _Rest...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up, _Vp, _Rest...>
     : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
 {};
 

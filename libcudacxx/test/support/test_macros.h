@@ -63,9 +63,7 @@
 #  define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__INTEL_LLVM_COMPILER)
-#  define TEST_COMPILER_ICC_LLVM
-#elif defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER)
 #  define TEST_COMPILER_ICC
 #elif defined(__NVCOMPILER)
 #  define TEST_COMPILER_NVHPC
@@ -78,8 +76,6 @@
 #  define TEST_COMPILER_GCC
 #elif defined(_MSC_VER)
 #  define TEST_COMPILER_MSVC
-#elif defined(__IBMCPP__)
-#  define TEST_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
 #  define TEST_COMPILER_NVRTC
 #elif defined(__EDG__)
@@ -249,7 +245,7 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if !defined(LIBCUDACXX_ENABLE_EXCEPTIONS) || (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
+#  if (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
     || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif

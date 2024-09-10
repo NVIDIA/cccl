@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
     : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)>
 {};
 
@@ -39,7 +39,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
     : public integral_constant<bool, is_destructible<_Tp>::value && _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(_Tp)>
 {};
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -51,12 +51,12 @@ struct __libcpp_trivial_destructor : public integral_constant<bool, is_scalar<_T
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
     : public __libcpp_trivial_destructor<__remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible<_Tp[]> : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible<_Tp[]> : public false_type
 {};
 
 #endif // defined(_LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)

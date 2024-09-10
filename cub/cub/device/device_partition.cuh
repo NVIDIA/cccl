@@ -26,8 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file cub::DevicePartition provides device-wide, parallel operations for
-//!       partitioning sequences of data items residing within device-accessible memory.
+//! @file
+//! cub::DevicePartition provides device-wide, parallel operations for partitioning sequences of data items residing
+//! within device-accessible memory.
 
 #pragma once
 

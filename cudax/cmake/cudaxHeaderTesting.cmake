@@ -14,6 +14,12 @@ file(GLOB_RECURSE headers
   "${cudax_SOURCE_DIR}/include/*.h"
 )
 
+# The following internal headers are not required to compile independently:
+list(REMOVE_ITEM headers
+  "cuda/experimental/__async/prologue.cuh"
+  "cuda/experimental/__async/epilogue.cuh"
+)
+
 set(headertest_srcs)
 foreach (header IN LISTS headers)
   set(headertest_src "headers/${header}.cu")

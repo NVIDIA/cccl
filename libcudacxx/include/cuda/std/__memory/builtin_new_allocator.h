@@ -23,8 +23,8 @@
 #endif // no system header
 
 #include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__new_>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/new>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,13 +38,12 @@ struct __builtin_new_allocator
   {
     typedef void* pointer_type;
 
-    _LIBCUDACXX_HIDE_FROM_ABI
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __builtin_new_deleter(size_t __size, size_t __align) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __builtin_new_deleter(size_t __size, size_t __align) noexcept
         : __size_(__size)
         , __align_(__align)
     {}
 
-    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void operator()(void* __p) const noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI void operator()(void* __p) const noexcept
     {
       _CUDA_VSTD::__libcpp_deallocate(__p, __size_, __align_);
     }
@@ -56,27 +55,24 @@ struct __builtin_new_allocator
 
   typedef unique_ptr<void, __builtin_new_deleter> __holder_t;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static __holder_t __allocate_bytes(size_t __s, size_t __align)
+  _LIBCUDACXX_HIDE_FROM_ABI static __holder_t __allocate_bytes(size_t __s, size_t __align)
   {
     return __holder_t(_CUDA_VSTD::__libcpp_allocate(__s, __align), __builtin_new_deleter(__s, __align));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static void
-  __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static void __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept
   {
     _CUDA_VSTD::__libcpp_deallocate(__p, __s, __align);
   }
 
   template <class _Tp>
-  _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static __holder_t
-  __allocate_type(size_t __n)
+  _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_HIDE_FROM_ABI static __holder_t __allocate_type(size_t __n)
   {
     return __allocate_bytes(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
   }
 
   template <class _Tp>
-  _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static void
-  __deallocate_type(void* __p, size_t __n) noexcept
+  _LIBCUDACXX_NODEBUG_TYPE _LIBCUDACXX_HIDE_FROM_ABI static void __deallocate_type(void* __p, size_t __n) noexcept
   {
     __deallocate_bytes(__p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
   }

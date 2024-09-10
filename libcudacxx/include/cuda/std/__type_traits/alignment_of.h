@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS alignment_of : public integral_constant<size_t, _LIBCUDACXX_ALIGNOF(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT alignment_of : public integral_constant<size_t, _LIBCUDACXX_ALIGNOF(_Tp)>
 {};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

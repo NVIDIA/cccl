@@ -35,6 +35,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__functional/invoke.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -66,9 +68,49 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
 
     *result = *first;
 
-    for (++first, ++result; first != last; ++first, ++result)
+    for (++first, ++result; first != last; ++first, (void) ++result)
     {
       *result = sum = wrapped_binary_op(sum, *first);
+    }
+  }
+
+  return result;
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename InitialValueType,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  InitialValueType init,
+  BinaryFunction binary_op)
+{
+  using namespace thrust::detail;
+
+  using ValueType = typename ::cuda::std::
+    __accumulator_t<BinaryFunction, typename ::cuda::std::iterator_traits<InputIterator>::value_type, InitialValueType>;
+
+  // wrap binary_op
+  thrust::detail::wrapped_function<BinaryFunction, ValueType> wrapped_binary_op{binary_op};
+
+  if (first != last)
+  {
+    ValueType sum = wrapped_binary_op(init, *first);
+    *result       = sum;
+    ++first;
+    ++result;
+
+    while (first != last)
+    {
+      *result = sum = wrapped_binary_op(sum, *first);
+      ++first;
+      ++result;
     }
   }
 
@@ -102,7 +144,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
     *result = sum;
     sum     = binary_op(sum, tmp);
 
-    for (++first, ++result; first != last; ++first, ++result)
+    for (++first, ++result; first != last; ++first, (void) ++result)
     {
       tmp     = *first;
       *result = sum;

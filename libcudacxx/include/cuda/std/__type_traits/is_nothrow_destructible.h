@@ -50,19 +50,19 @@ struct __libcpp_is_nothrow_destructible<_Tp, true>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible : public __libcpp_is_nothrow_destructible<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible : public __libcpp_is_nothrow_destructible<_Tp>
 {};
 
 template <class _Tp, size_t _Ns>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible<_Tp[_Ns]> : public is_nothrow_destructible<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp[_Ns]> : public is_nothrow_destructible<_Tp>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible<_Tp&> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&> : public true_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible<_Tp&&> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&&> : public true_type
 {};
 
 #else
@@ -72,12 +72,12 @@ struct __libcpp_nothrow_destructor : public integral_constant<bool, is_scalar<_T
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible
     : public __libcpp_nothrow_destructor<__remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible<_Tp[]> : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp[]> : public false_type
 {};
 
 #endif // defined(_LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)

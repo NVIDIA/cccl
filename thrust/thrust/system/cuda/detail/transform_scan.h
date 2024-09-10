@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#ifdef _CCCL_CUDA_COMPILER
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/scan.h>
@@ -67,6 +67,28 @@ OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
   using transformed_iterator_t = transform_input_iterator_t<value_type, InputIt, TransformOp>;
 
   return cuda_cub::inclusive_scan_n(policy, transformed_iterator_t(first, transform_op), num_items, result, scan_op);
+}
+
+template <class Derived, class InputIt, class OutputIt, class TransformOp, class InitialValueType, class ScanOp>
+OutputIt _CCCL_HOST_DEVICE transform_inclusive_scan(
+  execution_policy<Derived>& policy,
+  InputIt first,
+  InputIt last,
+  OutputIt result,
+  TransformOp transform_op,
+  InitialValueType init,
+  ScanOp scan_op)
+{
+  using input_type  = typename thrust::iterator_value<InputIt>::type;
+  using result_type = thrust::detail::invoke_result_t<TransformOp, input_type>;
+  using value_type  = thrust::remove_cvref_t<result_type>;
+
+  using size_type              = typename iterator_traits<InputIt>::difference_type;
+  size_type num_items          = static_cast<size_type>(thrust::distance(first, last));
+  using transformed_iterator_t = transform_input_iterator_t<value_type, InputIt, TransformOp>;
+
+  return cuda_cub::inclusive_scan_n(
+    policy, transformed_iterator_t(first, transform_op), num_items, result, init, scan_op);
 }
 
 template <class Derived, class InputIt, class OutputIt, class TransformOp, class InitialValueType, class ScanOp>

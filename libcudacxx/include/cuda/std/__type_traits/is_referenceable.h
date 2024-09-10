@@ -35,9 +35,9 @@ struct __libcpp_is_referenceable : public integral_constant<bool, _LIBCUDACXX_IS
 struct __libcpp_is_referenceable_impl
 {
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY static _Tp& __test(int);
+  _CCCL_HOST_DEVICE static _Tp& __test(int);
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _CCCL_HOST_DEVICE static false_type __test(...);
 };
 
 template <class _Tp>

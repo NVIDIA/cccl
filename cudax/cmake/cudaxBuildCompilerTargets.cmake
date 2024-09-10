@@ -9,7 +9,6 @@
 include("${cudax_SOURCE_DIR}/cmake/AppendOptionIfAvailable.cmake")
 
 function(cudax_build_compiler_targets)
-  set(cxx_compile_definitions LIBCUDACXX_ENABLE_EXCEPTIONS)
   set(cxx_compile_options)
   set(cuda_compile_options)
 
@@ -66,6 +65,8 @@ function(cudax_build_compiler_targets)
 
     # GCC 7.3 complains about name mangling changes due to `noexcept`
     append_option_if_available("-Wno-noexcept-type" cxx_compile_options)
+
+    append_option_if_available("-Wmissing-field-initializers" cxx_compile_options)
   endif()
 
   if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

@@ -45,7 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __any
 {
-  _LIBCUDACXX_INLINE_VISIBILITY __any(...);
+  _LIBCUDACXX_HIDE_FROM_ABI __any(...);
 };
 
 template <class _MP, bool _IsMemberFunctionPtr, bool _IsMemberObjectPtr>
@@ -319,13 +319,13 @@ using __enable_if_bullet6 =
 // fall back - none of the bullets
 
 template <class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY __nat __invoke(__any, _Args&&... __args);
+_LIBCUDACXX_HIDE_FROM_ABI __nat __invoke(__any, _Args&&... __args);
 
 // bullets 1, 2 and 3
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet1<_Fp, _A0>>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype((_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype((_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())(
   _CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
@@ -336,7 +336,7 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet2<_Fp, _A0>>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype((_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype((_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())(
   _CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get().*__f)(static_cast<_Args&&>(__args)...)))
 {
@@ -345,7 +345,7 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet3<_Fp, _A0>>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())(
   _CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
@@ -358,7 +358,7 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet4<_Fp, _A0>>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f))
 {
   return static_cast<_A0&&>(__a0).*__f;
@@ -366,7 +366,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet5<_Fp, _A0>>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 {
   return __a0.get().*__f;
@@ -374,7 +374,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet6<_Fp, _A0>>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept((*static_cast<_A0&&>(__a0)).*__f))
 {
   return (*static_cast<_A0&&>(__a0)).*__f;
@@ -384,7 +384,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept((*static_cast<_A0&&>(__a0)).*_
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class... _Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr decltype(_CUDA_VSTD::declval<_Fp>()(_CUDA_VSTD::declval<_Args>()...))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::declval<_Fp>()(_CUDA_VSTD::declval<_Args>()...))
 __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...)))
 {
   return static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...);
@@ -395,12 +395,12 @@ template <class _Ret, class _Fp, class... _Args>
 struct __invokable_r
 {
   template <class _XFp, class... _XArgs>
-  _LIBCUDACXX_INLINE_VISIBILITY static decltype(_CUDA_VSTD::__invoke(
+  _LIBCUDACXX_HIDE_FROM_ABI static decltype(_CUDA_VSTD::__invoke(
     _CUDA_VSTD::declval<_XFp>(), _CUDA_VSTD::declval<_XArgs>()...))
   __try_call(int);
 
   template <class _XFp, class... _XArgs>
-  _LIBCUDACXX_INLINE_VISIBILITY static __nat __try_call(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static __nat __try_call(...);
 
   // FIXME: Check that _Ret, _Fp, and _Args... are all complete types, cv void,
   // or incomplete array types as required by the standard.
@@ -426,7 +426,7 @@ struct __nothrow_invokable_r_imp<true, false, _Ret, _Fp, _Args...>
   typedef __nothrow_invokable_r_imp _ThisT;
 
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY static void __test_noexcept(_Tp) noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI static void __test_noexcept(_Tp) noexcept;
 
   static const bool value =
     noexcept(_ThisT::__test_noexcept<_Ret>(_CUDA_VSTD::__invoke(declval<_Fp>(), _CUDA_VSTD::declval<_Args>()...)));
@@ -473,7 +473,7 @@ template <class _Ret, bool = is_void<_Ret>::value>
 struct __invoke_void_return_wrapper
 {
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY static _Ret __call(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI static _Ret __call(_Args&&... __args)
   {
     return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -483,7 +483,7 @@ template <class _Ret>
 struct __invoke_void_return_wrapper<_Ret, true>
 {
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY static void __call(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI static void __call(_Args&&... __args)
   {
     _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -494,11 +494,11 @@ struct __invoke_void_return_wrapper<_Ret, true>
 // is_invocable
 
 template <class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_invocable : integral_constant<bool, __invokable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : integral_constant<bool, __invokable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>
@@ -510,12 +510,12 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _F
 // is_nothrow_invocable
 
 template <class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_invocable
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
     : integral_constant<bool, __nothrow_invokable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_invocable_r
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
     : integral_constant<bool, __nothrow_invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
@@ -526,20 +526,24 @@ template <class _Ret, class _Fn, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
 
 template <class _Fn, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS invoke_result : __invoke_of<_Fn, _Args...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result : __invoke_of<_Fn, _Args...>
 {};
 
 template <class _Fn, class... _Args>
 using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
 template <class _Fn, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr invoke_result_t<_Fn, _Args...>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr invoke_result_t<_Fn, _Args...>
 invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
 {
   return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
 #endif // _CCCL_STD_VER > 2011
+
+/// The type of intermediate accumulator (according to P2322R6)
+template <typename Invokable, typename InputT, typename InitT = InputT>
+using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invokable, InitT, InputT>::type>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

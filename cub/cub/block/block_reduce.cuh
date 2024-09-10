@@ -26,8 +26,9 @@
  *
  ******************************************************************************/
 
-//! @file The cub::BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing
-//!       a parallel reduction of items partitioned across a CUDA thread block.
+//! @file
+//! The cub::BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a parallel
+//! reduction of items partitioned across a CUDA thread block.
 
 #pragma once
 

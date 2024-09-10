@@ -1,0 +1,2219 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD_INPLACE_VECTOR
+#define _CUDA_STD_INPLACE_VECTOR
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_STD_VER >= 2014
+
+#  include <cuda/std/__algorithm/copy.h>
+#  include <cuda/std/__algorithm/equal.h>
+#  include <cuda/std/__algorithm/fill.h>
+#  include <cuda/std/__algorithm/lexicographical_compare.h>
+#  include <cuda/std/__algorithm/move.h>
+#  include <cuda/std/__algorithm/move_backward.h>
+#  include <cuda/std/__algorithm/remove.h>
+#  include <cuda/std/__algorithm/remove_if.h>
+#  include <cuda/std/__algorithm/rotate.h>
+#  include <cuda/std/__algorithm/swap_ranges.h>
+#  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/concepts.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/iter_move.h>
+#  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__iterator/reverse_iterator.h>
+#  include <cuda/std/__memory/construct_at.h>
+#  include <cuda/std/__memory/uninitialized_algorithms.h>
+#  include <cuda/std/__new/bad_alloc.h>
+#  include <cuda/std/__new/launder.h>
+#  include <cuda/std/__ranges/access.h>
+#  include <cuda/std/__ranges/concepts.h>
+#  include <cuda/std/__ranges/from_range.h>
+#  include <cuda/std/__ranges/size.h>
+#  include <cuda/std/__ranges/unwrap_end.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_constant_evaluated.h>
+#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#  include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
+#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#  include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
+#  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#  include <cuda/std/__type_traits/is_swappable.h>
+#  include <cuda/std/__type_traits/is_trivial.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_trivially_destructible.h>
+#  include <cuda/std/__type_traits/is_trivially_move_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#  include <cuda/std/detail/libcxx/include/stdexcept>
+#  include <cuda/std/initializer_list>
+#  include <cuda/std/limits>
+
+_CCCL_PUSH_MACROS
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <size_t _Capacity>
+using __inplace_vector_size_type =
+  _If<_Capacity <= numeric_limits<uint8_t>::max(),
+      uint8_t,
+      _If<_Capacity <= numeric_limits<uint16_t>::max(),
+          uint16_t,
+          _If<_Capacity <= numeric_limits<uint32_t>::max(), uint32_t, uint64_t>>>;
+
+enum class __inplace_vector_specialization
+{
+  __empty,
+  __trivial,
+  __default,
+};
+
+template <class _Tp, size_t _Capacity>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __inplace_vector_specialization
+__select_inplace_vector_specialization()
+{
+  if (_Capacity == 0)
+  {
+    return __inplace_vector_specialization::__empty;
+  }
+  else if (_CCCL_TRAIT(is_trivial, _Tp))
+  {
+    return __inplace_vector_specialization::__trivial;
+  }
+  else
+  {
+    return __inplace_vector_specialization::__default;
+  }
+}
+
+template <class _Base>
+struct _Rollback_change_size
+{
+  using iterator = typename _Base::iterator;
+  _Base* __obj_;
+  iterator& __first_;
+  iterator __current_;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rollback_change_size(
+    _Base* __obj, iterator& __first, iterator& __current) noexcept
+      : __obj_(__obj)
+      , __first_(__first)
+      , __current_(__current)
+  {}
+
+  _LIBCUDACXX_HIDE_FROM_ABI void operator()() const noexcept
+  {
+    __obj_->__size_ += static_cast<typename _Base::__size_type>(__current_ - __first_);
+  }
+};
+
+template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_destructible, _Tp)>
+struct __inplace_vector_destruct_base
+{
+  using size_type   = size_t;
+  using __size_type = __inplace_vector_size_type<_Capacity>;
+
+  alignas(_Tp) unsigned char __elems_[_Capacity * sizeof(_Tp)] = {};
+  __size_type __size_{0};
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  _CCCL_HIDE_FROM_ABI __inplace_vector_destruct_base() = default;
+  _LIBCUDACXX_HIDE_FROM_ABI ~__inplace_vector_destruct_base() noexcept
+  {
+    _Tp* __begin = _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(__elems_));
+    _CUDA_VSTD::__destroy(__begin, __begin + __size_);
+  }
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_destruct_base<_Tp, _Capacity, true>
+{
+  using size_type   = size_t;
+  using __size_type = __inplace_vector_size_type<_Capacity>;
+
+  alignas(_Tp) unsigned char __elems_[_Capacity * sizeof(_Tp)] = {};
+  __size_type __size_{0};
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_destruct_base() = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_storage : public __inplace_vector_destruct_base<_Tp, _Capacity>
+{
+  using size_type      = size_t;
+  using __size_type    = __inplace_vector_size_type<_Capacity>;
+  using reference      = _Tp&;
+  using iterator       = _Tp*;
+  using const_iterator = const _Tp*;
+
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_storage, __inplace_vector_destruct_base, _Tp, _Capacity);
+
+  // [containers.sequences.inplace.vector.members] size/capacity
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  {
+    return static_cast<size_type>(this->__size_);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  {
+    return this->__size_ == 0;
+  }
+
+  // [containers.sequences.inplace.vector.data], data access
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* data() noexcept
+  {
+    return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_));
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const _Tp* data() const noexcept
+  {
+    return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_));
+  }
+
+  // [containers.sequences.inplace.vector.itertators] iterators
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI iterator begin() noexcept
+  {
+    return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_));
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const_iterator begin() const noexcept
+  {
+    return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_));
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI iterator end() noexcept
+  {
+    return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_) + this->__size_);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const_iterator end() const noexcept
+  {
+    return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_) + this->__size_);
+  }
+
+  // [containers.sequences.inplace.vector.modifiers], modifiers
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+  {
+    auto __final = _CUDA_VSTD::__construct_at(end(), _CUDA_VSTD::forward<_Args>(__args)...);
+    ++this->__size_;
+    return *__final;
+  }
+
+protected:
+  _LIBCUDACXX_HIDE_FROM_ABI void __destroy(iterator __first, iterator __last) noexcept
+  {
+    _CUDA_VSTD::__destroy(__first, __last);
+    this->__size_ -= static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
+  {
+    iterator __idx = __first;
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+    }
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_value_construct(iterator __first, iterator __last)
+  {
+    iterator __idx = __first;
+    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __first, __idx});
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp();
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
+  {
+    iterator __idx = __first;
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+    }
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
+  {
+    iterator __idx = __first;
+    auto __guard   = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __first, __idx});
+    for (; __idx != __last; ++__idx)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__idx)) _Tp(__value);
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    iterator __curr = __dest;
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+    }
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
+  {
+    iterator __curr = __dest;
+    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __dest, __curr});
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(*__first);
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    iterator __curr = __dest;
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+    }
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
+  {
+    iterator __curr = __dest;
+    auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __dest, __curr});
+    for (; __first != __last; ++__curr, (void) ++__first)
+    {
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+    }
+    __guard.__complete();
+    this->__size_ += static_cast<__size_type>(__curr - __dest);
+  }
+};
+
+// * If is_trivially_copy_constructible_v<T> is true, then IV has a trivial copy constructor.
+template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)>
+struct __inplace_vector_copy : __inplace_vector_storage<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
+
+  _LIBCUDACXX_HIDE_FROM_ABI
+  __inplace_vector_copy(const __inplace_vector_copy& __other) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+      : __base()
+  {
+    this->__uninitialized_copy(__other.begin(), __other.end(), this->begin());
+  }
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_copy<_Tp, _Capacity, true> : __inplace_vector_storage<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy(const __inplace_vector_copy&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy(__inplace_vector_copy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(const __inplace_vector_copy&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy& operator=(__inplace_vector_copy&&)      = default;
+};
+
+// * If is_trivially_move_constructible_v<T> is true, then IV has a trivial move constructor.
+template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_move_constructible, _Tp)>
+struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&) = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI
+  __inplace_vector_move(__inplace_vector_move&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+      : __base()
+  {
+    this->__uninitialized_move(__other.begin(), __other.end(), this->begin());
+  }
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_move<_Tp, _Capacity, true> : __inplace_vector_copy<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move(__inplace_vector_move&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(const __inplace_vector_move&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move& operator=(__inplace_vector_move&&)      = default;
+};
+
+// * if is_trivially_copy_constructible_v<T> && is_trivially_copy_assignable_v<T> is true, then IV has a trivial copy
+// assignment operator
+template <class _Tp,
+          size_t _Capacity,
+          bool = _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)>
+struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(const __inplace_vector_copy_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)      = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI __inplace_vector_copy_assign&
+  operator=(const __inplace_vector_copy_assign& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
+  {
+    if (__other.size() < this->size())
+    {
+      const auto __new_end = _CUDA_VSTD::copy(__other.begin(), __other.end(), this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _CUDA_VSTD::copy(__other.begin(), __other.begin() + this->size(), this->begin());
+      this->__uninitialized_copy(__other.begin() + this->size(), __other.end(), this->end());
+    }
+    return *this;
+  }
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&) = default;
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_copy_assign<_Tp, _Capacity, true> : __inplace_vector_move<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(const __inplace_vector_copy_assign&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign& operator=(const __inplace_vector_copy_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign& operator=(__inplace_vector_copy_assign&&)      = default;
+};
+
+// * if is_trivially_move_constructible_v<T> && is_trivially_move_assignable_v<T> is true, then IV has a trivial move
+// assignment operator
+template <class _Tp,
+          size_t _Capacity,
+          bool = _CCCL_TRAIT(is_trivially_move_constructible, _Tp) && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)>
+struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  {
+    if (__other.size() < this->size())
+    {
+      const auto __new_end = _CUDA_VSTD::move(__other.begin(), __other.end(), this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _CUDA_VSTD::move(__other.begin(), __other.begin() + this->size(), this->begin());
+      this->__uninitialized_move(__other.begin() + this->size(), __other.end(), this->end());
+    }
+    return *this;
+  }
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_move_assign<_Tp, _Capacity, true> : __inplace_vector_copy_assign<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
+
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(const __inplace_vector_move_assign&)            = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign(__inplace_vector_move_assign&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
+  _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&&)      = default;
+};
+
+// Specialization for non-trivial types. Nothing in here can be constexpr
+template <class _Tp,
+          size_t _Capacity,
+          __inplace_vector_specialization _Spec = __select_inplace_vector_specialization<_Tp, _Capacity>()>
+struct __inplace_vector_base : __inplace_vector_move_assign<_Tp, _Capacity>
+{
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_base, __inplace_vector_move_assign, _Tp, _Capacity);
+};
+
+template <class _Tp, size_t _Capacity>
+struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__trivial>
+{
+  using size_type      = size_t;
+  using __size_type    = __inplace_vector_size_type<_Capacity>;
+  using reference      = _Tp&;
+  using iterator       = _Tp*;
+  using const_iterator = const _Tp*;
+
+  _Tp __elems_[_Capacity] = {};
+  __size_type __size_{0};
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base()                                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base(const __inplace_vector_base&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base(__inplace_vector_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base& operator=(const __inplace_vector_base&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base& operator=(__inplace_vector_base&&)      = default;
+
+  // [containers.sequences.inplace.vector.members] size/capacity
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  {
+    return static_cast<size_type>(__size_);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  {
+    return __size_ == 0;
+  }
+
+  // [containers.sequences.inplace.vector.data], data access
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
+  {
+    return __elems_;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
+  {
+    return __elems_;
+  }
+
+  // [containers.sequences.inplace.vector.itertators] iterators
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
+  {
+    return __elems_;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
+  {
+    return __elems_;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
+  {
+    return __elems_ + __size_;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
+  {
+    return __elems_ + __size_;
+  }
+
+  // [containers.sequences.inplace.vector.modifiers], modifiers
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+  {
+    _Tp* __final = __elems_ + __size_;
+    *__final     = _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
+    ++__size_;
+    return *__final;
+  }
+
+protected:
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy(iterator __first, iterator __last) noexcept
+  {
+    __size_ -= static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
+  {
+    _CUDA_VSTD::fill(__first, __last, _Tp());
+    __size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void
+  __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
+  {
+    _CUDA_VSTD::fill(__first, __last, __value);
+    __size_ += static_cast<__size_type>(__last - __first);
+  }
+
+  template <class _Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    _CUDA_VSTD::copy(__first, __last, __dest);
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+    __size_ += static_cast<__size_type>(_CUDA_VRANGES::distance(__first, __last));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+    __size_ += static_cast<__size_type>(_CUDA_VSTD::distance(__first, __last));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+  }
+
+  template <class _Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
+  {
+    _CUDA_VSTD::copy(__first, __last, __dest);
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+    __size_ += static_cast<__size_type>(_CUDA_VRANGES::distance(__first, __last));
+#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
+    __size_ += static_cast<__size_type>(_CUDA_VSTD::distance(__first, __last));
+#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
+  }
+};
+
+// We need to specialize inplace_vector for zero capacity as in that case it is required to be empty and trivial
+template <class _Tp>
+struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
+{
+  using size_type      = size_t;
+  using __size_type    = __inplace_vector_size_type<0>;
+  using reference      = _Tp&;
+  using iterator       = _Tp*;
+  using const_iterator = const _Tp*;
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base() = default;
+
+  // [containers.sequences.inplace.vector.members] size/capacity
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  {
+    return 0;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  {
+    return true;
+  }
+
+  // [containers.sequences.inplace.vector.data], data access
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
+  {
+    return nullptr;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
+  {
+    return nullptr;
+  }
+
+  // [containers.sequences.inplace.vector.itertators] iterators
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
+  {
+    return nullptr;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
+  {
+    return nullptr;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
+  {
+    return nullptr;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
+  {
+    return nullptr;
+  }
+
+  // [containers.sequences.inplace.vector.modifiers], modifiers
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& unchecked_emplace_back(_Args&&...) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+#  if defined(_CCCL_COMPILER_MSVC)
+    return *begin();
+#  endif // _CCCL_COMPILER_MSVC
+  }
+
+protected:
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy(iterator, iterator) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_value_construct(iterator, iterator) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_fill(iterator, iterator, const _Tp&) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+  template <class _Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_copy(_Iter, _Iter, iterator) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+  template <class _Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_move(_Iter, _Iter, iterator) noexcept
+  {
+    _LIBCUDACXX_UNREACHABLE();
+  }
+};
+
+template <class _Tp, size_t _Capacity>
+class inplace_vector : __inplace_vector_base<_Tp, _Capacity>
+{
+private:
+  using __base = __inplace_vector_base<_Tp, _Capacity>;
+
+public:
+  using value_type      = _Tp;
+  using size_type       = size_t;
+  using difference_type = ptrdiff_t;
+  using pointer         = _Tp*;
+  using const_pointer   = const _Tp*;
+  using reference       = _Tp&;
+  using const_reference = const _Tp&;
+
+  using iterator       = pointer;
+  using const_iterator = const_pointer;
+
+  using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
+  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(const inplace_vector&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(inplace_vector&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(const inplace_vector&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(inplace_vector&&)      = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit inplace_vector(const size_type __count)
+      : __base()
+  {
+    if (__count > 0)
+    {
+      if (_Capacity < __count)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      iterator __begin = this->begin();
+      this->__uninitialized_value_construct(__begin, __begin + __count);
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(const size_type __count, const _Tp& __value)
+      : __base()
+  {
+    if (__count > 0)
+    {
+      if (_Capacity < __count)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      iterator __begin = this->begin();
+      this->__uninitialized_fill(__begin, __begin + __count, __value);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(
+    __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(_Iter __first, _Iter __last)
+      : __base()
+  {
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(_Iter __first, _Iter __last)
+      : __base()
+  {
+    if (__first != __last)
+    {
+      const auto __size = static_cast<size_t>(_CUDA_VSTD::distance(__first, __last));
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_copy(__first, __last, this->begin());
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(initializer_list<_Tp> __ilist)
+      : __base()
+  {
+    if (__ilist.size() != 0)
+    {
+      if (_Capacity < __ilist.size())
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), this->begin());
+    }
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
+      : __base()
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(_CUDA_VRANGES::iter_move(__first));
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
+      : __base()
+  {
+    const auto __size = _CUDA_VRANGES::size(__range);
+    if (__size > 0)
+    {
+      if (_Capacity < __size)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), this->begin());
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
+      : __base()
+  {
+    const auto __count =
+      static_cast<size_t>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range)));
+    if (__count > 0)
+    {
+      if (_Capacity < __count)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), this->begin());
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
+  {
+    const auto __count = __ilist.size();
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    const auto __size = this->size();
+    if (__count < __size)
+    {
+      const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + __size, this->begin());
+      this->__uninitialized_copy(__ilist.begin() + __size, __ilist.end(), this->end());
+    }
+    return *this;
+  }
+
+  // inplace_vector.assign
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(const size_type __count, const _Tp& __value)
+  {
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    const iterator __begin = this->begin();
+    const iterator __end   = this->end();
+    if (__count < this->size())
+    {
+      _CUDA_VSTD::fill(__begin, __begin + __count, __value);
+      this->__destroy(__begin + __count, __end);
+    }
+    else
+    {
+      _CUDA_VSTD::fill(__begin, __end, __value);
+      this->__uninitialized_fill(__end, __begin + __count, __value);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(
+    __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(_Iter __first, _Iter __last)
+  {
+    iterator __end = this->end();
+    for (iterator __current = this->begin(); __current != __end; ++__current, (void) ++__first)
+    {
+      if (__first == __last)
+      {
+        this->__destroy(__current, __end);
+        return;
+      }
+      *__current = *__first;
+    }
+
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(_Iter __first, _Iter __last)
+  {
+    const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    if (__count < this->size())
+    {
+      const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _Iter __middle = _CUDA_VSTD::next(__first, this->size());
+      _CUDA_VSTD::copy(__first, __middle, this->begin());
+      this->__uninitialized_copy(__middle, __last, this->end());
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(initializer_list<_Tp> __ilist)
+  {
+    const auto __count = static_cast<size_type>(__ilist.size());
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    if (__count < this->size())
+    {
+      const iterator __new_end = _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      _CUDA_VSTD::copy(__ilist.begin(), __ilist.begin() + this->size(), this->begin());
+      this->__uninitialized_copy(__ilist.begin() + this->size(), __ilist.end(), this->end());
+    }
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
+  {
+    auto __first      = _CUDA_VRANGES::begin(__range);
+    const auto __last = _CUDA_VRANGES::end(__range);
+    iterator __end    = this->end();
+    for (iterator __current = this->begin(); __current != __end; ++__current, (void) ++__first)
+    {
+      if (__first == __last)
+      {
+        this->__destroy(__current, __end);
+        return;
+      }
+      *__current = *__first;
+    }
+
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
+  {
+    const auto __size = _CUDA_VRANGES::size(__range);
+    if (_Capacity < __size)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    const auto __first = _CUDA_VRANGES::begin(__range);
+    const auto __last  = _CUDA_VRANGES::__unwrap_end(__range);
+    if (static_cast<size_type>(__size) < this->size())
+    {
+      const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      const auto __middle = _CUDA_VSTD::next(__first, this->size());
+      _CUDA_VSTD::copy(__first, __middle, this->begin());
+      this->__uninitialized_copy(__middle, __last, this->end());
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
+  {
+    const auto __first = _CUDA_VRANGES::begin(__range);
+    const auto __last  = _CUDA_VRANGES::__unwrap_end(__range);
+    const auto __size  = static_cast<size_type>(_CUDA_VRANGES::distance(__first, __last));
+    if (_Capacity < __size)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    if (__size < this->size())
+    {
+      const iterator __new_end = _CUDA_VSTD::copy(__first, __last, this->begin());
+      this->__destroy(__new_end, this->end());
+    }
+    else
+    {
+      const auto __middle = _CUDA_VSTD::next(__first, this->size());
+      _CUDA_VSTD::copy(__first, __middle, this->begin());
+      this->__uninitialized_copy(__middle, __last, this->end());
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  // [containers.sequences.inplace.vector.access], element access
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
+  {
+    if (__pos > this->size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
+    }
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(const size_type __pos) const
+  {
+    if (__pos > this->size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
+    }
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](const size_type __pos) noexcept
+  {
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
+  {
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
+  {
+    return *this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
+  {
+    return *this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
+  {
+    return *(this->end() - 1);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
+  {
+    return *(this->end() - 1);
+  }
+
+  using __base::data;
+
+  // inplace_vector.iterators
+  using __base::begin;
+  using __base::end;
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
+  {
+    return reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
+  {
+    return const_reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
+  {
+    return reverse_iterator{this->begin()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
+  {
+    return const_reverse_iterator{this->begin()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
+  {
+    return this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
+  {
+    return this->end();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
+  {
+    return const_reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
+  {
+    return const_reverse_iterator{this->begin()};
+  }
+
+  // [containers.sequences.inplace.vector.members] size/capacity
+  using __base::empty;
+  using __base::size;
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
+  {
+    return _Capacity;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type capacity() const noexcept
+  {
+    return _Capacity;
+  }
+
+  // [containers.sequences.inplace.vector.modifiers], modifiers
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, const _Tp& __value)
+  {
+    return emplace(__cpos, __value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, _Tp&& __value)
+  {
+    return emplace(__cpos, _CUDA_VSTD::move(__value));
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, const size_type __count, const _Tp& __value)
+  {
+    const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
+    if (__count > _Capacity - this->size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos > this->size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, size_type, T)");
+    }
+
+    const iterator __first = this->begin() + __pos;
+    if (__count == 0)
+    {
+      return __first;
+    }
+
+    const iterator __end = this->end();
+    if (__pos == this->size())
+    {
+      this->__uninitialized_fill(__end, __end + __count, __value);
+      return __first;
+    }
+
+    const iterator __middle = __first + __count;
+    if (__end <= __middle)
+    { // all existing elements are pushed into uninitialized storage
+      this->__uninitialized_fill(__end, __middle, __value);
+      this->__uninitialized_move(__first, __end, __middle);
+      _CUDA_VSTD::fill(__first, __end, __value);
+    }
+    else
+    { // some elements get copied into existing storage
+      this->__uninitialized_move(__end - __count, __end, __end);
+      _CUDA_VSTD::move_backward(__first, __end - __count, __end);
+      _CUDA_VSTD::fill(__first, __middle, __value);
+    }
+
+    return __first;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(
+    __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
+  {
+    // add all new elements to the back then rotate
+    const iterator __old_end = this->end();
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+
+    const iterator __res = this->begin() + (__cpos - this->cbegin());
+    _CUDA_VSTD::rotate(__res, __old_end, this->end());
+    return __res;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
+  {
+    const auto __pos   = static_cast<size_type>(__cpos - this->cbegin());
+    const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
+    if (__count > _Capacity - this->size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos > this->size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, Iter, Iter)");
+    }
+
+    const iterator __res = this->begin() + __pos;
+    if (__count == 0)
+    {
+      return __res;
+    }
+
+    const iterator __end = this->end();
+    if (__pos == this->size())
+    {
+      this->__uninitialized_copy(__first, __last, __end);
+      return __res;
+    }
+
+    const iterator __middle = __res + __count;
+    if (__end <= __middle)
+    { // all existing elements are pushed into uninitialized storage
+      _Iter __imiddle = _CUDA_VSTD::next(__first, this->size() - __pos);
+      this->__uninitialized_copy(__imiddle, __last, __end);
+      this->__uninitialized_move(__res, __end, __middle);
+      _CUDA_VSTD::copy(__first, __imiddle, __res);
+    }
+    else
+    { // all new elements get copied into existing storage
+      this->__uninitialized_move(__end - __count, __end, __end);
+      _CUDA_VSTD::move_backward(__res, __end - __count, __end);
+      _CUDA_VSTD::copy(__first, __last, __res);
+    }
+
+    return __res;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, initializer_list<_Tp> __ilist)
+  {
+    const auto __pos   = static_cast<size_type>(__cpos - this->cbegin());
+    const auto __count = __ilist.size();
+    if (__count > _Capacity - this->size())
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos > this->size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::insert(const_iterator, initializer_list)");
+    }
+
+    const iterator __res = this->begin() + __pos;
+    if (__count == 0)
+    {
+      return __res;
+    }
+
+    const iterator __end = this->end();
+    if (__pos == this->size())
+    {
+      this->__uninitialized_copy(__ilist.begin(), __ilist.end(), __end);
+      return __res;
+    }
+
+    const iterator __middle = __res + __count;
+    if (__end <= __middle)
+    { // all existing elements are pushed into uninitialized storage
+      auto __imiddel = __ilist.begin() + this->size() - __pos;
+      this->__uninitialized_copy(__imiddel, __ilist.end(), __end);
+      this->__uninitialized_move(__res, __end, __middle);
+      _CUDA_VSTD::copy(__ilist.begin(), __imiddel, __res);
+    }
+    else
+    { // all new elements get copied into existing storage
+      this->__uninitialized_move(__end - __count, __end, __end);
+      _CUDA_VSTD::move_backward(__res, __end - __count, __end);
+      _CUDA_VSTD::copy(__ilist.begin(), __ilist.end(), __res);
+    }
+
+    return __res;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  {
+    // add all new elements to the back then rotate
+    auto __first             = _CUDA_VRANGES::begin(__range);
+    auto __last              = _CUDA_VRANGES::end(__range);
+    const iterator __old_end = this->end();
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+
+    const auto __pos = this->begin() + static_cast<size_type>(__cpos - this->cbegin());
+    _CUDA_VSTD::rotate(__pos, __old_end, this->end());
+    return __pos;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    return insert(__cpos, __first, _CUDA_VRANGES::__unwrap_end(__range));
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void append_range(_Range&& __range)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
+    for (; __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void append_range(_Range&& __range)
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    insert(this->end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator __cpos, _Args&&... __args)
+  {
+    const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
+    if (this->size() == _Capacity)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    else if (__pos > this->size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("inplace_vector::emplace(const_iterator, Args...)");
+    }
+
+    const iterator __res = this->begin() + __pos;
+    if (__pos == this->size())
+    {
+      this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+      return __res;
+    }
+
+    const iterator __end = this->end();
+    _Tp __temp{_CUDA_VSTD::forward<_Args>(__args)...};
+    this->unchecked_emplace_back(_CUDA_VSTD::move(*(__end - 1)));
+    _CUDA_VSTD::move_backward(__res, __end - 1, __end);
+    *__res = _CUDA_VSTD::move(__temp);
+
+    return __res;
+  }
+
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference emplace_back(_Args&&... __args)
+  {
+    if (this->size() == _Capacity)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    return this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(const _Tp& __value)
+  {
+    if (this->size() == _Capacity)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(_Tp&& __value)
+  {
+    if (this->size() == _Capacity)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+
+    return this->unchecked_emplace_back(_CUDA_VSTD::move(__value));
+  }
+
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer
+  try_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+  {
+    if (this->size() == _Capacity)
+    {
+      return nullptr;
+    }
+
+    return _CUDA_VSTD::addressof(this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...));
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer
+  try_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  {
+    if (this->size() == _Capacity)
+    {
+      return nullptr;
+    }
+
+    return _CUDA_VSTD::addressof(this->unchecked_emplace_back(__value));
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer
+  try_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  {
+    if (this->size() == _Capacity)
+    {
+      return nullptr;
+    }
+
+    return _CUDA_VSTD::addressof(this->unchecked_emplace_back(_CUDA_VSTD::move(__value)));
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range>
+  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  {
+    auto __first = _CUDA_VRANGES::begin(__range);
+    auto __last  = _CUDA_VRANGES::end(__range);
+    for (; this->size() != _Capacity && __first != __last; ++__first)
+    {
+      emplace_back(*__first);
+    }
+    return __first;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range>
+  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  {
+    const auto __capacity = _Capacity - this->size();
+    const auto __size     = _CUDA_VRANGES::size(__range);
+    const auto __diff     = __size < __capacity ? __size : __capacity;
+
+    auto __first  = _CUDA_VRANGES::begin(__range);
+    auto __middle = _CUDA_VRANGES::next(__first, __diff);
+    this->__uninitialized_move(__first, __middle, this->end());
+    return __middle;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
+                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range>
+  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  {
+    const auto __capacity = static_cast<ptrdiff_t>(_Capacity - this->size());
+    auto __first          = _CUDA_VRANGES::begin(__range);
+    const auto __size = static_cast<ptrdiff_t>(_CUDA_VRANGES::distance(__first, _CUDA_VRANGES::__unwrap_end(__range)));
+    const ptrdiff_t __diff = __size < __capacity ? __size : __capacity;
+
+    auto __middle = _CUDA_VRANGES::next(__first, __diff);
+    this->__uninitialized_move(__first, __middle, this->end());
+    return __middle;
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  using __base::unchecked_emplace_back;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  unchecked_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  {
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  unchecked_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  {
+    return this->unchecked_emplace_back(_CUDA_VSTD::move(__value));
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void pop_back() noexcept
+  {
+    const auto __end = this->end();
+    this->__destroy(__end - 1, __end);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator
+  erase(const_iterator __cpos) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  {
+    const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
+    if (__pos > this->size())
+    {
+      _CUDA_VSTD_NOVERSION::terminate();
+    }
+
+    const iterator __res = this->begin() + __pos;
+    if (__pos == this->size())
+    {
+      return __res;
+    }
+
+    const iterator __end = this->end();
+    _CUDA_VSTD::move(__res + 1, __end, __res);
+    this->__destroy(__end - 1, __end);
+    return __res;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator
+  erase(const_iterator __cfirst, const_iterator __clast) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  {
+    const iterator __first = (iterator) __cfirst;
+    const iterator __last  = (iterator) __clast;
+    const iterator __end   = this->end();
+    if (__first == __last)
+    {
+      return __last;
+    }
+
+    if (__first < this->begin() || __end < __last)
+    {
+      _CUDA_VSTD_NOVERSION::terminate();
+    }
+
+    const auto __new_end = _CUDA_VSTD::move(__last, __end, __first);
+    this->__destroy(__new_end, __end);
+    return __first;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void clear() noexcept
+  {
+    this->__destroy(this->begin(), this->end());
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void resize(const size_type __count)
+  {
+    const auto __diff = static_cast<ptrdiff_t>(__count) - static_cast<ptrdiff_t>(this->size());
+    if (__diff == 0)
+    {
+      return;
+    }
+    else if (__diff < 0)
+    {
+      this->__destroy(this->begin() + __count, this->end());
+    }
+    else
+    {
+      if (_Capacity < __count)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      const iterator __end = this->end();
+      this->__uninitialized_value_construct(__end, __end + __diff);
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void resize(const size_type __count, const _Tp& __value)
+  {
+    const auto __diff = static_cast<ptrdiff_t>(__count) - static_cast<ptrdiff_t>(this->size());
+    if (__diff == 0)
+    {
+      return;
+    }
+    else if (__diff < 0)
+    {
+      this->__destroy(this->begin() + __count, this->end());
+    }
+    else
+    {
+      if (_Capacity < __count)
+      {
+        _CUDA_VSTD::__throw_bad_alloc();
+      }
+
+      const iterator __end = this->end();
+      this->__uninitialized_fill(__end, __end + __diff, __value);
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void reserve(const size_type __count)
+  {
+    if (_Capacity < __count)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void shrink_to_fit() noexcept {}
+
+  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(inplace_vector& __other) noexcept(
+    _CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2))
+  {
+    if (this->size() < __other.size())
+    {
+      const auto __new_mid = _CUDA_VSTD::swap_ranges(this->begin(), this->end(), __other.begin());
+      this->__uninitialized_move(__new_mid, __other.end(), this->end());
+      __other.__destroy(__new_mid, __other.end());
+    }
+    else
+    {
+      const auto __new_mid = _CUDA_VSTD::swap_ranges(__other.begin(), __other.end(), this->begin());
+      __other.__uninitialized_move(__new_mid, this->end(), __other.end());
+      this->__destroy(__new_mid, this->end());
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(inplace_vector& __lhs, inplace_vector& __rhs) noexcept(
+    _Capacity == 0 || (_CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2)))
+  {
+    __lhs.swap(__rhs);
+  }
+
+  // inplace_vector.comparison
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator==(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return _CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+  }
+#  if _CCCL_STD_VER <= 2017
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return !_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+  }
+#  endif // _CCCL_STD_VER <= 2017
+
+#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __synth_three_way_result_t<_Tp>
+  operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+  }
+#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return _CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return __rhs < __lhs;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator<=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return !(__rhs < __lhs);
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator>=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return !(__lhs < __rhs);
+  }
+#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+
+  // [containers.sequences.inplace.vector.erasure]
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
+  __erase(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  {
+    const iterator __old_end = this->end();
+    const iterator __new_end = _CUDA_VSTD::remove(this->begin(), __old_end, __value);
+    this->__destroy(__new_end, __old_end);
+    return static_cast<size_type>(__old_end - __new_end);
+  }
+
+  template <class _Pred>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
+  __erase_if(_Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  {
+    const iterator __old_end = this->end();
+    const iterator __new_end = _CUDA_VSTD::remove_if(this->begin(), __old_end, _CUDA_VSTD::move(__pred));
+    this->__destroy(__new_end, __old_end);
+    return static_cast<size_type>(__old_end - __new_end);
+  }
+};
+
+template <class _Tp>
+class inplace_vector<_Tp, 0> : __inplace_vector_base<_Tp, 0>
+{
+private:
+  using __base = __inplace_vector_base<_Tp, 0>;
+
+public:
+  using value_type      = _Tp;
+  using size_type       = size_t;
+  using difference_type = ptrdiff_t;
+  using pointer         = _Tp*;
+  using const_pointer   = const _Tp*;
+  using reference       = _Tp&;
+  using const_reference = const _Tp&;
+
+  using iterator       = pointer;
+  using const_iterator = const_pointer;
+
+  using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
+  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
+
+  // [containers.sequences.inplace.vector.cons], construct/copy/destroy
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector() noexcept                        = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(const inplace_vector&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector(inplace_vector&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(const inplace_vector&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr inplace_vector& operator=(inplace_vector&&)      = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit inplace_vector(const size_type __count)
+      : __base()
+  {
+    if (__count > 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(const size_type __count, const _Tp& __value)
+      : __base()
+  {
+    if (__count > 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(_Iter __first, _Iter __last)
+      : __base()
+  {
+    if (__first != __last)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(initializer_list<_Tp> __ilist)
+      : __base()
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
+      : __base()
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return *this;
+  }
+
+  // inplace_vector.assign
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(const size_type __count, const _Tp&)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(_Iter __first, _Iter __last)
+  {
+    if (__first != __last)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(initializer_list<_Tp> __ilist)
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return;
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  // [containers.sequences.inplace.vector.access], element access
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
+  {
+    _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(const size_type __pos) const
+  {
+    _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](const size_type __pos) noexcept
+  {
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
+  {
+    return *(this->begin() + __pos);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
+  {
+    return *this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
+  {
+    return *this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
+  {
+    return *(this->end() - 1);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
+  {
+    return *(this->end() - 1);
+  }
+
+  using __base::data;
+
+  // inplace_vector.iterators
+  using __base::begin;
+  using __base::end;
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
+  {
+    return reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
+  {
+    return const_reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
+  {
+    return reverse_iterator{this->begin()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
+  {
+    return const_reverse_iterator{this->begin()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
+  {
+    return this->begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
+  {
+    return this->end();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
+  {
+    return const_reverse_iterator{this->end()};
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
+  {
+    return const_reverse_iterator{this->begin()};
+  }
+
+  // [containers.sequences.inplace.vector.members] size/capacity
+  using __base::empty;
+  using __base::size;
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
+  {
+    return 0;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type capacity() const noexcept
+  {
+    return 0;
+  }
+
+  // [containers.sequences.inplace.vector.modifiers], modifiers
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, const _Tp& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return emplace(__cpos, __value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, _Tp&& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return emplace(__cpos, _CUDA_VSTD::move(__value));
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator, const size_type __count, const _Tp&)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Iter)
+  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator, _Iter __first, _Iter __last)
+  {
+    if (__first != __last)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator, initializer_list<_Tp> __ilist)
+  {
+    if (__ilist.size() != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void append_range(_Range&& __range)
+  {
+    if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator, _Args&&...)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return nullptr;
+  }
+
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference emplace_back(_Args&&... __args)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(const _Tp& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(_Tp&& __value)
+  {
+    _CUDA_VSTD::__throw_bad_alloc();
+    return this->unchecked_emplace_back(_CUDA_VSTD::move(__value));
+  }
+
+  template <class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer try_emplace_back(_Args&&...) noexcept
+  {
+    return nullptr;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer try_push_back(const _Tp&) noexcept
+  {
+    return nullptr;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer try_push_back(_Tp&&) noexcept
+  {
+    return nullptr;
+  }
+
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+  _LIBCUDACXX_TEMPLATE(class _Range)
+  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range> try_append_range(_Range&& __range) noexcept
+  {
+    return _CUDA_VRANGES::begin(__range);
+  }
+#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+
+  using __base::unchecked_emplace_back;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference unchecked_push_back(const _Tp& __value) noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference unchecked_push_back(_Tp&& __value) noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+    return this->unchecked_emplace_back(__value);
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void pop_back() noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator erase(const_iterator) noexcept
+  {
+    _CUDA_VSTD_NOVERSION::terminate();
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator erase(const_iterator __cfirst, const_iterator __clast) noexcept
+  {
+    if (__cfirst != __clast)
+    {
+      _CUDA_VSTD_NOVERSION::terminate();
+    }
+    return nullptr;
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void clear() noexcept {}
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void resize(const size_type __count)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void resize(const size_type __count, const _Tp&)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void reserve(const size_type __count)
+  {
+    if (__count != 0)
+    {
+      _CUDA_VSTD::__throw_bad_alloc();
+    }
+  }
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void shrink_to_fit() noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(inplace_vector&) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(inplace_vector&, inplace_vector&) noexcept {}
+
+  // inplace_vector.comparison
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator==(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return true;
+  }
+#  if _CCCL_STD_VER <= 2017
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator!=(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return false;
+  }
+#  endif // _CCCL_STD_VER <= 2017
+
+#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __synth_three_way_result_t<_Tp>
+  operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+    noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
+  {
+    return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
+  }
+#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator<(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return false;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator>(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return false;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator<=(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return true;
+  }
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator>=(const inplace_vector&, const inplace_vector&) noexcept
+  {
+    return true;
+  }
+#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+
+  // [containers.sequences.inplace.vector.erasure]
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type __erase(const _Tp&) noexcept
+  {
+    return 0;
+  }
+
+  template <class _Pred>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type __erase_if(_Pred) noexcept
+  {
+    return 0;
+  }
+};
+
+// [containers.sequences.inplace.vector.erasure]
+template <class _Tp, size_t _Capacity>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t
+erase(inplace_vector<_Tp, _Capacity>& __cont, const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+{
+  return __cont.__erase(__value);
+}
+
+template <class _Tp, size_t _Capacity, class _Pred>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr size_t
+erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+{
+  return __cont.__erase_if(__pred);
+}
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_POP_MACROS
+
+#endif // _CCCL_STD_VER >= 2014
+
+#endif // _CUDA_STD_INPLACE_VECTOR

@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_COMPOUND) && !defined(_LIBCUDACXX_USE_IS_COMPOUND_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_compound : public integral_constant<bool, _LIBCUDACXX_IS_COMPOUND(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : public integral_constant<bool, _LIBCUDACXX_IS_COMPOUND(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
@@ -39,7 +39,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_compound_v = _LIBCUDACXX_IS_COMPOUND(_T
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_compound : public integral_constant<bool, !is_fundamental<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : public integral_constant<bool, !is_fundamental<_Tp>::value>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

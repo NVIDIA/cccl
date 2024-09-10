@@ -29,10 +29,9 @@
 #include <cub/device/device_histogram.cuh>
 #include <cub/iterator/counting_input_iterator.cuh>
 
-#include <cuda/std/__algorithm/copy.h>
-#include <cuda/std/__cccl/dialect.h>
-#include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__algorithm_>
 #include <cuda/std/array>
+#include <cuda/std/bit>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -213,7 +212,7 @@ struct bit_and_anything
   _CCCL_HOST_DEVICE auto operator()(const T& a, const T& b) const -> T
   {
     using U = typename cub::Traits<T>::UnsignedBits;
-    return c2h::bit_cast<T>(static_cast<U>(c2h::bit_cast<U>(a) & c2h::bit_cast<U>(b)));
+    return ::cuda::std::bit_cast<T>(static_cast<U>(::cuda::std::bit_cast<U>(a) & ::cuda::std::bit_cast<U>(b)));
   }
 };
 

@@ -116,7 +116,7 @@ struct __tuple_assignable<_Tp, _Up, true, true>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, tuple<_Tp...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
 };
@@ -133,7 +133,7 @@ template <class _Tuple, size_t _ExpectedSize, class _RawTuple = __remove_cvref_t
 using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE =
   __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
 
-struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __check_tuple_constructor_fail
 {
   template <int&...>
   using __enable_explicit_default = false_type;
@@ -160,11 +160,11 @@ struct __sfinae_copy_base
 template <>
 struct __sfinae_copy_base<false>
 {
-  __sfinae_copy_base()                                     = default;
-  __sfinae_copy_base(__sfinae_copy_base const&)            = delete;
-  __sfinae_copy_base(__sfinae_copy_base&&)                 = default;
-  __sfinae_copy_base& operator=(__sfinae_copy_base const&) = default;
-  __sfinae_copy_base& operator=(__sfinae_copy_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_base()                                     = default;
+  __sfinae_copy_base(__sfinae_copy_base const&)                                = delete;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_base(__sfinae_copy_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_base& operator=(__sfinae_copy_base const&) = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_base& operator=(__sfinae_copy_base&&)      = default;
 };
 
 template <bool _CanCopy, bool _CanMove>
@@ -173,11 +173,11 @@ struct __sfinae_move_base : __sfinae_copy_base<_CanCopy>
 template <bool _CanCopy>
 struct __sfinae_move_base<_CanCopy, false> : __sfinae_copy_base<_CanCopy>
 {
-  __sfinae_move_base()                                     = default;
-  __sfinae_move_base(__sfinae_move_base const&)            = default;
-  __sfinae_move_base(__sfinae_move_base&&)                 = delete;
-  __sfinae_move_base& operator=(__sfinae_move_base const&) = default;
-  __sfinae_move_base& operator=(__sfinae_move_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_base()                                     = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_base(__sfinae_move_base const&)            = default;
+  __sfinae_move_base(__sfinae_move_base&&)                                     = delete;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_base& operator=(__sfinae_move_base const&) = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_base& operator=(__sfinae_move_base&&)      = default;
 };
 
 template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
@@ -186,11 +186,11 @@ struct __sfinae_copy_assign_base : __sfinae_move_base<_CanCopy, _CanMove>
 template <bool _CanCopy, bool _CanMove>
 struct __sfinae_copy_assign_base<_CanCopy, _CanMove, false> : __sfinae_move_base<_CanCopy, _CanMove>
 {
-  __sfinae_copy_assign_base()                                            = default;
-  __sfinae_copy_assign_base(__sfinae_copy_assign_base const&)            = default;
-  __sfinae_copy_assign_base(__sfinae_copy_assign_base&&)                 = default;
-  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base const&) = delete;
-  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base()                                       = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base(__sfinae_copy_assign_base const&)       = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base(__sfinae_copy_assign_base&&)            = default;
+  __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base const&)                = delete;
+  _CCCL_HIDE_FROM_ABI __sfinae_copy_assign_base& operator=(__sfinae_copy_assign_base&&) = default;
 };
 
 template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>
@@ -200,11 +200,11 @@ template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign>
 struct __sfinae_move_assign_base<_CanCopy, _CanMove, _CanCopyAssign, false>
     : __sfinae_copy_assign_base<_CanCopy, _CanMove, _CanCopyAssign>
 {
-  __sfinae_move_assign_base()                                            = default;
-  __sfinae_move_assign_base(__sfinae_move_assign_base const&)            = default;
-  __sfinae_move_assign_base(__sfinae_move_assign_base&&)                 = default;
-  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base const&) = default;
-  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base&&)      = delete;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base()                                            = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base(__sfinae_move_assign_base const&)            = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base(__sfinae_move_assign_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __sfinae_move_assign_base& operator=(__sfinae_move_assign_base const&) = default;
+  __sfinae_move_assign_base& operator=(__sfinae_move_assign_base&&)                          = delete;
 };
 
 template <bool _CanCopy, bool _CanMove, bool _CanCopyAssign, bool _CanMoveAssign>

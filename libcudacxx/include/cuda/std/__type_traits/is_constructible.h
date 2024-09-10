@@ -76,7 +76,7 @@ struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&>
 struct __is_constructible_helper
 {
   template <class _To>
-  _LIBCUDACXX_INLINE_VISIBILITY static void __eat(_To);
+  _LIBCUDACXX_HIDE_FROM_ABI static void __eat(_To);
 
   // This overload is needed to work around a Clang bug that disallows
   // static_cast<T&&>(e) for non-reference-compatible types.
@@ -84,26 +84,26 @@ struct __is_constructible_helper
   // NOTE: The static_cast implementation below is required to support
   //  classes with explicit conversion operators.
   template <class _To, class _From, class = decltype(__eat<_To>(_CUDA_VSTD::declval<_From>()))>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test_cast(int);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test_cast(int);
 
   template <class _To, class _From, class = decltype(static_cast<_To>(_CUDA_VSTD::declval<_From>()))>
-  _LIBCUDACXX_INLINE_VISIBILITY static integral_constant<
+  _LIBCUDACXX_HIDE_FROM_ABI static integral_constant<
     bool,
     !__is_invalid_base_to_derived_cast<_To, _From>::value && !__is_invalid_lvalue_to_rvalue_cast<_To, _From>::value>
   __test_cast(long);
 
   template <class, class>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test_cast(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test_cast(...);
 
   template <class _Tp, class... _Args, class = decltype(_Tp(_CUDA_VSTD::declval<_Args>()...))>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test_nary(int);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test_nary(int);
   template <class _Tp, class...>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test_nary(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test_nary(...);
 
   template <class _Tp, class _A0, class = decltype(::new _Tp(_CUDA_VSTD::declval<_A0>()))>
-  _LIBCUDACXX_INLINE_VISIBILITY static is_destructible<_Tp> __test_unary(int);
+  _LIBCUDACXX_HIDE_FROM_ABI static is_destructible<_Tp> __test_unary(int);
   template <class, class>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test_unary(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test_unary(...);
 };
 
 template <class _Tp, bool = is_void<_Tp>::value>
@@ -149,7 +149,7 @@ struct __libcpp_is_constructible<_Tp&&, _A0> : public decltype(__is_constructibl
 
 #if defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_constructible
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
@@ -160,7 +160,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = _LIBCUDACXX_IS_CONSTR
 
 #else
 template <class _Tp, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_constructible : public __libcpp_is_constructible<_Tp, _Args...>::type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __libcpp_is_constructible<_Tp, _Args...>::type
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

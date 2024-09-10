@@ -41,7 +41,7 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -96,7 +96,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Iter>
-class _LIBCUDACXX_TEMPLATE_VIS move_iterator
+class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator
 #if _CCCL_STD_VER > 2014
     : public __move_iter_category_base<_Iter>
 #endif
@@ -109,7 +109,7 @@ private:
 
 #if _CCCL_STD_VER >= 2017
 #  if !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __mi_get_iter_concept()
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
     {
@@ -165,73 +165,71 @@ public:
     reference;
 #endif // _CCCL_STD_VER < 2017
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)
       : __current_(_CUDA_VSTD::move(__i))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator& operator++()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator++()
   {
     ++__current_;
     return *this;
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pointer
-  operator->() const
+  _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pointer operator->() const
   {
     return __current_;
   }
 
 #if _CCCL_STD_VER > 2014
 #  if _CCCL_STD_VER > 2017
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_iterator()
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
     requires is_constructible_v<_Iter>
       : __current_()
   {}
 #  else // ^^^ _CCCL_STD_VER > 2017 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
   _LIBCUDACXX_TEMPLATE(class _It2 = _Iter)
   _LIBCUDACXX_REQUIRES(is_constructible_v<_It2>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_iterator()
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
       : __current_()
   {}
 #  endif // _CCCL_STD_VER < 2020
 
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES((!_IsSame<_Up, _Iter>::value) && convertible_to<const _Up&, _Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_iterator(const move_iterator<_Up>& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator(const move_iterator<_Up>& __u)
       : __current_(__u.base())
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES((!_IsSame<_Up, _Iter>::value)
                        && convertible_to<const _Up&, _Iter> && assignable_from<_Iter&, const _Up&>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_iterator&
-  operator=(const move_iterator<_Up>& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator& operator=(const move_iterator<_Up>& __u)
   {
     __current_ = __u.base();
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Iter& base() const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Iter& base() const& noexcept
   {
     return __current_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr _Iter base() &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter base() &&
   {
     return _CUDA_VSTD::move(__current_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator*() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator*() const
   {
     return _CUDA_VRANGES::iter_move(__current_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr reference operator[](difference_type __n) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](difference_type __n) const
   {
     return _CUDA_VRANGES::iter_move(__current_ + __n);
   }
 
   _LIBCUDACXX_TEMPLATE(class _It2 = _Iter)
   _LIBCUDACXX_REQUIRES(forward_iterator<_It2>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator++(int)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int)
   {
     move_iterator __tmp(*this);
     ++__current_;
@@ -240,37 +238,35 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _It2 = _Iter)
   _LIBCUDACXX_REQUIRES((!forward_iterator<_It2>) )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator++(int)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator++(int)
   {
     ++__current_;
   }
 #else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER < 2017 vvv
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator()
       : __current_()
   {}
 
   template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  move_iterator(const move_iterator<_Up>& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator(const move_iterator<_Up>& __u)
       : __current_(__u.base())
   {}
 
   template <class _Up,
             class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value
                                   && is_assignable<_Iter&, const _Up&>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator&
-  operator=(const move_iterator<_Up>& __u)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator=(const move_iterator<_Up>& __u)
   {
     __current_ = __u.base();
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter base() const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter base() const
   {
     return __current_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator*() const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const
   {
     return static_cast<reference>(*__current_);
   }
@@ -278,15 +274,14 @@ public:
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
-  operator[](difference_type __n) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const
   {
     return static_cast<reference>(__current_[__n]);
   }
 
   _CCCL_DIAG_POP
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator operator++(int)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator operator++(int)
   {
     move_iterator __tmp(*this);
     ++__current_;
@@ -294,35 +289,31 @@ public:
   }
 #endif // _CCCL_STD_VER < 2017
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator& operator--()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator--()
   {
     --__current_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator operator--(int)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator operator--(int)
   {
     move_iterator __tmp(*this);
     --__current_;
     return __tmp;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator
-  operator+(difference_type __n) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator operator+(difference_type __n) const
   {
     return move_iterator(__current_ + __n);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator&
-  operator+=(difference_type __n)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator+=(difference_type __n)
   {
     __current_ += __n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator
-  operator-(difference_type __n) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator operator-(difference_type __n) const
   {
     return move_iterator(__current_ - __n);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator&
-  operator-=(difference_type __n)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator-=(difference_type __n)
   {
     __current_ -= __n;
     return *this;
@@ -331,8 +322,7 @@ public:
 #if _CCCL_STD_VER > 2014
   _LIBCUDACXX_TEMPLATE(class _Sent)
   _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
-  operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() == __y.base();
   }
@@ -340,24 +330,21 @@ public:
 #  if _CCCL_STD_VER < 2020
   _LIBCUDACXX_TEMPLATE(class _Sent)
   _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
-  operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() == __x.base();
   }
 
   _LIBCUDACXX_TEMPLATE(class _Sent)
   _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
-  operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() != __y.base();
   }
 
   _LIBCUDACXX_TEMPLATE(class _Sent)
   _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool
-  operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() != __x.base();
   }
@@ -365,7 +352,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Sent)
   _LIBCUDACXX_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr iter_difference_t<_Iter>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Iter>
   operator-(const move_sentinel<_Sent>& __x, const move_iterator& __y)
   {
     return __x.base() - __y.base();
@@ -373,13 +360,13 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Sent)
   _LIBCUDACXX_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr iter_difference_t<_Iter>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Iter>
   operator-(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() - __y.base();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr iter_rvalue_reference_t<_Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iter_rvalue_reference_t<_Iter>
   iter_move(const move_iterator& __i) noexcept(__noexcept_move_iter_iter_move<_Iter>)
   {
     return _CUDA_VRANGES::iter_move(__i.__current_);
@@ -387,7 +374,7 @@ public:
 
 #  if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
   template <class _Iter2, class _Iter1 = _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto iter_swap(
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto iter_swap(
     const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
     _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
   {
@@ -395,7 +382,7 @@ public:
   }
 #  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
   template <class _Iter2>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
     _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
@@ -414,7 +401,7 @@ struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 #endif // _CCCL_COMPILER_GCC || _CCCL_COMPILER_MSVC
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator==(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() == __y.base();
@@ -422,7 +409,7 @@ operator==(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 
 #if _CCCL_STD_VER <= 2017
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() != __y.base();
@@ -432,36 +419,36 @@ operator!=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator<=>(
-  const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) -> compare_three_way_result_t<_Iter1, _Iter2>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
+  -> compare_three_way_result_t<_Iter1, _Iter2>
 {
   return __x.base() <=> __y.base();
 }
 
 #else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() < __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() > __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() <= __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
   return __x.base() >= __y.base();
@@ -469,7 +456,7 @@ operator>=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _Iter1, class _Iter2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto
 operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) -> decltype(__x.base() - __y.base())
 {
   return __x.base() - __y.base();
@@ -477,7 +464,7 @@ operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) ->
 
 #if _CCCL_STD_VER > 2017
 template <class _Iter>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_iterator<_Iter>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter>
 operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
   requires requires {
     { __x.base() + __n } -> same_as<_Iter>;
@@ -487,7 +474,7 @@ operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
 }
 #else // ^^^ _CCCL_STD_VER > 2017 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
 template <class _Iter>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter>
 operator+(typename move_iterator<_Iter>::difference_type __n, const move_iterator<_Iter>& __x)
 {
   return move_iterator<_Iter>(__x.base() + __n);
@@ -495,8 +482,7 @@ operator+(typename move_iterator<_Iter>::difference_type __n, const move_iterato
 #endif // _CCCL_STD_VER < 2020
 
 template <class _Iter>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter>
-make_move_iterator(_Iter __i)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator<_Iter> make_move_iterator(_Iter __i)
 {
   return move_iterator<_Iter>(_CUDA_VSTD::move(__i));
 }

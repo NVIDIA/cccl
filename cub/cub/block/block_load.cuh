@@ -26,7 +26,8 @@
  *
  ******************************************************************************/
 
-//! @file block_load.cuh Operations for reading linear tiles of data into the CUDA thread block.
+//! @file
+//! block_load.cuh Operations for reading linear tiles of data into the CUDA thread block.
 
 #pragma once
 
