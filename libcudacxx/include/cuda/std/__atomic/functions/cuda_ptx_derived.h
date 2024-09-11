@@ -51,13 +51,13 @@ template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_e
 static inline _CCCL_DEVICE void
 __cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
-  constexpr uint64_t __alignmask = (sizeof(uint32_t) - 1);
-  uint32_t* __aligned            = (uint32_t*) ((intptr_t) __ptr & (~__alignmask));
-  const uint8_t __offset         = uint32_t((intptr_t) __ptr & __alignmask) * 8;
+  constexpr uint64_t __alignmask = (sizeof(uint16_t) - 1);
+  uint16_t* __aligned            = (uint16_t*) ((intptr_t) __ptr & (~__alignmask));
+  const uint8_t __offset         = uint16_t((intptr_t) __ptr & __alignmask) * 8;
 
-  uint32_t __value = 0;
+  uint16_t __value = 0;
+  __cuda_atomic_load(__aligned, __value, _Order{}, __atomic_cuda_operand_b16{}, _Sco{}, __atomic_cuda_mmio_disable{});
 
-  __cuda_atomic_load(__aligned, __value, _Order{}, __atomic_cuda_operand_b32{}, _Sco{}, __atomic_cuda_mmio_disable{});
   __dst = static_cast<_Type>(__value >> __offset);
 }
 
