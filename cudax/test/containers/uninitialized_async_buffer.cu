@@ -133,7 +133,7 @@ TEMPLATE_TEST_CASE(
                   "");
   }
 
-  SECTION("convertion to span")
+  SECTION("conversion to span")
   {
     uninitialized_async_buffer buf{resource, stream, 42};
     const cuda::std::span<TestType> as_span{buf};

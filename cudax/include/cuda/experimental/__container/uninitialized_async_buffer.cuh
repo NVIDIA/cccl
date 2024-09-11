@@ -102,10 +102,10 @@ public:
   using pointer    = _Tp*;
   using size_type  = size_t;
 
-  //! @brief Constructs a \c uninitialized_async_buffer, allocating sufficient storage for \p __count elements through
+  //! @brief Constructs an \c uninitialized_async_buffer, allocating sufficient storage for \p __count elements using
   //! \p __mr
   //! @param __mr The async memory resource to allocate the buffer with.
-  //! @param __stream The cuda stream used for stream ordered allocation.
+  //! @param __stream The CUDA stream used for stream-ordered allocation.
   //! @param __count The desired size of the buffer.
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`. Only allocates memory when \p __count > 0
@@ -149,8 +149,8 @@ public:
     __buf_    = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
   }
-  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer stream ordered on the stream that was
-  //! used to create the buffer
+  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream that was
+  //! used to create the buffer.
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   ~uninitialized_async_buffer()
@@ -186,7 +186,7 @@ public:
     return __count_;
   }
 
-  //! @brief Returns a \c async_resource_ref of the resource used to allocate the buffer
+  //! @brief Returns an \c async_resource_ref of the resource used to allocate the buffer
   _CCCL_NODISCARD _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
   {
     return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_async_buffer*>(this)->__mr_};
