@@ -50,21 +50,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-template <typename T>
-struct less_than_t
-{
-  T compare;
-
-  explicit __host__ less_than_t(T compare)
-      : compare(compare)
-  {}
-
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a < compare;
-  }
-};
-
 struct equal_to_default_t
 {
   template <typename T>
