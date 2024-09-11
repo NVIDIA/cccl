@@ -569,7 +569,8 @@ struct DispatchSelectIf : SelectedPolicy
       ::cuda::std::size_t allocation_sizes[3] = {0ULL, vsmem_size, streaming_selection_storage_bytes};
 
       // Bytes needed for tile status descriptors
-      error = CubDebug(ScanTileStateT::AllocationSize(max_num_tiles_per_invocation, allocation_sizes[0]));
+      error =
+        CubDebug(ScanTileStateT::AllocationSize(static_cast<int>(max_num_tiles_per_invocation), allocation_sizes[0]));
       if (cudaSuccess != error)
       {
         break;
