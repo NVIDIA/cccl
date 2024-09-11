@@ -31,32 +31,23 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/distance.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/reverse_iterator.h>
+#include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
 #include <algorithm>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-
-template <typename T>
-struct less_than_t
-{
-  T compare;
-
-  explicit __host__ less_than_t(T compare)
-      : compare(compare)
-  {}
-
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a < compare;
-  }
-};
 
 struct always_false_t
 {
@@ -307,4 +298,69 @@ CUB_TEST("DevicePartition::If works with a different output type", "[device][par
 
   REQUIRE(num_selected_out[0] == thrust::distance(reference.begin(), boundary));
   REQUIRE(reference == out);
+}
+
+CUB_TEST("DevicePartition::If works for very large number of items", "[device][partition_if]")
+try
+{
+  using type     = std::int64_t;
+  using offset_t = std::int64_t;
+
+  // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
+  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+
+  offset_t num_items = GENERATE_COPY(
+    values({
+      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      offset_t{2} * max_partition_size, // 2 partitions
+      max_partition_size + offset_t{1}, // 2 partitions
+      max_partition_size, // 1 partitions
+      max_partition_size - offset_t{1} // 1 partitions
+    }),
+    take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
+
+  auto in = thrust::make_counting_iterator(offset_t{0});
+
+  // We select the first <cut_off_index> items and reject the rest
+  const offset_t cut_off_index = num_items / 4;
+
+  // Prepare tabulate output iterator to verify results in a memory-efficient way:
+  // We use a tabulate iterator that checks whenever the partition algorithm writes an output whether that item
+  // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+  static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
+  c2h::device_vector<std::uint32_t> correctness_flags(cub::DivideAndRoundUp(num_items, bits_per_element));
+  auto expected_selected_it = thrust::make_counting_iterator(offset_t{0});
+  auto expected_rejected_it = thrust::make_reverse_iterator(
+    thrust::make_counting_iterator(offset_t{cut_off_index}) + (num_items - cut_off_index));
+  auto expected_result_op =
+    make_index_to_expected_partition_op(expected_selected_it, expected_rejected_it, cut_off_index);
+  auto expected_result_it =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(offset_t{0}), expected_result_op);
+  auto check_result_op = make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
+  auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+  // Needs to be device accessible
+  c2h::device_vector<offset_t> num_selected_out(1, 0);
+  offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  partition_if(
+    in, check_result_it, d_first_num_selected_out, num_items, less_than_t<type>{static_cast<type>(cut_off_index)});
+
+  // Ensure that we created the correct output
+  REQUIRE(num_selected_out[0] == cut_off_index);
+  bool all_results_correct = thrust::equal(
+    correctness_flags.cbegin(),
+    correctness_flags.cbegin() + (num_items / bits_per_element),
+    thrust::make_constant_iterator(0xFFFFFFFFU));
+  REQUIRE(all_results_correct == true);
+  if (num_items % bits_per_element != 0)
+  {
+    std::uint32_t last_element_flags = (0x00000001U << (num_items % bits_per_element)) - 0x01U;
+    REQUIRE(correctness_flags[correctness_flags.size() - 1] == last_element_flags);
+  }
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }
