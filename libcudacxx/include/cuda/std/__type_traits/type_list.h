@@ -61,32 +61,6 @@ using __type_call1 = typename _Fn::template __call<_Ty>;
 template <class _Fn, class _Ty, class _Uy>
 using __type_call2 = typename _Fn::template __call<_Ty, _Uy>;
 
-#  if defined(_CCCL_CUDACC_BELOW_12_2)
-
-namespace __detail
-{
-template <size_t _DependentValue>
-struct __type_call_indirect_fn
-{
-  template <template <class...> class _Fn, class... _Ts, class _Result = _Fn<_Ts...>>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(int) -> __type_identity<_Result>;
-
-  template <template <class...> class, class...>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(long) -> __type_call_indirect_fn;
-
-  template <template <class...> class _Fn, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = decltype(__type_call_indirect_fn::__fn<_Fn, _Ts...>(0));
-};
-} // namespace __detail
-
-//! \brief Evaluate a meta-callable with the given arguments, with an indirection
-//! to avoid the dreaded "pack expansion argument for non-pack parameter" error.
-template <class _Fn, class... _Ts>
-using __type_call_indirect = //
-  typename __detail::__type_call_indirect_fn<sizeof(
-    __type_list<_Fn, _Ts...>*)>::template __call<_Fn::template __call, _Ts...>::type;
-
-#  else // ^^^ _CCCL_CUDACC_BELOW_12_2 ^^^ / vvv !_CCCL_CUDACC_BELOW_12_2 vvv
 namespace __detail
 {
 template <size_t _DependentValue>
@@ -103,8 +77,6 @@ template <class _Fn, class... _Ts>
 using __type_call_indirect = //
   typename __detail::__type_call_indirect_fn<sizeof(
     __type_list<_Fn, _Ts...>*)>::template __call<_Fn::template __call, _Ts...>;
-
-#  endif
 
 //! \brief Turns a class or alias template into a meta-callable
 template <template <class...> class _Fn>
@@ -136,19 +108,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote2
 template <template <class...> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_indirect
 {
-#  if defined(_CCCL_CUDACC_BELOW_12_2)
-
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>::type;
-
-#  else
-
   template <class... _Ts>
   using __call _LIBCUDACXX_NODEBUG_TYPE =
     typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>;
-
-#  endif
 };
 
 //! \brief Turns a trait class template \c _Fn into a meta-callable \c
