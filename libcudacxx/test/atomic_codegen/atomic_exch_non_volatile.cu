@@ -14,9 +14,7 @@ __global__ void exch_device_relaxed_non_volatile(int* data, int* out, int n)
 ; SM8X-DAG:  ld.param.u64 %rd[[#EXPECTED:]], {{.*}}[[FUNCTION]]_param_1{{.*}}
 ; SM8X-DAG:  ld.param.u32 %r[[#INPUT:]], {{.*}}[[FUNCTION]]_param_2{{.*}}
 ; SM8X-NEXT: cvta.to.global.u64 %rd[[#GOUT:]], %rd[[#EXPECTED]];
-; SM8X-NEXT: //
-; SM8X-NEXT: atom.exch.relaxed.gpu.b32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];
-; SM8X-NEXT: //
+; SM8X-NEXT: {{/*[[:space:]] *}}atom.exch.relaxed.gpu.b32 %r[[#DEST:]],[%rd[[#ATOM]]],%r[[#INPUT]];{{[[:space:]]/*}}
 ; SM8X-NEXT: st.global.u32 [%rd[[#GOUT]]], %r[[#DEST]];
 ; SM8X-NEXT: ret;
 
