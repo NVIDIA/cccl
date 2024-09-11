@@ -450,11 +450,12 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       // Out-of-bounds items are selection_flags
-      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items, 1);
+      BlockLoadFlags(temp_storage.load_flags)
+        .Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags, num_tile_items, 1);
     }
     else
     {
-      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
+      BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
 // Convert flag type to selection_flags type

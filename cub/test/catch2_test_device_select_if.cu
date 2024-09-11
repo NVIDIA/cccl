@@ -42,6 +42,7 @@
 
 #include <algorithm>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -88,38 +89,6 @@ struct always_true_t
   __device__ bool operator()(const T&) const
   {
     return true;
-  }
-};
-
-template <typename T>
-struct mod_n
-{
-  T mod;
-  __host__ __device__ bool operator()(T x)
-  {
-    return (x % mod == 0) ? true : false;
-  }
-};
-
-template <typename T>
-struct multiply_n
-{
-  T multiplier;
-  __host__ __device__ T operator()(T x)
-  {
-    return x * multiplier;
-  }
-};
-
-template <typename T, typename TargetT>
-struct modx_and_add_divy
-{
-  T mod;
-  T div;
-
-  __host__ __device__ TargetT operator()(T x)
-  {
-    return static_cast<TargetT>((x % mod) + (x / div));
   }
 };
 
@@ -389,7 +358,7 @@ try
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  offset_t match_every_nth     = 1000000;
+  constexpr offset_t match_every_nth     = 1000000;
   offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
   c2h::device_vector<type> out(expected_num_copied);
   select_if(
