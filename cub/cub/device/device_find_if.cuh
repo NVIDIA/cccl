@@ -1,6 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -51,13 +50,15 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
 
+#define elements_per_thread 16
+
 CUB_NAMESPACE_BEGIN
 
 template <typename IterBegin, typename IterEnd, typename Pred>
 __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, std::size_t num_items)
 {
-  int elements_per_thread = 2;
-  auto tile_size          = blockDim.x * elements_per_thread;
+  // int elements_per_thread = 32;
+  auto tile_size = blockDim.x * elements_per_thread;
   __shared__ int sresult;
 
   for (int tile_offset = blockIdx.x * tile_size; tile_offset < num_items; tile_offset += tile_size * gridDim.x)
@@ -116,10 +117,10 @@ struct DeviceFind
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    int block_threads    = 128;
-    int items_per_thread = 2;
-    int tile_size        = block_threads * items_per_thread;
-    int num_tiles        = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+    int block_threads = 128;
+    // int items_per_thread = 2;
+    int tile_size = block_threads * elements_per_thread;
+    int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
 
     // Get device ordinal
     int device_ordinal;
