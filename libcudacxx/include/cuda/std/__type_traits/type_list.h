@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -70,10 +69,10 @@ template <size_t _DependentValue>
 struct __type_call_indirect_fn
 {
   template <template <class...> class _Fn, class... _Ts, class _Result = _Fn<_Ts...>>
-  _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(int) -> __type_identity<_Result>;
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(int) -> __type_identity<_Result>;
 
   template <template <class...> class, class...>
-  _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(long) -> __type_call_indirect_fn;
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(long) -> __type_call_indirect_fn;
 
   template <template <class...> class _Fn, class... _Ts>
   using __call _LIBCUDACXX_NODEBUG_TYPE = decltype(__type_call_indirect_fn::__fn<_Fn, _Ts...>(0));
@@ -87,8 +86,7 @@ using __type_call_indirect = //
   typename __detail::__type_call_indirect_fn<sizeof(
     __type_list<_Fn, _Ts...>*)>::template __call<_Fn::template __call, _Ts...>::type;
 
-#  else
-
+#  else // ^^^ _CCCL_CUDACC_BELOW_12_2 ^^^ / vvv !_CCCL_CUDACC_BELOW_12_2 vvv
 namespace __detail
 {
 template <size_t _DependentValue>
@@ -255,9 +253,9 @@ namespace __detail
 {
 // Only the following precise formulation works with nvcc < 12.2
 template <class _Fn, class... _Ts, template <class...> class _Fn2 = _Fn::template __call, class = _Fn2<_Ts...>>
-_CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(__type_list<_Fn, _Ts...>*) -> true_type;
 
-_CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(void*) -> false_type;
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_callable_fn(void*) -> false_type;
 } // namespace __detail
 
 //! \brief Test whether a meta-callable is callable with a given set of
@@ -347,7 +345,7 @@ struct __type_index_leaf
 };
 
 template <size_t _Ip, class _Ty>
-_CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>*);
+_LIBCUDACXX_HIDE_FROM_ABI __type_index_leaf<_Ip, _Ty> __type_index_get(__type_index_leaf<_Ip, _Ty>*);
 
 template <class _Is>
 struct __type_index_large_size_fn;
@@ -445,7 +443,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
             class... _Gs,
             class... _Hs,
             class... _Tail>
-  _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(
     __type_list_ptr<_Ts...>, // state
     __type_list_ptr<_As...>, // 1
     __type_list_ptr<_Bs...>, // 2
@@ -472,7 +470,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<0>
 {
   template <class... _Ts>
-  _CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __fn(__type_list_ptr<_Ts...>, ...) -> __type_list<_Ts...>;
 };
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
@@ -810,7 +808,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_value_list : __type_list<integral_co
 namespace __detail
 {
 template <class _Ty, _Ty _Start, _Ty _Stride, _Ty... _Is>
-_CCCL_HOST_DEVICE _LIBCUDACXX_HIDE_FROM_ABI auto
+_LIBCUDACXX_HIDE_FROM_ABI auto
 __type_iota_fn(integer_sequence<_Ty, _Is...>*) -> __type_value_list<_Ty, _Ty(_Start + (_Is * _Stride))...>;
 } // namespace __detail
 
