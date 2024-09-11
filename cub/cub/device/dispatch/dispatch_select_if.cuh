@@ -141,7 +141,7 @@ public:
     {
       *d_num_selected_out = num_previously_selected() + static_cast<TotalNumItemsT>(num_selections);
     }
-  };
+  }
 };
 
 /**
