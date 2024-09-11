@@ -92,6 +92,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
 {{ asm volatile("ld{8}{4}{6}.{0}{1} %0,[%1];" : "={2}"(__dst) : "l"(__ptr) : "memory"); }})XXX";
 
   constexpr size_t supported_sizes[] = {
+    16,
     32,
     64,
     128,
@@ -248,6 +249,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
 {{ asm volatile("st{8}{4}{6}.{0}{1} [%0],%1;" :: "l"(__ptr), "{2}"(__val) : "memory"); }})XXX";
 
   constexpr size_t supported_sizes[] = {
+    16,
     32,
     64,
     128,

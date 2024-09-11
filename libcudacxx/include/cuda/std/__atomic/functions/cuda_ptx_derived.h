@@ -41,7 +41,13 @@ using __cuda_atomic_enable_non_native_bitwise = __enable_if_t<_Operand::__size <
 template <class _Operand>
 using __cuda_atomic_enable_native_bitwise = __enable_if_t<_Operand::__size >= 32, bool>;
 
-template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
+template <class _Operand>
+using __cuda_atomic_enable_non_native_ld_st = __enable_if_t<_Operand::__size <= 8, bool>;
+
+template <class _Operand>
+using __cuda_atomic_enable_native_ld_st = __enable_if_t<_Operand::__size >= 16, bool>;
+
+template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_ld_st<_Operand> = 0>
 static inline _CCCL_DEVICE void
 __cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
@@ -164,7 +170,7 @@ _CCCL_DEVICE _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op, _Or
   return __expected;
 }
 
-template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_bitwise<_Operand> = 0>
+template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_ld_st<_Operand> = 0>
 static inline _CCCL_DEVICE void
 __cuda_atomic_store(_Type* __ptr, _Type __val, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
