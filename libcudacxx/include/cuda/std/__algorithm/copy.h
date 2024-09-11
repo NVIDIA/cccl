@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstdlib>
+#include <cuda/std/cstdlib> // ::memmove
 #include <cuda/std/detail/libcxx/include/cstring>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

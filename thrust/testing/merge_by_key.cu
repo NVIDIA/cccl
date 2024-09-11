@@ -118,7 +118,7 @@ auto call_merge_by_key(Args&&... args) -> decltype(thrust::merge_by_key(std::for
     using C = ::cuda::std::__conditional_t<::cuda::std::is_void<CompareOp>::value, thrust::less<T>, CompareOp>;
     return thrust::merge_by_key(std::forward<Args>(args)..., C{});
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 DECLARE_UNITTEST(TestMergeByKeyDispatchImplicit);
