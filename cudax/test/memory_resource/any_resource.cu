@@ -200,6 +200,9 @@ static_assert(cuda::mr::_IsSmall<small_resource>(), "");
 static_assert(!cuda::mr::_IsSmall<big_resource>(), "");
 static_assert(!cuda::mr::_IsSmall<immovable_resource>(), "");
 
+// We really, really want to make sure that the resource_ref is small.
+static_assert(cuda::mr::_IsSmall<cuda::mr::resource_ref<>>(), "");
+
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
