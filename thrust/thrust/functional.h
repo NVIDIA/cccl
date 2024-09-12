@@ -153,19 +153,6 @@ struct THRUST_DEPRECATED binary_function
  *  \{
  */
 
-#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                            \
-  template <>                                                                                           \
-  struct func<void>                                                                                     \
-  {                                                                                                     \
-    using is_transparent = void;                                                                        \
-    _CCCL_EXEC_CHECK_DISABLE                                                                            \
-    template <typename T>                                                                               \
-    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) -> decltype(impl) \
-    {                                                                                                   \
-      return impl;                                                                                      \
-    }                                                                                                   \
-  }
-
 #define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                                      \
   template <>                                                                                                      \
   struct func<void>                                                                                                \
@@ -178,9 +165,6 @@ struct THRUST_DEPRECATED binary_function
       return impl;                                                                                                 \
     }                                                                                                              \
   }
-
-#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(func, op) \
-  THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, THRUST_FWD(t1) op THRUST_FWD(t2))
 
 /*! \p plus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>plus<T></tt>, and \c x and \c y are objects
@@ -424,28 +408,11 @@ struct modulus : public ::cuda::std::modulus<T>
  *  \see unary_function
  */
 template <typename T = void>
-struct negate
+struct negate : ::cuda::std::negate<T>
 {
-  /*! \typedef argument_type
-   *  \brief The type of the function object's argument.
-   */
-  using argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>-x</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
-  {
-    return -x;
-  }
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 }; // end negate
-
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
 
 /*! \p square is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>square<T></tt>, and \c x is an object
@@ -480,18 +447,9 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
 template <typename T = void>
 struct square
 {
-  /*! \typedef argument_type
-   *  \brief The type of the function object's argument.
-   */
-  using argument_type = T;
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>x*x</tt>.
-   */
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
   {
@@ -499,7 +457,18 @@ struct square
   }
 }; // end square
 
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x* x);
+template <>
+struct square<void>
+{
+  using is_transparent = void;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename T>
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const noexcept(noexcept(x * x))
+  {
+    return x * x;
+  }
+};
 
 /*! \}
  */
@@ -870,16 +839,10 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
 template <typename T = void>
 struct identity
 {
-  /*! \typedef argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using argument_type = T;
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
+  // FIXME(bgruber): this should take T&& and forward to not add const to a mutable reference
   /*! Function call operator. The return value is <tt>x</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
@@ -889,7 +852,9 @@ struct identity
   }
 }; // end identity
 
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
+template <>
+struct identity<void> : ::cuda::std::__identity
+{};
 
 /*! \p maximum is a function object that takes two arguments and returns the greater
  *  of the two. Specifically, it is an Adaptable Binary Function. If \c f is an
@@ -923,19 +888,19 @@ struct maximum
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
   /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
    */
@@ -1391,9 +1356,7 @@ THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 /*! \} // placeholder_objects
  */
 
-#undef THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION
 #undef THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION
-#undef THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP
 
 THRUST_NAMESPACE_END
 
