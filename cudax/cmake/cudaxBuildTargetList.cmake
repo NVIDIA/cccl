@@ -128,7 +128,7 @@ function(_cn_add_target_to_target_list target_name dialect prefix)
 
   target_link_libraries(${target_name} INTERFACE
     cudax::cudax
-    cudax.compiler_interface
+    cudax.compiler_interface_cpp${dialect}
   )
 
   set(cudax_TARGETS ${cudax_TARGETS} ${target_name} CACHE INTERNAL "" FORCE)

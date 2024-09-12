@@ -109,7 +109,7 @@ function(_cub_add_target_to_target_list target_name dialect prefix)
 
   target_link_libraries(${target_name} INTERFACE
     CUB::CUB
-    cub.compiler_interface
+    cub.compiler_interface_cpp${dialect}
   )
 
   if (TARGET cub.thrust)
@@ -180,10 +180,6 @@ function(cub_build_target_list)
   add_flag_option(IGNORE_DEPRECATED_CPP_11 "Don't warn about deprecated C++11." OFF)
   add_flag_option(IGNORE_DEPRECATED_CPP_14 "Don't warn about deprecated C++14." OFF)
   add_flag_option(IGNORE_DEPRECATED_COMPILER "Don't warn about deprecated compilers." OFF)
-
-  # Build cub.compiler_interface with warning flags, etc
-  # This must be called before _cub_add_target_to_target_list.
-  cub_build_compiler_targets()
 
   # Set up the CUB target while testing out our find_package scripts.
   find_package(CUB REQUIRED CONFIG

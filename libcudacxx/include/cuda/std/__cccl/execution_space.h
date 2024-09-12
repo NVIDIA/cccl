@@ -22,6 +22,16 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef __has_include
+#  define __has_include(x) 0
+#endif // !__has_include
+
+// Bring in the __host__ and __device__ macros:
+#if __has_include(<crt/host_defines.h>)
+#  define __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__
+#  include <crt/host_defines.h>
+#endif
+
 #if defined(_CCCL_CUDA_COMPILER)
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__

@@ -145,24 +145,10 @@ endfunction()
 function(_thrust_add_target_to_target_list target_name host device dialect prefix)
   thrust_set_target_properties(${target_name} ${host} ${device} ${dialect} ${prefix})
 
-  target_link_libraries(${target_name} INTERFACE
-    thrust.compiler_interface
-  )
-
   # dialect-specific interface:
-  if (TARGET thrust.compiler_interface_cpp${dialect})
-    target_link_libraries(${target_name} INTERFACE
-      thrust.compiler_interface_cpp${dialect}
-    )
-  endif()
-
-  # Workaround Github issue #1174. cudafe promote TBB header warnings to
-  # errors, even when they're -isystem includes.
-  if ((NOT host STREQUAL "TBB") OR (NOT device STREQUAL "CUDA"))
-    target_link_libraries(${target_name} INTERFACE
-      thrust.promote_cudafe_warnings
-    )
-  endif()
+  target_link_libraries(${target_name} INTERFACE
+    thrust.compiler_interface_cpp${dialect}
+  )
 
   set(THRUST_TARGETS ${THRUST_TARGETS} ${target_name} CACHE INTERNAL "" FORCE)
 

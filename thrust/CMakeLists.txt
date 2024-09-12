@@ -73,7 +73,6 @@ if (NOT (THRUST_ENABLE_HEADER_TESTING OR
   return()
 endif()
 
-include(cmake/AppendOptionIfAvailable.cmake)
 include(cmake/ThrustBuildCompilerTargets.cmake)
 include(cmake/ThrustBuildTargetList.cmake)
 include(cmake/ThrustFindThrust.cmake)

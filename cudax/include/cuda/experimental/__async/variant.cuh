@@ -99,7 +99,7 @@ public:
     noexcept(__nothrow_constructible<_Ty, _As...>)
   {
     constexpr size_t __new_index = __async::__index_of<_Ty, _Ts...>();
-    static_assert(__new_index != __npos, "_Type not in variant");
+    static_assert(__new_index != __npos, "Type not in variant");
 
     __destroy();
     _Ty* __value = ::new (__ptr()) _Ty{static_cast<_As&&>(__as)...};
