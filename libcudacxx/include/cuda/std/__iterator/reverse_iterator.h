@@ -271,7 +271,7 @@ public:
     auto __ytmp = __y.base();
     _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
 #    if defined(_CCCL_COMPILER_ICC)
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
 #    endif // _CCCL_COMPILER_ICC
   }
 #  endif // !_CCCL_COMPILER_MSVC_2017
