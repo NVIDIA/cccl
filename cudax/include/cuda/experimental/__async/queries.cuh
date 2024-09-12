@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/stop_token.cuh>
