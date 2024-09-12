@@ -186,9 +186,6 @@ struct test_resource
 using big_resource   = test_resource<uintptr_t>;
 using small_resource = test_resource<unsigned int>;
 
-static_assert(sizeof(big_resource) > sizeof(cuda::mr::_AnyResourceStorage));
-static_assert(sizeof(small_resource) <= sizeof(cuda::mr::_AnyResourceStorage));
-
 struct immovable_resource : small_resource
 {
   explicit immovable_resource(int i, test_fixture_* fix) noexcept
@@ -199,10 +196,14 @@ struct immovable_resource : small_resource
   immovable_resource(const immovable_resource&) = delete;
 };
 
+static_assert(cuda::mr::_IsSmall<small_resource>(), "");
+static_assert(!cuda::mr::_IsSmall<big_resource>(), "");
+static_assert(!cuda::mr::_IsSmall<immovable_resource>(), "");
+
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
-  constexpr bool is_big = sizeof(TestResource) > sizeof(cuda::mr::_AnyResourceStorage);
+  constexpr bool is_big = !cuda::mr::_IsSmall<TestResource>();
 
   SECTION("construct and destruct")
   {
@@ -210,12 +211,10 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     CHECK(this->counts == expected);
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
-      expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
     --expected.object_count;
     CHECK(this->counts == expected);
   }
@@ -229,30 +228,54 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     CHECK(this->counts == expected);
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
-      expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
       auto mr2 = mr;
-      expected.new_count += is_big;
-      ++expected.copy_count;
-      ++expected.object_count;
+      expected.copy_count += !is_big;
+      expected.object_count += !is_big; // for big resources, copy is a ref-count increment
       CHECK(this->counts == expected);
       CHECK(mr == mr2);
-      ++expected.equal_to_count;
+      expected.equal_to_count += !is_big; // for big resources, equality first compares pointers
       CHECK(this->counts == expected);
 
       auto mr3 = std::move(mr);
       expected.move_count += !is_big; // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
       CHECK(mr2 == mr3);
+      expected.equal_to_count += !is_big;
+      CHECK(this->counts == expected);
+    }
+    expected.object_count -= (is_big ? 1 : 2);
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("equality comparison")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cudax::mr::any_resource<> mr1{TestResource{42, this}};
+      cudax::mr::any_resource<> mr2{TestResource{42, this}};
+      cudax::mr::any_resource<> mr3{TestResource{43, this}};
+      expected.object_count += 3;
+      expected.move_count += 3;
+
+      CHECK(mr1 == mr2);
+      ++expected.equal_to_count;
+      CHECK(this->counts == expected);
+
+      CHECK(mr1 != mr3);
+      ++expected.equal_to_count;
+      CHECK(this->counts == expected);
+      CHECK(mr2 != mr3);
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += 2 * is_big;
-    expected.object_count -= 2;
-    CHECK(this->counts == expected);
   }
 
   // Reset the counters:
@@ -264,7 +287,6 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     CHECK(this->counts == expected);
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
-      expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
@@ -278,7 +300,6 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
     --expected.object_count;
     CHECK(this->counts == expected);
   }
@@ -291,7 +312,6 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     {
       cudax::mr::any_resource<> mr{TestResource{42, this}};
-      expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
@@ -307,7 +327,6 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += is_big;
     --expected.object_count;
     CHECK(this->counts == expected);
   }

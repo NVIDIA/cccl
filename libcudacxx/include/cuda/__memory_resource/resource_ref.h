@@ -41,13 +41,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
-union _AnyResourceStorage
+struct alignas(void*) _AnyResourceStorage
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _AnyResourceStorage(void* __ptr = nullptr) noexcept
-      : __ptr_(__ptr)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _AnyResourceStorage(void* = nullptr) noexcept
+      : __buf_{}
   {}
-
-  void* __ptr_;
   char __buf_[3 * sizeof(void*)];
 };
 
@@ -56,19 +54,22 @@ constexpr bool _IsSmall() noexcept
 {
   return (sizeof(_Resource) <= sizeof(_AnyResourceStorage)) //
       && (alignof(_AnyResourceStorage) % alignof(_Resource) == 0)
+      && _CCCL_TRAIT(_CUDA_VSTD::is_copy_constructible, _Resource)
       && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Resource);
 }
 
 template <class _Resource>
 constexpr _Resource* _Any_resource_cast(_AnyResourceStorage* __object) noexcept
 {
-  return static_cast<_Resource*>(_IsSmall<_Resource>() ? __object->__buf_ : __object->__ptr_);
+  static_assert(_IsSmall<_Resource>(), "_Resource should be small (or a _Shared_resource wrapper, which is small)");
+  return reinterpret_cast<_Resource*>(__object->__buf_);
 }
 
 template <class _Resource>
 constexpr const _Resource* _Any_resource_cast(const _AnyResourceStorage* __object) noexcept
 {
-  return static_cast<const _Resource*>(_IsSmall<_Resource>() ? __object->__buf_ : __object->__ptr_);
+  static_assert(_IsSmall<_Resource>(), "_Resource should be small (or a _Shared_resource wrapper, which is small)");
+  return reinterpret_cast<const _Resource*>(__object->__buf_);
 }
 
 enum class _WrapperType
@@ -92,7 +93,6 @@ struct _Alloc_vtable
   using _MoveFn    = void (*)(_AnyResourceStorage*, _AnyResourceStorage*) _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT;
   using _CopyFn    = void (*)(_AnyResourceStorage*, const _AnyResourceStorage*);
 
-  bool __is_small;
   _AllocFn __alloc_fn;
   _DeallocFn __dealloc_fn;
   _EqualFn __equal_fn;
@@ -101,15 +101,13 @@ struct _Alloc_vtable
   _CopyFn __copy_fn;
 
   constexpr _Alloc_vtable(
-    bool __is_small_,
     _AllocFn __alloc_fn_,
     _DeallocFn __dealloc_fn_,
     _EqualFn __equal_fn_,
     _DestroyFn __destroy_fn_,
     _MoveFn __move_fn_,
     _CopyFn __copy_fn_) noexcept
-      : __is_small(__is_small_)
-      , __alloc_fn(__alloc_fn_)
+      : __alloc_fn(__alloc_fn_)
       , __dealloc_fn(__dealloc_fn_)
       , __equal_fn(__equal_fn_)
       , __destroy_fn(__destroy_fn_)
@@ -127,7 +125,6 @@ struct _Async_alloc_vtable : public _Alloc_vtable
   _AsyncDeallocFn __async_dealloc_fn;
 
   constexpr _Async_alloc_vtable(
-    bool __is_small_,
     _Alloc_vtable::_AllocFn __alloc_fn_,
     _Alloc_vtable::_DeallocFn __dealloc_fn_,
     _Alloc_vtable::_EqualFn __equal_fn_,
@@ -136,7 +133,7 @@ struct _Async_alloc_vtable : public _Alloc_vtable
     _Alloc_vtable::_CopyFn __copy_fn_,
     _AsyncAllocFn __async_alloc_fn_,
     _AsyncDeallocFn __async_dealloc_fn_) noexcept
-      : _Alloc_vtable(__is_small_, __alloc_fn_, __dealloc_fn_, __equal_fn_, __destroy_fn_, __move_fn_, __copy_fn_)
+      : _Alloc_vtable(__alloc_fn_, __dealloc_fn_, __equal_fn_, __destroy_fn_, __move_fn_, __copy_fn_)
       , __async_alloc_fn(__async_alloc_fn_)
       , __async_dealloc_fn(__async_dealloc_fn_)
   {}
@@ -164,7 +161,7 @@ struct _Resource_vtable_builder
   {
     // TODO: this breaks RMM because their memory resources do not declare their
     // deallocate functions to be noexcept. Comment out the check for now until
-    // we can fix RMM.
+    // we can fix RMM. (See: https://github.com/NVIDIA/cccl/issues/2411)
     // static_assert(noexcept(static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment)));
     return static_cast<_Resource*>(__object)->deallocate(__ptr, __bytes, __alignment);
   }
@@ -191,15 +188,9 @@ struct _Resource_vtable_builder
   template <class _Resource>
   static void _Destroy_impl(_AnyResourceStorage* __object_, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
+    static_assert(_IsSmall<_Resource>(), "_Resource should be small (or a _Shared_resource wrapper, which is small)");
     _Resource* __object = _Any_resource_cast<_Resource>(__object_);
-    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
-    {
-      __object->~_Resource();
-    }
-    else
-    {
-      delete __object;
-    }
+    __object->~_Resource();
   }
 
   template <class _Resource>
@@ -216,16 +207,10 @@ struct _Resource_vtable_builder
   static void _Move_impl(
     _AnyResourceStorage* __object, _AnyResourceStorage* __other_, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
-    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
-    {
-      _Resource* __other = _Any_resource_cast<_Resource>(__other_);
-      ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*__other));
-      __other->~_Resource();
-    }
-    else
-    {
-      __object->__ptr_ = _CUDA_VSTD::exchange(__other_->__ptr_, nullptr);
-    }
+    static_assert(_IsSmall<_Resource>(), "_Resource should be small (or a _Shared_resource wrapper, which is small)");
+    _Resource* __other = _Any_resource_cast<_Resource>(__other_);
+    ::new (static_cast<void*>(__object->__buf_)) _Resource(_CUDA_VSTD::move(*__other));
+    __other->~_Resource();
   }
 
   template <class _Resource>
@@ -242,14 +227,8 @@ struct _Resource_vtable_builder
   static void _Copy_impl(
     _AnyResourceStorage* __object, const _AnyResourceStorage* __other, __wrapper_type<_WrapperType::_Owning>) noexcept
   {
-    _CCCL_IF_CONSTEXPR (_IsSmall<_Resource>())
-    {
-      ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
-    }
-    else
-    {
-      __object->__ptr_ = new _Resource(*_Any_resource_cast<_Resource>(__other));
-    }
+    static_assert(_IsSmall<_Resource>(), "_Resource should be small (or a _Shared_resource wrapper, which is small)");
+    ::new (static_cast<void*>(__object->__buf_)) _Resource(*_Any_resource_cast<_Resource>(__other));
   }
 
   template <class _Resource>
@@ -267,8 +246,7 @@ struct _Resource_vtable_builder
   _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Default))
   static constexpr _Alloc_vtable _Create() noexcept
   {
-    return {_IsSmall<_Resource>(),
-            &_Resource_vtable_builder::_Alloc<_Resource>,
+    return {&_Resource_vtable_builder::_Alloc<_Resource>,
             &_Resource_vtable_builder::_Dealloc<_Resource>,
             &_Resource_vtable_builder::_Equal<_Resource>,
             &_Resource_vtable_builder::_Destroy<_Resource, _Wrapper_type>,
@@ -280,8 +258,7 @@ struct _Resource_vtable_builder
   _LIBCUDACXX_REQUIRES((_Alloc_type == _AllocType::_Async))
   static constexpr _Async_alloc_vtable _Create() noexcept
   {
-    return {_IsSmall<_Resource>(),
-            &_Resource_vtable_builder::_Alloc<_Resource>,
+    return {&_Resource_vtable_builder::_Alloc<_Resource>,
             &_Resource_vtable_builder::_Dealloc<_Resource>,
             &_Resource_vtable_builder::_Equal<_Resource>,
             &_Resource_vtable_builder::_Destroy<_Resource, _Wrapper_type>,
@@ -396,20 +373,19 @@ struct _Alloc_base
   }
 
 protected:
-  static _CCCL_FORCEINLINE void* _Get_object_(bool, void* __object) noexcept
+  _CCCL_FORCEINLINE static void* _Get_object_(void* __object) noexcept
   {
     return __object;
   }
 
-  static _CCCL_FORCEINLINE void* _Get_object_(const bool __is_small, const _AnyResourceStorage& __object) noexcept
+  _CCCL_FORCEINLINE static void* _Get_object_(const _AnyResourceStorage& __object) noexcept
   {
-    const void* __pv = __is_small ? __object.__buf_ : __object.__ptr_;
-    return const_cast<void*>(__pv);
+    return const_cast<void*>(static_cast<const void*>(&__object));
   }
 
   void* _Get_object() const noexcept
   {
-    return _Get_object_(__static_vtable->__is_small, this->__object);
+    return _Get_object_(this->__object);
   }
 
   __alloc_object_storage_t<_Wrapper_type> __object{};

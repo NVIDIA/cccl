@@ -56,9 +56,13 @@ namespace cuda::experimental::mr
 template <class _Ty, class _Uy = _CUDA_VSTD::remove_cvref_t<_Ty>>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource = false;
 
-template <class _Resource>
+template <class _Resource,
+          _CUDA_VMR::_AllocType =
+            _CUDA_VMR::async_resource<_Resource> ? _CUDA_VMR::_AllocType::_Async : _CUDA_VMR::_AllocType::_Default>
 struct _Shared_resource
 {
+  static_assert(_CUDA_VMR::resource<_Resource>, "");
+
   template <class... _Args>
   explicit _Shared_resource(_Args&&... __args)
       : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
@@ -74,7 +78,7 @@ struct _Shared_resource
       : __control_block(_CUDA_VSTD::exchange(__other.__control_block, nullptr))
   {}
 
-  ~_Shared_resource() noexcept
+  ~_Shared_resource()
   {
     if (__control_block && __control_block->__ref_count.fetch_sub(1, _CUDA_VSTD::memory_order_acq_rel) == 1)
     {
@@ -117,16 +121,6 @@ struct _Shared_resource
     __control_block->__resource.deallocate(__ptr, __size, __alignment);
   }
 
-  _CCCL_NODISCARD void* async_allocate(size_t __size, size_t __alignment, ::cuda::stream_ref __stream)
-  {
-    return __control_block->__resource.async_allocate(__size, __alignment, __stream);
-  }
-
-  void async_deallocate(void* __ptr, size_t __size, size_t __alignment, ::cuda::stream_ref __stream)
-  {
-    __control_block->__resource.async_deallocate(__ptr, __size, __alignment, __stream);
-  }
-
   friend void swap(_Shared_resource& __left, _Shared_resource& __right) noexcept
   {
     __left.swap(__right);
@@ -160,6 +154,8 @@ struct _Shared_resource
   }
 
 private:
+  friend struct _Shared_resource<_Resource, _CUDA_VMR::_AllocType::_Async>;
+
   struct _Control_block
   {
     _Resource __resource;
@@ -168,6 +164,27 @@ private:
 
   _Control_block* __control_block;
 };
+
+template <class _Resource>
+struct _Shared_resource<_Resource, _CUDA_VMR::_AllocType::_Async>
+    : _Shared_resource<_Resource, _CUDA_VMR::_AllocType::_Default>
+{
+  using _Shared_resource<_Resource, _CUDA_VMR::_AllocType::_Default>::_Shared_resource;
+
+  _CCCL_NODISCARD void* async_allocate(size_t __size, size_t __alignment, ::cuda::stream_ref __stream)
+  {
+    return this->__control_block->__resource.async_allocate(__size, __alignment, __stream);
+  }
+
+  void async_deallocate(void* __ptr, size_t __size, size_t __alignment, ::cuda::stream_ref __stream)
+  {
+    this->__control_block->__resource.async_deallocate(__ptr, __size, __alignment, __stream);
+  }
+};
+
+template <class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>>
+using __as_small_resource_t =
+  _CUDA_VSTD::_If<_CUDA_VMR::_IsSmall<__resource_t>(), __resource_t, _Shared_resource<__resource_t>>;
 
 //! @rst
 //! .. _cudax-memory-resource-basic-any-resource:
@@ -197,15 +214,16 @@ private:
   static constexpr bool __properties_match =
     _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
-  template <class _Resource>
-  using __copyable_resource =
-    _CUDA_VSTD::_If<_CCCL_TRAIT(_CUDA_VSTD::is_copy_constructible, _Resource), _Resource, _Shared_resource<_Resource>>;
-
 public:
   //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c resource or \c async_resource
   //! concept as well as all properties.
+  //!
   //! @param __res The resource to be wrapped within the \c basic_any_resource.
-  _LIBCUDACXX_TEMPLATE(class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>)
+  //!
+  //! @note If \c _Resource is copyable, nothrow-movable, and sufficiently small (`<= 3*sizeof(void*)`),
+  //! it will be stored directly within the \c basic_any_resource. Otherwise, it will be shared between all
+  //! copies of the \c basic_any_resource.
+  _LIBCUDACXX_TEMPLATE(class _Resource, class __resource_t = __as_small_resource_t<_Resource>)
   _LIBCUDACXX_REQUIRES(
     (!__is_basic_any_resource<_Resource>) _LIBCUDACXX_AND(_CUDA_VMR::resource_with<__resource_t, _Properties...>)
       _LIBCUDACXX_AND(_Alloc_type != _CUDA_VMR::_AllocType::_Async
@@ -215,47 +233,34 @@ public:
           nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __resource_t>)
       , __vtable(__vtable::template _Create<__resource_t>())
   {
-    if constexpr (_CUDA_VMR::_IsSmall<__resource_t>())
-    {
-      ::new (static_cast<void*>(this->__object.__buf_)) __resource_t(_CUDA_VSTD::forward<_Resource>(__res));
-    }
-    else
-    {
-      this->__object.__ptr_ = new __resource_t(_CUDA_VSTD::forward<_Resource>(__res));
-    }
+    static_assert(_CUDA_VMR::_IsSmall<__resource_t>());
+    ::new (static_cast<void*>(this->__object.__buf_)) __resource_t(_CUDA_VSTD::forward<_Resource>(__res));
   }
 
   //! @brief Constructs a \c basic_any_resource wrapping an object of type \c _Resource that
   //! is constructed from \c __args... . \c _Resource must satisfy the  \c resource or \c async_resource
   //! concept, and it must provide all properties in \c _Properties... .
   //!
-  //! If \c _Resource is not copy constructible, the resource will be shared between all copies of the
-  //! \c basic_any_resource. Otherwise, the resource will be copied for each \c basic_any_resource.
-  //!
   //! @param __args The arguments used to construct the instance of \c _Resource this \c basic_any_resource
   //! object wraps.
-  _LIBCUDACXX_TEMPLATE(class _Resource, class... _Args)
-  _LIBCUDACXX_REQUIRES(_CUDA_VMR::resource_with<_Resource, _Properties...> _LIBCUDACXX_AND(
-    _Alloc_type != _CUDA_VMR::_AllocType::_Async || (_CUDA_VMR::async_resource_with<_Resource, _Properties...>) ))
+  //!
+  //! @note If \c _Resource is copyable, nothrow-movable, and sufficiently small (`<= 3*sizeof(void*)`),
+  //! it will be stored directly within the \c basic_any_resource. Otherwise, it will be shared between all
+  //! copies of the \c basic_any_resource.
+  _LIBCUDACXX_TEMPLATE(class _Resource, class... _Args, class __resource_t = __as_small_resource_t<_Resource>)
+  _LIBCUDACXX_REQUIRES(_CUDA_VMR::resource_with<__resource_t, _Properties...> _LIBCUDACXX_AND(
+    _Alloc_type != _CUDA_VMR::_AllocType::_Async || (_CUDA_VMR::async_resource_with<__resource_t, _Properties...>) ))
   basic_any_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
-          nullptr,
-          &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __copyable_resource<_Resource>>)
-      , __vtable(__vtable::template _Create<__copyable_resource<_Resource>>())
+          nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __resource_t>)
+      , __vtable(__vtable::template _Create<__resource_t>())
   {
-    if constexpr (_CUDA_VMR::_IsSmall<__copyable_resource<_Resource>>())
-    {
-      ::new (static_cast<void*>(this->__object.__buf_))
-        __copyable_resource<_Resource>(_CUDA_VSTD::forward<_Args>(__args)...);
-    }
-    else
-    {
-      this->__object.__ptr_ = new __copyable_resource<_Resource>(_CUDA_VSTD::forward<_Args>(__args)...);
-    }
+    static_assert(_CUDA_VMR::_IsSmall<__resource_t>(), "__as_small_resource_t<_Resource> must be small");
+    ::new (static_cast<void*>(this->__object.__buf_)) __resource_t(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
   //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
-  //! This constructor also handles conversion from \c async_any_resource to \c any_resource
+  //! This constructor also handles conversion from \c any_async_resource to \c any_resource
   //! @param __other The other \c basic_any_resource.
   _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(
@@ -402,26 +407,79 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource<_Ty, basic_any_res
 //! ``any_resource`` wraps any given :ref:`resource <libcudacxx-extended-api-memory-resources-resource>` that
 //! satisfies the required properties. It owns the contained resource, taking care of construction / destruction.
 //! This makes it especially suited for use in e.g. container types that need to ensure that the lifetime of the
-//! container exceeds the lifetime of the memory resource used to allocate the storage
+//! container exceeds the lifetime of the memory resource used to allocate the storage.
+//!
+//! When initialized with a resource type that is copyable, nothrow-movable, and sufficiently small
+//! (``<=3*sizeof(void*)``), the resource will be stored directly within the ``any_resource``. Otherwise, it will
+//! be shared between all copies of the `any_resource`.
 //!
 //! @endrst
 template <class... _Properties>
 using any_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Default, _Properties...>;
 
 //! @rst
-//! .. _cudax-memory-resource-async-any-resource:
+//! .. _cudax-memory-resource-any-async-resource:
 //!
 //! Type erased wrapper around an `async_resource`
 //! -----------------------------------------------
 //!
-//! ``async_any_resource`` wraps any given :ref:`async resource <libcudacxx-extended-api-memory-resources-resource>`
+//! ``any_async_resource`` wraps any given :ref:`async resource <libcudacxx-extended-api-memory-resources-resource>`
 //! that satisfies the required properties. It owns the contained resource, taking care of construction / destruction.
 //! This makes it especially suited for use in e.g. container types that need to ensure that the lifetime of the
-//! container exceeds the lifetime of the memory resource used to allocate the storage
+//! container exceeds the lifetime of the memory resource used to allocate the storage.
+//!
+//! When initialized with a resource type that is copyable, nothrow-movable, and sufficiently small
+//! (``<=3*sizeof(void*)``), the resource will be stored directly within the ``any_async_resource``. Otherwise, it will
+//! be shared between all copies of the `any_resource`.
 //!
 //! @endrst
 template <class... _Properties>
-using async_any_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Async, _Properties...>;
+using any_async_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Async, _Properties...>;
+
+//! @rst
+//! .. _cudax-memory-resource-make-any-resource:
+//!
+//! Factory function for `any_resource` objects
+//! -------------------------------------------
+//!
+//! ``make_any_resource`` constructs an :ref:`any_resource <cudax-memory-resource-any-resource>` object that wraps a
+//! newly constructed instance of the given resource type. The resource type must satisfy the ``cuda::mr::resource``
+//! concept and provide all of the properties specified in the template parameter pack.
+//!
+//! @param __args The arguments used to construct the instance of the resource type.
+//!
+//! @endrst
+template <class _Resource, class... _Properties, class... _Args>
+auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
+{
+  static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
+  static_assert(_CUDA_VMR::resource_with<_Resource, _Properties...>,
+                "Resource does not satisfy the required properties");
+  return any_resource<_Properties...>(_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...);
+}
+
+//! @rst
+//! .. _cudax-memory-resource-make-any-async-resource:
+//!
+//! Factory function for `any_async_resource` objects
+//! -------------------------------------------------
+//!
+//! ``make_any_async_resource`` constructs an :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
+//! object that wraps a newly constructed instance of the given resource type. The resource type must satisfy the
+//! ``cuda::mr::async_resource`` concept and provide all of the properties specified in the template parameter pack.
+//!
+//! @param __args The arguments used to construct the instance of the resource type.
+//!
+//! @endrst
+template <class _Resource, class... _Properties, class... _Args>
+auto make_any_async_resource(_Args&&... __args) -> any_async_resource<_Properties...>
+{
+  static_assert(_CUDA_VMR::async_resource<_Resource>,
+                "_Resource does not satisfy the cuda::mr::async_resource concept");
+  static_assert(_CUDA_VMR::async_resource_with<_Resource, _Properties...>,
+                "Resource does not satisfy the required properties");
+  return any_async_resource<_Properties...>(_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...);
+}
 
 } // namespace cuda::experimental::mr
 
