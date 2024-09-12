@@ -42,16 +42,132 @@
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__concepts/all_of.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
+#include <cuda/std/atomic>
 
 namespace cuda::experimental::mr
 {
 template <class _Ty, class _Uy = _CUDA_VSTD::remove_cvref_t<_Ty>>
 _LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource = false;
+
+template <class _Resource>
+struct _Shared_resource
+{
+  template <class... _Args>
+  explicit _Shared_resource(_Args&&... __args)
+      : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
+  {}
+
+  _Shared_resource(const _Shared_resource& __other) noexcept
+      : __control_block(__other.__control_block)
+  {
+    __control_block->__ref_count.fetch_add(1, _CUDA_VSTD::memory_order_relaxed);
+  }
+
+  _Shared_resource(_Shared_resource&& __other) noexcept
+      : __control_block(_CUDA_VSTD::exchange(__other.__control_block, nullptr))
+  {}
+
+  ~_Shared_resource() noexcept
+  {
+    if (__control_block && __control_block->__ref_count.fetch_sub(1, _CUDA_VSTD::memory_order_acq_rel) == 1)
+    {
+      delete __control_block;
+    }
+  }
+
+  _Shared_resource& operator=(const _Shared_resource& __other) noexcept
+  {
+    if (this != &__other)
+    {
+      _Shared_resource(__other).swap(*this);
+    }
+
+    return *this;
+  }
+
+  _Shared_resource& operator=(_Shared_resource&& __other) noexcept
+  {
+    if (this != &__other)
+    {
+      _Shared_resource(_CUDA_VSTD::move(__other)).swap(*this);
+    }
+
+    return *this;
+  }
+
+  void swap(_Shared_resource& __other) noexcept
+  {
+    _CUDA_VSTD::swap(__control_block, __other.__control_block);
+  }
+
+  _CCCL_NODISCARD void* allocate(size_t __size, size_t __alignment)
+  {
+    return __control_block->__resource.allocate(__size, __alignment);
+  }
+
+  void deallocate(void* __ptr, size_t __size, size_t __alignment)
+  {
+    __control_block->__resource.deallocate(__ptr, __size, __alignment);
+  }
+
+  _CCCL_NODISCARD void* async_allocate(size_t __size, size_t __alignment, ::cuda::stream_ref __stream)
+  {
+    return __control_block->__resource.async_allocate(__size, __alignment, __stream);
+  }
+
+  void async_deallocate(void* __ptr, size_t __size, size_t __alignment, ::cuda::stream_ref __stream)
+  {
+    __control_block->__resource.async_deallocate(__ptr, __size, __alignment, __stream);
+  }
+
+  friend void swap(_Shared_resource& __left, _Shared_resource& __right) noexcept
+  {
+    __left.swap(__right);
+  }
+
+  _CCCL_NODISCARD_FRIEND bool operator==(const _Shared_resource& __left, const _Shared_resource& __right)
+  {
+    if (__left.__control_block == __right.__control_block)
+    {
+      return true;
+    }
+
+    if (__left.__control_block == nullptr || __right.__control_block == nullptr)
+    {
+      return false;
+    }
+
+    return __left.__control_block->__resource == __right.__control_block->__resource;
+  }
+
+  _CCCL_NODISCARD_FRIEND bool operator!=(const _Shared_resource& __left, const _Shared_resource& __right)
+  {
+    return !(__left == __right);
+  }
+
+  _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_REQUIRES(::cuda::has_property<_Resource, _Property>)
+  _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const _Shared_resource& __self, _Property) noexcept
+  {
+    return get_property(__self.__control_block->__resource, _Property{});
+  }
+
+private:
+  struct _Control_block
+  {
+    _Resource __resource;
+    _CUDA_VSTD::atomic<int> __ref_count;
+  };
+
+  _Control_block* __control_block;
+};
 
 //! @rst
 //! .. _cudax-memory-resource-basic-any-resource:
@@ -81,6 +197,10 @@ private:
   static constexpr bool __properties_match =
     _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
+  template <class _Resource>
+  using __copyable_resource =
+    _CUDA_VSTD::_If<_CCCL_TRAIT(_CUDA_VSTD::is_copy_constructible, _Resource), _Resource, _Shared_resource<_Resource>>;
+
 public:
   //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c resource or \c async_resource
   //! concept as well as all properties.
@@ -102,6 +222,35 @@ public:
     else
     {
       this->__object.__ptr_ = new __resource_t(_CUDA_VSTD::forward<_Resource>(__res));
+    }
+  }
+
+  //! @brief Constructs a \c basic_any_resource wrapping an object of type \c _Resource that
+  //! is constructed from \c __args... . \c _Resource must satisfy the  \c resource or \c async_resource
+  //! concept, and it must provide all properties in \c _Properties... .
+  //!
+  //! If \c _Resource is not copy constructible, the resource will be shared between all copies of the
+  //! \c basic_any_resource. Otherwise, the resource will be copied for each \c basic_any_resource.
+  //!
+  //! @param __args The arguments used to construct the instance of \c _Resource this \c basic_any_resource
+  //! object wraps.
+  _LIBCUDACXX_TEMPLATE(class _Resource, class... _Args)
+  _LIBCUDACXX_REQUIRES(_CUDA_VMR::resource_with<_Resource, _Properties...> _LIBCUDACXX_AND(
+    _Alloc_type != _CUDA_VMR::_AllocType::_Async || (_CUDA_VMR::async_resource_with<_Resource, _Properties...>) ))
+  basic_any_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args) noexcept
+      : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
+          nullptr,
+          &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __copyable_resource<_Resource>>)
+      , __vtable(__vtable::template _Create<__copyable_resource<_Resource>>())
+  {
+    if constexpr (_CUDA_VMR::_IsSmall<__copyable_resource<_Resource>>())
+    {
+      ::new (static_cast<void*>(this->__object.__buf_))
+        __copyable_resource<_Resource>(_CUDA_VSTD::forward<_Args>(__args)...);
+    }
+    else
+    {
+      this->__object.__ptr_ = new __copyable_resource<_Resource>(_CUDA_VSTD::forward<_Args>(__args)...);
     }
   }
 
