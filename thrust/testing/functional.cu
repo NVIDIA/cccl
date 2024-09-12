@@ -186,11 +186,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
 {
   using T = typename Vector::value_type;
 
-  Vector input(4);
-  input[0] = 0;
-  input[1] = 1;
-  input[2] = 2;
-  input[3] = 3;
+  Vector input{0, 1, 2, 3};
 
   Vector output(4);
 
@@ -205,16 +201,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject1stFunctional()
 {
   using T = typename Vector::value_type;
 
-  Vector lhs(4);
-  Vector rhs(4);
-  lhs[0] = 0;
-  rhs[0] = 3;
-  lhs[1] = 1;
-  rhs[1] = 4;
-  lhs[2] = 2;
-  rhs[2] = 5;
-  lhs[2] = 3;
-  rhs[2] = 6;
+  Vector lhs{0, 1, 2, 3};
+  Vector rhs{3, 4, 5, 6};
 
   Vector output(4);
 
@@ -229,16 +217,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject2ndFunctional()
 {
   using T = typename Vector::value_type;
 
-  Vector lhs(4);
-  Vector rhs(4);
-  lhs[0] = 0;
-  rhs[0] = 3;
-  lhs[1] = 1;
-  rhs[1] = 4;
-  lhs[2] = 2;
-  rhs[2] = 5;
-  lhs[2] = 3;
-  rhs[2] = 6;
+  Vector lhs{0, 1, 2, 3};
+  Vector rhs{3, 4, 5, 6};
 
   Vector output(4);
 
@@ -253,25 +233,15 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMaximumFunctional()
 {
   using T = typename Vector::value_type;
 
-  Vector input1(4);
-  Vector input2(4);
-  input1[0] = 8;
-  input1[1] = 3;
-  input1[2] = 7;
-  input1[3] = 7;
-  input2[0] = 5;
-  input2[1] = 6;
-  input2[2] = 9;
-  input2[3] = 3;
+  Vector input1{8, 3, 7, 7};
+  Vector input2{5, 6, 9, 3};
 
   Vector output(4);
 
   thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::maximum<T>());
 
-  ASSERT_EQUAL(output[0], 8);
-  ASSERT_EQUAL(output[1], 6);
-  ASSERT_EQUAL(output[2], 9);
-  ASSERT_EQUAL(output[3], 7);
+  Vector ref{8, 6, 9, 7};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestMaximumFunctional);
 
@@ -280,25 +250,15 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMinimumFunctional()
 {
   using T = typename Vector::value_type;
 
-  Vector input1(4);
-  Vector input2(4);
-  input1[0] = 8;
-  input1[1] = 3;
-  input1[2] = 7;
-  input1[3] = 7;
-  input2[0] = 5;
-  input2[1] = 6;
-  input2[2] = 9;
-  input2[3] = 3;
+  Vector input1{8, 3, 7, 7};
+  Vector input2{5, 6, 9, 3};
 
   Vector output(4);
 
   thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minimum<T>());
 
-  ASSERT_EQUAL(output[0], 5);
-  ASSERT_EQUAL(output[1], 3);
-  ASSERT_EQUAL(output[2], 7);
-  ASSERT_EQUAL(output[3], 3);
+  Vector ref{5, 3, 7, 3};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestMinimumFunctional);
 
@@ -307,22 +267,14 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 {
   using T = typename Vector::value_type;
 
-  Vector input(5);
-  input[0] = 1;
-  input[1] = 0;
-  input[2] = 1;
-  input[3] = 1;
-  input[4] = 0;
+  Vector input{1, 0, 1, 1, 0};
 
   Vector output(5);
 
   thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(thrust::identity<T>()));
 
-  ASSERT_EQUAL(output[0], 0);
-  ASSERT_EQUAL(output[1], 1);
-  ASSERT_EQUAL(output[2], 0);
-  ASSERT_EQUAL(output[3], 0);
-  ASSERT_EQUAL(output[4], 1);
+  Vector ref{0, 1, 0, 0, 1};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
 
@@ -340,28 +292,15 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
 {
   using T = typename Vector::value_type;
 
-  Vector input1(5);
-  Vector input2(5);
-  input1[0] = 1;
-  input1[1] = 0;
-  input1[2] = 1;
-  input1[3] = 1;
-  input1[4] = 0;
-  input2[0] = 1;
-  input2[1] = 1;
-  input2[2] = 0;
-  input2[3] = 1;
-  input2[4] = 1;
+  Vector input1{1, 0, 1, 1, 0};
+  Vector input2{1, 1, 0, 1, 1};
 
   Vector output(5);
 
   thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::not_fn(thrust::equal_to<T>()));
 
-  ASSERT_EQUAL(output[0], 0);
-  ASSERT_EQUAL(output[1], 1);
-  ASSERT_EQUAL(output[2], 1);
-  ASSERT_EQUAL(output[3], 0);
-  ASSERT_EQUAL(output[4], 1);
+  Vector ref{0, 1, 1, 0, 1};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestNot2);
 
