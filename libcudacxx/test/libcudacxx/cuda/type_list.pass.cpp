@@ -101,8 +101,10 @@ _CCCL_HOST_DEVICE constexpr bool test_call_indirect(long)
 }
 
 static_assert(test_call_indirect<Incomplete, Empty>(0), "");
+#if !defined(_CCCL_CUDACC_BELOW_12_2)
 static_assert(!test_call_indirect<Incomplete>(0), "");
 static_assert(!test_call_indirect<Incomplete, Empty, int>(0), "");
+#endif
 
 template <class... Ts>
 struct Template
@@ -214,10 +216,14 @@ static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::
                                            int,
                                            Int<42>>::value,
               "");
+
+#if !defined(_CCCL_CUDACC_BELOW_12_2)
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
                                             ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             int>::value,
               "");
+#endif
+
 static_assert(
   ::cuda::std::__type_index_c<
     14,
@@ -423,22 +429,28 @@ static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::
                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            ::cuda::std::__type_list<int, Int<42>>>::value,
               "");
+#if !defined(_CCCL_CUDACC_BELOW_12_2)
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
                                             ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             ::cuda::std::__type_list<int>>::value,
               "");
+#endif
 
 // __type_front
 static_assert(::cuda::std::__type_front<::cuda::std::__type_list<Int<42>, double>>::value == 42, "");
+#if !defined(_CCCL_CUDACC_BELOW_12_2)
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_front>,
                                             ::cuda::std::__type_list<>>::value,
               "");
+#endif
 
 // __type_back
 static_assert(::cuda::std::__type_back<::cuda::std::__type_list<double, Int<42>>>::value == 42, "");
+#if !defined(_CCCL_CUDACC_BELOW_12_2)
 static_assert(
   !::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_back>, ::cuda::std::__type_list<>>::value,
   "");
+#endif
 
 // __type_concat
 static_assert(::cuda::std::is_same<::cuda::std::__type_concat<>, ::cuda::std::__type_list<>>::value, "");
@@ -559,10 +571,12 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_transform<::cuda::std::__
 static_assert(::cuda::std::is_same<::cuda::std::__type_transform<::cuda::std::__type_list<int, char const>, AddPointer>,
                                    ::cuda::std::__type_list<int*, char const*>>::value,
               "");
+#if !defined(_CCCL_CUDACC_BELOW_12_2)
 static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote2<::cuda::std::__type_transform>,
                                             ::cuda::std::__type_list<int, char const, int&>,
                                             AddPointer>::value,
               "");
+#endif
 
 template <class A, class B>
 struct Pair
