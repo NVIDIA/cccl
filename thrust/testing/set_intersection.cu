@@ -54,19 +54,8 @@ void TestSetIntersectionSimple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a(3), b(4);
-
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
-
-  Vector ref(2);
-  ref[0] = 0;
-  ref[1] = 4;
+  Vector a{0, 2, 4}, b{0, 3, 3, 4};
+  Vector ref{0, 4};
 
   Vector result(2);
 

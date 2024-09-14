@@ -68,6 +68,7 @@ void TestReverseCopySimple()
   Vector input{1, 2, 3, 4, 5};
   Vector output(5);
 
+  // arm gcc is complaining here
   Iterator iter = thrust::reverse_copy(input.begin(), input.end(), output.begin());
 
   Vector ref{5, 4, 3, 2, 1};

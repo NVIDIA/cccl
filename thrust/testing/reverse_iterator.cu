@@ -71,6 +71,7 @@ void TestReverseIteratorCopy()
 
   Vector destination(4, 0);
 
+  // arm gcc is complaining here
   thrust::copy(
     thrust::make_reverse_iterator(source.end()), thrust::make_reverse_iterator(source.begin()), destination.begin());
 

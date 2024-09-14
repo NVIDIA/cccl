@@ -91,7 +91,7 @@ DECLARE_VARIABLE_UNITTEST(TestReplace);
 #ifndef THRUST_GCC13_TBB_MISCOMPILE
 #  ifndef THRUST_GCC12_OMP_MISCOMPILE
 template <class Vector>
-void TestReplaceCopySimple()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
 {
   using T = typename Vector::value_type;
 
