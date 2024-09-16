@@ -5,7 +5,7 @@ How to initialize a tensor map on device
 
 An introduction to TMA (Tensor Memory Access) can be found in the `CUDA
 Programming Guide
-<https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-tensor-memory-access-tma>`__.
+<https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=tma#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma>`__.
 It describes how to create a tensor map on the **host** using the CUDA driver
 API.
 
