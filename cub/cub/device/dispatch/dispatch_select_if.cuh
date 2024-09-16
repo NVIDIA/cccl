@@ -190,6 +190,12 @@ struct agent_select_if_wrapper_t
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
+// TODO (elstehle) gird-private constants were introduced in CTK 11.7. The macro is temporarily placed here, do we want to make this a CCCL macro?
+#if _CCCL_CUDACC_BELOW_11_7
+#define _CUB_GRID_CONSTANT 
+#else
+#define _CUB_GRID_CONSTANT __grid_constant__
+#endif
 
 /**
  * Select kernel entry point (multi-block)
@@ -302,7 +308,7 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     OffsetT num_items,
     int num_tiles,
-    StreamingContextT streaming_context,
+    _CUB_GRID_CONSTANT StreamingContextT streaming_context,
     cub::detail::vsmem_t vsmem)
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
