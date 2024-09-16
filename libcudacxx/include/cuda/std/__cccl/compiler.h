@@ -58,11 +58,6 @@
 #  define _CCCL_CUDA_COMPILER
 #endif // cuda compiler available
 
-// We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if defined(_CCCL_CUDA_COMPILER) && defined(__CUDACC__)
-#  define _CCCL_CUDA_COMPILATION
-#endif // _CCCL_CUDA_COMPILER && __CUDACC__
-
 // clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
 // defined in "cuda.h". clang-cuda automatically pre-includes "__clang_cuda_runtime_wrapper.h" which includes "cuda.h"
 #if defined(_CCCL_CUDA_COMPILER_CLANG)

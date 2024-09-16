@@ -22,12 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILATION)
+// We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
+#if defined(_CCCL_CUDA_COMPILER) && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
 #  define _CCCL_FORCEINLINE __forceinline__
-#else // ^^^ _CCCL_CUDA_COMPILATION ^^^ / vvv !_CCCL_CUDA_COMPILATION
+#else // ^^^ _CCCL_CUDA_COMPILATION ^^^ / vvv !_CCCL_CUDA_COMPILATION vvv
 #  define _CCCL_HOST
 #  define _CCCL_DEVICE
 #  define _CCCL_HOST_DEVICE
