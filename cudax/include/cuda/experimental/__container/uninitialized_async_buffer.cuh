@@ -221,11 +221,14 @@ public:
 
   //! @brief Replaces the stored stream
   //! @param __stream the new stream
-  //! @note Synchronizes with the old stream
-  _CCCL_NODISCARD constexpr void get_stream(::cuda::stream_ref __stream)
+  //! @note Always synchronizes with the old stream
+  constexpr void set_stream(::cuda::stream_ref __stream)
   {
-    __stream_.wait();
-    __stream_ = __stream;
+    if (__stream != __stream_)
+    {
+      __stream_.wait();
+      __stream_ = __stream;
+    }
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_async_buffer
