@@ -27,6 +27,8 @@
 
 #include <cub/detail/choose_offset.cuh>
 
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include "catch2_test_helper.h"
@@ -41,6 +43,36 @@ CUB_TEST("Tests choose_offset", "[util][type]")
 
   // Uses unsigned 64-bit type for signed 64-bit type
   STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_offset_t<std::int64_t>, unsigned long long>::value);
+}
+
+CUB_TEST("Tests choose_signed_offset", "[util][type]")
+{
+  // Uses signed 64-bit type for unsigned signed 32-bit type
+  STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_signed_offset_t<std::uint32_t>, std::int64_t>::value);
+
+  // Uses signed 32-bit type for signed 32-bit type
+  STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_signed_offset_t<std::int32_t>, std::int32_t>::value);
+
+  // Uses signed 32-bit type for type smaller than 32 bits
+  STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_signed_offset_t<std::int8_t>, std::int32_t>::value);
+
+  // Uses signed 64-bit type for signed 64-bit type
+  STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_signed_offset_t<std::int64_t>, std::int64_t>::value);
+
+  // Offset type covers maximum number representable by a signed 32-bit integer
+  REQUIRE(cudaSuccess
+          == cub::detail::choose_signed_offset<std::int32_t>::is_exceeding_offset_type(
+            ::cuda::std::numeric_limits<std::int32_t>::max()));
+
+  // Offset type covers maximum number representable by a signed 64-bit integer
+  REQUIRE(cudaSuccess
+          == cub::detail::choose_signed_offset<std::int64_t>::is_exceeding_offset_type(
+            ::cuda::std::numeric_limits<std::int64_t>::max()));
+
+  // Offset type does not support maximum number representable by an unsigned 64-bit integer
+  REQUIRE(cudaErrorInvalidValue
+          == cub::detail::choose_signed_offset<std::uint64_t>::is_exceeding_offset_type(
+            ::cuda::std::numeric_limits<std::uint64_t>::max()));
 }
 
 CUB_TEST("Tests promote_small_offset", "[util][type]")

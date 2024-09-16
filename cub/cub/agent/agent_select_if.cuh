@@ -681,7 +681,7 @@ struct AgentSelectIf
     CTA_SYNC();
 
     // Gather items from shared memory and scatter to global
-    ScatterPartitionsToGlobal<IS_LAST_TILE, IS_FIRST_TILE>(
+    ScatterPartitionsToGlobal<IS_LAST_TILE>(
       num_tile_items, tile_num_rejections, num_selections_prefix, num_rejected_prefix, d_selected_out);
   }
 
@@ -689,7 +689,7 @@ struct AgentSelectIf
    * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to two
    * distinct partitions.
    */
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE, typename SelectedItT, typename RejectedItT>
+  template <bool IS_LAST_TILE, typename SelectedItT, typename RejectedItT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
@@ -730,7 +730,7 @@ struct AgentSelectIf
    * iterator, where selected items are written in order from the beginning of the itereator and rejected items are
    * writtem from the iterators end backwards.
    */
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE, typename PartitionedOutputItT>
+  template <bool IS_LAST_TILE, typename PartitionedOutputItT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
@@ -739,20 +739,25 @@ struct AgentSelectIf
     PartitionedOutputItT partitioned_out_it)
   {
     using total_offset_t           = typename StreamingContextT::total_num_items_t;
-    auto const selected_base_begin = streaming_context.num_previously_selected();
-    auto const rejected_base_end   = streaming_context.num_total_items() - streaming_context.num_previously_rejected();
+    
+    total_offset_t _num_rejected_prefix = streaming_context.num_total_items() - streaming_context.num_previously_rejected();
+    _num_rejected_prefix -= static_cast<total_offset_t>(num_rejected_prefix + 1);
+    total_offset_t _num_selections_prefix = streaming_context.num_previously_selected() + static_cast<total_offset_t>(num_selections_prefix);
+    
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-    {
+    {      
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+      
       int rejection_idx = item_idx;
       int selection_idx = item_idx - tile_num_rejections;
+      total_offset_t scatter_rejected_index = _num_rejected_prefix - static_cast<total_offset_t>(rejection_idx);
+      total_offset_t scatter_selected_index = _num_selections_prefix + static_cast<total_offset_t>(selection_idx);
       total_offset_t scatter_offset =
         (item_idx < tile_num_rejections)
-          ? rejected_base_end - static_cast<total_offset_t>(num_rejected_prefix + rejection_idx + 1)
-          : selected_base_begin + num_selections_prefix + selection_idx;
-
-      InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+          ? scatter_rejected_index
+          : scatter_selected_index;
 
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
       {

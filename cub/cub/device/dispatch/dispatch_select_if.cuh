@@ -71,9 +71,6 @@ namespace select
 // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
 using per_partition_offset_t = ::cuda::std::int32_t;
 
-// Offset type large enough to represent any index within the input and output iterators
-using num_total_items_t = ::cuda::std::int64_t;
-
 template <typename TotalNumItemsT>
 class streaming_context_t
 {
@@ -308,7 +305,7 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     OffsetT num_items,
     int num_tiles,
-    _CUB_GRID_CONSTANT StreamingContextT streaming_context,
+    _CUB_GRID_CONSTANT const StreamingContextT streaming_context,
     cub::detail::vsmem_t vsmem)
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
@@ -399,7 +396,7 @@ struct DispatchSelectIf : SelectedPolicy
   using per_partition_offset_t = detail::select::per_partition_offset_t;
 
   // Offset type large enough to represent any index within the input and output iterators
-  using num_total_items_t = detail::select::num_total_items_t;
+  using num_total_items_t = OffsetT;
 
   // Type used to provide streaming information about each partition's context
   using streaming_context_t = detail::select::streaming_context_t<num_total_items_t>;
