@@ -60,12 +60,6 @@ namespace cuda::experimental
 //!
 //! .. warning::
 //!
-//!    ``uninitialized_async_buffer`` stores a reference to the provided memory `memory resource
-//!    <libcudacxx-extended-api-memory-resources-resource>`. It is the user's resposibility to ensure the lifetime of
-//!    the resource exceeds the lifetime of the buffer.
-//!
-//! .. warning::
-//!
 //!    ``uninitialized_async_buffer`` uses `stream-ordered allocation
 //!    <https://developer.nvidia.com/blog/using-cuda-stream-ordered-memory-allocator-part-1/>`__. It is the user's
 //!    resposibility to ensure the lifetime of both the provided async resource and the stream exceed the lifetime of
