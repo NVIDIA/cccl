@@ -18,11 +18,6 @@ set(PACKAGE_VERSION 11.0)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 project(libcudacxx LANGUAGES CXX)
 
-option(libcudacxx_ENABLE_INSTALL_RULES "Enable installation of libcu++" ${LIBCUDACXX_TOPLEVEL_PROJECT})
-if (libcudacxx_ENABLE_INSTALL_RULES)
-  include(cmake/libcudacxxInstallRules.cmake)
-endif()
-
 if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
   include(cmake/libcudacxxAddSubdir.cmake)
   return()

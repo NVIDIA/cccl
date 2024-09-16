@@ -14,6 +14,7 @@ endif()
 set(cn_cmake_dir "${CMAKE_CURRENT_LIST_DIR}")
 set(cn_prefix_dir "${cn_cmake_dir}/../../..")
 find_path(cn_include_dir "cuda/experimental/version.cuh"
+  REQUIRED
   NO_DEFAULT_PATH NO_CACHE REQUIRED
   HINTS
     "${cn_prefix_dir}/cudax/include" # Source
