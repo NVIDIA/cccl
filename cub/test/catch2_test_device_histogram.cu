@@ -430,7 +430,7 @@ CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", types)
 
 // TODO(bgruber): float produces INFs in the HistogramRange test setup AND the HistogramEven implementation
 // This test covers int32 and int64 arithmetic for bin computation
-CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", metal::remove<types, float>)
+CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", c2h::remove<types, float>)
 {
   using sample_t             = c2h::get<0, TestType>;
   using level_t              = sample_t;
