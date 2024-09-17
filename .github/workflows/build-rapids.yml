@@ -121,6 +121,12 @@ jobs:
 
           . ~/cccl/ci/rapids/post-create-command.sh;
 
+          whoami
+          stat ~/.aws/config
+          stat ~/.aws/credentials
+          sccache --stop-server || true;
+          SCCACHE_LOG=trace sccache --start-server;
+
           # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
           for RAPIDS_ENABLE_TESTS in OFF ON; do
             _apply_manifest_modifications;
@@ -154,8 +160,8 @@ jobs:
           aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
           EOF
 
-          chmod 0400 .aws/credentials
-          chmod 0400 .aws/config
+          chmod 0600 .aws/credentials
+          chmod 0644 .aws/config
 
           .devcontainer/launch.sh \
             --docker \
