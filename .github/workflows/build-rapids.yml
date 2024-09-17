@@ -121,12 +121,6 @@ jobs:
 
           . ~/cccl/ci/rapids/post-create-command.sh;
 
-          whoami
-          stat ~/.aws/config
-          stat ~/.aws/credentials
-          sccache --stop-server || true;
-          SCCACHE_LOG=trace sccache --start-server;
-
           # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
           for RAPIDS_ENABLE_TESTS in OFF ON; do
             _apply_manifest_modifications;
@@ -145,29 +139,16 @@ jobs:
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
 
-          mkdir -p .aws
-
-          cat <<EOF > .aws/config
-          [default]
-          bucket=rapids-sccache-devs
-          region=us-east-2
-          EOF
-
-          cat <<EOF > .aws/credentials
-          [default]
-          aws_access_key_id=$AWS_ACCESS_KEY_ID
-          aws_session_token=$AWS_SESSION_TOKEN
-          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
-          EOF
-
-          chmod 0600 .aws/credentials
-          chmod 0644 .aws/config
-
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
-            --env VAULT_HOST= \
+            --env "VAULT_HOST=" \
+            --env "AWS_REGION=$AWS_REGION" \
+            --env "SCCACHE_REGION=$AWS_REGION" \
+            --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
+            --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" \
+            --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
