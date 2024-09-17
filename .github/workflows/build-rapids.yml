@@ -125,7 +125,9 @@ jobs:
           for RAPIDS_ENABLE_TESTS in OFF ON; do
             _apply_manifest_modifications;
             for lib in ${RAPIDS_LIBS}; do
+              ls -l ~/.aws
               sccache -z
+              sccache -s
               if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
                 if ! test -v failures_map["${lib}"]; then
                   failures+=("${lib}")
@@ -154,8 +156,8 @@ jobs:
           aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
           EOF
 
-          chmod 0444 .aws/credentials
-          chmod 0444 .aws/config
+          chmod 0400 .aws/credentials
+          chmod 0400 .aws/config
 
           .devcontainer/launch.sh \
             --docker \

@@ -21,9 +21,6 @@ _apply_manifest_modifications() {
     # Print the entire manifest.yaml after modifications
     cat "${PROJECT_MANIFEST_YML}";
     # Regenerate the RAPIDS build scripts from the new manifest.yaml
-    sed -i 's@sccache --stop-server >/dev/null 2>&1 || true@pkill -9 sccache || true; devcontainer-utils-vault-s3-creds-propagate@' /opt/rapids-build-utils/bin/tmpl/cpp.build.tmpl.sh
-    sed -i 's@sccache --stop-server >/dev/null 2>&1 || true@pkill -9 sccache || true; devcontainer-utils-vault-s3-creds-propagate@' /opt/rapids-build-utils/bin/tmpl/python.build.wheel.tmpl.sh
-    sed -i 's@sccache --stop-server >/dev/null 2>&1 || true@pkill -9 sccache || true; devcontainer-utils-vault-s3-creds-propagate@' /opt/rapids-build-utils/bin/tmpl/python.install.tmpl.sh
     rapids-generate-scripts;
 }
 
@@ -113,7 +110,7 @@ _run_post_create_command() {
     gh config set git_protocol ssh;
     gh config set git_protocol ssh --host github.com;
 
-    clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules;
+    clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules --no-update-env;
 }
 
 if [ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]; then
